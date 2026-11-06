@@ -62,8 +62,11 @@ public sealed class PythonReRequiredLiteralScreenTests
         Assert.False(ordinary.Search("baaaa"u8).Success);
         var limited = new Utf8PythonRegex("a+b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkingBytes = 1 });
+        Assert.True(limited.Search("ab"u8).Success);
+        var overlapping = new Utf8PythonRegex("a+ab", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Search("ab"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Search("aab"u8)).ResourceKind);
     }
 
     [Fact]

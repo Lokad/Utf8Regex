@@ -208,6 +208,10 @@ counts or avoid VM workspace; exact denial thresholds are not version-stable.
 Disproved plain-alternative branches need no frame storage. For example, Count
 of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
 workspace still require admission. This limit does not cover total managed memory.
+Fused scalar repeats can also execute without unused counter vectors. The first
+counter-dependent repeat admits its complete state before acquisition; retries
+reuse it under the same synchronous invocation lifetime. Required capture and
+assertion storage remains admitted. Work and heap requirements can therefore fall.
 Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
 impossible starts. Each scan admits at most 2048 bytes, with original-token and
 deadline checks even on unlimited calls. Actual candidates retain normal VM and

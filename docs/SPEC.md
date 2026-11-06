@@ -298,6 +298,12 @@ The shared backtracking VM uses small fixed frame, capture-trail and repeat-jour
 chunks. Short searches and captures need less initial capacity; deep runs acquire
 more chunks, headers and growth checkpoints. Every covered acquisition still
 requires admission first.
+Root repeat state is acquired only when execution needs mutable counters. Fused
+runs can fit tighter working limits, including Count when captures are unused.
+Counter-dependent execution still admits the complete vectors before allocation;
+the invocation retains them across retries and releases them synchronously.
+Assertion children retain their separate storage lifetime. Numerical work and
+working requirements can change; counter-heavy paths can cost more time.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.

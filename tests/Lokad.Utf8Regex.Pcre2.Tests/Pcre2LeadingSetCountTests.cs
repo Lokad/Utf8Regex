@@ -67,10 +67,10 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     [Theory]
-    [InlineData("(a+)(b)", 'x', "aaab")]
-    [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar")]
-    [InlineData(@"[^a]+\.[^z]+", 'b', "ébc.😀tail")]
-    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(string pattern, char filler, string hit)
+    [InlineData("(a+)(b)", 'x', "aaab", true)]
+    [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar", false)]
+    [InlineData(@"[^a]+\.[^z]+", 'b', "ébc.😀tail", true)]
+    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(string pattern, char filler, string hit, bool needsStorage)
     {
         var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
@@ -83,8 +83,10 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.True(invocation.Budget.Steps > validation);
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
+        if (needsStorage)
+            Assert.Equal(Pcre2ErrorKind.HeapLimit,
+                Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
+        else Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(hit)));
 
         invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out input));
@@ -96,8 +98,10 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.False(regex.IsMatch(bytes));
-        Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(hit))).ErrorKind);
+        if (needsStorage)
+            Assert.Equal(Pcre2ErrorKind.HeapLimit,
+                Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(hit))).ErrorKind);
+        else Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
     }
 
     [Theory]

@@ -40,7 +40,7 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceMatchOutcome RunFrom(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
-        int[] captureStarts, int[] captureEnds, int[] counts, int[] positions, int[] balanceHeads,
+        int[] captureStarts, int[] captureEnds, ref int[] counts, ref int[] positions, int[] balanceHeads,
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
     {
@@ -208,6 +208,11 @@ internal static partial class Utf8SliceRunner
                 RestoreAssertion(continuation, ref current, captureStarts, captureEnds, balanceHeads,
                     false, ref stacks, ref invocation);
             }
+            // Only the root can acquire deferred tables; children retain their
+            // existing independently released arrays. Keep root storage reusable
+            // after success, failure and interruption of an assertion child.
+            counts = current.Counts;
+            positions = current.Positions;
             continuations.Release(ref invocation);
         }
     }

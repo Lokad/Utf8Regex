@@ -78,15 +78,14 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
 
     [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectBoundsRetainWorkingAdmission(int length)
+    public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('A', length));
         Assert.Equal(length, new Utf8Regex(Pattern, Options).Match(input).LengthInBytes);
         var tight = new Utf8Regex(Pattern, Options, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
+        // The scalar continuation also needs no mutable repeat buffers.
+        Assert.Equal(length, tight.Match(input).LengthInBytes);
     }
 
     [Fact]

@@ -70,18 +70,12 @@ public sealed class Utf8AdjacentSetRepeatTests
     }
 
     [Fact]
-    public void RepeatBuffersAreAdmittedWithoutUnnecessaryRewindStorage()
+    public void FusedRunsNeedNoRepeatOrRewindStorage()
     {
         const string pattern = @"\Aitem\s+[0-9]+\z";
-        var capacity = 2 * Utf8ConstructionBudget.ArrayBytes<int>(2);
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,
-            MaxWorkingBytes = capacity, MaxResultBytes = 1 };
+            MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var owner = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
-        Assert.True(owner.Match("item   12345"u8).Success);
-        var denied = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkingBytes = capacity - 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("item   12345"u8)).ResourceKind);
         Assert.True(owner.Match("item   12345"u8).Success);
     }
 

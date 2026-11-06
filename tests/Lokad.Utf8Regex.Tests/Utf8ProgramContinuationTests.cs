@@ -70,7 +70,8 @@ public sealed class Utf8ProgramContinuationTests
     [MemberData(nameof(ResourceCases))]
     public void EveryDeniedScalarContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
     {
-        var pattern = family == 0 ? Patterns[family] : "ab[0-9]{2}";
+        // The overlapping last digit needs actual mutable repeat state.
+        var pattern = family == 0 ? Patterns[family] : "ab[0-9]{1,2}[0-9]";
         var program = Utf8ScalarCaptureWitness.Lower(pattern, RegexOptions.CultureInvariant, depth, shape);
         var input = Encoding.ASCII.GetBytes(family == 0 ? "abc" : "ab42");
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];

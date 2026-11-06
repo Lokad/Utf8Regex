@@ -32,6 +32,10 @@
 - Reduce initial capture-trail allocation for small matches. Long capture
   histories can use more buffers and bytes; working admission still covers
   each table/chunk acquisition and growth overlap.
+- Acquire repeat counters only when execution needs mutable state. Fused scalar
+  matching can allocate less and fit smaller working limits; unfused, assertion
+  and reverse workloads can cost more time. State remains admitted before
+  acquisition and released synchronously.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when

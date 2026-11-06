@@ -372,11 +372,19 @@ internal static partial class Utf8SliceRunner
                 // the same VM without the unused assertion-continuation driver.
                 var current = new AssertionCursor(program, start, counts, positions,
                     requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount);
-                attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
-                    false, ref workspace.Stacks, ref invocation, out _);
+                try
+                {
+                    attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
+                        false, ref workspace.Stacks, ref invocation, out _);
+                }
+                finally
+                {
+                    workspace.Counts = current.Counts;
+                    workspace.Positions = current.Positions;
+                }
             }
             else
-                attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
+                attempt = RunFrom(program, input, start, captureStarts, captureEnds, ref workspace.Counts, ref workspace.Positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -966,8 +974,8 @@ internal static partial class Utf8SliceRunner
                         // Counts store unsigned bits. Only an inactive repeat has
                         // both UINT_MAX and position -1; active body starts are
                         // nonnegative scalar boundaries, including RTL execution.
-                        var count = (long)unchecked((uint)counts[repeatId]);
-                        if (counts[repeatId] == -1 && positions[repeatId] == -1)
+                        var count = counts.Length == 0 ? 0 : (long)unchecked((uint)counts[repeatId]);
+                        if (counts.Length == 0 || counts[repeatId] == -1 && positions[repeatId] == -1)
                         {
                             count = 0;
                             if (TryRunClassRepeatWithoutRewind(program, programIndex, input, inputIndex, cursor.RequiredEnd,
@@ -984,6 +992,15 @@ internal static partial class Utf8SliceRunner
                                 }
                                 else failed = true;
                                 break;
+                            }
+                            if (counts.Length == 0)
+                            {
+                                var breach = stacks.TryRentRepeatTables(program.RepeatCount, ref invocation,
+                                    out counts, out positions);
+                                if (breach != Utf8ExecutionLimitKind.None)
+                                    return new(false, -1, breach, null, null);
+                                cursor.Counts = counts;
+                                cursor.Positions = positions;
                             }
                             if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
                             {
@@ -1765,26 +1782,15 @@ internal static partial class Utf8SliceRunner
 
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
         {
-            // The terminal root uses scalar locals, never repeat vectors. Keep
-            // the exact same gate as execution and the existing owner/release.
-            var repeats = CanRunTerminalClassRepeat(program) ? 0 : program.RepeatCount;
+            // Fused repeats use scalar locals. Root repeat vectors are acquired
+            // by the existing stack owner only when a repeat needs mutable state.
             // Lowering propagates the same balancing requirement to assertion
             // bodies. Only balancing captures produce or restore head entries.
             var balanceGroups = program.HasBalancing ? program.GroupCount : 0;
-            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeats) * 2
-                + Utf8ConstructionBudget.ArrayBytes<int>(balanceGroups));
+            var bytes = Utf8ConstructionBudget.ArrayBytes<int>(balanceGroups);
             var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             _reservation = bytes;
-            if (repeats != 0)
-            {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                Counts = new int[repeats];
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                Positions = new int[repeats];
-            }
             if (balanceGroups != 0)
             {
                 breach = invocation.TryChargeInputStep();
@@ -1824,6 +1830,37 @@ internal static partial class Utf8SliceRunner
         internal int TrailCount => _trailCount;
         internal int JournalCount => _journalCount;
         internal int BalanceCount => _balanceCount;
+
+        // These root arrays share this workspace's reservation lifetime and are
+        // retained between attempts. Assertion children keep their own leases.
+        internal Utf8ExecutionLimitKind TryRentRepeatTables(int repeats, ref Utf8SliceInvocation invocation,
+            out int[] counts, out int[] positions)
+        {
+            counts = positions = [];
+            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeats) * 2);
+            var reserved = checked(_reservedBytes + bytes);
+            var breach = invocation.TryReserveWorking(bytes);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            // The workspace releases this reservation even on partial allocation
+            // or interruption, just as it releases partially acquired stack chunks.
+            _reservedBytes = reserved;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            counts = new int[repeats];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            positions = new int[repeats];
+            for (var offset = 0; offset < repeats;)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(2048, repeats - offset);
+                counts.AsSpan(offset, length).Fill(-1);
+                positions.AsSpan(offset, length).Fill(-1);
+                offset += length;
+            }
+            return Utf8ExecutionLimitKind.None;
+        }
 
         // Capture end writes and explicit close markers already survive exactly
         // the chosen path. Reuse their order; no completion history is allocated.

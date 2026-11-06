@@ -66,15 +66,13 @@ public sealed class PythonReAdjacentSetRepeatTests
     public void WorkWorkingAndResultAdmissionRemainUseful()
     {
         const string pattern = @"item\s+[0-9]+";
-        foreach (var (policy, kind) in new[]
-        {
-            (new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, Utf8ResourceLimitKind.ExecutionWorkingBytes),
-            (new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Utf8ResourceLimitKind.ExecutionWorkSteps),
-        })
-        {
-            var denied = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(kind, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Search("item   12345"u8)).ResourceKind);
-        }
+        var working = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkingBytes = 1 });
+        Assert.True(working.Search("item   12345"u8).Success);
+        var work = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Search("item   12345"u8)).ResourceKind);
         var results = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,

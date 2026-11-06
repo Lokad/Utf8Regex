@@ -38,14 +38,12 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
 
     [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectLengthBoundsHelperAdmission(int length)
+    public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var bytes = Encoding.ASCII.GetBytes("///" + new string('x', length - 4) + "\n");
         Assert.Equal(length, new Utf8Regex(Pattern).Match(bytes).LengthInBytes);
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(bytes).LengthInBytes);
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(bytes)).ResourceKind);
+        Assert.Equal(length, tight.Match(bytes).LengthInBytes);
     }
 
     [Fact]

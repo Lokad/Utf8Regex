@@ -94,8 +94,11 @@ public sealed class Utf8TerminalClassRepeatTests
         var plain = new Utf8Regex(@"\w+", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
         Assert.Equal(2, plain.Count("abc ééé"u8));
         var captured = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        Assert.Equal(2, captured.Count("abc ééé"u8));
+        var detailed = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
+            policy with { MaxResultBytes = 1 << 20 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Count("abc ééé"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => detailed.MatchDetailed("abc ééé"u8)).ResourceKind);
     }
 
     [Theory]

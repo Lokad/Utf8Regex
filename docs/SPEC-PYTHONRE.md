@@ -329,6 +329,11 @@ zero and subject end. Interior coordinates still use an existing map or bounded
 validation of the necessary span. Avoiding redundant endpoint scans lowers work
 charges without changing full-subject validation or publication checks.
 
+Fused VM repeats need no unused counter vectors. Counter-dependent execution
+still admits its state before acquisition and retains it across candidate
+attempts. This can lower execution work/working requirements without changing
+captures, retained results or synchronous interruption and release.
+
 Cold FullMatch/replacement preparation retains separate construction limits;
 finite working bytes cap additional covered construction capacity. A byte failure
 can report ConstructionBytes before execution. Template lookup also charges one

@@ -234,8 +234,7 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
+        Assert.Equal(2, limited.Count(input));
     }
 
     [Theory]

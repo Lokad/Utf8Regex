@@ -49,9 +49,7 @@ public sealed class Utf8IdentifierValueMatchTests
         Assert.Equal((length - 3, 3), (unlimited.IndexInBytes, unlimited.LengthInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(unlimited, tight.Match(input));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
+        Assert.Equal(unlimited, tight.Match(input));
     }
 
     [Fact]

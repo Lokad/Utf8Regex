@@ -43,15 +43,13 @@ public sealed class Utf8OperatorPrefixValueMatchTests
 
     [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectSizeBoundsTheExistingHelper(int length)
+    public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('+', length));
         Assert.Equal(length, new Utf8Regex(Pattern).Match(input).LengthInBytes);
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
+        Assert.Equal(length, tight.Match(input).LengthInBytes);
     }
 
     [Fact]

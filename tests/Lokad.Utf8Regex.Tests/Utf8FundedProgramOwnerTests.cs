@@ -147,7 +147,9 @@ public sealed class Utf8FundedProgramOwnerTests
         using (var work = Compile("(a+)", account, policy: new() { MaxWorkSteps = 1 }))
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count("aaaa"u8)).ResourceKind);
         using (var bytes = Compile("(a+)", account, policy: new() { MaxWorkingBytes = 1 }))
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => bytes.Count("aaaa"u8)).ResourceKind);
+            Assert.Equal(1, bytes.Count("aaaa"u8));
+        using (var dependent = Compile(@"(?<x>a+)\k<x>", account, policy: new() { MaxWorkingBytes = 1 }))
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("aaaa"u8)).ResourceKind);
         using (var native = Compile("alpha", account, policy: new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }))
             Assert.Equal(2, native.Count("alpha alpha"u8));
         Assert.Equal(0UL, root.Used);
@@ -159,7 +161,8 @@ public sealed class Utf8FundedProgramOwnerTests
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
         using var token = new CancellationTokenSource();
-        using var owner = Utf8Regex.Compile("([a-z]+)-([0-9]+)", RegexOptions.None,
+        // The overlapping required letter makes repeat storage genuinely live.
+        using var owner = Utf8Regex.Compile("([a-z]+)[a-z]-([0-9]+)", RegexOptions.None,
             timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, default, default,
             Timeout.InfiniteTimeSpan, default, programs);
         var held = programs.Used;

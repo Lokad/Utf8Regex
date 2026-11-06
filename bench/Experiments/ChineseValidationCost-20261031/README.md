@@ -43,3 +43,14 @@ validation. Continue the next Core ratio, lexer identifier6.13x, sharing the
 recently improved bounded value-prefix mechanism. This is not parity, completed
 release performance or permission to weaken metering/validation. Final-source
 cumulative performance, current full refresh and fresh package/consumer gates remain.
+
+## Later email check, 2026-11-06
+
+One existing 30-second-capped validation-case command reused frozen dev40 Core
+`633DA3DD` and all eight unchanged measured assets. Its100calls/single sample on
+the6839410B email corpus observed validity-only872.752us, BCL Utf8.IsValid2732.269us
+and metadata validation3367.734us. Independently warmed phase costs are not
+additive public costs or new benchmark Status. This also rejects broad BCL
+substitution for email; no prototype, confirmation or selector tuning followed.
+Inspection archive `artifacts/experiments/email-validity-cost-20261106/inspection.zip`:
+`3C007F1C16843BC417918202B4DDF33C6EAB0D10CA751EEEFF7A0298B1112769`.

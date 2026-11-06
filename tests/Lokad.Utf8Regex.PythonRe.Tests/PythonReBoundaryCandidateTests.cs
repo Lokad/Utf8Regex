@@ -103,8 +103,9 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(@"\b[0-9]+X\b", "a111X", 0, true)]
+    [InlineData(@"\b[0-9]+X\b", "a111X", 0, false)]
     [InlineData(@"\b", "alpha beta", 1, false)]
+    [InlineData(@"(?P<x>a+)(?P=x)", "aaaa", 0, true)]
     public void InteriorStartsKeepActualWorkingAdmission(string pattern, string text, int offset, bool requiresStorage)
     {
         using var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
@@ -114,7 +115,7 @@ public sealed class PythonReBoundaryCandidateTests
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
                 () => regex.IsMatch(input, offset)).ResourceKind);
         else
-            Assert.True(regex.IsMatch(input, offset)); // A pure boundary needs no major scratch buffer.
+            Assert.Equal(new Utf8PythonRegex(pattern).IsMatch(input, offset), regex.IsMatch(input, offset));
     }
 
     [Theory]

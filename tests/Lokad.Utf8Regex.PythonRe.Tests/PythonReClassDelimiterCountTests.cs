@@ -37,7 +37,7 @@ public sealed class PythonReClassDelimiterCountTests
     }
 
     [Fact]
-    public void StrictValidationAndActualVmStorageRemainRequired()
+    public void StrictValidationAndWorkAdmissionRemainRequired()
     {
         var regex = Create(@"\w+@");
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "é@");
@@ -46,8 +46,7 @@ public sealed class PythonReClassDelimiterCountTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é@"u8, 1));
         var working = new Utf8PythonRegex(@"\w+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => working.Count(input)).ResourceKind);
+        Assert.Equal(1, working.Count(input));
         Assert.Equal(0, working.Count(Encoding.UTF8.GetBytes(new string('!', 100000))));
         var work = new Utf8PythonRegex(@"\w+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkSteps = 1 });

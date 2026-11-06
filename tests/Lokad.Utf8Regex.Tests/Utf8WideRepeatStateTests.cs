@@ -147,7 +147,7 @@ public sealed class Utf8WideRepeatStateTests
     }
 
     private delegate Utf8SliceMatchOutcome RunSeeded(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] starts, int[] ends, int[] counts, int[] positions, int[] heads,
+        int start, int[] starts, int[] ends, ref int[] counts, ref int[] positions, int[] heads,
         bool history, bool nonempty, bool aligned, ref Utf8SliceRunner.ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation);
 
@@ -185,9 +185,10 @@ public sealed class Utf8WideRepeatStateTests
             .CreateDelegate<RunSeeded>();
         var invocation = new Utf8SliceInvocation(new(1000, 128, 1000000), Regex.InfiniteMatchTimeout, default);
         var stacks = new Utf8SliceRunner.ChunkedStacks();
+        int[] counts = [unchecked((int)count)], positions = [0];
         try
         {
-            return run(program, input, start, [], [], [unchecked((int)count)], [0], [],
+            return run(program, input, start, [], [], ref counts, ref positions, [],
                 false, nonempty, true, ref stacks, ref invocation);
         }
         finally
