@@ -8,6 +8,9 @@ shared declarations, multiple groups, RTL, balancing and conditional assertions
 retain the old classification. Plain group-participation conditionals can qualify.
 No runtime field, executor, buffer, chunk-size change, mode or unchecked API.
 
+Accepted source `8988013261bc34853c40c195dc4bd7e493b75d5e` has
+[green source CI](source-ci.json)42304000208 on Windows/Linux, terminal/CLOSED.
+
 The actual named Python FullMatch program's [production-state probe](probe-after.json)
 observes4->0trail entries,320->96modeled positioned working bytes, zero live
 frames and disposal0. Strict whole-subject UTF-8/scalars, captures/history and

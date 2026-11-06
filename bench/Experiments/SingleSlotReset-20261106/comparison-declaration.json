@@ -1,0 +1,28 @@
+{
+  "Scope": "ONE bounded one-element capture reset pilot; exact existing reset semantics",
+  "Parent": "8988013261bc34853c40c195dc4bd7e493b75d5e",
+  "BeforeSource": "89880132 same C# as accepted03C32073 build",
+  "AfterSource": "89880132 + source-inputs.json",
+  "CoreBefore": "03C320737324B8FFF8707600F71D69E151C04C5B4F0163F2CEB120CBECEDDDBE",
+  "CoreAfter": "673B3B7B197A61CEADAD27B756234CD3C5FA324AB6F0AFAA634A978DA4CD9EDC",
+  "PythonBefore": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "PythonAfter": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "PcreBefore": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+  "PcreAfter": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 14,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "1s/min128",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Acceptance": "Actual one-capture strings/UTF8/finite/live/deadline; Unicode, zero/many captures, Core history/open/RTL, Pcrebackref and detailed results; unchanged native control. Preserve semantics and allocations. Retain all process ranges/uncertainty/costs; no universal slowdown gate. At most ONE justified noise confirmation.",
+  "PreflightRepair": "Before any timing: byte[][] checker implemented as intended; initial untimed failure archive1F15947C retained. Producer DLLs and all workloads unchanged."
+}

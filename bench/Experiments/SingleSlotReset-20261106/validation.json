@@ -1,0 +1,49 @@
+{
+  "Parent": "8988013261bc34853c40c195dc4bd7e493b75d5e",
+  "Decision": "Rejected and fully restored",
+  "Reason": "No convincing primary ordinary/UTF8/finite gains for extra branches/code; multiple-group+3.97%,PCRE+5.37% costs retained",
+  "Seconds": 86.179528741,
+  "Samples": 280,
+  "MinimumMilliseconds": 43.6637,
+  "Confirmation": "None",
+  "Windows": {
+    "Core": 706,
+    "PythonRe": 1378,
+    "Pcre2": 789,
+    "PerFramework": true,
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ]
+  },
+  "Linux": {
+    "Core": 706,
+    "PythonRe": 1378,
+    "Pcre2": 789,
+    "PerFramework": true,
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ]
+  },
+  "Restored": {
+    "Core": 21,
+    "PythonRe": 12,
+    "PerFramework": true,
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "Full46AssetsUnchanged": 8,
+    "ArchiveSha256": "B76CE82B6E0372597A5F5D043E0800DF456E4D167A007F3D93BCC8355252E2A8"
+  },
+  "RawSha256": "68120680478B612CAEB1697EE0A2F38F158165A1698483420FA2B5602A726EF3",
+  "RawBytes": 6413307,
+  "PreflightFailureSha256": "1F15947C89133D6BA0C9F3E79D2701996C83800CDC1096D971778199A0E942DE",
+  "OffVmVerified": true,
+  "PackagesChanged": false
+}

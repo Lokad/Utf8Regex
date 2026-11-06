@@ -1,0 +1,9 @@
+{
+  "Stage": "Untimed BEFORE producer preflight",
+  "TimingStarted": false,
+  "ProductionChanged": false,
+  "Failure": "Temporary checker omitted byte[][] branch and used reference equality",
+  "Sha256": "1F15947C89133D6BA0C9F3E79D2701996C83800CDC1096D971778199A0E942DE",
+  "OffVmVerified": true,
+  "SourceCoreAfter": "673B3B7B197A61CEADAD27B756234CD3C5FA324AB6F0AFAA634A978DA4CD9EDC"
+}
