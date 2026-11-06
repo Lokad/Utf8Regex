@@ -1,0 +1,14 @@
+{
+  "CanonicalLinux45Sha256": "EDED0EEC0206F0CF4BA4FDA448B096E30BD77554B6980E65DAA43DC212878D1B",
+  "Linux45InventoryEntries": 18374,
+  "FullSubtreeContentComparisonExit": 0,
+  "OffVmVerified": true,
+  "BatchRetirementSha256": "22E6B99B983377C555780E247EB505CB4DF59F822AFB00147ECC30C31606F014",
+  "BatchRetirementBytes": 84237967,
+  "BatchEntries": 246,
+  "ExplicitScope": "Only fresh45Linux scratch/duplicate archive, two completed current pilots and specific completed45 scratch files; old rejected/closed targets untouched",
+  "AllEightFull45BinariesUnchanged": true,
+  "PriorPackageAssets": 240,
+  "NoServerKill": true,
+  "Closed": true
+}

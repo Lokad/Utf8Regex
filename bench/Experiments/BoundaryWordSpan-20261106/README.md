@@ -1,5 +1,9 @@
 # Batch impossible ASCII word-interior candidates
 
+Accepted source `1efc4964f60696df54ca3bfb741574d1026984c7`; common46 freeze
+`41a751a3d8d9ba344b7ccdbfe9f0814d44571b00` changes release metadata afterward.
+[Source CI](source-ci.json)42289147358 is terminal GREEN on Windows/Linux, CLOSED.
+
 The existing Python positive-boundary proof now borrows Core's allocation-free
 `WordSearch` to skip at most2048 ASCII word bytes per loop. Standard boundary
 predicates and Python's exact fixed word predicate share that set; other

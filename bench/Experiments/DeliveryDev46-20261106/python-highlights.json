@@ -1,0 +1,62 @@
+[
+  {
+    "CaseId": "common/date-miss",
+    "Status": "CpythonFaster",
+    "ManagedUs": 2.221759239059296,
+    "ComparatorUs": 0.8554897808751591,
+    "Ratio": 2.5785786825873425,
+    "Lower95": 2.5593470143703843,
+    "Upper95": 2.60457884365609,
+    "Bytes": 0
+  },
+  {
+    "CaseId": "findall/empty-progression-strings",
+    "Status": "CpythonFaster",
+    "ManagedUs": 66.44501992031873,
+    "ComparatorUs": 42.472858215179315,
+    "Ratio": 1.5647890734463823,
+    "Lower95": 1.5434259693425354,
+    "Upper95": 1.5810395371670751,
+    "Bytes": 16464
+  },
+  {
+    "CaseId": "count/empty-progression",
+    "Status": "ManagedFaster",
+    "ManagedUs": 158.6075235109718,
+    "ComparatorUs": 375.4150510948905,
+    "Ratio": 0.4239813109597718,
+    "Lower95": 0.41904421715194884,
+    "Upper95": 0.4279768094470344,
+    "Bytes": 0
+  },
+  {
+    "CaseId": "zero-width/count",
+    "Status": "ManagedFaster",
+    "ManagedUs": 524.7567010309278,
+    "ComparatorUs": 1102.840170212766,
+    "Ratio": 0.4753640126210874,
+    "Lower95": 0.47131332000828785,
+    "Upper95": 0.4798740643341338,
+    "Bytes": 0
+  },
+  {
+    "CaseId": "findall/one-capture-strings",
+    "Status": "CpythonFaster",
+    "ManagedUs": 441.46779661016944,
+    "ComparatorUs": 212.350675,
+    "Ratio": 2.073282559003746,
+    "Lower95": 2.0560896836000517,
+    "Upper95": 2.089228281304471,
+    "Bytes": 94344
+  },
+  {
+    "CaseId": "findall/many-capture-strings",
+    "Status": "CpythonFaster",
+    "ManagedUs": 697.3861111111112,
+    "ComparatorUs": 344.86636363636364,
+    "Ratio": 2.022453630576879,
+    "Lower95": 2.017471465616862,
+    "Upper95": 2.1040212967093743,
+    "Bytes": 242008
+  }
+]

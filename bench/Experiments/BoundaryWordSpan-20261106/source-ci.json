@@ -1,0 +1,22 @@
+{
+  "Id": 42289147358,
+  "HeadSha": "41a751a3d8d9ba344b7ccdbfe9f0814d44571b00",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "name": "tests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T20:37:43Z"
+    },
+    {
+      "name": "tests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T20:38:57Z"
+    }
+  ],
+  "Closed": true,
+  "Scope": "Frozen common46 CI includes source1efc4964 plus Version/CHANGELOG freeze41a751a3; one push/one matrix"
+}

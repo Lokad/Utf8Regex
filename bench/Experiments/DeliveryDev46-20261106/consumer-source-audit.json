@@ -1,0 +1,12 @@
+{
+  "OriginalSha256": "CBD35E993774B928D7D8C054F53A3BEABDFBE8C8024C138CF68253D5BA3C41AB",
+  "FilesCompared": 1565,
+  "ChangedFiles": [
+    "producer-apis/Probe.csproj",
+    "lython/src/Lokad.Lython.Utf8Regex/Lokad.Lython.Utf8Regex.csproj",
+    "awk/adapter/Adapter.csproj"
+  ],
+  "OnlyExactPinsChanged": true,
+  "RepinnedArchiveSha256": "640FF1F55A9E93F48835A125FD555DF3449DDD98A935B06E41B0E153752CA246",
+  "Qualified": false
+}

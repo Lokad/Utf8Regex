@@ -1,0 +1,15 @@
+{
+  "Before": "6c50b01b72f9385f233b367a8df4aa177cf4eec9",
+  "FrozenFull": "41a751a3d8d9ba344b7ccdbfe9f0814d44571b00",
+  "ProducerCSharpChanges": [
+    "src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchState.cs"
+  ],
+  "CoreCSharpChanged": false,
+  "Pcre2CSharpChanged": false,
+  "BenchmarkCSharpChanged": false,
+  "ChangedProducerBenchmarkPaths": [
+    "src/Directory.Build.props",
+    "src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchState.cs"
+  ],
+  "Scope": "Combined accepted Python cursor changes; commonVersion46 stamps all three packages; final data/docs bridge is a separate check"
+}
