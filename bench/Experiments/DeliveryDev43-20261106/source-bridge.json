@@ -1,0 +1,26 @@
+{
+  "Scope": "Full42/package43 code bridge; source equality does not claim identical binaries or public throughput.",
+  "FullSource": "f7e13648950a6109949a8a16c4b3a8a0cac75f0d",
+  "PackageSource": "26fc4bee169401a63354e5a66ec90620db7a5104",
+  "ChangedFiles": [
+    "src/Directory.Build.props",
+    "tests/Lokad.Utf8Regex.PythonRe.Tests/PythonReTemplateAuthorityTests.cs"
+  ],
+  "SourceDiff": [],
+  "MetadataDiff": [
+    "diff --git a/src/Directory.Build.props b/src/Directory.Build.props",
+    "index 9d05d204..1b13833c 100644",
+    "--- a/src/Directory.Build.props",
+    "+++ b/src/Directory.Build.props",
+    "@@ -13,7 +13,7 @@",
+    "     <Authors>Lokad</Authors>",
+    "     <Company>Lokad</Company>",
+    "     <!-- Common release version; adapters pin this exact Core. -->",
+    "-    <Version>0.5.0-dev.42</Version>",
+    "+    <Version>0.5.0-dev.43</Version>",
+    "     <AssemblyVersion>0.5.0</AssemblyVersion>",
+    "     <FileVersion>0.5.0</FileVersion>",
+    "     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>"
+  ],
+  "RootBuildPropsUnchanged": []
+}

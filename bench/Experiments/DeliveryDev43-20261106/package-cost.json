@@ -1,0 +1,344 @@
+{
+  "Scope": "ONE Default fresh-process ABBA exact Windows43 package graph vs frozen Linux42 graph; same C# implementation, different producer/version metadata. Public operating costs, not source-effect attribution or catalog Status.",
+  "PackageSource": "26fc4bee169401a63354e5a66ec90620db7a5104",
+  "FullSource": "f7e13648950a6109949a8a16c4b3a8a0cac75f0d",
+  "CoreBefore": "B5C50D2D73B6392DA6C8F40098C3D15F2EA3C1A4E82248CDE9B4675E389AD8B7",
+  "CoreAfter": "5C1AB3AEAC681FE08F2E62E9F7D84E17E5AEFDA620264043F6909EC2390F4B30",
+  "PythonBefore": "00BF83FFFF54FADB1C2E0262D62AA8697C1EDFB6F92F547EF5CE6828C083D87B",
+  "PythonAfter": "1001ECAA8D2C95180C94521CADD554D3F4299EE36741612E4ECAE746D8116C44",
+  "PcreBefore": "D65430797CF071D5E0370B60AC5659F39599B880B273DFC3666AFC2ED5676AE7",
+  "PcreAfter": "821E92BA7489AF44B94E5D40703AEDD2859E519D676F19D20CFC00FDBFA4BBBF",
+  "Seconds": 73.977135909,
+  "Samples": 240,
+  "MinimumSampleMilliseconds": 58.4739,
+  "Rows": [
+    {
+      "Name": "unchanged-native-control",
+      "BeforeUs": 12.480682414556401,
+      "AfterUs": 12.473061818508244,
+      "DeltaUs": -0.0076205960481576795,
+      "Percent": -0.061059129581486626,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        12.489074417645845,
+        12.474235807860262
+      ],
+      "AfterProcessMedians": [
+        12.431210986267166,
+        12.474501246882792
+      ],
+      "BeforeMinimum": 12.430983572468289,
+      "BeforeMaximum": 12.498461218548554,
+      "AfterMinimum": 12.426674989596338,
+      "AfterMaximum": 12.486741479634247,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-imports-compiled",
+      "BeforeUs": 10.284146651961446,
+      "AfterUs": 10.300051431510372,
+      "DeltaUs": 0.015904779548925774,
+      "Percent": 0.15465337171065574,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        10.341985522233712,
+        10.215635123614664
+      ],
+      "AfterProcessMedians": [
+        10.298697068403907,
+        10.304311688311687
+      ],
+      "BeforeMinimum": 10.187314578005116,
+      "BeforeMaximum": 10.40124095139607,
+      "AfterMinimum": 10.238181818181818,
+      "AfterMaximum": 10.471290043290043,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "core-unicode-pair-count",
+      "BeforeUs": 2.935890392276151,
+      "AfterUs": 3.0241994102967817,
+      "DeltaUs": 0.08830901802063096,
+      "Percent": 3.0079126336922446,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        2.9843544153335646,
+        2.884087626384208
+      ],
+      "AfterProcessMedians": [
+        3.0510978043912176,
+        2.9568701531119506
+      ],
+      "BeforeMinimum": 2.8775397207510833,
+      "BeforeMaximum": 2.994017136347878,
+      "AfterMinimum": 2.94924935374826,
+      "AfterMaximum": 3.05746967603255,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "python-unicode-pair-count",
+      "BeforeUs": 3.058868125885244,
+      "AfterUs": 3.1130734160114444,
+      "DeltaUs": 0.054205290126200456,
+      "Percent": 1.7720701872531164,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        3.1173481065335,
+        2.9947234678624817
+      ],
+      "AfterProcessMedians": [
+        3.1884341825902336,
+        3.041632591246403
+      ],
+      "BeforeMinimum": 2.9904633781763827,
+      "BeforeMaximum": 3.1254889721181858,
+      "AfterMinimum": 3.0369074663031954,
+      "AfterMaximum": 3.2003343949044587,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "python-unicode-finite-live",
+      "BeforeUs": 7.1605128045363795,
+      "AfterUs": 8.356791429811466,
+      "DeltaUs": 1.1962786252750863,
+      "Percent": 16.706605489444982,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        6.939649941656943,
+        7.385947224296739
+      ],
+      "AfterProcessMedians": [
+        8.147721657974197,
+        8.5966258111031
+      ],
+      "BeforeMinimum": 6.934480746791132,
+      "BeforeMaximum": 7.395780433159074,
+      "AfterMinimum": 8.135437825967609,
+      "AfterMaximum": 8.613698630136986,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "core-unicode-deadline-live",
+      "BeforeUs": 7.594809504455869,
+      "AfterUs": 8.775300306626868,
+      "DeltaUs": 1.1804908021709988,
+      "Percent": 15.543389224949046,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        7.399825218476904,
+        7.784673927306128
+      ],
+      "AfterProcessMedians": [
+        8.568383838383838,
+        9.01159793814433
+      ],
+      "BeforeMinimum": 7.393133583021223,
+      "BeforeMaximum": 7.804369505314263,
+      "AfterMinimum": 8.546796536796537,
+      "AfterMaximum": 9.018677986658581,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-chinese",
+      "BeforeUs": 99.46768607951421,
+      "AfterUs": 98.79784926698215,
+      "DeltaUs": -0.6698368125320542,
+      "Percent": -0.6734215290748691,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        99.10913621262458,
+        99.75877483443709
+      ],
+      "AfterProcessMedians": [
+        99.26666666666667,
+        98.30619902120718
+      ],
+      "BeforeMinimum": 98.73704318936878,
+      "BeforeMaximum": 99.83791390728477,
+      "AfterMinimum": 97.994779771615,
+      "AfterMaximum": 99.54207920792079,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "python-date-miss-control",
+      "BeforeUs": 1.829501512137237,
+      "AfterUs": 1.8278726113247399,
+      "DeltaUs": -0.0016289008124972248,
+      "Percent": -0.08903522635487215,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1.8344534474850942,
+        1.8137367231288515
+      ],
+      "AfterProcessMedians": [
+        1.8294395969030357,
+        1.8214552066319456
+      ],
+      "BeforeMinimum": 1.8107298795404578,
+      "BeforeMaximum": 1.8421005962391073,
+      "AfterMinimum": 1.8137508089617553,
+      "AfterMaximum": 1.8427162624426023,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "python-backreference-miss-control",
+      "BeforeUs": 1.9980842527884621,
+      "AfterUs": 1.9864492965431453,
+      "DeltaUs": -0.011634956245316852,
+      "Percent": -0.582305587418519,
+      "BeforeBytes": 400.0,
+      "AfterBytes": 400.0,
+      "BeforeProcessMedians": [
+        2.028741012074345,
+        1.967599544937429
+      ],
+      "AfterProcessMedians": [
+        1.9548586168614903,
+        2.0297635981846507
+      ],
+      "BeforeMinimum": 1.9568405655777668,
+      "BeforeMaximum": 2.0369488536155202,
+      "AfterMinimum": 1.948919218964279,
+      "AfterMaximum": 2.041742870690239,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "pcre-unicode-pair-count-control",
+      "BeforeUs": 12.553970068592808,
+      "AfterUs": 13.032506148270064,
+      "DeltaUs": 0.47853607967725686,
+      "Percent": 3.8118306564586035,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        12.334961546456038,
+        12.902785283724796
+      ],
+      "AfterProcessMedians": [
+        12.699373302694799,
+        13.366797044763146
+      ],
+      "BeforeMinimum": 12.302348784036582,
+      "BeforeMaximum": 13.058948243608397,
+      "AfterMinimum": 12.649007729266765,
+      "AfterMaximum": 13.457518470230335,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-aws-full-adverse-control",
+      "BeforeUs": 8486.935714285715,
+      "AfterUs": 8527.095535714285,
+      "DeltaUs": 40.15982142856956,
+      "Percent": 0.4731957773754569,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        8902.057142857144,
+        8144.425
+      ],
+      "AfterProcessMedians": [
+        8891.314285714285,
+        8150.0
+      ],
+      "BeforeMinimum": 8123.2375,
+      "BeforeMaximum": 8923.128571428571,
+      "AfterMinimum": 8033.512500000001,
+      "AfterMaximum": 8910.657142857142,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-python-class-run-adverse-control",
+      "BeforeUs": 297.29851485148515,
+      "AfterUs": 284.4687776258829,
+      "DeltaUs": -12.82973722560223,
+      "Percent": -4.315439393301812,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        297.7252475247525,
+        282.4986175115207
+      ],
+      "AfterProcessMedians": [
+        285.4909090909091,
+        283.6438095238095
+      ],
+      "BeforeMinimum": 280.7511520737327,
+      "BeforeMaximum": 310.1760368663594,
+      "AfterMinimum": 281.00857142857143,
+      "AfterMaximum": 286.82344497607653,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    }
+  ],
+  "ReferenceRows": [
+    {
+      "Name": "unicode-predecoded-dotnet-count",
+      "Microseconds": 87.99736842105263,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 59.8409,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "unicode-decode-then-dotnet-count",
+      "Microseconds": 98.92293729372936,
+      "AllocatedBytes": 20024.0,
+      "MinimumMilliseconds": 59.7387,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "chinese-predecoded-dotnet-count",
+      "Microseconds": 18.991666666666667,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 59.9295,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "chinese-decode-then-dotnet-count",
+      "Microseconds": 2205.240740740741,
+      "AllocatedBytes": 679424.0,
+      "MinimumMilliseconds": 58.8285,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    }
+  ],
+  "ProcessLifetime": [
+    {
+      "Worker": "before-a",
+      "PeakResidentKiB": 239160
+    },
+    {
+      "Worker": "after-a",
+      "PeakResidentKiB": 238456
+    },
+    {
+      "Worker": "after-b",
+      "PeakResidentKiB": 240388
+    },
+    {
+      "Worker": "before-b",
+      "PeakResidentKiB": 239696
+    },
+    {
+      "Worker": "comparators",
+      "PeakResidentKiB": 143284
+    }
+  ]
+}

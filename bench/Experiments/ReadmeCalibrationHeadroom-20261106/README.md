@@ -21,7 +21,7 @@ affinity are preserved. No confirmation, tuned variant or public table refresh.
 | Symbol |16.265|34.913|5.465|6.528|
 | English control |37.523|60.788|4.982|5.973|
 
-River and symbol reproduce below-floor batches; all120 candidate samples exceed
+River and symbol reproduce below-floor batches; all120 candidate samples are at least
 25.7575ms. Historical Twain failures do not reproduce in this pilot. This supports
 more headroom, not a guarantee against future short samples. Per-workload wall
 costs rise18.56–26.32%; English rises19.89%. Results and allocations match across
@@ -30,12 +30,13 @@ The separate unchanged `--measure-case` control retains result513; its11–18ms
 single samples are descriptive and do not qualify throughput. Changes in the
 reported operation medians are harness observations, not an engine speedup.
 
-The nominal extra sampling budget is178*6*5*25ms=133.5seconds. The prior full run
-is43m35s; a future coherent Full must still prove the unchanged3600s target and
-original RAM/disk admission. Do not infer a new Full-clock result or change the
-six catalog exclusions from this dirty-source pilot. Package/platform matrices
-and generated figures wait for that boundary.
-
+A conservative178-row bound gives133.5seconds; ordinary/compiled entries share
+89 six-lane workloads, whose nominal extra samples total66.75seconds before
+calibration/GC. Raw predeclarations retain their original estimate. This pilot
+alone left the six exclusions unchanged. The [completed coherent Full](../DeliveryDev43-20261106/full-refresh.json)
+subsequently proves the unchanged3600s target and original admission at
+2764.8607085s (46m04.86s), with all178 Core rows duration-qualified. Its package/
+platform qualification and generated figures are recorded at that boundary.
 Release benchmark builds pass Windows.NET10/11 and Linux.NET11. Existing snapshot
 guards pass both targets/both OS: Core3/Python1/PCRE1 per target, matching binaries
 reused. All eight frozen dev41 Full DLL/PDBs remain byte-identical. Benchmark
