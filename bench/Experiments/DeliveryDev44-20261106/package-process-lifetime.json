@@ -1,0 +1,22 @@
+[
+  {
+    "Worker": "before-a",
+    "PeakResidentKiB": 254252
+  },
+  {
+    "Worker": "after-a",
+    "PeakResidentKiB": 250192
+  },
+  {
+    "Worker": "after-b",
+    "PeakResidentKiB": 250164
+  },
+  {
+    "Worker": "before-b",
+    "PeakResidentKiB": 253760
+  },
+  {
+    "Worker": "comparators",
+    "PeakResidentKiB": 175460
+  }
+]

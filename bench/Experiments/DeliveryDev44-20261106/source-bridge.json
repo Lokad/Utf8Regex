@@ -1,7 +1,26 @@
 {
   "FullSource": "f105c683013fe5431161edb7c6a3723cd608db33",
+  "PackageSource": "c410be73b6a61ba1e1cd798c9319c2682e494d38",
+  "ChangedFiles": [
+    "CHANGELOG.md",
+    "PCRE2.Benchmarks.json",
+    "PythonRe.Benchmarks.json",
+    "README.Benchmarks.json",
+    "README.Parity.json",
+    "README.md",
+    "bench/Experiments/DeliveryDev44-20261106/README.md",
+    "bench/Experiments/DeliveryDev44-20261106/catalog-movements.json",
+    "bench/Experiments/DeliveryDev44-20261106/full-refresh.json",
+    "bench/Experiments/DeliveryDev44-20261106/python-unqualified-details.json",
+    "bench/Experiments/DeliveryDev44-20261106/ratio-summary.json",
+    "bench/Experiments/DeliveryDev44-20261106/source-bridge.json",
+    "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+    "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
+  ],
+  "CSharpAndBuildInputDiff": [],
+  "Scope": "Final generated data, release notes and receipt only; actual binaries retain distinct revision metadata",
   "PackageVersion": "0.5.0-dev.44",
-  "PackageQualificationPending": true,
-  "ExpectedDifferences": "Final generated data, release notes and receipts; source revision metadata in final binaries. No C# or build-input implementation change.",
-  "Scope": "Source equality is not binary or performance equality. Final exact-package operating costs are a separate declared comparison."
+  "PackageQualificationComplete": true,
+  "FullArchiveSha256": "1BB10D7E670CFCAF8B2FD46C34F01877F5FB10EF53B9625F91336A1B1288F58B",
+  "WindowsCompilerInputsSha256": "DA8D6F08A4E8B6395A625E0BD9DB819498D0345D1AA9C4BB1104EE07D7AA0148"
 }
