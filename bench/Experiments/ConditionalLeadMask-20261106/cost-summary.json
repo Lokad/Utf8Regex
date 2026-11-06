@@ -1,0 +1,341 @@
+{
+  "Scope": "ONE Default fresh-process ABBA, only Core implementation differs. Public costs; no normalization or catalog Status.",
+  "SourceParent": "1a483b3e76a5b2f88763c5694abc1b150fe70fcd",
+  "CoreBefore": "A13D50C19F4FF9654E23EB4991CAAD94365AECB51371D12621CFB8DE5902D3B5",
+  "CoreAfter": "23DA6873CEB8C9C91CDCC726938900C96C0B23B8BBEF7C01A79DF66D6B20CE9B",
+  "PythonBoth": "ABEB4035015CE18E198BC4D16C656F0711B3994D914948F7D3D251D4BE00C6FC",
+  "PcreBoth": "45E1E0EE4A65418DC39BE1CF9880D8AB14BBF016DDBC7A49D7C64356275874B2",
+  "Seconds": 73.118351176,
+  "Samples": 240,
+  "MinimumSampleMilliseconds": 58.4838,
+  "Rows": [
+    {
+      "Name": "actual-chinese",
+      "BeforeUs": 85.93321377331421,
+      "AfterUs": 87.58693430656933,
+      "DeltaUs": 1.6537205332551252,
+      "Percent": 1.9244253306032855,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        85.98608321377331,
+        85.77585714285715
+      ],
+      "AfterProcessMedians": [
+        87.52554744525547,
+        87.95197080291972
+      ],
+      "BeforeMinimum": 85.23599999999999,
+      "BeforeMaximum": 86.593543758967,
+      "AfterMinimum": 86.48525547445256,
+      "AfterMaximum": 88.73255474452554,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-chinese-compiled",
+      "BeforeUs": 86.0469957081545,
+      "AfterUs": 87.47197406340058,
+      "DeltaUs": 1.4249783552460826,
+      "Percent": 1.6560466097842452,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        86.33205673758864,
+        85.90472103004292
+      ],
+      "AfterProcessMedians": [
+        87.41224783861671,
+        87.80116279069767
+      ],
+      "BeforeMinimum": 85.73333333333333,
+      "BeforeMaximum": 86.60765957446809,
+      "AfterMinimum": 86.88515850144091,
+      "AfterMaximum": 88.02936046511627,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-family-compiled",
+      "BeforeUs": 105.3288884489454,
+      "AfterUs": 107.17307692307693,
+      "DeltaUs": 1.8441884741315278,
+      "Percent": 1.7508857268777156,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        105.47127845884413,
+        104.6095652173913
+      ],
+      "AfterProcessMedians": [
+        107.32611806797854,
+        107.07960644007156
+      ],
+      "BeforeMinimum": 104.15599999999999,
+      "BeforeMaximum": 105.76199649737303,
+      "AfterMinimum": 106.24597495527728,
+      "AfterMaximum": 107.60232558139536,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-chinese-finite-live",
+      "BeforeUs": 421.07565043035993,
+      "AfterUs": 430.34983513189445,
+      "DeltaUs": 9.274184701534523,
+      "Percent": 2.202498456525759,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        419.21805555555557,
+        421.5725352112676
+      ],
+      "AfterProcessMedians": [
+        424.9319444444444,
+        443.4496402877698
+      ],
+      "BeforeMinimum": 418.75069444444443,
+      "BeforeMaximum": 423.0788732394366,
+      "AfterMinimum": 422.90902777777774,
+      "AfterMaximum": 455.24892086330937,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-chinese-deadline-live",
+      "BeforeUs": 428.9047148137049,
+      "AfterUs": 434.2402122153209,
+      "DeltaUs": 5.33549740161601,
+      "Percent": 1.2439819888511838,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        426.9802816901408,
+        430.0163120567376
+      ],
+      "AfterProcessMedians": [
+        432.3485714285714,
+        440.222463768116
+      ],
+      "BeforeMinimum": 425.6133802816901,
+      "BeforeMaximum": 432.5921985815603,
+      "AfterMinimum": 427.73428571428576,
+      "AfterMaximum": 442.1268115942029,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-english-control",
+      "BeforeUs": 61.00247975708503,
+      "AfterUs": 62.645583596214514,
+      "DeltaUs": 1.6431038391294877,
+      "Percent": 2.693503355392135,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        60.74443319838057,
+        61.50151821862348
+      ],
+      "AfterProcessMedians": [
+        61.10162601626016,
+        63.03333333333333
+      ],
+      "BeforeMinimum": 60.58957489878542,
+      "BeforeMaximum": 61.648178137651826,
+      "AfterMinimum": 60.22632113821139,
+      "AfterMaximum": 63.96585365853659,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-email-control",
+      "BeforeUs": 1233.545918367347,
+      "AfterUs": 1243.0908163265306,
+      "DeltaUs": 9.544897959183572,
+      "Percent": 0.7737772722572478,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1233.5122448979594,
+        1234.465306122449
+      ],
+      "AfterProcessMedians": [
+        1225.022448979592,
+        1250.9571428571428
+      ],
+      "BeforeMinimum": 1221.734693877551,
+      "BeforeMaximum": 1235.238775510204,
+      "AfterMinimum": 1215.8999999999999,
+      "AfterMaximum": 1252.7244897959183,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-russian-folded-control",
+      "BeforeUs": 231.09695728084256,
+      "AfterUs": 240.84225791505793,
+      "DeltaUs": 9.745300634215369,
+      "Percent": 4.216974878804791,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        230.91872659176028,
+        231.27518796992481
+      ],
+      "AfterProcessMedians": [
+        238.52972972972975,
+        244.1672
+      ],
+      "BeforeMinimum": 229.64135338345864,
+      "BeforeMaximum": 233.68233082706766,
+      "AfterMinimum": 235.996138996139,
+      "AfterMaximum": 245.8712,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "mixed-width-tail",
+      "BeforeUs": 97.00512,
+      "AfterUs": 96.75161394717612,
+      "DeltaUs": -0.25350605282388017,
+      "Percent": -0.26133265215679824,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        96.99152000000001,
+        97.03925686591276
+      ],
+      "AfterProcessMedians": [
+        96.64032258064516,
+        96.96569579288025
+      ],
+      "BeforeMinimum": 96.73007999999999,
+      "BeforeMaximum": 97.1638126009693,
+      "AfterMinimum": 95.94177419354838,
+      "AfterMaximum": 97.05032362459546,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "late-constrained-tail",
+      "BeforeUs": 10.540692395704982,
+      "AfterUs": 10.573834419188154,
+      "DeltaUs": 0.03314202348317252,
+      "Percent": 0.31441979557886857,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        10.539631578947368,
+        10.541753212462595
+      ],
+      "AfterProcessMedians": [
+        10.583533994334276,
+        10.558160552897396
+      ],
+      "BeforeMinimum": 10.495652173913042,
+      "BeforeMaximum": 10.562876254180601,
+      "AfterMinimum": 10.504660641502745,
+      "AfterMaximum": 10.609941520467835,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "short-mixed-tail",
+      "BeforeUs": 0.18691224580888344,
+      "AfterUs": 0.19104594883746817,
+      "DeltaUs": 0.004133703028584734,
+      "Percent": 2.2115742126449067,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.1835183892534165,
+        0.1917828550585187
+      ],
+      "AfterProcessMedians": [
+        0.18818573115217396,
+        0.1934828867516972
+      ],
+      "BeforeMinimum": 0.1814379449951138,
+      "BeforeMaximum": 0.19540214704828027,
+      "AfterMinimum": 0.1859046863524665,
+      "AfterMaximum": 0.1966982102448056,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "ascii-native-control",
+      "BeforeUs": 2.641907068927549,
+      "AfterUs": 2.647756848559707,
+      "DeltaUs": 0.005849779632158381,
+      "Percent": 0.22142261175497335,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        2.6441532080134142,
+        2.6419026646113193
+      ],
+      "AfterProcessMedians": [
+        2.6475627508932904,
+        2.6501511235708968
+      ],
+      "BeforeMinimum": 2.630928426440738,
+      "BeforeMaximum": 2.6496513988174035,
+      "AfterMinimum": 2.6414398517799635,
+      "AfterMaximum": 2.654540277716939,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    }
+  ],
+  "ReferenceRows": [
+    {
+      "Name": "chinese-predecoded-dotnet",
+      "Microseconds": 18.969162995594715,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 60.1086,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "chinese-decode-then-dotnet",
+      "Microseconds": 2072.2400000000002,
+      "AllocatedBytes": 679424.0,
+      "MinimumMilliseconds": 61.1177,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "family-predecoded-dotnet",
+      "Microseconds": 36.58792588164973,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 60.4572,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    },
+    {
+      "Name": "family-decode-then-dotnet",
+      "Microseconds": 2038.337037037037,
+      "AllocatedBytes": 679424.0,
+      "MinimumMilliseconds": 54.9649,
+      "Scope": "Separate equal-result public .NET Count diagnostics; no catalog Status"
+    }
+  ],
+  "ProcessLifetime": [
+    {
+      "Worker": "before-a",
+      "PeakResidentKiB": 103804
+    },
+    {
+      "Worker": "after-a",
+      "PeakResidentKiB": 103956
+    },
+    {
+      "Worker": "after-b",
+      "PeakResidentKiB": 103820
+    },
+    {
+      "Worker": "before-b",
+      "PeakResidentKiB": 103848
+    },
+    {
+      "Worker": "comparators",
+      "PeakResidentKiB": 199852
+    }
+  ]
+}
