@@ -1,0 +1,11 @@
+{
+  "Parent": "1e2b6cb1659da72447f53d64701272af11100e41",
+  "RuntimeSha256": "D0798EDD28E3055B73F322AC131C96876284DCBFB6EC52C28FFF79EBFAD23E0A",
+  "CandidateTestsSha256": "05D83D3D9F32F9F204501674ED778665B1EBE38A6076C53BBC763C01AA5110DF",
+  "UnicodeTestsSha256": "C971A77D5385A001713371A7D46D2135EAABE8B166AE3A33B9F5EE519A27B472",
+  "WindowsFocusedPerFramework": 1138,
+  "Filter": "FullyQualifiedName~Boundary|FullyQualifiedName~Finite|FullyQualifiedName~Interruption|FullyQualifiedName~PersistentCursor|FullyQualifiedName~GreedyEmptyRetry|FullyQualifiedName~LiteralAtomRepeat",
+  "InitialFailuresPerFramework": 6,
+  "InitialIssue": "4096-byte scans completed before unchanged diagnostic64-work cadence; longer witnesses and controlled-validation reference ensure post-validation injection",
+  "RuntimeRetunedAfterInitialTests": false
+}

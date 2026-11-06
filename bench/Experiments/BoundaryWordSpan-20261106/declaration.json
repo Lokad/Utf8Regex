@@ -1,0 +1,93 @@
+{
+  "Scope": "ONE bounded Python ASCII word-interior skip public-operation ABBA; no new catalog Status or universal slowdown gate",
+  "Parent": "1e2b6cb1659da72447f53d64701272af11100e41",
+  "BeforeSource": "f7c709dd79c1a504a5c39f0cd126011a4c85e6e2",
+  "AfterSource": "1e2b6cb1659da72447f53d64701272af11100e41+runtime-sha256:D0798EDD28E3055B73F322AC131C96876284DCBFB6EC52C28FFF79EBFAD23E0A",
+  "CoreBefore": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+  "CoreAfter": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+  "PythonBefore": "FD6F29098772B6460D181ADB0D3CE671EEB2C204645F156CF54F812C7468CC27",
+  "PythonAfter": "B3414891CDAA689B5E9F80E3C0D272C1D21BD87D5B03E73D4643348807117A9C",
+  "PcreBefore": "7D56A547690984A2EBDECA3164C3C792BA7365EF1AD0C3464665A609DA0E786F",
+  "PcreAfter": "7D56A547690984A2EBDECA3164C3C792BA7365EF1AD0C3464665A609DA0E786F",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 14,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Warmup": "1second/min128 per public row; normal8CPU startup thenCPU2",
+  "Acceptance": "Assess actual/finite/deadline date miss, dense word interiors and boundary-only EOF; retain all Unicode/captured/negative/empty/one-capture neighbor costs and allocations/ranges. No normalization. At most one noise confirmation if needed",
+  "ChangedFiles": [
+    "Lokad.Utf8Regex.PythonRe.dll",
+    "Lokad.Utf8Regex.PythonRe.pdb"
+  ],
+  "Unchanged": [
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.dll",
+      "Before": "AD405F95C2D3B8CE5E76DBEEEA8F0E27ED3FA4D0702E57F3DB7D93268C41AC75",
+      "After": "AD405F95C2D3B8CE5E76DBEEEA8F0E27ED3FA4D0702E57F3DB7D93268C41AC75",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+      "Before": "B0AB10A4AC2477BDABCD1572F4DDDDE3704FC31B03097CB6171B5704271F2009",
+      "After": "B0AB10A4AC2477BDABCD1572F4DDDDE3704FC31B03097CB6171B5704271F2009",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.dll",
+      "Before": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+      "After": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.Pcre2.dll",
+      "Before": "7D56A547690984A2EBDECA3164C3C792BA7365EF1AD0C3464665A609DA0E786F",
+      "After": "7D56A547690984A2EBDECA3164C3C792BA7365EF1AD0C3464665A609DA0E786F",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.Pcre2.pdb",
+      "Before": "B1AB703848F3FBC438B3DCDD5EBC9F5CC38847737AAEC9CF05EDEC4B65FD26E4",
+      "After": "B1AB703848F3FBC438B3DCDD5EBC9F5CC38847737AAEC9CF05EDEC4B65FD26E4",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.pdb",
+      "Before": "F957DABC79EF64153FB5BAA76D27DBC2279F950629EBD4500D492F5538988324",
+      "After": "F957DABC79EF64153FB5BAA76D27DBC2279F950629EBD4500D492F5538988324",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.deps.json",
+      "Before": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "After": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.dll",
+      "Before": "E350876C134C95249992422623D2A5505EAAD6A0FB0174758ECB6D148DEC6DCB",
+      "After": "E350876C134C95249992422623D2A5505EAAD6A0FB0174758ECB6D148DEC6DCB",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.pdb",
+      "Before": "2D1DE2471053565ECBCE53F0584B0D8DF51D0AD80F77DA2F1F893C84885A6B32",
+      "After": "2D1DE2471053565ECBCE53F0584B0D8DF51D0AD80F77DA2F1F893C84885A6B32",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.runtimeconfig.json",
+      "Before": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "After": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "Unchanged": true
+    }
+  ]
+}

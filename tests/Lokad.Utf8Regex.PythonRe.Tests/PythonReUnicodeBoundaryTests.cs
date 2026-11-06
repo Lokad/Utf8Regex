@@ -104,8 +104,11 @@ public sealed class PythonReUnicodeBoundaryTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "é");
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        var input = Encoding.UTF8.GetBytes(new string('a', 200000) + "é");
+        // Measure the controlled validation lane used below, so the diagnostic
+        // cannot inject during validation instead of the subsequent word scan.
+        var validation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20),
+            Regex.InfiniteMatchTimeout, token.Token);
         Utf8Validation.Validate(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.None, timeout, Funded);

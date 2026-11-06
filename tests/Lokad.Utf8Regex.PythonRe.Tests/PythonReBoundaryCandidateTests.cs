@@ -57,8 +57,9 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void BoundedWordRunsPreserveOriginalInterruptionAndRetainedResult(bool timeout)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void BoundedWordRunsPreserveOriginalInterruptionAndRetainedResult(bool timeout, bool interiorRun)
     {
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
@@ -73,9 +74,12 @@ public sealed class PythonReBoundaryCandidateTests
         });
         try
         {
-            using var regex = new Utf8PythonRegex(@"\d{2,4}\b", default, TimeSpan.FromMilliseconds(20),
+            var pattern = interiorRun ? @"\b[0-9]+X\b" : @"\d{2,4}\b";
+            using var regex = new Utf8PythonRegex(pattern, default, TimeSpan.FromMilliseconds(20),
                 new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
-            var input = Encoding.UTF8.GetBytes("1234 " + string.Concat(Enumerable.Repeat("123A ", 4096)) + "5678");
+            var input = Encoding.UTF8.GetBytes(interiorRun
+                ? "22X a" + new string('1', 200000) + "X 33X"
+                : "1234 " + string.Concat(Enumerable.Repeat("123A ", 4096)) + "5678");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
             Assert.True(cursor.MoveNext());
             var retained = cursor.Current;
@@ -85,9 +89,40 @@ public sealed class PythonReBoundaryCandidateTests
             if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             cursor.Dispose();
-            Assert.Equal("1234", retained.Value.ValueText);
+            Assert.Equal(interiorRun ? "22X" : "1234", retained.Value.ValueText);
         }
         finally { session.Complete(); }
+    }
+
+    [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4096)]
+    public void WordInteriorBlocksKeepUnicodeEdgesCapturesAndEofBoundaries(int count)
+    {
+        var input = Encoding.UTF8.GetBytes("a" + new string('1', count) + "X\u0301 22X😀 33Xé");
+        foreach (var pattern in new[] { @"\b", @"(?a:\b)", @"\b[0-9]+X\b",
+            @"(?a:\b[0-9]+X\b)", @"\b(?P<n>[0-9]+)X\b", @"\B[0-9]+X" })
+        {
+            using var regex = new Utf8PythonRegex(pattern);
+            // The leading assertion leaves this equivalent reference on its
+            // original per-candidate verifier, rather than the interior proof.
+            using var reference = new Utf8PythonRegex("(?=)(?:" + pattern + ")");
+            foreach (var start in new[] { 0, 1, count })
+            {
+                var expected = reference.FindIterDetailed(input, start);
+                var actual = regex.FindIterDetailed(input, start);
+                Assert.Equal(expected.Length, regex.Count(input, start));
+                Assert.Equal(expected.Length, actual.Length);
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.Equal(expected[i].Groups, actual[i].Groups);
+                    Assert.Equal(expected[i].LastIndex, actual[i].LastIndex);
+                }
+            }
+        }
+        using var boundary = new Utf8PythonRegex(@"\b");
+        var eof = Encoding.UTF8.GetBytes("a" + new string('1', count));
+        Assert.Equal(new[] { 0, eof.Length },
+            boundary.FindIterDetailed(eof).Select(m => m.Value.StartOffsetInBytes));
     }
 
     [Theory]
@@ -166,7 +201,9 @@ public sealed class PythonReBoundaryCandidateTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         using var regex = new Utf8PythonRegex(pattern, default, TimeSpan.FromMilliseconds(20));
-        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('1', 4096)), 0, token.Token);
+        // Bounded ASCII blocks need enough input to reach the diagnostic
+        // hook's unchanged 64-work-unit cadence after construction.
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('1', 200000)), 0, token.Token);
         if (pattern == @"\b") Assert.True(cursor.MoveNext());
         var interrupted = false;
         cursor.WorkingInvocation.CheckpointHook = _ => { interrupted = true; if (expire) ticks = 30; else token.Cancel(); };

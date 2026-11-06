@@ -1,0 +1,12 @@
+{
+  "EvidenceSha256": "0470FF2007DD34DC05FDD27F6A1292D869A78273D34E141D8FD6575277290A7D",
+  "EvidenceBytes": 9718218,
+  "WindowsSha256": "F4C499D51B3B7359C92D78C4573639E8326DF9C45FF7D4D3B219D91E6112EA4D",
+  "OffVmVerified": true,
+  "Complete": true,
+  "Decision": "Promote bounded word-interior scan reductions, retaining dense almost-date +2.13% and empty neighbor +1.41% observations; ordinary date -2.47% has interleaving process medians",
+  "Confirmation": "None",
+  "NoAllocationIncreases": true,
+  "PackageRegenerated": false,
+  "FullRefreshRepeated": false
+}

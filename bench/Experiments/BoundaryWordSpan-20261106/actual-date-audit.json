@@ -1,0 +1,135 @@
+{
+  "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+  "InputBytes": 47,
+  "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+  "IsMatch": false,
+  "InstructionCount": 17,
+  "Instructions": [
+    {
+      "Kind": "Boundary",
+      "A": 1,
+      "B": 0,
+      "C": 1,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatGreedy",
+      "A": 4,
+      "B": 0,
+      "C": 1,
+      "D": 2
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatGreedy",
+      "A": 9,
+      "B": 1,
+      "C": 1,
+      "D": 2
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 2
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 6,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatGreedy",
+      "A": 14,
+      "B": 2,
+      "C": 2,
+      "D": 4
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 3
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 11,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Boundary",
+      "A": 1,
+      "B": 0,
+      "C": 5,
+      "D": 0
+    },
+    {
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    }
+  ],
+  "BoundaryPredicate": "Lokad.Utf8Regex.PythonRe.PythonReScalarClassData.IsWord",
+  "HasLeadingRange": true,
+  "Low": 48,
+  "High": 57,
+  "CoreSha256": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+  "PythonSha256": "FD6F29098772B6460D181ADB0D3CE671EEB2C204645F156CF54F812C7468CC27",
+  "Timed": false
+}

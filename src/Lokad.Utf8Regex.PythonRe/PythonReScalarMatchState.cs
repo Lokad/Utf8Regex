@@ -369,7 +369,19 @@ internal struct PythonReScalarMatchState
                             input[_position - 1] < 128 && input[_position] < 128 &&
                             Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&
                             Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position]), _program, boundary))
+                        {
+                            // These predicates share the exact ASCII word set.
+                            // Bound each skip by the next loop's interruption poll;
+                            // non-ASCII context and EOF still reach the verifier.
+                            if (boundary.C == 0 || _program.CategorySetMembers[boundary.C - 1][0].Table.ScalarPredicate == PythonReScalarClassData.IsWord)
+                            {
+                                var block = input.Slice(_position, Math.Min(2048, input.Length - _position));
+                                var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
+                                _position += stop < 0 ? block.Length : stop;
+                                continue;
+                            }
                             outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        }
                         // A complete boundary-only root cannot satisfy a nonempty
                         // retry. Reuse failure's scalar advance/EOF checks; actual
                         // candidates still run the VM with its admitted workspace.
