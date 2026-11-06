@@ -1,0 +1,7 @@
+{
+  "FullSource": "f105c683013fe5431161edb7c6a3723cd608db33",
+  "PackageVersion": "0.5.0-dev.44",
+  "PackageQualificationPending": true,
+  "ExpectedDifferences": "Final generated data, release notes and receipts; source revision metadata in final binaries. No C# or build-input implementation change.",
+  "Scope": "Source equality is not binary or performance equality. Final exact-package operating costs are a separate declared comparison."
+}

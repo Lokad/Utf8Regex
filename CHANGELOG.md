@@ -3,167 +3,47 @@
 ## Unreleased — 0.5.0
 
 - Target .NET 10 and .NET 11 in all three packages. Benchmarks default to .NET 11;
-  the current pinned SDK/runtime is RC3, with historical measurements labeled.
+  the pinned SDK/runtime is currently RC3. Historical results keep their runtime
+  labels. Adapters require the exact matching Core package version.
 - Compile UTF-8 patterns and parse UTF-8 replacement templates directly across
-  Core, PythonRe and PCRE2. Owned bytes and admitted cache keys replace mandatory
-  whole-pattern/template strings; explicit text interoperability remains.
-- Add UTF-8 capture-name lookup, validated capture counts and caller-buffer
-  pattern metadata without exposing mutable program storage.
-- Add caller-funded Core and PCRE2 program owners with separate working admission,
-  deterministic close and byte-template replacement into caller-owned destinations.
-  Their bounded cache maxima are conservatively prepaid. Controls cover modeled
-  major capacity and overlap, not total heap/RSS; execution defaults remain unlimited.
-- Extend PythonRe hosting with effective flags and structured errors, funded
-  compilation/cache storage, native `Replace`/`Subn` and retained substitution
-  output with explicit disposal.
+  Core, PythonRe and PCRE2. Add UTF-8 capture-name lookup and caller-buffer pattern
+  metadata. Owned byte keys replace mandatory whole-pattern/template strings;
+  explicit text interoperability remains.
+- Add caller-funded Core and PCRE2 program owners, working admission and byte-template
+  replacement into caller-owned destinations. Extend PythonRe hosting with effective
+  flags, structured errors, funded compilation/cache storage and retained substitution
+  output. Program owners and retained outputs have deterministic disposal.
 - Add persistent memory cursors, byte-range captures and retained result receipts.
-  Current-call tokens, original cancellation and absolute deadlines preserve
-  cursor/result lifetimes across advances and program closure.
-- Reduce live-token ASCII Boolean matching scratch through existing metered
-  native plans. Reuse proved literal/category/count and bounded candidate ranges
-  for matching, preserving strict full-subject validation and resource controls.
-- Reuse the existing bounded eight-literal Count search in PythonRe, including
-  capture-discarding and finite-limit calls. VM scratch and numerical work/depth
-  requirements can decrease; result discovery and captured outputs keep their routes.
-- Reuse checked literal-pair search for positive two-member Unicode classes.
-  PythonRe Unicode splits improve; dense wide-character splits can cost more.
-  Construction and execution admission, whole-subject validation and original
-  interruption controls remain enforced.
-- Reduce initial capture-trail allocation for small matches. Long capture
-  histories can use more buffers and bytes; working admission still covers
-  each table/chunk acquisition and growth overlap.
-- Acquire repeat counters only when execution needs mutable state. Fused scalar
-  matching can allocate less and fit smaller working limits; unfused, assertion
-  and reverse workloads can cost more time. State remains admitted before
-  acquisition and released synchronously.
-- Search proved unbounded runs excluding two ASCII values in checked bounded
-  spans, reducing imports Count work without additional allocation. Finite and
-  scalar-counted repeats retain their existing behavior; some local costs rise.
-- Lower ordinary PythonRe class complements directly to scalar classes, avoiding
-  redundant guards and backtracking state. Compound predicate unions retain their
-  existing handling; numerical work and storage requirements can decrease.
-- Reduce Count candidate-window rewind work for direct unbounded scalar runs
-  excluding an ASCII pair. Missing-delimiter rejection, scalar floors and original
-  interruption remain; some other class/repeat workloads can cost more time.
-- Skip impossible ASCII starts in scalar first-match searches, including captured
-  and range-prefixed patterns. Some excluded pattern families can cost more.
-- Reduce temporary allocations for Boolean and coordinate-only matching when
-  captures cannot affect the match. Capture-dependent expressions, detailed
-  results and cursors retain their capture storage.
-- Reuse exactly filled Python result arrays during materialization, reducing
-  allocation and working/result requirements for those calls. Partial buffers
-  keep their final copy; execution time can increase slightly.
-- Reuse bounded ordered-window Count on eligible mixed Unicode input, deriving
-  gap limits in scalars. Unicode-constrained classes retain scalar execution;
-  ASCII and deadline calls can cost more while match scratch decreases.
-- Batch ASCII runs in the Unicode email-token counter using checked searches.
-  Dense and long tokens improve; the large document corpus remains validation
-  dominated. Work units charge bounded scans rather than helper characters.
-- Reject impossible bounded scalar-gap candidates using short ASCII tail prefixes.
-  Corpus Count and finite/deadline operations improve; single-byte tails can cost
-  more. Strict validation, captures and bounded interruption remain.
-- Reuse scalar repeat execution for unfolded literal runs, reducing nullable
-  FindAll and Count scratch. Capture-inside, overlapping-tail and RTL operations
-  can cost more; numeric work/depth requirements can decrease.
-- Avoid unnecessary repeat frames for proved nonempty bounded word runs before
-  positive boundaries. Date recognition and finite controls use less time and
-  temporary storage. Excluded ASCII separators give bounded word Count the same
-  frame savings; declined proofs can cost more.
-- Reuse greedy class runs before disjoint literal alternatives or required ASCII
-  classes, avoiding futile rewinds and temporary storage. Overlapping, folded and
-  RTL calls can cost more; captures and resource controls retain their contracts.
-  The bounded class proof can add work while working/depth requirements decrease.
-- Avoid plain-alternative frames when a required ASCII literal disproves a
-  branch, reducing imports Count allocations and working requirements. Viable
-  alternatives retain ordering and captures; some matching workloads cost more.
-- Avoid full coordinate-map arrays for detailed matches whose complete capture
-  histories lie in an ASCII prefix, retaining strict full-subject validation.
-  Result/working requirements can fall; Unicode full-map calls can cost more.
-- Speed up repeated-segment Count with Unicode separators and declaration searches
-  by skipping impossible word-interior starts, preserving strict validation and
-  existing cancellation and resource authority.
-- Speed up mixed-text keyword-family Count with the existing checked SIMD prefix
-  filter. Miss scans and dense matches can cost more; the additional compiled
-  search storage is admitted through the existing resource controls. Reuse its
-  immutable four-position masks within each scan to reduce candidate-scan costs.
-- Reuse the existing boundary-overlap proof and metered structural verifier for
-  eligible finite-policy declaration Count, reducing scalar VM scratch. Work,
-  depth and working requirements can fall; strict validation and interruption
-  retain their original scope.
-- Simplify common UTF-8 validation with fewer vector comparisons for valid
-  two-byte leads and continuation bytes. Chinese and case-sensitive Russian Count
-  improve; folded Russian and some deadline calls can cost more.
-- Avoid unused coordinate computation during finite structural/simple Count,
-  retaining whole-subject validation, block work charges and interruption points.
-- Reuse metered native Count for four-to-eight complete literal alternatives,
-  reducing execution time, temporary storage and route-dependent resource needs.
-- Reuse checked span search for 17–32-byte exact literals in bounded native
-  windows. Count and value matching improve; reverse and dense-tail calls can
-  cost more. Modeled work requirements can decrease.
-- Reject longer impossible ASCII prefixes before scalar Count enters the VM,
-  improving Ruff-like searches and reducing working requirements for misses.
-- Speed up native literal-suffix Count with checked span search, and retain
-  suffix bytes directly without unused prepared search descriptors.
-- Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
-  retaining the 256-bit fallback. Dense false prefixes and some long or mixed
-  literals can cost more; validation and finite resource routes remain.
-- Speed up multiline searches beginning with a mandatory ASCII literal using
-  bounded checked line-start discovery. Finite/live-token and deadline operations
-  benefit too; sparse and false-prefix misses can cost more.
-- Reuse the existing bounded ASCII dotted-decimal boolean executor in PythonRe.
-  Eligible repeated IsMatch calls use less time and scratch; retaining the
-  admitted Core root increases resident preparation and construction costs.
-- Skip impossible ASCII starts in PythonRe atomic and possessive searches while
-  retaining complete atomic verification, captures and resource controls.
-- Skip proved ASCII word-interior candidates after PythonRe VM admission.
-  Date-like misses improve; Unicode-prefix and boundary-only operations can cost
-  more. Strict validation, captures and interruption authority remain.
-- Reuse admitted literals for capture-free repeated-literal PythonRe value
-  FullMatch, reducing execution work and temporary storage while preserving
-  strict validation, cancellation and finite resource limits.
-- Compare exact PythonRe literals up to 256 bytes directly at a required Match
-  or FullMatch start, retaining full validation and bounded invocation checks.
-- Extend that bounded FullMatch verification to fixed literal tails using owned
-  scalar instructions, avoiding VM arrays and cold preparation for those calls.
-- Reuse validated subject-end coordinates for PythonRe scalar value results,
-  avoiding redundant Unicode scans without changing strict input validation.
-- Defer exact PythonRe Search coordinate projection until a hit, widen checked
-  UTF-8 validation on supported hardware and reuse invariant SIMD mask metadata.
-  Larger Unicode searches and Chinese Count improve; tiny or late Search hits,
-  dense false prefixes and folded Russian Count can cost more.
-- Use the runtime's checked ASCII predicate for boolean input checks, reducing
-  literal Count validation cost. Accept a complete ASCII validity proof before
-  Unicode selection for faster matching; late Unicode after a long ASCII prefix
-  can cost more. Resource controls remain enforced.
-- Reduce shared invocation metadata, bounded output-copy overhead and finite-limit
-  Core Match overhead while
-  preserving numeric working limits, caller-funded admission and deterministic refunds.
-- Reuse the prepared small ASCII literal-family search for literal replacement,
-  reducing eligible ordinary and compiled execution time without changing output
-  allocations. Miss scans can cost more; controlled and declined shapes retain
-  their existing execution and admission.
-- Reduce required-literal screening and empty confirmation overhead while
-  retaining strict validation, matching and resource controls.
-- Speed up capture-free PythonRe word-boundary Split and Count by avoiding
-  impossible word-interior attempts and nonempty retries, preserving scalar
-  progression and resource controls. No-boundary misses and empty input can cost
-  more; execution allocations remain unchanged.
-- Speed up scalar Count with class-delimiter candidate windows and shared
-  capture-free PythonRe counting, preserving pinned Unicode and resource controls.
-- Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
-- Skip impossible PCRE2 date-like candidates using existing bounded literal
-  windows across word boundaries. Some controlled, capture and UCP workloads
-  cost more; captures, scalar semantics and interruption remain.
-- Speed up NonBacktracking batches and scan proved complete anchored-line Count
-  roots without a viability table. Captures, cursors and bounded interruption
-  checks remain. Work and working requirements change; recheck finite policies
-  when upgrading.
+  Current-call tokens supplement original cancellation and absolute deadlines;
+  returned results remain valid across cursor advances and program closure.
+- Improve literal, candidate-window, class/repeat, declaration and token matching
+  through existing checked span/SIMD search and scalar execution. Reuse more native
+  plans under finite limits, avoid unnecessary backtracking/capture/coordinate
+  scratch and reduce small capture-trail allocations. PythonRe Count, Split and
+  FullMatch also reuse proved scalar/native work and materialized result buffers.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
-- Fix literal Count throwing on a trailing partial Unicode needle after a match.
-- Keep execution owned, managed and checked. Core, PythonRe and PCRE2 retain their
-  documented grammar/semantic boundaries; POSIX and complete profile equivalence
-  remain outside this release.
+  Fix literal Count throwing on a trailing partial Unicode needle after a match.
+- Reject null replacement evaluators even on misses; an already-cancelled explicit
+  token retains precedence.
+
+Performance changes include local trade-offs: some long capture histories,
+assertions, reverse, folded, dense-match and controlled workloads can take more
+execution time or memory. No blanket speedup or complete profile equivalence is
+promised. Refreshed public-operation tables and focused receipts retain allocations,
+uncertainty and adverse observations.
+
+Resource limits cover modeled major capacity and growth overlap, not total heap/RSS
+or arbitrary caller retention; execution defaults remain unlimited. Numerical work,
+depth and working/result requirements depend on the execution route and can change
+between versions. Recheck finite policies when upgrading. Admission still precedes
+covered acquisition, temporary loans refund synchronously, and strict whole-subject
+UTF-8 validation, scalar matching, captures and interruption contracts remain.
+
+See the [migration guide](docs/MIGRATION.md) and the
+[Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md) and
+[PCRE2](docs/SPEC-PCRE2.md) specifications for API contracts and profile limitations.
+Execution remains owned, managed and checked. POSIX remains outside this release.
 
 ## 0.4.0 — 2026-10-27
 

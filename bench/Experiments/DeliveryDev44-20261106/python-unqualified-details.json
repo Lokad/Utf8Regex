@@ -1,0 +1,27 @@
+[
+  {
+    "CaseId": "ascii-option/search-hit",
+    "Reason": "Removable harness floors are 0.15 %/11.16 % of the lanes.",
+    "Ratio": 0.9658601958524873
+  },
+  {
+    "CaseId": "greedy/search-miss",
+    "Reason": "Removable harness floors are 0.22 %/15.37 % of the lanes.",
+    "Ratio": 0.8334188368224446
+  },
+  {
+    "CaseId": "multiline/search-hit",
+    "Reason": "Removable harness floors are 0.23 %/10.12 % of the lanes.",
+    "Ratio": 0.8950311907884559
+  },
+  {
+    "CaseId": "search-offset/literal-hit",
+    "Reason": "Removable harness floors are 0.20 %/14.29 % of the lanes.",
+    "Ratio": 0.9821361921651754
+  },
+  {
+    "CaseId": "unicode-category/search-miss",
+    "Reason": "Removable harness floors are 0.22 %/15.94 % of the lanes.",
+    "Ratio": 1.0108591808960667
+  }
+]
