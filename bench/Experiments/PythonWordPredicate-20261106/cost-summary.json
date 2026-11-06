@@ -1,0 +1,219 @@
+{
+  "Scope": "ONE Default fresh-process ABBA, only Python implementation differs. Public costs; no normalization or catalog Status.",
+  "SourceParent": "2c8200f94135caf449478ffae6f03fb426fccd2d",
+  "CoreBoth": "633DA3DDC5E9FDC471ED45C90A2055802F9603BB6E1260E5E016CAB367D4EDAF",
+  "PythonBefore": "2E76F402929F563DB7984A8A6690D051EC50B447CD86880283173BB957A1A623",
+  "PythonAfter": "596E8F00E9383EA1359C7E3ECC14DAC64C0DD078C9761B325BE0427BB7740B8F",
+  "Seconds": 50.496676394,
+  "Samples": 180,
+  "MinimumSampleMilliseconds": 56.381,
+  "Rows": [
+    {
+      "Name": "unchanged-literal-is-match-control",
+      "BeforeUs": 0.11692777187215593,
+      "AfterUs": 0.11648623559759308,
+      "DeltaUs": -0.00044153627456285094,
+      "Percent": -0.3776145457091262,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.1170868518495888,
+        0.11676869189472307
+      ],
+      "AfterProcessMedians": [
+        0.11655633832763973,
+        0.11641613286754644
+      ],
+      "BeforeMinimum": 0.11535329645148619,
+      "BeforeMaximum": 0.12231058498101349,
+      "AfterMinimum": 0.11491771443151373,
+      "AfterMaximum": 0.12289860569834384,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-date-miss",
+      "BeforeUs": 1.575553749919447,
+      "AfterUs": 1.5765705601981344,
+      "DeltaUs": 0.0010168102786873856,
+      "Percent": 0.06453669249553151,
+      "BeforeBytes": 80.0,
+      "AfterBytes": 80.0,
+      "BeforeProcessMedians": [
+        1.5573972934434608,
+        1.585768357305072
+      ],
+      "AfterProcessMedians": [
+        1.5618710002920948,
+        1.5883819570950815
+      ],
+      "BeforeMinimum": 1.5548279480212006,
+      "BeforeMaximum": 1.5889207310479074,
+      "AfterMinimum": 1.5544411694415676,
+      "AfterMaximum": 1.5905870197667147,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "date-hit",
+      "BeforeUs": 0.5144064733814,
+      "AfterUs": 0.5151999208939924,
+      "DeltaUs": 0.0007934475125923601,
+      "Percent": 0.15424524255627237,
+      "BeforeBytes": 80.0,
+      "AfterBytes": 80.0,
+      "BeforeProcessMedians": [
+        0.5001455604075691,
+        0.5298106921897309
+      ],
+      "AfterProcessMedians": [
+        0.5018441521942187,
+        0.5278373496629808
+      ],
+      "BeforeMinimum": 0.49850469763133515,
+      "BeforeMaximum": 0.5303632806303209,
+      "AfterMinimum": 0.5001611876637708,
+      "AfterMaximum": 0.5299026388827702,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-date-miss-finite-live",
+      "BeforeUs": 1.9601577843711362,
+      "AfterUs": 1.9865222963937146,
+      "DeltaUs": 0.02636451202257839,
+      "Percent": 1.3450198873167007,
+      "BeforeBytes": 192.0,
+      "AfterBytes": 192.0,
+      "BeforeProcessMedians": [
+        1.9480603448275862,
+        1.967882630198825
+      ],
+      "AfterProcessMedians": [
+        2.020344792821857,
+        1.9544082734397865
+      ],
+      "BeforeMinimum": 1.947276645768025,
+      "BeforeMaximum": 1.9738639758356291,
+      "AfterMinimum": 1.9495105531887216,
+      "AfterMaximum": 2.0254931612729776,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "dense-date-misses",
+      "BeforeUs": 81.78944887833347,
+      "AfterUs": 81.94235500960176,
+      "DeltaUs": 0.15290613126828134,
+      "Percent": 0.18695092504625865,
+      "BeforeBytes": 80.0,
+      "AfterBytes": 80.0,
+      "BeforeProcessMedians": [
+        81.80136054421769,
+        81.77753721244926
+      ],
+      "AfterProcessMedians": [
+        81.74884667571234,
+        82.1525956284153
+      ],
+      "BeforeMinimum": 81.49431664411367,
+      "BeforeMaximum": 82.05918367346939,
+      "AfterMinimum": 81.2865671641791,
+      "AfterMaximum": 82.25655737704918,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "ascii-word-count",
+      "BeforeUs": 498.1021862403498,
+      "AfterUs": 496.39454268292684,
+      "DeltaUs": -1.707643557422955,
+      "Percent": -0.3428299663392642,
+      "BeforeBytes": 1056.0,
+      "AfterBytes": 1056.0,
+      "BeforeProcessMedians": [
+        490.7764227642276,
+        506.00840336134456
+      ],
+      "AfterProcessMedians": [
+        493.56341463414634,
+        500.3725
+      ],
+      "BeforeMinimum": 490.09918699186994,
+      "BeforeMaximum": 506.0596638655462,
+      "AfterMinimum": 492.0617886178862,
+      "AfterMaximum": 500.88666666666666,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-word-count",
+      "BeforeUs": 350.18722130470684,
+      "AfterUs": 346.07515195560256,
+      "DeltaUs": -4.112069349104274,
+      "Percent": -1.1742488300354736,
+      "BeforeBytes": 1056.0,
+      "AfterBytes": 1056.0,
+      "BeforeProcessMedians": [
+        347.91907514450867,
+        356.32797619047625
+      ],
+      "AfterProcessMedians": [
+        342.32784090909087,
+        349.98081395348834
+      ],
+      "BeforeMinimum": 347.6508670520231,
+      "BeforeMaximum": 358.9375,
+      "AfterMinimum": 341.1051136363636,
+      "AfterMaximum": 351.0639534883721,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-boundary-count",
+      "BeforeUs": 244.51723643875783,
+      "AfterUs": 241.462,
+      "DeltaUs": -3.055236438757845,
+      "Percent": -1.2494973701058787,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        243.6081300813008,
+        246.64016393442623
+      ],
+      "AfterProcessMedians": [
+        240.9456,
+        242.0128
+      ],
+      "BeforeMinimum": 243.19390243902438,
+      "BeforeMaximum": 248.10368852459018,
+      "AfterMinimum": 240.5076,
+      "AfterMaximum": 242.4588,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-captured-findall-strings",
+      "BeforeUs": 359.03689763330476,
+      "AfterUs": 352.5263358250277,
+      "DeltaUs": -6.510561808277089,
+      "Percent": -1.8133405929009916,
+      "BeforeBytes": 41496.0,
+      "AfterBytes": 41496.0,
+      "BeforeProcessMedians": [
+        358.31130952380954,
+        360.51437125748504
+      ],
+      "AfterProcessMedians": [
+        348.1761627906977,
+        357.3261904761905
+      ],
+      "BeforeMinimum": 357.4625,
+      "BeforeMaximum": 363.41317365269464,
+      "AfterMinimum": 346.3011627906977,
+      "AfterMaximum": 358.4940476190476,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    }
+  ]
+}

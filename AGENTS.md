@@ -65,6 +65,8 @@ share the remaining budget; on Linux wrap the runner in
 to hard-cap builds/tests too. Set PATH and UTF8REGEX_CPYTHON before starting.
 Check disk capacity and actual available RAM first; free tmpfs capacity does not
 reserve physical memory. Retire archived fixture scratch before a full run.
+Size focused experiments' memory admission for their bounded workers and retained
+results; do not copy the full-refresh reserve into small comparisons.
 Keep an SSH session open until `/dev/shm` evidence
 is archived and copied off the VM; logout cleanup can clear this filesystem.
 The Verify phase requires matching frozen paired evidence; it deliberately rejects
