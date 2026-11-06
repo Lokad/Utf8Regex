@@ -298,6 +298,9 @@ The shared backtracking VM uses small fixed frame, capture-trail and repeat-jour
 chunks. Short searches and captures need less initial capacity; deep runs acquire
 more chunks, headers and growth checkpoints. Every covered acquisition still
 requires admission first.
+Capture-trail chunks now hold eight entries. Brief captures reserve less, while
+long histories can require more chunk headers and growth work. Working requirements
+can therefore rise or fall with this version even when captures are unchanged.
 Root repeat state is acquired only when execution needs mutable counters. Fused
 runs can fit tighter working limits, including Count when captures are unused.
 Bounded greedy Dot repeats with a proved terminal ASCII literal can select their

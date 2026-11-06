@@ -134,6 +134,10 @@ Bounded greedy Dot repeats with a proved terminal ASCII literal can avoid rewind
 storage. Captures and strict validation are unchanged; finite work, depth and
 working requirements can be lower for these shapes.
 
+Smaller capture-trail chunks reduce the first reservation for brief captures.
+Long histories can require more headers and growth checkpoints; qualify finite
+working policies on those workloads as well. Capture semantics are unchanged.
+
 Count can reuse a prepared disjoint-class repeat such as
 `(?:[A-Z][a-z]+\s*){10,100}` without VM scratch, including on mixed UTF-8.
 Its original separator predicate preserves Unicode whitespace. Complete-input

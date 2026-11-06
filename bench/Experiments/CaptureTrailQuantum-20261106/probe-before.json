@@ -1,0 +1,15 @@
+{
+  "Scope": "Untimed allocation attribution, same canonical public FullMatch miss; actual production constructor/matcher/disposal, no alternate executor",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CoreSha256": "1DA7BA043A19089D80FDE1FB739DAD90F6480A0BBB57530515C6B18115EABCFF",
+  "PythonSha256": "1F200875372BCBBDA48E7AB76102932E20E607815B39D3B56D4D348D5F9BEF58",
+  "ProgramGroups": 1,
+  "UsesCaptureOpeningJournal": true,
+  "TrailModeledReserveBytes": 288,
+  "ConstructorBytes": 64,
+  "MatchingBytes": 336,
+  "DisposalBytes": 0,
+  "PublicBytes": 400,
+  "CursorIsValueType": true,
+  "StateIsValueType": true
+}
