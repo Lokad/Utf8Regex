@@ -209,6 +209,17 @@ internal static partial class Utf8SliceRunner
         if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
             ReadOnlySpan<byte> mask = program.SetMasks[following.A].AsSpan(0, 16);
+            Func<int, bool>? predicate = null;
+            ReadOnlySpan<byte> predicateMask = default;
+            var predicateNegated = false;
+            if (atom.Kind == Utf8SliceInstructionKind.CategorySet && (atom.B & 2) == 0 && atom.C == 0 &&
+                program.CategorySetMembers[atom.D] is { Length: 1 } members &&
+                members[0].Table.ClassProgram is null && members[0].Table.ScalarPredicate is { } scalarPredicate)
+            {
+                predicate = scalarPredicate;
+                predicateMask = program.SetMasks[atom.A];
+                predicateNegated = members[0].Negated;
+            }
             for (var octet = 0; octet < mask.Length; octet++)
             {
                 var bits = (uint)mask[octet];
@@ -220,7 +231,15 @@ internal static partial class Utf8SliceRunner
                     var proofBreach = invocation.TryChargeStep();
                     var overlaps = false;
                     if (proofBreach == Utf8ExecutionLimitKind.None)
-                        proofBreach = TryMatchScalarClass(program, atom, new Rune(value), ref invocation, out overlaps);
+                    {
+                        // Bind a sole pure table once; preserve mask short-circuit,
+                        // both negations and the original per-member authority.
+                        if (predicate is not null)
+                            overlaps = (((predicateMask[value >> 3] & (1 << (value & 7))) != 0 ||
+                                predicate(value) != predicateNegated) != ((atom.B & 1) != 0));
+                        else
+                            proofBreach = TryMatchScalarClass(program, atom, new Rune(value), ref invocation, out overlaps);
+                    }
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                     {
                         outcome = new(false, -1, proofBreach, null, null);

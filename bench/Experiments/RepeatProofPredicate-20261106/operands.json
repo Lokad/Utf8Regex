@@ -1,0 +1,132 @@
+{
+  "Scope": "Untimed actual verbose FullMatch program",
+  "Core": "03C320737324B8FFF8707600F71D69E151C04C5B4F0163F2CEB120CBECEDDDBE",
+  "Python": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "Instructions": [
+    {
+      "pc": 0,
+      "Kind": "Literal",
+      "A": 105,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 1,
+      "Kind": "Literal",
+      "A": 116,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 2,
+      "Kind": "Literal",
+      "A": 101,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 3,
+      "Kind": "Literal",
+      "A": 109,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 4,
+      "Kind": "RepeatGreedy",
+      "A": 7,
+      "B": 0,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "pc": 5,
+      "Kind": "CategorySet",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 6,
+      "Kind": "RepeatEnd",
+      "A": 4,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 7,
+      "Kind": "RepeatExit",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 8,
+      "Kind": "RepeatGreedy",
+      "A": 11,
+      "B": 1,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "pc": 9,
+      "Kind": "Set",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 10,
+      "Kind": "RepeatEnd",
+      "A": 8,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 11,
+      "Kind": "RepeatExit",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 12,
+      "Kind": "Anchor",
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "pc": 13,
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    }
+  ],
+  "Masks": [
+    "003E00F0010000000000000000000000",
+    "000000000000FF030000000000000000"
+  ],
+  "Members": [
+    [
+      {
+        "Negated": false,
+        "ClassProgram": false,
+        "Predicate": "IsSpace"
+      }
+    ]
+  ]
+}

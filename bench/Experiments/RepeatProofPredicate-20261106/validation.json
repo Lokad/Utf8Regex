@@ -1,0 +1,35 @@
+{
+  "Parent": "94c73a95cf3f2600ebed5598a268d8ddeb1ed78d",
+  "Accepted": true,
+  "Windows": {
+    "Core": 208,
+    "PythonRe": 1375,
+    "Pcre2": 1014,
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "CountsPerFramework": true
+  },
+  "Linux": {
+    "Core": 208,
+    "PythonRe": 1375,
+    "Pcre2": 1014,
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "CountsPerFramework": true,
+    "TerminalExit": 0
+  },
+  "Preserved": "Exact proof work/denial/predicate order, scalars/captures/lifetimes/original interruption/admission",
+  "CoreFullOptsBytesBefore": 4076,
+  "CoreFullOptsBytesAfter": 4691,
+  "RawSha256": "CF8B0E3AB98A819D629AA13BD9413F2CA6B8330AAA1228FA40A652CD8D12B892",
+  "RawBytes": 4566547,
+  "OffVmVerified": true,
+  "Full46AssetsUnchanged": 8,
+  "PackagesRegenerated": false,
+  "InitialFixtureFix": "Wrong outcome property names in new tests corrected before execution; no production correction",
+  "Confirmation": "None"
+}

@@ -1,0 +1,27 @@
+{
+  "Scope": "ONE bounded pure category-predicate dispatch hoist in existing disjoint-repeat proof",
+  "Parent": "94c73a95cf3f2600ebed5598a268d8ddeb1ed78d",
+  "BeforeSource": "Accepted89880132 (same C# as parent94c73a95), exact reused03C32073",
+  "AfterSource": "94c73a95 + source-inputs.json",
+  "CoreBefore": "03C320737324B8FFF8707600F71D69E151C04C5B4F0163F2CEB120CBECEDDDBE",
+  "CoreAfter": "1ADD291846FC88ABA8406E7D6E47ECC314A73B0B4574C3E1324D73183A372962",
+  "PythonBefore": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "PythonAfter": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "PcreBefore": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+  "PcreAfter": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 14,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "1s/min128",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Acceptance": "Actual verbose FullMatch ordinary/finite/live/deadline, Unicode/captured/long/overlapping/folded/multi-table controls, Core/Pcre generic and native/one/two capture controls. Preserve EXACT predicate order/work/numerical admission and semantics; all costs/allocations/ranges retained. At most ONE justified noise confirmation."
+}

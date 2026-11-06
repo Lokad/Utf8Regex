@@ -1,0 +1,10 @@
+[
+  {
+    "File": "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.TerminalClassRepeat.cs",
+    "Sha256": "9F043C1B358FBE315F8731D1BFD5320D14C587233921ACACA531A1E03CCBAAAE"
+  },
+  {
+    "File": "tests/Lokad.Utf8Regex.Tests/Utf8RepeatProofPredicateTests.cs",
+    "Sha256": "6E1B347E74BF1971955AEF6A36EBD29AA6BF444AB3E40D8944ECEC631B512CD5"
+  }
+]
