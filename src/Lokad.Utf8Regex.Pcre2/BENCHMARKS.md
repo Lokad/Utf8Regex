@@ -13,21 +13,21 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `4C26FE29E00933FDCE0FE628363381D0EF560C237E2493C348CBEB23FD6CBCA6`
-- Latest managed row measurement: `2026-11-05T22:25:09.4751110+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-05T22:25:09.4751110+00:00`
+- Snapshot SHA-256: `ED642AADE1934F9BC79F5E1D2C66861D6CD343663728EA3A9837208F10EB9F17`
+- Latest managed row measurement: `2026-11-06T01:01:02.3449674+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-06T01:01:02.3449674+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `43/60`
+- Comparable rows at or below the decode-then-.NET median: `44/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
-- Comparator Status: `75` managed faster, `3` equivalent, `12` native faster, `11` inconclusive, `0` unqualified, `25` excluded
+- Comparator Status: `80` managed faster, `1` equivalent, `12` native faster, `8` inconclusive, `0` unqualified, `25` excluded
 - Rows with paired qualification evidence: `101/101`
 - Qualification processor sets: `single-least-contended-allowed-processor 0x10`, `single-least-contended-allowed-processor 0x2`, `single-least-contended-allowed-processor 0x20`, `single-least-contended-allowed-processor 0x4`, `single-least-contended-allowed-processor 0x40`, `single-least-contended-allowed-processor 0x8`, `single-least-contended-allowed-processor 0x80`
 - Scaling families: `16`
 - Managed/comparator measurement environments represented: `1/1`
 
-Managed rows were measured from source `3799baaa2b2f` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`.
+Managed rows were measured from source `18bc29c908ca` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`.
 
-PCRE.NET / PCRE2 NFA rows were measured from source `3799baaa2b2f` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`, tracked dirty `False`, untracked files `False`.
+PCRE.NET / PCRE2 NFA rows were measured from source `18bc29c908ca` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`, tracked dirty `False`, untracked files `False`.
 
 NuGet package SHA-512: `Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==`.
 
@@ -57,177 +57,177 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `backtracking/assertion-capture` | **Inconclusive** | 4,103 B | 0.650 us | 2.060 us | 0.32x | 0.30–0.33x | -1.404 us | 9 pairs; 36/31 ms; 55,855/14,865 ops/lane; IQR 1.023/1.100 | `Pcre2Slice` | 463.449 us | 0.277 us | 0.810 us | 0.80x | 1,248 B | 0 B |
-| `backtracking/capture-backreference` | **Inconclusive** | 22,528 B | 0.869 us | 10.884 us | 0.08x | 0.07–0.08x | -10.024 us | 9 pairs; 36/33 ms; 41,392/3,037 ops/lane; IQR 1.012/1.105 | `Pcre2Slice` | 0.692 us | 0.095 us | 3.559 us | 0.24x | 720 B | 0 B |
-| `common/backtracking` | **Managed faster** | 49 B | 0.011 us | 1.303 us | 0.01x | 0.01–0.01x | -1.293 us | 9 pairs; 39/41 ms; 3,652,218/31,131 ops/lane; IQR 1.003/1.009 | `Pcre2Slice` | 0.102 us | 1.055 us | 1.071 us | 0.01x | 0 B | 0 B |
-| `common/date-match` | **Native faster** | 47 B | 0.695 us | 0.159 us | 4.39x | 4.33–4.41x | +0.535 us | 9 pairs; 38/39 ms; 54,063/245,276 ops/lane; IQR 1.009/1.024 | `Pcre2Backtracking` | 0.045 us | 0.116 us | 0.159 us | 4.38x | 0 B | 0 B |
-| `common/date-miss` | **Native faster** | 47 B | 2.286 us | 0.559 us | 4.11x | 4.07–4.14x | +1.730 us | 9 pairs; 38/39 ms; 16,775/69,782 ops/lane; IQR 1.006/1.008 | `Pcre2Backtracking` | 0.124 us | 0.708 us | 0.747 us | 3.06x | 0 B | 0 B |
-| `common/email-match` | **Managed faster** | 34 B | 0.098 us | 0.306 us | 0.32x | 0.32–0.32x | -0.208 us | 9 pairs; 39/39 ms; 398,932/127,152 ops/lane; IQR 1.008/1.005 | `Pcre2Slice` | 0.112 us | 0.308 us | 0.336 us | 0.29x | 0 B | 0 B |
-| `common/email-miss` | **Managed faster** | 35 B | 0.104 us | 0.343 us | 0.30x | 0.30–0.30x | -0.239 us | 9 pairs; 40/39 ms; 383,615/113,820 ops/lane; IQR 1.010/1.011 | `Pcre2Slice` | 0.116 us | 0.432 us | 0.464 us | 0.22x | 0 B | 0 B |
-| `common/ip-match` | **Managed faster** | 15 B | 0.078 us | 0.285 us | 0.27x | 0.27–0.28x | -0.207 us | 9 pairs; 39/40 ms; 505,816/140,242 ops/lane; IQR 1.004/1.013 | `Pcre2Slice` | 0.088 us | 0.222 us | 0.245 us | 0.32x | 0 B | 0 B |
-| `common/ip-miss` | **Managed faster** | 15 B | 0.080 us | 0.309 us | 0.26x | 0.26–0.26x | -0.228 us | 9 pairs; 41/40 ms; 506,703/130,252 ops/lane; IQR 1.019/1.009 | `Pcre2Slice` | 0.088 us | 0.238 us | 0.263 us | 0.30x | 0 B | 0 B |
-| `common/one-node-backtracking` | **Native faster** | 52 B | 0.171 us | 0.078 us | 2.21x | 2.16–2.36x | +0.094 us | 9 pairs; 40/42 ms; 233,721/548,015 ops/lane; IQR 1.029/1.020 | `Pcre2Slice` | 0.087 us | 0.854 us | 0.888 us | 0.19x | 0 B | 0 B |
-| `common/uri-match` | **Managed faster** | 46 B | 0.032 us | 0.194 us | 0.17x | 0.17–0.17x | -0.161 us | 9 pairs; 40/43 ms; 1,241,018/219,595 ops/lane; IQR 1.002/1.011 | `Pcre2Backtracking` | 0.110 us | 0.292 us | 0.337 us | 0.10x | 0 B | 0 B |
-| `common/uri-miss` | **Managed faster** | 19 B | 0.060 us | 0.602 us | 0.10x | 0.10–0.10x | -0.542 us | 9 pairs; 40/39 ms; 661,978/64,367 ops/lane; IQR 1.007/1.006 | `Pcre2Backtracking` | 0.132 us | 0.224 us | 0.247 us | 0.24x | 0 B | 0 B |
-| `industry/boostdocs-credit-card-match` | **Managed faster** | 18 B | 0.033 us | 0.154 us | 0.21x | 0.21–0.22x | -0.122 us | 9 pairs; 38/41 ms; 1,136,763/267,983 ops/lane; IQR 1.027/1.008 | `Pcre2Backtracking` | 0.104 us | 0.178 us | 0.198 us | 0.17x | 0 B | 0 B |
-| `industry/boostdocs-date-match` | **Managed faster** | 10 B | 0.019 us | 0.111 us | 0.17x | 0.17–0.18x | -0.092 us | 9 pairs; 36/40 ms; 1,884,572/363,823 ops/lane; IQR 1.030/1.007 | `Pcre2Backtracking` | 0.059 us | 0.088 us | 0.107 us | 0.18x | 0 B | 0 B |
-| `industry/boostdocs-float-match` | **Managed faster** | 8 B | 0.056 us | 0.120 us | 0.47x | 0.46–0.48x | -0.064 us | 9 pairs; 40/38 ms; 701,712/314,899 ops/lane; IQR 1.019/1.037 | `Pcre2Backtracking` | 0.012 us | 0.083 us | 0.101 us | 0.56x | 0 B | 0 B |
-| `industry/boostdocs-ftp-line-match` | **Managed faster** | 67 B | 0.084 us | 0.276 us | 0.31x | 0.31–0.31x | -0.192 us | 9 pairs; 40/41 ms; 472,361/148,356 ops/lane; IQR 1.015/1.018 | `Pcre2Slice` | 0.094 us | 0.118 us | 0.155 us | 0.54x | 0 B | 0 B |
-| `industry/boostdocs-postcode-match` | **Inconclusive** | 7 B | 0.025 us | 0.113 us | 0.22x | 0.20–0.23x | -0.088 us | 9 pairs; 42/39 ms; 1,667,610/342,199 ops/lane; IQR 1.053/1.011 | `Pcre2Backtracking` | 0.019 us | 0.088 us | 0.106 us | 0.24x | 0 B | 0 B |
-| `literal/absolute-anchored` | **Inconclusive** | 4,103 B | 0.115 us | 1.923 us | 0.06x | 0.05–0.07x | -1.806 us | 9 pairs; 40/41 ms; 344,335/21,297 ops/lane; IQR 1.008/1.221 | `Pcre2Literal` | 0.085 us | 0.050 us | 0.591 us | 0.20x | 0 B | 0 B |
-| `literal/early` | **Inconclusive** | 4,103 B | 0.118 us | 1.772 us | 0.07x | 0.05–0.07x | -1.655 us | 9 pairs; 40/40 ms; 335,092/22,432 ops/lane; IQR 1.006/1.127 | `Pcre2Literal` | 0.146 us | 0.053 us | 0.578 us | 0.20x | 0 B | 0 B |
-| `literal/late` | **Managed faster** | 4,103 B | 0.154 us | 1.816 us | 0.09x | 0.07–0.09x | -1.662 us | 9 pairs; 43/33 ms; 279,513/18,208 ops/lane; IQR 1.012/1.028 | `Pcre2Literal` | 0.198 us | 0.230 us | 0.784 us | 0.20x | 0 B | 0 B |
-| `literal/missing` | **Inconclusive** | 4,096 B | 0.147 us | 1.953 us | 0.08x | 0.07–0.08x | -1.801 us | 9 pairs; 40/41 ms; 271,256/20,855 ops/lane; IQR 1.009/1.153 | `Pcre2Literal` | 0.168 us | 0.204 us | 0.731 us | 0.20x | 0 B | 0 B |
-| `simple/ab-plus` | **Managed faster** | 16 B | 0.009 us | 0.096 us | 0.09x | 0.09–0.09x | -0.088 us | 9 pairs; 39/40 ms; 4,486,654/420,129 ops/lane; IQR 1.006/1.014 | `Pcre2Slice` | 0.248 us | 0.067 us | 0.088 us | 0.10x | 0 B | 0 B |
-| `simple/foo-dense` | **Managed faster** | 18 B | 0.067 us | 0.088 us | 0.76x | 0.75–0.81x | -0.022 us | 9 pairs; 42/41 ms; 620,198/463,102 ops/lane; IQR 1.067/1.012 | `Pcre2Literal` | 0.126 us | 0.050 us | 0.072 us | 0.93x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.013 us | 0.108 us | 0.12x | 0.12–0.12x | -0.095 us | 9 pairs; 39/40 ms; 2,938,395/372,849 ops/lane; IQR 1.013/1.020 | `Pcre2Backtracking` | 0.265 us | 0.094 us | 0.119 us | 0.11x | 0 B | 0 B |
-| `simple/httpclient-caseless` | **Equivalent** | 45 B | 0.121 us | 0.120 us | 1.00x | 0.99–1.01x | 0.000 us | 9 pairs; 44/41 ms; 364,958/340,388 ops/lane; IQR 1.004/1.015 | `Pcre2Character` | 0.137 us | 0.110 us | 0.141 us | 0.85x | 0 B | 0 B |
-| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.079 us | 0.205 us | 0.38x | 0.37–0.38x | -0.127 us | 9 pairs; 43/42 ms; 543,788/205,091 ops/lane; IQR 1.076/1.050 | `Pcre2Slice` | 0.421 us | 0.074 us | 0.107 us | 0.74x | 0 B | 0 B |
+| `backtracking/assertion-capture` | **Managed faster** | 4,103 B | 0.697 us | 2.176 us | 0.32x | 0.30–0.34x | -1.478 us | 9 pairs; 37/42 ms; 53,220/19,166 ops/lane; IQR 1.010/1.064 | `Pcre2Slice` | 471.305 us | 0.278 us | 0.830 us | 0.84x | 1,248 B | 0 B |
+| `backtracking/capture-backreference` | **Inconclusive** | 22,528 B | 0.901 us | 13.408 us | 0.07x | 0.06–0.08x | -12.519 us | 9 pairs; 37/47 ms; 40,958/3,482 ops/lane; IQR 1.021/1.114 | `Pcre2Slice` | 0.633 us | 0.095 us | 3.396 us | 0.27x | 720 B | 0 B |
+| `common/backtracking` | **Managed faster** | 49 B | 0.011 us | 1.230 us | 0.01x | 0.01–0.01x | -1.219 us | 9 pairs; 39/40 ms; 3,623,443/32,230 ops/lane; IQR 1.004/1.001 | `Pcre2Slice` | 0.102 us | 1.232 us | 1.266 us | 0.01x | 0 B | 0 B |
+| `common/date-match` | **Native faster** | 47 B | 0.686 us | 0.157 us | 4.35x | 4.32–4.38x | +0.529 us | 9 pairs; 38/41 ms; 54,803/258,073 ops/lane; IQR 1.006/1.011 | `Pcre2Backtracking` | 0.048 us | 0.119 us | 0.156 us | 4.40x | 0 B | 0 B |
+| `common/date-miss` | **Native faster** | 47 B | 2.404 us | 0.573 us | 4.21x | 4.18–4.24x | +1.836 us | 9 pairs; 39/40 ms; 16,211/69,497 ops/lane; IQR 1.005/1.008 | `Pcre2Backtracking` | 0.117 us | 0.746 us | 0.779 us | 3.08x | 0 B | 0 B |
+| `common/email-match` | **Managed faster** | 34 B | 0.102 us | 0.293 us | 0.35x | 0.35–0.35x | -0.191 us | 9 pairs; 41/40 ms; 402,838/136,159 ops/lane; IQR 1.004/1.009 | `Pcre2Slice` | 0.113 us | 0.314 us | 0.343 us | 0.30x | 0 B | 0 B |
+| `common/email-miss` | **Managed faster** | 35 B | 0.106 us | 0.358 us | 0.30x | 0.29–0.32x | -0.249 us | 9 pairs; 40/40 ms; 377,678/110,703 ops/lane; IQR 1.075/1.017 | `Pcre2Slice` | 0.115 us | 0.443 us | 0.464 us | 0.23x | 0 B | 0 B |
+| `common/ip-match` | **Managed faster** | 15 B | 0.078 us | 0.287 us | 0.27x | 0.27–0.27x | -0.210 us | 9 pairs; 40/39 ms; 510,570/135,708 ops/lane; IQR 1.005/1.004 | `Pcre2Slice` | 0.087 us | 0.232 us | 0.260 us | 0.30x | 0 B | 0 B |
+| `common/ip-miss` | **Managed faster** | 15 B | 0.080 us | 0.314 us | 0.25x | 0.25–0.26x | -0.234 us | 9 pairs; 41/39 ms; 514,151/122,727 ops/lane; IQR 1.012/1.019 | `Pcre2Slice` | 0.088 us | 0.253 us | 0.274 us | 0.29x | 0 B | 0 B |
+| `common/one-node-backtracking` | **Native faster** | 52 B | 0.174 us | 0.075 us | 2.32x | 2.29–2.38x | +0.099 us | 9 pairs; 40/38 ms; 231,132/502,252 ops/lane; IQR 1.005/1.003 | `Pcre2Slice` | 0.087 us | 1.002 us | 1.027 us | 0.17x | 0 B | 0 B |
+| `common/uri-match` | **Managed faster** | 46 B | 0.033 us | 0.198 us | 0.17x | 0.17–0.17x | -0.165 us | 9 pairs; 40/41 ms; 1,187,554/204,323 ops/lane; IQR 1.004/1.002 | `Pcre2Backtracking` | 0.110 us | 0.298 us | 0.336 us | 0.10x | 0 B | 0 B |
+| `common/uri-miss` | **Managed faster** | 19 B | 0.060 us | 0.607 us | 0.10x | 0.10–0.10x | -0.547 us | 9 pairs; 40/40 ms; 662,059/65,252 ops/lane; IQR 1.001/1.006 | `Pcre2Backtracking` | 0.135 us | 0.234 us | 0.252 us | 0.24x | 0 B | 0 B |
+| `industry/boostdocs-credit-card-match` | **Managed faster** | 18 B | 0.033 us | 0.154 us | 0.22x | 0.21–0.22x | -0.121 us | 9 pairs; 38/40 ms; 1,155,974/256,364 ops/lane; IQR 1.019/1.016 | `Pcre2Backtracking` | 0.115 us | 0.183 us | 0.202 us | 0.16x | 0 B | 0 B |
+| `industry/boostdocs-date-match` | **Managed faster** | 10 B | 0.021 us | 0.110 us | 0.19x | 0.18–0.20x | -0.089 us | 9 pairs; 42/40 ms; 1,954,548/357,863 ops/lane; IQR 1.025/1.020 | `Pcre2Backtracking` | 0.061 us | 0.090 us | 0.109 us | 0.20x | 0 B | 0 B |
+| `industry/boostdocs-float-match` | **Managed faster** | 8 B | 0.058 us | 0.123 us | 0.47x | 0.47–0.48x | -0.065 us | 9 pairs; 40/36 ms; 685,603/295,584 ops/lane; IQR 1.015/1.002 | `Pcre2Backtracking` | 0.016 us | 0.087 us | 0.102 us | 0.57x | 0 B | 0 B |
+| `industry/boostdocs-ftp-line-match` | **Managed faster** | 67 B | 0.086 us | 0.278 us | 0.31x | 0.31–0.31x | -0.192 us | 9 pairs; 41/38 ms; 475,371/138,432 ops/lane; IQR 1.004/1.011 | `Pcre2Slice` | 0.095 us | 0.118 us | 0.152 us | 0.56x | 0 B | 0 B |
+| `industry/boostdocs-postcode-match` | **Managed faster** | 7 B | 0.025 us | 0.116 us | 0.21x | 0.19–0.22x | -0.091 us | 9 pairs; 43/40 ms; 1,731,009/342,628 ops/lane; IQR 1.044/1.023 | `Pcre2Backtracking` | 0.019 us | 0.090 us | 0.108 us | 0.23x | 0 B | 0 B |
+| `literal/absolute-anchored` | **Inconclusive** | 4,103 B | 0.125 us | 2.109 us | 0.06x | 0.05–0.07x | -1.989 us | 9 pairs; 42/47 ms; 339,887/22,106 ops/lane; IQR 1.044/1.107 | `Pcre2Literal` | 0.087 us | 0.050 us | 0.595 us | 0.21x | 0 B | 0 B |
+| `literal/early` | **Inconclusive** | 4,103 B | 0.125 us | 1.936 us | 0.06x | 0.06–0.07x | -1.806 us | 9 pairs; 41/34 ms; 327,214/17,757 ops/lane; IQR 1.038/1.084 | `Pcre2Literal` | 0.146 us | 0.053 us | 0.590 us | 0.21x | 0 B | 0 B |
+| `literal/late` | **Inconclusive** | 4,103 B | 0.156 us | 1.951 us | 0.08x | 0.08–0.08x | -1.796 us | 9 pairs; 40/40 ms; 255,026/20,564 ops/lane; IQR 1.004/1.048 | `Pcre2Literal` | 0.202 us | 0.230 us | 0.764 us | 0.20x | 0 B | 0 B |
+| `literal/missing` | **Managed faster** | 4,096 B | 0.154 us | 1.827 us | 0.08x | 0.08–0.09x | -1.672 us | 9 pairs; 41/39 ms; 264,495/21,203 ops/lane; IQR 1.015/1.038 | `Pcre2Literal` | 0.172 us | 0.205 us | 0.753 us | 0.20x | 0 B | 0 B |
+| `simple/ab-plus` | **Managed faster** | 16 B | 0.009 us | 0.101 us | 0.09x | 0.09–0.09x | -0.092 us | 9 pairs; 38/40 ms; 4,361,253/400,464 ops/lane; IQR 1.003/1.015 | `Pcre2Slice` | 0.253 us | 0.069 us | 0.089 us | 0.10x | 0 B | 0 B |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.067 us | 0.089 us | 0.76x | 0.75–0.77x | -0.021 us | 9 pairs; 41/39 ms; 606,044/443,037 ops/lane; IQR 1.008/1.019 | `Pcre2Literal` | 0.134 us | 0.051 us | 0.073 us | 0.92x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.014 us | 0.110 us | 0.13x | 0.12–0.13x | -0.095 us | 9 pairs; 41/40 ms; 2,860,585/369,201 ops/lane; IQR 1.015/1.010 | `Pcre2Backtracking` | 0.285 us | 0.092 us | 0.113 us | 0.12x | 0 B | 0 B |
+| `simple/httpclient-caseless` | **Managed faster** | 45 B | 0.113 us | 0.121 us | 0.95x | 0.93–0.97x | -0.006 us | 9 pairs; 39/38 ms; 341,348/314,036 ops/lane; IQR 1.065/1.023 | `Pcre2Character` | 0.132 us | 0.112 us | 0.143 us | 0.79x | 0 B | 0 B |
+| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.076 us | 0.204 us | 0.37x | 0.37–0.38x | -0.127 us | 9 pairs; 41/40 ms; 534,042/197,118 ops/lane; IQR 1.003/1.021 | `Pcre2Slice` | 0.439 us | 0.075 us | 0.105 us | 0.72x | 0 B | 0 B |
 
 ## Compatible Count
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `backtracking/alternation-repeat` | **Managed faster** | 7,168 B | 80.367 us | 157.698 us | 0.51x | 0.51–0.51x | -77.543 us | 9 pairs; 39/42 ms; 489/265 ops/lane; IQR 1.006/1.004 | `Pcre2Slice` | 323.509 us | 95.093 us | 98.300 us | 0.82x | 0 B | 0 B |
-| `character/unicode-class-dense` | **Managed faster** | 7,168 B | 37.211 us | 282.973 us | 0.13x | 0.13–0.13x | -245.822 us | 9 pairs; 39/41 ms; 1,053/145 ops/lane; IQR 1.009/1.010 | `Pcre2Character` | 262.143 us | 217.022 us | 226.717 us | 0.16x | 0 B | 0 B |
-| `common/matches-boundary` | **Managed faster** | 8,208 B | 9.291 us | 208.568 us | 0.05x | 0.04–0.05x | -199.287 us | 9 pairs; 41/41 ms; 4,415/198 ops/lane; IQR 1.018/1.046 | `Pcre2Backtracking` | 7.855 us | 212.144 us | 215.497 us | 0.04x | 0 B | 0 B |
-| `common/matches-set` | **Native faster** | 8,208 B | 235.222 us | 201.363 us | 1.18x | 1.16–1.19x | +36.192 us | 9 pairs; 39/38 ms; 166/187 ops/lane; IQR 1.006/1.020 | `Pcre2SingleTokenRepeat` | 7.819 us | 227.817 us | 228.251 us | 1.03x | 0 B | 0 B |
-| `common/matches-word` | **Managed faster** | 8,208 B | 3.479 us | 23.658 us | 0.15x | 0.14–0.15x | -20.218 us | 9 pairs; 39/43 ms; 11,168/1,815 ops/lane; IQR 1.010/1.024 | `Pcre2Literal` | 1.364 us | 4.198 us | 5.832 us | 0.60x | 0 B | 0 B |
-| `common/matches-words` | **Managed faster** | 8,208 B | 9.423 us | 80.467 us | 0.12x | 0.12–0.12x | -71.044 us | 9 pairs; 39/40 ms; 4,171/497 ops/lane; IQR 1.012/1.011 | `Pcre2Backtracking` | 9.224 us | 88.073 us | 88.607 us | 0.11x | 0 B | 0 B |
-| `industry/leipzig-name-family-count` | **Inconclusive** | 16,013,977 B | 4,069.262 us | 26,116.000 us | 0.16x | 0.14–0.17x | -22032.300 us | 9 pairs; 33/52 ms; 8/2 ops/lane; IQR 1.016/1.145 | `Pcre2Backtracking` | 5,542.810 us | 11,264.720 us | 17,790.300 us | 0.23x | 0 B | 0 B |
-| `industry/leipzig-river-window-count` | **Managed faster** | 16,013,977 B | 3,279.925 us | 53,187.000 us | 0.06x | 0.06–0.06x | -49839.867 us | 9 pairs; 39/53 ms; 12/1 ops/lane; IQR 1.033/1.023 | `Pcre2Backtracking` | 3,857.793 us | 39,583.600 us | 45,905.650 us | 0.07x | 1,056 B | 0 B |
-| `industry/leipzig-symbol-count` | **Inconclusive** | 16,013,977 B | 1,961.910 us | 471,986.000 us | 0.00x | 0.00–0.00x | -470064.471 us | 9 pairs; 41/472 ms; 21/1 ops/lane; IQR 1.037/1.007 | `Pcre2Character` | 1,858.607 us | 22,604.867 us | 29,083.300 us | 0.07x | 0 B | 0 B |
-| `industry/leipzig-twain-count` | **Inconclusive** | 16,013,977 B | 5,432.567 us | 11,193.400 us | 0.47x | 0.45–0.50x | -5877.033 us | 9 pairs; 33/34 ms; 6/3 ops/lane; IQR 1.024/1.085 | `Pcre2Literal` | 1,284.224 us | 1,323.937 us | 8,025.657 us | 0.68x | 0 B | 0 B |
-| `industry/mariomka-email-count` | **Managed faster** | 6,839,410 B | 18,606.300 us | 144,328.600 us | 0.13x | 0.13–0.13x | -125830.400 us | 9 pairs; 37/144 ms; 2/1 ops/lane; IQR 1.016/1.008 | `Pcre2Backtracking` | 1,230.154 us | 499.002 us | 8,225.583 us | 2.26x | 0 B | 0 B |
-| `industry/mariomka-ip-count` | **Managed faster** | 6,839,410 B | 4,774.075 us | 21,682.350 us | 0.22x | 0.22–0.22x | -16902.038 us | 9 pairs; 38/43 ms; 8/2 ops/lane; IQR 1.006/1.014 | `Pcre2Slice` | 2,425.338 us | 10,406.500 us | 18,577.667 us | 0.26x | 0 B | 0 B |
-| `industry/mariomka-uri-count` | **Managed faster** | 6,839,410 B | 21,383.700 us | 129,782.700 us | 0.17x | 0.16–0.17x | -107769.950 us | 9 pairs; 43/130 ms; 2/1 ops/lane; IQR 1.031/1.012 | `Pcre2Backtracking` | 1,502.818 us | 2,265.730 us | 10,122.800 us | 2.11x | 0 B | 0 B |
-| `industry/rust-sherlock-holmes-window-count` | **Managed faster** | 594,930 B | 161.522 us | 953.700 us | 0.17x | 0.17–0.17x | -793.287 us | 9 pairs; 39/36 ms; 242/38 ops/lane; IQR 1.010/1.006 | `Pcre2Backtracking` | 167.677 us | 310.502 us | 526.954 us | 0.31x | 1,528 B | 0 B |
-| `industry/rust-sherlock-ing-count` | **Managed faster** | 594,930 B | 12,368.833 us | 13,167.133 us | 0.94x | 0.93–0.95x | -760.900 us | 9 pairs; 37/40 ms; 3/3 ops/lane; IQR 1.009/1.012 | `Pcre2Backtracking` | 307.138 us | 14,436.250 us | 14,489.825 us | 0.85x | 0 B | 0 B |
-| `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 2,746.136 us | 96,561.600 us | 0.03x | 0.03–0.03x | -93785.064 us | 9 pairs; 38/97 ms; 14/1 ops/lane; IQR 1.010/1.005 | `Pcre2Character` | 1,966.012 us | 19,229.733 us | 19,739.367 us | 0.14x | 0 B | 0 B |
-| `industry/rust-sherlock-nonnewline-count` | **Managed faster** | 594,930 B | 180.568 us | 2,756.286 us | 0.07x | 0.06–0.07x | -2577.362 us | 9 pairs; 39/39 ms; 214/14 ops/lane; IQR 1.010/1.020 | `Pcre2SingleTokenRepeat` | 182.226 us | 988.196 us | 1,410.864 us | 0.13x | 0 B | 0 B |
-| `industry/rust-sherlock-word-holmes-count` | **Managed faster** | 594,930 B | 1,522.888 us | 19,394.250 us | 0.08x | 0.08–0.08x | -17869.740 us | 9 pairs; 38/39 ms; 25/2 ops/lane; IQR 1.008/1.012 | `Pcre2Backtracking` | 556.579 us | 10,088.780 us | 10,130.600 us | 0.15x | 0 B | 0 B |
-| `simple/ab-plus` | **Managed faster** | 16 B | 0.153 us | 1.084 us | 0.14x | 0.14–0.14x | -0.930 us | 9 pairs; 40/40 ms; 258,787/36,780 ops/lane; IQR 1.005/1.004 | `Pcre2Slice` | 0.635 us | 0.249 us | 0.276 us | 0.56x | 0 B | 0 B |
-| `simple/foo-dense` | **Managed faster** | 18 B | 0.493 us | 0.810 us | 0.61x | 0.61–0.61x | -0.316 us | 9 pairs; 42/39 ms; 85,142/48,489 ops/lane; IQR 1.003/1.006 | `Pcre2Literal` | 0.147 us | 0.148 us | 0.171 us | 2.89x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.293 us | 1.149 us | 0.26x | 0.25–0.26x | -0.855 us | 9 pairs; 40/39 ms; 135,957/33,986 ops/lane; IQR 1.006/1.008 | `Pcre2Backtracking` | 1.094 us | 0.348 us | 0.381 us | 0.77x | 0 B | 0 B |
-| `simple/httpclient-caseless` | **Native faster** | 45 B | 1.258 us | 1.101 us | 1.15x | 1.14–1.15x | +0.161 us | 9 pairs; 59/41 ms; 46,531/37,654 ops/lane; IQR 1.009/1.009 | `Pcre2Character` | 0.283 us | 0.414 us | 0.456 us | 2.76x | 0 B | 0 B |
-| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.149 us | 0.838 us | 0.18x | 0.18–0.18x | -0.691 us | 9 pairs; 41/40 ms; 274,058/47,839 ops/lane; IQR 1.014/1.010 | `Pcre2Slice` | 0.791 us | 0.151 us | 0.194 us | 0.77x | 0 B | 0 B |
+| `backtracking/alternation-repeat` | **Managed faster** | 7,168 B | 81.935 us | 159.696 us | 0.51x | 0.51–0.51x | -77.761 us | 9 pairs; 40/40 ms; 486/251 ops/lane; IQR 1.002/1.003 | `Pcre2Slice` | 327.522 us | 102.788 us | 104.768 us | 0.78x | 0 B | 0 B |
+| `character/unicode-class-dense` | **Managed faster** | 7,168 B | 39.563 us | 289.050 us | 0.14x | 0.14–0.14x | -249.435 us | 9 pairs; 40/41 ms; 1,005/142 ops/lane; IQR 1.006/1.002 | `Pcre2Character` | 259.573 us | 220.278 us | 231.531 us | 0.17x | 0 B | 0 B |
+| `common/matches-boundary` | **Managed faster** | 8,208 B | 9.448 us | 207.488 us | 0.05x | 0.05–0.05x | -198.071 us | 9 pairs; 40/40 ms; 4,245/195 ops/lane; IQR 1.001/1.013 | `Pcre2Backtracking` | 7.240 us | 228.071 us | 229.306 us | 0.04x | 0 B | 0 B |
+| `common/matches-set` | **Native faster** | 8,208 B | 236.320 us | 206.675 us | 1.14x | 1.13–1.15x | +29.144 us | 9 pairs; 39/40 ms; 167/193 ops/lane; IQR 1.003/1.004 | `Pcre2SingleTokenRepeat` | 7.360 us | 239.704 us | 241.472 us | 0.98x | 0 B | 0 B |
+| `common/matches-word` | **Inconclusive** | 8,208 B | 3.530 us | 22.811 us | 0.15x | 0.15–0.16x | -19.281 us | 9 pairs; 39/38 ms; 11,130/1,682 ops/lane; IQR 1.009/1.007 | `Pcre2Literal` | 1.381 us | 4.262 us | 5.999 us | 0.59x | 0 B | 0 B |
+| `common/matches-words` | **Managed faster** | 8,208 B | 9.597 us | 81.887 us | 0.12x | 0.12–0.12x | -72.286 us | 9 pairs; 40/40 ms; 4,166/484 ops/lane; IQR 1.002/1.004 | `Pcre2Backtracking` | 9.314 us | 97.040 us | 99.011 us | 0.10x | 0 B | 0 B |
+| `industry/leipzig-name-family-count` | **Inconclusive** | 16,013,977 B | 4,190.450 us | 28,890.700 us | 0.15x | 0.14–0.15x | -24678.250 us | 9 pairs; 34/29 ms; 8/1 ops/lane; IQR 1.006/1.061 | `Pcre2Backtracking` | 5,261.230 us | 12,941.350 us | 19,596.700 us | 0.21x | 0 B | 0 B |
+| `industry/leipzig-river-window-count` | **Inconclusive** | 16,013,977 B | 3,378.050 us | 55,218.200 us | 0.06x | 0.06–0.06x | -51883.375 us | 9 pairs; 41/55 ms; 12/1 ops/lane; IQR 1.025/1.034 | `Pcre2Backtracking` | 3,904.885 us | 44,516.950 us | 51,858.900 us | 0.07x | 1,056 B | 0 B |
+| `industry/leipzig-symbol-count` | **Inconclusive** | 16,013,977 B | 1,935.138 us | 495,289.100 us | 0.00x | 0.00–0.00x | -493401.319 us | 9 pairs; 41/495 ms; 21/1 ops/lane; IQR 1.033/1.003 | `Pcre2Character` | 1,786.345 us | 23,284.267 us | 29,709.600 us | 0.07x | 0 B | 0 B |
+| `industry/leipzig-twain-count` | **Managed faster** | 16,013,977 B | 5,571.950 us | 10,718.075 us | 0.52x | 0.48–0.52x | -5165.892 us | 9 pairs; 33/43 ms; 6/4 ops/lane; IQR 1.005/1.065 | `Pcre2Literal` | 1,274.128 us | 1,350.463 us | 8,294.929 us | 0.67x | 0 B | 0 B |
+| `industry/mariomka-email-count` | **Managed faster** | 6,839,410 B | 18,755.950 us | 145,895.900 us | 0.13x | 0.13–0.13x | -127065.650 us | 9 pairs; 38/146 ms; 2/1 ops/lane; IQR 1.007/1.006 | `Pcre2Backtracking` | 1,239.734 us | 506.479 us | 8,444.533 us | 2.22x | 0 B | 0 B |
+| `industry/mariomka-ip-count` | **Managed faster** | 6,839,410 B | 4,898.875 us | 21,742.650 us | 0.22x | 0.22–0.23x | -16814.488 us | 9 pairs; 39/43 ms; 8/2 ops/lane; IQR 1.006/1.012 | `Pcre2Slice` | 2,517.790 us | 11,501.040 us | 19,469.633 us | 0.25x | 0 B | 0 B |
+| `industry/mariomka-uri-count` | **Managed faster** | 6,839,410 B | 22,265.700 us | 133,361.100 us | 0.17x | 0.17–0.17x | -111146.100 us | 9 pairs; 45/133 ms; 2/1 ops/lane; IQR 1.010/1.007 | `Pcre2Backtracking` | 1,534.009 us | 2,340.495 us | 10,327.760 us | 2.16x | 0 B | 0 B |
+| `industry/rust-sherlock-holmes-window-count` | **Managed faster** | 594,930 B | 160.881 us | 998.974 us | 0.16x | 0.16–0.16x | -838.363 us | 9 pairs; 39/38 ms; 243/38 ops/lane; IQR 1.002/1.017 | `Pcre2Backtracking` | 172.935 us | 351.924 us | 579.310 us | 0.28x | 1,528 B | 0 B |
+| `industry/rust-sherlock-ing-count` | **Managed faster** | 594,930 B | 11,232.250 us | 13,411.667 us | 0.84x | 0.83–0.84x | -2178.917 us | 9 pairs; 45/40 ms; 4/3 ops/lane; IQR 1.003/1.004 | `Pcre2Backtracking` | 306.125 us | 16,248.325 us | 16,354.675 us | 0.69x | 0 B | 0 B |
+| `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 2,914.462 us | 97,285.000 us | 0.03x | 0.03–0.03x | -94370.538 us | 9 pairs; 38/97 ms; 13/1 ops/lane; IQR 1.018/1.005 | `Pcre2Character` | 2,056.272 us | 19,874.600 us | 19,984.533 us | 0.15x | 0 B | 0 B |
+| `industry/rust-sherlock-nonnewline-count` | **Managed faster** | 594,930 B | 186.487 us | 2,849.643 us | 0.07x | 0.06–0.07x | -2663.383 us | 9 pairs; 39/40 ms; 211/14 ops/lane; IQR 1.002/1.011 | `Pcre2SingleTokenRepeat` | 191.166 us | 1,010.404 us | 1,442.245 us | 0.13x | 0 B | 0 B |
+| `industry/rust-sherlock-word-holmes-count` | **Managed faster** | 594,930 B | 1,600.365 us | 20,106.400 us | 0.08x | 0.08–0.08x | -18511.604 us | 9 pairs; 42/40 ms; 26/2 ops/lane; IQR 1.005/1.003 | `Pcre2Backtracking` | 563.828 us | 10,464.780 us | 10,709.740 us | 0.15x | 0 B | 0 B |
+| `simple/ab-plus` | **Managed faster** | 16 B | 0.154 us | 1.089 us | 0.14x | 0.14–0.14x | -0.937 us | 9 pairs; 41/40 ms; 266,586/36,637 ops/lane; IQR 1.020/1.004 | `Pcre2Slice` | 0.661 us | 0.259 us | 0.282 us | 0.55x | 0 B | 0 B |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.516 us | 0.825 us | 0.63x | 0.62–0.63x | -0.309 us | 9 pairs; 40/41 ms; 77,473/49,775 ops/lane; IQR 1.012/1.004 | `Pcre2Literal` | 0.142 us | 0.150 us | 0.172 us | 3.00x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.300 us | 1.228 us | 0.24x | 0.24–0.24x | -0.927 us | 9 pairs; 41/40 ms; 137,410/32,365 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 1.066 us | 0.349 us | 0.380 us | 0.79x | 0 B | 0 B |
+| `simple/httpclient-caseless` | **Managed faster** | 45 B | 0.859 us | 1.122 us | 0.76x | 0.76–0.77x | -0.264 us | 9 pairs; 39/40 ms; 45,545/35,499 ops/lane; IQR 1.009/1.005 | `Pcre2Character` | 0.285 us | 0.427 us | 0.470 us | 1.83x | 0 B | 0 B |
+| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.164 us | 0.863 us | 0.19x | 0.19–0.19x | -0.699 us | 9 pairs; 38/41 ms; 230,328/47,023 ops/lane; IQR 1.009/1.004 | `Pcre2Slice` | 0.806 us | 0.154 us | 0.201 us | 0.81x | 0 B | 0 B |
 
 ## Compatible EnumerateMatches
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `simple/ab-plus` | **Managed faster** | 16 B | 0.871 us | 1.079 us | 0.81x | 0.80–0.81x | -0.210 us | 9 pairs; 41/41 ms; 46,676/37,600 ops/lane; IQR 1.010/1.010 | `Pcre2Slice` | 2.961 us | 0.303 us | 0.318 us | 2.74x | 0 B | 0 B |
-| `simple/foo-dense` | **Managed faster** | 18 B | 0.778 us | 0.809 us | 0.96x | 0.96–0.96x | -0.032 us | 9 pairs; 38/40 ms; 48,882/49,449 ops/lane; IQR 1.006/1.006 | `Pcre2Literal` | 3.538 us | 0.178 us | 0.198 us | 3.92x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.990 us | 1.150 us | 0.86x | 0.85–0.86x | -0.161 us | 9 pairs; 42/40 ms; 42,191/35,157 ops/lane; IQR 1.005/1.011 | `Pcre2Backtracking` | 5.228 us | 0.402 us | 0.439 us | 2.26x | 0 B | 0 B |
-| `simple/httpclient-caseless` | **Native faster** | 45 B | 1.243 us | 1.108 us | 1.12x | 1.12–1.13x | +0.136 us | 9 pairs; 40/41 ms; 31,832/37,269 ops/lane; IQR 1.006/1.007 | `Pcre2Character` | 3.623 us | 0.469 us | 0.508 us | 2.45x | 0 B | 0 B |
-| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.769 us | 0.840 us | 0.91x | 0.91–0.92x | -0.073 us | 9 pairs; 39/40 ms; 51,004/48,021 ops/lane; IQR 1.007/1.007 | `Pcre2Slice` | 2.087 us | 0.174 us | 0.214 us | 3.59x | 0 B | 0 B |
+| `simple/ab-plus` | **Managed faster** | 16 B | 0.884 us | 1.101 us | 0.80x | 0.80–0.81x | -0.219 us | 9 pairs; 40/40 ms; 45,459/36,044 ops/lane; IQR 1.012/1.005 | `Pcre2Slice` | 2.984 us | 0.305 us | 0.325 us | 2.72x | 0 B | 0 B |
+| `simple/foo-dense` | **Equivalent** | 18 B | 0.823 us | 0.831 us | 0.99x | 0.99–1.00x | -0.006 us | 9 pairs; 40/40 ms; 48,483/47,663 ops/lane; IQR 1.005/1.003 | `Pcre2Literal` | 3.508 us | 0.182 us | 0.202 us | 4.08x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.993 us | 1.187 us | 0.84x | 0.84–0.84x | -0.194 us | 9 pairs; 40/41 ms; 40,422/34,831 ops/lane; IQR 1.005/1.002 | `Pcre2Backtracking` | 5.240 us | 0.403 us | 0.427 us | 2.32x | 0 B | 0 B |
+| `simple/httpclient-caseless` | **Native faster** | 45 B | 1.214 us | 1.133 us | 1.07x | 1.07–1.07x | +0.082 us | 9 pairs; 41/40 ms; 34,176/35,321 ops/lane; IQR 1.004/1.003 | `Pcre2Character` | 3.623 us | 0.481 us | 0.519 us | 2.34x | 0 B | 0 B |
+| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.796 us | 0.862 us | 0.92x | 0.92–0.93x | -0.066 us | 9 pairs; 40/40 ms; 49,612/46,753 ops/lane; IQR 1.003/1.004 | `Pcre2Slice` | 2.102 us | 0.181 us | 0.223 us | 3.57x | 0 B | 0 B |
 
 ## Compatible MatchMany
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `simple/ab-plus` | **Managed faster** | 16 B | 0.577 us | 1.072 us | 0.54x | 0.53–0.54x | -0.497 us | 9 pairs; 38/38 ms; 65,990/35,857 ops/lane; IQR 1.013/1.010 | `Pcre2Slice` | — | — | — | — | 0 B | 0 B |
-| `simple/foo-dense` | **Managed faster** | 18 B | 0.496 us | 0.817 us | 0.61x | 0.60–0.61x | -0.319 us | 9 pairs; 39/41 ms; 78,452/50,169 ops/lane; IQR 1.010/1.004 | `Pcre2Literal` | — | — | — | — | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.651 us | 1.150 us | 0.56x | 0.56–0.57x | -0.503 us | 9 pairs; 42/39 ms; 64,583/34,166 ops/lane; IQR 1.014/1.013 | `Pcre2Backtracking` | — | — | — | — | 0 B | 0 B |
-| `simple/httpclient-caseless` | **Managed faster** | 45 B | 0.855 us | 1.100 us | 0.77x | 0.77–0.78x | -0.249 us | 9 pairs; 40/40 ms; 46,767/36,440 ops/lane; IQR 1.010/1.003 | `Pcre2Character` | — | — | — | — | 0 B | 0 B |
-| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.531 us | 0.842 us | 0.63x | 0.63–0.64x | -0.308 us | 9 pairs; 39/40 ms; 74,042/46,981 ops/lane; IQR 1.019/1.007 | `Pcre2Slice` | — | — | — | — | 0 B | 0 B |
+| `simple/ab-plus` | **Managed faster** | 16 B | 0.565 us | 1.101 us | 0.51x | 0.51–0.51x | -0.535 us | 9 pairs; 37/39 ms; 65,781/35,843 ops/lane; IQR 1.007/1.010 | `Pcre2Slice` | — | — | — | — | 0 B | 0 B |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.502 us | 0.830 us | 0.60x | 0.60–0.61x | -0.328 us | 9 pairs; 39/39 ms; 78,584/47,510 ops/lane; IQR 1.003/1.005 | `Pcre2Literal` | — | — | — | — | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.675 us | 1.183 us | 0.57x | 0.57–0.57x | -0.509 us | 9 pairs; 40/39 ms; 59,950/33,012 ops/lane; IQR 1.002/1.003 | `Pcre2Backtracking` | — | — | — | — | 0 B | 0 B |
+| `simple/httpclient-caseless` | **Managed faster** | 45 B | 0.920 us | 1.131 us | 0.81x | 0.81–0.81x | -0.213 us | 9 pairs; 40/40 ms; 43,829/35,408 ops/lane; IQR 1.004/1.007 | `Pcre2Character` | — | — | — | — | 0 B | 0 B |
+| `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.480 us | 0.861 us | 0.56x | 0.56–0.56x | -0.381 us | 9 pairs; 38/40 ms; 79,724/46,778 ops/lane; IQR 1.007/1.005 | `Pcre2Slice` | — | — | — | — | 0 B | 0 B |
 
 ## Compatible Replace
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `common/replace-words` | **Excluded** | 8,208 B | 61.154 us | — | — | — | — | — | `—` | 25.181 us | 92.031 us | 94.450 us | 0.65x | 13,648 B | — |
-| `simple/ab-plus` | **Excluded** | 16 B | 4.838 us | — | — | — | — | — | `—` | 1.579 us | 0.354 us | 0.376 us | 12.86x | 7,056 B | — |
-| `simple/foo-dense` | **Excluded** | 18 B | 1.087 us | — | — | — | — | — | `—` | 0.937 us | 0.237 us | 0.261 us | 4.17x | 48 B | — |
-| `simple/foo-optional-bar` | **Excluded** | 23 B | 1.236 us | — | — | — | — | — | `—` | 3.086 us | 0.453 us | 0.489 us | 2.53x | 48 B | — |
-| `simple/httpclient-caseless` | **Excluded** | 45 B | 1.517 us | — | — | — | — | — | `—` | 1.051 us | 0.526 us | 0.566 us | 2.68x | 56 B | — |
-| `simple/loglevel-multiline` | **Excluded** | 67 B | 3.735 us | — | — | — | — | — | `—` | 1.537 us | 0.265 us | 0.317 us | 11.79x | 720 B | — |
+| `common/replace-words` | **Excluded** | 8,208 B | 61.944 us | — | — | — | — | — | `—` | 25.827 us | 101.407 us | 104.299 us | 0.59x | 13,648 B | — |
+| `simple/ab-plus` | **Excluded** | 16 B | 4.972 us | — | — | — | — | — | `—` | 1.648 us | 0.355 us | 0.380 us | 13.08x | 7,056 B | — |
+| `simple/foo-dense` | **Excluded** | 18 B | 1.068 us | — | — | — | — | — | `—` | 0.967 us | 0.241 us | 0.268 us | 3.99x | 48 B | — |
+| `simple/foo-optional-bar` | **Excluded** | 23 B | 1.233 us | — | — | — | — | — | `—` | 3.112 us | 0.455 us | 0.483 us | 2.55x | 48 B | — |
+| `simple/httpclient-caseless` | **Excluded** | 45 B | 1.469 us | — | — | — | — | — | `—` | 1.078 us | 0.532 us | 0.585 us | 2.51x | 56 B | — |
+| `simple/loglevel-multiline` | **Excluded** | 67 B | 3.707 us | — | — | — | — | — | `—` | 1.558 us | 0.268 us | 0.319 us | 11.61x | 720 B | — |
 
 ## PCRE2-only IsMatch
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `pcre2/backslash-c-literal` | **Inconclusive** | 5 B | 0.091 us | 0.081 us | 1.11x | 1.09–1.13x | +0.009 us | 9 pairs; 42/38 ms; 458,710/474,768 ops/lane; IQR 1.055/1.016 | `Pcre2Character` | 0 B | 0 B | 2.406 us | 2,712 B |
-| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.013 us | 0.117 us | 0.11x | 0.11–0.11x | -0.104 us | 9 pairs; 39/41 ms; 2,993,992/353,002 ops/lane; IQR 1.010/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 130.525 us | 111,912 B |
-| `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.370 us | 0.100 us | 3.65x | 3.63–3.66x | +0.268 us | 9 pairs; 35/39 ms; 93,919/387,439 ops/lane; IQR 1.015/1.024 | `Pcre2Backtracking` | 0 B | 0 B | 23.363 us | 19,056 B |
-| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.397 us | 0.115 us | 3.44x | 3.42–3.46x | +0.282 us | 9 pairs; 35/39 ms; 88,854/336,944 ops/lane; IQR 1.006/1.010 | `Pcre2Backtracking` | 0 B | 0 B | 71.744 us | 65,176 B |
-| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.375 us | 0.100 us | 3.77x | 3.58–3.79x | +0.276 us | 9 pairs; 36/38 ms; 96,381/380,693 ops/lane; IQR 1.016/1.028 | `Pcre2Backtracking` | 0 B | 0 B | 71.481 us | 65,136 B |
-| `pcre2/grapheme-cluster` | **Native faster** | 248 B | 0.575 us | 0.339 us | 1.69x | 1.69–1.70x | +0.237 us | 9 pairs; 38/39 ms; 65,881/116,177 ops/lane; IQR 1.011/1.009 | `Pcre2Character` | 0 B | 0 B | 2.062 us | 2,248 B |
-| `pcre2/recursive-optional` | **Managed faster** | 6 B | 0.012 us | 0.628 us | 0.02x | 0.02–0.02x | -0.616 us | 9 pairs; 41/39 ms; 3,500,699/61,901 ops/lane; IQR 1.033/1.007 | `Pcre2Backtracking` | 0 B | 0 B | 23.456 us | 21,584 B |
-| `pcre2/recursive-palindrome` | **Inconclusive** | 6 B | 0.012 us | 0.493 us | 0.02x | 0.02–0.02x | -0.482 us | 9 pairs; 39/40 ms; 3,414,667/80,654 ops/lane; IQR 1.022/1.012 | `Pcre2Backtracking` | 0 B | 0 B | 24.275 us | 21,072 B |
-| `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.454 us | 0.106 us | 4.31x | 4.23–4.34x | +0.349 us | 9 pairs; 35/41 ms; 77,601/383,748 ops/lane; IQR 1.022/1.012 | `Pcre2Backtracking` | 0 B | 0 B | 17.694 us | 13,760 B |
+| `pcre2/backslash-c-literal` | **Native faster** | 5 B | 0.090 us | 0.085 us | 1.06x | 1.06–1.06x | +0.005 us | 9 pairs; 40/42 ms; 449,446/494,152 ops/lane; IQR 1.006/1.006 | `Pcre2Character` | 0 B | 0 B | 2.281 us | 2,712 B |
+| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.013 us | 0.122 us | 0.11x | 0.11–0.11x | -0.109 us | 9 pairs; 39/40 ms; 3,024,041/324,800 ops/lane; IQR 1.006/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 131.375 us | 111,912 B |
+| `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.382 us | 0.103 us | 3.69x | 3.66–3.70x | +0.278 us | 9 pairs; 36/39 ms; 93,503/376,494 ops/lane; IQR 1.012/1.015 | `Pcre2Backtracking` | 0 B | 0 B | 23.956 us | 19,056 B |
+| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.395 us | 0.116 us | 3.38x | 3.36–3.42x | +0.278 us | 9 pairs; 36/41 ms; 90,716/349,350 ops/lane; IQR 1.006/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 71.275 us | 65,176 B |
+| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.374 us | 0.105 us | 3.55x | 3.52–3.56x | +0.268 us | 9 pairs; 36/40 ms; 95,835/375,562 ops/lane; IQR 1.009/1.015 | `Pcre2Backtracking` | 0 B | 0 B | 70.394 us | 65,136 B |
+| `pcre2/grapheme-cluster` | **Native faster** | 248 B | 0.665 us | 0.346 us | 1.93x | 1.91–1.94x | +0.321 us | 9 pairs; 38/39 ms; 56,857/113,222 ops/lane; IQR 1.003/1.010 | `Pcre2Character` | 0 B | 0 B | 1.425 us | 2,248 B |
+| `pcre2/recursive-optional` | **Managed faster** | 6 B | 0.012 us | 0.631 us | 0.02x | 0.02–0.02x | -0.619 us | 9 pairs; 28/40 ms; 2,446,514/62,854 ops/lane; IQR 1.013/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 22.869 us | 21,584 B |
+| `pcre2/recursive-palindrome` | **Managed faster** | 6 B | 0.012 us | 0.516 us | 0.02x | 0.02–0.02x | -0.504 us | 9 pairs; 40/39 ms; 3,448,204/75,694 ops/lane; IQR 1.005/1.012 | `Pcre2Backtracking` | 0 B | 0 B | 23.512 us | 21,072 B |
+| `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.471 us | 0.107 us | 4.40x | 4.38–4.45x | +0.365 us | 9 pairs; 37/40 ms; 79,465/378,159 ops/lane; IQR 1.005/1.016 | `Pcre2Backtracking` | 0 B | 0 B | 19.212 us | 13,760 B |
 
 ## PCRE2-only Count
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `literal/empty-unicode` | **Managed faster** | 320 B | 8.152 us | 10.107 us | 0.81x | 0.80–0.81x | -1.919 us | 9 pairs; 39/40 ms; 4,781/3,940 ops/lane; IQR 1.008/1.016 | `Pcre2Literal` | 0 B | 0 B | 0.762 us | 1,488 B |
-| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.289 us | 1.024 us | 0.28x | 0.28–0.28x | -0.735 us | 9 pairs; 40/40 ms; 138,032/39,088 ops/lane; IQR 1.006/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 133.488 us | 111,912 B |
-| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 0.314 us | 0.455 us | 0.69x | 0.68–0.70x | -0.140 us | 9 pairs; 40/40 ms; 126,649/87,275 ops/lane; IQR 1.009/1.009 | `Pcre2Backtracking` | 0 B | 0 B | 116.294 us | 99,256 B |
-| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 0.284 us | 0.453 us | 0.63x | 0.62–0.63x | -0.170 us | 9 pairs; 36/37 ms; 125,320/81,302 ops/lane; IQR 1.011/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 142.156 us | 127,480 B |
-| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.301 us | 0.572 us | 0.52x | 0.52–0.53x | -0.274 us | 9 pairs; 36/40 ms; 119,255/69,782 ops/lane; IQR 1.016/1.020 | `Pcre2Backtracking` | 0 B | 0 B | 103.856 us | 81,544 B |
-| `pcre2/duplicate-names` | **Managed faster** | 23 B | 0.294 us | 0.388 us | 0.76x | 0.75–0.77x | -0.093 us | 9 pairs; 35/39 ms; 119,174/100,441 ops/lane; IQR 1.009/1.020 | `Pcre2Backtracking` | 0 B | 0 B | 215.356 us | 179,232 B |
-| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 4.940 us | 8.650 us | 0.57x | 0.57–0.58x | -3.686 us | 9 pairs; 39/41 ms; 7,922/4,736 ops/lane; IQR 1.008/1.004 | `Pcre2Character` | 0 B | 0 B | 1.419 us | 2,248 B |
-| `pcre2/kreset-atomic-alt` | **Managed faster** | 13 B | 0.248 us | 0.305 us | 0.81x | 0.81–0.82x | -0.056 us | 9 pairs; 35/40 ms; 141,821/131,565 ops/lane; IQR 1.003/1.007 | `Pcre2Backtracking` | 0 B | 0 B | 90.763 us | 72,568 B |
-| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.262 us | 0.398 us | 0.66x | 0.65–0.66x | -0.136 us | 9 pairs; 33/38 ms; 126,181/95,438 ops/lane; IQR 1.005/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 120.525 us | 110,720 B |
-| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 3.748 us | — | — | — | — | — | `—` | 0 B | — | 15.113 us | 11,496 B |
-| `pcre2/kreset-global` | **Managed faster** | 26 B | 0.195 us | 0.296 us | 0.66x | 0.65–0.66x | -0.100 us | 9 pairs; 33/40 ms; 170,175/135,342 ops/lane; IQR 1.012/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 53.550 us | 53,288 B |
-| `pcre2/kreset-repeat` | **Excluded** | 14 B | 3.630 us | — | — | — | — | — | `—` | 0 B | — | 13.906 us | 10,536 B |
-| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.574 us | 0.656 us | 0.87x | 0.87–0.88x | -0.085 us | 9 pairs; 38/38 ms; 66,448/58,473 ops/lane; IQR 1.017/1.008 | `Pcre2Slice` | 0 B | 0 B | 63.931 us | 55,552 B |
+| `literal/empty-unicode` | **Managed faster** | 320 B | 8.385 us | 10.532 us | 0.80x | 0.79–0.80x | -2.154 us | 9 pairs; 39/35 ms; 4,668/3,282 ops/lane; IQR 1.004/1.003 | `Pcre2Literal` | 0 B | 0 B | 0.775 us | 1,488 B |
+| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.292 us | 1.100 us | 0.27x | 0.26–0.27x | -0.808 us | 9 pairs; 40/41 ms; 135,463/37,138 ops/lane; IQR 1.004/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 132.537 us | 111,912 B |
+| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 0.310 us | 0.490 us | 0.63x | 0.63–0.63x | -0.180 us | 9 pairs; 37/39 ms; 120,435/80,280 ops/lane; IQR 1.001/1.013 | `Pcre2Backtracking` | 0 B | 0 B | 115.963 us | 99,256 B |
+| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 0.284 us | 0.455 us | 0.63x | 0.62–0.63x | -0.170 us | 9 pairs; 36/38 ms; 128,235/83,585 ops/lane; IQR 1.006/1.020 | `Pcre2Backtracking` | 0 B | 0 B | 142.037 us | 127,480 B |
+| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.348 us | 0.583 us | 0.60x | 0.60–0.60x | -0.235 us | 9 pairs; 42/41 ms; 121,808/69,474 ops/lane; IQR 1.020/1.014 | `Pcre2Backtracking` | 0 B | 0 B | 103.269 us | 81,544 B |
+| `pcre2/duplicate-names` | **Managed faster** | 23 B | 0.304 us | 0.396 us | 0.77x | 0.76–0.77x | -0.092 us | 9 pairs; 38/40 ms; 125,096/101,221 ops/lane; IQR 1.002/1.013 | `Pcre2Backtracking` | 0 B | 0 B | 218.975 us | 179,232 B |
+| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 5.142 us | 8.748 us | 0.59x | 0.58–0.59x | -3.593 us | 9 pairs; 41/40 ms; 8,055/4,518 ops/lane; IQR 1.005/1.004 | `Pcre2Character` | 0 B | 0 B | 2.138 us | 2,248 B |
+| `pcre2/kreset-atomic-alt` | **Managed faster** | 13 B | 0.255 us | 0.310 us | 0.82x | 0.82–0.83x | -0.055 us | 9 pairs; 34/39 ms; 133,439/125,218 ops/lane; IQR 1.001/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 94.106 us | 72,568 B |
+| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.270 us | 0.401 us | 0.67x | 0.67–0.68x | -0.131 us | 9 pairs; 37/39 ms; 135,469/97,944 ops/lane; IQR 1.004/1.015 | `Pcre2Backtracking` | 0 B | 0 B | 123.800 us | 110,720 B |
+| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 3.906 us | — | — | — | — | — | `—` | 0 B | — | 13.975 us | 11,496 B |
+| `pcre2/kreset-global` | **Managed faster** | 26 B | 0.189 us | 0.292 us | 0.65x | 0.64–0.65x | -0.103 us | 9 pairs; 40/40 ms; 212,268/136,800 ops/lane; IQR 1.007/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 54.419 us | 53,288 B |
+| `pcre2/kreset-repeat` | **Excluded** | 14 B | 3.812 us | — | — | — | — | — | `—` | 0 B | — | 14.206 us | 10,536 B |
+| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.600 us | 0.671 us | 0.89x | 0.89–0.90x | -0.072 us | 9 pairs; 33/39 ms; 55,567/57,742 ops/lane; IQR 1.003/1.006 | `Pcre2Slice` | 0 B | 0 B | 63.712 us | 55,552 B |
 
 ## PCRE2-only EnumerateMatches
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `literal/empty-unicode` | **Managed faster** | 320 B | 9.629 us | 29.322 us | 0.33x | 0.33–0.33x | -19.678 us | 9 pairs; 41/41 ms; 4,288/1,403 ops/lane; IQR 1.008/1.006 | `Pcre2Literal` | 0 B | 0 B | 0.806 us | 1,488 B |
-| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.990 us | 1.033 us | 0.95x | 0.94–0.98x | -0.053 us | 9 pairs; 40/40 ms; 40,553/38,773 ops/lane; IQR 1.022/1.007 | `Pcre2Backtracking` | 0 B | 0 B | 130.375 us | 111,912 B |
-| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 0.989 us | 1.175 us | 0.84x | 0.83–0.85x | -0.186 us | 9 pairs; 39/41 ms; 39,772/35,292 ops/lane; IQR 1.009/1.009 | `Pcre2Backtracking` | 0 B | 0 B | 112.169 us | 99,256 B |
-| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 0.938 us | 1.010 us | 0.93x | 0.92–0.93x | -0.072 us | 9 pairs; 39/42 ms; 42,072/41,457 ops/lane; IQR 1.010/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 136.875 us | 127,480 B |
-| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.942 us | 1.166 us | 0.81x | 0.81–0.81x | -0.223 us | 9 pairs; 40/41 ms; 42,326/35,370 ops/lane; IQR 1.015/1.014 | `Pcre2Backtracking` | 0 B | 0 B | 104.856 us | 81,544 B |
-| `pcre2/duplicate-names` | **Equivalent** | 23 B | 0.918 us | 0.917 us | 1.00x | 0.99–1.00x | -0.002 us | 9 pairs; 39/41 ms; 42,469/44,935 ops/lane; IQR 1.008/1.012 | `Pcre2Backtracking` | 0 B | 0 B | 214.369 us | 179,232 B |
-| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 5.584 us | 8.690 us | 0.64x | 0.64–0.64x | -3.124 us | 9 pairs; 39/40 ms; 7,035/4,570 ops/lane; IQR 1.008/1.008 | `Pcre2Character` | 0 B | 0 B | 1.450 us | 2,248 B |
-| `pcre2/kreset-atomic-alt` | **Native faster** | 13 B | 0.917 us | 0.885 us | 1.04x | 1.04–1.05x | +0.035 us | 9 pairs; 37/43 ms; 40,521/48,426 ops/lane; IQR 1.020/1.010 | `Pcre2Backtracking` | 0 B | 0 B | 90.000 us | 72,568 B |
-| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.904 us | 0.963 us | 0.94x | 0.93–0.94x | -0.059 us | 9 pairs; 40/40 ms; 44,133/41,728 ops/lane; IQR 1.007/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 122.825 us | 110,720 B |
-| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 4.951 us | — | — | — | — | — | `—` | 0 B | — | 16.481 us | 11,496 B |
-| `pcre2/kreset-global` | **Equivalent** | 26 B | 0.857 us | 0.847 us | 1.01x | 1.01–1.01x | +0.011 us | 9 pairs; 42/41 ms; 49,070/48,294 ops/lane; IQR 1.003/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 53.806 us | 53,288 B |
-| `pcre2/kreset-repeat` | **Excluded** | 14 B | 4.892 us | — | — | — | — | — | `—` | 0 B | — | 15.225 us | 10,536 B |
-| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.898 us | 1.231 us | 0.73x | 0.72–0.73x | -0.337 us | 9 pairs; 40/39 ms; 44,019/31,369 ops/lane; IQR 1.016/1.012 | `Pcre2Slice` | 0 B | 0 B | 65.219 us | 55,552 B |
+| `literal/empty-unicode` | **Managed faster** | 320 B | 9.901 us | 28.979 us | 0.34x | 0.34–0.34x | -19.069 us | 9 pairs; 40/40 ms; 4,066/1,365 ops/lane; IQR 1.002/1.004 | `Pcre2Literal` | 0 B | 0 B | 0.787 us | 1,488 B |
+| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.950 us | 1.076 us | 0.88x | 0.88–0.89x | -0.125 us | 9 pairs; 40/41 ms; 42,201/38,431 ops/lane; IQR 1.004/1.003 | `Pcre2Backtracking` | 0 B | 0 B | 131.031 us | 111,912 B |
+| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 1.035 us | 1.228 us | 0.85x | 0.84–0.85x | -0.190 us | 9 pairs; 40/40 ms; 38,216/32,435 ops/lane; IQR 1.009/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 117.888 us | 99,256 B |
+| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 1.007 us | 1.043 us | 0.96x | 0.96–0.97x | -0.037 us | 9 pairs; 42/41 ms; 41,498/39,146 ops/lane; IQR 1.004/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 144.050 us | 127,480 B |
+| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.945 us | 1.166 us | 0.81x | 0.81–0.81x | -0.223 us | 9 pairs; 40/41 ms; 42,579/35,528 ops/lane; IQR 1.003/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 105.150 us | 81,544 B |
+| `pcre2/duplicate-names` | **Managed faster** | 23 B | 0.927 us | 0.954 us | 0.97x | 0.97–0.98x | -0.026 us | 9 pairs; 39/42 ms; 42,278/43,530 ops/lane; IQR 1.006/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 218.656 us | 179,232 B |
+| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 5.563 us | 8.814 us | 0.63x | 0.63–0.63x | -3.258 us | 9 pairs; 39/40 ms; 7,100/4,517 ops/lane; IQR 1.003/1.005 | `Pcre2Character` | 0 B | 0 B | 1.400 us | 2,248 B |
+| `pcre2/kreset-atomic-alt` | **Native faster** | 13 B | 0.915 us | 0.890 us | 1.03x | 1.03–1.03x | +0.025 us | 9 pairs; 40/40 ms; 44,021/45,132 ops/lane; IQR 1.002/1.003 | `Pcre2Backtracking` | 0 B | 0 B | 95.006 us | 72,568 B |
+| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.919 us | 0.964 us | 0.95x | 0.95–0.96x | -0.045 us | 9 pairs; 40/41 ms; 43,681/42,159 ops/lane; IQR 1.005/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 126.150 us | 110,720 B |
+| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 5.102 us | — | — | — | — | — | `—` | 0 B | — | 13.706 us | 11,496 B |
+| `pcre2/kreset-global` | **Managed faster** | 26 B | 0.825 us | 0.858 us | 0.96x | 0.96–0.96x | -0.034 us | 9 pairs; 39/40 ms; 47,411/46,182 ops/lane; IQR 1.004/1.002 | `Pcre2Backtracking` | 0 B | 0 B | 54.219 us | 53,288 B |
+| `pcre2/kreset-repeat` | **Excluded** | 14 B | 5.073 us | — | — | — | — | — | `—` | 0 B | — | 13.950 us | 10,536 B |
+| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.857 us | 1.257 us | 0.68x | 0.68–0.68x | -0.399 us | 9 pairs; 37/39 ms; 43,497/31,094 ops/lane; IQR 1.004/1.007 | `Pcre2Slice` | 0 B | 0 B | 65.894 us | 55,552 B |
 
 ## PCRE2-only MatchMany
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `literal/empty-unicode` | **Managed faster** | 320 B | 1.316 us | 2.298 us | 0.57x | 0.57–0.58x | -0.977 us | 9 pairs; 39/41 ms; 29,688/17,976 ops/lane; IQR 1.010/1.010 | `Pcre2Literal` | 0 B | 0 B | 0.775 us | 1,488 B |
-| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.659 us | 1.028 us | 0.64x | 0.64–0.64x | -0.371 us | 9 pairs; 37/41 ms; 56,905/39,461 ops/lane; IQR 1.004/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 130.150 us | 111,912 B |
-| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 0.687 us | 1.169 us | 0.59x | 0.59–0.59x | -0.479 us | 9 pairs; 42/39 ms; 61,011/33,483 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 114.638 us | 99,256 B |
-| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 0.617 us | 1.010 us | 0.61x | 0.60–0.62x | -0.392 us | 9 pairs; 37/38 ms; 60,568/38,007 ops/lane; IQR 1.007/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 140.744 us | 127,480 B |
-| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.622 us | 1.167 us | 0.53x | 0.53–0.53x | -0.547 us | 9 pairs; 40/39 ms; 63,796/33,694 ops/lane; IQR 1.014/1.019 | `Pcre2Backtracking` | 0 B | 0 B | 104.606 us | 81,544 B |
-| `pcre2/duplicate-names` | **Managed faster** | 23 B | 0.674 us | 0.919 us | 0.73x | 0.73–0.74x | -0.245 us | 9 pairs; 44/40 ms; 65,599/43,748 ops/lane; IQR 1.003/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 215.963 us | 179,232 B |
-| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 1.856 us | 2.149 us | 0.86x | 0.86–0.87x | -0.296 us | 9 pairs; 40/40 ms; 21,318/18,742 ops/lane; IQR 1.005/1.010 | `Pcre2Character` | 0 B | 0 B | 1.394 us | 2,248 B |
-| `pcre2/kreset-atomic-alt` | **Managed faster** | 13 B | 0.629 us | 0.860 us | 0.73x | 0.73–0.73x | -0.231 us | 9 pairs; 39/39 ms; 61,462/45,499 ops/lane; IQR 1.007/1.010 | `Pcre2Backtracking` | 0 B | 0 B | 90.312 us | 72,568 B |
-| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.600 us | 0.971 us | 0.62x | 0.61–0.62x | -0.371 us | 9 pairs; 39/39 ms; 65,322/40,202 ops/lane; IQR 1.003/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 122.350 us | 110,720 B |
-| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 4.648 us | — | — | — | — | — | `—` | 0 B | — | 13.819 us | 11,496 B |
-| `pcre2/kreset-global` | **Managed faster** | 26 B | 0.481 us | 0.849 us | 0.57x | 0.56–0.57x | -0.367 us | 9 pairs; 39/39 ms; 81,805/45,718 ops/lane; IQR 1.006/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 53.569 us | 53,288 B |
-| `pcre2/kreset-repeat` | **Excluded** | 14 B | 4.514 us | — | — | — | — | — | `—` | 0 B | — | 14.294 us | 10,536 B |
-| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.582 us | 1.226 us | 0.47x | 0.47–0.48x | -0.645 us | 9 pairs; 39/39 ms; 66,550/32,218 ops/lane; IQR 1.009/1.005 | `Pcre2Slice` | 0 B | 0 B | 64.919 us | 55,552 B |
+| `literal/empty-unicode` | **Managed faster** | 320 B | 1.445 us | 2.287 us | 0.63x | 0.63–0.63x | -0.840 us | 9 pairs; 40/40 ms; 27,502/17,517 ops/lane; IQR 1.003/1.003 | `Pcre2Literal` | 0 B | 0 B | 0.750 us | 1,488 B |
+| `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.640 us | 1.067 us | 0.60x | 0.60–0.60x | -0.429 us | 9 pairs; 40/41 ms; 62,539/38,356 ops/lane; IQR 1.003/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 131.769 us | 111,912 B |
+| `pcre2/branch-reset-basic` | **Managed faster** | 17 B | 0.680 us | 1.226 us | 0.55x | 0.55–0.56x | -0.547 us | 9 pairs; 40/40 ms; 58,289/32,342 ops/lane; IQR 1.004/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 116.006 us | 99,256 B |
+| `pcre2/branch-reset-followup` | **Managed faster** | 31 B | 0.638 us | 1.033 us | 0.62x | 0.62–0.62x | -0.393 us | 9 pairs; 40/42 ms; 62,344/40,587 ops/lane; IQR 1.009/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 141.381 us | 127,480 B |
+| `pcre2/branch-reset-nested` | **Managed faster** | 22 B | 0.626 us | 1.156 us | 0.54x | 0.54–0.54x | -0.529 us | 9 pairs; 40/39 ms; 63,960/33,755 ops/lane; IQR 1.002/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 106.300 us | 81,544 B |
+| `pcre2/duplicate-names` | **Managed faster** | 23 B | 0.615 us | 0.953 us | 0.65x | 0.64–0.65x | -0.337 us | 9 pairs; 40/40 ms; 64,441/42,368 ops/lane; IQR 1.009/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 214.519 us | 179,232 B |
+| `pcre2/grapheme-cluster` | **Managed faster** | 248 B | 1.906 us | 2.176 us | 0.88x | 0.87–0.88x | -0.263 us | 9 pairs; 40/40 ms; 20,826/18,524 ops/lane; IQR 1.005/1.003 | `Pcre2Character` | 0 B | 0 B | 1.387 us | 2,248 B |
+| `pcre2/kreset-atomic-alt` | **Managed faster** | 13 B | 0.601 us | 0.889 us | 0.68x | 0.67–0.68x | -0.289 us | 9 pairs; 40/40 ms; 65,913/44,744 ops/lane; IQR 1.005/1.003 | `Pcre2Backtracking` | 0 B | 0 B | 94.188 us | 72,568 B |
+| `pcre2/kreset-bar-or-baz` | **Managed faster** | 26 B | 0.604 us | 0.970 us | 0.62x | 0.62–0.63x | -0.365 us | 9 pairs; 39/40 ms; 65,270/41,518 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 125.394 us | 110,720 B |
+| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 4.803 us | — | — | — | — | — | `—` | 0 B | — | 13.906 us | 11,496 B |
+| `pcre2/kreset-global` | **Managed faster** | 26 B | 0.490 us | 0.852 us | 0.58x | 0.57–0.58x | -0.362 us | 9 pairs; 40/40 ms; 81,444/46,646 ops/lane; IQR 1.003/1.009 | `Pcre2Backtracking` | 0 B | 0 B | 55.375 us | 53,288 B |
+| `pcre2/kreset-repeat` | **Excluded** | 14 B | 4.732 us | — | — | — | — | — | `—` | 0 B | — | 14.494 us | 10,536 B |
+| `pcre2/same-start-global` | **Managed faster** | 9 B | 0.600 us | 1.266 us | 0.47x | 0.47–0.48x | -0.666 us | 9 pairs; 39/40 ms; 65,272/31,359 ops/lane; IQR 1.001/1.003 | `Pcre2Slice` | 0 B | 0 B | 64.725 us | 55,552 B |
 
 ## PCRE2-only Replace
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `literal/empty-unicode` | **Excluded** | 320 B | 17.629 us | — | — | — | — | — | `—` | 480 B | — | 0.725 us | 1,488 B |
-| `pcre2/branch-reset-backref` | **Excluded** | 23 B | 1.151 us | — | — | — | — | — | `—` | 48 B | — | 130.769 us | 111,912 B |
-| `pcre2/branch-reset-basic` | **Excluded** | 17 B | 1.258 us | — | — | — | — | — | `—` | 48 B | — | 116.869 us | 99,256 B |
-| `pcre2/branch-reset-followup` | **Excluded** | 31 B | 1.164 us | — | — | — | — | — | `—` | 48 B | — | 143.394 us | 127,480 B |
-| `pcre2/branch-reset-nested` | **Excluded** | 22 B | 1.147 us | — | — | — | — | — | `—` | 48 B | — | 102.412 us | 81,544 B |
-| `pcre2/duplicate-names` | **Excluded** | 23 B | 1.129 us | — | — | — | — | — | `—` | 48 B | — | 220.700 us | 179,232 B |
-| `pcre2/grapheme-cluster` | **Excluded** | 248 B | 6.840 us | — | — | — | — | — | `—` | 64 B | — | 1.381 us | 2,248 B |
-| `pcre2/kreset-atomic-alt` | **Excluded** | 13 B | 1.169 us | — | — | — | — | — | `—` | 40 B | — | 92.756 us | 72,568 B |
-| `pcre2/kreset-bar-or-baz` | **Excluded** | 26 B | 1.170 us | — | — | — | — | — | `—` | 40 B | — | 120.612 us | 110,720 B |
-| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 21.945 us | — | — | — | — | — | `—` | 1,216 B | — | 13.594 us | 11,496 B |
-| `pcre2/kreset-global` | **Excluded** | 26 B | 1.079 us | — | — | — | — | — | `—` | 48 B | — | 53.131 us | 53,288 B |
-| `pcre2/kreset-repeat` | **Excluded** | 14 B | 16.326 us | — | — | — | — | — | `—` | 928 B | — | 15.206 us | 10,536 B |
-| `pcre2/same-start-global` | **Excluded** | 9 B | 4.684 us | — | — | — | — | — | `—` | 7,184 B | — | 63.575 us | 55,552 B |
+| `literal/empty-unicode` | **Excluded** | 320 B | 17.229 us | — | — | — | — | — | `—` | 480 B | — | 0.719 us | 1,488 B |
+| `pcre2/branch-reset-backref` | **Excluded** | 23 B | 1.143 us | — | — | — | — | — | `—` | 48 B | — | 135.537 us | 111,912 B |
+| `pcre2/branch-reset-basic` | **Excluded** | 17 B | 1.241 us | — | — | — | — | — | `—` | 48 B | — | 118.406 us | 99,256 B |
+| `pcre2/branch-reset-followup` | **Excluded** | 31 B | 1.126 us | — | — | — | — | — | `—` | 48 B | — | 147.094 us | 127,480 B |
+| `pcre2/branch-reset-nested` | **Excluded** | 22 B | 1.141 us | — | — | — | — | — | `—` | 48 B | — | 102.844 us | 81,544 B |
+| `pcre2/duplicate-names` | **Excluded** | 23 B | 1.125 us | — | — | — | — | — | `—` | 48 B | — | 224.238 us | 179,232 B |
+| `pcre2/grapheme-cluster` | **Excluded** | 248 B | 6.858 us | — | — | — | — | — | `—` | 64 B | — | 1.444 us | 2,248 B |
+| `pcre2/kreset-atomic-alt` | **Excluded** | 13 B | 1.155 us | — | — | — | — | — | `—` | 40 B | — | 93.706 us | 72,568 B |
+| `pcre2/kreset-bar-or-baz` | **Excluded** | 26 B | 1.155 us | — | — | — | — | — | `—` | 40 B | — | 123.544 us | 110,720 B |
+| `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 22.257 us | — | — | — | — | — | `—` | 1,216 B | — | 15.194 us | 11,496 B |
+| `pcre2/kreset-global` | **Excluded** | 26 B | 1.061 us | — | — | — | — | — | `—` | 48 B | — | 53.681 us | 53,288 B |
+| `pcre2/kreset-repeat` | **Excluded** | 14 B | 16.599 us | — | — | — | — | — | `—` | 928 B | — | 13.900 us | 10,536 B |
+| `pcre2/same-start-global` | **Excluded** | 9 B | 4.770 us | — | — | — | — | — | `—` | 7,184 B | — | 64.619 us | 55,552 B |
 
 ## Qualified comparator plans
 
@@ -375,22 +375,22 @@ Scaling rows are mechanism and complexity guards, not direct .NET parity claims.
 
 | Family | Operation | Points | Input range | Pattern range | Warm elapsed range |
 |---|---|---:|---:|---:|---:|
-| `branch-repeat-linear` | `IsMatch` | 4 | 1,025–8,193 B | 12–12 B | 30.024–241.672 us |
-| `branch-reset-coordinate-projection` | `EnumerateMatches` | 4 | 512–4,096 B | 15–15 B | 12.253–92.925 us |
-| `candidate-heavy-misses` | `IsMatch` | 4 | 512–4,096 B | 10–10 B | 2.867–12.551 us |
-| `capture-rollback` | `Count` | 4 | 65–513 B | 10–10 B | 6.746–45.873 us |
-| `cartesian-literal-families` | `IsMatch` | 4 | 4–6 B | 20–116 B | 0.031–1.133 us |
-| `character-class-dense` | `Count` | 4 | 896–7,168 B | 13–13 B | 5.267–40.601 us |
-| `dense-non-ascii-coordinates` | `Count` | 4 | 512–4,096 B | 2–2 B | 5.684–22.102 us |
-| `dense-plus-sparse-candidate-portfolios` | `Count` | 6 | 512–8,192 B | 12–12 B | 6.152–97.275 us |
-| `excluded-ascii-repeat-count` | `Count` | 4 | 5,120–40,960 B | 6–6 B | 8.914–70.832 us |
-| `leading-word-boundary-run-candidates` | `Count` | 4 | 510–4,092 B | 11–11 B | 1.209–5.337 us |
-| `literal-family-global-cursor` | `Replace` | 4 | 2,560–20,480 B | 19–19 B | 46.579–359.613 us |
-| `long-flat-patterns` | `IsMatch` | 4 | 64–512 B | 64–512 B | 0.067–0.075 us |
-| `replacement-growth` | `Replace` | 4 | 64–512 B | 3–3 B | 37.538–294.701 us |
-| `required-literal-all-a-miss` | `Count` | 4 | 16,384–131,072 B | 13–13 B | 0.819–5.048 us |
-| `single-token-repeat-vm` | `IsMatch` | 4 | 513–4,097 B | 5–5 B | 2.130–15.439 us |
-| `zero-width-iteration` | `Count` | 4 | 512–4,096 B | 5–5 B | 101.330–838.510 us |
+| `branch-repeat-linear` | `IsMatch` | 4 | 1,025–8,193 B | 12–12 B | 30.694–238.485 us |
+| `branch-reset-coordinate-projection` | `EnumerateMatches` | 4 | 512–4,096 B | 15–15 B | 12.491–95.482 us |
+| `candidate-heavy-misses` | `IsMatch` | 4 | 512–4,096 B | 10–10 B | 2.663–12.609 us |
+| `capture-rollback` | `Count` | 4 | 65–513 B | 10–10 B | 6.973–46.386 us |
+| `cartesian-literal-families` | `IsMatch` | 4 | 4–6 B | 20–116 B | 0.037–1.150 us |
+| `character-class-dense` | `Count` | 4 | 896–7,168 B | 13–13 B | 5.607–43.130 us |
+| `dense-non-ascii-coordinates` | `Count` | 4 | 512–4,096 B | 2–2 B | 6.202–23.904 us |
+| `dense-plus-sparse-candidate-portfolios` | `Count` | 6 | 512–8,192 B | 12–12 B | 6.226–99.725 us |
+| `excluded-ascii-repeat-count` | `Count` | 4 | 5,120–40,960 B | 6–6 B | 9.119–72.800 us |
+| `leading-word-boundary-run-candidates` | `Count` | 4 | 510–4,092 B | 11–11 B | 1.213–5.404 us |
+| `literal-family-global-cursor` | `Replace` | 4 | 2,560–20,480 B | 19–19 B | 47.252–366.911 us |
+| `long-flat-patterns` | `IsMatch` | 4 | 64–512 B | 64–512 B | 0.070–0.084 us |
+| `replacement-growth` | `Replace` | 4 | 64–512 B | 3–3 B | 39.098–303.857 us |
+| `required-literal-all-a-miss` | `Count` | 4 | 16,384–131,072 B | 13–13 B | 0.843–5.121 us |
+| `single-token-repeat-vm` | `IsMatch` | 4 | 513–4,097 B | 5–5 B | 2.180–15.545 us |
+| `zero-width-iteration` | `Count` | 4 | 512–4,096 B | 5–5 B | 106.532–830.976 us |
 
 ## Reproduce and refresh
 
