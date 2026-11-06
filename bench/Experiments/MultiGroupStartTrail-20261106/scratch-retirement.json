@@ -1,0 +1,19 @@
+{
+  "Scope": "One retirement of fresh completed VM scratch; closed, do not revisit these deletion targets",
+  "Archive": "artifacts/experiments/capture-scratch-retirement-20261106/evidence.tar.gz",
+  "Sha256": "0AE0E53EA5BEA9F32FB2BCB3617F7D457BB9C5BE43022CC67128174512E06FDF",
+  "Bytes": 16803501,
+  "ContentComparison": "GNU tar compare passed before removal",
+  "OffVmHashVerified": true,
+  "Targets": [
+    "/home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/single-group-capture-trail-20261106",
+    "/home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/multi-group-start-trail-20261106"
+  ],
+  "Paths": "Both resolved absolute paths checked inside intended checkout; no prior protected target touched",
+  "RemovedKiB": 60944,
+  "RepositoryFreeKiBAfter": 1060744,
+  "MemAvailableKiBAfter": 8156000,
+  "FrozenFullAssets": "All eight hashes unchanged before/after",
+  "RawAndStagedArtifacts": "Canonical experiment archives and all package bytes preserved",
+  "BuildServers": "No shutdown or kill"
+}

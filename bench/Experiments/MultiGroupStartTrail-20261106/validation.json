@@ -43,5 +43,15 @@
     "WindowsIncludes": "Twelve-group probe and preceding untimed imports audit"
   },
   "Packages": "No pack/qualification/publication; staged dev.44 immutable",
-  "CI": "Pending source push"
+  "CI": {
+    "Run": 42270164829,
+    "Conclusion": "Success",
+    "Platforms": [
+      "windows-latest",
+      "ubuntu-latest"
+    ],
+    "State": "Terminal GREEN/CLOSED; never requery",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42270164829"
+  },
+  "SourceCommit": "beff6b5d1bf31e1b7944cdc6b6b23bf6df0d96b6"
 }
