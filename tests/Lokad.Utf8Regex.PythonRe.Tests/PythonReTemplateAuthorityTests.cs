@@ -3,6 +3,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
+// Dedicated-thread wait assertions must not compete with parallel allocation stress.
+[Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReTemplateAuthorityTests
 {
     private const string Template = @"<\g<x>>";
