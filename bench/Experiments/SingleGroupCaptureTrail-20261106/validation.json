@@ -41,7 +41,17 @@
     "WindowsBytes": 9726
   },
   "Packages": "No repack, qualification or publication; staged dev.44 immutable",
-  "CI": "First source run 42263961611 failed/closed; corrected source follow-up pending push",
+  "CI": {
+    "Run": 42265262007,
+    "Source": "a3da7509dc0fd098fd6e6cd25b33795acaca5cdd",
+    "Conclusion": "Success",
+    "Platforms": [
+      "windows-latest",
+      "ubuntu-latest"
+    ],
+    "State": "Terminal GREEN/CLOSED; do not requery",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42265262007"
+  },
   "SourceCommit": "90e121dc8820edd27378da16c9daade55864f5dc",
   "AdmissionFollowup": {
     "Scope": "Test-only corrections; production and measured graphs unchanged",
@@ -57,6 +67,7 @@
     "Bytes": 20695,
     "InitialWindowsCI": "artifacts/experiments/single-group-capture-trail-20261106/first-ci-windows.txt",
     "InitialWindowsCISha256": "07188F6560356CAAC751D7A8DF051B1AD712A34E8DF08AB841D0D974DA6AF34E",
-    "InitialWindowsCIBytes": 167696
+    "InitialWindowsCIBytes": 167696,
+    "Commit": "a3da7509dc0fd098fd6e6cd25b33795acaca5cdd"
   }
 }
