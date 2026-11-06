@@ -1,0 +1,34 @@
+[
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.pdb",
+    "Sha256": "B0AB10A4AC2477BDABCD1572F4DDDDE3704FC31B03097CB6171B5704271F2009"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll",
+    "Sha256": "AD405F95C2D3B8CE5E76DBEEEA8F0E27ED3FA4D0702E57F3DB7D93268C41AC75"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "3E8229A5D1183EA2F0C8DBE31B6670E702B1C63BCD17E1979071BC3044C99937"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "3C39BB97029C0819F293A307AB7B7D1FFC0F2D590C4F3B790A4A34ECBA14EFBF"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+    "Sha256": "CBF516F64BE6490335D5F047FE61104F380961783B7F24EB658C4301D3351FAA"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "2C036F32DAE301026E1C25F45F7609FA9B1F7DF5EC611C5C6389BCB10F84F693"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "8A187A12B219B2B816AEA01883982962D2639EA95F721DD4323460B92DFAF2E1"
+  },
+  {
+    "Path": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+    "Sha256": "271EB58B175B9C748346DF2C4FEAFCE27A849491AF2BE1B49EECAD11A24DF4B5"
+  }
+]

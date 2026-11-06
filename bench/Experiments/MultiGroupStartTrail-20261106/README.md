@@ -24,7 +24,8 @@ DLL/PDB changes; Python and caller bytes are identical. Fifteen public rows,
 producer cap35s. No confirmation, tuning, normalization or catalog refresh.
 
 The real two-capture FindAll subject is 18,432 bytes/2,048 tuples. Selection uses
-the qualified 715.96 µs/1.91× CPython gap; these new private-fixture observations
+the published discovery715.96 µs/1.91× CPython gap (paired qualification:
+707.92 µs/2.02×); these new private-fixture observations
 do not establish a new CPython ratio or benchmark Status.
 
 | Public operation | Before µs | After µs | Change | B/op before → after |

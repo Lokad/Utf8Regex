@@ -1,0 +1,9 @@
+{
+  "Source": "7c5f60bd27604f48bdf85b4318373e46c6acbf5d",
+  "Sha256": "47B5FF3D13479291B9BA722BC93818909BE8BBDE59B35135D984269EA1F89E9C",
+  "Bytes": 34339874,
+  "OffVmVerified": true,
+  "TerminalExit": 0,
+  "FullSeconds": 2768.7323673,
+  "Scope": "Full terminal0; exact83 passed steps; Complete/Full, <=3600s, seven generated files verified/imported once"
+}

@@ -1,0 +1,22 @@
+{
+  "FullSource": "7c5f60bd27604f48bdf85b4318373e46c6acbf5d",
+  "PackageVersion": "0.5.0-dev.45",
+  "ProducerAndBenchmarkCSharpChanged": false,
+  "BuildInputsChanged": false,
+  "ChangedTrackedPaths": [
+    "PCRE2.Benchmarks.json",
+    "PythonRe.Benchmarks.json",
+    "README.Benchmarks.json",
+    "README.Parity.json",
+    "README.md",
+    "bench/Experiments/MultiGroupStartTrail-20261106/README.md",
+    "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+    "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
+  ],
+  "AdditionalPaths": "DeliveryDev45 receipt/data observations only",
+  "ActualBinaries": "Generated source/revision metadata differ after final data commit; no DLL equality claim",
+  "OriginalConsumerSourceSha256": "CBD35E993774B928D7D8C054F53A3BEABDFBE8C8024C138CF68253D5BA3C41AB",
+  "RepinnedSourceSha256": "84723791EA55CB316EFEAEDCF0D7DE4ACD112543998FCA76F256064094B4DCB2",
+  "Qualified": false,
+  "PublicationAuthorized": false
+}
