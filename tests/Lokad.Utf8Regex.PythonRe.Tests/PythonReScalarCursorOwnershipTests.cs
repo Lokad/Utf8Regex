@@ -77,7 +77,7 @@ public sealed class PythonReScalarCursorOwnershipTests
         {
             Assert.True(mapped.MoveNext());
             var positionedBytes = mapped.ReservedBytes;
-            Assert.True(positionedBytes > 96); // Slots plus cursor-owned VM scratch.
+            Assert.True(positionedBytes > 0); // Owned slots; unnecessary rollback scratch may be absent.
             source.Cancel();
             var observed = false;
             try { mapped.SnapshotGroups(); }

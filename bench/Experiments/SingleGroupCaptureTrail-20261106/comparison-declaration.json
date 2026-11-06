@@ -1,0 +1,26 @@
+{
+  "Scope": "Single-group rollback trail; ONE bounded public Default-process ABBA; no catalog Status",
+  "SourceParent": "d492fdcd642aaf7ee4da709d728ea4c45d9e7071",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "CoreBefore": "82CCAD0A3EB46A2EC4EE59D07AAD994A335C43C2C87FB0BE4C084E3BD9AF12E7",
+  "CoreAfter": "A21136D97F35ECA9D599D7D09CE4AD161ED8C9FBE630CD6555040E563931EE30",
+  "PythonBefore": "E4FDE8A53158B6F5BDC4A51B8228FC29A2A32063374F6A98071297145B81A705",
+  "PythonAfter": "35B47DCA31C42873DBD9112D990AC50D21F43B0B84C76A7D37EA505E3E24A34B",
+  "Rows": 12,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterSeconds": 120,
+  "ProducerSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Confirmation": "At most one if noise prevents a decision",
+  "Controls": [
+    "unchanged-core-literal-count",
+    "unchanged-python-literal-findall",
+    "unchanged-named-fullmatch-miss"
+  ]
+}

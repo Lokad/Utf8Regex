@@ -59,7 +59,7 @@ internal static partial class Utf8SliceRunner
                 var outcome = terminalClassRepeat
                     ? RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation)
                     : RunSegment(input, captureStarts, captureEnds, balanceHeads,
-                        ref current, resumeFailure, ref stacks, ref invocation, out suspended);
+                        ref current, resumeFailure, preserveCaptureTrail: true, ref stacks, ref invocation, out suspended);
                 resumeFailure = false;
                 if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredEnd && outcome.EndIndex != requiredEnd)
                 {

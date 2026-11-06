@@ -375,7 +375,7 @@ internal static partial class Utf8SliceRunner
                 try
                 {
                     attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
-                        false, ref workspace.Stacks, ref invocation, out _);
+                        false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _);
                 }
                 finally
                 {
@@ -805,7 +805,7 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceMatchOutcome RunSegment(
         ReadOnlySpan<byte> input, int[] captureStarts, int[] captureEnds, int[] balanceHeads,
-        ref AssertionCursor cursor, bool resumeFailure,
+        ref AssertionCursor cursor, bool resumeFailure, bool preserveCaptureTrail,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended)
     {
         suspended = false;
@@ -1102,7 +1102,11 @@ internal static partial class Utf8SliceRunner
                         programIndex++;
                         break;
                     }
-                    if (!stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
+                    // The assertion/history driver retains every entry. In an
+                    // assertion-free latest-value root, one plain slot needs
+                    // undo only while a frame can return to an earlier value.
+                    if ((preserveCaptureTrail || captureStarts.Length != 1 || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
+                        !stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
                         return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     }
@@ -1126,7 +1130,8 @@ internal static partial class Utf8SliceRunner
                     }
                     else
                     {
-                        if (!stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
+                        if ((preserveCaptureTrail || captureStarts.Length != 1 || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
+                            !stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
                         {
                             return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }

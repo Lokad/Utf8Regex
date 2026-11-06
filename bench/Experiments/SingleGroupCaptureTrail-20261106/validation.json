@@ -1,0 +1,45 @@
+{
+  "Decision": "Accepted: lower necessary scratch and detailed-result gain with documented local regressions",
+  "SourceParent": "d492fdcd642aaf7ee4da709d728ea4c45d9e7071",
+  "Windows": {
+    "Targets": [
+      "net10.0",
+      "net11.0"
+    ],
+    "CorePerTarget": 7399,
+    "Pcre2PerTarget": 841,
+    "PythonPerTarget": "604 existing checks plus 2 corrected finite-policy witnesses; same runtime code",
+    "InitialFailures": "Five mandatory-trail Core assumptions; one Python reservation assumption; two insufficient new witness budgets. Raw logs preserved."
+  },
+  "Linux": {
+    "Targets": [
+      "net10.0",
+      "net11.0"
+    ],
+    "CorePerTarget": 7399,
+    "PythonPerTarget": 913,
+    "Pcre2PerTarget": 841,
+    "ExitCode": 0,
+    "FrozenFullAssets": "All eight original DLL/PDB hashes unchanged before/after tests"
+  },
+  "Comparison": {
+    "Seconds": 77.170581374,
+    "Rows": 12,
+    "Samples": 240,
+    "MinimumMilliseconds": 38.6381,
+    "Confirmation": "None",
+    "CoreAssembliesPerProcess": 1,
+    "PythonAssembliesPerProcess": 1
+  },
+  "Raw": {
+    "Linux": "artifacts/experiments/single-group-capture-trail-20261106/evidence.tar.gz",
+    "LinuxSha256": "4836ABD722E02DAAA5A00ED73D6819F7F945E5913CCDDCA87C6DD0950FA1DE04",
+    "LinuxBytes": 8246244,
+    "OffVmCopyHashVerified": true,
+    "Windows": "artifacts/experiments/single-group-capture-trail-20261106/windows.tar.gz",
+    "WindowsSha256": "285AA7017EB609DB075AC320A010FFDF811A13394C5ED65472A8AA9D89F70973",
+    "WindowsBytes": 9726
+  },
+  "Packages": "No repack, qualification or publication; staged dev.44 immutable",
+  "CI": "Pending source push"
+}

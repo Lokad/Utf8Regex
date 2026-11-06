@@ -104,7 +104,11 @@ Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last
 capture to close on the successful path, not the largest participating number:
 `((a))` closes group 1 last. `LastGroup` is that slot's name, or null when
-unnamed. Misses/no participating captures have null completion metadata.
+unnamed. Misses/no participating captures have null completion metadata. With one
+group, participation in its completed slot establishes `LastIndex` without a
+completion-journal scan. Unneeded rollback storage can be omitted on linear paths;
+numeric work/working requirements may decrease, with admission before needed
+allocation and interruption/result contracts preserved.
 Global discovery retries a nonempty match at the same position after an empty
 result before advancing one complete scalar. A complete capture-free boundary-only
 program skips that impossible nonempty retry and uses the same scalar advancement,

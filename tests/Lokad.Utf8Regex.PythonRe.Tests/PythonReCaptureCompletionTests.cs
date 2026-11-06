@@ -7,6 +7,20 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReCaptureCompletionTests
 {
+    [Theory]
+    [InlineData("(?P<v>a)", "a", "a")]
+    [InlineData("(?P<v>)", "", "")]
+    public void SingleCaptureCompletionRemainsValidWithFiniteLimits(string pattern, string text, string capture)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 1024, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
+        var result = regex.SearchDetailedData(Encoding.UTF8.GetBytes(text));
+        Assert.True(result.Success);
+        Assert.Equal(1, result.LastIndex);
+        Assert.Equal("v", result.LastGroup);
+        Assert.Equal(capture, result.Groups[1].ValueText);
+    }
+
     private static IEnumerable<JsonElement> Rows()
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,

@@ -187,8 +187,11 @@ public sealed class Utf8SliceClassAdmissionTests
         Array.Fill(ends, -1);
         var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
+        // Caller-owned slots need no runner scratch without rollback or history.
+        Assert.Equal(Utf8ExecutionLimitKind.None,
             Utf8SliceRunner.IsMatch(program, input, starts, ends, ref storage).Breach);
+        Assert.Equal(new[] { 0 }, starts);
+        Assert.Equal(new[] { 1 }, ends);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);

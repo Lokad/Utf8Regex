@@ -1,0 +1,13 @@
+{
+  "Scope": "Untimed production state; no alternative executor",
+  "CoreSha256": "A21136D97F35ECA9D599D7D09CE4AD161ED8C9FBE630CD6555040E563931EE30",
+  "PythonSha256": "35B47DCA31C42873DBD9112D990AC50D21F43B0B84C76A7D37EA505E3E24A34B",
+  "GroupCount": 1,
+  "UsesCaptureOpeningJournal": false,
+  "Positioned": {
+    "ReservedBytes": 96,
+    "FrameCount": 0,
+    "TrailCount": 0
+  },
+  "DisposedReservedBytes": 0
+}

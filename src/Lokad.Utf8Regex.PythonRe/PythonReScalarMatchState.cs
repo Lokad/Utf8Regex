@@ -568,6 +568,14 @@ internal struct PythonReScalarMatchState
         if (_program.GroupCount == 0) return null;
         try
         {
+            // One participating group is necessarily the last to close. Its
+            // completed slot survives even when no rollback trail was needed.
+            if (_program.GroupCount == 1)
+            {
+                if (!_workspace.Initialized || !TryGetCaptureByteRange(1, out _, out _)) return null;
+                Checkpoint(input);
+                return 1;
+            }
             // The successful workspace keeps its capture journal until the next
             // advance. Only detailed/context results observe completion order;
             // value/string/UTF8 discovery needs no extra scan or metadata state.

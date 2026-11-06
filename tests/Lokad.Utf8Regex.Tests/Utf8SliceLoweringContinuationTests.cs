@@ -140,7 +140,10 @@ public sealed class Utf8SliceLoweringContinuationTests
         }
         var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref storage).Breach);
+        // A single linear slot has no rollback/history consumer. Its caller-owned
+        // arrays need no runner scratch; continuations still require admission.
+        Assert.Equal(shape == 0 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes,
+            Utf8SliceRunner.IsMatch(program, input, starts, ends, ref storage).Breach);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
         using var source = new CancellationTokenSource();
         var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);

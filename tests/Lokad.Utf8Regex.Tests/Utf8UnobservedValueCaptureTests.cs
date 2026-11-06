@@ -62,7 +62,6 @@ public sealed class Utf8UnobservedValueCaptureTests
     [InlineData("abcdef(?=(?<v>[0-9]+))[0-9]+", "abcdef123")]
     [InlineData("abcdef(?<v>a)+(?<-v>b)+(?(v)(?!))", "abcdefaaabbb")]
     [InlineData("abcdef(?<v>[0-9]+)(?<v>[a-z]+)", "abcdef123abc")]
-    [InlineData("abcdef(?<12>[0-9]+)", "abcdef123")]
     public void OriginalConservativeExclusionsRetainTheirCaptureWorkingStorage(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -73,6 +72,23 @@ public sealed class Utf8UnobservedValueCaptureTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
+    }
+
+    [Fact]
+    public void OneSparseSlotNeedsStorageButNoRollbackTrailForValues()
+    {
+        const string pattern = "abcdef(?<12>[0-9]+)";
+        var input = "abcdef123"u8.ToArray();
+        var admitted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 256, MaxWorkSteps = 100000 });
+        Assert.True(admitted.IsMatch(input));
+        Assert.Equal(9, admitted.Match(input).LengthInBytes);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => admitted.MatchDetailed(input)).ResourceKind);
+        var denied = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 1, MaxWorkSteps = 100000 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input)).ResourceKind);
     }
 
     [Theory]
