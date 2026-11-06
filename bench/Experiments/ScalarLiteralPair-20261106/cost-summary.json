@@ -1,0 +1,112 @@
+{
+  "Scope": "ONE public SplitToStrings ABBA, frozen39 vs changed Core with identical PythonRe; no catalog refresh, correction or new Status",
+  "ElapsedSeconds": 28.846269083,
+  "Samples": 100,
+  "Summary": [
+    {
+      "Name": "unchanged-equivalent-alternation",
+      "BeforeUs": 55.22908067542214,
+      "AfterUs": 55.82997249878159,
+      "Percent": 1.0879989599878792,
+      "BeforeProcessMedians": [
+        54.84217749313815,
+        55.73977485928705
+      ],
+      "AfterProcessMedians": [
+        55.84084905660377,
+        55.819095940959414
+      ],
+      "BeforeAllocatedBytes": [
+        19512
+      ],
+      "AfterAllocatedBytes": [
+        19512
+      ],
+      "MinimumBatchMs": 58.6705
+    },
+    {
+      "Name": "actual-unicode-split",
+      "BeforeUs": 97.9824918699187,
+      "AfterUs": 55.72285452766467,
+      "Percent": -43.12978424590162,
+      "BeforeProcessMedians": [
+        97.9739837398374,
+        97.99100000000001
+      ],
+      "AfterProcessMedians": [
+        56.1180790960452,
+        55.56657355679702
+      ],
+      "BeforeAllocatedBytes": [
+        19512
+      ],
+      "AfterAllocatedBytes": [
+        19512
+      ],
+      "MinimumBatchMs": 58.5298
+    },
+    {
+      "Name": "actual-unicode-split-finite",
+      "BeforeUs": 115.20009615384615,
+      "AfterUs": 78.40035708749859,
+      "Percent": -31.944191276717902,
+      "BeforeProcessMedians": [
+        114.63702290076337,
+        115.52057692307693
+      ],
+      "AfterProcessMedians": [
+        79.97424042272127,
+        77.43730297723293
+      ],
+      "BeforeAllocatedBytes": [
+        23712
+      ],
+      "AfterAllocatedBytes": [
+        23712
+      ],
+      "MinimumBatchMs": 43.7451
+    },
+    {
+      "Name": "dense-second-wide-scalar",
+      "BeforeUs": 856.523309178744,
+      "AfterUs": 988.1877049180328,
+      "Percent": 15.37195711177224,
+      "BeforeProcessMedians": [
+        856.9944444444444,
+        856.0521739130435
+      ],
+      "AfterProcessMedians": [
+        990.8573770491804,
+        973.1015873015873
+      ],
+      "BeforeAllocatedBytes": [
+        323760
+      ],
+      "AfterAllocatedBytes": [
+        323760
+      ],
+      "MinimumBatchMs": 58.79
+    },
+    {
+      "Name": "unicode-false-prefix",
+      "BeforeUs": 184.14299397920087,
+      "AfterUs": 33.722407903799265,
+      "Percent": -81.68683631395271,
+      "BeforeProcessMedians": [
+        183.98730158730157,
+        184.23166144200627
+      ],
+      "AfterProcessMedians": [
+        33.37114735658043,
+        33.98014184397163
+      ],
+      "BeforeAllocatedBytes": [
+        6200
+      ],
+      "AfterAllocatedBytes": [
+        6200
+      ],
+      "MinimumBatchMs": 57.3014
+    }
+  ]
+}

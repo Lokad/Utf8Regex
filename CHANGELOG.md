@@ -25,6 +25,10 @@
 - Reuse the existing bounded eight-literal Count search in PythonRe, including
   capture-discarding and finite-limit calls. VM scratch and numerical work/depth
   requirements can decrease; result discovery and captured outputs keep their routes.
+- Reuse checked literal-pair search for positive two-member Unicode classes.
+  PythonRe Unicode splits improve; dense wide-character splits can cost more.
+  Construction and execution admission, whole-subject validation and original
+  interruption controls remain enforced.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when

@@ -87,6 +87,11 @@ major working-buffer requirements can decrease; numeric costs depend on the
 program version. Frames still require depth and working admission before growth,
 and the original token/deadline governs execution and publication.
 
+Positive, case-sensitive classes containing exactly two scalars, with at least
+one non-ASCII member, can reuse complete UTF-8 literal-pair plans. Encoded storage
+is admitted at construction; discovery and publication share the original
+execution authority. Numerical work and VM scratch requirements can decrease.
+
 Forward plain alternatives can omit a frame when a required exact ASCII literal
 disproves one branch at the current position. Inspection skips at most 32 capture
 markers per branch; viable alternatives retain their original order and capture

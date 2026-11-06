@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 
@@ -978,6 +979,15 @@ internal static class Utf8NativeExecutionAnalyzer
             owner.ChargeWork(1); node = node.Child(0); frames.Push(new(node, 0, false));
         }
         owner.ChargeWork(1);
+        // Two unfolded scalar members are a complete UTF-8 literal pair.
+        // Keep ASCII classes on their existing lowering and borrow the pair
+        // search for mixed/wide classes without adding a matching primitive.
+        if (node.Kind == Utf8TreeNodeKind.Set && !node.MatchCaseInsensitive &&
+            TryGetScalarClassLiteralPair(node.ScalarClass, owner, out literals))
+        {
+            construction.Complete();
+            return true;
+        }
         if (node.Kind != Utf8TreeNodeKind.Alternate) return false;
         var result = owner.AllocateArray<byte[]>(node.ChildCount, false);
         for (var index = 0; index < result.Length; index++)
@@ -986,6 +996,39 @@ internal static class Utf8NativeExecutionAnalyzer
             if (!TryGetLiteralBranchUtf8(node.Child(index), out result[index])) return false;
         }
         literals = result; construction.Complete(); return true;
+    }
+
+    private static bool TryGetScalarClassLiteralPair(Utf8ScalarClass? scalarClass,
+        Utf8ConstructionBudget owner, out byte[][] literals)
+    {
+        literals = [];
+        if (scalarClass is null) return false;
+        var data = scalarClass.Data.AsSpan();
+        // Canonical positive ranges only: no negation, predicates or subtraction.
+        if (data.Length < 5 || data[0] != 0 || data[2] != 0 ||
+            data[1] is not (2 or 4) || data.Length != 3 + data[1]) return false;
+        Span<int> scalars = stackalloc int[2];
+        var count = 0;
+        for (var index = 3; index < data.Length; index += 2)
+        {
+            for (var scalar = data[index]; scalar < data[index + 1]; scalar++)
+            {
+                owner.ChargeWork(1);
+                if (count == scalars.Length || !Rune.IsValid(scalar)) return false;
+                scalars[count++] = scalar;
+            }
+        }
+        if (count != 2 || scalars[0] < 128 && scalars[1] < 128) return false;
+        var result = owner.AllocateArray<byte[]>(2, false);
+        for (var index = 0; index < result.Length; index++)
+        {
+            var rune = new Rune(scalars[index]);
+            var bytes = owner.AllocateArray<byte>(rune.Utf8SequenceLength, false);
+            rune.EncodeToUtf8(bytes);
+            result[index] = bytes;
+        }
+        literals = result;
+        return true;
     }
 
     private static bool TryGetLiteralBranchUtf8(Utf8TreeNode node, out byte[] literal)

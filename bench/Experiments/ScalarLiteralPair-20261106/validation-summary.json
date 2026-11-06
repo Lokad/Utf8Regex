@@ -1,0 +1,16 @@
+{
+  "SourceParent": "1289f4c9bb0d31e4b153747f6ca9b2be7f7ed102",
+  "RawSha256": "15DB2037759ECB2D930B337CD7888044A1A5B88579AD8EFB48EA0CC0874E26D9",
+  "RawBytes": 1678394,
+  "RawOffVmVerified": true,
+  "WindowsSha256": "BD7B20BEE6086B5C8AC56627619E26EE918CD1E5AA212ACF255C6499C14209F2",
+  "CorePerOsPerFramework": 1901,
+  "PythonPerOsPerFramework": 176,
+  "Pcre2PerOsPerFramework": 1212,
+  "FinalPairPerOsPerFramework": 9,
+  "ManagedInventoryNet11Windows": 12,
+  "LinuxTestMarker": 0,
+  "LinuxPostTestSummaryFailure": "rg unavailable after successful tests; terminal0/logs verified, no repeat",
+  "Complete": true,
+  "FullOrPackageQualificationRepeated": false
+}
