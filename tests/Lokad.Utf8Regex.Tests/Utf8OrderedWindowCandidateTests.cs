@@ -74,15 +74,20 @@ public sealed class Utf8OrderedWindowCandidateTests
     }
 
     [Fact]
-    public void DenseFalseFirstBytesUseBoundedWorkButStillAdmitVmWorkspace()
+    public void DenseFalseFirstBytesUseBoundedWorkAndOnlyNeededWorkspace()
     {
         var input = Encoding.UTF8.GetBytes(new string('r', 100000) + "Tom!!!!!!!!!!river");
         var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkSteps = 4096 });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
+        // A complete terminal tail no longer needs rewind state. A capture
+        // starting in the tail keeps the VM path and its workspace admission.
+        Assert.Equal(1, new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        const string capturedTail = @"Tom.{10,25}(?<tail>river)|river.{10,25}Tom";
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(Pattern,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(capturedTail,
                 RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));

@@ -62,6 +62,15 @@ tails, captures, RTL/NB, malformed input, aliases, depth/working/result admissio
 and original interruption. [Core specification](../../../docs/SPEC.md) and
 [migration guide](../../../docs/MIGRATION.md) record lower numerical requirements.
 
+Full CI on `9f3f0012` subsequently failed one obsolete workspace witness:
+Core42036/42037 per runtime on both OS. It expected fused Count to require
+rewind storage. The corrected test accepts that Count under1 working byte and
+still requires typed working denial for a capture-start tail with genuine VM
+storage needs. Exact pre-fix reproduction fails both Windows targets; the two
+affected fixtures then pass41 checks per runtime on Windows/Linux. Production
+source and timed assets are unchanged; no timings or package checks are repeated.
+The failed CI remains recorded as failed, separate from follow-up CI.
+
 Immutable raw under `artifacts/experiments/dot-tail-policy-20261106/`:
 
 - `evidence.tar.gz`, SHA256
@@ -71,6 +80,9 @@ Immutable raw under `artifacts/experiments/dot-tail-policy-20261106/`:
 - `correctness-source.zip`: Windows checks, complete final source/tests/docs,
   patch, analyzer, source identities and summary; SHA256
   `46B1D2F904CD1BDB9B38AD4CECF58B50B4B9302161557BB83A3C5CCC0F63A64E`.
+- `workspace-witness.zip`: failed CI logs, pre-fix reproduction, corrected test
+  source/patch and focused Windows/Linux results; SHA256
+  `9A053A69292A7E6932714696CF79E6049C99B02128B58F1C1A77D45D1D123AE6`.
 
 All eight frozen Full DLL/PDBs remain unchanged. Existing qualified packages,
 symbols and published bytes are untouched. No package or Full refresh was repeated;
