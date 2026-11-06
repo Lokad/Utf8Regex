@@ -1,0 +1,8 @@
+{
+  "Phase": "Linux orchestration before tests",
+  "Issue": "Copied wrapper required missing scratch; caller had already staged and verified inputs",
+  "NoTestsStarted": true,
+  "NoTimedComparisonStarted": true,
+  "Fix": "Reuse existing verified preflight; original8GiB admission and tests preserved",
+  "RepeatQualification": false
+}

@@ -1,0 +1,46 @@
+{
+  "Scope": "ONE exact Windows-package dev44-to-dev45 public operating-cost comparison for the capture-bookkeeping batch; no isolated decomposition, normalization or catalog Status",
+  "BeforeVersion": "0.5.0-dev.44",
+  "AfterVersion": "0.5.0-dev.45",
+  "BeforeSource": "c410be73b6a61ba1e1cd798c9319c2682e494d38",
+  "AfterSource": "6c50b01b72f9385f233b367a8df4aa177cf4eec9",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 18,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Warmup": "1 second/min128; normal startup8CPU thenCPU2; default tiering/PGO",
+  "Acceptance": "Observe every allocation and process range; preserve finite/live/deadline costs, history/rollback and PCRE, prior window/tail/AWS/class-run observations. No universal10% delivery gate. At most one justified noise confirmation.",
+  "CoreBefore": "B61AF63D12B2F3B6D3387FCB9B87303584BDF473748A1AAD5D809AFBC6145E1D",
+  "PythonBefore": "A1654B75B7DD150375E293CEFAB47F0E408B1951708791EE5CB993B1868FA8DC",
+  "PcreBefore": "0029B36081DF4AA12F9E3BBED4FDAE73165754229FC8354D34C7A5156111AC0E",
+  "CoreAfter": "D9570A23E85539F1323AC2677C3AF4270E5140E911B91B197409505069D13AA5",
+  "PythonAfter": "AD476034D917E846BB815CAB24FAA389073E261BB49224F58B31372710B44207",
+  "PcreAfter": "7D56A547690984A2EBDECA3164C3C792BA7365EF1AD0C3464665A609DA0E786F",
+  "Unchanged": [
+    {
+      "File": "Worker.dll",
+      "Sha256": "B24174150AD280E10DDEC4CCD1BAF2E20BADF76C221BE275A9C921EBC390F6D2"
+    },
+    {
+      "File": "Worker.pdb",
+      "Sha256": "C443E08419026D1CA9A15E99735F816AB5C2F51680EB5A9D6ADBA55EED947551"
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "AD405F95C2D3B8CE5E76DBEEEA8F0E27ED3FA4D0702E57F3DB7D93268C41AC75"
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+      "Sha256": "B0AB10A4AC2477BDABCD1572F4DDDDE3704FC31B03097CB6171B5704271F2009"
+    }
+  ]
+}

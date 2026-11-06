@@ -1,0 +1,12 @@
+{
+  "Sha256": "AF890C09B1B748EA2CEA50D9FB4F03117604C733F7CE372497D61ED1453639F7",
+  "Bytes": 3902597,
+  "OffVmVerified": true,
+  "Seconds": 112.434842744,
+  "Samples": 360,
+  "MinimumSampleMilliseconds": 31.6661,
+  "TerminalExit": 0,
+  "Confirmation": "None",
+  "Decision": "Accept capture working/allocation reductions with documented operating-cost observations; no universal slowdown gate",
+  "Qualification": "Detailed-result before-process medians diverge; ordinary two-capture source gains do not reproduce in combined exact-package comparison"
+}

@@ -1,0 +1,23 @@
+{
+  "Id": 42279995071,
+  "HeadSha": "6c50b01b72f9385f233b367a8df4aa177cf4eec9",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42279995071",
+  "Jobs": [
+    {
+      "Conclusion": "success",
+      "CompletedAt": "2026-11-06T19:37:16Z",
+      "Name": "tests (windows-latest)",
+      "Status": "completed"
+    },
+    {
+      "Conclusion": "success",
+      "CompletedAt": "2026-11-06T19:36:42Z",
+      "Name": "tests (ubuntu-latest)",
+      "Status": "completed"
+    }
+  ],
+  "ObservedLocal": "2026-11-06T20:42:09.1709552+01:00",
+  "Closed": true
+}

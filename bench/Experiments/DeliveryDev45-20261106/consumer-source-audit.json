@@ -8,5 +8,6 @@
   ],
   "OnlyExactPinsChanged": true,
   "RepinnedArchiveSha256": "84723791EA55CB316EFEAEDCF0D7DE4ACD112543998FCA76F256064094B4DCB2",
-  "Qualified": false
+  "Qualified": true,
+  "Acceptance": "Windows/Linux both targets; original Awk19/Lython118 and public probes/root loans0; package-cost acceptance separate"
 }
