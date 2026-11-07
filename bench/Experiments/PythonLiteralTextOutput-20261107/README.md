@@ -84,3 +84,12 @@ Full refresh was repeated. Immutable raw evidence is copied off VM and verified:
 An initial archive command reported a source-directory timestamp change; writing
 the archive to a sibling path fixed archiving. The experiment was not repeated.
 No NuGet publication.
+
+Initial CI for `ed65ef0b` stopped at a benchmark-only caller's missing new
+out-length argument. Correction `1f48bb58` updates that diagnostic to reuse the
+validated length and acquire owned miss bytes when required. Affected benchmark
+builds and eight diagnostic checksum smokes pass across both targets/platforms.
+Production libraries and the timed comparison are unchanged. The
+[correction evidence](diagnostic-fix-evidence.json) includes the frozen Full54
+binaries and original failure. Corrected source CI
+[passed on Windows and Linux](ci.json).

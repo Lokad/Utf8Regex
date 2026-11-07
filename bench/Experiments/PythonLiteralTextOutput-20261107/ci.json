@@ -1,0 +1,21 @@
+{
+  "Run": 42405945400,
+  "Head": "1f48bb58ae01c1ce37077e9814a2c351d4615c10",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (windows-latest)",
+      "Conclusion": "success"
+    }
+  ],
+  "CompletedAtUtc": "2026-11-07T19:31:41Z",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42405945400",
+  "InitialFailure": "42405220039, benchmark-only compile caller; preserved in initial-ci-failure.json and diagnostic-fix evidence.",
+  "ProducerTimingRepeated": false,
+  "FullOrPackageRepeated": false
+}
