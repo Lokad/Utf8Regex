@@ -25,6 +25,9 @@
   starts while retaining bounded interruption and resource controls.
   Completed single-capture references avoid unnecessary opening journals, and
   bounded repeat proofs reuse pure predicate dispatch with unchanged work charges.
+  Complete ASCII-range Count skips nonmembers, and PythonRe captured
+  class/delimiter searches avoid repeated impossible starts. These routes can
+  require less numerical work and temporary capacity under finite policies.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.
