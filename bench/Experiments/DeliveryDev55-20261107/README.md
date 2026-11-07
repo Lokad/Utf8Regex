@@ -89,5 +89,5 @@ All six [canonical raw archives](canonical-archives.json) are verified off VM.
 Frozen Full52/54/55 graphs remain intact. The prior dev.54 Linux scratch retirement
 was fully compared with its retained canonical archive before removing only its
 two named VM targets. Protected and previously denied scopes remain untouched.
-[Source CI](source-ci.json) passed on Windows/Linux. Snapshot CI is pending.
+[Source CI](source-ci.json) and [snapshot CI](snapshot-ci.json) passed on Windows/Linux.
 No NuGet publication.
