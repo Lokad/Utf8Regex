@@ -1,0 +1,19 @@
+{
+  "HeadSha": "dae93ecfeb8395eeea72eb2ddab6cfc721a34bc7",
+  "Id": 42394508467,
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "Name": "tests (windows-latest)",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Conclusion": "success"
+    }
+  ],
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42394508467",
+  "CheckedAt": "2026-11-07T18:15:37.0295336+01:00",
+  "Closed": true
+}

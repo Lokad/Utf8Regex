@@ -88,3 +88,5 @@ Full52 graphs remain unchanged. Raw evidence is copied off VM and hash-verified:
 Parent `328f1577`; Core `8AFEDEC7` to `0B032B40`, PCRE2 `23FA2CBA` to
 `7EDAF253`, fixed PythonRe `47870A68`, caller `0E9A9311`. Exact hashes and both
 test-patch revisions are retained. No NuGet publication.
+
+Source CI [passed on Windows and Linux](ci.json) for `dae93ecf`.
