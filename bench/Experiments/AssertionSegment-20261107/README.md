@@ -75,3 +75,5 @@ Canonical raw evidence is immutable and verified off VM:
 Source parent `4972688b`; Core before `D9667053`, after `00D7A259`; fixed PythonRe
 `47870A68`/PCRE2 `3236E597`; final caller `5E58093B`. Full hashes and the source
 patch live in raw evidence and [scope](scope.json). No NuGet publication.
+
+Source CI [passed on Windows and Linux](ci.json) for `68128a36`.

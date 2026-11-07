@@ -1,0 +1,21 @@
+{
+  "RunId": 42388172571,
+  "HeadSha": "68128a363f2d01e5ff304b24ec7932fb3c1e4081",
+  "Status": "completed",
+  "Conclusion": "success",
+  "ObservedAt": "2026-11-07T16:55:52.1986721+01:00",
+  "Jobs": [
+    {
+      "Name": "tests (windows-latest)",
+      "Status": "completed",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Status": "completed",
+      "Conclusion": "success"
+    }
+  ],
+  "Terminal": true,
+  "Scope": "Repository source CI,both runtimes and disabled dynamic code;no rerun"
+}
