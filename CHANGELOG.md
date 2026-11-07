@@ -43,6 +43,8 @@
   and gap prefixes retain their conservative windows; required work can decrease.
   Reuse prepared prefix tries for short PythonRe searches under the same resource
   and interruption authority, avoiding repeated case-expanded prefix checks.
+  Extend existing class/delimiter windows to short captured searches, avoiding
+  failed prefix retries before detailed-result projection.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

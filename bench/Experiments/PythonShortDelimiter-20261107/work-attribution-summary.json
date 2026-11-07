@@ -1,0 +1,27 @@
+{
+  "Scope": "Untimed production discovery;not public throughput",
+  "Original256GateAllows": false,
+  "Proposed16GateAllows": true,
+  "Before": {
+    "Found": true,
+    "Start": 7,
+    "End": 15,
+    "Steps": 99,
+    "WorkingBytes": 320
+  },
+  "After": {
+    "Found": true,
+    "Start": 7,
+    "End": 15,
+    "Steps": 36,
+    "WorkingBytes": 320
+  },
+  "KnownStart": {
+    "Found": true,
+    "Start": 7,
+    "End": 15,
+    "Steps": 29,
+    "WorkingBytes": 320
+  },
+  "RawFieldNote": "ExistingLengthGate in raw probes denotes the original256byte expression,not current source gate"
+}

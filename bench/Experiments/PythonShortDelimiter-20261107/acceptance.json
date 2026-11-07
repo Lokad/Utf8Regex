@@ -1,0 +1,85 @@
+{
+  "Decision": "Promote documented local tradeoffs for major target gains",
+  "Source": "6a6432a658ea94405a51ebe3c36530889e126ada plus runtime.patch",
+  "Seconds": 108.623755455,
+  "Rows": 21,
+  "Samples": 420,
+  "MinimumSampleMilliseconds": 51.4695,
+  "Allocations": "Unchangedall21medians",
+  "PersistentGains": [
+    {
+      "Name": "actual-detailed",
+      "BeforeUs": 1.3669942328122628,
+      "AfterUs": 0.77613278107504,
+      "Percent": -43.223404865554336,
+      "DeltaUs": -0.5908614517372228
+    },
+    {
+      "Name": "actual-detailed-finite-live",
+      "BeforeUs": 1.9801911902748448,
+      "AfterUs": 1.1947116334189216,
+      "Percent": -39.66685442868276,
+      "DeltaUs": -0.7854795568559232
+    },
+    {
+      "Name": "actual-detailed-deadline-live",
+      "BeforeUs": 2.8539489428665963,
+      "AfterUs": 1.8995167432485256,
+      "Percent": -33.44251136670332,
+      "DeltaUs": -0.9544321996180707
+    },
+    {
+      "Name": "detail-16",
+      "BeforeUs": 1.7406133239337327,
+      "AfterUs": 0.7670513031181749,
+      "Percent": -55.93212504057693,
+      "DeltaUs": -0.9735620208155578
+    },
+    {
+      "Name": "actual-value-search",
+      "BeforeUs": 1.1207582083161292,
+      "AfterUs": 0.5514009661150081,
+      "Percent": -50.80107716155348,
+      "DeltaUs": -0.569357242201121
+    }
+  ],
+  "PersistentAdverse": [
+    {
+      "Name": "folded-search-miss",
+      "BeforeUs": 0.21100547659564028,
+      "AfterUs": 0.2223021166572653,
+      "Percent": 5.353718891037729,
+      "DeltaUs": 0.011296640061625007
+    },
+    {
+      "Name": "dense-class-false-delimiters",
+      "BeforeUs": 2.4098115946657863,
+      "AfterUs": 2.500736077804423,
+      "Percent": 3.7730950975545907,
+      "DeltaUs": 0.09092448313863688
+    },
+    {
+      "Name": "detail-15-control",
+      "BeforeUs": 1.6338168835070905,
+      "AfterUs": 1.7795278046642748,
+      "Percent": 8.91843649236912,
+      "DeltaUs": 0.14571092115718431
+    }
+  ],
+  "ControlInterpretation": "Coreliteral+0.87%,Pcreliteral+2.94%,predecodedNet-3.14% rangesoverlap;no normalization orcausalcredit. Other adverse/largeUnicode/mail/explicitgap rangesoverlap",
+  "FiniteExtraUsBefore": 0.613196957462582,
+  "FiniteExtraUsAfter": 0.4185788523438816,
+  "FiniteExtraPercentBefore": 44.85731854194266,
+  "FiniteExtraPercentAfter": 53.931345582916634,
+  "Tests": "Python340cases/TFM/OS includingexpanded54windowfixture",
+  "Accounting": "Existing metered search/rewind/verification;work99->36observed,same7..15/320B;not a public timingclaim",
+  "Confirmation": "None;ONEpublicABBA,no tuning",
+  "Canonical": "artifacts/experiments/python-short-delimiter-20261107/evidence.tar.gz",
+  "Sha256": "D5B149034C337434D4B9611E97293A9D639215BC5470ABB7E5A3A04348AA5D9E",
+  "Bytes": 2416368,
+  "OffVmVerified": true,
+  "Full50AndPriorStaged270Unchanged": true,
+  "ClosedHandles": "68161Windowsnew0/17272Linux0/77603comparison0",
+  "Milestone": "Combinedtrie+shortwindow batch frozen for common0.5.0-dev.51 qualification;no packagequalification repeated",
+  "Publication": false
+}

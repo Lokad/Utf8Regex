@@ -1,0 +1,27 @@
+{
+  "Pattern": "([a-z]\u002B)-([0-9]\u002B)",
+  "InputBytes": 22,
+  "CoreHintEligible": false,
+  "DetectorDelimiter": 45,
+  "LeadingClass": 2,
+  "LiteralIndex": 6,
+  "GapMaximum": 0,
+  "DirectAsciiClass": true,
+  "CaptureMarkersOnly": true,
+  "ExistingLengthGate": false,
+  "OrdinaryDiscovery": {
+    "Found": true,
+    "Start": 7,
+    "End": 15,
+    "Steps": 99,
+    "WorkingBytes": 320
+  },
+  "KnownCorrectStartVerification": {
+    "Found": true,
+    "Start": 7,
+    "End": 15,
+    "Steps": 29,
+    "WorkingBytes": 320
+  },
+  "AttributionOnly": true
+}

@@ -29,26 +29,28 @@ public sealed class PythonReClassDelimiterWindowTests
     [InlineData(@"[\w.+-]+@[\w.-]+\.[\w.-]+", "abc \t @mention abc@bad abc@x.y é@x.y")]
     public void DirectAndExplicitWhitespaceWindowsKeepAllPossibleStarts(string pattern, string suffix)
     {
-        var prefix = "é😀" + new string('x', 256) + " ";
-        var text = prefix + suffix;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern);
-        foreach (var finite in new[] { false, true })
+        foreach (var prefix in new[] { "é😀 ", "é😀" + new string('x', 256) + " " })
         {
-            using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
-                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
-            Assert.Equal(oracle.Count(text), owner.Count(input));
-            Assert.Equal(oracle.Count(suffix), owner.Count(input, Encoding.UTF8.GetByteCount(prefix)));
-            var actual = owner.FindIterDetailed(input);
-            var wanted = oracle.Matches(text).ToArray();
-            Assert.Equal(wanted.Length, actual.Length);
-            for (var index = 0; index < actual.Length; index++)
+            var text = prefix + suffix;
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern);
+            foreach (var finite in new[] { false, true })
             {
-                Assert.Equal(wanted[index].Index, actual[index].Value.StartOffsetInUtf16);
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted[index].Index)), actual[index].Value.StartOffsetInBytes);
-                Assert.Equal(wanted[index].Groups.Cast<Group>().Select(group => group.Value),
-                    actual[index].Groups.Select(group => group.ValueText));
+                using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
+                    finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
+                        MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
+                Assert.Equal(oracle.Count(text), owner.Count(input));
+                Assert.Equal(oracle.Count(suffix), owner.Count(input, Encoding.UTF8.GetByteCount(prefix)));
+                var actual = owner.FindIterDetailed(input);
+                var wanted = oracle.Matches(text).ToArray();
+                Assert.Equal(wanted.Length, actual.Length);
+                for (var index = 0; index < actual.Length; index++)
+                {
+                    Assert.Equal(wanted[index].Index, actual[index].Value.StartOffsetInUtf16);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted[index].Index)), actual[index].Value.StartOffsetInBytes);
+                    Assert.Equal(wanted[index].Groups.Cast<Group>().Select(group => group.Value),
+                        actual[index].Groups.Select(group => group.ValueText));
+                }
             }
         }
     }
@@ -159,11 +161,13 @@ public sealed class PythonReClassDelimiterWindowTests
         }
     }
 
-    [Fact]
-    public void EveryWorkCutoffRetainsTheCallerLoanAndRefusesPartialSuccess()
+    [Theory]
+    [InlineData(0)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    [InlineData(246)] [InlineData(247)] [InlineData(248)] [InlineData(512)]
+    public void EveryWorkCutoffRetainsTheCallerLoanAndRefusesPartialSuccess(int prefix)
     {
         var program = PythonReScalarCompiler.Compile(new PythonReParser("([a-z]+)-([0-9]+)").Parse(default));
-        var input = Encoding.UTF8.GetBytes(new string('x', 512) + " item-123");
+        var input = Encoding.UTF8.GetBytes(new string('x', prefix) + " item-123");
         ulong Run(ulong cap)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
@@ -220,5 +224,50 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Throws<ArgumentException>(() => owner.ReplaceToString(invalid, @"\2:\1"));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Search(invalid, 0, token.Token)).CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(15)] [InlineData(16)] [InlineData(17)]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)]
+    public void SubjectGateKeepsDetailedCapturesLaterFloorsAndAnchoredOperations(int length)
+    {
+        var text = new string('x', length - 7) + " item-1";
+        var bytes = Encoding.UTF8.GetBytes(text); var storage = new byte[bytes.Length + 7]; bytes.CopyTo(storage, 3);
+        var input = storage.AsSpan(3, bytes.Length); var at = length - 6;
+        for (var mode = 0; mode < 3; mode++)
+        {
+            using var token = new CancellationTokenSource();
+            using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)", default,
+                mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                mode == 0 ? default : new() { MaxWorkSteps = 1_000_000, MaxDepth = 128,
+                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 });
+            var first = owner.SearchDetailedData(input, 0, token.Token);
+            Assert.Equal((at, length), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes));
+            Assert.Equal(new[] { "item-1", "item", "1" }, first.Groups.Select(group => group.ValueText));
+            Assert.Equal(at + 1, owner.Search(input, at + 1, token.Token).StartOffsetInBytes);
+            Assert.False(owner.Match(input).Success);
+            Assert.False(owner.FullMatch(input).Success);
+        }
+    }
+
+    [Fact]
+    public void ShortWindowAliasesKeepOwnedSnapshotsAfterAdvanceAndDisposal()
+    {
+        var input = "prefix item-123 other-45"u8.ToArray();
+        using var owner = new Utf8PythonRegex("(?P<n>[a-z]+)-([0-9]+)");
+        var cursor = owner.CreateMatchCursor(input); var alias = cursor;
+        try
+        {
+            Assert.True(cursor.MoveNext()); var first = alias.Current;
+            Assert.True(alias.MoveNext()); var second = cursor.Current;
+            Assert.False(cursor.MoveNext()); alias.Dispose();
+            input.AsSpan().Fill((byte)'x');
+            Assert.Equal("item-123", first.Value.ValueText);
+            Assert.Equal("other-45", second.Value.ValueText);
+            first.Groups[1] = default; first.NameEntries[0] = default;
+            Assert.True(second.TryGetFirstSetGroup("n", out var group));
+            Assert.Equal("other", group.ValueText);
+        }
+        finally { cursor.Dispose(); }
     }
 }

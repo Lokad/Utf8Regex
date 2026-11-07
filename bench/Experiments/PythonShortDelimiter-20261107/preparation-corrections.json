@@ -1,0 +1,8 @@
+{
+  "Stage": "Static graph guard before measurement/preflight",
+  "Issue": "Copied Core-change wrapper still asserted unchangedPython instead of unchangedCore",
+  "Correction": "Assert fixed Core/Pcre/caller;PythonBefore/After identities already separately declared",
+  "ProducerChanged": false,
+  "ComparisonStarted": false,
+  "SettingsChanged": false
+}

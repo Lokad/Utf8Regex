@@ -1,0 +1,31 @@
+{
+  "Scope": "ONE short class-delimiter gate256->16 sourceA/B,21public rows",
+  "BeforeSource": "6a6432a658ea94405a51ebe3c36530889e126ada",
+  "AfterSource": "6a6432a658ea94405a51ebe3c36530889e126ada plus runtime.patch",
+  "CoreBefore": "E460D9AE9D740D18C1667164BA758F2BA90A9EF94664E0E52CC8C1AB5AFB5AF5",
+  "CoreAfter": "E460D9AE9D740D18C1667164BA758F2BA90A9EF94664E0E52CC8C1AB5AFB5AF5",
+  "PythonBefore": "F95E00F9CCA5829A4D0529B1212C72A43A0ECB660A1272FC3B5E8626783A1CE8",
+  "PythonAfter": "D1CBF756A0EEA314479CE23C9A7EF6B21FC1B667F0649C36B4536B21BED3B3BF",
+  "PcreBefore": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "PcreAfter": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "WorkerSha256": "37383566E473E33E69FEE4A16A4A23BB702B777C81770F36D113CCB66BAD0087",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 21,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Coverage": "Actualdetailed/value/finite/live/deadline,15vs16,long/dense/absentdelimiters,explicitgaps,folded/native/Unicode/mailneighbors;fixedCore/Pcre/caller/predecodedNet",
+  "Acceptance": "Useful overall public gains with all allocations/local costs/process ranges retained;no universal10%gate",
+  "Confirmation": "At most one justified noise confirmation;no retuning",
+  "TimingStarted": false,
+  "DeclaredAt": "2026-11-07T12:24:59.7371980+01:00"
+}

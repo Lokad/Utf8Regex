@@ -337,7 +337,7 @@ internal struct PythonReScalarMatchState
         var keepWorkspace = false;
         var leadingClass = -1;
         var literalIndex = -1;
-        var delimiter = !_finished && search && input.Length >= 256 &&
+        var delimiter = !_finished && search && input.Length >= 16 &&
             !_program.CanMatchEmpty && !_program.HasContiguousAnchor &&
             !_program.RightToLeft && !_program.IgnoreCase && _candidateRegex is null
             ? Utf8SliceRunner.GetLeadingWhitespaceLiteral(_program, out leadingClass, out literalIndex, out _) : -1;

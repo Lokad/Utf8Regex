@@ -42,7 +42,8 @@ can lower numerical work charges without changing allocation or admission scope.
 
 Search-based operations can also narrow candidate starts for a positive greedy
 ASCII set repeat followed directly by an exact ASCII delimiter, allowing capture
-markers between them. Existing checked, metered search and scalar rewind locate
+markers between them, including short subjects of at least 16 bytes.
+Existing checked, metered search and scalar rewind locate
 a necessary window; the profile VM still verifies its candidates with complete
 prefix context and original capture/backreference order. Match and FullMatch
 retain anchored verification. Whole-subject validation and capture-slot admission
