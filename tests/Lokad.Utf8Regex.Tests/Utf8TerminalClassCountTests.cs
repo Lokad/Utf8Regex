@@ -13,6 +13,78 @@ public sealed class Utf8TerminalClassCountTests
         MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000,
     };
 
+    [Theory]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    public void AsciiRangeGapsKeepRunLimitsAndScalarFloors(int gap)
+    {
+        var text = new string('x', gap) + "12😀123456789é" + new string('x', gap) + "345 aaabaaaa caac";
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var pattern in new[] { "[0-9]+", "[0-9]{3,4}", "a{2,3}", "[ac]+", "[^0-9]+", "(?i:a+)" })
+        {
+            var regex = new Utf8Regex(pattern);
+            var program = regex.Inspection.AvailableOwnedSliceProgram!;
+            foreach (var floor in new[] { 0, gap, gap + 2 })
+            {
+                var expected = Regex.Count(Encoding.UTF8.GetString(input.AsSpan(floor)), pattern);
+                var invocation = new Utf8SliceInvocation(new(1_000_000, 128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
+                var outcome = Utf8SliceRunner.CountFromBytes(program, input, floor, [], [], ref invocation);
+                Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
+                Assert.Equal(expected, outcome.Count);
+                Assert.Equal(expected, regex.Count(input.AsSpan(floor)));
+            }
+        }
+    }
+
+    [Fact]
+    public void AsciiRangeSeekingKeepsEveryWorkCutoffAndBorrowedLoan()
+    {
+        var program = new Utf8Regex("[0-9]{2,4}").Inspection.AvailableOwnedSliceProgram!;
+        var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "123456789😀12");
+        var baseline = new Utf8SliceInvocation(new(100_000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        Assert.True(baseline.Ledger.TryReserve(13));
+        var complete = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
+        Assert.Equal(Utf8ExecutionLimitKind.None, complete.Breach);
+        Assert.Equal(3, complete.Count);
+        for (ulong cap = 1; cap <= baseline.Budget.Steps; cap++)
+        {
+            var invocation = new Utf8SliceInvocation(new(cap, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
+            Assert.Equal(cap == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
+            if (result.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(3, result.Count);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Fact]
+    public void AsciiRangeSeekingObservesOriginalCancellationAndDeadline()
+    {
+        var program = new Utf8Regex("[0-9]+").Inspection.AvailableOwnedSliceProgram!;
+        var input = new byte[262144]; input.AsSpan().Fill((byte)'x');
+        using var cancellation = new CancellationTokenSource();
+        var session = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());
+        try
+        {
+            var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1), Timeout.InfiniteTimeSpan, cancellation.Token);
+            var error = Assert.Throws<OperationCanceledException>(() =>
+                Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        }
+        finally { session.Complete(); }
+        var expired = false;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => expired ? 30_000 : 0);
+        session = Utf8SearchDiagnosticsSession.Start(_ => expired = true);
+        try
+        {
+            var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1), TimeSpan.FromSeconds(20), default);
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
+        }
+        finally { session.Complete(); }
+    }
+
     public static IEnumerable<object[]> ScalarCases()
     {
         foreach (var compiled in new[] { false, true })

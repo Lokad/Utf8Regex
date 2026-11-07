@@ -468,6 +468,15 @@ so tight working/result/depth limits can admit it. Work charges are bounded scan
 units rather than VM instructions. RTL, NonBacktracking, ECMAScript, folded and unproved
 grammar shapes keep their existing routes; detailed results are unchanged.
 
+The scalar counter for a complete capture-free greedy literal or contiguous
+ASCII range repeat can skip nonmembers through checked span search. Active runs
+retain their original minimum/maximum splitting. Controlled searches charge
+before each block of at most 2048 bytes and preserve the original token,
+deadline and final publication check. Strict whole-subject validation still
+precedes counting; no capture workspace or result payload is introduced.
+Nonmember work charges can fall from per-scalar steps to bounded scan units.
+Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
+
 Greedy unbounded word repeats with a positive minimum, optionally enclosed by
 word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
 proof. That counter needs no capture workspace and admits one work unit before

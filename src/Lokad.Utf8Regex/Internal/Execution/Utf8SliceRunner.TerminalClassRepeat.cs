@@ -45,6 +45,9 @@ internal static partial class Utf8SliceRunner
             ? program.SetMasks[atom.A] : [];
         var minimum = repeat.RepeatMinimum;
         var maximum = repeat.RepeatMaximum;
+        byte asciiLast = 0;
+        var asciiFirst = input.Length - start >= 256
+            ? GetUnfoldedAsciiRange(program, atom, out asciiLast) : -1;
         var position = start;
         var run = 0;
         var count = 0;
@@ -52,6 +55,16 @@ internal static partial class Utf8SliceRunner
         {
             breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            if (run == 0 && asciiFirst >= 0 &&
+                (uint)(input[position] - asciiFirst) > (uint)(asciiLast - asciiFirst))
+            {
+                // The complete atom cannot consume outside this exact ASCII
+                // interval. Reuse bounded discovery; active runs still finish
+                // through the original greedy minimum/maximum handling below.
+                breach = TrySeekAsciiCandidate(input, ref position, (byte)asciiFirst, asciiLast, ref invocation);
+                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                if (position < 0) break;
+            }
             bool hit;
             int width;
             if (!asciiMask.IsEmpty && input[position] < 128)
