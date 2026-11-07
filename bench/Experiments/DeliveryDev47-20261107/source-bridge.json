@@ -1,0 +1,16 @@
+{
+  "FullSource": "e7a65967deeb4b974d748b4a936c80c3e63870fa",
+  "PackageSource": "Pending final data/docs commit",
+  "ChangedFiles": [
+    "PCRE2.Benchmarks.json",
+    "PythonRe.Benchmarks.json",
+    "README.Benchmarks.json",
+    "README.Parity.json",
+    "README.md",
+    "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+    "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
+  ],
+  "CSharpAndBuildInputDiff": [],
+  "Scope": "Generated data/docs/receipts only after Full. Revision metadata/actual package binaries will differ; exact final packages and public costs remain separate acceptance.",
+  "Qualified": false
+}

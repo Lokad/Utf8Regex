@@ -1,0 +1,13 @@
+{
+  "BeforePackageSource": "6957b35aa51ee5730252011085e21669767ee1f9",
+  "FrozenFullSource": "e7a65967deeb4b974d748b4a936c80c3e63870fa",
+  "ProducerCSharpChanged": [
+    "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceProgram.cs",
+    "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.TerminalClassRepeat.cs"
+  ],
+  "PythonReCSharpChanged": false,
+  "Pcre2CSharpChanged": false,
+  "BenchmarkCSharpChanged": false,
+  "Scope": "Existing Core preparation flag narrowing and existing bounded repeat proof predicate hoist only; rejected slot reset is absent. Common47 version metadata/build pins change coherently.",
+  "Invariants": "Owned checked strict UTF8/scalars; captures/history; interruption/admission; no new runtime fields/modes/frameworks"
+}

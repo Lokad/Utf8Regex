@@ -1,0 +1,25 @@
+{
+  "Linux46": {
+    "Archive": "artifacts/experiments/delivery-dev46-20261106/linux-evidence.tar.gz",
+    "Sha256": "AD55CA95A60DBBD52F16C5D698ADB670A7AE351DDEF281B10F7C00AF73A51D5E",
+    "Bytes": 808663481,
+    "OffVmVerified": true,
+    "Scope": "Fresh dev46 Linux scratch retirement only; preserve immutable canonical46 bytes"
+  },
+  "CurrentOutputs": {
+    "Scope": "Exact15current source Release-output/obj directories at frozen common47 boundary",
+    "Sha256": "CCFB3A9E4F089D2AD7CEC89980DDA97FCC4D713756CA37F6BE01B517D6F1FC81",
+    "Bytes": 135159502,
+    "InventoryEntries": 1675,
+    "FullContentComparisonExit": 0,
+    "OffVmVerified": true,
+    "CanonicalRawPreserved": true,
+    "PriorFullEightPreservedIn": "tmp/delivery-dev47-20261107/full46-baseline",
+    "NugetAssetsIncluded": false
+  },
+  "PriorFullEight": "Preserved separately; manifest checked before/after and at Full47 admission",
+  "Scopes": "Closed; no retries/aliases. Historical rejected/protected scopes remain offlimits",
+  "ImmutablePackages": "Preserved",
+  "ServerShutdownOrKill": false,
+  "AdmissionReduced": false
+}
