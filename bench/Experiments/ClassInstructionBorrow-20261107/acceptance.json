@@ -1,0 +1,42 @@
+{
+  "Decision": "Promote",
+  "Source": "2cc4f7566e28c5e6ebea4f7a73a695d7474e0c75 plusonewordinmodifier",
+  "Change": "PrivateTryMatchScalarClassreadonlyinstructionreference;noopcode/state/allocation/admission/charge/semantics/publicAPIchange",
+  "Validation": {
+    "OS": [
+      "Windows",
+      "Linux"
+    ],
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "CoreChecksPerTarget": 1053,
+    "PythonChecksPerTarget": 38,
+    "PcreChecksPerTarget": 46,
+    "AllPassed": true,
+    "Sessions": "47250/57433/14885terminal0closed"
+  },
+  "Codegen": "MatchedsourceLinuxFullOpts:loopstackcopyremoved;predicate648->638bytes,proof4691->4270,repeat2165->1926;diagnosticonly",
+  "Comparison": {
+    "Seconds": 93.44716997,
+    "Rows": 18,
+    "Samples": 360,
+    "MinimumSampleMilliseconds": 69.6775,
+    "Session": "13201terminal0closed",
+    "NoiseConfirmation": "None",
+    "Allocations": "Unchangedall18rows",
+    "StablePublicGains": "mail-4.20%,denseASCII-6.77%,partialletter-4.70%,foldedclass-9.19%;allbothprocesses/disjointoverallranges",
+    "Adverse": "Longcaptured+1.63%/+0.84337us,Unicodehit+0.77%/+0.01165us,othercontrolrangesinterleave;no normalization/causalclaim"
+  },
+  "Evidence": {
+    "Canonical": "artifacts/experiments/class-instruction-borrow-20261107/evidence.tar.gz",
+    "Sha256": "EF55E189607A0F7A5AD809D1DAFBC9F2BB5F79110A764273E68D59E161F7F543",
+    "Bytes": 5747263,
+    "OffVmVerified": true
+  },
+  "Metadata": "InheriteddeclarationBeforeVersionlabel48iserroneous;Source/core/Python/Pcre/callerhashescorrectandall4loadedCoreVersion=49+2ccverified;separateclarificationretained,not48->49packagecomparison",
+  "Preserved": "NoFull/packagequalificationreplayed;all264stagedassetsandFull49/48graphsimmutable",
+  "Publication": false,
+  "CheckedAt": "2026-11-07T08:18:58.3459098+01:00"
+}

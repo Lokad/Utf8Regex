@@ -518,7 +518,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8ExecutionLimitKind TryMatchScalarClass(Utf8SliceProgram program,
-        Utf8SliceInstruction instruction, Rune scalar, ref Utf8SliceInvocation invocation, out bool hit)
+        in Utf8SliceInstruction instruction, Rune scalar, ref Utf8SliceInvocation invocation, out bool hit)
     {
         if (instruction.Kind == Utf8SliceInstructionKind.Literal)
         {

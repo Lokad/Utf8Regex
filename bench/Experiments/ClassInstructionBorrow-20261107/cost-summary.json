@@ -1,0 +1,396 @@
+{
+  "Scope": "ONE readonlyinstructionborrow publiccomparison;source2ccplusinparameteronly;fixedqualified49Python/Pcre/caller;18unchangedpost49adverse/target/controlrows",
+  "BeforeSource": "2cc4f7566e28c5e6ebea4f7a73a695d7474e0c75",
+  "AfterSource": "same+runtime.patch",
+  "CoreBefore": "ED9C22376A129A29D3C0DFD306B980A009808BFB4FE88F4F21E23061A791F02E",
+  "CoreAfter": "5442096DBBC7FE1FEFFB2F107A2F37ECBA8476EA0BEE11416F9484E8DF4E31AC",
+  "PythonBefore": "5B75B7FA058A9211041953F3C05F9F2000FC35DB34DDF75066C0FA2B39C1176C",
+  "PythonAfter": "5B75B7FA058A9211041953F3C05F9F2000FC35DB34DDF75066C0FA2B39C1176C",
+  "PcreBefore": "D2494007CCEECD4FE86682CC7DBF8D40DE02DFF1F8679017DA9BE4B14B81DEE9",
+  "PcreAfter": "D2494007CCEECD4FE86682CC7DBF8D40DE02DFF1F8679017DA9BE4B14B81DEE9",
+  "Seconds": 93.44716997,
+  "Samples": 360,
+  "MinimumSampleMilliseconds": 69.6775,
+  "Confirmation": "None",
+  "Rows": [
+    {
+      "Name": "unchanged-core-literal-count",
+      "BeforeUs": 0.33228640027727185,
+      "AfterUs": 0.3295935864799887,
+      "DeltaUs": -0.0026928137972831445,
+      "Percent": -0.8103894095684239,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.3285728739151282,
+        0.33535964939852625
+      ],
+      "AfterProcessMedians": [
+        0.33041360371591194,
+        0.3293734973836798
+      ],
+      "BeforeMinimum": 0.32715555731510443,
+      "BeforeMaximum": 0.33611895663731517,
+      "AfterMinimum": 0.327821426828565,
+      "AfterMaximum": 0.33183901263924687
+    },
+    {
+      "Name": "captured-class-ascii-input",
+      "BeforeUs": 0.849091234310364,
+      "AfterUs": 0.8481246211332112,
+      "DeltaUs": -0.000966613177152853,
+      "Percent": -0.11384090873790553,
+      "BeforeBytes": 128.0,
+      "AfterBytes": 128.0,
+      "BeforeProcessMedians": [
+        0.8503730958357689,
+        0.8461785734713722
+      ],
+      "AfterProcessMedians": [
+        0.8498014179554584,
+        0.8452091616732934
+      ],
+      "BeforeMinimum": 0.8407801864668534,
+      "BeforeMaximum": 0.8566819114427519,
+      "AfterMinimum": 0.835547964383715,
+      "AfterMaximum": 0.8512717216892559
+    },
+    {
+      "Name": "anchored-fullmatch-control",
+      "BeforeUs": 0.33741389404736855,
+      "AfterUs": 0.33785373396720497,
+      "DeltaUs": 0.0004398399198364267,
+      "Percent": 0.1303561968241551,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.3389987823649689,
+        0.33648925562375925
+      ],
+      "AfterProcessMedians": [
+        0.33856926777708934,
+        0.33740686367004313
+      ],
+      "BeforeMinimum": 0.335141748922818,
+      "BeforeMaximum": 0.3407126611068992,
+      "AfterMinimum": 0.33445985348252355,
+      "AfterMaximum": 0.34112466741990743
+    },
+    {
+      "Name": "actual-unicode-miss-unlimited",
+      "BeforeUs": 0.3927312318540025,
+      "AfterUs": 0.392829032439422,
+      "DeltaUs": 9.780058541952741E-05,
+      "Percent": 0.024902675796334428,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.389367470649922,
+        0.39421557445043554
+      ],
+      "AfterProcessMedians": [
+        0.39275211211456784,
+        0.39303690886338005
+      ],
+      "BeforeMinimum": 0.38851574289587437,
+      "BeforeMaximum": 0.3956387391124015,
+      "AfterMinimum": 0.3881141821290446,
+      "AfterMaximum": 0.39524876275227744
+    },
+    {
+      "Name": "actual-unicode-miss-finite-live",
+      "BeforeUs": 0.4642459286642022,
+      "AfterUs": 0.4620506286526025,
+      "DeltaUs": -0.0021953000115997323,
+      "Percent": -0.4728743702537952,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.4637501248876012,
+        0.4648371378903425
+      ],
+      "AfterProcessMedians": [
+        0.46417725888962125,
+        0.4602447321528704
+      ],
+      "BeforeMinimum": 0.4597038409318733,
+      "BeforeMaximum": 0.4828699767793019,
+      "AfterMinimum": 0.4566703218651481,
+      "AfterMaximum": 0.46618083670715244
+    },
+    {
+      "Name": "actual-unicode-miss-deadline-live",
+      "BeforeUs": 0.5587152687205317,
+      "AfterUs": 0.5592060871303194,
+      "DeltaUs": 0.0004908184097877077,
+      "Percent": 0.08784768150540412,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        0.5575760492163729,
+        0.5604121157527305
+      ],
+      "AfterProcessMedians": [
+        0.5684287287781534,
+        0.555157371534973
+      ],
+      "BeforeMinimum": 0.555834820139624,
+      "BeforeMaximum": 0.5635003565664527,
+      "AfterMinimum": 0.5529462113703937,
+      "AfterMaximum": 0.5687143453986099
+    },
+    {
+      "Name": "actual-unicode-miss-token-only",
+      "BeforeUs": 0.45672378215132015,
+      "AfterUs": 0.4536682586529144,
+      "DeltaUs": -0.0030555234984057655,
+      "Percent": -0.6690090636430668,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.4566433949183259,
+        0.45680416938431434
+      ],
+      "AfterProcessMedians": [
+        0.4556060196891955,
+        0.453444451290899
+      ],
+      "BeforeMinimum": 0.45303100332048113,
+      "BeforeMaximum": 0.45858216670518265,
+      "AfterMinimum": 0.45135683036539526,
+      "AfterMaximum": 0.4602901824073847
+    },
+    {
+      "Name": "full-unicode-hit-finite-adverse",
+      "BeforeUs": 1.7330687568211132,
+      "AfterUs": 1.7071405053329927,
+      "DeltaUs": -0.0259282514881205,
+      "Percent": -1.4960890262472604,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        1.7350124497222754,
+        1.7316747693223533
+      ],
+      "AfterProcessMedians": [
+        1.7053171899456772,
+        1.7139417770419425
+      ],
+      "BeforeMinimum": 1.7243200536295726,
+      "BeforeMaximum": 1.9015729745259526,
+      "AfterMinimum": 1.690395051508462,
+      "AfterMaximum": 1.7226867181751286
+    },
+    {
+      "Name": "unicode-hit-finite-live",
+      "BeforeUs": 1.514902173019324,
+      "AfterUs": 1.5265513189682691,
+      "DeltaUs": 0.011649145948945172,
+      "Percent": 0.7689701788285985,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        1.5349341292713048,
+        1.4948926303054744
+      ],
+      "AfterProcessMedians": [
+        1.500898776776898,
+        1.5599497329563305
+      ],
+      "BeforeMinimum": 1.485669926403871,
+      "BeforeMaximum": 1.5388019761218608,
+      "AfterMinimum": 1.489998589363803,
+      "AfterMaximum": 1.575082207561001
+    },
+    {
+      "Name": "long-unicode-miss-finite-live",
+      "BeforeUs": 12.880870667793745,
+      "AfterUs": 12.912136678200692,
+      "DeltaUs": 0.031266010406946876,
+      "Percent": 0.24273211969374486,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        12.893000845308539,
+        12.836763952892985
+      ],
+      "AfterProcessMedians": [
+        12.833667820069206,
+        13.018291404612159
+      ],
+      "BeforeMinimum": 12.682265426880813,
+      "BeforeMaximum": 12.917204301075268,
+      "AfterMinimum": 12.793356401384084,
+      "AfterMaximum": 13.06954926624738
+    },
+    {
+      "Name": "actual-mail-count",
+      "BeforeUs": 3743.6452380952383,
+      "AfterUs": 3586.413636363636,
+      "DeltaUs": -157.23160173160204,
+      "Percent": -4.19995997835525,
+      "BeforeBytes": 1544.0,
+      "AfterBytes": 1544.0,
+      "BeforeProcessMedians": [
+        3707.8952380952373,
+        3775.9904761904763
+      ],
+      "AfterProcessMedians": [
+        3584.447619047619,
+        3590.118181818182
+      ],
+      "BeforeMinimum": 3689.4952380952377,
+      "BeforeMaximum": 3797.8190476190475,
+      "AfterMinimum": 3568.028571428572,
+      "AfterMaximum": 3622.9045454545458
+    },
+    {
+      "Name": "actual-mail-finite-live",
+      "BeforeUs": 5041.899375,
+      "AfterUs": 5044.456666666667,
+      "DeltaUs": 2.55729166666697,
+      "Percent": 0.050720799374670555,
+      "BeforeBytes": 1656.0,
+      "AfterBytes": 1656.0,
+      "BeforeProcessMedians": [
+        4946.3125,
+        5140.433333333333
+      ],
+      "AfterProcessMedians": [
+        5034.953333333334,
+        5076.460000000001
+      ],
+      "BeforeMinimum": 4901.575,
+      "BeforeMaximum": 5153.053333333333,
+      "AfterMinimum": 4977.48,
+      "AfterMaximum": 5077.3533333333335
+    },
+    {
+      "Name": "actual-mail-deadline-live",
+      "BeforeUs": 5668.978571428572,
+      "AfterUs": 5682.357142857143,
+      "DeltaUs": 13.378571428571377,
+      "Percent": 0.23599615451006528,
+      "BeforeBytes": 1704.0,
+      "AfterBytes": 1704.0,
+      "BeforeProcessMedians": [
+        5544.592857142858,
+        5743.45
+      ],
+      "AfterProcessMedians": [
+        5679.650000000001,
+        5713.678571428572
+      ],
+      "BeforeMinimum": 5519.085714285714,
+      "BeforeMaximum": 5799.4,
+      "AfterMinimum": 5617.2642857142855,
+      "AfterMaximum": 5727.6
+    },
+    {
+      "Name": "dense-ascii-class-union",
+      "BeforeUs": 138.7117646664836,
+      "AfterUs": 129.32694235365463,
+      "DeltaUs": -9.384822312828959,
+      "Percent": -6.765700324982293,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        140.93283858998146,
+        136.16119133574009
+      ],
+      "AfterProcessMedians": [
+        130.53659793814433,
+        127.91366782006921
+      ],
+      "BeforeMinimum": 134.67382671480144,
+      "BeforeMaximum": 141.49981447124304,
+      "AfterMinimum": 127.24048442906575,
+      "AfterMaximum": 130.9721649484536
+    },
+    {
+      "Name": "long-captured-class-union",
+      "BeforeUs": 51.81233222929862,
+      "AfterUs": 52.655702110187626,
+      "DeltaUs": 0.8433698808890071,
+      "Percent": 1.6277396608139982,
+      "BeforeBytes": 64.0,
+      "AfterBytes": 64.0,
+      "BeforeProcessMedians": [
+        51.33034098816981,
+        52.138677918424754
+      ],
+      "AfterProcessMedians": [
+        52.7,
+        52.54978873239436
+      ],
+      "BeforeMinimum": 51.11391788448156,
+      "BeforeMaximum": 52.578973277074546,
+      "AfterMinimum": 51.79272084805653,
+      "AfterMaximum": 52.86763250883392
+    },
+    {
+      "Name": "partial-letter-mask-adverse",
+      "BeforeUs": 155.688963297258,
+      "AfterUs": 148.37583571279336,
+      "DeltaUs": -7.313127584464638,
+      "Percent": -4.697267827843154,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        155.598132780083,
+        155.779793814433
+      ],
+      "AfterProcessMedians": [
+        150.64979919678717,
+        147.37745664739884
+      ],
+      "BeforeMinimum": 154.1101659751037,
+      "BeforeMaximum": 156.79670103092786,
+      "AfterMinimum": 146.50886319845858,
+      "AfterMaximum": 151.09979919678713
+    },
+    {
+      "Name": "folded-category-control",
+      "BeforeUs": 174.84443155452436,
+      "AfterUs": 158.77115127878525,
+      "DeltaUs": -16.07328027573911,
+      "Percent": -9.192903733240565,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        175.21631701631702,
+        174.16821345707658
+      ],
+      "AfterProcessMedians": [
+        161.99936575052854,
+        156.1991718426501
+      ],
+      "BeforeMinimum": 173.07935034802784,
+      "BeforeMaximum": 176.0055944055944,
+      "AfterMinimum": 155.54037267080744,
+      "AfterMaximum": 163.33636363636364
+    },
+    {
+      "Name": "pcre-literal-control",
+      "BeforeUs": 0.3211843348169076,
+      "AfterUs": 0.3227171075530804,
+      "DeltaUs": 0.001532772736172805,
+      "Percent": 0.4772252473167926,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.32100137010782154,
+        0.3213867476546515
+      ],
+      "AfterProcessMedians": [
+        0.3169311080499933,
+        0.3241528889662374
+      ],
+      "BeforeMinimum": 0.3187857951305857,
+      "BeforeMaximum": 0.32174578866768766,
+      "AfterMinimum": 0.3150051236392958,
+      "AfterMaximum": 0.3324817732831609
+    }
+  ],
+  "ReferenceRows": []
+}

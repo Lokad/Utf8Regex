@@ -1,0 +1,8 @@
+{
+  "Issue": "InheritedBeforeVersionlabelintheoneoffdeclarationstill48",
+  "ActualBeforeVersion": "0.5.0-dev.49+2cc4f7566e28c5e6ebea4f7a73a695d7474e0c75",
+  "ActualAfterVersion": "0.5.0-dev.49+2cc4f7566e28c5e6ebea4f7a73a695d7474e0c75",
+  "Scope": "Sourcecontrolledcomparison,not48->49packagecomparison;exactsource/core/Python/Pcre/callerhashesdeclaredcorrectlybeforetiming",
+  "Action": "Preserveoriginaldeclaration;retainlabelclarificationandverifyallloadedCoreVersionvaluesaftercompletion;no sourcemutationortimingretry",
+  "Timestamp": "2026-11-07T08:17:09.6411511+01:00"
+}
