@@ -326,6 +326,29 @@ internal struct PythonReScalarMatchState
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
         var keepWorkspace = false;
+        var leadingClass = -1;
+        var literalIndex = -1;
+        var delimiter = !_finished && search && input.Length >= 256 &&
+            !_program.CanMatchEmpty && !_program.HasContiguousAnchor &&
+            !_program.RightToLeft && !_program.IgnoreCase && _candidateRegex is null
+            ? Utf8SliceRunner.GetLeadingWhitespaceLiteral(_program, out leadingClass, out literalIndex, out _) : -1;
+        if (delimiter >= 0)
+        {
+            // Borrow only the direct ASCII class/delimiter case. Capture markers
+            // do not consume input; whitespace/gap and other prefixes stay opaque.
+            if (leadingClass < 0 ||
+                _program.Instructions[leadingClass] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom ||
+                _program.SetMasks[atom.A].Length != 16)
+                delimiter = -1;
+            else
+            {
+                var afterRepeat = leadingClass + 3;
+                while (afterRepeat < literalIndex && _program.Instructions[afterRepeat].Kind is
+                    Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) afterRepeat++;
+                if (afterRepeat != literalIndex) delimiter = -1;
+            }
+        }
+        var windowEnd = -1;
         try
         {
             while (!_finished)
@@ -348,12 +371,28 @@ internal struct PythonReScalarMatchState
                     }
                     else
                     {
+                        if (delimiter >= 0 && _position > windowEnd)
+                        {
+                            var floor = _position;
+                            windowEnd = floor;
+                            var breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref windowEnd,
+                                (byte)delimiter, (byte)delimiter, ref _invocation);
+                            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                            if (windowEnd < 0) { Checkpoint(input); _finished = true; return false; }
+                            _position = windowEnd;
+                            breach = Utf8SliceRunner.TryRewindClassWhitespace(_program, input, floor,
+                                leadingClass, 0, ref _position, ref _invocation);
+                            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                        }
                         // A necessary start hint still requires profile verification.
                         // Avoid its search helper when the current byte meets the hint.
                         if (search && (_candidateRegex is not null ||
                             _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
                                 (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                             !SeekCandidate(input)) { _finished = true; return false; }
+                        // The range hint may have jumped past this delimiter.
+                        // Discover the next window before entering the verifier.
+                        if (delimiter >= 0 && _position > windowEnd) continue;
                         _invocation.AnchorOriginByte = _position;
                         // Once scratch is admitted, a positive leading boundary
                         // cannot match between two ASCII word scalars. Borrow the

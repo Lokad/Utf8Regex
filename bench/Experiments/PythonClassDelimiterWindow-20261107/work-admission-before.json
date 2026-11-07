@@ -1,0 +1,22 @@
+{
+  "Scope": "Untimed exact public work-admission attribution; no throughput claim",
+  "CoreSha256": "05F46E90F5D0B42F4CE90C7D0535611BE994490398721DE33D7D8FCF2A350AD0",
+  "PythonSha256": "E184C3DEFE0824FB6BFC317E101818CF3FFEBFD1A918A2729B7A7CCC41379C80",
+  "Rows": [
+    {
+      "PrefixBytes": 128,
+      "InputBytes": 137,
+      "MinimumPublicWorkBudget": 9342
+    },
+    {
+      "PrefixBytes": 256,
+      "InputBytes": 265,
+      "MinimumPublicWorkBudget": 35008
+    },
+    {
+      "PrefixBytes": 512,
+      "InputBytes": 521,
+      "MinimumPublicWorkBudget": 135491
+    }
+  ]
+}

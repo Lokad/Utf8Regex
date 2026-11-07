@@ -1,0 +1,29 @@
+{
+  "Scope": "One bounded public captured class/delimiter window A/B. Before clean c4f09d3f Core/Python build, unchanged qualified47 PCRE. Reuse existing metered necessary-window helpers; same original VM verifies every candidate. No universal10%gate.",
+  "BeforeSource": "c4f09d3f5c9f3305a4bc8bf94d842e7df6dbde69 clean affected build",
+  "AfterSource": "c4f09d3f + candidate.patch",
+  "CoreBefore": "05F46E90F5D0B42F4CE90C7D0535611BE994490398721DE33D7D8FCF2A350AD0",
+  "CoreAfter": "D2B9C924AA7B0C04B43F9F4818AEFD1A364AA76CBF55459BFC807B6C81AF52E0",
+  "PythonBefore": "E184C3DEFE0824FB6BFC317E101818CF3FFEBFD1A918A2729B7A7CCC41379C80",
+  "PythonAfter": "FB2A350AF0AE636938F719B329A764F6E92F2F845370908FC8A2A2C43D257D3C",
+  "PcreBefore": "69282B1120816788EC6D894EC5DDC0E9F1ABB6DAF71D9D5DC7DC361FB6FA3E0B",
+  "PcreAfter": "69282B1120816788EC6D894EC5DDC0E9F1ABB6DAF71D9D5DC7DC361FB6FA3E0B",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Rows": 14,
+  "OuterCapSeconds": 120,
+  "Warmup": "1s/min128",
+  "Samples": 5,
+  "TargetMilliseconds": 60,
+  "FloorMilliseconds": 20,
+  "Confirmation": "At most one if justified noise; none planned",
+  "PatchSha256": "8F5C1ED1F9B23021E44F2BA216C86F0546F286AE451BDF31E162CC9D9252C79D",
+  "CallerSha256": "D9E926CEE6F7AFC4A84117ACD4C04FE701434AB72AD77B0345A8D050C9C314B9",
+  "Comparator": "Two equal-output public .NET Regex.Replace lanes (predecoded/decode-then); no finite-resource equivalent and no CPython Status claim",
+  "Existing47": "All packages and Full benchmark DLL/PDB assets immutable",
+  "Algorithm": "ASCII positive greedy class and direct ASCII literal, allowing only capture markers; local per-MoveNext window, no fields; owned verification/prefix/UTF8/alias semantics retained"
+}

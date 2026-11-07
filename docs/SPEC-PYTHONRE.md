@@ -35,6 +35,16 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+Search-based operations can also narrow candidate starts for a positive greedy
+ASCII set repeat followed directly by an exact ASCII delimiter, allowing capture
+markers between them. Existing checked, metered search and scalar rewind locate
+a necessary window; the profile VM still verifies its candidates with complete
+prefix context and original capture/backreference order. Match and FullMatch
+retain anchored verification. Whole-subject validation and capture-slot admission
+remain; avoiding impossible starts can lower execution work and required VM
+workspace. Search blocks, rewound scalars, verification and publication keep the
+same invocation's cancellation, deadline and resource authority.
+
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
 ordered choice and original invocation controls remain; required capacity can fall.

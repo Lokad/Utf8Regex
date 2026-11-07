@@ -1,0 +1,13 @@
+{
+  "Scope": "One reference-only confirmation; no producer or source rerun",
+  "Reason": "Original BCL diagnostic aborted below20ms floor after allfour producer rounds completed; calibration lacked post-GC confirmation",
+  "OuterCapSeconds": 30,
+  "Cases": 2,
+  "SourceUnchanged": "c4f09d3f+candidate.patch unchanged",
+  "OriginalCampaignSeconds": 81.875388185,
+  "MaximumAggregateMeasurementSeconds": 111.875388185,
+  "Change": "Diagnostic-only caller adds ONE post-GC calibration confirmation and records it; same public .NET Regex.Replace options/pattern/input/templates/output",
+  "NoFurtherConfirmation": true,
+  "CallerSha256": "C201D577DD65F44D6538BB41B844D1C76A16C2F7A8FEC1C0CC243A05353FDFAE",
+  "ProducerCallerSha256": "D9E926CEE6F7AFC4A84117ACD4C04FE701434AB72AD77B0345A8D050C9C314B9"
+}

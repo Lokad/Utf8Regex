@@ -71,7 +71,7 @@ internal static partial class Utf8SliceRunner
         return first;
     }
 
-    private static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
+    internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
         byte first, byte last, ref Utf8SliceInvocation invocation)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
@@ -100,7 +100,7 @@ internal static partial class Utf8SliceRunner
     // Verify every start in that window with the unchanged VM: captures,
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
-    private static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
+    internal static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
         out int leadingClass, out int literalIndex, out long gapMaximum)
     {
         leadingClass = -1;
@@ -180,7 +180,7 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
+    internal static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
     {
         var code = program.Instructions;
