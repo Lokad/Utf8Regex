@@ -1,0 +1,114 @@
+{
+  "Source": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "Version": "0.5.0-dev.50",
+  "Seconds": 282.7471536,
+  "Fixtures": 8,
+  "Checks": 110110.0,
+  "BuildCount": 2,
+  "PacksPerPackage": 1,
+  "OriginalWindowsConsumers": true,
+  "OriginalConsumerChecks": [
+    {
+      "Fixture": "Awk",
+      "Framework": "net10.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "A7B8A5F117E828C81B20E608C2007678BBF7703704D295AFBFE601F03B68FBCB",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+        }
+      ]
+    },
+    {
+      "Fixture": "Awk",
+      "Framework": "net11.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "F4954746B2E8B5648B99CD61F718FB15F8880A00829D3F2BFB9ABAC324E86F1B",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+        }
+      ]
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "3F52C6124A5AE4E0C58113A03FFEDD2B7992B18579E31A9AB50188311DBD0332",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "1655E74420CD2B8EF926040BCD008F141C3538D1592A9517E58ECD1EA433DB9E"
+        }
+      ]
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "13DE55B12D98610C0FA90B358A4499C3FC7B6C3142E32F6C2BE5CD7145E5D54A",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE"
+        }
+      ]
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Passed": true,
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "1655E74420CD2B8EF926040BCD008F141C3538D1592A9517E58ECD1EA433DB9E"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Sha256": "79CBDA8D3F3CDE56C3D3A7F3975227DDEFB4959D275D27F942235C885C37B96A"
+        }
+      ]
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Passed": true,
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Sha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F"
+        }
+      ]
+    }
+  ],
+  "RestoreAudits": 12,
+  "CompilerDocuments": 464,
+  "PackagesPublished": false,
+  "Status": "Windows boundary accepted;Linux/Full/cumulative costs pending"
+}

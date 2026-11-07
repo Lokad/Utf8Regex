@@ -1,0 +1,10 @@
+{
+  "Stage": "Linux staging before tests",
+  "Failure": "stage-and-run-linux.sh expected task/source.txt; only full-source.txt had been transferred to the VM task directory",
+  "Correction": "Transfer the existing frozen source.txt, then invoke only the not-started Linux staging/checks",
+  "ProducerChanged": false,
+  "PackageChanged": false,
+  "TestsStarted": false,
+  "FullRepeated": false,
+  "GeneratedRestoreCompleted": true
+}

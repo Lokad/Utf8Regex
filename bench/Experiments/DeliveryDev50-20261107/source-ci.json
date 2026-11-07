@@ -1,0 +1,12 @@
+{
+  "Source": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "RunId": 42356334488,
+  "Status": "Completed",
+  "Conclusion": "Success",
+  "Platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "LastObserved": "2026-11-07T09:50:00+01:00",
+  "Scope": "Previously observed terminal source CI;closed,not requeried"
+}
