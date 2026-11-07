@@ -1,0 +1,31 @@
+{
+  "Scope": "ONE bounded prepared-prefix trie sourceA/B,21public rows",
+  "BeforeSource": "c6434ac50d86e1a010f9b6cf326b9b0244537618",
+  "AfterSource": "c6434ac50d86e1a010f9b6cf326b9b0244537618 plus runtime.patch",
+  "CoreBefore": "B2D022DBBD62375E509601F555202BFA5B287E92F30D179F2DF00F2D5E76E70C",
+  "CoreAfter": "C107DE10242AA5728B0245ECEF8C88D5AFEE6C817121D7E635B712C3335F3E93",
+  "PythonBefore": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+  "PythonAfter": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+  "PcreBefore": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "PcreAfter": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "WorkerSha256": "39DCDE74A91AD17697FE6D855067144E4E2588D84F93077787E010FE5BBA2FB7",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 21,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Coverage": "Actualfoldedmiss/hit/captured/finite/deadline/dense/256vs257/longcontrol/Unicodepartners;nativeCore,privatePcre,immutablepredecodedNetcontrols;actualmailadverseneighbors",
+  "Acceptance": "Useful overall public gains;allallocations/absoluteadversecosts/processranges preserved,universal10%gate absent",
+  "Confirmation": "At most one justified noise confirmation,no retuning",
+  "TimingStarted": false,
+  "DeclaredAt": "2026-11-07T11:39:01.9343169+01:00"
+}

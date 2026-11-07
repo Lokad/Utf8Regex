@@ -35,6 +35,11 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+A prepared prefix trie can search a whole remaining suffix of at most 256 bytes
+between charged entry/completion checkpoints. It returns only a necessary start;
+the scalar verifier retains ordered matching and captures. Reusing shared prefixes
+can lower numerical work charges without changing allocation or admission scope.
+
 Search-based operations can also narrow candidate starts for a positive greedy
 ASCII set repeat followed directly by an exact ASCII delimiter, allowing capture
 markers between them. Existing checked, metered search and scalar rewind locate

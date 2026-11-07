@@ -1,0 +1,88 @@
+{
+  "Decision": "Promote with documented local cost",
+  "Scope": "ONE bounded prepared-prefix trie sourceA/B,21public rows",
+  "BeforeSource": "c6434ac50d86e1a010f9b6cf326b9b0244537618",
+  "AfterSource": "c6434ac50d86e1a010f9b6cf326b9b0244537618 plus runtime.patch",
+  "Seconds": 107.918336235,
+  "Rows": 21,
+  "Samples": 420,
+  "MinimumSampleMilliseconds": 51.4034,
+  "Allocations": "All21medians unchanged",
+  "PersistentTargetGains": [
+    {
+      "Name": "captured-folded-search",
+      "BeforeUs": 0.44498684838120306,
+      "AfterUs": 0.38128643442507526,
+      "Percent": -14.315122837418803,
+      "DeltaUs": -0.0637004139561278
+    },
+    {
+      "Name": "folded-search-miss",
+      "BeforeUs": 0.3783212434176654,
+      "AfterUs": 0.19513573881555746,
+      "Percent": -48.420623422373275,
+      "DeltaUs": -0.18318550460210792
+    },
+    {
+      "Name": "folded-search-finite-live",
+      "BeforeUs": 0.5431808059346228,
+      "AfterUs": 0.3234388901509345,
+      "Percent": -40.45465402732519,
+      "DeltaUs": -0.2197419157836883
+    },
+    {
+      "Name": "dense-folded-prefix-miss",
+      "BeforeUs": 10.344232063534795,
+      "AfterUs": 6.198367295807583,
+      "Percent": -40.078999990169415,
+      "DeltaUs": -4.145864767727212
+    },
+    {
+      "Name": "folded-miss-256",
+      "BeforeUs": 0.38997812267857257,
+      "AfterUs": 0.2058750486895075,
+      "Percent": -47.20856460473972,
+      "DeltaUs": -0.18410307398906506
+    },
+    {
+      "Name": "folded-search-deadline-live",
+      "BeforeUs": 1.0400480170229445,
+      "AfterUs": 0.43373011029738395,
+      "Percent": -58.2971071336781,
+      "DeltaUs": -0.6063179067255605
+    },
+    {
+      "Name": "unicode-folding-partners",
+      "BeforeUs": 0.40528427489935237,
+      "AfterUs": 0.3328975421836683,
+      "Percent": -17.860730652246616,
+      "DeltaUs": -0.07238673271568408
+    }
+  ],
+  "PersistentAdverse": {
+    "Name": "folded-miss-257",
+    "BeforeUs": 0.39752779331415217,
+    "AfterUs": 0.4288321136092101,
+    "Percent": 7.8747500983709084,
+    "DeltaUs": 0.03130432029505792
+  },
+  "ControlInterpretation": "Unchanged predecodedNet-0.05% overlapping;Coreliteral+1.45% andPcreliteral-3.09% overlap. FullUnicodefinite-6.83%disjoint bypasses changedhelper,no causal credit. Other Unicode/mail movements overlap.",
+  "OtherAdverse": "AnchoredFullMatch+1.81%/+about5ns andordinarymail+0.55%/+11.68us overlap",
+  "FiniteExtraUsBefore": 0.16485956251695744,
+  "FiniteExtraUsAfter": 0.12830315133537706,
+  "FiniteExtraPercentBefore": 43.57660728423676,
+  "FiniteExtraPercentAfter": 65.75071901956892,
+  "Accounting": "Charged bounded<=256byte preparedlookup plus completion;route-dependent work can decrease. Major admission,state growth,original token/deadline and full verification unchanged",
+  "Tests": "210Core/437Python perTFM/OS including14newcases each",
+  "Confirmation": "None;ONEcompleteABBA,no retuning",
+  "Canonical": "artifacts/experiments/python-folded-trie-20261107/evidence.tar.gz",
+  "Sha256": "04504B53D920D1A6FA7CCD3D0F056C3DAC6FB69959E50ABC01BFC6D7DDD75534",
+  "Bytes": 2423084,
+  "OffVmVerified": true,
+  "Full50GraphUnchanged": true,
+  "StagedAndPublishedBytesUnchanged": true,
+  "TestHandles": "83918Windows0/82935Linux0 CLOSED",
+  "ComparisonHandle": "24423terminal0CLOSED",
+  "PackagesQualified": false,
+  "Publication": false
+}

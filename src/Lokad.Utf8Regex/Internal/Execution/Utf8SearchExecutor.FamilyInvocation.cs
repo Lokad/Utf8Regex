@@ -51,6 +51,23 @@ internal static partial class Utf8SearchExecutor
             if (breach == Utf8ExecutionLimitKind.None && smallFound) candidate = smallMatch.Index;
             return breach;
         }
+        // A short remaining subject bounds the prepared trie's whole walk.
+        // Reuse its shared prefixes instead of confirming each expanded needle
+        // after every first-byte hit. Only a necessary start escapes to the VM.
+        if ((uint)(end - start) <= 256 && plan.AlternateLiteralSearch is
+            { Strategy: PreparedLiteralSetStrategy.MultiLiteralTrie } trie)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(start);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var relative = trie.IndexOf(input[start..end]);
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach == Utf8ExecutionLimitKind.None && relative >= 0) candidate = start + relative;
+            return breach;
+        }
         var buckets = plan.AlternateLiteralSearch?.SearchData.Buckets;
         if (buckets is { Length: 1 } && buckets[0].PrefixDiscriminator is { HasValue: true } discriminator)
         {

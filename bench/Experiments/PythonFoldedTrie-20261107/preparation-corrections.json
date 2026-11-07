@@ -1,0 +1,10 @@
+{
+  "Stage": "New semantic fixtures before timing",
+  "Issues": [
+    "The .NET oracle skipped the long-s/Kelvin match that Python semantics require",
+    "A fixed straight-line match uses no VM payload;the test incorrectly required a working-byte denial"
+  ],
+  "Correction": "Use explicit Python partner expectations and verify result-text admission rather than inventing workspace",
+  "ProducerChanged": false,
+  "TimingStarted": false
+}
