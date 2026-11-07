@@ -7,6 +7,33 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2LiteralGlobalOperationTests
 {
+    [Theory]
+    [InlineData("needle")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    [InlineData("夏洛克·福尔摩斯")]
+    public void DirectCountNeedsNoDiscardedCoordinatesButKeepsFullValidation(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        foreach (var padding in new[] { 1023, 1024, 1025, 4096 })
+        {
+            var text = "😀" + new string('x', padding) + pattern + " " + pattern;
+            var input = Encoding.UTF8.GetBytes(text);
+            Assert.Equal(2, regex.Count(input, 4));
+            var invalidOffset = Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2));
+            Assert.Equal("startOffsetInBytes", invalidOffset.ParamName);
+            foreach (var offset in new[] { -1, 2, input.Length + 1 })
+                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], offset));
+            var matches = regex.EnumerateMatches(input, 4);
+            Assert.True(matches.MoveNext());
+            Assert.Equal(4 + padding, matches.Current.StartOffsetInBytes);
+            Assert.Equal(2 + padding, matches.Current.StartOffsetInUtf16);
+            var first = matches.Current;
+            Assert.True(matches.MoveNext());
+            Assert.Equal(2 + padding, first.StartOffsetInUtf16);
+        }
+    }
+
     [Fact]
     public void LiteralGlobalOperationsShareTheGenericProgram()
     {

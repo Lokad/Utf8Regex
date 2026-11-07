@@ -1,0 +1,16 @@
+{
+  "Kind": "UntimedFullOpts route/code size,not publicspeed",
+  "Graphs": {
+    "after": {
+      "CountCoreBytes": 1544,
+      "ValidityOnlyCalls": 1,
+      "MetadataPathRetained": true
+    },
+    "before": {
+      "CountCoreBytes": 1127,
+      "ValidityOnlyCalls": 0,
+      "MetadataPathRetained": true
+    }
+  },
+  "Finding": "Before enters complete metadata preparation. After eligible branch calls strict validity-only validation, scalar-offset check andexisting CountWithMetrics before metadata; controlled fallthrough remains. No field/API/new ownership."
+}

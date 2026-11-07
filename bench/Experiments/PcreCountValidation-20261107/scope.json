@@ -1,0 +1,13 @@
+{
+  "SourceParent": "519be8609a10257e2d6ac53d2e63e5ce6abf10c7",
+  "BeforeCore": "8AFEDEC74B28D2D9B25D89E3DEFF19EAC705ECA7B6D5B293EE119875BAEFFF90",
+  "BeforePcre": "3236E5971063E6513617789553506463F6DF818FE7599835943DCC3C8D064C3C",
+  "Scope": "Move existing unmetered direct literal Count selection ahead of UTF16 metadata preparation;delete former global-driver branch,not duplicate it. Same None options,unmetered/nohook,nonemptyunanchoredliteral and1024Bsuffix eligibility.",
+  "Contracts": "Strict whole-input validation before scalar offset checks/count;original cancellation/deadlines,finite/shared allowance paths stay unchanged. Count publishes onlyint;Match/Enumerate retain complete metadata. No new subject mode,field,owner,API,framework or bypass of basic metering.",
+  "Validation": "PublicUnicode/ASCII1023/1024/1025boundaries,offsets,malformed-before-offset errors,retainedresults/enumeration coordinates,anchors/options/emptyexclusions,resource/cancel/deadline on bothTFM/OS. One<=120s fixed-caller public separate-process before/after with default/finite/live/deadline controls and allocations;no package/Full,tuning,or morethan1justifiednoise confirmation.",
+  "TimingStarted": false,
+  "AfterPcre": "23FA2CBA416F86CBA56B8468F847B1D972E31D3E06DAEF42625A98B774E77B19",
+  "Windows": "Corrected source placement IsMatch->CountCore after compiler error;newfixture enumeration offset0->4 after genuineprefixmatch mismatch. Both original logs/exits preserved. Final100checks perTFM pass;productionalgorithm unchanged after first placement correction.",
+  "WorkerSha256": "0E9A9311B586A35E790E058D59D3B232E90656F8DDFE62960958AC3E8BDF87A3",
+  "Rows": 20
+}

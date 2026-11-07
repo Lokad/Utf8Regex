@@ -2417,15 +2417,6 @@ internal static class Pcre2GlobalOperationDriver
             }
         }
 
-        if (program is Pcre2LiteralDirectProgram literalProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
-            literalProgram.Program.CanCountDirectly(input.ByteLength - start.Value))
-        {
-            result = literalProgram.Program.CountNonOverlapping(input.Bytes[start.Value..]);
-            return true;
-        }
-
         if (program is Pcre2CharacterDirectProgram characterProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             (invocation.IsUnmetered && invocation.CheckpointHook is null) &&

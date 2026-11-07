@@ -1,0 +1,11 @@
+{
+  "Scope": "Untimed public Count and production selector reflection;no source edit or timing",
+  "Pattern": "\u590F\u6D1B\u514B\u00B7\u798F\u5C14\u6469\u65AF",
+  "InputBytes": 813478,
+  "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+  "Count": 30,
+  "CountProgram": "Lokad.Utf8Regex.Pcre2.Pcre2LiteralDirectProgram",
+  "LiteralProgram": "Lokad.Utf8Regex.Pcre2.Pcre2LiteralProgram",
+  "CanCountDirectly": true,
+  "PcreSha256": "3236E5971063E6513617789553506463F6DF818FE7599835943DCC3C8D064C3C"
+}
