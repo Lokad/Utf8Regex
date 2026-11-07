@@ -1,0 +1,12 @@
+{
+  "Source": "553acbdfc895d993416e3bad3af47c468a181148",
+  "PreviousFull52Assets": 8,
+  "CurrentFull54Assets": 8,
+  "AllVerifiedAfterLinuxAndCosts": true,
+  "OlderStagedUnchanged": 288,
+  "StagedTotal": 294,
+  "CapacityRetirement": "Fresh52Linuxonly,18395members/contentcompared,canonicalF690C0A6offVMretained;33325CLOSED;proof9280D558included;no newcleanup",
+  "EvidenceSha256": "5C34261D3C3431000FBB82072F8F803FE69E866C283CA36FDC5F9D42335DE5B1",
+  "OffVmVerified": true,
+  "PostFullGuards": 10
+}

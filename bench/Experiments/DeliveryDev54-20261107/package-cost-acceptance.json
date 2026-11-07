@@ -1,0 +1,424 @@
+{
+  "Decision": "Accept combined exact52->54 publicgains;all14intended persist/disjoint. Alladversepointestimatesoverlap;keepallobservations. No universal10percentgate oruniformspeedup.",
+  "Seconds": 113.71932552,
+  "Rows": 22,
+  "Samples": 440,
+  "MinimumSampleMilliseconds": 49.6214,
+  "Allocations": "All22medians unchanged",
+  "Gains": [
+    {
+      "Name": "core-actual-chinese-count",
+      "BeforeUs": 86.27419168591224,
+      "AfterUs": 81.4131857805968,
+      "DeltaUs": -4.861005905315437,
+      "Percent": -5.634368529365419,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        86.41327944572748,
+        85.88777393310265
+      ],
+      "AfterProcessMedians": [
+        80.94877267876201,
+        82.13133187772924
+      ],
+      "BeforeMinimum": 85.21591695501729,
+      "BeforeMaximum": 86.86882217090069,
+      "AfterMinimum": 80.71931696905015,
+      "AfterMaximum": 82.81266375545852
+    },
+    {
+      "Name": "core-chinese-finite-live",
+      "BeforeUs": 131.56724786565343,
+      "AfterUs": 126.89678747940692,
+      "DeltaUs": -4.6704603862465035,
+      "Percent": -3.5498655341758223,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        130.05789473684212,
+        133.7463458110517
+      ],
+      "AfterProcessMedians": [
+        126.82800658978584,
+        127.06799999999998
+      ],
+      "BeforeMinimum": 129.7777192982456,
+      "BeforeMaximum": 135.43511586452763,
+      "AfterMinimum": 125.87397034596376,
+      "AfterMaximum": 129.50576606260296
+    },
+    {
+      "Name": "core-chinese-deadline-live",
+      "BeforeUs": 141.37488583243436,
+      "AfterUs": 133.83684903748733,
+      "DeltaUs": -7.538036794947033,
+      "Percent": -5.331948988366674,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        139.36851851851853,
+        142.40155339805827
+      ],
+      "AfterProcessMedians": [
+        134.36897163120565,
+        132.58339285714285
+      ],
+      "BeforeMinimum": 138.3390740740741,
+      "BeforeMaximum": 145.0359223300971,
+      "AfterMinimum": 132.3675,
+      "AfterMaximum": 134.86517857142857
+    },
+    {
+      "Name": "python-lookbehind-miss",
+      "BeforeUs": 0.3893056762068572,
+      "AfterUs": 0.3433889340110001,
+      "DeltaUs": -0.04591674219585706,
+      "Percent": -11.794521632265964,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.38367550568371783,
+        0.3949675633126137
+      ],
+      "AfterProcessMedians": [
+        0.3460766372243282,
+        0.34198609074135405
+      ],
+      "BeforeMinimum": 0.3824410732196589,
+      "BeforeMaximum": 0.3973154908932982,
+      "AfterMinimum": 0.3409854757061078,
+      "AfterMaximum": 0.34762562790610824
+    },
+    {
+      "Name": "python-lookbehind-miss-finite-live",
+      "BeforeUs": 0.5813021427728564,
+      "AfterUs": 0.5174364455252907,
+      "DeltaUs": -0.06386569724756574,
+      "Percent": -10.986661246924257,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.5682292862939654,
+        0.5962499384428503
+      ],
+      "AfterProcessMedians": [
+        0.5119807486927697,
+        0.5243535466295961
+      ],
+      "BeforeMinimum": 0.5642748863062154,
+      "BeforeMaximum": 0.5994706085129434,
+      "AfterMinimum": 0.5115993287008141,
+      "AfterMaximum": 0.5306267596239582
+    },
+    {
+      "Name": "python-lookbehind-hit-finite-live",
+      "BeforeUs": 0.5804141042416125,
+      "AfterUs": 0.5320932495937187,
+      "DeltaUs": -0.04832085464789382,
+      "Percent": -8.32523784221808,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.5659418075124546,
+        0.596098474627387
+      ],
+      "AfterProcessMedians": [
+        0.5285522109556942,
+        0.5328997781091476
+      ],
+      "BeforeMinimum": 0.5635998960848437,
+      "BeforeMaximum": 0.6026753543594546,
+      "AfterMinimum": 0.5231394558315132,
+      "AfterMaximum": 0.5394259376850578
+    },
+    {
+      "Name": "core-assertion-dense-count",
+      "BeforeUs": 172.36559626254956,
+      "AfterUs": 137.2792188959425,
+      "DeltaUs": -35.08637736660705,
+      "Percent": -20.355789164076,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        171.91207289293848,
+        172.91782407407408
+      ],
+      "AfterProcessMedians": [
+        137.3862254025045,
+        137.17221238938055
+      ],
+      "BeforeMinimum": 170.2642369020501,
+      "BeforeMaximum": 175.7275462962963,
+      "AfterMinimum": 135.31574239713774,
+      "AfterMaximum": 138.46194690265486
+    },
+    {
+      "Name": "core-assertion-dense-finite-live",
+      "BeforeUs": 184.81,
+      "AfterUs": 153.50868666296367,
+      "DeltaUs": -31.301313337036333,
+      "Percent": -16.937023611837198,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        182.31064356435644,
+        185.41555555555556
+      ],
+      "AfterProcessMedians": [
+        153.44242424242424,
+        153.57494908350307
+      ],
+      "BeforeMinimum": 180.68168316831685,
+      "BeforeMaximum": 189.31728395061728,
+      "AfterMinimum": 150.2621181262729,
+      "AfterMaximum": 156.1682828282828
+    },
+    {
+      "Name": "python-assertion-dense-count",
+      "BeforeUs": 199.3523811023622,
+      "AfterUs": 147.17839982839985,
+      "DeltaUs": -52.17398127396234,
+      "Percent": -26.171737194938437,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        199.9244094488189,
+        198.64693333333332
+      ],
+      "AfterProcessMedians": [
+        147.14444444444445,
+        147.21235521235522
+      ],
+      "BeforeMinimum": 197.25573333333332,
+      "BeforeMaximum": 200.30853333333332,
+      "AfterMinimum": 145.59498069498068,
+      "AfterMaximum": 149.29005847953218
+    },
+    {
+      "Name": "pcre-assertion-dense-count",
+      "BeforeUs": 171.45476744186047,
+      "AfterUs": 135.39023938681132,
+      "DeltaUs": -36.06452805504915,
+      "Percent": -21.034427093010677,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        170.69627906976743,
+        172.655
+      ],
+      "AfterProcessMedians": [
+        135.98036036036035,
+        134.7126110124334
+      ],
+      "BeforeMinimum": 169.32395348837207,
+      "BeforeMaximum": 174.23295454545453,
+      "AfterMinimum": 134.02291296625222,
+      "AfterMaximum": 137.13693693693693
+    },
+    {
+      "Name": "pcre-actual-chinese-count",
+      "BeforeUs": 1307.6791109128753,
+      "AfterUs": 81.3323093220339,
+      "DeltaUs": -1226.3468015908416,
+      "Percent": -93.78040769763028,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1306.942372881356,
+        1315.882456140351
+      ],
+      "AfterProcessMedians": [
+        81.21260593220339,
+        81.5946088794926
+      ],
+      "BeforeMinimum": 1291.3694915254239,
+      "BeforeMaximum": 1323.0105263157895,
+      "AfterMinimum": 80.55169491525425,
+      "AfterMaximum": 82.1943974630021
+    },
+    {
+      "Name": "pcre-chinese-finite-live",
+      "BeforeUs": 2759.1833333333334,
+      "AfterUs": 126.17375732076934,
+      "DeltaUs": -2633.009576012564,
+      "Percent": -95.4271339712559,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        2733.810344827586,
+        2777.4444444444443
+      ],
+      "AfterProcessMedians": [
+        125.93969594594593,
+        126.98279932546373
+      ],
+      "BeforeMinimum": 2696.61724137931,
+      "BeforeMaximum": 2779.1555555555556,
+      "AfterMinimum": 124.75641891891892,
+      "AfterMaximum": 127.90809443507588
+    },
+    {
+      "Name": "pcre-chinese-live",
+      "BeforeUs": 2743.1607142857147,
+      "AfterUs": 125.4044839255499,
+      "DeltaUs": -2617.756230360165,
+      "Percent": -95.42846748743251,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        2721.8857142857146,
+        2758.089285714286
+      ],
+      "AfterProcessMedians": [
+        125.3253807106599,
+        125.749081803005
+      ],
+      "BeforeMinimum": 2709.546428571429,
+      "BeforeMaximum": 2790.8821428571428,
+      "AfterMinimum": 123.99582637729549,
+      "AfterMaximum": 127.04156928213689
+    },
+    {
+      "Name": "pcre-chinese-deadline",
+      "BeforeUs": 2744.3946428571426,
+      "AfterUs": 133.18902877697843,
+      "DeltaUs": -2611.205614080164,
+      "Percent": -95.14687039913773,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        2735.7107142857144,
+        2768.503571428572
+      ],
+      "AfterProcessMedians": [
+        131.59633507853405,
+        133.93723021582733
+      ],
+      "BeforeMinimum": 2722.4357142857143,
+      "BeforeMaximum": 2807.1857142857148,
+      "AfterMinimum": 130.4258289703316,
+      "AfterMaximum": 135.57014388489208
+    }
+  ],
+  "AdverseObservations": [
+    {
+      "Name": "unchanged-core-ascii-count",
+      "BeforeUs": 0.3225698035626461,
+      "AfterUs": 0.32610498333375093,
+      "DeltaUs": 0.003535179771104846,
+      "Percent": 1.095942562527652,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.3194274554593129,
+        0.3266254600148629
+      ],
+      "AfterProcessMedians": [
+        0.32410474223590385,
+        0.32835757661347265
+      ],
+      "BeforeMinimum": 0.31781758261877885,
+      "BeforeMaximum": 0.32783851976450795,
+      "AfterMinimum": 0.32092333536825607,
+      "AfterMaximum": 0.33276594054512076
+    },
+    {
+      "Name": "unchanged-predecoded-cjk-control",
+      "BeforeUs": 24.483882105241292,
+      "AfterUs": 25.00108234154921,
+      "DeltaUs": 0.517200236307918,
+      "Percent": 2.1124110714338062,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        25.301514652617715,
+        23.826159554730978
+      ],
+      "AfterProcessMedians": [
+        25.180462113489632,
+        24.650210016155086
+      ],
+      "BeforeMinimum": 23.454236239950525,
+      "BeforeMaximum": 25.34807375699704,
+      "AfterMinimum": 24.490662358642968,
+      "AfterMaximum": 25.474006116207953
+    },
+    {
+      "Name": "unicode-miss-finite-live-control",
+      "BeforeUs": 0.21659257697395073,
+      "AfterUs": 0.2177410456926222,
+      "DeltaUs": 0.0011484687186714693,
+      "Percent": 0.5302438036967505,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.21055433499530166,
+        0.22286860057557367
+      ],
+      "AfterProcessMedians": [
+        0.2114528793768245,
+        0.22107948442534908
+      ],
+      "BeforeMinimum": 0.2099403764675983,
+      "BeforeMaximum": 0.2252043425847856,
+      "AfterMinimum": 0.20775066735353345,
+      "AfterMaximum": 0.2224814122504778
+    },
+    {
+      "Name": "captured-detailed-control",
+      "BeforeUs": 0.9037437212186012,
+      "AfterUs": 0.9897347628506109,
+      "DeltaUs": 0.08599104163200966,
+      "Percent": 9.514980808503992,
+      "BeforeBytes": 496.0,
+      "AfterBytes": 496.0,
+      "BeforeProcessMedians": [
+        0.8174279885760913,
+        0.9916897045598374
+      ],
+      "AfterProcessMedians": [
+        0.9801810359888191,
+        1.0117411927136686
+      ],
+      "BeforeMinimum": 0.8098147694818442,
+      "BeforeMaximum": 1.0452819505046131,
+      "AfterMinimum": 0.9724941037735848,
+      "AfterMaximum": 1.0216151516501135
+    },
+    {
+      "Name": "anchored-fullmatch-control",
+      "BeforeUs": 0.29962482945154023,
+      "AfterUs": 0.30107314079541336,
+      "DeltaUs": 0.001448311343873132,
+      "Percent": 0.48337494143066984,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.2925535401661164,
+        0.30846488006547607
+      ],
+      "AfterProcessMedians": [
+        0.3015346469405911,
+        0.2971379146375457
+      ],
+      "BeforeMinimum": 0.28859728362098597,
+      "BeforeMaximum": 0.31095255083838746,
+      "AfterMinimum": 0.29165600865758273,
+      "AfterMaximum": 0.30220971036936967
+    }
+  ],
+  "FinitePcreOverhead": {
+    "BeforeExtraUs": 1451.504222420458,
+    "AfterExtraUs": 44.84144799873545,
+    "BeforeRelativePercent": 110.99850187307649,
+    "AfterRelativePercent": 55.13362201629675
+  },
+  "Controls": "CoreASCII+1.10percent/3.54ns,BCL+2.11percent/0.517us,finiteUnicodemiss+0.53percent/1.15ns,FullMatch+0.48percent/1.45ns alloverlap. Detailed+9.51percent/85.99ns overlaps,before-process0.8174/0.9917us versusafter0.9802/1.0117us:do notclaimsettledregression. Ordinarymail-0.09percentoverlaps.",
+  "UnintendedGain": "Finite-mail-2.78percent/-66.91us persists/disjoint;retainwithoutunmeasuredcausalclaim.",
+  "Uncertainty": "BeforeCoreCJKfinite130.06/133.75us ->126.83/127.07us;deadline139.37/142.40 ->134.37/132.58us. All14gainsdisjoint. Retainallprocesses/ranges,no controlnormalization.",
+  "CatalogTradeoffs": "SeparateFull52->54catalogobservations retainAWSCompiled+11.38percent/+1043.84us andwordHolmesCountCompiled+22.61percent/+113.11us,ordinary+21.51percent/+108.58us;PythoncapturedFindAll+7.84percent/+34.39us. Notisolatedcausality. ExistingclosedAWStrialsstayclosedabsentdistinctlivecause. Final22rowA/Bdoesnoteraseothercatalogobservations.",
+  "Confirmation": "None;decisionclear",
+  "ProducerRetuning": "None",
+  "ArchiveSha256": "30A5554F6A5444090479569CA41E58D4FCD28D48B9BC6071671EE9D6C6A4C7D3"
+}

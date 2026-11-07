@@ -1,0 +1,6 @@
+{
+  "Reason": "Transferprep was sequenced before its Windowsconsumer completionmarker. Actual6checks/12auditsalreadycomplete. Preserveinitialwrapper1;setphase0fromauthoritativeproofandrunonlyunstartedtransfer/costpreparation.",
+  "ActualConsumersRepeated": false,
+  "CandidateQualificationRepeated": false,
+  "ProducerChanged": false
+}

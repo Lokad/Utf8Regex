@@ -1,0 +1,16 @@
+{
+  "Source": "553acbdfc895d993416e3bad3af47c468a181148",
+  "Version": "0.5.0-dev.54",
+  "WindowsSeconds": 368.1906712,
+  "Fixtures": 8,
+  "Checks": 110300.0,
+  "ActualAwkPerTarget": 19,
+  "ActualLythonPerTarget": 118,
+  "PublicProbes": 2,
+  "FinalRootLoans": 0,
+  "RestoreAudits": 12,
+  "CompilerDocuments": 464,
+  "Passed": true,
+  "OverallDeliveryAccepted": false,
+  "Remaining": "VMFull,exactWindowsLinuxconsumers,directcumulativepackagecosts,snapshotimport/guards"
+}
