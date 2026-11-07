@@ -1,0 +1,11 @@
+{
+  "HeadSha": "bc490f6fcddd4305d447d284da23be055f5ef063",
+  "Id": 42395647540,
+  "Status": "completed",
+  "Conclusion": "failure",
+  "WindowsFailure": "WarmedLiteralFamilyCountAndEnumerationAllocateNoObjectsPerResult:5728bytes",
+  "LinuxFailure": "WarmedWordBoundaryCandidateSearchAllocatesNoObjects:2936bytes",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/42395647540",
+  "Closed": true,
+  "Retried": false
+}

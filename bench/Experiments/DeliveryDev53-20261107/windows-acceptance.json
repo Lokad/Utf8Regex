@@ -1,0 +1,16 @@
+{
+  "Source": "bc490f6fcddd4305d447d284da23be055f5ef063",
+  "Version": "0.5.0-dev.53",
+  "WindowsSeconds": 383.2648441,
+  "Fixtures": 8,
+  "Checks": 110300.0,
+  "ActualAwkPerTarget": 19,
+  "ActualLythonPerTarget": 118,
+  "PublicProbes": 2,
+  "FinalRootLoans": 0,
+  "RestoreAudits": 12,
+  "CompilerDocuments": 464,
+  "Passed": true,
+  "OverallDeliveryAccepted": false,
+  "Reason": "Full/sourceCI allocation fixtures need adequate warmup; no benchmarkphase started"
+}

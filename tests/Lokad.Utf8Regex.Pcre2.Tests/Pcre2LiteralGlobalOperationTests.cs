@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics;
 using System.Text;
 using Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -373,11 +374,14 @@ public sealed class Pcre2LiteralGlobalOperationTests
     {
         var regex = new Utf8Pcre2Regex("alpha|amber|bravo");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha amber bravo ", 128)));
-        _ = regex.Count(input);
-        var warm = regex.EnumerateMatches(input);
-        while (warm.MoveNext())
+        // Warm complete Count/projection batches long enough for runtime
+        // initialization and tiering; one batch depends on suite ordering.
+        var warmup = Stopwatch.StartNew();
+        for (var iteration = 0; iteration < 256 || warmup.ElapsedMilliseconds < 250; iteration++)
         {
-            _ = warm.Current.StartOffsetInUtf16;
+            _ = regex.Count(input);
+            var warm = regex.EnumerateMatches(input);
+            while (warm.MoveNext()) _ = warm.Current.StartOffsetInUtf16;
         }
 
         var sum = 0;
@@ -402,7 +406,9 @@ public sealed class Pcre2LiteralGlobalOperationTests
     {
         var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("short ", 128)));
-        _ = regex.Count(input);
+        var warmup = Stopwatch.StartNew();
+        for (var iteration = 0; iteration < 256 || warmup.ElapsedMilliseconds < 250; iteration++)
+            _ = regex.Count(input);
 
         var sum = 0;
         var before = GC.GetAllocatedBytesForCurrentThread();

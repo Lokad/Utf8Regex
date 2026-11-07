@@ -1,0 +1,9 @@
+{
+  "Sha256": "53EC49742B6006FBB9AB53083F8BE55771717C729226F4FD69F259A6310C4280",
+  "Bytes": 34173214,
+  "OffVmVerified": true,
+  "Complete": false,
+  "Session": "1447terminal1/CLOSED",
+  "Outcome": "Buildpass69.655s;tests283.157s,total352.883s;oneNET10wordboundaryallocationassert2952bytes,Countresult0correct;no benchmarkphase started",
+  "Next": "Preserveattempt;boundedallocationdiagnosisbeforeanyretry. Do not claim60min acceptance."
+}
