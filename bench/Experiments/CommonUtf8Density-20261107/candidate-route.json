@@ -1,0 +1,11 @@
+{
+  "Bytes": 837,
+  "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+  "Ascii": false,
+  "Mode": "ValidationCore",
+  "Valid": true,
+  "Error": -1,
+  "PublicFound": false,
+  "CoreSha256": "C3CF9C426934DB9CF47890E2136BD5639E134B1C44F0D68E1000A483F19F44D7",
+  "Scope": "Read-only source route/codegen;no throughput measurement"
+}

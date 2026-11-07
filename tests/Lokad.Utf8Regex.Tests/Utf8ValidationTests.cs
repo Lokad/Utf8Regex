@@ -11,7 +11,7 @@ public sealed class Utf8ValidationTests
     public void EveryByteTagAtThreeByteBlockBoundariesAgreesWithScalarValidation()
     {
         var tail = Encoding.UTF8.GetBytes(new string('中', 80) + "é😀");
-        foreach (var prefix in new[] { 0, 1, 28, 29, 30, 31, 32, 60, 61, 62, 63, 64, 125, 126, 127, 128 })
+        foreach (var prefix in new[] { 0, 1, 28, 29, 30, 31, 32, 60, 61, 62, 63, 64, 125, 126, 127, 128, 255, 256, 257 })
         {
             var input = new byte[prefix + 3 + tail.Length];
             input.AsSpan(0, prefix).Fill((byte)'x');

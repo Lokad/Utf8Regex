@@ -9,6 +9,7 @@ public sealed class Utf8ValidationPrefixTests
     [InlineData(0)] [InlineData(1)] [InlineData(15)] [InlineData(16)] [InlineData(17)]
     [InlineData(31)] [InlineData(32)] [InlineData(33)] [InlineData(63)] [InlineData(64)]
     [InlineData(65)] [InlineData(127)] [InlineData(128)] [InlineData(129)]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
     public void AsciiPrefixKeepsWholeInputCoordinatesAndUnicodeFlags(int prefixLength)
     {
@@ -33,6 +34,7 @@ public sealed class Utf8ValidationPrefixTests
     [InlineData(0)] [InlineData(1)] [InlineData(15)] [InlineData(16)] [InlineData(17)]
     [InlineData(31)] [InlineData(32)] [InlineData(33)] [InlineData(63)] [InlineData(64)]
     [InlineData(65)] [InlineData(127)] [InlineData(128)] [InlineData(129)]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
     public void MalformedSuffixReportsTheOriginalByteOffset(int prefixLength)
     {

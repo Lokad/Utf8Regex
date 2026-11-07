@@ -43,12 +43,29 @@ internal static class Utf8ValidationCore
             // --measure-utf8-validation-profile over the frozen two-byte,
             // three-byte, and mixed profiles; it is a cost trade-off, not a
             // correctness gate.
-            var sampleLength = Math.Min(input.Length, 256);
+            var sample = input[..Math.Min(input.Length, 256)];
             var twoByteLeads = 0;
             var safeThreeByteLeads = 0;
-            for (var i = 0; i < sampleLength; i++)
+            if (Vector256.IsHardwareAccelerated)
             {
-                var value = input[i];
+                while (sample.Length >= Vector256<byte>.Count)
+                {
+                    var current = MemoryMarshal.Read<Vector256<byte>>(sample);
+                    var twoByte = Vector256.LessThanOrEqual(
+                        Vector256.Subtract(current, Vector256.Create((byte)0xC2)),
+                        Vector256.Create((byte)(0xDF - 0xC2)));
+                    var threeByte = Vector256.LessThanOrEqual(
+                        Vector256.Subtract(current, Vector256.Create((byte)0xE1)),
+                        Vector256.Create((byte)(0xEF - 0xE1))) &
+                        ~Vector256.Equals(current, Vector256.Create((byte)0xED));
+                    twoByteLeads += BitOperations.PopCount(twoByte.ExtractMostSignificantBits());
+                    safeThreeByteLeads += BitOperations.PopCount(threeByte.ExtractMostSignificantBits());
+                    sample = sample[Vector256<byte>.Count..];
+                }
+            }
+            for (var i = 0; i < sample.Length; i++)
+            {
+                var value = sample[i];
                 if (value is >= 0xC2 and < 0xE0)
                 {
                     twoByteLeads++;
