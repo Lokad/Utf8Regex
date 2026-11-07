@@ -1,0 +1,32 @@
+{
+  "Scope": "ONE scoped readonly invocation transfer A/B; unchanged owned copy/authority, 17 public workloads",
+  "Source": "2aaf9d71fc0552f6b035533d595f2ec7c6a573f1 plus runtime.patch",
+  "BeforeSource": "2aaf9d71fc0552f6b035533d595f2ec7c6a573f1",
+  "AfterSource": "same + runtime.patch",
+  "BeforeVersion": "0.5.0-dev.49",
+  "AfterVersion": "0.5.0-dev.49",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "CoreBefore": "AB81495C732EEFE03F4C5ACF2513700A2371403EB4A737CA0D77A54DB456669B",
+  "CoreAfter": "AB81495C732EEFE03F4C5ACF2513700A2371403EB4A737CA0D77A54DB456669B",
+  "PythonBefore": "1C49B5CB3C587081E9054CC4B7636122CAED8C119D5CDFE6935308DE378FBBCF",
+  "PythonAfter": "EED2DFAF7925818960111D311B5F7B2BBF70B0E3DDACA7C9A638E0D018D6158B",
+  "WorkerSha256": "B4DC110B663854A06993AD6EC876DC1848A274A37B5F457921EAF4E99FDC54C9",
+  "Rows": 17,
+  "SamplesPerProcess": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProcessCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Controls": "Fixed Core/caller; folded miss/hit/live limits, Unicode, captures, anchors, actual mail",
+  "Acceptance": "Useful public benefit with absolute adverse/range/allocation evidence; otherwise restore",
+  "Confirmation": "At most one justified noise confirmation",
+  "SourceChanges": "Two private constructor scoped in parameters; state retains one owned copy",
+  "DeclaredAt": "2026-11-07T08:46:53.0799584+01:00"
+}

@@ -37,7 +37,7 @@ internal struct PythonReScalarMatchState
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout, object pattern,
-        Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
+        scoped in Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
     {
         this = default;
         _program = program;
@@ -47,6 +47,7 @@ internal struct PythonReScalarMatchState
         _position = startOffsetInBytes;
         _slots = new Utf8SliceSlots([], []);
         _workspace = new Utf8SliceRunner.AttemptWorkspace();
+        // Own one value copy; the constructor chain only borrows the source.
         _invocation = invocation;
         try
         {

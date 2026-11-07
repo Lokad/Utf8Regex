@@ -1,0 +1,31 @@
+{
+  "Decision": "Promote",
+  "Source": "2aaf9d71fc0552f6b035533d595f2ec7c6a573f1 + archived runtime.patch",
+  "Reason": "Eight target public gains persist with disjoint overall ranges and unchanged allocations; small adverse neighbors retained",
+  "Contracts": "Unchanged strict whole-input UTF8/scalars, captures, ownership, original/current controls and major allocation/work admission",
+  "Tests": {
+    "Windows": {
+      "AdditionalLifetimeNet10": 102,
+      "net11": 482,
+      "AdditionalLifetimeNet11": 102,
+      "net10": 482
+    },
+    "Linux": {
+      "AdditionalLifetimeNet10": 102,
+      "net11": 482,
+      "AdditionalLifetimeNet11": 102,
+      "net10": 482
+    }
+  },
+  "ComparisonHandle": "9369 terminal0/CLOSED",
+  "TestHandle": "39329 terminal0/CLOSED",
+  "RawArchive": "artifacts/experiments/python-invocation-transfer-20261107/evidence.tar.gz",
+  "RawSha256": "E6BA2C8C51F1DA3B6375FADFD229DB213D7D7C6B98C9D2E9B7091C1B8E607DCD",
+  "RawBytes": 5826116,
+  "SupplementalArchive": "artifacts/experiments/python-invocation-transfer-20261107/lifetime-validation.zip",
+  "SupplementalSha256": "6849F59D252D3582132DA04BC7C629729A0DF5C688ACD1600E4860C34CAFA7CF",
+  "Full49Graphs": "All eight frozen DLL/PDB hashes unchanged",
+  "Packages": "All 264 staged assets preserved; no package write, Full or package requalification",
+  "Confirmation": "None",
+  "Timestamp": "2026-11-07T08:50:29.4402840+01:00"
+}

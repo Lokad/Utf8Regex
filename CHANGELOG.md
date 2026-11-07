@@ -36,6 +36,8 @@
   predicates for mask misses and unchanged per-scalar work charges.
   Borrow immutable class instructions during scalar classification to avoid
   repeated instruction copies.
+  Borrow invocation values through Python cursor construction, retaining one
+  owned state copy and the original controls.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.
