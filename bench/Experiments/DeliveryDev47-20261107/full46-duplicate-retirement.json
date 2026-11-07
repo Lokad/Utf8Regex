@@ -1,0 +1,14 @@
+{
+  "Scope": "Fresh flat duplicate VM delivery46/full-evidence.tar.gz only",
+  "Sha256": "7888F2093A1DFF5A31B8242D3FFEBC02BFF1FE0A859E2F2835B3D128F8F49B7E",
+  "Bytes": 34342703,
+  "CanonicalOffVmHashVerified": true,
+  "RemoteHashVerified": true,
+  "ExactResolvedPathChecked": true,
+  "InitialPreflight": "Relative manifest evaluated outside repo; stopped BEFORE deletion; read-only audit confirmed all bytes still present; corrected cwd",
+  "RemovedOnce": true,
+  "PriorFullEightVerifiedBeforeAndAfter": true,
+  "CurrentFullEightVerifiedAfter": true,
+  "PublishedOrStagedAssetRemoved": false,
+  "ScopeClosed": true
+}

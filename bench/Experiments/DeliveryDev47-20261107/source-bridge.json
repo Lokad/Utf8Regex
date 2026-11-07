@@ -1,16 +1,30 @@
 {
   "FullSource": "e7a65967deeb4b974d748b4a936c80c3e63870fa",
-  "PackageSource": "Pending final data/docs commit",
+  "PackageSource": "0c01d65f14fdc5acbd555968011716c99ec763c7",
   "ChangedFiles": [
     "PCRE2.Benchmarks.json",
     "PythonRe.Benchmarks.json",
     "README.Benchmarks.json",
     "README.Parity.json",
     "README.md",
+    "bench/Experiments/DeliveryDev47-20261107/README.md",
+    "bench/Experiments/DeliveryDev47-20261107/batch-source-scope.json",
+    "bench/Experiments/DeliveryDev47-20261107/catalog-movements.json",
+    "bench/Experiments/DeliveryDev47-20261107/consumer-source-audit.json",
+    "bench/Experiments/DeliveryDev47-20261107/full-archive-acceptance.json",
+    "bench/Experiments/DeliveryDev47-20261107/full-refresh.json",
+    "bench/Experiments/DeliveryDev47-20261107/import-validation.json",
+    "bench/Experiments/DeliveryDev47-20261107/imported-snapshot-hashes.json",
+    "bench/Experiments/DeliveryDev47-20261107/post-refresh-guards-acceptance.json",
+    "bench/Experiments/DeliveryDev47-20261107/ratio-summary.json",
+    "bench/Experiments/DeliveryDev47-20261107/scratch-retirement.json",
+    "bench/Experiments/DeliveryDev47-20261107/source-bridge.json",
+    "bench/Experiments/DeliveryDev47-20261107/source-ci.json",
     "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
     "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
   ],
   "CSharpAndBuildInputDiff": [],
-  "Scope": "Generated data/docs/receipts only after Full. Revision metadata/actual package binaries will differ; exact final packages and public costs remain separate acceptance.",
-  "Qualified": false
+  "Scope": "Final generated data/docs/receipts only; revision metadata/actual binaries differ",
+  "Qualified": true,
+  "EvidenceScope": "Same tracked C#/build inputs; Linux Full and exact Windows final packages have different revision metadata/compiler source line endings/binary hashes. Original Windows PDB compiler documents retained. Both-platform package/consumer acceptance and one final public-cost comparison complete."
 }

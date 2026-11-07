@@ -39,33 +39,85 @@ Earlier own source CI42310386527 was superseded/cancelled after the freeze push
 to avoid duplicate matrices. The final data/docs commit changes revision metadata;
 its C#/build-input bridge is recorded separately from actual package hashes.
 
-Package/consumer acceptance and final public costs are **pending**. The existing
-qualifier will produce the final common47candidate once, with exact pins and
-matching documentation. Linux will consume those exact Windows-produced bytes.
-Original Awk/Lython/public API fixtures use1565original files with only3exact
-version pins changed. The original archiveCBD35E99 and repinned9FB64B08 remain.
-All246previous staged assets must stay unchanged;6new files will give252.
-No package is published by this delivery.
+All three packages are qualified/staged in `artifacts/nuget/`, unpublished.
+Final package source `0c01d65f14fdc5acbd555968011716c99ec763c7` changes only
+generated data/docs/receipts after Full. Tracked C#/build inputs agree; original
+Windows CRLF compiler documents, revision metadata and actual package hashes are
+distinct from the Linux Full binaries. The [source bridge](source-bridge.json)
+records this boundary rather than claiming byte-identical builds.
 
-The final comparison is fixed at18public/4diagnostic rows, Default-process ABBA,
-five independently calibrated60ms targets/20ms floor, under120s, at most one
-justified noise confirmation. Before any timing, AWSquick replaces the uncertain
-hot-construction row and actual Unicode FullMatch replaces the Unicode-whitespace
-row, retaining the bounded scope. Focused construction/finite-Unicode evidence is
-preserved. Complete result projections/arrays, allocations and process ranges are
-checked; separate BCL diagnostics do not replace the Full profile comparators.
+Windows qualification took307.5218432s: two selected builds, one pack per profile,
+eight detached fixtures/109920checks, six assets and464compiler documents tied to
+symbols. Linux consumed those EXACT Windows bytes: eight fixtures/109920checks,
+24restore audits and12TRX checks pass, with no producer rebuild/repack. Supplied
+Awk19/Lython118 per runtime, public probes and root loans0 pass on both platforms.
+The1565original consumer files change only3exact pins8->47; original archive
+CBD35E99 and repinned9FB64B08 remain. All246previous staged assets stay unchanged;
+six new package/symbol files give252. [Final data-source CI](data-source-ci.json)
+42317511458 is GREEN on Windows/Linux, CLOSED.
+
+ONE **106.554773438s** [exact-package comparison](package-cost.json) passed:
+18public/4diagnostic rows, Default-process ABBA, independently calibrated60ms
+targets/five samples,360public samples/minimum53.3229ms, under120s. No confirmation.
+Before any timing, AWSquick replaced the uncertain hot-construction row and actual
+Unicode FullMatch replaced Unicode-whitespace, retaining the bounded scope.
+Focused construction/finite-Unicode evidence remains. [Exact graphs and unchanged
+caller/benchmark bytes](package-cost-declaration.json) are bound before timing;
+complete result projections/arrays are checked afterward. Separate BCL diagnostics
+do not replace the Full profile comparators.
+
+| Public operation | Before us | After us | Change | B/op before/after |
+| --- | ---: | ---: | ---: | ---: |
+| Named FullMatch miss |0.43|0.35|-18.05%|272/64|
+| Named FullMatch hit |0.46|0.40|-14.00%|272/64|
+| Named miss finite/live |0.64|0.54|-15.86%|384/176|
+| Named miss deadline/live |0.81|0.67|-17.42%|432/224|
+| Verbose FullMatch |0.69|0.56|-19.69%|0/0|
+| Verbose finite/live |0.88|0.76|-13.74%|112/112|
+| Verbose deadline/live |1.00|0.88|-12.17%|160/160|
+| Completed-reference FindAll |159.18|147.02|-7.64%|45376/45168|
+| Core long reference history |28.45|24.48|-13.96%|40312/28512|
+| PCRE long backreference Count |22.60|20.22|-10.57%|35784/22784|
+| Actual Unicode FullMatch |18.15|18.79|+3.51%|0/0|
+| Actual AWSquick ordinary Count |4788.67|4803.34|+0.31%|528/528|
+
+Target ordinary/finite/deadline, Unicode-reference, FindAll and history/PCRE ranges
+are disjoint and improve in both candidate processes. Unicode-reference-13.68%
+also saves208B. Unicode FullMatch is slower in both candidate processes, with
+disjoint ranges; accept this3.51% local cost for the larger target gains. No row
+increases allocations. Native+1.50%, shorthand+0.46%, one-capture+0.42%,
+two-capture+0.49% and rewind-0.54% remain observations with interleaving process
+medians/ranges, not attributed gains or a normalization factor.
+
+AWSquick before4790.34/4787.00us versus after4825.43/4772.50us does not reproduce
+the Full catalog's29% movement. The final driver measures ordinary Count; its
+different process history and package binaries do not explain or erase either
+catalog mode. Unicode's final3.51% likewise does not supersede the catalog19.46%.
+All earlier focused costs and uncertainty remain intact; no blanket speedup or
+universal slowdown gate is asserted.
 
 Canonical off-VM evidence under `artifacts/experiments/delivery-dev47-20261107/`:
 
 - full-evidence.tar.gz: `ED55D5879DDCC84FCC5FC58D7A488CD7DA3040D6E82110A681D4E58DEA51AC12`,34283479B.
 - post-refresh-guards.tar.gz: `06FD021ADE1A8D8C25DE81ACBE50AA07E643F05E528FAB42F45325340E02C524`.
 - retired-source-outputs.tar.gz: `CCFB3A9E4F089D2AD7CEC89980DDA97FCC4D713756CA37F6BE01B517D6F1FC81`,135159502B.
+- windows-evidence.zip: `EBEB60C78D28C9E2944AC4794C60AEA58CA6DD0804371B20D8F276FC18E94B72`.
+- windows-restore-inputs.zip: `EEAFADCCB4D254A3766BDEECF37933BA0E687B60AE0522B353A5314D48027346`.
+- linux-evidence.tar.gz: `73F04313E430719F287E80CA7E8876DF6A6DD48B0BA58265050959FD62F1ECC8`,808690256B.
+- package-cost-evidence.tar.gz: `87D9E17C4BDAFC960C6FA9125A796503A6F80A3EBB63978278EAFB974615AD8E`,3546939B.
 
 Fresh46Linux scratch and15disposable source-output targets were retired after
 full inventory/content and off-VM archive verification. All8prior Full46 assets
 were copied/verified separately. These cleanup scopes are closed; protected and
 previously rejected scopes remain untouched. Compiler workers expired naturally;
 no server shutdown/kill or admission reduction was used.
+
+The fresh flat VM duplicate of Full46 was subsequently retired after7888F209/
+34342703B canonical/hash/path proof. Its first relative-manifest preflight stopped
+before deletion; a read-only audit and corrected cwd preceded the single removal.
+This scope is closed. Both eight-asset graphs and all package bytes remain intact.
+Eight measured Full47 DLL/PDBs are verified unchanged after Linux and final costs.
+All package/consumer/cost gates for this candidate are complete.
 
 Immutable staged/published bytes remain unchanged. Broader profile work, optional
 POSIX and remaining parity gaps retain separate plan items.

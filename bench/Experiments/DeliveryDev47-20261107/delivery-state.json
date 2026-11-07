@@ -1,0 +1,15 @@
+{
+  "Version": "0.5.0-dev.47",
+  "PackageSource": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "FullSource": "e7a65967deeb4b974d748b4a936c80c3e63870fa",
+  "FullAccepted": true,
+  "WindowsPackagesAccepted": true,
+  "OriginalWindowsConsumersAccepted": true,
+  "LinuxAcceptance": "PassedExactWindowsBytes",
+  "FinalPackageCosts": "Passed106.554773438sNoConfirmation",
+  "Published": false,
+  "AllPriorStagedAssetsPreserved": 246,
+  "TotalStagedAssets": 252,
+  "MeasuredFullAssetsPreserved": 8,
+  "FinalDataCi": "42317511458GreenBothOSClosed"
+}

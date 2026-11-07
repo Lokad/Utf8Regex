@@ -1,0 +1,136 @@
+[
+  {
+    "Side": "before",
+    "Version": "0.5.0-dev.46",
+    "Source": "6957b35aa51ee5730252011085e21669767ee1f9",
+    "Files": [
+      {
+        "File": "Lokad.Utf8Regex.Benchmarks.dll",
+        "Sha256": "FB38A99C0E95721A7989A7ABC21E104407E2FBA9141FA4C4E259DB0194F477AF",
+        "Bytes": 1308672
+      },
+      {
+        "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+        "Sha256": "64065A40DFC83D7903A3EBB503A48E440F4FD10DAFC8DC483185AE1B28818BA9",
+        "Bytes": 304112
+      },
+      {
+        "File": "Lokad.Utf8Regex.dll",
+        "Sha256": "C6CF3BC41C1D5568177A8132FB4A41EE9C157AEF8972E41E842E471B4633664B",
+        "Bytes": 1518080
+      },
+      {
+        "File": "Lokad.Utf8Regex.Pcre2.dll",
+        "Sha256": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+        "Bytes": 423936
+      },
+      {
+        "File": "Lokad.Utf8Regex.Pcre2.pdb",
+        "Sha256": "2923425B6217D8C91F428F65C4AC655D90292162B3A4A654E758514BC254DE8E",
+        "Bytes": 163960
+      },
+      {
+        "File": "Lokad.Utf8Regex.pdb",
+        "Sha256": "B3B4312AC00DEB9EE95C8507A5450CEB8B7204670BA77C36D2EC637697B0B5C1",
+        "Bytes": 536200
+      },
+      {
+        "File": "Lokad.Utf8Regex.PythonRe.dll",
+        "Sha256": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+        "Bytes": 258560
+      },
+      {
+        "File": "Lokad.Utf8Regex.PythonRe.pdb",
+        "Sha256": "563C73DE2E395E7B67ED088406AAB1188E694025DE729FEB0DA856ECF5AE2903",
+        "Bytes": 76468
+      },
+      {
+        "File": "Worker.deps.json",
+        "Sha256": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+        "Bytes": 1617
+      },
+      {
+        "File": "Worker.dll",
+        "Sha256": "9D3BB54ED01C38AC13313BC5ABC0465E021D4606A0892DFB5B6A7E1F346888D2",
+        "Bytes": 33280
+      },
+      {
+        "File": "Worker.pdb",
+        "Sha256": "D727BFBE8044F7DF3015231BCB6189483BF9752F0DCA088B10F2E57A01277F4F",
+        "Bytes": 20216
+      },
+      {
+        "File": "Worker.runtimeconfig.json",
+        "Sha256": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+        "Bytes": 357
+      }
+    ]
+  },
+  {
+    "Side": "after",
+    "Version": "0.5.0-dev.47",
+    "Source": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+    "Files": [
+      {
+        "File": "Lokad.Utf8Regex.Benchmarks.dll",
+        "Sha256": "FB38A99C0E95721A7989A7ABC21E104407E2FBA9141FA4C4E259DB0194F477AF",
+        "Bytes": 1308672
+      },
+      {
+        "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+        "Sha256": "64065A40DFC83D7903A3EBB503A48E440F4FD10DAFC8DC483185AE1B28818BA9",
+        "Bytes": 304112
+      },
+      {
+        "File": "Lokad.Utf8Regex.dll",
+        "Sha256": "117CB3B60B5018FFFCD214CC3DC10078079B5BD0D85315A01FA5E08D766422CD",
+        "Bytes": 1518080
+      },
+      {
+        "File": "Lokad.Utf8Regex.Pcre2.dll",
+        "Sha256": "69282B1120816788EC6D894EC5DDC0E9F1ABB6DAF71D9D5DC7DC361FB6FA3E0B",
+        "Bytes": 423936
+      },
+      {
+        "File": "Lokad.Utf8Regex.Pcre2.pdb",
+        "Sha256": "B49EDF80B9D350CB330ECD64D355A918E64777B7315CE62677FD202CD7320D61",
+        "Bytes": 163960
+      },
+      {
+        "File": "Lokad.Utf8Regex.pdb",
+        "Sha256": "0382F8EDD4860B93CDFE488113D1993BF0097E197F7285DD1C646E7234F91379",
+        "Bytes": 536440
+      },
+      {
+        "File": "Lokad.Utf8Regex.PythonRe.dll",
+        "Sha256": "FB5C875A597411C9942B70E86F2E333171FE36456FB0E7F2205D530A46744A01",
+        "Bytes": 258560
+      },
+      {
+        "File": "Lokad.Utf8Regex.PythonRe.pdb",
+        "Sha256": "55D5814B1AAA03C1D71189D9ECFD9989D2BD0D7471280D8E6297D9D57D4043CE",
+        "Bytes": 76468
+      },
+      {
+        "File": "Worker.deps.json",
+        "Sha256": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+        "Bytes": 1617
+      },
+      {
+        "File": "Worker.dll",
+        "Sha256": "9D3BB54ED01C38AC13313BC5ABC0465E021D4606A0892DFB5B6A7E1F346888D2",
+        "Bytes": 33280
+      },
+      {
+        "File": "Worker.pdb",
+        "Sha256": "D727BFBE8044F7DF3015231BCB6189483BF9752F0DCA088B10F2E57A01277F4F",
+        "Bytes": 20216
+      },
+      {
+        "File": "Worker.runtimeconfig.json",
+        "Sha256": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+        "Bytes": 357
+      }
+    ]
+  }
+]

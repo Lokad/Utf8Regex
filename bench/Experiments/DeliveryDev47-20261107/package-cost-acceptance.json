@@ -1,0 +1,13 @@
+{
+  "Source": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "Sha256": "87D9E17C4BDAFC960C6FA9125A796503A6F80A3EBB63978278EAFB974615AD8E",
+  "Bytes": 3546939,
+  "OffVmVerified": true,
+  "TerminalExit": 0,
+  "Seconds": 106.554773438,
+  "PublicRows": 18,
+  "PublicSamples": 360,
+  "ReferenceRows": 4,
+  "Confirmation": "None",
+  "Scope": "Exact qualified46-to47 Windows package DLL/PDB graphs; same caller/benchmark bytes; Default-process ABBA"
+}

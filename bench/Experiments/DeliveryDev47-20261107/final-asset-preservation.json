@@ -1,0 +1,11 @@
+{
+  "Version": "0.5.0-dev.47",
+  "PackageSource": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "HistoricalAssets": 246,
+  "HistoricalBytesUnchanged": true,
+  "NewAssets": 6,
+  "NewFeedAndStagedBytesMatch": true,
+  "TotalStaged": 252,
+  "After": "Linux acceptance and final public-cost run",
+  "Published": false
+}

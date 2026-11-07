@@ -1,0 +1,18 @@
+{
+  "Run": 42317511458,
+  "Source": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "Status": "Completed",
+  "Conclusion": "Success",
+  "Platforms": [
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (windows-latest)",
+      "Conclusion": "success"
+    }
+  ],
+  "Scope": "Final47 data/docs package source; includes full source and generated snapshot guards",
+  "Closed": true
+}

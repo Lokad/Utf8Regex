@@ -1,0 +1,69 @@
+{
+  "Scope": "ONE exact Windows46-to-Windows47 combined completed-reference/pure-predicate public-cost comparison; no source decomposition or normalization",
+  "BeforeVersion": "0.5.0-dev.46",
+  "AfterVersion": "0.5.0-dev.47",
+  "BeforeSource": "6957b35aa51ee5730252011085e21669767ee1f9",
+  "AfterSource": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "CoreBefore": "C6CF3BC41C1D5568177A8132FB4A41EE9C157AEF8972E41E842E471B4633664B",
+  "PythonBefore": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "PcreBefore": "8BA9A9CA621080213172185CF6E68ED110F88D4A458395E92C22B5A0450A0D55",
+  "CoreAfter": "117CB3B60B5018FFFCD214CC3DC10078079B5BD0D85315A01FA5E08D766422CD",
+  "PythonAfter": "FB5C875A597411C9942B70E86F2E333171FE36456FB0E7F2205D530A46744A01",
+  "PcreAfter": "69282B1120816788EC6D894EC5DDC0E9F1ABB6DAF71D9D5DC7DC361FB6FA3E0B",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 18,
+  "ComparatorRows": 4,
+  "Samples": 5,
+  "TargetMs": 60,
+  "FloorMs": 20,
+  "Warmup": "1s/min128",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Acceptance": "Combined completed-reference/predicate change: actual named+verbose ordinary/finite/live/deadline; Unicode and FindAll; Core capture history/rewind, PCRE, shorthand, one/two-capture and actualAWS/UnicodeFullMatch adverse controls. Preserve all costs/allocations/process ranges. No universal slowdown gate.",
+  "Confirmation": "At most one justified noise confirmation",
+  "ScopeAdjustment": "Before any timing/final graph binding: replace hot construction with actual32MB AWSquick after freshFull+29.48%, and Unicode-whitespace row with actualUnicodeFullMatch after+19.46%; retain18rows/120s. Focused construction uncertainty/finite Unicode evidence stays intact.",
+  "Unchanged": [
+    {
+      "File": "Worker.dll",
+      "Before": "9D3BB54ED01C38AC13313BC5ABC0465E021D4606A0892DFB5B6A7E1F346888D2",
+      "After": "9D3BB54ED01C38AC13313BC5ABC0465E021D4606A0892DFB5B6A7E1F346888D2",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.pdb",
+      "Before": "D727BFBE8044F7DF3015231BCB6189483BF9752F0DCA088B10F2E57A01277F4F",
+      "After": "D727BFBE8044F7DF3015231BCB6189483BF9752F0DCA088B10F2E57A01277F4F",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.deps.json",
+      "Before": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "After": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.runtimeconfig.json",
+      "Before": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "After": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.dll",
+      "Before": "FB38A99C0E95721A7989A7ABC21E104407E2FBA9141FA4C4E259DB0194F477AF",
+      "After": "FB38A99C0E95721A7989A7ABC21E104407E2FBA9141FA4C4E259DB0194F477AF",
+      "Unchanged": true
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+      "Before": "64065A40DFC83D7903A3EBB503A48E440F4FD10DAFC8DC483185AE1B28818BA9",
+      "After": "64065A40DFC83D7903A3EBB503A48E440F4FD10DAFC8DC483185AE1B28818BA9",
+      "Unchanged": true
+    }
+  ]
+}
