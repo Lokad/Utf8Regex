@@ -1,0 +1,85 @@
+{
+  "Decision": "Promote",
+  "Reason": "Five intended public string gains persist in both processes with disjoint sample ranges; two no-match allocations fall. Byte-only miss adverse estimate overlaps; unchanged PCRE control is +11.064 ns/disjoint and retained without a causal or noise claim. Local regressions acceptable for substantial gains.",
+  "TimedAttempts": 1,
+  "Confirmation": "None",
+  "Seconds": 66.197238486,
+  "PublicRows": 14,
+  "Samples": 280,
+  "MinimumSampleMilliseconds": 25.9778,
+  "Adverse": [
+    {
+      "Name": "unchanged-core-count",
+      "Percent": 0.04884677155128081,
+      "DeltaMicroseconds": 0.00015897949473808737,
+      "BeforeProcessMedians": [
+        0.3261344859374185,
+        0.32496360455321077
+      ],
+      "AfterProcessMedians": [
+        0.325673799358966,
+        0.32534948661024005
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "unchanged-pcre-count",
+      "Percent": 6.866648475247827,
+      "DeltaMicroseconds": 0.011063573680088284,
+      "BeforeProcessMedians": [
+        0.16707854612136785,
+        0.15724867657967495
+      ],
+      "AfterProcessMedians": [
+        0.17237189005727446,
+        0.17198445441229068
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "byte-miss-owned-copy",
+      "Percent": 5.002204439424007,
+      "DeltaMicroseconds": 0.08650089695036867,
+      "BeforeProcessMedians": [
+        1.7260215268088497,
+        1.818003787123779
+      ],
+      "AfterProcessMedians": [
+        1.8271177994817622,
+        1.748056607534383
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "excluded-live-token-miss",
+      "Percent": 2.2879402694367723,
+      "DeltaMicroseconds": 0.07008750994431168,
+      "BeforeProcessMedians": [
+        3.0238265712012726,
+        3.1117840095465397
+      ],
+      "AfterProcessMedians": [
+        3.2592879872712803,
+        3.076203261734288
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "excluded-deadline-miss",
+      "Percent": 1.1766915583129256,
+      "DeltaMicroseconds": 0.03987171837708825,
+      "BeforeProcessMedians": [
+        3.403391010342084,
+        3.373528241845664
+      ],
+      "AfterProcessMedians": [
+        3.3836416070007957,
+        3.535013922036595
+      ],
+      "RangesOverlap": true
+    }
+  ],
+  "NoNormalization": true,
+  "CatalogStatusUnchanged": true,
+  "NoNewPackage": true
+}

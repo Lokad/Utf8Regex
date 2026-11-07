@@ -1,0 +1,12 @@
+{
+  "Parent": "cd338e24a6c8037c0672bf4205ea643e2711db1c",
+  "Baseline": "Exact qualified 0.5.0-dev.54 package DLL/PDB graph, frozen before affected builds.",
+  "Problem": "PythonRe replacement/no-match-string allocated an intermediate byte array and copied it before decoding text. Existing input/replacement validation metadata was discarded.",
+  "BoundedChange": "Skip miss byte materialization for text output and reuse validated scalar extents for UTF-16 sizing. Byte and retained output keep independent admitted storage. Keep existing eligibility, search and copy algorithms.",
+  "Preserved": "Strict whole-input/replacement/template validation; scalar boundaries; counts/offsets; retained results and aliases; original cancellation/deadlines; meaningful major-storage/work/depth/result admission and parent loans. Keep actual Unsafe.SizeOf.",
+  "Revised": "Removed intermediate traffic and redundant validation can reduce modeled work/result charges and peak working bytes. Finite limits, cancellable tokens and deadlines retain the existing scalar path.",
+  "Validation": "Focused Release Core/PythonRe on both targets/platforms; see validation.json.",
+  "DeclaredComparison": "One separate-process fixed-caller ABBA, 120-second cap, unchanged Core/PCRE controls, public text/byte and excluded finite/live/deadline operations; at most one justified noise confirmation.",
+  "Result": "Accepted after one 66.197-second comparison; no confirmation, variants, catalog refresh or package qualification.",
+  "OriginalDeclaration": "Preserved in the immutable Linux evidence archive, before timing."
+}

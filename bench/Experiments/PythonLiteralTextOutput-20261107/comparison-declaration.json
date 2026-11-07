@@ -1,0 +1,31 @@
+{
+  "Scope": "PythonLiteralTextOutput-20261107",
+  "BeforeSource": "553acbdfc895d993416e3bad3af47c468a181148",
+  "AfterSource": "cd338e24a6c8037c0672bf4205ea643e2711db1c + source.patch",
+  "SourcePatch": "936F650361423890E7CCC4B920C8A2E6E4A47D9DAB9C0003FCFC9083F42C4501",
+  "CoreBefore": "D92F46FBF0E9CA1CA2856CD1464DA62F5062F427AF33B99A2F8CE350E3E57D25",
+  "CoreAfter": "D0C083D000FF5835E43B82F6560F9BCAD8FBDBDACD33BE163631C9593D505BC2",
+  "PythonBefore": "364C554811A5B421A08B4F8C3EDC4B7B2D0C217B693D0588B67C3E397381BD51",
+  "PythonAfter": "559EEC994DE18E975B0424E863D2184E275371EB86B3A14C73CA76550D6B98CF",
+  "PcreBefore": "A9A230202942F99D3697080B73DF0F36BB9A5333406055E6CB11EA9D785AB9B0",
+  "PcreAfter": "A9A230202942F99D3697080B73DF0F36BB9A5333406055E6CB11EA9D785AB9B0",
+  "Worker": "D6D953F618083F9D900F94111AEE0D699607ED33D35FC9B625D03147C99D8A76",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Rows": 14,
+  "SamplesPerRow": 5,
+  "WarmMilliseconds": 750,
+  "MinimumWarmCalls": 32,
+  "TargetMilliseconds": 75,
+  "MinimumSampleMilliseconds": 20,
+  "MaximumRetainedBytesPerSample": 134217728,
+  "OuterCapSeconds": 120,
+  "WorkerCapSeconds": 28,
+  "MemoryReserveKiB": 2097152,
+  "Confirmation": "At most one if uncertainty prevents a decision; never automatic",
+  "Decision": "Public operation costs and allocations; local regressions may be accepted for substantial gains. Keep controls, ranges, process observations and all adverse cases; no normalization or composed ratios. No catalog refresh/package qualification."
+}

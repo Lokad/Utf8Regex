@@ -279,22 +279,28 @@ public sealed partial class Utf8Regex
     }
 
     // Borrow the adapter's operation and result owner through final shaping.
-    internal byte[] ReplaceExactLiteralForResult(
+    internal byte[]? ReplaceExactLiteralForResult(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literalReplacementUtf8,
         int maximumReplacementCount,
         ref Utf8SliceInvocation invocation,
         ref Utf8InvocationResultLedger results,
-        out int replacementCount)
+        out int replacementCount, out int outputUtf16Length)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
-        _ = Utf8Validation.Validate(input, ref invocation);
-        _ = Utf8Validation.Validate(literalReplacementUtf8, ref invocation);
-        return Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
+        var inputValidation = Utf8Validation.Validate(input, ref invocation);
+        var replacementValidation = Utf8Validation.Validate(literalReplacementUtf8, ref invocation);
+        var bytes = Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
+        // Complete ASCII needles replace whole scalar ranges. Both source and
+        // replacement are validated, so their UTF-16 extents determine output
+        // sizing without validating the assembled bytes a second time.
+        outputUtf16Length = checked(inputValidation.Utf16Length + replacementCount *
+            (replacementValidation.Utf16Length - literal.Length));
+        return bytes;
     }
 
     private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,

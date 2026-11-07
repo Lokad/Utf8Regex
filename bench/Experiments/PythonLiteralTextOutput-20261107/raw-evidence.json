@@ -1,0 +1,13 @@
+{
+  "Linux": {
+    "Sha256": "F574EF079D7E550E722F0D505389F197C0A7E1E76BAAFE722E12F172A298935D",
+    "Bytes": 3699350,
+    "OffVmVerified": true,
+    "ComparisonExit": 0,
+    "ComparisonSeconds": 66.197238486,
+    "ArchiveAttempt1": "Directory timestamp warning only; timing not repeated."
+  },
+  "WindowsSha256": "5B54D66CEA8FC119447DB04CF59A5D7A926260674E1D11F0D329957C9B15BD98",
+  "WindowsBytes": 15282,
+  "OffVmVerified": true
+}

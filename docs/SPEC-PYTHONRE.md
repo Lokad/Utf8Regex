@@ -346,6 +346,14 @@ acquisition/copy can lower cumulative result traffic, work and peak working
 requirements. Returned arrays and children remain valid across later calls;
 execution time and allocations still depend on capacity and pooling.
 
+Unmetered native ASCII-literal substitutions reuse validated scalar extents to
+size string output. On a miss, text output decodes the validated input directly,
+without an intermediate byte array; byte output still acquires an independent
+owned copy. Required output allocation remains admitted before acquisition.
+Removing intermediate storage and repeated validation can lower modeled result
+traffic, work and peak working requirements. Finite limits, cancellable tokens
+and deadlines retain their existing scalar substitution path.
+
 Native literal value/text operations use validation and discovery's own bounded
 checkpoints, followed by final publication checks. Adjacent helper boundaries
 add no separate work charges. This can reduce required work units without

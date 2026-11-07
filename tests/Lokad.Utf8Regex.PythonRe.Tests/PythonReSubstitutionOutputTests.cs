@@ -232,7 +232,9 @@ public sealed class PythonReSubstitutionOutputTests
         var control = new Utf8InvocationBufferControl(ref invocation);
         try
         {
-            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, ref invocation, ref results, out var count);
+            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, ref invocation, ref results, out var count, out var chars);
+            Assert.NotNull(bytes);
+            Assert.Equal(6, chars);
             Assert.Equal(2, count); Assert.Equal("😀 😀é"u8.ToArray(), bytes);
             Assert.Equal(48UL, results.ReservedBytes); Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
             if (textOutput)
@@ -246,6 +248,51 @@ public sealed class PythonReSubstitutionOutputTests
         }
         finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Fact]
+    public void NativeLiteralMissDefersOutputAcquisitionToItsPublicShape()
+    {
+        var core = new global::Lokad.Utf8Regex.Utf8Regex("cat");
+        var input = "é😀 dog"u8;
+        var invocation = new Utf8SliceInvocation(new(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        Utf8InvocationResultLedger results = default;
+        try
+        {
+            var bytes = core.ReplaceExactLiteralForResult(input, "😀é"u8, int.MaxValue,
+                ref invocation, ref results, out var count, out var chars);
+            Assert.Null(bytes);
+            Assert.Equal(0, count);
+            Assert.Equal(7, chars);
+            Assert.Equal(0UL, results.ReservedBytes);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+            Assert.Equal("é😀 dog", results.DecodeUtf8(input, chars, ref invocation));
+        }
+        finally { results.Release(ref invocation); }
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
+    [InlineData("dog fox", "tiger", 0, "dog fox", 0)]
+    [InlineData("é😀 dog", "😀é", 0, "é😀 dog", 0)]
+    [InlineData("é😀 cat 中 cat", "😀é", 0, "é😀 😀é 中 😀é", 2)]
+    [InlineData("catcaté", "", 0, "é", 2)]
+    [InlineData("catcaté", "😀", 1, "😀caté", 1)]
+    public void LiteralByteAndStringOutputsKeepUnicodeCountsAndOwnedCopies(
+        string text, string replacement, int limit, string expected, int replacements)
+    {
+        var regex = new Utf8PythonRegex("cat");
+        var input = Encoding.UTF8.GetBytes(text);
+        var result = regex.SubnToString(input, replacement, limit);
+        Assert.Equal(expected, result.ResultText);
+        Assert.Equal(replacements, result.ReplacementCount);
+        var bytes = regex.Subn(input, replacement, limit);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
+        Assert.Equal(replacements, bytes.ReplacementCount);
+        input.AsSpan().Fill((byte)'x');
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
     }
 
     [Fact]

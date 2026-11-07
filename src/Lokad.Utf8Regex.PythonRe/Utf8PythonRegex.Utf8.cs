@@ -334,21 +334,25 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var bytes = _utf8Regex.ReplaceExactLiteralForResult(input, literalBytes,
-                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced);
+                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced, out var charCount);
             var text = string.Empty;
             if (textOutput)
             {
-                var validation = Utf8Validation.Validate(bytes, ref invocation);
-                text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
-                results.ReleaseArray(bytes, ref invocation);
+                text = results.DecodeUtf8(bytes is null ? input : bytes, charCount, ref invocation);
+                if (bytes is not null) results.ReleaseArray(bytes, ref invocation);
+            }
+            else if (bytes is null)
+            {
+                bytes = results.AllocateArray<byte>(input.Length, ref invocation);
+                Utf8InvocationOutput.Copy(input, bytes, new Utf8InvocationBufferControl(ref invocation));
             }
             Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             if (textOutput) resultText = text;
-            else resultBytes = bytes;
+            else resultBytes = bytes!;
             replacementCount = replaced;
             if (retain)
             {
-                var receipt = results.AllocateObject((Result: new Utf8PythonSubnUtf8Result { ResultBytes = bytes, ReplacementCount = replaced },
+                var receipt = results.AllocateObject((Result: new Utf8PythonSubnUtf8Result { ResultBytes = resultBytes, ReplacementCount = replaced },
                     Allowance: invocation.Ledger.MemoryAllowance!), static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref invocation);
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 receipt.SetTransferredBytes(results.TransferSince(0, ref invocation));

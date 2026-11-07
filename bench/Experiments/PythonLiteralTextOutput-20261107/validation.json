@@ -1,0 +1,24 @@
+{
+  "Configuration": "Release",
+  "Targets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "Platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "CoreTestsPerTargetAndPlatform": 556,
+  "PythonTestsPerTargetAndPlatform": 155,
+  "Failures": 0,
+  "Coverage": "Scalar byte/string output and counts; Unicode replacement sizes; miss/hit/limits/offsets/empty/excluded routes; strict malformed/template errors; independent byte ownership, retained aliases, parent loans and preallocation/interruption policy checks.",
+  "WindowsLogs": [
+    "windows-core-tests.txt",
+    "windows-python-tests.txt"
+  ],
+  "LinuxLogs": [
+    "linux-core-tests.txt",
+    "linux-python-tests.txt"
+  ],
+  "NoFullOrPackageQualification": true
+}

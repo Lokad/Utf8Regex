@@ -4,7 +4,9 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ExactLiteralReplacement
 {
-    internal static byte[] Replace(
+    // A miss needs no materialized byte result. The caller can decode the
+    // validated subject directly or acquire the owned byte copy it publishes.
+    internal static byte[]? Replace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literal,
         ReadOnlySpan<byte> replacement,
@@ -38,6 +40,8 @@ internal static class Utf8ExactLiteralReplacement
             replacementCount++;
             remaining = remaining[(index + literal.Length)..];
         }
+
+        if (replacementCount == 0) return null;
 
         var outputLength = checked(input.Length + replacementCount * (replacement.Length - literal.Length));
         var output = results.AllocateArray<byte>(outputLength, ref invocation);
