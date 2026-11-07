@@ -93,4 +93,4 @@ All six [canonical raw archives](canonical-archives.json) are hash-verified off 
 Full52 and Full54 frozen graphs remain intact after Linux/costs; the graph archive
 also preserves the ten snapshot checks and the previously verified dev.52 fixture
 retirement. No new cleanup or NuGet publication. [Source CI](source-ci.json) passed
-on Windows/Linux; the snapshot/receipt commit receives its own CI check.
+on Windows/Linux; [snapshot CI](snapshot-ci.json) also passed on both platforms.
