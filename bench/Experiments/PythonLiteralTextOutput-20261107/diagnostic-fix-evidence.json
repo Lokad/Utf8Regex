@@ -1,0 +1,12 @@
+{
+  "Canonical": "artifacts/experiments/python-literal-text-output-20261107/diagnostic-fix-evidence.zip",
+  "Sha256": "4591E15726E5C9C4951C47D3BFF060F4FCA18FBC354CE06D7022255E4BA750CA",
+  "Bytes": 1714619,
+  "NestedLinuxArchiveSha256": "F818BACC67E7F1164AFCB57FB0B9050F5AD3D74848F7E1A61066BCD9CBBF6EE9",
+  "OffVmVerified": true,
+  "SavedFull54Assets": 8,
+  "WindowsAndLinuxBuilds": "Affected benchmark project, both targets, successful",
+  "ResultSmokes": 8,
+  "ProducerSourceChanged": false,
+  "TimingRepeated": false
+}

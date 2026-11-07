@@ -3648,12 +3648,18 @@ internal sealed class PythonReBenchmarkContext
         try
         {
             var bytes = GetCoreReplacementRegex().ReplaceExactLiteralForResult(InputBytes,
-                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount);
+                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount, out var charCount);
             var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
             if (IsUtf8ReplacementOperation)
+            {
+                if (bytes is null)
+                {
+                    bytes = results.AllocateArray<byte>(InputBytes.Length, ref invocation);
+                    Utf8InvocationOutput.Copy(InputBytes, bytes, new Utf8InvocationBufferControl(ref invocation));
+                }
                 return new PythonReBenchmarkReplacementResult(string.Empty, bytes, returnedCount);
-            var validation = Utf8Validation.Validate(bytes, ref invocation);
-            var text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
+            }
+            var text = results.DecodeUtf8(bytes ?? InputBytes, charCount, ref invocation);
             return new PythonReBenchmarkReplacementResult(text, null, returnedCount);
         }
         finally { results.Release(ref invocation); }

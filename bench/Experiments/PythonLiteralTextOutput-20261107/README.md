@@ -54,6 +54,10 @@ row, process median, sample range and fractional allocation observation in the
 costs are acceptable for these substantial gains; there is no universal 10% gate,
 uniform-speedup claim or new catalog Status.
 
+These fixed-caller costs use the frozen package baseline and this experiment's
+batch retention and warmup. Catalog medians retain their own producer identities
+and protocol; this comparison does not replace them or derive a new .NET ratio.
+
 ## Validation and preservation
 
 Focused Release checks pass on Windows/Linux and .NET 10/11: Core 556 and

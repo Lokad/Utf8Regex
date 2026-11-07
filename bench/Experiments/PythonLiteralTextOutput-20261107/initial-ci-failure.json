@@ -1,0 +1,16 @@
+{
+  "Run": 42405220039,
+  "Head": "ed65ef0b4d00fa413d8ad7384215b7bfb8690452",
+  "Status": "completed",
+  "Conclusion": "failure",
+  "Jobs": [
+    "tests (windows-latest)",
+    "tests (ubuntu-latest)"
+  ],
+  "Failure": "Benchmark-only friend caller of ReplaceExactLiteralForResult omitted new outputUtf16Length argument (CS7036). Source build stopped before CI tests.",
+  "Correction": "Update diagnostic caller to use validated output length and defer miss byte materialization according to its required output shape. Production libraries and the measured candidate are unchanged.",
+  "LocalValidation": "Affected benchmark project, both targets/platforms; four checksum-comparing replacement diagnostic smokes per platform. These are result smokes, not a second performance comparison.",
+  "FailedLogsSha256": "57E87985ED2493C13F09DEC25A184AC6B4534A15C355C75DD74A6BD5E91982AD",
+  "TimedComparisonRepeated": false,
+  "FullOrPackageRepeated": false
+}
