@@ -1,0 +1,19 @@
+{
+  "Kind": "UntimedFullOpts codegenerationfacts,not publictiming",
+  "Graphs": {
+    "before": {
+      "CountCoreBytes": 1544,
+      "ControlledCounterBytes": null,
+      "HasControlledCounterCall": false,
+      "ValidityOnlyBreachCall": false
+    },
+    "after": {
+      "CountCoreBytes": 1658,
+      "ControlledCounterBytes": 454,
+      "HasControlledCounterCall": true,
+      "ValidityOnlyBreachCall": false
+    }
+  },
+  "Finding": "Controlledeligible Count bypassesmetadata/globalcursor and calls existingboundedcandidate/comparison underoriginalrefinvocation. Unmetered preparedcounter retained. NoUncheckedAPI or newsubjectrepresentation.",
+  "ValidityOnlyAdmission": "TryValidateOnly inlines:CountCore xor ecx,ecx then TryValidate(input,refinvocation,boolfalse,...). Controlledcounter calls existing TryFindLiteralCandidate."
+}

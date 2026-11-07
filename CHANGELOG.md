@@ -54,8 +54,9 @@
   Reuse bounded prefix searches for selected mixed-width UTF-8 literals, with
   complete verification and ordinary sequence-search fallback. Their preparation
   uses the existing bounded construction scope and can require additional work.
-  Avoid discarded UTF-16 metadata in existing unmetered PCRE2 literal Count;
-  strict whole-input validation and controlled execution paths remain.
+  Avoid discarded UTF-16 metadata in eligible PCRE2 literal Count. Controlled
+  Count reuses bounded candidate/comparison search under its original invocation;
+  its numerical work charges change. Strict whole-input validation remains.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -54,6 +55,30 @@ internal sealed class Pcre2LiteralProgram
 
     internal int CountNonOverlapping(ReadOnlySpan<byte> input) =>
         Search.CountWithMetrics(input, out _, out _);
+
+    internal Utf8ExecutionLimitKind TryCountNonOverlapping(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var total = 0;
+        var start = 0;
+        var last = input.Length - _literalUtf8.Length;
+        while (start <= last)
+        {
+            // The same bounded search and long-needle comparison used by Core.
+            // No global cursor, capture or coordinate projection escapes Count.
+            var breach = Utf8SearchExecutor.TryFindLiteralCandidate(Search, input, start, last,
+                false, ref invocation, out var candidate);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (candidate < 0) break;
+            total++;
+            start = candidate + _literalUtf8.Length;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (terminal == Utf8ExecutionLimitKind.None) count = total;
+        return terminal;
+    }
 }
 
 internal readonly record struct Pcre2LiteralMatch(

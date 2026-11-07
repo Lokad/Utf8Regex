@@ -1,0 +1,6 @@
+{
+  "Sha256": "3A2AF26CE6544B66F90BD2275BE505A1D50E422AF7B30A5A08F7A96C7C2434A1",
+  "Bytes": 13290,
+  "OffVmVerified": true,
+  "Scope": "Windows110PCRE+477Core perTFM plus oneadditional publicdenialfixture perTFM/OS;initialfixturefailureandboth sourcepatchespreserved;productionhashesunchanged"
+}

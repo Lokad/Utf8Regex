@@ -14,10 +14,15 @@ internal static partial class Utf8Validation
 
     internal static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
-        var breach = TryValidate(input, ref invocation, computeUtf16Length: false, out _, out _);
+        var breach = TryValidateOnly(input, ref invocation);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"UTF-8 validation exceeded the invocation {breach} budget.");
     }
+
+    // PCRE2-INTEGRATION-POINT: byte-only Count needs the existing bounded
+    // validator's breach result to retain its profile-specific failure mapping.
+    internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+        => TryValidate(input, ref invocation, computeUtf16Length: false, out _, out _);
 
     // Byte-only counters need ASCII eligibility, not derived coordinates.
     internal static bool ValidateIsAscii(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)

@@ -1,0 +1,172 @@
+{
+  "Decision": "Promote controlled byte-only Count under sameinvocation;three large persistent publicgains;retain every overlapping adverse estimate",
+  "Seconds": 101.816019977,
+  "Rows": 20,
+  "Samples": 400,
+  "MinimumSampleMilliseconds": 59.4467,
+  "Allocations": "All20medians unchanged",
+  "Gains": [
+    {
+      "Name": "pcre-chinese-finite-live-control",
+      "BeforeUs": 2802.159259259259,
+      "AfterUs": 117.89835663010143,
+      "DeltaUs": -2684.260902629158,
+      "Percent": -95.7925890100455,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        2803.6777777777775,
+        2795.014285714286
+      ],
+      "AfterProcessMedians": [
+        117.87519623233909,
+        117.92151702786379
+      ],
+      "BeforeMinimum": 2728.628571428572,
+      "BeforeMaximum": 2882.1535714285715,
+      "AfterMinimum": 115.78777089783283,
+      "AfterMaximum": 118.86562009419151
+    },
+    {
+      "Name": "pcre-chinese-live-control",
+      "BeforeUs": 2781.5625,
+      "AfterUs": 116.68378556277898,
+      "DeltaUs": -2664.878714437221,
+      "Percent": -95.80509927198189,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        2810.1259259259264,
+        2760.546428571429
+      ],
+      "AfterProcessMedians": [
+        115.95335413416535,
+        117.85157728706623
+      ],
+      "BeforeMinimum": 2745.1392857142855,
+      "BeforeMaximum": 2817.5629629629634,
+      "AfterMinimum": 114.92620904836193,
+      "AfterMaximum": 118.84447949526813
+    },
+    {
+      "Name": "pcre-chinese-deadline-control",
+      "BeforeUs": 2792.5759259259257,
+      "AfterUs": 122.83391349198735,
+      "DeltaUs": -2669.7420124339383,
+      "Percent": -95.6014118595089,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        2821.1888888888893,
+        2778.685185185185
+      ],
+      "AfterProcessMedians": [
+        122.310603588907,
+        123.78643790849674
+      ],
+      "BeforeMinimum": 2757.8259259259253,
+      "BeforeMaximum": 2840.374074074074,
+      "AfterMinimum": 120.77748776508973,
+      "AfterMaximum": 124.31045751633987
+    }
+  ],
+  "AdverseObservations": [
+    {
+      "Name": "pcre-two-byte-dense-count",
+      "BeforeUs": 40.31292115852399,
+      "AfterUs": 41.43220649344719,
+      "DeltaUs": 1.1192853349231981,
+      "Percent": 2.776492754077009,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        40.113433637829125,
+        40.823220153340635
+      ],
+      "AfterProcessMedians": [
+        41.04027855153203,
+        41.66726775956284
+      ],
+      "BeforeMinimum": 39.977646426652335,
+      "BeforeMaximum": 41.05870755750274,
+      "AfterMinimum": 40.91387978142076,
+      "AfterMaximum": 41.890491803278685
+    },
+    {
+      "Name": "pcre-three-byte-dense-count",
+      "BeforeUs": 48.56200519143413,
+      "AfterUs": 49.69031396125585,
+      "DeltaUs": 1.1283087698217216,
+      "Percent": 2.3234394160081884,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        48.782600382409186,
+        48.48351719662556
+      ],
+      "AfterProcessMedians": [
+        48.8831619537275,
+        49.72785571142285
+      ],
+      "BeforeMinimum": 47.83945489941597,
+      "BeforeMaximum": 49.14831102613129,
+      "AfterMinimum": 48.54273778920309,
+      "AfterMaximum": 50.28490313961256
+    },
+    {
+      "Name": "pcre-supplementary-dense-count",
+      "BeforeUs": 32.09933643964178,
+      "AfterUs": 32.4355346866069,
+      "DeltaUs": 0.33619824696511813,
+      "Percent": 1.047368214596256,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        32.1982251082251,
+        31.921586089906704
+      ],
+      "AfterProcessMedians": [
+        32.32482578397212,
+        32.506828003457215
+      ],
+      "BeforeMinimum": 31.63918575063613,
+      "BeforeMaximum": 32.44679653679654,
+      "AfterMinimum": 32.04429442508711,
+      "AfterMaximum": 32.876872822299646
+    },
+    {
+      "Name": "pcre-wide-miss",
+      "BeforeUs": 19.19015737874097,
+      "AfterUs": 19.257120541043882,
+      "DeltaUs": 0.06696316230291188,
+      "Percent": 0.34894535246019487,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        19.218306986231514,
+        19.162719298245612
+      ],
+      "AfterProcessMedians": [
+        19.1333932238193,
+        19.370620155038758
+      ],
+      "BeforeMinimum": 18.96813725490196,
+      "BeforeMaximum": 19.35818459969403,
+      "AfterMinimum": 19.00159137577002,
+      "AfterMaximum": 19.444661190965093
+    }
+  ],
+  "FiniteOverhead": {
+    "BeforeExtraUs": 2720.5381729972783,
+    "AfterExtraUs": 41.156854846663734,
+    "BeforeRelativePercent": 3333.1315442986297,
+    "AfterRelativePercent": 53.63050486398766
+  },
+  "Controls": "CoreASCII-0.37percent/BCL-0.22percent overlap. UnmeteredPCRECJK-5.98percent overlaps,asdoes unchangedCoreCJK-6.33percent;firstafterprocess~72us versus~81us otherprocesses inboth. Do notcredit changes to unaffected routes. Excluded1023B,anchored,empty,matchoptions improve withdisjoint ranges;retain withoutunmeasured causalclaim.",
+  "Uncertainty": "Finite2.8037/2.7950ms ->117.875/117.922us;live2.8101/2.7605ms ->115.953/117.852us;deadline2.8212/2.7787ms ->122.311/123.786us. Allthreedisjointinbothprocesses. Dense2/3/4B+2.78/+2.32/+1.05percent andwidemiss+0.35percentoverlap. No normalization ornewcatalogStatus.",
+  "Confirmation": "None;decisionclear",
+  "ProducerRetuning": "None",
+  "NumericalAdmission": "Eligiblecontrolled Count uses existing2048B candidatewindows and separatelycharged longneedle comparisons versusold4096BPCREwindows. Validation/search/terminalcheck sharecumulative originalinvocation. Exact numericalcaps may needreadmission;no work/depth/working/result guarantee removed.",
+  "Preparation": "Initial8192Btestinput didnotreach64stepdiagnostichook. Corrected public262144Bwitnessvalidatesandsearches underoriginaltoken/deadline. Additionalpublicfailureprecedencefixtureaddedafterfreeze;producerDLLhashes unchanged;onlynewfixturetested,noproductionretune.",
+  "ArchiveSha256": "4FE494D2892FC1FFDC570CA0C3D1799FFA0BA5493FDC3D294FF3E9A38CDB6917"
+}

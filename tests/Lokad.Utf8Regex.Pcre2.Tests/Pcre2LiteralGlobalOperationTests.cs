@@ -1,12 +1,116 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2LiteralGlobalOperationTests
 {
+    [Fact]
+    public void ControlledByteOnlyCountDenialPrecedesUnvisitedMalformedTail()
+    {
+        var regex = new Utf8Pcre2Regex("é", default, default,
+            new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 8192) + "é");
+        bytes[^1] = 0xff;
+        var failure = Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
+        using var token = new CancellationTokenSource();
+        token.Cancel();
+        var cancelled = Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, 0, default, token.Token));
+        Assert.Equal(token.Token, cancelled.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData("needle")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    [InlineData("夏洛克·福尔摩斯")]
+    public void ControlledByteOnlyCountKeepsScalarOffsetsAndWholeInputErrors(string pattern)
+    {
+        using var token = new CancellationTokenSource();
+        var regex = new Utf8Pcre2Regex(pattern, default, default,
+            new() { MatchLimit = 100000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
+            Timeout.InfiniteTimeSpan);
+        foreach (var padding in new[] { 1023, 1024, 1025, 2025, 2047, 2048 })
+        {
+            var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
+            Assert.Equal(2, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));
+            Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2, default, token.Token));
+            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 2, default, token.Token));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ByteOnlyCountKeepsCumulativeWorkDenialAndBorrowedCapacity(bool longNeedle)
+    {
+        var pattern = longNeedle ? new string('a', 2050) + "é" : "é";
+        var regex = new Utf8Pcre2Regex(pattern);
+        var program = Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count).Program;
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 4095) + pattern + " " + pattern);
+        var required = Execute(100000, expectDenial: false);
+        Assert.True(required > 1);
+        Execute(required - 1, expectDenial: true);
+
+        ulong Execute(ulong work, bool expectDenial)
+        {
+            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 1, 64, 1),
+                Timeout.InfiniteTimeSpan, CancellationToken.None);
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(17));
+            try
+            {
+                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(bytes, ref invocation));
+                var breach = program.TryCountNonOverlapping(bytes, ref invocation, out var count);
+                Assert.Equal(expectDenial ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, breach);
+                Assert.Equal(expectDenial ? 0 : 2, count);
+                if (expectDenial)
+                    Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.TryChargeInputStep());
+                Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
+                return invocation.Budget.Steps;
+            }
+            finally { invocation.Ledger.Release(17); Assert.Equal(0UL, invocation.Ledger.ReservedBytes); }
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void ByteOnlyValidationAndSearchRetainOriginalInterruption(bool duringSearch, bool cancel)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        var regex = new Utf8Pcre2Regex("é", default, default,
+            new() { MatchLimit = 100000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
+            TimeSpan.FromMilliseconds(20));
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 262144) + "é");
+        var checkpoints = 0;
+        // Validation consumes 131 bounded steps. The first search checkpoint
+        // after that is 192; the existing hook runs every 64 charged steps.
+        var session = Utf8SearchDiagnosticsSession.Start(step =>
+        {
+            if (step < (duringSearch ? 192UL : 64UL)) return;
+            checkpoints++;
+            if (cancel) token.Cancel(); else ticks = 25;
+        });
+        Exception? failure = null;
+        try
+        {
+            regex.Count(bytes, 0, Pcre2MatchOptions.None, token.Token);
+        }
+        catch (Exception error) { failure = error; }
+        finally { session.Complete(); }
+        Assert.True(checkpoints > 0);
+        if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+    }
+
     [Theory]
     [InlineData("needle")]
     [InlineData("é")]

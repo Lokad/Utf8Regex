@@ -205,6 +205,12 @@ Create maps positive nullable common policies to these limits; null becomes zero
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
 the managed route, not native PCRE2. Proved search/count shortcuts can change work
 counts or avoid VM workspace; exact denial thresholds are not version-stable.
+Eligible nonempty, unanchored literal Count can validate without deriving UTF-16
+coordinates, including under finite policies, live tokens and deadlines. Its
+controlled search reuses the shared bounded candidate/comparison kernel: at most
+2,048 bytes per search window, with separately charged long-literal comparisons.
+This replaces the former 4,096-byte PCRE2 candidate windows for this Count route;
+tight numerical work caps may need readmission. No capture/result buffer is needed.
 Disproved plain-alternative branches need no frame storage. For example, Count
 of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
 workspace still require admission. This limit does not cover total managed memory.

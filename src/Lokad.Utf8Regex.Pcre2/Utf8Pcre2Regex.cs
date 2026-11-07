@@ -342,16 +342,21 @@ public sealed partial class Utf8Pcre2Regex
         {
             // This existing direct Count consumes bytes only. Validate strictly
             // without preparing interoperability metadata that cannot escape it.
-            if (matchOptions == Pcre2MatchOptions.None && invocation.IsUnmetered && invocation.CheckpointHook is null &&
+            if (matchOptions == Pcre2MatchOptions.None &&
                 _program.Operations.Count is Pcre2LiteralDirectProgram literal &&
                 (uint)startOffsetInBytes <= (uint)input.Length &&
                 literal.Program.CanCountDirectly(input.Length - startOffsetInBytes))
             {
-                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(input, ref invocation));
                 if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                     throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes), startOffsetInBytes,
                         "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
-                var count = literal.Program.CountNonOverlapping(input[startOffsetInBytes..]);
+                int count;
+                if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+                    count = literal.Program.CountNonOverlapping(input[startOffsetInBytes..]);
+                else
+                    Pcre2SliceDriver.ThrowIfSliceBreached(literal.Program.TryCountNonOverlapping(
+                        input[startOffsetInBytes..], ref invocation, out count));
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return count;
             }
