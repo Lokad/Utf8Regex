@@ -1,0 +1,19 @@
+{
+  "Source": "9e2c10a41a4734aea003d6114d3367dc50099d25",
+  "ProductionDiff": [],
+  "WindowsChecksPerTFM": 482,
+  "LinuxChecksPerTFM": 482,
+  "AllPassed": true,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WindowsRestoredAssemblySha256": "4F781E99C891BFAC0F1B1A6A7B8040B2C341F88E28D8951D87FE981E8D7F942C",
+  "WindowsBaselineAssemblySha256": "4F781E99C891BFAC0F1B1A6A7B8040B2C341F88E28D8951D87FE981E8D7F942C",
+  "MatchingBytes": true,
+  "Sessions": "Restoration13957terminal0closed;original61986/21221/47177terminal0closed",
+  "NoCSharpChangeRetained": true,
+  "NoFurtherBenchmark": true,
+  "Timestamp": "2026-11-07T08:39:11.5351889+01:00",
+  "CanonicalRestorationSha256": "94992359A166627B799954EDB7D1535AC0AACC99983E03FB8987F09B3991CA3C"
+}

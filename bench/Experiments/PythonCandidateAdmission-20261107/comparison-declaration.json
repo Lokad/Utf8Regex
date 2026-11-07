@@ -1,0 +1,31 @@
+{
+  "Scope": "ONEpurecandidateeligibilityshortcircuitA/B;samebooltruth/controls,no newstate;17publictarget/controlrows",
+  "Source": "9e2c10a41a4734aea003d6114d3367dc50099d25 plusruntime.patch",
+  "BeforeSource": "9e2c10a41a4734aea003d6114d3367dc50099d25",
+  "AfterSource": "same+runtime.patch",
+  "BeforeVersion": "0.5.0-dev.49",
+  "AfterVersion": "0.5.0-dev.49",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "CoreBefore": "E408EDFEDFE1251B6D3BFA8EE0E109BCC7C4A661265AA2586ED129B99AD5347A",
+  "CoreAfter": "E408EDFEDFE1251B6D3BFA8EE0E109BCC7C4A661265AA2586ED129B99AD5347A",
+  "PythonBefore": "90A679C80E4C1913B9814A7EC5549603FA0FE07E32688EE2E6DDEB775C4A0DBA",
+  "PythonAfter": "042AF9794670B556397E7A845128581FC2F5653391EC5D753C962CA33496261F",
+  "Rows": 17,
+  "SamplesPerProcess": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProcessCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Controls": "Exactoriginal13folded/class/literalrows+2Coreclass/actualmail/finitemail",
+  "Acceptance": "Usefulpublicimprovementwithabsoluteadverse/range/allocationevidence;otherwise restore",
+  "Confirmation": "Atmostonejustifiednoiseconfirmation",
+  "SourceChanges": "Privatecandidateclassifierbooleanorderonly;Core/callerfixed",
+  "DeclaredAt": "2026-11-07T08:33:36.1130561+01:00"
+}
