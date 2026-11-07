@@ -1,0 +1,17 @@
+{
+  "Source": "4972688bd8998eaec4d171924a77a1455b6b2589",
+  "Before": "Exact qualified Windows dev52 DLL/PDBs,produced from6f9b661a;immutable copies",
+  "Scope": "Move existing bounded ASCII assertion evaluation into RunSegment;share existing fixed-forward rewind logic;no new field,representation,mode or engine",
+  "Primary": "Public PythonRe lookbehind Search miss/hit plus Core/PCRE2 counterparts",
+  "Controls": "Captured/folded/Unicode/33byte assertion bodies,mailCount and unchanged Core/BCL literal controls",
+  "Policy": "One <=120second separate-process public ABBA,750ms/min32warmup,75mscalibration,5samples20msfloor;finite/live/deadline and allocations;atmost1justified noise confirmation",
+  "Qualification": "Focused Release relevant profiles and both OS/TFM;no Full/package rerun",
+  "TimingStarted": false,
+  "WorkerSha256": "5E58093B58D6650C6714CED2A3418439D1E3EA10DDCEE9FE56E49DC7FA12EDA1",
+  "Rows": 20,
+  "CoreBefore": "D96670537DDF500BA15385D2F21A5FAFB11B72CED19742384A588F393EE852AC",
+  "CoreAfter": "00D7A25949DC6AEFDDB19CB16AD86419AE869A1FE1023519B99CC3F596E9A1FE",
+  "Windows": "Core130/Python78/PCRE201 eachTFM,allpass;80427/83574 terminal0,CLOSED;additional two exactSkipBuild filters for initially missed ReRetained/Slice class names,without duplicate cases or rebuild",
+  "Linux": "94807terminal0/CLOSED;Core130/Python78/PCRE201 eachTFM,allpass;Full52eightassets flat-frozen and unchanged",
+  "UntimedCorrection": "Initial caller6B00B43A89481BDF5328A28FCD6C1D35BCE649D679748BFA3FDCC2C8BE48ED2E normal20rowpreflightpassed;codegen aborted134on own timing-override guard. Corrected preflight-only guard;no timed comparison started. Original source/scope/input preserved."
+}

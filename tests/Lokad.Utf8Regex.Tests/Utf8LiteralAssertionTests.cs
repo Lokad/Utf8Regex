@@ -19,6 +19,8 @@ public sealed class Utf8LiteralAssertionTests
     [InlineData("(?<=fo{1,2})bar")]
     [InlineData("(?<=f(?=oo)oo)bar")]
     [InlineData("(?<=foo)bar(?<=bar)")]
+    [InlineData("(?:(?<x>foo)(?=bar)baz|(?<x>foo)bar)")]
+    [InlineData("(?:(?<x>foo)(?!bar)bar|(?<x>foo)bar)")]
     [InlineData("(?<=😀)bar")]
     public void PublicOperationsPreserveAssertionsAndCaptures(string pattern)
     {

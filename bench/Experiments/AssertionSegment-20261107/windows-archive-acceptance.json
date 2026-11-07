@@ -1,0 +1,5 @@
+{
+  "Sha256": "057A4DC0ABCC9693CCEB9B3517D709C85FD27D348F71C19A8D5C5062DB040923",
+  "Bytes": 40974,
+  "Scope": "Exact Windows modified producer/test source bytes,focused test logs/exits and frozen graph/caller scope;one archive,no repeated tests"
+}

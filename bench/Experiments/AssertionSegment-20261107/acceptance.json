@@ -1,0 +1,189 @@
+{
+  "Decision": "Promote existing literal evaluator into scalar segment for clear dense/controlled public gains;ordinary short Search gain remains unresolved",
+  "SourceParent": "4972688bd8998eaec4d171924a77a1455b6b2589",
+  "CoreBefore": "D96670537DDF500BA15385D2F21A5FAFB11B72CED19742384A588F393EE852AC",
+  "CoreAfter": "00D7A25949DC6AEFDDB19CB16AD86419AE869A1FE1023519B99CC3F596E9A1FE",
+  "Worker": "5E58093B58D6650C6714CED2A3418439D1E3EA10DDCEE9FE56E49DC7FA12EDA1",
+  "Seconds": 103.17070342,
+  "Rows": 20,
+  "Samples": 400,
+  "MinimumSampleMilliseconds": 56.9968,
+  "Allocations": "All20medians unchanged",
+  "PersistentGains": [
+    {
+      "Name": "python-lookbehind-miss-finite-live",
+      "BeforeUs": 0.512816513776106,
+      "AfterUs": 0.4787466564057362,
+      "DeltaUs": -0.03406985737036983,
+      "Percent": -6.643673995499411,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.510799988579749,
+        0.514833038972463
+      ],
+      "AfterProcessMedians": [
+        0.47607246700961753,
+        0.481053606848314
+      ],
+      "BeforeMinimum": 0.5046552541697304,
+      "BeforeMaximum": 0.5227883970250246,
+      "AfterMinimum": 0.4753765536632904,
+      "AfterMaximum": 0.48332485123708113
+    },
+    {
+      "Name": "python-lookbehind-hit-finite-live",
+      "BeforeUs": 0.5455529940831005,
+      "AfterUs": 0.5023501109194337,
+      "DeltaUs": -0.04320288316366683,
+      "Percent": -7.9190992684912365,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.5553383765504978,
+        0.5390580604635197
+      ],
+      "AfterProcessMedians": [
+        0.49958920070574914,
+        0.5055806537337231
+      ],
+      "BeforeMinimum": 0.5356222016083676,
+      "BeforeMaximum": 0.5612925794743976,
+      "AfterMinimum": 0.49514897300176436,
+      "AfterMaximum": 0.5081801890199446
+    },
+    {
+      "Name": "python-lookbehind-miss-deadline-live",
+      "BeforeUs": 0.7230756293636764,
+      "AfterUs": 0.6896553960767597,
+      "DeltaUs": -0.03342023328691668,
+      "Percent": -4.621955426201718,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        0.7306181084758018,
+        0.7101131302592045
+      ],
+      "AfterProcessMedians": [
+        0.6919517065920137,
+        0.6895497632527496
+      ],
+      "BeforeMinimum": 0.7038305847800674,
+      "BeforeMaximum": 0.7653556716233315,
+      "AfterMinimum": 0.6864474940002409,
+      "AfterMaximum": 0.6959402897969232
+    },
+    {
+      "Name": "python-lookbehind-dense-count",
+      "BeforeUs": 186.407375,
+      "AfterUs": 140.78703007518794,
+      "DeltaUs": -45.62034492481206,
+      "Percent": -24.473465668840653,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        186.207,
+        187.8054862842893
+      ],
+      "AfterProcessMedians": [
+        140.27542533081285,
+        140.87593984962405
+      ],
+      "BeforeMinimum": 185.3005,
+      "BeforeMaximum": 189.07356608478804,
+      "AfterMinimum": 139.1748582230624,
+      "AfterMaximum": 141.6540642722117
+    },
+    {
+      "Name": "core-lookbehind-dense-count",
+      "BeforeUs": 167.28934065934067,
+      "AfterUs": 127.11135225375627,
+      "DeltaUs": -40.1779884055844,
+      "Percent": -24.017064235671036,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        167.2514285714286,
+        168.9125
+      ],
+      "AfterProcessMedians": [
+        128.0279534109817,
+        125.61869782971618
+      ],
+      "BeforeMinimum": 165.9520879120879,
+      "BeforeMaximum": 169.73181818181817,
+      "AfterMinimum": 125.02938230383974,
+      "AfterMaximum": 129.69683860232945
+    },
+    {
+      "Name": "core-lookbehind-dense-finite-live",
+      "BeforeUs": 179.86361436377825,
+      "AfterUs": 144.66478276353277,
+      "DeltaUs": -35.198831600245484,
+      "Percent": -19.569734392779992,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        176.59484777517565,
+        180.70190476190476
+      ],
+      "AfterProcessMedians": [
+        144.32346153846154,
+        145.92943469785575
+      ],
+      "BeforeMinimum": 176.14918032786883,
+      "BeforeMaximum": 181.34761904761905,
+      "AfterMinimum": 143.96,
+      "AfterMaximum": 148.441910331384
+    },
+    {
+      "Name": "pcre-lookbehind-dense-count",
+      "BeforeUs": 168.21817679218626,
+      "AfterUs": 127.59497444633729,
+      "DeltaUs": -40.623202345848966,
+      "Percent": -24.1491158211958,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        167.56704035874438,
+        169.16666666666666
+      ],
+      "AfterProcessMedians": [
+        127.78902027027029,
+        127.53049403747869
+      ],
+      "BeforeMinimum": 166.86121076233186,
+      "BeforeMaximum": 169.59041095890413,
+      "AfterMinimum": 126.41756756756759,
+      "AfterMaximum": 128.42618243243243
+    },
+    {
+      "Name": "pcre-negative-dense-count",
+      "BeforeUs": 171.1864756158874,
+      "AfterUs": 130.61407599309155,
+      "DeltaUs": -40.57239962279584,
+      "Percent": -23.700703853400917,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        170.63280542986428,
+        173.85277777777776
+      ],
+      "AfterProcessMedians": [
+        131.27190226876093,
+        130.5348877374784
+      ],
+      "BeforeMinimum": 169.25022624434388,
+      "BeforeMaximum": 175.1548611111111,
+      "AfterMinimum": 129.45284974093263,
+      "AfterMaximum": 131.8188255613126
+    }
+  ],
+  "Uncertainty": "Ordinary Python Search miss after-process0.300142/0.337286us versus before0.329621/0.328631us;hit0.308948/0.350423 versus0.354236/0.343422us. Ranges overlap and not every process improves:do not claim settled short Search gains. Negative/Unicode context rows likewise overlap.",
+  "Controls": "PCRE ASCII+2.94percent/+13.07ns,CoreASCII+0.08percent/+0.253ns,BCL-2.89percent/-0.870ns,mail-1.17percent/-24.80us overlap. Long33byte fallback-4.73percent/-43.44ns is disjoint;other capture/fold/Unicode fallbacks overlap. No normalization or unmeasured causal explanation.",
+  "Confirmation": "None;clear dense/finite gains decide the pilot without settling short-row noise",
+  "Preparation": "First untimed codegen aborted134on existing caller timing-override guard;normal20rowpreflight passed. Guard corrected only for preflight before timing;initial caller/source/scope/input retained. One timed comparison only.",
+  "Contracts": "Same <=32 unfoldedASCII body proof,scalar rewind/requiredEnd,logical depth,work/cancellation/deadline checkpoints,capture rollback,parent loans and result lifetimes. No field/representation/mode/engine/API changes.",
+  "Validation": "Core130/Python78/PCRE201 eachTFM on Windows/Linux;focused source checks,not package/Full qualification",
+  "Complete": true
+}

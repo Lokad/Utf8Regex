@@ -49,6 +49,8 @@
   avoiding repeated validation while keeping bounded resource/interruption checks.
   Vectorize the common UTF-8 validator's existing lead-density census while
   preserving its exact counts, selection window, scalar tail and fallback.
+  Evaluate bounded ASCII assertions within the current scalar VM segment, avoiding
+  unnecessary suspension while retaining scalar rewind, depth and interruption.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

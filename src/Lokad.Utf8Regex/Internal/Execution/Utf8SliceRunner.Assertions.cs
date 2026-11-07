@@ -74,33 +74,13 @@ internal static partial class Utf8SliceRunner
                     var body = current.Program.Assertions[instruction.A].Body;
                     var assertion = current.Program.Assertions[instruction.A];
                     var assertionStart = current.InputIndex;
-                    if (assertion.ForwardScalarCount is uint scalarCount)
+                    var startBreach = TryRewindAssertionStart(input, assertion.ForwardScalarCount,
+                        ref assertionStart, ref invocation, out var available);
+                    if (startBreach != Utf8ExecutionLimitKind.None)
+                        return new(false, -1, startBreach, null, null);
+                    if (!available)
                     {
-                        var available = scalarCount <= (uint)assertionStart;
-                        for (uint count = 0; available && count < scalarCount; count++)
-                        {
-                            if ((count & 63) == 0)
-                            {
-                                var step = invocation.TryChargeInputStep();
-                                if (step != Utf8ExecutionLimitKind.None) return new(false, -1, step, null, null);
-                            }
-                            assertionStart = AdvancePastScalar(input, assertionStart, true);
-                            available = assertionStart >= 0;
-                        }
-                        if (!available)
-                        {
-                            resumeFailure = instruction.B != 0;
-                            if (!resumeFailure) current.ProgramIndex++;
-                            continue;
-                        }
-                    }
-                    if (TryRunAsciiLiteralAssertion(body, input, assertionStart,
-                        assertion.ForwardScalarCount.HasValue ? current.InputIndex : null,
-                        (uint)stacks.FrameCount + 1, ref invocation, out var matched, out var literalBreach))
-                    {
-                        if (literalBreach != Utf8ExecutionLimitKind.None)
-                            return new(false, -1, literalBreach, null, null);
-                        resumeFailure = matched != (instruction.B != 0);
+                        resumeFailure = instruction.B != 0;
                         if (!resumeFailure) current.ProgramIndex++;
                         continue;
                     }
@@ -217,12 +197,32 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private static bool TryRunAsciiLiteralAssertion(Utf8SliceProgram body, ReadOnlySpan<byte> input,
-        int start, int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation,
+    private static Utf8ExecutionLimitKind TryRewindAssertionStart(ReadOnlySpan<byte> input,
+        uint? scalarCount, ref int start, ref Utf8SliceInvocation invocation, out bool available)
+    {
+        available = true;
+        if (scalarCount is not uint length) return Utf8ExecutionLimitKind.None;
+        available = length <= (uint)start;
+        for (uint count = 0; available && count < length; count++)
+        {
+            if ((count & 63) == 0)
+            {
+                var step = invocation.TryChargeInputStep();
+                if (step != Utf8ExecutionLimitKind.None) return step;
+            }
+            start = AdvancePastScalar(input, start, true);
+            available = start >= 0;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static bool TryRunAsciiLiteralAssertion(Utf8SliceAssertion assertion, ReadOnlySpan<byte> input,
+        int start, uint depth, ref Utf8SliceInvocation invocation,
         out bool matched, out Utf8ExecutionLimitKind breach)
     {
         matched = false;
         breach = Utf8ExecutionLimitKind.None;
+        var body = assertion.Body;
         var code = body.Instructions.AsSpan();
         // A bounded, side-effect-free body needs no child cursor or trail.
         // Capture writes, folding and every other instruction keep the VM.
@@ -231,6 +231,12 @@ internal static partial class Utf8SliceRunner
         for (var index = 0; index < length; index++)
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal || (uint)literal.A >= 128)
                 return false;
+        // Fixed-forward lookbehind keeps its original scalar rewind and end
+        // constraint, without suspending the parent for this bounded body.
+        int? requiredEnd = assertion.ForwardScalarCount.HasValue ? start : null;
+        breach = TryRewindAssertionStart(input, assertion.ForwardScalarCount,
+            ref start, ref invocation, out var available);
+        if (breach != Utf8ExecutionLimitKind.None || !available) return true;
         breach = invocation.TryChargeInputStep();
         if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
         if (breach != Utf8ExecutionLimitKind.None) return true;

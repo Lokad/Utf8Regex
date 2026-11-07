@@ -1,0 +1,18 @@
+{
+  "Scope": "Untimed FullOpts on immutable before/after Core DLLs;not a public speedup",
+  "Before": {
+    "RunFromBytes": 5260,
+    "RunFromEvaluatorCalls": 1,
+    "RunSegmentBytes": 10554,
+    "RunSegmentEvaluatorCalls": 0,
+    "EvaluatorBytes": 939
+  },
+  "After": {
+    "RunFromBytes": 4988,
+    "RunFromEvaluatorCalls": 0,
+    "RunSegmentBytes": 10827,
+    "RunSegmentEvaluatorCalls": 1,
+    "EvaluatorBytes": 1012
+  },
+  "Conclusion": "Existing bounded evaluator now executes within scalar segment;fixed-forward rewind shared unchanged;call-route precondition met"
+}

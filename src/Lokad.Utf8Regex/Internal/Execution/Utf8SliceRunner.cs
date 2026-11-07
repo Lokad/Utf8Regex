@@ -1605,6 +1605,18 @@ internal static partial class Utf8SliceRunner
                     }
                 case Utf8SliceInstructionKind.Lookbehind:
                 case Utf8SliceInstructionKind.Lookahead:
+                {
+                    // Side-effect-free literal assertions use the same bounded
+                    // evaluator without leaving and re-entering this segment.
+                    if (TryRunAsciiLiteralAssertion(program.Assertions[instruction.A], input, inputIndex,
+                        (uint)stacks.FrameCount + 1, ref invocation, out var matched, out var assertionBreach))
+                    {
+                        if (assertionBreach != Utf8ExecutionLimitKind.None)
+                            return new(false, -1, assertionBreach, null, null);
+                        failed = matched != (instruction.B != 0);
+                        if (!failed) programIndex++;
+                        break;
+                    }
                     // The driver owns child arrays and saves this exact edge;
                     // returning here suspends, rather than recursively entering,
                     // the assertion's independent instruction stream.
@@ -1612,6 +1624,7 @@ internal static partial class Utf8SliceRunner
                     cursor.InputIndex = inputIndex;
                     suspended = true;
                     return default;
+                }
                 case Utf8SliceInstructionKind.BalanceStart:
                     // Retain the body's opening without testing its source yet:
                     // the body can establish the capture popped at successful close.

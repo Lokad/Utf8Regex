@@ -5,6 +5,22 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonLiteralAssertionTests
 {
     [Theory]
+    [InlineData("(?:(?P<x>foo)(?=bar)baz|(?P<y>foo)bar)")]
+    [InlineData("(?:(?P<x>foo)(?!bar)bar|(?P<y>foo)bar)")]
+    public void LiteralAssertionsKeepParentAlternativeCaptureRollback(string pattern)
+    {
+        using var token = new CancellationTokenSource();
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var match = regex.SearchDetailedData("foobar"u8, 0, token.Token);
+        Assert.True(match.Success);
+        Assert.Equal("foobar", match.Value.ValueText);
+        Assert.False(match.Groups[1].Success);
+        Assert.Equal("foo", match.Groups[2].ValueText);
+    }
+
+    [Theory]
     [InlineData("(?<=foo)bar", "foobar", true, 3)]
     [InlineData("(?<=foo)bar", "fooxbar", false, 0)]
     [InlineData("(?<!foo)bar", "foobar", false, 0)]
