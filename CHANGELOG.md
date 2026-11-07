@@ -28,6 +28,8 @@
   Complete ASCII-range Count skips nonmembers, and PythonRe captured
   class/delimiter searches avoid repeated impossible starts. These routes can
   require less numerical work and temporary capacity under finite policies.
+  Use checked SIMD in bounded validator selection, preserving its threshold,
+  validation policy and interruption checkpoints.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

@@ -1,0 +1,29 @@
+{
+  "Source": "27faafbb275ca2b9df55491e7455780e25b71ade",
+  "Scope": "ONE exact vector lead-count selector public comparison; original256-byte/eight-lead rule;actual837B Python miss,finite/deadline,long,previously-adverse-threebyte,otherwidths/controls",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 16,
+  "ComparatorRows": 0,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "MemoryAdmissionKiB": 2097152,
+  "Confirmation": "One within-worker calibration confirmation; no campaign rerun planned",
+  "CoreBefore": "B7A109B5E85743A19995D1713313265B4ECC864CA13D2FC389AE4A24DA6DC002",
+  "CoreAfter": "592B393543F00343DF3B37BE810B0F6257B44668CFDD9AC4D1992C6588EF0C4B",
+  "PythonBefore": "F49889DFDDD197DEDB94DD2E22A6CBBE2AC86F52EE763BF163364E9540EE04BC",
+  "PythonAfter": "F49889DFDDD197DEDB94DD2E22A6CBBE2AC86F52EE763BF163364E9540EE04BC",
+  "PcreBefore": "B31FE792EBD948CFA17459100B7ED2236FE34EC59E95C90976BE9DA84ED22D5D",
+  "PcreAfter": "B31FE792EBD948CFA17459100B7ED2236FE34EC59E95C90976BE9DA84ED22D5D",
+  "ActualInputBytes": 837,
+  "ActualInputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+  "Acceptance": "Promote public gains with explicit local costs; no universal10%gate; no kernel timing or control normalization. Preserve previous adverse3bytecase.",
+  "ReferenceTiming": "None;Full48 snapshots unchanged"
+}

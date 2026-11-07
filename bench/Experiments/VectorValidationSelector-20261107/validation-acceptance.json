@@ -1,0 +1,81 @@
+{
+  "Focused": [
+    {
+      "OS": "windows",
+      "Profile": "core",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        384,
+        384
+      ]
+    },
+    {
+      "OS": "windows",
+      "Profile": "PythonRe",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        137,
+        137
+      ]
+    },
+    {
+      "OS": "windows",
+      "Profile": "Pcre2",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        74,
+        74
+      ]
+    },
+    {
+      "OS": "linux",
+      "Profile": "core",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        384,
+        384
+      ]
+    },
+    {
+      "OS": "linux",
+      "Profile": "PythonRe",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        137,
+        137
+      ]
+    },
+    {
+      "OS": "linux",
+      "Profile": "Pcre2",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        74,
+        74
+      ]
+    }
+  ],
+  "WindowsScalarFallback": "DOTNET_EnableHWIntrinsic=0,7perTFMmatchingbinaries",
+  "NewCases": 7,
+  "NoTestsSkipped": true,
+  "RuntimePatch": "209B6D0813EAB990D528A5C2CF70C3E9990FE98180C0C7FEBEB3CE17B2EB58C8",
+  "NoNewAPIOrAccountingPolicy": true
+}

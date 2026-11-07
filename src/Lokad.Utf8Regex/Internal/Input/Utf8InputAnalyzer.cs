@@ -1,3 +1,6 @@
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
@@ -91,11 +94,24 @@ internal static class Utf8InputAnalyzer
     // profiles; it is a cost trade-off, not a correctness gate.
     private static bool ShouldUseUtf8IsValidFastPath(ReadOnlySpan<byte> input)
     {
-        var length = Math.Min(input.Length, 256);
+        var probe = input[..Math.Min(input.Length, 256)];
         var constrainedOrFourByteLeadCount = 0;
-        for (var i = 0; i < length; i++)
+        if (Vector256.IsHardwareAccelerated)
         {
-            var value = input[i];
+            while (probe.Length >= Vector256<byte>.Count)
+            {
+                var current = MemoryMarshal.Read<Vector256<byte>>(probe);
+                var leads = Vector256.Equals(current, Vector256.Create((byte)0xE0)) |
+                    Vector256.Equals(current, Vector256.Create((byte)0xED)) |
+                    Vector256.GreaterThanOrEqual(current, Vector256.Create((byte)0xF0));
+                constrainedOrFourByteLeadCount += BitOperations.PopCount(leads.ExtractMostSignificantBits());
+                if (constrainedOrFourByteLeadCount >= 8) return true;
+                probe = probe[Vector256<byte>.Count..];
+            }
+        }
+        for (var i = 0; i < probe.Length; i++)
+        {
+            var value = probe[i];
             if (value is 0xE0 or 0xED or >= 0xF0)
             {
                 // The count cannot decrease; later bytes cannot change this choice.
