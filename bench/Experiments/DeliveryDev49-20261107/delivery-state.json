@@ -1,0 +1,14 @@
+{
+  "Source": "c1a87495f78eeb2ab56005b5d653a1ccbc55ddf0",
+  "Version": "0.5.0-dev.49",
+  "FullAccepted": true,
+  "WindowsPackagesAccepted": true,
+  "OriginalWindowsConsumersAccepted": true,
+  "LinuxAcceptance": "Complete",
+  "OriginalLinuxConsumersAccepted": true,
+  "FinalPackageCosts": "Acceptedwithdocumentedlocaltradeoffs",
+  "Prior258AssetsUnchanged": true,
+  "NewAssets": 6,
+  "AllStaged": 264,
+  "Published": false
+}

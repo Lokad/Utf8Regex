@@ -1,0 +1,57 @@
+{
+  "Scope": "ONE exact Windows48-to-Windows49 accepted class-start/selector/finite-Search/repeat public-cost comparison; no source decomposition or normalization",
+  "BeforeVersion": "0.5.0-dev.48",
+  "AfterVersion": "0.5.0-dev.49",
+  "BeforeSource": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "AfterSource": "c1a87495f78eeb2ab56005b5d653a1ccbc55ddf0",
+  "CoreBefore": "3D40253E3A28EC016F8DA772003C3C8B5775B31C6C99BE3173221CC8FCF10E44",
+  "PythonBefore": "DD59798B2F57C2C87615ABAE2458B8AD0C6ED57EEB36C0AF3505D5BB3C12F4D7",
+  "PcreBefore": "7956F13894178F609D5010575D28288FF9AE62DFBF7C47C306F7BAAAB7EA9894",
+  "CoreAfter": "9B04FEBEEC7D4DE18A012DB536ED36C2A77C1E13AAC683A47D457CB85221F05E",
+  "PythonAfter": "5B75B7FA058A9211041953F3C05F9F2000FC35DB34DDF75066C0FA2B39C1176C",
+  "PcreAfter": "D2494007CCEECD4FE86682CC7DBF8D40DE02DFF1F8679017DA9BE4B14B81DEE9",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 18,
+  "ComparatorRows": 0,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Acceptance": "Usefulcumulativegainswithabsoluteadversetradeoffs,rangesandallocations;no universal10%gate",
+  "Confirmation": "Atmostonejustifiednoiseconfirmation",
+  "ScopeAdjustment": "None",
+  "Unchanged": [
+    {
+      "File": "Worker.dll",
+      "Before": "F0D6C4D07371F3878597461FAA435117EC7C0644BF77FC6849A7ABF99668F216",
+      "After": "F0D6C4D07371F3878597461FAA435117EC7C0644BF77FC6849A7ABF99668F216",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.pdb",
+      "Before": "11CB75377E5245BDE655C2418146C562EC5B3FDFF5DC3A273DA86D8A9F7C9393",
+      "After": "11CB75377E5245BDE655C2418146C562EC5B3FDFF5DC3A273DA86D8A9F7C9393",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.deps.json",
+      "Before": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "After": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.runtimeconfig.json",
+      "Before": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "After": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "Unchanged": true
+    }
+  ]
+}

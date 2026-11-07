@@ -1,0 +1,11 @@
+{
+  "Error": "Timedcommandomittedcorpusargumentalthoughpreflightpassed",
+  "FailedAttempt": "52515terminal1;innerexit134;14.101722358s;baselineprocessonly,no completeABBA",
+  "CanonicalFailedSha": "22A3CEDE69C1AF6EEC1D1F1780370F6619B894E9193AA11E1F50733F05F9BE72",
+  "CanonicalFailedBytes": 3692510,
+  "OffVmVerified": true,
+  "Correction": "Supplysameargs4corpusasalreadysuccessfulpreflight;producer/caller/input/18rows/timings/settingsallfixed",
+  "Limit": "ONEcorrected120sABBA,no additionalcampaignor noiseconfirmation",
+  "Publication": false,
+  "DeclaredAt": "2026-11-07T08:00:27.5123999+01:00"
+}

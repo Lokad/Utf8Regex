@@ -1,0 +1,17 @@
+{
+  "PriorAssets": 258,
+  "AllPriorBytesUnchanged": true,
+  "NewAssets": 6,
+  "TotalStaged": 264,
+  "Source": "c1a87495f78eeb2ab56005b5d653a1ccbc55ddf0",
+  "Version": "0.5.0-dev.49",
+  "NewFiles": [
+    "Lokad.Utf8Regex.0.5.0-dev.49.nupkg",
+    "Lokad.Utf8Regex.0.5.0-dev.49.snupkg",
+    "Lokad.Utf8Regex.Pcre2.0.5.0-dev.49.nupkg",
+    "Lokad.Utf8Regex.Pcre2.0.5.0-dev.49.snupkg",
+    "Lokad.Utf8Regex.PythonRe.0.5.0-dev.49.nupkg",
+    "Lokad.Utf8Regex.PythonRe.0.5.0-dev.49.snupkg"
+  ],
+  "Published": false
+}
