@@ -65,3 +65,7 @@ Canonical immutable evidence, verified off VM:
 Dev.51 packages, symbols, qualified catalogs and all276staged assets stay immutable.
 This source change does not replace the [qualified dev.51 checkpoint](../DeliveryDev51-20261107/README.md)
 or refresh benchmark Status. Further package qualification waits for a material batch.
+
+[Source CI](source-ci.json) passed on Windows/Linux for
+`9cdb09a08d455e69b83494b4d883b2bde7ba6afd`.
+[Frozen graph/package checks](frozen-preservation.json) remain unchanged after the pilot.

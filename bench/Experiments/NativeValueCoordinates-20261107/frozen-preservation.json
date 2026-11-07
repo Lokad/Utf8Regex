@@ -1,0 +1,8 @@
+{
+  "Full50Assets": 8,
+  "Full51Assets": 8,
+  "VerifiedAfterPilot": true,
+  "StagedAssets": 276,
+  "AllStagedUnchanged": true,
+  "Scope": "Read-only graph/package preservation after affected-only builds and one source comparison;no rebuild,benchmark,qualification or deletion"
+}
