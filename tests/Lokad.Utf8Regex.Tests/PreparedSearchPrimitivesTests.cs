@@ -9,6 +9,37 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class PreparedSearchPrimitivesTests
 {
     [Theory]
+    [InlineData(16)] [InlineData(17)] [InlineData(32)] [InlineData(33)]
+    public void MixedWidthPrefixSearchPreservesBothDirectionsAndFalsePrefixFallback(int length)
+    {
+        var needle = Encoding.UTF8.GetBytes("夏洛克·" + new string('x', length - 11));
+        var prepared = new PreparedSubstringSearch(needle, false);
+        Assert.Equal(length is >= 17 and <= 32, prepared.HasExactAnchors);
+        var rejected = (byte[])needle.Clone();
+        rejected[^1] ^= 1;
+        byte[][] cases = [[], needle[..^1], needle, [.. rejected, 0, .. needle],
+            [.. needle, 0, .. rejected], [.. rejected, .. needle, .. rejected, .. needle]];
+        foreach (var value in cases)
+        foreach (var offset in new[] { 0, 1, 3 })
+        {
+            byte[] storage = [.. new byte[offset], .. value, 0xff, .. needle];
+            var view = storage.AsSpan(offset, value.Length);
+            Assert.Equal(view.IndexOf(needle), prepared.IndexOf(view));
+            Assert.Equal(view.LastIndexOf(needle), prepared.LastIndexOf(view));
+        }
+        var random = new Random(827 + length);
+        for (var sample = 0; sample < 80; sample++)
+        {
+            var value = new byte[random.Next(0, 240)];
+            random.NextBytes(value);
+            if (value.Length >= length && sample % 2 == 0)
+                needle.CopyTo(value.AsSpan(random.Next(value.Length - length + 1)));
+            Assert.Equal(value.AsSpan().IndexOf(needle), prepared.IndexOf(value));
+            Assert.Equal(value.AsSpan().LastIndexOf(needle), prepared.LastIndexOf(value));
+        }
+    }
+
+    [Theory]
     [InlineData(97, 98)]
     [InlineData(97, 97)]
     [InlineData(0, 255)]

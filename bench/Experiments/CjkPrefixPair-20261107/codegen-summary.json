@@ -1,0 +1,50 @@
+[
+  {
+    "Side": "before",
+    "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:CountExactLiteral",
+    "Bytes": 950,
+    "FullOpts": true
+  },
+  {
+    "Side": "before",
+    "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:<CountExactLiteral>g__CountViaSpanSearch|43_0",
+    "Bytes": 126,
+    "FullOpts": true
+  },
+  {
+    "Side": "before",
+    "Method": "Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch:IndexOfExactPrepared",
+    "Bytes": 149,
+    "FullOpts": true
+  },
+  {
+    "Side": "before",
+    "Method": "Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch:IndexOfExactAnchored",
+    "Bytes": 377,
+    "FullOpts": true
+  },
+  {
+    "Side": "after",
+    "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:CountExactLiteral",
+    "Bytes": 1110,
+    "FullOpts": true
+  },
+  {
+    "Side": "after",
+    "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:<CountExactLiteral>g__CountViaSpanSearch|43_0",
+    "Bytes": 126,
+    "FullOpts": true
+  },
+  {
+    "Side": "after",
+    "Method": "Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch:IndexOfExactPrepared",
+    "Bytes": 149,
+    "FullOpts": true
+  },
+  {
+    "Side": "after",
+    "Method": "Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch:IndexOfExactAnchored",
+    "Bytes": 646,
+    "FullOpts": true
+  }
+]

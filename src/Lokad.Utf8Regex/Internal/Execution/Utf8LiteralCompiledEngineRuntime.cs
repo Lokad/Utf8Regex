@@ -480,6 +480,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             TryGetLeadingUtf8SegmentLength(literal, out _))
         {
+            if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
+                return prepared.CountWithMetrics(input, out _, out _);
             // Reuse complete-sequence search instead of restarting a scalar
             // anchor and rechecking each prefix. Earlier fused strategies keep
             // their priority; controlled invocations use their metered paths.

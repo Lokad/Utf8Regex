@@ -1,0 +1,14 @@
+{
+  "SourceParent": "5e69d4160f9dfd1637dbe791339a9be62917be7a",
+  "BeforeCore": "00D7A25949DC6AEFDDB19CB16AD86419AE869A1FE1023519B99CC3F596E9A1FE",
+  "Scope": "One bounded mixed-width UTF8 prefix-pair experiment;reuse exact anchor fields,17..32byte wider-leading needles with an interior two-byte lead",
+  "Algorithm": "BCL prefix search once,full literal verification once,then existing full-literal BCL search after a rejected candidate;reverse symmetric. No repeated custom prefix-probe loop,counter,threshold,field,owner,mode or engine.",
+  "NativeCount": "Use existing prepared CountWithMetrics only for selected long exact anchors;keep preceding fused/correlated/other routes and old short needle policy.",
+  "Resources": "Same major capacity,strict whole UTF8/captures/coordinates/cursor lifetimes,finite2048byte windows,cancellation/deadlines/depth/result admission;bounded <=32byte preparation adds conservative construction work.",
+  "Validation": "Focused primitive boundaries/random differential/public native and finite policies across affected profiles,Release bothTFM/OS;Release codegen +one <=120second public separate-process ABBA with unchanged controls,finite/live/deadline,allocations and adversarial false-prefix/miss/dense cases. Atmost1noise confirmation,no tuning/package/Full.",
+  "TimingStarted": false,
+  "WorkerSha256": "6FE4020B867CC9B6E9CC90DC541C6EA9D4F3AFFE050B49103BCD335D3A6A192D",
+  "CoreAfter": "8AFEDEC74B28D2D9B25D89E3DEFF19EAC705ECA7B6D5B293EE119875BAEFFF90",
+  "Rows": 20,
+  "Checks": "Windows/Linux Core330/Python253/Pcre170 eachTFM;allpass,no repeated checks"
+}

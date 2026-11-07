@@ -8,6 +8,28 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteLiteralCountTests
 {
+    [Theory]
+    [InlineData(16)] [InlineData(17)] [InlineData(32)] [InlineData(33)]
+    public void MixedWidthPrefixCandidatesKeepWindowEdgesAndStrictWholeInput(int length)
+    {
+        var literal = "夏洛克·" + new string('x', length - 11);
+        var rejected = literal[..^1] + "y";
+        using var token = new CancellationTokenSource();
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
+        foreach (var prefix in new[] { 0, 2025, 2026, 2032, 2047, 2048, 4095 })
+        {
+            var text = new string('a', prefix) + rejected + "😀" + literal + " " + literal;
+            var input = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xff, .. input, 0xff];
+            var ordinary = new Utf8Regex(literal, mode);
+            var finite = Create(literal, 1000000, mode);
+            Assert.Equal(2, ordinary.Count(storage.AsSpan(1, input.Length)));
+            Assert.Equal(2, finite.Count(storage.AsSpan(1, input.Length), token.Token));
+            Assert.True(finite.IsMatch(input, token.Token));
+            Assert.Throws<ArgumentException>(() => finite.Count([.. input, 0xff], token.Token));
+        }
+    }
+
     private static Utf8Regex Create(string pattern, ulong work, RegexOptions options)
         => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });

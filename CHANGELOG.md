@@ -51,6 +51,9 @@
   preserving its exact counts, selection window, scalar tail and fallback.
   Evaluate bounded ASCII assertions within the current scalar VM segment, avoiding
   unnecessary suspension while retaining scalar rewind, depth and interruption.
+  Reuse bounded prefix searches for selected mixed-width UTF-8 literals, with
+  complete verification and ordinary sequence-search fallback. Their preparation
+  uses the existing bounded construction scope and can require additional work.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

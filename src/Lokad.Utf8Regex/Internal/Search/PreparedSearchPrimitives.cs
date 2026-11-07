@@ -108,8 +108,11 @@ internal readonly struct PreparedSubstringSearch
         _exactTier = !ignoreCase ? DetermineExactTier(needle.Length) : PreparedExactSearchTier.None;
         _ignoreCasePreferredCompareIndex = -1;
 
-        // These kernels only borrow the needle; they perform no preparation scans.
-        if (needle.Length <= 1 || !ignoreCase && needle.Length is not (>= 4 and <= 16))
+        // Larger kernels borrow the needle without preparation. Exact short
+        // needles can prepare anchors within this bounded inspection window.
+        if (needle.Length <= 1 || !ignoreCase &&
+            (needle.Length is not (>= 4 and <= 16) &&
+             (needle.Length is not (>= 17 and <= 32) || needle[0] < 0xE0)))
             return;
 
         using var construction = Utf8ConstructionScope.Enter();
@@ -119,8 +122,17 @@ internal readonly struct PreparedSubstringSearch
             if (!ignoreCase)
             {
                 owner.ChargeWork(3ul * (ulong)needle.Length);
-                if (AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(needle, false, out var anchors))
+                if (needle.Length <= 16 && AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(needle, false, out var anchors))
                     _exactAnchors = anchors;
+                else if (needle.Length > 16)
+                {
+                    // A two-byte lead can distinguish a mixed-width UTF-8
+                    // literal from surrounding wider scalars. Keep the first
+                    // byte too, by borrowing a BCL prefix search below.
+                    for (var index = 1; index < needle.Length - 1; index++)
+                        if (needle[index] is >= 0xC2 and < 0xE0)
+                        { _exactAnchors = new(index, 0); break; }
+                }
                 construction.Complete();
                 return;
             }
@@ -161,6 +173,8 @@ internal readonly struct PreparedSubstringSearch
     public bool IgnoreCase { get; }
 
     public int Length => Needle.Length;
+
+    internal bool HasExactAnchors => _exactAnchors.Anchor2 > 0;
 
     public PreparedIgnoreCaseSearchTier IgnoreCaseTier => !IgnoreCase
         ? PreparedIgnoreCaseSearchTier.None
@@ -295,6 +309,18 @@ internal readonly struct PreparedSubstringSearch
         }
 
         var anchor2 = _exactAnchors.Anchor2;
+        if (Needle.Length > 16)
+        {
+            // Every complete match contains this prefix. After the first false
+            // candidate, retain the ordinary BCL search for the remainder.
+            var prefixLength = anchor2 + 1;
+            var candidate = input[..(input.Length - Needle.Length + prefixLength)]
+                .IndexOf(Needle.AsSpan(0, prefixLength));
+            if (candidate < 0 || input.Slice(candidate, Needle.Length).SequenceEqual(Needle)) return candidate;
+            var next = candidate + 1;
+            var relative = input[next..].IndexOf(Needle);
+            return relative < 0 ? -1 : next + relative;
+        }
         var anchor2Byte = Needle[anchor2];
         var anchor3 = _exactAnchors.Anchor3;
         var maxStart = input.Length - Needle.Length;
@@ -339,6 +365,14 @@ internal readonly struct PreparedSubstringSearch
         }
 
         var anchor2 = _exactAnchors.Anchor2;
+        if (Needle.Length > 16)
+        {
+            var prefixLength = anchor2 + 1;
+            var candidate = input[..(input.Length - Needle.Length + prefixLength)]
+                .LastIndexOf(Needle.AsSpan(0, prefixLength));
+            if (candidate < 0 || input.Slice(candidate, Needle.Length).SequenceEqual(Needle)) return candidate;
+            return input[..(candidate + Needle.Length - 1)].LastIndexOf(Needle);
+        }
         var anchor2Byte = Needle[anchor2];
         var anchor3 = _exactAnchors.Anchor3;
         var maxStart = input.Length - Needle.Length;

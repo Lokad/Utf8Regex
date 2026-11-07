@@ -1,0 +1,14 @@
+{
+  "Scope": "Untimed pair-predicate census only,not actual JIT candidate tracing or a public speedup",
+  "Parent": "68128a363f2d01e5ff304b24ec7932fb3c1e4081",
+  "InputBytes": 813478,
+  "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+  "Needle": "夏洛克·福尔摩斯",
+  "NeedleBytes": 23,
+  "NeedleHex": "E5A48FE6B49BE5858BC2B7E7A68FE5B094E691A9E696AF",
+  "FirstLastPairGates": 751,
+  "FirstOffset9PairGates": 51,
+  "Next": "Verify current runtime byte-pair selection and live public route before any code/timing;existing CountViaSpanSearch bypasses prepared anchors for this needle. Distinguish this interior-byte candidate idea from closed leading-scalar/fused/prefix variants;do not add a framework or extra state without material evidence.",
+  "NoSourceChange": true,
+  "NoTiming": true
+}
