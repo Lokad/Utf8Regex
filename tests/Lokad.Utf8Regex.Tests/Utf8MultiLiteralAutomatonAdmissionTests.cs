@@ -196,7 +196,13 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     {
         var literals = Literals(4); var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
         foreach (var literal in literals) Array.Fill(literal, (byte)'z'); Array.Fill(literals, Array.Empty<byte>());
-        for (var warm = 0; warm < 1000; warm++) _ = search.IndexOf("ushers"u8);
+        // Warm the same three operations measured below.
+        for (var warm = 0; warm < 1000; warm++)
+        {
+            _ = search.IndexOf("ushers"u8);
+            _ = search.LastIndexOf("ushers"u8);
+            _ = search.TryFindFirstMatch("ushers"u8, out _, out _, out _);
+        }
         var before = GC.GetAllocatedBytesForCurrentThread(); var sum = 0;
         for (var iteration = 0; iteration < 1000; iteration++)
         {
