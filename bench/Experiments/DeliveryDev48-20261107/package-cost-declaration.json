@@ -1,0 +1,57 @@
+{
+  "Scope": "ONE exact Windows47-to-Windows48 combined range-Count/class-delimiter public-cost comparison; no source decomposition or normalization",
+  "BeforeVersion": "0.5.0-dev.47",
+  "AfterVersion": "0.5.0-dev.48",
+  "BeforeSource": "0c01d65f14fdc5acbd555968011716c99ec763c7",
+  "AfterSource": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "CoreBefore": "117CB3B60B5018FFFCD214CC3DC10078079B5BD0D85315A01FA5E08D766422CD",
+  "PythonBefore": "FB5C875A597411C9942B70E86F2E333171FE36456FB0E7F2205D530A46744A01",
+  "PcreBefore": "69282B1120816788EC6D894EC5DDC0E9F1ABB6DAF71D9D5DC7DC361FB6FA3E0B",
+  "CoreAfter": "3D40253E3A28EC016F8DA772003C3C8B5775B31C6C99BE3173221CC8FCF10E44",
+  "PythonAfter": "DD59798B2F57C2C87615ABAE2458B8AD0C6ED57EEB36C0AF3505D5BB3C12F4D7",
+  "PcreAfter": "7956F13894178F609D5010575D28288FF9AE62DFBF7C47C306F7BAAAB7EA9894",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 18,
+  "ComparatorRows": 0,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Acceptance": "All equal-result public rows meet duration floors and graph identity; report costs as well as gains; no universal slowdown gate",
+  "Confirmation": "No rerun planned; one within-worker post-GC calibration confirmation before samples",
+  "ScopeAdjustment": "Existing Full owns current reference qualification; package driver uses independent BCL result oracles outside timing only",
+  "Unchanged": [
+    {
+      "File": "Worker.dll",
+      "Before": "BDE0084FEFF22862DDA5CBE82FD33E8FF1531B701348DA50CA94DCCD9815AD2F",
+      "After": "BDE0084FEFF22862DDA5CBE82FD33E8FF1531B701348DA50CA94DCCD9815AD2F",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.pdb",
+      "Before": "85577F81E58BEAA84E963BD3FF194A9C619444FC5E052B76BB2D013F147D3979",
+      "After": "85577F81E58BEAA84E963BD3FF194A9C619444FC5E052B76BB2D013F147D3979",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.deps.json",
+      "Before": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "After": "D0E39360991C1FFC2FDE0FA2F3F8817B6C8C181F5435D2EB3BDA9E58F03EBA47",
+      "Unchanged": true
+    },
+    {
+      "File": "Worker.runtimeconfig.json",
+      "Before": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "After": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0",
+      "Unchanged": true
+    }
+  ]
+}

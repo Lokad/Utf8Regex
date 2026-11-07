@@ -1,0 +1,12 @@
+{
+  "Version": "0.5.0-dev.48",
+  "PackageSource": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "FullSource": "adda7bf55fa2ee2e68f1bb0dca80ba3852bc89b1",
+  "FullAccepted": true,
+  "WindowsPackagesAccepted": true,
+  "OriginalWindowsConsumersAccepted": true,
+  "LinuxAcceptance": "Complete:exactWindowsbytes,8fixtures109974checks,24restoreaudits12TRX,originalAwk/Lython/probes",
+  "FinalPackageCosts": "Complete:93.729271674s,18rows360samples,min64.1634ms,DefaultABBA;major gains and accepted persistent localcosts",
+  "Published": false,
+  "Complete": true
+}

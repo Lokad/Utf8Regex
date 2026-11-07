@@ -1,0 +1,39 @@
+{
+  "Scope": "Fresh dev48 capacity preparation only; CLOSED/one-time, all canonical raw offVM. Protected prior scopes/staged bytes remain.",
+  "Linux47": {
+    "Scope": "Fresh Linux47 fixture scratch tree and duplicate archive only",
+    "CanonicalOffVm": "D:\\code\\utf8regex\\artifacts\\experiments\\delivery-dev47-20261107\\linux-evidence.tar.gz",
+    "Sha256": "73F04313E430719F287E80CA7E8876DF6A6DD48B0BA58265050959FD62F1ECC8",
+    "Bytes": 808690256,
+    "Verified": "2026-11-07T03:39:39.9950374+01:00",
+    "Preserve": "All252staged assets,Full47eightDLL/PDBs,source,originalconsumerarchives and all closed/protected scopes"
+  },
+  "Experiments": {
+    "Scope": [
+      "safe-three-byte-range-20261105",
+      "terminal-root-repeat-20261104",
+      "delivery-dev32-20261105"
+    ],
+    "CanonicalOffVm": "D:\\code\\utf8regex\\artifacts\\experiments\\delivery-dev48-20261107\\retired-experiment-scratch.tar.gz",
+    "Sha256": "DCBB235AD796F1A8DB9B93A7736A29D6B154E8C913530AC3255C4EA93A42A637",
+    "Bytes": 384613351,
+    "FullMemberAndContentComparison": "286entries passed before transfer",
+    "OffVmVerified": true,
+    "Verified": "2026-11-07T03:44:44.6841849+01:00"
+  },
+  "OlderDeliveries": {
+    "Scope": [
+      "delivery-dev10-20261102",
+      "delivery-dev12-20261102",
+      "delivery-dev14-20261102",
+      "delivery-dev44-20261106",
+      "python-split-profile-20261105"
+    ],
+    "CanonicalOffVm": "D:\\code\\utf8regex\\artifacts\\experiments\\delivery-dev48-20261107\\retired-delivery-scratch.tar.gz",
+    "Sha256": "64FAAC0062844DBE57CC584DEB96D9C72403AC96F1BD3F3D6B97632629C119FF",
+    "Bytes": 496185097,
+    "FullMemberAndContentComparison": "2067entries passed; sudo read preserves root-owned cpu.data without chmod",
+    "OffVmVerified": true,
+    "Verified": "2026-11-07T04:02:53.7384274+01:00"
+  }
+}

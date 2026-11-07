@@ -1,0 +1,18 @@
+{
+  "Run": 42336088440,
+  "Source": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "Status": "Completed",
+  "Conclusion": "Success",
+  "Platforms": [
+    {
+      "Name": "tests (windows-latest)",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Conclusion": "success"
+    }
+  ],
+  "Scope": "Final package/data source; no C#/build-input change after frozen Full",
+  "Closed": true
+}

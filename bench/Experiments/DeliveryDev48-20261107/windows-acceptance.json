@@ -1,0 +1,15 @@
+{
+  "Version": "0.5.0-dev.48",
+  "Source": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "Seconds": 295.9725951,
+  "Fixtures": 8,
+  "Checks": 109974.0,
+  "CleanSource": true,
+  "BuildCount": 2,
+  "PackCountPerPackage": 1,
+  "CompilerDocuments": 464,
+  "CompilerArchiveSha256": "FFDD88DAC52460ADA95AEE228DA5B770849F7EE389A8DE3ED7FB43109EA7F8C9",
+  "OriginalConsumersTerminal": "0",
+  "PriorAssetsUnchanged": 252,
+  "Published": false
+}

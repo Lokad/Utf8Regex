@@ -1,0 +1,14 @@
+{
+  "Source": "f6b2175ea1715e12fcab0e6fa7dcd556ddbe5f40",
+  "Version": "0.5.0-dev.48",
+  "Sha256": "632AB940E1D97984E965B044F67C4EEB04F69781DC93C6A6E9CF52F85B40CA51",
+  "Bytes": 3711611,
+  "OffVmVerified": true,
+  "TerminalExit": 0,
+  "Seconds": 93.729271674,
+  "ProducerRows": 18,
+  "Samples": 360,
+  "MinimumSampleMs": 64.1634,
+  "Confirmation": "None; within-worker calibration confirmation precedes samples",
+  "Scope": "Exact-package47->48 Default-process ABBA, no new reference timing; costs accepted for major gains, no universal10%gate"
+}
