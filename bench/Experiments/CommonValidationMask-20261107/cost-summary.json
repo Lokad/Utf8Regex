@@ -1,0 +1,314 @@
+{
+  "Scope": "One bounded existing-validator vector predicate combination. Public Count costs; default512 ABBA nine rows, forced256 ABBA actual CJK plus unchanged ASCII; two equal-count BCL diagnostics. No universal <=10% gate.",
+  "BeforeSource": "0c01d65f14fdc5acbd555968011716c99ec763c7 qualified dev47",
+  "AfterSource": "cec22747 + candidate.patch",
+  "CoreBefore": "117CB3B60B5018FFFCD214CC3DC10078079B5BD0D85315A01FA5E08D766422CD",
+  "CoreAfter": "FAED9C609B03C289C8A0A34762EE978E7E4C26DBB22BFB0FC2560C8B4F57EDF5",
+  "Seconds": 65.869999055,
+  "Samples": 220,
+  "Confirmation": "None",
+  "Rows": [
+    {
+      "Name": "actual-chinese",
+      "Narrow": false,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "BeforeUs": 84.93326548056163,
+      "AfterUs": 84.27490328848415,
+      "DeltaUs": -0.658362192077476,
+      "Percent": -0.7751523367815816,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        84.80155148095909,
+        85.06497948016415
+      ],
+      "AfterProcessMedians": [
+        84.86224066390042,
+        83.75853314527502
+      ],
+      "BeforeMinimum": 84.02927496580027,
+      "BeforeMaximum": 85.46699576868829,
+      "AfterMinimum": 82.85035260930889,
+      "AfterMaximum": 85.60788381742739,
+      "MinimumSampleMilliseconds": 58.7409
+    },
+    {
+      "Name": "actual-chinese-compiled",
+      "Narrow": false,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "BeforeUs": 84.10015212060667,
+      "AfterUs": 84.94992907801418,
+      "DeltaUs": 0.8497769574075136,
+      "Percent": 1.0104345069303244,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        83.91074380165288,
+        84.28956043956045
+      ],
+      "AfterProcessMedians": [
+        85.42893617021276,
+        84.28314606741573
+      ],
+      "BeforeMinimum": 83.40233516483516,
+      "BeforeMaximum": 84.98360881542699,
+      "AfterMinimum": 83.50365168539325,
+      "AfterMaximum": 85.87645390070922,
+      "MinimumSampleMilliseconds": 59.4546
+    },
+    {
+      "Name": "actual-alternation-compiled",
+      "Narrow": false,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 207,
+      "BeforeUs": 102.72102177554439,
+      "AfterUs": 101.6789075630252,
+      "DeltaUs": -1.0421142125191807,
+      "Percent": -1.0145091963710273,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        102.49798994974874,
+        102.84802744425386
+      ],
+      "AfterProcessMedians": [
+        101.54789915966387,
+        102.65103806228373
+      ],
+      "BeforeMinimum": 101.17788944723618,
+      "BeforeMaximum": 103.63550600343054,
+      "AfterMinimum": 100.91851211072665,
+      "AfterMaximum": 103.5598615916955,
+      "MinimumSampleMilliseconds": 58.3309
+    },
+    {
+      "Name": "actual-chinese-finite-live",
+      "Narrow": false,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "BeforeUs": 378.7850318471337,
+      "AfterUs": 397.321265072985,
+      "DeltaUs": 18.536233225851277,
+      "Percent": 4.893602351565973,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        378.91910828025476,
+        375.07962962962966
+      ],
+      "AfterProcessMedians": [
+        417.94206896551725,
+        379.40184049079755
+      ],
+      "BeforeMinimum": 371.9456790123457,
+      "BeforeMaximum": 383.18518518518516,
+      "AfterMinimum": 372.66748466257667,
+      "AfterMaximum": 421.0896551724138,
+      "MinimumSampleMilliseconds": 59.3503
+    },
+    {
+      "Name": "actual-chinese-deadline-live",
+      "Narrow": false,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "BeforeUs": 389.4678628684178,
+      "AfterUs": 405.6023085329205,
+      "DeltaUs": 16.13444566450272,
+      "Percent": 4.142689860383619,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        393.3581699346405,
+        385.3327044025157
+      ],
+      "AfterProcessMedians": [
+        428.405035971223,
+        385.8018987341772
+      ],
+      "BeforeMinimum": 381.077358490566,
+      "BeforeMaximum": 396.2705882352941,
+      "AfterMinimum": 381.246835443038,
+      "AfterMaximum": 432.57769784172666,
+      "MinimumSampleMilliseconds": 58.9706
+    },
+    {
+      "Name": "dense-three-byte-neighbor",
+      "Narrow": false,
+      "InputBytes": 212992,
+      "InputSha256": "D129F5DCD98778E4CACAFFD5E5B6030466D6E9116A61F1B58DF8132AD492D362",
+      "Expected": 8192,
+      "BeforeUs": 110.30226307189542,
+      "AfterUs": 110.28667883211679,
+      "DeltaUs": -0.015584239778632991,
+      "Percent": -0.01412866730438056,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        110.18296296296297,
+        110.40367647058825
+      ],
+      "AfterProcessMedians": [
+        111.23907407407407,
+        109.96879562043796
+      ],
+      "BeforeMinimum": 109.34666666666666,
+      "BeforeMaximum": 111.8261111111111,
+      "AfterMinimum": 109.27536496350365,
+      "AfterMaximum": 112.08611111111111,
+      "MinimumSampleMilliseconds": 59.0472
+    },
+    {
+      "Name": "late-constrained-tail",
+      "Narrow": false,
+      "InputBytes": 98320,
+      "InputSha256": "26DD88BAFE1F51B14292D466E43D11C43734FBA6495DE65E1A7A55E7A80FA8A4",
+      "Expected": 1,
+      "BeforeUs": 10.302141364902507,
+      "AfterUs": 10.104318463955579,
+      "DeltaUs": -0.19782290094692812,
+      "Percent": -1.9202114777892132,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        10.33023746701847,
+        10.27400766016713
+      ],
+      "AfterProcessMedians": [
+        10.09100322525887,
+        10.17671975601491
+      ],
+      "BeforeMinimum": 10.192612137203167,
+      "BeforeMaximum": 10.782251539138082,
+      "AfterMinimum": 9.970157867934137,
+      "AfterMaximum": 10.2179261267367,
+      "MinimumSampleMilliseconds": 57.945
+    },
+    {
+      "Name": "ascii-literal-control",
+      "Narrow": false,
+      "InputBytes": 65542,
+      "InputSha256": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+      "Expected": 1,
+      "BeforeUs": 2.592757635508268,
+      "AfterUs": 2.5962289645077092,
+      "DeltaUs": 0.0034713289994412477,
+      "Percent": 0.13388559547182766,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        2.5750504430213175,
+        2.6091176858486835
+      ],
+      "AfterProcessMedians": [
+        2.5966993717187363,
+        2.595758557296682
+      ],
+      "BeforeMinimum": 2.5723002017720855,
+      "BeforeMaximum": 2.6342023123928433,
+      "AfterMinimum": 2.5649754712109476,
+      "AfterMaximum": 2.633221447628884,
+      "MinimumSampleMilliseconds": 58.5917
+    },
+    {
+      "Name": "folded-russian-control",
+      "Narrow": false,
+      "InputBytes": 1570556,
+      "InputSha256": "7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90",
+      "Expected": 746,
+      "BeforeUs": 235.3328996282528,
+      "AfterUs": 229.26536256574587,
+      "DeltaUs": -6.067537062506915,
+      "Percent": -2.5782782909196222,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        233.09144981412638,
+        236.78532818532815
+      ],
+      "AfterProcessMedians": [
+        233.19026217228466,
+        219.8707581227437
+      ],
+      "BeforeMinimum": 228.78810408921933,
+      "BeforeMaximum": 238.04169884169883,
+      "AfterMinimum": 219.32996389891696,
+      "AfterMaximum": 234.65318352059924,
+      "MinimumSampleMilliseconds": 60.6298
+    }
+  ],
+  "NarrowRows": [
+    {
+      "Name": "actual-chinese",
+      "Narrow": true,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "BeforeUs": 141.35914595801893,
+      "AfterUs": 144.97234413993635,
+      "DeltaUs": 3.6131981819174257,
+      "Percent": 2.5560413211540567,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        141.25787037037037,
+        141.46042154566746
+      ],
+      "AfterProcessMedians": [
+        141.4478672985782,
+        147.20096618357488
+      ],
+      "BeforeMinimum": 139.85231481481483,
+      "BeforeMaximum": 144.05245901639344,
+      "AfterMinimum": 141.26990521327014,
+      "AfterMaximum": 148.78140096618358,
+      "MinimumSampleMilliseconds": 59.6159
+    },
+    {
+      "Name": "ascii-literal-control",
+      "Narrow": true,
+      "InputBytes": 65542,
+      "InputSha256": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+      "Expected": 1,
+      "BeforeUs": 3.6150996718123256,
+      "AfterUs": 3.4290320794777926,
+      "DeltaUs": -0.18606759233453296,
+      "Percent": -5.146956079394993,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        3.608380940804668,
+        3.6455660770650944
+      ],
+      "AfterProcessMedians": [
+        3.6090708623875085,
+        3.2423815284279174
+      ],
+      "BeforeMinimum": 3.5774522912361735,
+      "BeforeMaximum": 3.657316419510452,
+      "AfterMinimum": 3.208504707305528,
+      "AfterMaximum": 3.627117229870672,
+      "MinimumSampleMilliseconds": 58.8634
+    }
+  ],
+  "ReferenceRows": [
+    {
+      "Name": "chinese-predecoded-dotnet",
+      "Microseconds": 19.29252928141817,
+      "AllocatedBytes": 0.0,
+      "MinimumSampleMilliseconds": 60.2189
+    },
+    {
+      "Name": "chinese-decode-then-dotnet",
+      "Microseconds": 2141.793103448276,
+      "AllocatedBytes": 679424.0,
+      "MinimumSampleMilliseconds": 60.8388
+    }
+  ]
+}
