@@ -1,0 +1,23 @@
+{
+  "Decision": "RejectedRestore",
+  "Reason": "No stable actual limitedSplit gain; long-literal controls slower in both candidate processes; small dense/finite-count gains do not justify added branching/code size",
+  "Seconds": 70.718975647,
+  "Rows": 12,
+  "Samples": 240,
+  "MinimumSampleMilliseconds": 23.7053,
+  "Confirmation": "None; decision does not need more timing",
+  "FullOptsBeforeBytes": 4194,
+  "FullOptsAfterBytes": 4433,
+  "FullOptsDeltaBytes": 239,
+  "WorkCharges": "Exact parity validated against existing folded general comparison path at every cutoff",
+  "Windows": "Core1070/Python355/Pcre57 perTFM pass",
+  "Linux": "Core1070/Python355/Pcre57 perTFM pass",
+  "RawSha256": "342EF907776C985C06827D3612F8A32461608509BA25AE089DF0C89337A29314",
+  "RawBytes": 4922141,
+  "CodegenSha256": "CF3D1D27683E44F7B894C4A40605C1B17EFF56C994EEE5D34A2449815DAA998A",
+  "Source": "Original parent source restored on both hosts; Core rebuilt and matching adapter/test graphs refreshed",
+  "Qualified47": "Immutable",
+  "RootMetadataStaging": "Initial archive metadata at checkout root was moved under tmp after exact hash/path checks; no tests started before correction; no root files left",
+  "Restoration": "Windows/Linux Core152/Python58/Pcre18 perTFM pass; Full47 all8 preserved",
+  "RestorationSha256": "666366256F0DE7A074CDBE61977E21E0F402EFCE8457EEAE096E6ED473AD67A0"
+}

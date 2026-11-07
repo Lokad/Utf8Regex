@@ -1,0 +1,18 @@
+{
+  "Scope": "Untimed current qualified47 route/shape probe; no throughput claim",
+  "CoreRetained": true,
+  "CoreNativeResult": true,
+  "CandidateEligible": true,
+  "ProgramGroupCount": 0,
+  "InputBytes": 2944,
+  "ResultCount": 4,
+  "ResultLengths": [
+    5,
+    4,
+    5,
+    2927
+  ],
+  "AllocatedBytes": 6032,
+  "CoreSha256": "117CB3B60B5018FFFCD214CC3DC10078079B5BD0D85315A01FA5E08D766422CD",
+  "PythonSha256": "FB5C875A597411C9942B70E86F2E333171FE36456FB0E7F2205D530A46744A01"
+}

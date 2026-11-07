@@ -1,0 +1,16 @@
+{
+  "Parent": "9397905c5c701fc0ed639978d7c113bc358b986e",
+  "SourceFiles": [
+    {
+      "Path": "src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.FamilyInvocation.cs",
+      "Sha256": "396B4C2602D7C30B0343D6226A25A09B2DC9F3D1A0997DFDDA1EAAE2D27573E0"
+    },
+    {
+      "Path": "tests/Lokad.Utf8Regex.Tests/Utf8NativeFamilyInvocationTests.cs",
+      "Sha256": "8CE81793E837EF6761E9146CF50A84292456EDC3DDE9A1D5DBFB6309F98EDC89"
+    }
+  ],
+  "Windows": "Core1070/Python355/Pcre57 perTFM pass",
+  "CurrentQualifiedBaseline": "0.5.0-dev.47 source0c01d65f Core117CB3B6; adapters unchanged",
+  "Scope": "Skip redundant unfolded length1 comparison; EXACT input work retained"
+}
