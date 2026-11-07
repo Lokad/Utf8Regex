@@ -1,0 +1,21 @@
+{
+  "Source": "381944603ae0efb9e64035415e4ac79f2a4b353c",
+  "Change": "Onlypositive-unfoldedCategorySetASCII maskhits inexistingRunClassRepeat;Setmaskmissstillrejects,Categorymaskmissfullscalarfallback;nocharge/admission/semanticschange",
+  "Scope": "One12rowpublicDefault-processABBA under120s;fixedPython/caller/control;onejustifiednoiseconfirmationmax;no variants/full/package",
+  "Timing": "750ms/min32warmup;75mstarget;fivebatches;onecalibrationconfirmationbeforesamples;CPU2aftereightCPUstartup;nooverrides;checksaftertiming",
+  "Memory": "2GiBactualRAMguard;smallworker/resultbuffers;Full8GiBguardunchanged",
+  "Workloads": "UnchangedCoreliteral,actualPythonmailordinary/finite/deadline,denseASCII/Unicodeunion,longcapturedunion,Corepartialletter/digitmask,folded/complement/Setcontrols",
+  "Decision": "Usefulpublicgainswithabsoluteadverseneighbors/allocations/ranges;documentlocalcosts;restoreifnouserbenefit,no tuningvariants",
+  "Preparation": "FirstCRLFpatchtransportfailedbeforeapplication/tests/timing;normalizedLF,oldinputretained;baselineuntimedpreflightcaughtinvalid512expectationfornegativeclasswhichcouldconsume@;controlnowexcludes@;oldworker/archive698F0931preserved;timingnotstarted,productionunchanged",
+  "DeclaredAt": "2026-11-07T06:36:24.1101593+01:00",
+  "PythonAfter": "AFDD69EBFE8045FB6EE64D708BA14E3D9401E9C0997C597A7C812849E1569985",
+  "CoreBefore": "5DC994CC25B73D89C8E51E375E3F1653E4825D92F1A27DE0FEB4A860DA0AEE7F",
+  "PythonBefore": "AFDD69EBFE8045FB6EE64D708BA14E3D9401E9C0997C597A7C812849E1569985",
+  "CoreAfter": "0D0EEFDB9DA2B3B758C06F86A160981575A90C5D72DDEB90F9EBB8CE220B5F42",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ]
+}

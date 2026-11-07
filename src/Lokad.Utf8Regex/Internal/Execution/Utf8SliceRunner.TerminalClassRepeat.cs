@@ -471,21 +471,25 @@ internal static partial class Utf8SliceRunner
                 ? new(true, position, Utf8ExecutionLimitKind.None, null, null)
                 : new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         }
-        ReadOnlySpan<byte> asciiMask = atom.Kind == Utf8SliceInstructionKind.Set && atom.B == 0 && atom.C == 0
-            ? program.SetMasks[atom.A] : [];
+        ReadOnlySpan<byte> asciiMask = atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
+            atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
-            // This positive, unfolded mask has the same ASCII predicate; keep
-            // its existing per-scalar charge without Rune decoding/dispatch.
+            // A positive, unfolded mask proves its ASCII hits without decoding
+            // or class dispatch. Category masks can omit members supplied by
+            // their tables; only a plain Set can reject a mask miss here.
             if (!asciiMask.IsEmpty && (uint)position < (uint)input.Length && input[position] < 128)
             {
                 var value = input[position];
-                if ((asciiMask[value >> 3] & (1 << (value & 7))) == 0) break;
-                position++;
-                count++;
-                continue;
+                if ((asciiMask[value >> 3] & (1 << (value & 7))) != 0)
+                {
+                    position++;
+                    count++;
+                    continue;
+                }
+                if (atom.Kind == Utf8SliceInstructionKind.Set) break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
             breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);

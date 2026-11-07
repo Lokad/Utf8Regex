@@ -32,6 +32,8 @@
   validation policy and interruption checkpoints.
   Reuse bounded literal value search under finite limits, live cancellation tokens
   and deadlines, avoiding unused miss metadata and scalar cursor preparation.
+  Reuse positive ASCII mask hits in category repeats while retaining full scalar
+  predicates for mask misses and unchanged per-scalar work charges.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

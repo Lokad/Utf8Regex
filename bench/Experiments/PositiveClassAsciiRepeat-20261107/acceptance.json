@@ -1,0 +1,41 @@
+{
+  "Decision": "Promote",
+  "Source": "381944603ae0efb9e64035415e4ac79f2a4b353c plusruntime.patch",
+  "Production": "OnlyCoreRunClassRepeat;newCategorySetpositiveASCIIhitproof,tablemissfallback;noAPI/state/admission/workchargechange",
+  "Validation": {
+    "Pcre2": 46,
+    "Python": 57,
+    "Core": 498,
+    "Coverage": "partialmasks/everyASCIIvalue,categorymembers/complements/folds,scalarbounds/slices,RTLandNB,captures/retention,malformedtails,everypositiveworkcutoff/exactboundary,parentloans,originaltoken/deadlineinsideRunClassRepeat",
+    "BothFrameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "AllExitCodes": 0,
+    "BothOperatingSystems": [
+      "Windows",
+      "Linux"
+    ],
+    "NewCoreTests": 13
+  },
+  "Timing": {
+    "Confirmation": "None",
+    "Session": "24213terminal0closed",
+    "Transport": "CRLFpatchfailedbeforeapplication/tests;normalizedLF,no productioncorrection",
+    "Samples": 240,
+    "Rows": 12,
+    "PriorPreflight": "Baselineuntimedexpectationincorrectfornegativeclassincluding@;controlcorrectedbeforefirsttiming,oldcaller/raw698F0931retained",
+    "Seconds": 62.99001819,
+    "MinimumMilliseconds": 73.556
+  },
+  "Evidence": {
+    "Bytes": 2919398,
+    "CanonicalPath": "artifacts/experiments/positive-class-ascii-repeat-20261107/evidence.tar.gz",
+    "OffVmVerified": true,
+    "OriginalPreflightBytes": 2903181,
+    "OriginalPreflight": "698F09319718CC25529150F72772BB9B30B29DC2F91A4232A9FE8BD87F6BCB39",
+    "Sha256": "D4AE2C0E5C3A4DA3696135967F21E49E3E6D4ED0417C63BBF5F125AA1A8E5ED1"
+  },
+  "Preserved": "Allstaged/publishedbytesand8Full48DLL/PDBassetsunchanged;noFull/package/catalog/comparatorrequalification",
+  "Timestamp": "2026-11-07T06:40:43.0221982+01:00"
+}
