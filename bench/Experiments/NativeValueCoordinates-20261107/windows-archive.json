@@ -1,0 +1,5 @@
+{
+  "Sha256": "5593310D2A0E61501963D071AB49658247B586FBE334DFB2F903A25BCD70ABA4",
+  "Bytes": 24254,
+  "Scope": "Windows source,before source,patches,all failed/corrected fixture logs and preparation checkpoint;no producer retuning or timed repeat"
+}

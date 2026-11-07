@@ -1,0 +1,6 @@
+{
+  "Source": "27a5922b5c032cae1b9e143020f92dd1de763bde",
+  "CoreSha256": "2377ABAEA55338FEE85B9B56120373CAE1B86F990E58B49C6EDDAA47EC77265F",
+  "PythonSha256": "1CFE7EE5A428DEF9CD44847461EB37C0646BAA76AEEF0BB580966F75F090201B",
+  "Scope": "Clean snapshot revision baseline;only Python project net11 built without dependencies;Core exactdev51Windows bytes stay fixed;no package pack"
+}

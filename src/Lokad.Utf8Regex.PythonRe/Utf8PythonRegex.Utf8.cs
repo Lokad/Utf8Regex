@@ -419,9 +419,11 @@ public sealed partial class Utf8PythonRegex
                     Utf8InvocationOutput.Checkpoint(control);
                     return default;
                 }
+                // Whole-subject validation and complete native literals prove
+                // these scalar ranges; derive coordinates without validating again.
                 startUtf16 = start == 0 ? 0
-                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
-                endUtf16 = startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
+                    : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
+                endUtf16 = startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
             }
             else
             {

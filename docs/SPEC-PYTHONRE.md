@@ -67,6 +67,11 @@ while hits derive their returned coordinates. No VM workspace or capture storage
 is needed for that route. Numerical work/depth/working requirements can decrease;
 actual payload admission and original interruption authority remain. Other
 patterns and nonzero offsets retain their existing routes.
+Successful literal values count coordinates over the already validated scalar
+ranges, using the existing sizing helper's scalar-aligned blocks of at most 4096
+bytes. This replaces coordinate-only validation blocks of 2048 bytes and can
+reduce numerical work charges; whole-subject validation still precedes discovery,
+and sizing/publication retain the same cancellation and deadline authority.
 
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,

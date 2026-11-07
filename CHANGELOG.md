@@ -45,6 +45,8 @@
   and interruption authority, avoiding repeated case-expanded prefix checks.
   Extend existing class/delimiter windows to short captured searches, avoiding
   failed prefix retries before detailed-result projection.
+  Count native literal value coordinates over already validated scalar ranges,
+  avoiding repeated validation while keeping bounded resource/interruption checks.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

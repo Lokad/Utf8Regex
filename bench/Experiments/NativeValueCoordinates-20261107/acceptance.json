@@ -1,0 +1,179 @@
+{
+  "Decision": "Promote existing bounded coordinate counter for successful native value ranges;accept explicit local costs for material long-Unicode gains",
+  "Scope": "ONE bounded coordinate-count source public ABBA;19workloads;no package/Full rerun",
+  "BeforeSource": "27a5922b5c032cae1b9e143020f92dd1de763bde",
+  "AfterSource": "27a5922b5c032cae1b9e143020f92dd1de763bde +two coordinate-only call substitutions",
+  "Complete": true,
+  "Seconds": 98.142680736,
+  "Rows": 19,
+  "Samples": 380,
+  "MinimumSampleMilliseconds": 66.8218,
+  "Allocations": "All19medians unchanged",
+  "Confirmation": "None",
+  "Tuning": "None",
+  "Gains": [
+    {
+      "Name": "actual-unicode-hit",
+      "BeforeUs": 0.14300991683369477,
+      "AfterUs": 0.12973973276257206,
+      "DeltaUs": -0.01327018407112271,
+      "Percent": -9.279205501919508,
+      "BeforeMinimum": 0.13844109306943642,
+      "BeforeMaximum": 0.1479054287189972,
+      "AfterMinimum": 0.12740795074673528,
+      "AfterMaximum": 0.13466630344027283
+    },
+    {
+      "Name": "actual-unicode-hit-finite-live",
+      "BeforeUs": 0.30438309007532743,
+      "AfterUs": 0.2580997580177908,
+      "DeltaUs": -0.04628333205753665,
+      "Percent": -15.205618697833268,
+      "BeforeMinimum": 0.30034066603686393,
+      "BeforeMaximum": 0.3089270818778078,
+      "AfterMinimum": 0.2562033737063553,
+      "AfterMaximum": 0.26018131624689
+    },
+    {
+      "Name": "actual-unicode-hit-deadline-live",
+      "BeforeUs": 0.471304105720066,
+      "AfterUs": 0.38040796593316195,
+      "DeltaUs": -0.09089613978690403,
+      "Percent": -19.28609122724094,
+      "BeforeMinimum": 0.45561230520389434,
+      "BeforeMaximum": 0.48055497830999816,
+      "AfterMinimum": 0.3743532968878845,
+      "AfterMaximum": 0.38495386725942127
+    },
+    {
+      "Name": "full-unicode-hit-finite-live",
+      "BeforeUs": 1.5860897795292879,
+      "AfterUs": 0.9226211957170377,
+      "DeltaUs": -0.6634685838122502,
+      "Percent": -41.83045577717242,
+      "BeforeMinimum": 1.5243937492870994,
+      "BeforeMaximum": 1.6045320022969212,
+      "AfterMinimum": 0.8941355584142757,
+      "AfterMaximum": 0.93992509808584
+    },
+    {
+      "Name": "full-unicode-hit-deadline-live",
+      "BeforeUs": 1.704545118069435,
+      "AfterUs": 1.038375020652674,
+      "DeltaUs": -0.666170097416761,
+      "Percent": -39.081986763205435,
+      "BeforeMinimum": 1.6837928214010776,
+      "BeforeMaximum": 1.725733737490377,
+      "AfterMinimum": 1.0232373800584063,
+      "AfterMaximum": 1.0450298984842166
+    },
+    {
+      "Name": "two-byte-prefix",
+      "BeforeUs": 1.5127428506654688,
+      "AfterUs": 0.9380651102490555,
+      "DeltaUs": -0.5746777404164133,
+      "Percent": -37.98912288123574,
+      "BeforeMinimum": 1.4261699673139783,
+      "BeforeMaximum": 1.6283281538719974,
+      "AfterMinimum": 0.9283236994219655,
+      "AfterMaximum": 1.1697286012526096
+    },
+    {
+      "Name": "three-byte-prefix",
+      "BeforeUs": 2.0555894198660942,
+      "AfterUs": 1.3110846524193827,
+      "DeltaUs": -0.7445047674467116,
+      "Percent": -36.21855416512167,
+      "BeforeMinimum": 1.9928200599443373,
+      "BeforeMaximum": 2.123632868537327,
+      "AfterMinimum": 1.2881496662988072,
+      "AfterMaximum": 1.3172964072380753
+    },
+    {
+      "Name": "supplementary-prefix",
+      "BeforeUs": 14.062835741629948,
+      "AfterUs": 8.249712357561677,
+      "DeltaUs": -5.8131233840682714,
+      "Percent": -41.33677937273911,
+      "BeforeMinimum": 13.811928283937066,
+      "BeforeMaximum": 14.259137963485788,
+      "AfterMinimum": 8.159853615905615,
+      "AfterMaximum": 8.530346277243058
+    },
+    {
+      "Name": "mixed-prefix-finite-live",
+      "BeforeUs": 49.216948919408125,
+      "AfterUs": 34.049025164354745,
+      "DeltaUs": -15.16792375505338,
+      "Percent": -30.81849665222154,
+      "BeforeMinimum": 47.96413474240423,
+      "BeforeMaximum": 51.256539235412475,
+      "AfterMinimum": 33.95538603791031,
+      "AfterMaximum": 34.73638465094776
+    },
+    {
+      "Name": "ascii-long-prefix",
+      "BeforeUs": 0.3343277260818306,
+      "AfterUs": 0.2984732857489932,
+      "DeltaUs": -0.03585444033283741,
+      "Percent": -10.72433948360646,
+      "BeforeMinimum": 0.33013399770445806,
+      "BeforeMaximum": 0.33839495366317923,
+      "AfterMinimum": 0.29512253773135033,
+      "AfterMaximum": 0.30184957999290823
+    }
+  ],
+  "AcceptedAdverse": [
+    {
+      "Name": "actual-unicode-miss",
+      "BeforeUs": 0.36314487768845394,
+      "AfterUs": 0.46796572153009725,
+      "DeltaUs": 0.10482084384164331,
+      "Percent": 28.864745252326074,
+      "BeforeMinimum": 0.29145222965418177,
+      "BeforeMaximum": 0.4376978025942598,
+      "AfterMinimum": 0.4599320205148055,
+      "AfterMaximum": 0.47463064095375085,
+      "BeforeProcessMedians": [
+        0.4313758901463642,
+        0.2947588105858338
+      ],
+      "AfterProcessMedians": [
+        0.4654610992839172,
+        0.468157105590365
+      ]
+    },
+    {
+      "Name": "unicode-family-hit",
+      "BeforeUs": 0.27320650240170785,
+      "AfterUs": 0.3068938037922078,
+      "DeltaUs": 0.03368730139049997,
+      "Percent": 12.330343931920051,
+      "BeforeMinimum": 0.2677997247249974,
+      "BeforeMaximum": 0.2781403813081895,
+      "AfterMinimum": 0.2993601926794901,
+      "AfterMaximum": 0.3153853515641254,
+      "BeforeProcessMedians": [
+        0.2705270535769408,
+        0.27585875882108757
+      ],
+      "AfterProcessMedians": [
+        0.3030290493823115,
+        0.31511446951224586
+      ]
+    }
+  ],
+  "MissUncertainty": "Miss before-process medians0.431376/0.294759us,after0.465461/0.468157us. Retain observed+28.86percent/+104.82ns with disjoint ranges;its exact size varies substantially by process. The unchanged miss branch bypasses both substituted calls;no unmeasured causal explanation or normalization.",
+  "OtherControls": "Identical PCRE DLL/control+6.59percent/+20.74ns and anchored FullMatch+4.91percent/+13.86ns have disjoint ranges;they bypass changed calls. BCLcontrol-5.28percent retained without causal credit. Core+1.03percent,ASCIIearly+1.59percent,captured+1.71percent overlap. Tiny ASCIIcomplete-4.71percent overlaps;no stable gain claimed.",
+  "FiniteExtra": {
+    "BeforeUs": 0.16137317324163267,
+    "AfterUs": 0.12836002525521872,
+    "BeforeRelativePercent": 112.84054757495761,
+    "AfterRelativePercent": 98.93655746163881
+  },
+  "Contract": "Strict full-input validation precedes literal discovery. Existing CountUtf16 uses<=4096byte scalar-aligned shaping blocks in place of<=2048byte coordinate-only validation;numeric work charges may fall. Same synchronous original/current token,absolute deadline,sticky denial,parent loans,major admission and retained results. No new fields,allocation,helper,mode or API.",
+  "Checks": "Windows121distinct and Linux121 perTFM,net10/net11. Windows reused104unchanged passes plus15corrected boundaries and2interruption cases. Linux ran all121 once. Original fixture assumptions corrected before timing;producer unchanged.",
+  "EvidenceSha256": "B1B00D51BEBB6713F9407D0719733647156BDC9CD1889CAEC72A71308D1C9E6D",
+  "PackageScope": "Source A/B with fixed Core2377/PCRE10360Windows dev51 companions,not another package comparison. Immutable dev51 packages/source6032,Full6032 receipts and all staged/published bytes preserved. No Full/package rerun.",
+  "RouteProbe": "Шерлок/needle/é*1024 execute the changed successful native branch;é|中|😀 has Fast=false,so its adverse cost bypasses the calls. Misses return before both calls. No causal claim from unrelated disjoint controls."
+}

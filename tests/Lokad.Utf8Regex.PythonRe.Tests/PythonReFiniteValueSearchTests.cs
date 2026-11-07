@@ -70,11 +70,15 @@ public sealed class PythonReFiniteValueSearchTests
         else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
     }
 
-    [Fact]
-    public void EveryWorkCutoffKeepsTheExistingParentLoanAndRefusesPartialSuccess()
+    [Theory]
+    [InlineData("x")]
+    [InlineData("é")]
+    [InlineData("中")]
+    [InlineData("😀")]
+    public void EveryWorkCutoffKeepsTheExistingParentLoanAndRefusesPartialSuccess(string scalar)
     {
         var owner = new Utf8PythonRegex("Шерлок");
-        var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "Шерлок");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, 8192)) + "Шерлок");
         var probe = new Utf8SliceInvocation(new(100000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(probe.Ledger.TryReserve(13));
         Assert.True(owner.MaterializeNativeMatchValue(input, 0, 0, ref probe).Success);
@@ -93,5 +97,79 @@ public sealed class PythonReFiniteValueSearchTests
         Assert.True(exact.Ledger.TryReserve(13));
         Assert.True(owner.MaterializeNativeMatchValue(input, 0, 0, ref exact).Success);
         Assert.Equal(needed, exact.Budget.Steps); Assert.Equal(13UL, exact.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData("é", 4093)] [InlineData("é", 4094)] [InlineData("é", 4095)]
+    [InlineData("é", 4096)] [InlineData("é", 4097)]
+    [InlineData("中", 4093)] [InlineData("中", 4094)] [InlineData("中", 4095)]
+    [InlineData("中", 4096)] [InlineData("中", 4097)]
+    [InlineData("😀", 4093)] [InlineData("😀", 4094)] [InlineData("😀", 4095)]
+    [InlineData("😀", 4096)] [InlineData("😀", 4097)]
+    public void NativeValueCoordinatesKeepCompleteScalarsAcrossSizingBlocks(string scalar, int padding)
+    {
+        var prefix = new string('x', padding) + scalar + "中😀|";
+        var pattern = string.Concat(Enumerable.Repeat("é中😀", 1025));
+        var input = Encoding.UTF8.GetBytes(prefix + pattern + "尾😀");
+        var byteStart = Encoding.UTF8.GetByteCount(prefix);
+        foreach (var mode in new[] { 0, 1, 2 })
+        {
+            using var token = new CancellationTokenSource();
+            using var owner = new Utf8PythonRegex(pattern, default,
+                mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                mode == 0 ? default : Policy);
+            var match = owner.Search(input, 0, mode == 0 ? default : token.Token);
+            Assert.True(match.Success);
+            Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
+                (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            Assert.Equal((prefix.Length, prefix.Length + pattern.Length),
+                (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
+            Assert.False(owner.Search("absent"u8).Success);
+            Assert.Equal(pattern, match.GetValueString());
+            var malformed = new byte[input.Length + 1];
+            input.CopyTo(malformed, 0);
+            malformed[^1] = 0xff;
+            var error = Assert.Throws<ArgumentException>(() => owner.Search(malformed));
+            Assert.Contains($"byte offset {input.Length}.", error.Message);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ObservedCheckpointsKeepOriginalInterruptionAuthorityThroughCoordinatePublication(bool expire)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
+        using var owner = new Utf8PythonRegex("Шерлок", default, timeout, Policy);
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é中😀", 20000)) + "Шерлок");
+        var limits = new Utf8ExecutionLimits(100000, 1, 13, 1);
+        var probe = new Utf8SliceInvocation(limits, timeout, default);
+        var checkpoints = new List<ulong>();
+        // Diagnostics observe the existing 64-step cadence, not every charge.
+        probe.CheckpointHook = checkpoints.Add;
+        Assert.True(owner.MaterializeNativeMatchValue(input, 0, 0, ref probe).Success);
+        Assert.NotEmpty(checkpoints);
+        foreach (var stop in checkpoints)
+        {
+            ticks = 0;
+            using var token = new CancellationTokenSource();
+            var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var reached = false;
+            invocation.CheckpointHook = step =>
+            {
+                if (step != stop) return;
+                reached = true;
+                if (expire) ticks = 1000; else token.Cancel();
+            };
+            Exception? failure = null;
+            try { _ = owner.MaterializeNativeMatchValue(input, 0, 0, ref invocation); }
+            catch (Exception error) { failure = error; }
+            Assert.True(reached);
+            if (expire) Assert.Equal("Шерлок", Assert.IsType<RegexMatchTimeoutException>(failure).Pattern);
+            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
     }
 }

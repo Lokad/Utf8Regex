@@ -1,0 +1,19 @@
+{
+  "Source": "27a5922b5c032cae1b9e143020f92dd1de763bde",
+  "Windows": "104unchanged focused cases +15corrected boundary cases +2new interruption cases pass perTFM;121distinct",
+  "TimingStarted": false,
+  "ProducerEdits": "Only two successful native value coordinate-validation calls become existing CountUtf16 calls",
+  "PreparationCorrections": [
+    "Prefix originally admitted an earlier overlapping exact literal;added separator,test-only.",
+    "Diagnostic callbacks run at64step cadence;collect observed points on larger Unicode prefix,instead of assuming every charged step invokes hook.",
+    "VM checkout is detached;initial pull fetched only. Explicitly advanced clean detached snapshot.",
+    "PowerShell patch serialization usedCRLF;normalized toLF. Initial git apply failed atomically before any producer build/test. Continued after staging without restarting completed tests or timing."
+  ],
+  "LinuxHandle": "19920 terminal0/CLOSED",
+  "CoreFixedWindows": "2377ABAEA55338FEE85B9B56120373CAE1B86F990E58B49C6EDDAA47EC77265F",
+  "BaselinePythonWindows": "1CFE7EE5A428DEF9CD44847461EB37C0646BAA76AEEF0BB580966F75F090201B",
+  "SnapshotCi": "42373996339GREEN/CLOSED",
+  "LinuxChecksPerFramework": 121,
+  "CandidatePythonWindows": "9B88CA5C3FAF2CB81970973F148A11EA712AF5F148E9F56727C9ECCDF7C72BCB",
+  "NextAction": "Prepare fixed19row public Default-process A/B with successful native Unicode/ASCII value routes,ordinary/finite/deadline,complete/short/long prefixes and unchanged miss/capture/anchored/Core/PCRE/BCLcontrols. Declare120souter35sproducer750mswarm75msfiveSamples20msfloor before timing. Atmostonejustifiednoiseconfirmation;promote useful net public gains or restore. No Full/package rerun. Core fixedexactdev51Windows2377,PCREuseexactdev51Windows10360. Keep staged/published bytes and Full51/50 graphs immutable."
+}

@@ -1,0 +1,4 @@
+{"Pattern":"\u0428\u0435\u0440\u043B\u043E\u043A","Fast":true,"CoreRetained":true,"CoreKind":"ExactUtf8Literal","CompleteNative":true,"ChangedSuccessBranch":true}
+{"Pattern":"\u00E9|\u4E2D|\uD83D\uDE00","Fast":false,"CoreRetained":true,"CoreKind":"ExactUtf8Literals","CompleteNative":true,"ChangedSuccessBranch":false}
+{"Pattern":"needle","Fast":true,"CoreRetained":true,"CoreKind":"ExactAsciiLiteral","CompleteNative":true,"ChangedSuccessBranch":true}
+{"Pattern":"\u00E9*1024","Fast":true,"CoreRetained":true,"CoreKind":"ExactUtf8Literal","CompleteNative":true,"ChangedSuccessBranch":true}

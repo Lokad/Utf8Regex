@@ -1,0 +1,12 @@
+using System.Reflection;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+foreach(var pattern in new[]{"Шерлок","é|中|😀","needle",new string('é',1024)})
+{
+ using var owner=new Utf8PythonRegex(pattern);
+ var fast=(bool)typeof(Utf8PythonRegex).GetField("_canUseZeroOffsetUtf8SearchValueFastPath",flags)!.GetValue(owner)!;
+ var core=(Utf8Regex?)typeof(Utf8PythonRegex).GetField("_utf8Regex",flags)!.GetValue(owner);
+ Console.WriteLine(JsonSerializer.Serialize(new{Pattern=pattern.Length<20?pattern:"é*1024",Fast=fast,CoreRetained=core is not null,CoreKind=core?.Inspection.ExecutionKind.ToString(),CompleteNative=core?.CanFindNativeLiteralForResult==true,ChangedSuccessBranch=fast&&core?.CanFindNativeLiteralForResult==true}));
+}
