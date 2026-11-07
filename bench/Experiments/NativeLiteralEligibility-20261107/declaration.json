@@ -1,0 +1,31 @@
+{
+  "Scope": "ONE immutable primary-program eligibility proof A/B;21public rows include2construction operations",
+  "BeforeSource": "088fa1f578ff377badd63bf37eb02614b1e8ec91",
+  "AfterSource": "088fa1f578ff377badd63bf37eb02614b1e8ec91 plus runtime.patch",
+  "CoreBefore": "D91EC6B9517EDF8EC0C65F0E77A4A1F0184FA5FD34869B5B7E44C354FC0B83FB",
+  "CoreAfter": "4760831D74A2CEEAFBD2027F75CD25FD43C683030125B59419FAF7E7F554D9EA",
+  "PythonBefore": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+  "PythonAfter": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+  "PcreBefore": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "PcreAfter": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+  "WorkerSha256": "7F7E7A37759234DCD61E6B1EFF54AEDA3BDF5A70EA342EA86E92A1852F24669B",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "ProducerRows": 21,
+  "Samples": 5,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "Warmup": "750ms/min32",
+  "OuterCapSeconds": 120,
+  "ProducerCapSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "Controls": "Same Python/Pcre/caller bytes;ordinary/finite foldedmiss,foldedhit,Unicode,mail,captures,Core/Pcreliteral",
+  "Acceptance": "Useful overall public gains,retain local absolute costs,ranges and allocations;construction observations explicitly separate",
+  "Confirmation": "At most one justified noise confirmation,no retuning",
+  "TimingStarted": false,
+  "DeclaredAt": "2026-11-07T11:08:16.1399455+01:00"
+}

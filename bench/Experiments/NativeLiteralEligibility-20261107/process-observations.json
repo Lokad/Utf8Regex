@@ -1,0 +1,2886 @@
+[
+  {
+    "Worker": "before-a",
+    "ComparatorsOnly": false,
+    "ElapsedSeconds": 27.0338906,
+    "StartupProcessors": 8,
+    "Affinity": "4",
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "CoreSha256": "D91EC6B9517EDF8EC0C65F0E77A4A1F0184FA5FD34869B5B7E44C354FC0B83FB",
+    "PythonSha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+    "PcreSha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+    "CoreVersion": "0.5.0-dev.50+088fa1f578ff377badd63bf37eb02614b1e8ec91",
+    "LoadedCoreAssemblies": 1,
+    "LoadedPythonAssemblies": 1,
+    "LoadedPcreAssemblies": 1,
+    "Rows": [
+      {
+        "Name": "unchanged-core-literal-count",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 228303,
+        "WarmCalls": 1736546,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.3293272536935564,
+          0.3267412167163813,
+          0.3307153213054581,
+          0.3258406591240588,
+          0.3215406718264762
+        ],
+        "ElapsedMilliseconds": [
+          75.1864,
+          74.596,
+          75.5033,
+          74.3904,
+          73.4087
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "captured-class-ascii-input",
+        "InputBytes": 8195,
+        "InputSha256": "C575018D7430837326614275BC53CE2DB914BFF108F2FDCCD830402B3C2D6450",
+        "Expected": [
+          "aaa"
+        ],
+        "Iterations": 85832,
+        "WarmCalls": 395652,
+        "WarmMilliseconds": 750.0007,
+        "Microseconds": [
+          0.805668049212415,
+          0.7968263584677043,
+          0.8095780128623357,
+          0.8026062540777332,
+          0.8021542082207103
+        ],
+        "ElapsedMilliseconds": [
+          69.1521,
+          68.3932,
+          69.4877,
+          68.8893,
+          68.8505
+        ],
+        "AllocatedBytes": [
+          128,
+          128,
+          128,
+          128,
+          128
+        ]
+      },
+      {
+        "Name": "anchored-fullmatch-control",
+        "InputBytes": 8,
+        "InputSha256": "378A53B80F332FCE39B2EAB0FC2820D46A7A7F91D9CC86BFDFA6B6B758BAC1A6",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 8,
+          "Start16": 0,
+          "End16": 8,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 241043,
+        "WarmCalls": 2262018,
+        "WarmMilliseconds": 750.0001,
+        "Microseconds": [
+          0.30220168185759383,
+          0.3026530536045436,
+          0.29992573939089706,
+          0.29939222462382226,
+          0.30283808283169394
+        ],
+        "ElapsedMilliseconds": [
+          72.8436,
+          72.9524,
+          72.295,
+          72.1664,
+          72.997
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-unlimited",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 197612,
+        "WarmCalls": 1276835,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.3867897698520332,
+          0.3935641560229136,
+          0.38855939922676763,
+          0.38581007226281805,
+          0.3890436815578001
+        ],
+        "ElapsedMilliseconds": [
+          76.4343,
+          77.773,
+          76.784,
+          76.2407,
+          76.8797
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-finite-live",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 161856,
+        "WarmCalls": 1449370,
+        "WarmMilliseconds": 750.0006,
+        "Microseconds": [
+          0.4539362149070779,
+          0.45566305852115463,
+          0.4595078341241598,
+          0.4575468317516806,
+          0.4583413651640965
+        ],
+        "ElapsedMilliseconds": [
+          73.4723,
+          73.7518,
+          74.3741,
+          74.0567,
+          74.1853
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "folded-search-miss",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 203033,
+        "WarmCalls": 1344562,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.3808267621519655,
+          0.3818463008476454,
+          0.3753394768338152,
+          0.37642058187585264,
+          0.37833307885910167
+        ],
+        "ElapsedMilliseconds": [
+          77.3204,
+          77.5274,
+          76.2063,
+          76.4258,
+          76.8141
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-finite-live",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 149860,
+        "WarmCalls": 1287209,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.5127745896169758,
+          0.5067576404644335,
+          0.5024823168290404,
+          0.5012551714933938,
+          0.5062458294408114
+        ],
+        "ElapsedMilliseconds": [
+          76.8444,
+          75.9427,
+          75.302,
+          75.1181,
+          75.866
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "full-unicode-hit-finite-adverse",
+        "InputBytes": 2048,
+        "InputSha256": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 2048,
+          "Start16": 0,
+          "End16": 1024,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 43661,
+        "WarmCalls": 357034,
+        "WarmMilliseconds": 750.002,
+        "Microseconds": [
+          1.719804860172694,
+          1.7092622706763474,
+          1.6961796569020406,
+          1.7017910721238636,
+          1.694782529030485
+        ],
+        "ElapsedMilliseconds": [
+          75.0884,
+          74.6281,
+          74.0569,
+          74.3019,
+          73.9959
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "unicode-hit-finite-live",
+        "InputBytes": 849,
+        "InputSha256": "0FB52BB84F59B4ECBAA6939475C161DC9E24712BB51B820C34EED92BC41B4101",
+        "Expected": {
+          "Success": true,
+          "Start": 837,
+          "End": 849,
+          "Start16": 453,
+          "End16": 459,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 46052,
+        "WarmCalls": 496671,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          1.5702510205854252,
+          1.5847824198731868,
+          1.571703726222531,
+          1.57466559541388,
+          1.567645270563711
+        ],
+        "ElapsedMilliseconds": [
+          72.3132,
+          72.9824,
+          72.3801,
+          72.5165,
+          72.1932
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "long-unicode-miss-finite-live",
+        "InputBytes": 53568,
+        "InputSha256": "5E7AA992F5CAEE39A12A051685677B3FDA19058094F00778C542197F24A6A3A0",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 5839,
+        "WarmCalls": 58577,
+        "WarmMilliseconds": 750.0013,
+        "Microseconds": [
+          12.826271621853058,
+          12.621818804589827,
+          12.817451618427812,
+          12.756602157903751,
+          12.65283438945025
+        ],
+        "ElapsedMilliseconds": [
+          74.8926,
+          73.6988,
+          74.8411,
+          74.4858,
+          73.8799
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "actual-mail-count",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 34,
+        "WarmCalls": 293,
+        "WarmMilliseconds": 751.7113,
+        "Microseconds": [
+          2235.3294117647056,
+          2231.676470588235,
+          2246.223529411765,
+          2245.6352941176474,
+          2235.5617647058825
+        ],
+        "ElapsedMilliseconds": [
+          76.0012,
+          75.877,
+          76.3716,
+          76.3516,
+          76.0091
+        ],
+        "AllocatedBytes": [
+          1544,
+          1544,
+          1544,
+          1544,
+          1544
+        ]
+      },
+      {
+        "Name": "actual-mail-finite-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 23,
+        "WarmCalls": 222,
+        "WarmMilliseconds": 752.6165,
+        "Microseconds": [
+          3385.6260869565217,
+          3377.517391304348,
+          3350.2478260869566,
+          3394.7391304347825,
+          3433.9956521739127
+        ],
+        "ElapsedMilliseconds": [
+          77.8694,
+          77.6829,
+          77.0557,
+          78.079,
+          78.9819
+        ],
+        "AllocatedBytes": [
+          1656,
+          1656,
+          1656,
+          1656,
+          1656
+        ]
+      },
+      {
+        "Name": "actual-mail-deadline-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 21,
+        "WarmCalls": 209,
+        "WarmMilliseconds": 753.0952,
+        "Microseconds": [
+          3547.252380952381,
+          3646.157142857143,
+          3552.514285714286,
+          3590.147619047619,
+          3622.609523809524
+        ],
+        "ElapsedMilliseconds": [
+          74.4923,
+          76.5693,
+          74.6028,
+          75.3931,
+          76.0748
+        ],
+        "AllocatedBytes": [
+          1704,
+          1704,
+          1704,
+          1704,
+          1704
+        ]
+      },
+      {
+        "Name": "dense-ascii-class-union",
+        "InputBytes": 5632,
+        "InputSha256": "E91B28CF4EF8A5D6561C041990B0FE0D4787FE97A4F083374A40D2E8B1C5E874",
+        "Expected": 512,
+        "Iterations": 587,
+        "WarmCalls": 5896,
+        "WarmMilliseconds": 750.1231,
+        "Microseconds": [
+          127.20357751277683,
+          126.38909710391822,
+          127.64071550255538,
+          126.82453151618398,
+          127.8052810902896
+        ],
+        "ElapsedMilliseconds": [
+          74.6685,
+          74.1904,
+          74.9251,
+          74.446,
+          75.0217
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "long-captured-class-union",
+        "InputBytes": 16385,
+        "InputSha256": "DF531677EB4E88A519BCDC9425D77F5D5A38D56C34763134771FA52BF1BBB919",
+        "Expected": 1,
+        "Iterations": 1439,
+        "WarmCalls": 14159,
+        "WarmMilliseconds": 750.0088,
+        "Microseconds": [
+          52.08339124391939,
+          52.36685198054205,
+          52.400138985406535,
+          52.208964558721334,
+          51.57567755385684
+        ],
+        "ElapsedMilliseconds": [
+          74.948,
+          75.3559,
+          75.4038,
+          75.1287,
+          74.2174
+        ],
+        "AllocatedBytes": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      {
+        "Name": "partial-letter-mask-adverse",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 469,
+        "WarmCalls": 4621,
+        "WarmMilliseconds": 750.1295,
+        "Microseconds": [
+          158.64541577825162,
+          156.84371002132198,
+          157.64776119402987,
+          158.4959488272921,
+          158.24754797441366
+        ],
+        "ElapsedMilliseconds": [
+          74.4047,
+          73.5597,
+          73.9368,
+          74.3346,
+          74.2181
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-category-control",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 481,
+        "WarmCalls": 4603,
+        "WarmMilliseconds": 750.0719,
+        "Microseconds": [
+          155.40706860706862,
+          155.9860706860707,
+          156.25467775467774,
+          154.93035343035342,
+          156.0987525987526
+        ],
+        "ElapsedMilliseconds": [
+          74.7508,
+          75.0293,
+          75.1585,
+          74.5215,
+          75.0835
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "pcre-literal-control",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 237459,
+        "WarmCalls": 2039505,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.3120349197124556,
+          0.3134814852248178,
+          0.3133458828682004,
+          0.31389250354798093,
+          0.31366762262116826
+        ],
+        "ElapsedMilliseconds": [
+          74.0955,
+          74.439,
+          74.4068,
+          74.5366,
+          74.4832
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-hit",
+        "InputBytes": 22,
+        "InputSha256": "2D6E3D128BE15868D65E9727B2BF15897BAA4449C02F8CF66F18F0AA480D5EB4",
+        "Expected": {
+          "Success": true,
+          "Start": 7,
+          "End": 15,
+          "Start16": 7,
+          "End16": 15,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 193102,
+        "WarmCalls": 1853512,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          0.38347609035639196,
+          0.3810913403279096,
+          0.37870555457737365,
+          0.377093453200899,
+          0.37940829199076137
+        ],
+        "ElapsedMilliseconds": [
+          74.05,
+          73.5895,
+          73.1288,
+          72.8175,
+          73.2645
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "construct-core-literal",
+        "InputBytes": 6,
+        "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "Expected": 512,
+        "Iterations": 2367,
+        "WarmCalls": 13733,
+        "WarmMilliseconds": 750.0022,
+        "Microseconds": [
+          31.913265737220115,
+          31.181580059146594,
+          31.10506970849176,
+          31.07473595268272,
+          31.176975073933253
+        ],
+        "ElapsedMilliseconds": [
+          75.5387,
+          73.8068,
+          73.6257,
+          73.5539,
+          73.7959
+        ],
+        "AllocatedBytes": [
+          40488,
+          40488,
+          40488,
+          40488,
+          40488
+        ]
+      },
+      {
+        "Name": "construct-python-folded",
+        "InputBytes": 8,
+        "InputSha256": "4BFBDF7EBEE257FF0658B04DB68FECA37C7B68EF3F419B437EFEF43D3F5D84B6",
+        "Expected": 1,
+        "Iterations": 524,
+        "WarmCalls": 4125,
+        "WarmMilliseconds": 750.0776,
+        "Microseconds": [
+          142.39732824427483,
+          140.73816793893127,
+          138.6885496183206,
+          140.0526717557252,
+          139.7358778625954
+        ],
+        "ElapsedMilliseconds": [
+          74.6162,
+          73.7468,
+          72.6728,
+          73.3876,
+          73.2216
+        ],
+        "AllocatedBytes": [
+          221896,
+          221896,
+          221896,
+          221896,
+          221896
+        ]
+      }
+    ]
+  },
+  {
+    "Worker": "after-a",
+    "ComparatorsOnly": false,
+    "ElapsedSeconds": 27.0853665,
+    "StartupProcessors": 8,
+    "Affinity": "4",
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "CoreSha256": "4760831D74A2CEEAFBD2027F75CD25FD43C683030125B59419FAF7E7F554D9EA",
+    "PythonSha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+    "PcreSha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+    "CoreVersion": "0.5.0-dev.50+088fa1f578ff377badd63bf37eb02614b1e8ec91",
+    "LoadedCoreAssemblies": 1,
+    "LoadedPythonAssemblies": 1,
+    "LoadedPcreAssemblies": 1,
+    "Rows": [
+      {
+        "Name": "unchanged-core-literal-count",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 245050,
+        "WarmCalls": 1838420,
+        "WarmMilliseconds": 750.0002,
+        "Microseconds": [
+          0.31080963068761475,
+          0.3053266680269333,
+          0.3078894103244236,
+          0.3070002040399919,
+          0.30695409100183635
+        ],
+        "ElapsedMilliseconds": [
+          76.1639,
+          74.8203,
+          75.4483,
+          75.2304,
+          75.2191
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "captured-class-ascii-input",
+        "InputBytes": 8195,
+        "InputSha256": "C575018D7430837326614275BC53CE2DB914BFF108F2FDCCD830402B3C2D6450",
+        "Expected": [
+          "aaa"
+        ],
+        "Iterations": 83425,
+        "WarmCalls": 386354,
+        "WarmMilliseconds": 750.0001,
+        "Microseconds": [
+          0.8369373688942163,
+          0.8369409649385676,
+          0.8375439017081211,
+          0.8401558285885526,
+          0.8299250824093497
+        ],
+        "ElapsedMilliseconds": [
+          69.8215,
+          69.8218,
+          69.8721,
+          70.09,
+          69.2365
+        ],
+        "AllocatedBytes": [
+          128,
+          128,
+          128,
+          128,
+          128
+        ]
+      },
+      {
+        "Name": "anchored-fullmatch-control",
+        "InputBytes": 8,
+        "InputSha256": "378A53B80F332FCE39B2EAB0FC2820D46A7A7F91D9CC86BFDFA6B6B758BAC1A6",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 8,
+          "Start16": 0,
+          "End16": 8,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 227259,
+        "WarmCalls": 2381629,
+        "WarmMilliseconds": 750.0001,
+        "Microseconds": [
+          0.29333535745559036,
+          0.29236773901143637,
+          0.2928539683796902,
+          0.29070047830888984,
+          0.29325439256531094
+        ],
+        "ElapsedMilliseconds": [
+          66.6631,
+          66.4432,
+          66.5537,
+          66.0643,
+          66.6447
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-unlimited",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 195166,
+        "WarmCalls": 1304470,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          0.38046637221647206,
+          0.3895130299334925,
+          0.3882510273305801,
+          0.38454290193988705,
+          0.3901668323375998
+        ],
+        "ElapsedMilliseconds": [
+          74.2541,
+          76.0197,
+          75.7734,
+          75.0497,
+          76.1473
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-finite-live",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 165739,
+        "WarmCalls": 1478016,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          0.45526882628711407,
+          0.4495888113238284,
+          0.45115814624198286,
+          0.4505191898104851,
+          0.4465527123972028
+        ],
+        "ElapsedMilliseconds": [
+          75.4558,
+          74.5144,
+          74.7745,
+          74.6686,
+          74.0112
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "folded-search-miss",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 208555,
+        "WarmCalls": 1376390,
+        "WarmMilliseconds": 750.0008,
+        "Microseconds": [
+          0.367957613099662,
+          0.36951931145261446,
+          0.36918606602574855,
+          0.36807412912660925,
+          0.3646644769964757
+        ],
+        "ElapsedMilliseconds": [
+          76.7394,
+          77.0651,
+          76.9956,
+          76.7637,
+          76.0526
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-finite-live",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 142587,
+        "WarmCalls": 1265551,
+        "WarmMilliseconds": 750.001,
+        "Microseconds": [
+          0.5210005119681317,
+          0.5219409904128708,
+          0.5167806321754438,
+          0.5159523659239622,
+          0.51932714763618
+        ],
+        "ElapsedMilliseconds": [
+          74.2879,
+          74.422,
+          73.6862,
+          73.5681,
+          74.0493
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "full-unicode-hit-finite-adverse",
+        "InputBytes": 2048,
+        "InputSha256": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 2048,
+          "Start16": 0,
+          "End16": 1024,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 43802,
+        "WarmCalls": 352887,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          1.6910620519610975,
+          1.7385530341080317,
+          1.6819620108670839,
+          1.7243870142915847,
+          1.744879229258938
+        ],
+        "ElapsedMilliseconds": [
+          74.0719,
+          76.1521,
+          73.6733,
+          75.5316,
+          76.4292
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "unicode-hit-finite-live",
+        "InputBytes": 849,
+        "InputSha256": "0FB52BB84F59B4ECBAA6939475C161DC9E24712BB51B820C34EED92BC41B4101",
+        "Expected": {
+          "Success": true,
+          "Start": 837,
+          "End": 849,
+          "Start16": 453,
+          "End16": 459,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 48764,
+        "WarmCalls": 491422,
+        "WarmMilliseconds": 750.0021,
+        "Microseconds": [
+          1.4979021409236322,
+          1.5088261832499386,
+          1.5125830530719384,
+          1.4987941924370436,
+          1.4975063571487162
+        ],
+        "ElapsedMilliseconds": [
+          73.0437,
+          73.5764,
+          73.7596,
+          73.0872,
+          73.0244
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "long-unicode-miss-finite-live",
+        "InputBytes": 53568,
+        "InputSha256": "5E7AA992F5CAEE39A12A051685677B3FDA19058094F00778C542197F24A6A3A0",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 5921,
+        "WarmCalls": 58893,
+        "WarmMilliseconds": 750.0088,
+        "Microseconds": [
+          12.705961830771829,
+          12.741631481168724,
+          12.80077689579463,
+          12.787586556324946,
+          12.622766424590441
+        ],
+        "ElapsedMilliseconds": [
+          75.232,
+          75.4432,
+          75.7934,
+          75.7153,
+          74.7394
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "actual-mail-count",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 35,
+        "WarmCalls": 290,
+        "WarmMilliseconds": 751.1166,
+        "Microseconds": [
+          2240.2314285714288,
+          2258.037142857143,
+          2250.5057142857145,
+          2262.5485714285714,
+          2244.7371428571428
+        ],
+        "ElapsedMilliseconds": [
+          78.4081,
+          79.0313,
+          78.7677,
+          79.1892,
+          78.5658
+        ],
+        "AllocatedBytes": [
+          1544,
+          1544,
+          1544,
+          1544,
+          1544
+        ]
+      },
+      {
+        "Name": "actual-mail-finite-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 23,
+        "WarmCalls": 223,
+        "WarmMilliseconds": 753.3143,
+        "Microseconds": [
+          3348.891304347826,
+          3360.0913043478263,
+          3356.7608695652175,
+          3352.365217391304,
+          3373.2782608695657
+        ],
+        "ElapsedMilliseconds": [
+          77.0245,
+          77.2821,
+          77.2055,
+          77.1044,
+          77.5854
+        ],
+        "AllocatedBytes": [
+          1656,
+          1656,
+          1656,
+          1656,
+          1656
+        ]
+      },
+      {
+        "Name": "actual-mail-deadline-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 21,
+        "WarmCalls": 210,
+        "WarmMilliseconds": 751.6742,
+        "Microseconds": [
+          3595.8714285714286,
+          3622.6380952380955,
+          3614.0714285714284,
+          3530.4380952380952,
+          3563.87619047619
+        ],
+        "ElapsedMilliseconds": [
+          75.5133,
+          76.0754,
+          75.8955,
+          74.1392,
+          74.8414
+        ],
+        "AllocatedBytes": [
+          1704,
+          1704,
+          1704,
+          1704,
+          1704
+        ]
+      },
+      {
+        "Name": "dense-ascii-class-union",
+        "InputBytes": 5632,
+        "InputSha256": "E91B28CF4EF8A5D6561C041990B0FE0D4787FE97A4F083374A40D2E8B1C5E874",
+        "Expected": 512,
+        "Iterations": 596,
+        "WarmCalls": 6001,
+        "WarmMilliseconds": 750.0074,
+        "Microseconds": [
+          126.22416107382551,
+          126.37432885906041,
+          127.03741610738253,
+          126.38255033557047,
+          125.68808724832216
+        ],
+        "ElapsedMilliseconds": [
+          75.2296,
+          75.3191,
+          75.7143,
+          75.324,
+          74.9101
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "long-captured-class-union",
+        "InputBytes": 16385,
+        "InputSha256": "DF531677EB4E88A519BCDC9425D77F5D5A38D56C34763134771FA52BF1BBB919",
+        "Expected": 1,
+        "Iterations": 1432,
+        "WarmCalls": 14306,
+        "WarmMilliseconds": 750.0353,
+        "Microseconds": [
+          53.1743715083799,
+          52.312290502793296,
+          52.162779329608945,
+          52.05789106145251,
+          51.76878491620112
+        ],
+        "ElapsedMilliseconds": [
+          76.1457,
+          74.9112,
+          74.6971,
+          74.5469,
+          74.1329
+        ],
+        "AllocatedBytes": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      {
+        "Name": "partial-letter-mask-adverse",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 486,
+        "WarmCalls": 4709,
+        "WarmMilliseconds": 750.1055,
+        "Microseconds": [
+          155.45123456790125,
+          155.8343621399177,
+          155.02572016460906,
+          153.83415637860085,
+          155.05267489711932
+        ],
+        "ElapsedMilliseconds": [
+          75.5493,
+          75.7355,
+          75.3425,
+          74.7634,
+          75.3556
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-category-control",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 496,
+        "WarmCalls": 4692,
+        "WarmMilliseconds": 750.1347,
+        "Microseconds": [
+          151.61532258064514,
+          150.61975806451613,
+          151.1155241935484,
+          152.55,
+          152.71915322580645
+        ],
+        "ElapsedMilliseconds": [
+          75.2012,
+          74.7074,
+          74.9533,
+          75.6648,
+          75.7487
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "pcre-literal-control",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 232593,
+        "WarmCalls": 1961030,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.31166716109255227,
+          0.31309110764296433,
+          0.3139741952681293,
+          0.31400730030568413,
+          0.3140111697256581
+        ],
+        "ElapsedMilliseconds": [
+          72.4916,
+          72.8228,
+          73.0282,
+          73.0359,
+          73.0368
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-hit",
+        "InputBytes": 22,
+        "InputSha256": "2D6E3D128BE15868D65E9727B2BF15897BAA4449C02F8CF66F18F0AA480D5EB4",
+        "Expected": {
+          "Success": true,
+          "Start": 7,
+          "End": 15,
+          "Start16": 7,
+          "End16": 15,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 204080,
+        "WarmCalls": 1902141,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.36333055664445313,
+          0.3609961779694238,
+          0.3612426499411995,
+          0.36049735397883187,
+          0.3644428655429243
+        ],
+        "ElapsedMilliseconds": [
+          74.1485,
+          73.6721,
+          73.7224,
+          73.5703,
+          74.3755
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "construct-core-literal",
+        "InputBytes": 6,
+        "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "Expected": 512,
+        "Iterations": 2342,
+        "WarmCalls": 13494,
+        "WarmMilliseconds": 750.0289,
+        "Microseconds": [
+          32.81430401366354,
+          31.727583262169087,
+          31.52732707087959,
+          31.400469684030746,
+          31.24752348420154
+        ],
+        "ElapsedMilliseconds": [
+          76.8511,
+          74.306,
+          73.837,
+          73.5399,
+          73.1817
+        ],
+        "AllocatedBytes": [
+          40488,
+          40488,
+          40488,
+          40488,
+          40488
+        ]
+      },
+      {
+        "Name": "construct-python-folded",
+        "InputBytes": 8,
+        "InputSha256": "4BFBDF7EBEE257FF0658B04DB68FECA37C7B68EF3F419B437EFEF43D3F5D84B6",
+        "Expected": 1,
+        "Iterations": 506,
+        "WarmCalls": 3929,
+        "WarmMilliseconds": 750.01,
+        "Microseconds": [
+          144.5088932806324,
+          139.91343873517786,
+          138.5290513833992,
+          140.45533596837947,
+          139.9302371541502
+        ],
+        "ElapsedMilliseconds": [
+          73.1215,
+          70.7962,
+          70.0957,
+          71.0704,
+          70.8047
+        ],
+        "AllocatedBytes": [
+          221896,
+          221896,
+          221896,
+          221896,
+          221896
+        ]
+      }
+    ]
+  },
+  {
+    "Worker": "after-b",
+    "ComparatorsOnly": false,
+    "ElapsedSeconds": 27.0548771,
+    "StartupProcessors": 8,
+    "Affinity": "4",
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "CoreSha256": "4760831D74A2CEEAFBD2027F75CD25FD43C683030125B59419FAF7E7F554D9EA",
+    "PythonSha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+    "PcreSha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+    "CoreVersion": "0.5.0-dev.50+088fa1f578ff377badd63bf37eb02614b1e8ec91",
+    "LoadedCoreAssemblies": 1,
+    "LoadedPythonAssemblies": 1,
+    "LoadedPcreAssemblies": 1,
+    "Rows": [
+      {
+        "Name": "unchanged-core-literal-count",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 239863,
+        "WarmCalls": 1803400,
+        "WarmMilliseconds": 750,
+        "Microseconds": [
+          0.3145408003735466,
+          0.31422311903044653,
+          0.3150123195323997,
+          0.3150769397531091,
+          0.31385457532007854
+        ],
+        "ElapsedMilliseconds": [
+          75.4467,
+          75.3705,
+          75.5598,
+          75.5753,
+          75.2821
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "captured-class-ascii-input",
+        "InputBytes": 8195,
+        "InputSha256": "C575018D7430837326614275BC53CE2DB914BFF108F2FDCCD830402B3C2D6450",
+        "Expected": [
+          "aaa"
+        ],
+        "Iterations": 85018,
+        "WarmCalls": 386104,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.8247900444611729,
+          0.8197734597379378,
+          0.8070032228469266,
+          0.8211931590957209,
+          0.810685972382319
+        ],
+        "ElapsedMilliseconds": [
+          70.122,
+          69.6955,
+          68.6098,
+          69.8162,
+          68.9229
+        ],
+        "AllocatedBytes": [
+          128,
+          128,
+          128,
+          128,
+          128
+        ]
+      },
+      {
+        "Name": "anchored-fullmatch-control",
+        "InputBytes": 8,
+        "InputSha256": "378A53B80F332FCE39B2EAB0FC2820D46A7A7F91D9CC86BFDFA6B6B758BAC1A6",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 8,
+          "Start16": 0,
+          "End16": 8,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 237123,
+        "WarmCalls": 2283415,
+        "WarmMilliseconds": 750,
+        "Microseconds": [
+          0.30406582237910285,
+          0.30489914516938466,
+          0.3013153511047009,
+          0.3024927990958279,
+          0.30825099210114587
+        ],
+        "ElapsedMilliseconds": [
+          72.101,
+          72.2986,
+          71.4488,
+          71.728,
+          73.0934
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-unlimited",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 198069,
+        "WarmCalls": 1318314,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.38635223078826064,
+          0.38654357824798424,
+          0.3827004730674664,
+          0.37961568948194824,
+          0.3840474784039905
+        ],
+        "ElapsedMilliseconds": [
+          76.5244,
+          76.5623,
+          75.8011,
+          75.1901,
+          76.0679
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-finite-live",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 167032,
+        "WarmCalls": 1494129,
+        "WarmMilliseconds": 750.0006,
+        "Microseconds": [
+          0.45311676804444656,
+          0.44654676948129696,
+          0.44110709325159253,
+          0.44283670194932706,
+          0.43945830739020064
+        ],
+        "ElapsedMilliseconds": [
+          75.685,
+          74.5876,
+          73.679,
+          73.9679,
+          73.4036
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "folded-search-miss",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 202611,
+        "WarmCalls": 1354001,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.38129716550434084,
+          0.37838468789947244,
+          0.38191114993756514,
+          0.3786526891432351,
+          0.37713648321167165
+        ],
+        "ElapsedMilliseconds": [
+          77.255,
+          76.6649,
+          77.3794,
+          76.7192,
+          76.412
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-finite-live",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 140498,
+        "WarmCalls": 1240023,
+        "WarmMilliseconds": 750.0006,
+        "Microseconds": [
+          0.5391023359763129,
+          0.5363720480006833,
+          0.536691625503566,
+          0.5366944725191818,
+          0.5334410454241342
+        ],
+        "ElapsedMilliseconds": [
+          75.7428,
+          75.3592,
+          75.4041,
+          75.4045,
+          74.9474
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "full-unicode-hit-finite-adverse",
+        "InputBytes": 2048,
+        "InputSha256": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 2048,
+          "Start16": 0,
+          "End16": 1024,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 42380,
+        "WarmCalls": 354395,
+        "WarmMilliseconds": 750.0009,
+        "Microseconds": [
+          1.734976403964134,
+          1.757069372345446,
+          1.7410500235960362,
+          1.7312671071260026,
+          1.748223218499292
+        ],
+        "ElapsedMilliseconds": [
+          73.5283,
+          74.4646,
+          73.7857,
+          73.3711,
+          74.0897
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "unicode-hit-finite-live",
+        "InputBytes": 849,
+        "InputSha256": "0FB52BB84F59B4ECBAA6939475C161DC9E24712BB51B820C34EED92BC41B4101",
+        "Expected": {
+          "Success": true,
+          "Start": 837,
+          "End": 849,
+          "Start16": 453,
+          "End16": 459,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 48905,
+        "WarmCalls": 494423,
+        "WarmMilliseconds": 750.0017,
+        "Microseconds": [
+          1.5107719047132195,
+          1.5241958899907986,
+          1.5052632655147737,
+          1.5427747674061956,
+          1.5105756057662816
+        ],
+        "ElapsedMilliseconds": [
+          73.8843,
+          74.5408,
+          73.6149,
+          75.4494,
+          73.8747
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "long-unicode-miss-finite-live",
+        "InputBytes": 53568,
+        "InputSha256": "5E7AA992F5CAEE39A12A051685677B3FDA19058094F00778C542197F24A6A3A0",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 5891,
+        "WarmCalls": 58920,
+        "WarmMilliseconds": 750.0034,
+        "Microseconds": [
+          12.75489730096758,
+          12.778136139874384,
+          12.761636394500083,
+          12.838601256153455,
+          12.69125785095909
+        ],
+        "ElapsedMilliseconds": [
+          75.1391,
+          75.276,
+          75.1788,
+          75.6322,
+          74.7642
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "actual-mail-count",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 35,
+        "WarmCalls": 293,
+        "WarmMilliseconds": 751.1506,
+        "Microseconds": [
+          2197.6742857142854,
+          2186.88,
+          2209.0400000000004,
+          2192.8628571428576,
+          2220.9142857142856
+        ],
+        "ElapsedMilliseconds": [
+          76.9186,
+          76.5408,
+          77.3164,
+          76.7502,
+          77.732
+        ],
+        "AllocatedBytes": [
+          1544,
+          1544,
+          1544,
+          1544,
+          1544
+        ]
+      },
+      {
+        "Name": "actual-mail-finite-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 24,
+        "WarmCalls": 228,
+        "WarmMilliseconds": 750.542,
+        "Microseconds": [
+          3310.4583333333335,
+          3278.454166666667,
+          3274.7250000000004,
+          3259.5541666666663,
+          3273.4874999999997
+        ],
+        "ElapsedMilliseconds": [
+          79.451,
+          78.6829,
+          78.5934,
+          78.2293,
+          78.5637
+        ],
+        "AllocatedBytes": [
+          1656,
+          1656,
+          1656,
+          1656,
+          1656
+        ]
+      },
+      {
+        "Name": "actual-mail-deadline-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 22,
+        "WarmCalls": 212,
+        "WarmMilliseconds": 751.2227,
+        "Microseconds": [
+          3549.809090909091,
+          3625.0954545454547,
+          3568.1545454545453,
+          3549.068181818182,
+          3536.9136363636367
+        ],
+        "ElapsedMilliseconds": [
+          78.0958,
+          79.7521,
+          78.4994,
+          78.0795,
+          77.8121
+        ],
+        "AllocatedBytes": [
+          1704,
+          1704,
+          1704,
+          1704,
+          1704
+        ]
+      },
+      {
+        "Name": "dense-ascii-class-union",
+        "InputBytes": 5632,
+        "InputSha256": "E91B28CF4EF8A5D6561C041990B0FE0D4787FE97A4F083374A40D2E8B1C5E874",
+        "Expected": 512,
+        "Iterations": 588,
+        "WarmCalls": 5854,
+        "WarmMilliseconds": 750.0033,
+        "Microseconds": [
+          128.4355442176871,
+          128.03452380952382,
+          129.22653061224491,
+          128.6658163265306,
+          127.23486394557821
+        ],
+        "ElapsedMilliseconds": [
+          75.5201,
+          75.2843,
+          75.9852,
+          75.6555,
+          74.8141
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "long-captured-class-union",
+        "InputBytes": 16385,
+        "InputSha256": "DF531677EB4E88A519BCDC9425D77F5D5A38D56C34763134771FA52BF1BBB919",
+        "Expected": 1,
+        "Iterations": 1441,
+        "WarmCalls": 14085,
+        "WarmMilliseconds": 750.0274,
+        "Microseconds": [
+          52.719916724496876,
+          52.59528105482304,
+          52.48584316446911,
+          52.564746703678004,
+          52.203539208882724
+        ],
+        "ElapsedMilliseconds": [
+          75.9694,
+          75.7898,
+          75.6321,
+          75.7458,
+          75.2253
+        ],
+        "AllocatedBytes": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      {
+        "Name": "partial-letter-mask-adverse",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 472,
+        "WarmCalls": 4627,
+        "WarmMilliseconds": 750.0263,
+        "Microseconds": [
+          161.14830508474577,
+          164.82690677966102,
+          158.55105932203392,
+          157.75593220338985,
+          159.00677966101694
+        ],
+        "ElapsedMilliseconds": [
+          76.062,
+          77.7983,
+          74.8361,
+          74.4608,
+          75.0512
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-category-control",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 478,
+        "WarmCalls": 4612,
+        "WarmMilliseconds": 750.0739,
+        "Microseconds": [
+          155.38912133891213,
+          157.21401673640167,
+          157.73075313807533,
+          156.47092050209204,
+          155.78284518828454
+        ],
+        "ElapsedMilliseconds": [
+          74.276,
+          75.1483,
+          75.3953,
+          74.7931,
+          74.4642
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "pcre-literal-control",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 214945,
+        "WarmCalls": 1855424,
+        "WarmMilliseconds": 750.0002,
+        "Microseconds": [
+          0.34729488939030917,
+          0.35035195049896484,
+          0.34883667915048033,
+          0.34434529763427857,
+          0.3475805438600572
+        ],
+        "ElapsedMilliseconds": [
+          74.6493,
+          75.3064,
+          74.9807,
+          74.0153,
+          74.7107
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-hit",
+        "InputBytes": 22,
+        "InputSha256": "2D6E3D128BE15868D65E9727B2BF15897BAA4449C02F8CF66F18F0AA480D5EB4",
+        "Expected": {
+          "Success": true,
+          "Start": 7,
+          "End": 15,
+          "Start16": 7,
+          "End16": 15,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 199506,
+        "WarmCalls": 1846614,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          0.37234068148326366,
+          0.36929666275700984,
+          0.37341583711768067,
+          0.37453359798702796,
+          0.3743250829548986
+        ],
+        "ElapsedMilliseconds": [
+          74.2842,
+          73.6769,
+          74.4987,
+          74.7217,
+          74.6801
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "construct-core-literal",
+        "InputBytes": 6,
+        "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "Expected": 512,
+        "Iterations": 2355,
+        "WarmCalls": 13681,
+        "WarmMilliseconds": 750.007,
+        "Microseconds": [
+          32.42912951167728,
+          31.52968152866242,
+          31.466539278131634,
+          31.570912951167728,
+          31.52178343949045
+        ],
+        "ElapsedMilliseconds": [
+          76.3706,
+          74.2524,
+          74.1037,
+          74.3495,
+          74.2338
+        ],
+        "AllocatedBytes": [
+          40488,
+          40488,
+          40488,
+          40488,
+          40488
+        ]
+      },
+      {
+        "Name": "construct-python-folded",
+        "InputBytes": 8,
+        "InputSha256": "4BFBDF7EBEE257FF0658B04DB68FECA37C7B68EF3F419B437EFEF43D3F5D84B6",
+        "Expected": 1,
+        "Iterations": 524,
+        "WarmCalls": 4036,
+        "WarmMilliseconds": 750.0288,
+        "Microseconds": [
+          139.17270992366412,
+          140.2612595419847,
+          137.81087786259545,
+          139.60019083969465,
+          137.73435114503815
+        ],
+        "ElapsedMilliseconds": [
+          72.9265,
+          73.4969,
+          72.2129,
+          73.1505,
+          72.1728
+        ],
+        "AllocatedBytes": [
+          221896,
+          221896,
+          221896,
+          221896,
+          221896
+        ]
+      }
+    ]
+  },
+  {
+    "Worker": "before-b",
+    "ComparatorsOnly": false,
+    "ElapsedSeconds": 27.0569018,
+    "StartupProcessors": 8,
+    "Affinity": "4",
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "CoreSha256": "D91EC6B9517EDF8EC0C65F0E77A4A1F0184FA5FD34869B5B7E44C354FC0B83FB",
+    "PythonSha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE",
+    "PcreSha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F",
+    "CoreVersion": "0.5.0-dev.50+088fa1f578ff377badd63bf37eb02614b1e8ec91",
+    "LoadedCoreAssemblies": 1,
+    "LoadedPythonAssemblies": 1,
+    "LoadedPcreAssemblies": 1,
+    "Rows": [
+      {
+        "Name": "unchanged-core-literal-count",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 230001,
+        "WarmCalls": 1712577,
+        "WarmMilliseconds": 750.0002,
+        "Microseconds": [
+          0.3220429476393581,
+          0.32585206151277596,
+          0.3286850926735101,
+          0.3268229268568398,
+          0.32068208399093917
+        ],
+        "ElapsedMilliseconds": [
+          74.0702,
+          74.9463,
+          75.5979,
+          75.1696,
+          73.7572
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "captured-class-ascii-input",
+        "InputBytes": 8195,
+        "InputSha256": "C575018D7430837326614275BC53CE2DB914BFF108F2FDCCD830402B3C2D6450",
+        "Expected": [
+          "aaa"
+        ],
+        "Iterations": 84076,
+        "WarmCalls": 382832,
+        "WarmMilliseconds": 750.0001,
+        "Microseconds": [
+          0.8288572244160045,
+          0.8296993196631619,
+          0.833053427850992,
+          0.8334804224749036,
+          0.8323528712117609
+        ],
+        "ElapsedMilliseconds": [
+          69.687,
+          69.7578,
+          70.0398,
+          70.0757,
+          69.9809
+        ],
+        "AllocatedBytes": [
+          128,
+          128,
+          128,
+          128,
+          128
+        ]
+      },
+      {
+        "Name": "anchored-fullmatch-control",
+        "InputBytes": 8,
+        "InputSha256": "378A53B80F332FCE39B2EAB0FC2820D46A7A7F91D9CC86BFDFA6B6B758BAC1A6",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 8,
+          "Start16": 0,
+          "End16": 8,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 231006,
+        "WarmCalls": 2314266,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.29515467130723877,
+          0.29832861484117296,
+          0.2901535025064284,
+          0.28859077253404675,
+          0.2886565716907786
+        ],
+        "ElapsedMilliseconds": [
+          68.1825,
+          68.9157,
+          67.0272,
+          66.6662,
+          66.6814
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-unlimited",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 195248,
+        "WarmCalls": 1278280,
+        "WarmMilliseconds": 750.0005,
+        "Microseconds": [
+          0.38517782512496934,
+          0.38597629681225926,
+          0.3898441981479963,
+          0.38143591739736127,
+          0.385609583708924
+        ],
+        "ElapsedMilliseconds": [
+          75.2052,
+          75.3611,
+          76.1163,
+          74.4746,
+          75.2895
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "actual-unicode-miss-finite-live",
+        "InputBytes": 837,
+        "InputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 163639,
+        "WarmCalls": 1480337,
+        "WarmMilliseconds": 750.0012,
+        "Microseconds": [
+          0.45879221945868653,
+          0.4521752149548702,
+          0.4539046315364919,
+          0.4524245442712312,
+          0.45546110645995147
+        ],
+        "ElapsedMilliseconds": [
+          75.0763,
+          73.9935,
+          74.2765,
+          74.0343,
+          74.5312
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "folded-search-miss",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 195307,
+        "WarmCalls": 1339745,
+        "WarmMilliseconds": 750.0003,
+        "Microseconds": [
+          0.3888621503581541,
+          0.3873179148724828,
+          0.3883557680984297,
+          0.38425965275182145,
+          0.389425878232731
+        ],
+        "ElapsedMilliseconds": [
+          75.9475,
+          75.6459,
+          75.8486,
+          75.0486,
+          76.0576
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-finite-live",
+        "InputBytes": 20,
+        "InputSha256": "0BE68FC6F954503E9493B695377567A7359CD97E19209EEDCE42834D137A0139",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 139016,
+        "WarmCalls": 1225211,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.533197617540427,
+          0.5275306439546527,
+          0.5304245554468551,
+          0.5300857455256949,
+          0.5309475168325948
+        ],
+        "ElapsedMilliseconds": [
+          74.123,
+          73.3352,
+          73.7375,
+          73.6904,
+          73.8102
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "full-unicode-hit-finite-adverse",
+        "InputBytes": 2048,
+        "InputSha256": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Expected": {
+          "Success": true,
+          "Start": 0,
+          "End": 2048,
+          "Start16": 0,
+          "End16": 1024,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 43956,
+        "WarmCalls": 353123,
+        "WarmMilliseconds": 750.001,
+        "Microseconds": [
+          1.691166166166166,
+          1.69999544999545,
+          1.6842524342524343,
+          1.6942442442442442,
+          1.704040404040404
+        ],
+        "ElapsedMilliseconds": [
+          74.3369,
+          74.725,
+          74.033,
+          74.4722,
+          74.9028
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "unicode-hit-finite-live",
+        "InputBytes": 849,
+        "InputSha256": "0FB52BB84F59B4ECBAA6939475C161DC9E24712BB51B820C34EED92BC41B4101",
+        "Expected": {
+          "Success": true,
+          "Start": 837,
+          "End": 849,
+          "Start16": 453,
+          "End16": 459,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 45909,
+        "WarmCalls": 492077,
+        "WarmMilliseconds": 750.0013,
+        "Microseconds": [
+          1.5192685530070356,
+          1.5150166633993334,
+          1.5321353111590321,
+          1.5315972902916637,
+          1.5134592345727416
+        ],
+        "ElapsedMilliseconds": [
+          69.7481,
+          69.5529,
+          70.3388,
+          70.3141,
+          69.4814
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "long-unicode-miss-finite-live",
+        "InputBytes": 53568,
+        "InputSha256": "5E7AA992F5CAEE39A12A051685677B3FDA19058094F00778C542197F24A6A3A0",
+        "Expected": {
+          "Success": false,
+          "Start": 0,
+          "End": 0,
+          "Start16": 0,
+          "End16": 0,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 6019,
+        "WarmCalls": 59126,
+        "WarmMilliseconds": 750.0014,
+        "Microseconds": [
+          12.753547100847316,
+          12.770576507725536,
+          12.574962618375144,
+          12.642016946336598,
+          12.69403555407875
+        ],
+        "ElapsedMilliseconds": [
+          76.7636,
+          76.8661,
+          75.6887,
+          76.0923,
+          76.4054
+        ],
+        "AllocatedBytes": [
+          112,
+          112,
+          112,
+          112,
+          112
+        ]
+      },
+      {
+        "Name": "actual-mail-count",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 34,
+        "WarmCalls": 289,
+        "WarmMilliseconds": 750.4062,
+        "Microseconds": [
+          2283.064705882353,
+          2253.9117647058824,
+          2264.0852941176468,
+          2290.755882352941,
+          2282.6676470588236
+        ],
+        "ElapsedMilliseconds": [
+          77.6242,
+          76.633,
+          76.9789,
+          77.8857,
+          77.6107
+        ],
+        "AllocatedBytes": [
+          1544,
+          1544,
+          1544,
+          1544,
+          1544
+        ]
+      },
+      {
+        "Name": "actual-mail-finite-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 22,
+        "WarmCalls": 221,
+        "WarmMilliseconds": 752.7775,
+        "Microseconds": [
+          3391.090909090909,
+          3409.2045454545455,
+          3401.190909090909,
+          3396.690909090909,
+          3378.6727272727276
+        ],
+        "ElapsedMilliseconds": [
+          74.604,
+          75.0025,
+          74.8262,
+          74.7272,
+          74.3308
+        ],
+        "AllocatedBytes": [
+          1656,
+          1656,
+          1656,
+          1656,
+          1656
+        ]
+      },
+      {
+        "Name": "actual-mail-deadline-live",
+        "InputBytes": 6839410,
+        "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+        "Expected": 92,
+        "Iterations": 22,
+        "WarmCalls": 207,
+        "WarmMilliseconds": 750.8669,
+        "Microseconds": [
+          3601.9272727272732,
+          3585.740909090909,
+          3609.4045454545453,
+          3610.25,
+          3586.9954545454543
+        ],
+        "ElapsedMilliseconds": [
+          79.2424,
+          78.8863,
+          79.4069,
+          79.4255,
+          78.9139
+        ],
+        "AllocatedBytes": [
+          1704,
+          1704,
+          1704,
+          1704,
+          1704
+        ]
+      },
+      {
+        "Name": "dense-ascii-class-union",
+        "InputBytes": 5632,
+        "InputSha256": "E91B28CF4EF8A5D6561C041990B0FE0D4787FE97A4F083374A40D2E8B1C5E874",
+        "Expected": 512,
+        "Iterations": 592,
+        "WarmCalls": 5922,
+        "WarmMilliseconds": 750.0967,
+        "Microseconds": [
+          125.80591216216214,
+          127.09510135135136,
+          125.17500000000001,
+          126.51942567567568,
+          127.08040540540541
+        ],
+        "ElapsedMilliseconds": [
+          74.4771,
+          75.2403,
+          74.1036,
+          74.8995,
+          75.2316
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "long-captured-class-union",
+        "InputBytes": 16385,
+        "InputSha256": "DF531677EB4E88A519BCDC9425D77F5D5A38D56C34763134771FA52BF1BBB919",
+        "Expected": 1,
+        "Iterations": 1430,
+        "WarmCalls": 14234,
+        "WarmMilliseconds": 750.021,
+        "Microseconds": [
+          52.857342657342656,
+          52.341538461538455,
+          52.650069930069925,
+          51.908181818181816,
+          52.51573426573427
+        ],
+        "ElapsedMilliseconds": [
+          75.586,
+          74.8484,
+          75.2896,
+          74.2287,
+          75.0975
+        ],
+        "AllocatedBytes": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      {
+        "Name": "partial-letter-mask-adverse",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 484,
+        "WarmCalls": 4707,
+        "WarmMilliseconds": 750.1033,
+        "Microseconds": [
+          155.5373966942149,
+          154.7396694214876,
+          154.01322314049585,
+          155.69710743801653,
+          153.76880165289253
+        ],
+        "ElapsedMilliseconds": [
+          75.2801,
+          74.894,
+          74.5424,
+          75.3574,
+          74.4241
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-category-control",
+        "InputBytes": 3584,
+        "InputSha256": "08E76F6E991892DEA80C55B519A65C768DC1D091E503A7F8EAD05FAFE87C911B",
+        "Expected": 512,
+        "Iterations": 500,
+        "WarmCalls": 4764,
+        "WarmMilliseconds": 750.0586,
+        "Microseconds": [
+          150.4636,
+          148.8348,
+          149.3106,
+          150.6426,
+          148.023
+        ],
+        "ElapsedMilliseconds": [
+          75.2318,
+          74.4174,
+          74.6553,
+          75.3213,
+          74.0115
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "pcre-literal-control",
+        "InputBytes": 8198,
+        "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+        "Expected": 1,
+        "Iterations": 238997,
+        "WarmCalls": 2066651,
+        "WarmMilliseconds": 750,
+        "Microseconds": [
+          0.31132692042159527,
+          0.3108955342535681,
+          0.3099243923563894,
+          0.3075666221751737,
+          0.3137056113675067
+        ],
+        "ElapsedMilliseconds": [
+          74.4062,
+          74.3031,
+          74.071,
+          73.5075,
+          74.9747
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "folded-search-hit",
+        "InputBytes": 22,
+        "InputSha256": "2D6E3D128BE15868D65E9727B2BF15897BAA4449C02F8CF66F18F0AA480D5EB4",
+        "Expected": {
+          "Success": true,
+          "Start": 7,
+          "End": 15,
+          "Start16": 7,
+          "End16": 15,
+          "Captures": 0,
+          "LastIndex": 0
+        },
+        "Iterations": 194538,
+        "WarmCalls": 1825580,
+        "WarmMilliseconds": 750.0004,
+        "Microseconds": [
+          0.37900872837183486,
+          0.38268204669524725,
+          0.38057191911091925,
+          0.37527064121148573,
+          0.3814108297607665
+        ],
+        "ElapsedMilliseconds": [
+          73.7316,
+          74.4462,
+          74.0357,
+          73.0044,
+          74.1989
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Name": "construct-core-literal",
+        "InputBytes": 6,
+        "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "Expected": 512,
+        "Iterations": 2418,
+        "WarmCalls": 13872,
+        "WarmMilliseconds": 750.0227,
+        "Microseconds": [
+          31.698842018196856,
+          30.898842018196856,
+          31.155293631100083,
+          31.02224979321753,
+          30.542183622828784
+        ],
+        "ElapsedMilliseconds": [
+          76.6478,
+          74.7134,
+          75.3335,
+          75.0118,
+          73.851
+        ],
+        "AllocatedBytes": [
+          40488,
+          40488,
+          40488,
+          40488,
+          40488
+        ]
+      },
+      {
+        "Name": "construct-python-folded",
+        "InputBytes": 8,
+        "InputSha256": "4BFBDF7EBEE257FF0658B04DB68FECA37C7B68EF3F419B437EFEF43D3F5D84B6",
+        "Expected": 1,
+        "Iterations": 510,
+        "WarmCalls": 3971,
+        "WarmMilliseconds": 750.1466,
+        "Microseconds": [
+          145.67960784313723,
+          139.49843137254902,
+          140.46784313725487,
+          140.32039215686274,
+          141.4829411764706
+        ],
+        "ElapsedMilliseconds": [
+          74.2966,
+          71.1442,
+          71.6386,
+          71.5634,
+          72.1563
+        ],
+        "AllocatedBytes": [
+          221896,
+          221896,
+          221896,
+          221896,
+          221896
+        ]
+      }
+    ]
+  }
+]

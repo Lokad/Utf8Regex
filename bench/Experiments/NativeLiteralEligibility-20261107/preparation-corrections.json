@@ -1,0 +1,11 @@
+{
+  "Stage": "Untimed public-result preflight",
+  "ExpectedError": "Core default constructor Options is CultureInvariant;worker expected None",
+  "PreflightExit": 134,
+  "ComparisonStarted": false,
+  "Correction": "Only expected enum corrected before the sole timed ABBA;producer graphs,inputs and settings unchanged",
+  "ExportWarning": "Initial tar archive was created inside its source directory;directory-mtime warning. Archive fully readable and copied/hashed offVM",
+  "ExportCorrection": "Final archive placed outside the trial directory;failed raw preserved unchanged",
+  "FailedArchiveSha256": "DCFFBC78B47A1E8BE08B6AFD9E57762646F5D93894F1CA039984886B58A25AA3",
+  "OffVmVerified": true
+}

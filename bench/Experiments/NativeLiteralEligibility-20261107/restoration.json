@@ -1,0 +1,42 @@
+{
+  "Complete": true,
+  "ProductionChangeRetained": false,
+  "Source": "088fa1f578ff377badd63bf37eb02614b1e8ec91",
+  "WindowsCoreMatchesBaseline": "D91EC6B9517EDF8EC0C65F0E77A4A1F0184FA5FD34869B5B7E44C354FC0B83FB",
+  "RestoredTests": [
+    {
+      "Log": "restored-windows-core.txt",
+      "Counts": [
+        512,
+        512
+      ]
+    },
+    {
+      "Log": "restored-windows-python.txt",
+      "Counts": [
+        71,
+        71
+      ]
+    },
+    {
+      "Log": "restored-linux-core.txt",
+      "Counts": [
+        512,
+        512
+      ]
+    },
+    {
+      "Log": "restored-linux-python.txt",
+      "Counts": [
+        71,
+        71
+      ]
+    }
+  ],
+  "Full50GraphUnchanged": true,
+  "WindowsHandle": "13918terminal0CLOSED",
+  "LinuxHandle": "28266terminal0CLOSED",
+  "RestorationArchiveSha256": "9FFA71F97BC69F1BC2E1A8D4AC8C46C0AE5E497AB562C5A60B277D6195302B45",
+  "PublishedBytesChanged": false,
+  "StagedBytesChanged": false
+}

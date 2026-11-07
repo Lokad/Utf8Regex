@@ -1,0 +1,21 @@
+{
+  "Decision": "Reject and restore;no useful overall target improvement",
+  "Complete": true,
+  "Seconds": 108.562946031,
+  "Rows": 21,
+  "Samples": 420,
+  "MinimumSampleMilliseconds": 66.0643,
+  "Target": "Foldedmiss-2.54%/-9.73ns overlapping;finite/live+1.45% overlapping;foldedhit-3.45%/about13ns disjoint",
+  "Allocations": "Unchanged all21rows including2construction operations",
+  "Construction": "Core+1.28%/+0.40us,Python-0.45%/-0.64us;both ranges overlap",
+  "Control": "Coreliteral-4.28% disjoint on unchanged algorithm;no normalization or causal credit",
+  "Reason": "Small hit saving does not justify another retained property amid inconclusive target misses and adverse neighbors;not a general rejection of precomputed eligibility",
+  "Confirmation": "None;ONEtimedABBA after untimed expected-value correction;no retuning",
+  "Archive": "artifacts/experiments/native-literal-eligibility-20261107/evidence.tar.gz",
+  "Sha256": "E69707FF0F6CDBB3ABBDA8AE64E2706F0337EDBE97FC69857018BC6998567F03",
+  "Bytes": 2493919,
+  "OffVmVerified": true,
+  "Session": "57258terminal0CLOSED",
+  "RestorationComplete": true,
+  "NoFullOrPackageQualification": true
+}
