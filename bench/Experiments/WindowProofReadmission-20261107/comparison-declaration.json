@@ -1,0 +1,30 @@
+{
+  "Scope": "WindowProofReadmission-20261107",
+  "BeforeSource": "6c64a5e2e1464259365f30a06fc9171f4a069f07",
+  "AfterSource": "6c64a5e2 + source.patch",
+  "SourcePatch": "EE2B02BBFBFD2B8A0A7D31DF7B17F148B33AA95707AE54EE968815673C0374C2",
+  "CoreBefore": "53A2C34CD8D328A4054CCEF5E8A01DD90C8E7802CC2078C577447CCB329AA4FC",
+  "CoreAfter": "13F1A3728FDDD234DB027CBAF41681C952557C7B0763E72C95497B9B31943F55",
+  "PythonBefore": "559EEC994DE18E975B0424E863D2184E275371EB86B3A14C73CA76550D6B98CF",
+  "PythonAfter": "559EEC994DE18E975B0424E863D2184E275371EB86B3A14C73CA76550D6B98CF",
+  "PcreBefore": "A9A230202942F99D3697080B73DF0F36BB9A5333406055E6CB11EA9D785AB9B0",
+  "PcreAfter": "A9A230202942F99D3697080B73DF0F36BB9A5333406055E6CB11EA9D785AB9B0",
+  "Worker": "80D20B01EC290C4785F1E47E004283F5435525995047DBD9E5A7725D57674F37",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Rows": 22,
+  "SamplesPerRow": 5,
+  "WarmMilliseconds": 750,
+  "MinimumWarmCalls": 32,
+  "TargetMilliseconds": 75,
+  "MinimumSampleMilliseconds": 20,
+  "OuterCapSeconds": 120,
+  "WorkerCapSeconds": 35,
+  "MemoryReserveKiB": 2097152,
+  "Confirmation": "At most one only if uncertainty prevents a decision",
+  "Decision": "Current public costs and allocations. Substantial gains can justify documented local regressions. Keep all process observations, adverse cases and uncertainty. No universal 10% gate, control normalization, composed old ratios, variant tuning, catalog refresh or package/Full qualification."
+}

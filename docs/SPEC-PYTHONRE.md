@@ -85,6 +85,10 @@ membership and complete VM verification remain authoritative. This can reduce
 work and scratch on misses. Captured and empty-capable programs retain their
 profile cursor, including empty-then-nonempty retries. Original cancellation,
 deadlines, major-buffer admission and caller-funded refunds still apply.
+The shared class rewind can classify an unproved window prefix before VM
+admission, reusing membership already established by a backwards step. Fully
+rejected Count windows need no VM storage; viable starts retain full verification.
+This can lower numerical work, depth and working requirements.
 
 Count can also borrow Core's complete, case-sensitive nonempty literal proof for
 up to eight alternatives, including captures whose values Count discards. The

@@ -695,7 +695,7 @@ internal static partial class Utf8SliceRunner
                         continue;
                     }
                 }
-                if (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
+                while (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
                     if (leadingClass >= 0)
                     {

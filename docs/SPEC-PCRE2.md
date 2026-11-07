@@ -205,6 +205,10 @@ Create maps positive nullable common policies to these limits; null becomes zero
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
 the managed route, not native PCRE2. Proved search/count shortcuts can change work
 counts or avoid VM workspace; exact denial thresholds are not version-stable.
+Class/delimiter Count windows can reject an unproved prefix using the original
+scalar predicate before VM admission. Classification retains bounded work and
+the original token/deadline; viable starts retain complete verification. Skipped
+attempts can reduce required work, depth and heap capacity.
 Eligible nonempty, unanchored literal Count can validate without deriving UTF-16
 coordinates, including under finite policies, live tokens and deadlines. Its
 controlled search reuses the shared bounded candidate/comparison kernel: at most

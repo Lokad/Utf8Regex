@@ -1,0 +1,240 @@
+{
+  "Decision": "Promote",
+  "Reason": "Five intended mail/gap gains persist in both processes with disjoint ranges. Substantial absolute mail savings justify the documented local costs. All 22 allocation medians unchanged; no uniform-speedup claim.",
+  "Seconds": 113.053869011,
+  "Rows": 22,
+  "Samples": 440,
+  "MinimumSampleMilliseconds": 70.6964,
+  "TimedAttempts": 1,
+  "Confirmation": "None",
+  "Adverse": [
+    {
+      "Name": "unchanged-core-count",
+      "Percent": 3.986869065480847,
+      "DeltaUs": 0.01220166303684922,
+      "BeforeProcessMedians": [
+        0.30584458319965113,
+        0.3062479052391502
+      ],
+      "AfterProcessMedians": [
+        0.3168174821190138,
+        0.3191077744266279
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "unchanged-pcre-count",
+      "Percent": 2.233517688911446,
+      "DeltaUs": 0.0035938007173901276,
+      "BeforeProcessMedians": [
+        0.16859352840887787,
+        0.15443696533046444
+      ],
+      "AfterProcessMedians": [
+        0.1644798348124066,
+        0.16470977754314425
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "class-whitespace",
+      "Percent": 2.722653800514463,
+      "DeltaUs": 1.126605211168993,
+      "BeforeProcessMedians": [
+        41.457158899494665,
+        41.30071585903084
+      ],
+      "AfterProcessMedians": [
+        42.765694282380394,
+        42.28527220630372
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "direct-class",
+      "Percent": 0.5264597792953074,
+      "DeltaUs": 0.1016375507949121,
+      "BeforeProcessMedians": [
+        18.88797690763052,
+        19.790468750000002
+      ],
+      "AfterProcessMedians": [
+        19.609621903520207,
+        19.287372708757637
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "bounded-class",
+      "Percent": 0.371331255836016,
+      "DeltaUs": 0.08708099255609625,
+      "BeforeProcessMedians": [
+        22.948389039445953,
+        23.721293130245574
+      ],
+      "AfterProcessMedians": [
+        23.31087088915956,
+        23.779738154613465
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "captured-reference",
+      "Percent": 4.592508973016285,
+      "DeltaUs": 2.2927846967066117,
+      "BeforeProcessMedians": [
+        49.97116182572614,
+        49.83319783197831
+      ],
+      "AfterProcessMedians": [
+        52.328520877565474,
+        52.10751404494381
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "sparse-gap-miss",
+      "Percent": 0.5663624387480359,
+      "DeltaUs": 0.01920772839668894,
+      "BeforeProcessMedians": [
+        3.3975964351622627,
+        3.3860542853322633
+      ],
+      "AfterProcessMedians": [
+        3.4079907353792707,
+        3.411665384093069
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "false-gap-windows",
+      "Percent": 7.244743809253684,
+      "DeltaUs": 22.571231729708074,
+      "BeforeProcessMedians": [
+        316.7779661016949,
+        305.46115702479335
+      ],
+      "AfterProcessMedians": [
+        336.0058295964126,
+        331.85866666666664
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "dense-mail",
+      "Percent": 3.7880914170804747,
+      "DeltaUs": 5.350617324750857,
+      "BeforeProcessMedians": [
+        140.64011516314778,
+        141.58173076923077
+      ],
+      "AfterProcessMedians": [
+        146.85526838966203,
+        146.30694444444444
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "unicode-mail",
+      "Percent": 1.5625027877988362,
+      "DeltaUs": 1.8826501779253135,
+      "BeforeProcessMedians": [
+        120.1004893964111,
+        121.29300813008132
+      ],
+      "AfterProcessMedians": [
+        122.32878535773709,
+        122.41530782029952
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "false-mail-delimiters",
+      "Percent": 5.586074525117479,
+      "DeltaUs": 12.56739811912226,
+      "BeforeProcessMedians": [
+        224.93545454545455,
+        225.52198795180723
+      ],
+      "AfterProcessMedians": [
+        237.28087774294673,
+        238.26125000000002
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "mail-miss-control",
+      "Percent": 1.136505500610907,
+      "DeltaUs": 0.003946243046898168,
+      "BeforeProcessMedians": [
+        0.3486740245166972,
+        0.34410882316003927
+      ],
+      "AfterProcessMedians": [
+        0.347655607219592,
+        0.3542151971556025
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "dot-prefix-control",
+      "Percent": 1.1790491326046704,
+      "DeltaUs": 0.31317769768185855,
+      "BeforeProcessMedians": [
+        26.708865377599416,
+        26.508782074448863
+      ],
+      "AfterProcessMedians": [
+        27.003103066124858,
+        26.541705989110707
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "ascii-range-control",
+      "Percent": 2.872089049344506,
+      "DeltaUs": 0.5452988153078948,
+      "BeforeProcessMedians": [
+        18.992185498334614,
+        18.948410696266397
+      ],
+      "AfterProcessMedians": [
+        19.74586566764785,
+        19.150822160384518
+      ],
+      "RangesOverlap": true
+    },
+    {
+      "Name": "rtl-control",
+      "Percent": 4.6286270646260785,
+      "DeltaUs": 1.1273603708883293,
+      "BeforeProcessMedians": [
+        24.496984126984128,
+        24.23328822733424
+      ],
+      "AfterProcessMedians": [
+        25.16169861202908,
+        25.64908783783784
+      ],
+      "RangesOverlap": false
+    },
+    {
+      "Name": "literal-control",
+      "Percent": 2.221096247796872,
+      "DeltaUs": 0.004623320841065898,
+      "BeforeProcessMedians": [
+        0.20807051746226257,
+        0.20911324384812568
+      ],
+      "AfterProcessMedians": [
+        0.21673991259150674,
+        0.20885574182803351
+      ],
+      "RangesOverlap": true
+    }
+  ],
+  "OldReceipt": "WindowClassProof-20261103 remains unchanged; its two-ALC rejection is historical and separate.",
+  "NoControlNormalization": true,
+  "NoCatalogStatusChange": true,
+  "NoPackageOrFull": true
+}

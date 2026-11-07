@@ -1,0 +1,12 @@
+{
+  "DiagnosticOnly": true,
+  "Tier": "FullOpts, untimed separate preflights",
+  "CountFromBytesBeforeBytes": 4066,
+  "CountFromBytesAfterBytes": 4046,
+  "RewindBeforeBytes": 2486,
+  "RewindAfterBytes": 2638,
+  "NewFields": 0,
+  "NewHelpers": 0,
+  "UncheckedReadsAdded": 0,
+  "Claims": "Code size is diagnostic, not public-cost attribution. Public costs come from the independent 22-row comparison."
+}

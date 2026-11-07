@@ -10,6 +10,71 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData(@"\p{Lu}{2,4}\s+[\s\S]{0,8}result", " 😀result! ")]
+    [InlineData(@"\p{Lu}+@", "é😀@! ")]
+    public void RejectedWindowsAdvanceWithoutVmWorkspace(string pattern, string tail)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('!', 260) + string.Concat(Enumerable.Repeat(tail, 64)));
+        byte[] storage = [0xff, .. input, 0xff];
+        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
+            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(storage.AsSpan(1, input.Length), live.Token));
+        Assert.Throws<ArgumentException>(() => regex.Count(storage.AsSpan(1), live.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\p{Lu}{2,4}\s+[\s\S]{0,8}result", " 😀result! AB 😀result! ")]
+    [InlineData(@"\p{Lu}+@", "é😀@! É@! ")]
+    public void RejectedWindowsKeepLaterValidStarts(string pattern, string tail)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('!', 260) + tail);
+        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, Funded);
+        var cursor = regex.EnumerateMatches(input);
+        var expected = 0;
+        while (cursor.MoveNext()) expected++;
+        Assert.Equal(1, expected);
+        Assert.Equal(expected, regex.Count(input));
+        using var live = new CancellationTokenSource();
+        Assert.Equal(expected, regex.Count(input, live.Token));
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void RejectedWindowPrefixKeepsOriginalInterruptionWithoutVmAdmission(bool expire)
+    {
+        const int spaces = 200000;
+        const string pattern = @"\p{Lu}+\s+result";
+        var input = Encoding.UTF8.GetBytes("😀" + new string(' ', spaces) + "result");
+        var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
+        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
+        // Search and the backwards whitespace scan finish well before this
+        // point. The tiny workspace cap prevents a failed VM attempt from
+        // satisfying this witness instead of the forward membership scan.
+        var threshold = calibration.Budget.Steps + spaces + spaces / 2;
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < threshold) return;
+            entered = true;
+            if (expire) ticks = 50; else token.Cancel();
+        });
+        try
+        {
+            var regex = new Utf8Regex(pattern, RegexOptions.None,
+                expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            if (expire) Assert.IsType<RegexMatchTimeoutException>(Record.Exception(() => regex.Count(input, token.Token)));
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
+            Assert.True(entered);
+        }
+        finally { session.Complete(); }
+    }
+
+    [Theory]
     [InlineData(@"\w+\s+Holmes")]
     [InlineData(@"[\w]+\s*Holmes")]
     [InlineData(@"(?<w>\w+)\s+(?<h>Holmes)")]

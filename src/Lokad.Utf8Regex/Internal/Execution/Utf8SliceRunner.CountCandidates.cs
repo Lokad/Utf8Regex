@@ -183,6 +183,7 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
     {
+        var windowEnd = position;
         var code = program.Instructions;
         var directClassLiteral = gapMaximum == 0 && leadingClass > 0 && code.Length - leadingClass > 3 &&
             code[leadingClass + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 };
@@ -228,6 +229,7 @@ internal static partial class Utf8SliceRunner
             if (!TryReadScalar(input, position, true, out var scalar, out var width) || !Rune.IsWhiteSpace(scalar)) break;
             position -= width;
         }
+        var classStart = position;
         var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
         for (long remaining = classMaximum; remaining > 0 && position > floor; remaining--)
         {
@@ -238,6 +240,23 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (!hit) break;
             position -= width;
+        }
+        // A backwards class step already proved membership at the new start.
+        // Otherwise discard only the unproved prefix once per window; every
+        // remaining viable start still enters complete VM verification.
+        if (leadingClass >= 0 && position == classStart &&
+            code[leadingClass].Kind != Utf8SliceInstructionKind.Dot)
+        {
+            while (position <= windowEnd)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
+                breach = TryMatchScalarClass(program, code[leadingClass], scalar, ref invocation, out var hit);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (hit) break;
+                position += width;
+            }
         }
         return Utf8ExecutionLimitKind.None;
     }

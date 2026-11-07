@@ -362,6 +362,12 @@ conservative union. Omitting impossible starts across nonmember whitespace can
 lower numerical work requirements without changing allocation admission.
 Skipped starts need no VM work or scratch. Whole-subject strict validation,
 bounded search/rewind checkpoints and admission before live VM storage remain.
+A backwards class step proves membership at the rewound start. When it makes
+no progress, bounded classification can discard only the unproved window prefix;
+every remaining viable start retains full verification. Fully rejected windows
+advance to the next delimiter before VM admission. Avoided attempts can lower
+numerical work, depth and working requirements; classification still spends work
+under the original token and deadline.
 Mandatory anchors can precede Count's ASCII start filter; the VM still checks
 their full original-subject context. Skipped starts can lower required work/storage.
 Scalar-class and unfolded literal repetitions with a proved endpoint can omit

@@ -1,0 +1,18 @@
+[
+  {
+    "Ordinary": "core-gap-control",
+    "Finite": "finite-gap",
+    "BeforeExtraUs": 6.641053129067785,
+    "AfterExtraUs": 6.306903956049112,
+    "BeforeExtraPercent": 16.203106916082355,
+    "AfterExtraPercent": 17.747356601153985
+  },
+  {
+    "Ordinary": "mail-corpus",
+    "Finite": "finite-mail-corpus",
+    "BeforeExtraUs": 404.13450168918894,
+    "AfterExtraUs": 334.4949128919859,
+    "BeforeExtraPercent": 19.860547686706752,
+    "AfterExtraPercent": 17.801716956341586
+  }
+]

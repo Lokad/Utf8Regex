@@ -1,0 +1,235 @@
+{
+  "Scope": "Untimed route facts only; fixture equality is not proof of Unicode profile equivalence.",
+  "CoreSha256": "F1DC741D348B49A1F447CFDBF3FCC3F04648C61E1D56E830C4BB186BB59F7C4D",
+  "PythonSha256": "88534E87FC3BAE7F325D9D71BFB6EBA6B206594D011AED28B47EEAE5B0A782F1",
+  "CensusScope": "Untimed replay of existing rewind with floor 0, not instrumented production attempts or timing. Zero rewind at floor 0 proves the same lack of progress for any later admitted floor.",
+  "Delimiters": 2856,
+  "ZeroRewindDelimiters": 2578,
+  "FirstZeroRewindOffsets": [
+    61391,
+    68239,
+    76283,
+    76977,
+    77025,
+    77053,
+    78688,
+    78722
+  ],
+  "MaskAcceptsDelimiter": false,
+  "CategoryMembers": [
+    {
+      "Negated": false,
+      "Predicate": "IsWord",
+      "AcceptsDelimiter": false
+    }
+  ],
+  "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+  "InputBytes": 6839410,
+  "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+  "PythonCount": 92,
+  "CoreCount": 92,
+  "PythonHintRetained": false,
+  "PythonHintKind": null,
+  "IndependentCoreKind": "FallbackRegex",
+  "GroupCount": 0,
+  "CanMatchEmpty": false,
+  "IgnoreCase": false,
+  "NativeLiteralCount": null,
+  "Instructions": [
+    {
+      "Kind": "RepeatGreedy",
+      "A": 3,
+      "B": 0,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Literal",
+      "A": 64,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatGreedy",
+      "A": 8,
+      "B": 1,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 1
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 5,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Literal",
+      "A": 46,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatGreedy",
+      "A": 13,
+      "B": 2,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "Kind": "CategorySet",
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 2
+    },
+    {
+      "Kind": "RepeatEnd",
+      "A": 10,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "RepeatExit",
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    }
+  ],
+  "CorePreparedMembers": [
+    {
+      "Name": "SemanticRegex",
+      "Type": "Utf8PreparedSemanticRegex"
+    },
+    {
+      "Name": "Features",
+      "Type": "Utf8RegexFeatures"
+    },
+    {
+      "Name": "ExecutionPattern",
+      "Type": "String"
+    },
+    {
+      "Name": "ExecutionKind",
+      "Type": "NativeExecutionKind"
+    },
+    {
+      "Name": "ExecutionBackend",
+      "Type": "Utf8ExecutionBackend"
+    },
+    {
+      "Name": "CompiledPatternCategory",
+      "Type": "Utf8CompiledPatternCategory"
+    },
+    {
+      "Name": "ExecutionTree",
+      "Type": "Utf8ExecutionTree"
+    },
+    {
+      "Name": "ScalarProgram",
+      "Type": "Utf8SliceProgram"
+    },
+    {
+      "Name": "SearchPlan",
+      "Type": "Utf8SearchPlan\u0026"
+    },
+    {
+      "Name": "StructuralSearchPlan",
+      "Type": "Utf8StructuralSearchPlan"
+    },
+    {
+      "Name": "StructuralVerifier",
+      "Type": "Utf8StructuralVerifierPlan"
+    },
+    {
+      "Name": "StructuralLinearProgram",
+      "Type": "Utf8StructuralLinearProgram\u0026"
+    },
+    {
+      "Name": "SimplePatternPlan",
+      "Type": "AsciiSimplePatternPlan\u0026"
+    },
+    {
+      "Name": "OperationMatchCursorPlans",
+      "Type": "Utf8OperationMatchCursorPlans"
+    },
+    {
+      "Name": "StructuralIdentifierFamilyPlan",
+      "Type": "AsciiStructuralIdentifierFamilyPlan"
+    },
+    {
+      "Name": "StructuralTokenWindowPlan",
+      "Type": "AsciiStructuralTokenWindowPlan"
+    },
+    {
+      "Name": "StructuralRepeatedSegmentPlan",
+      "Type": "AsciiStructuralRepeatedSegmentPlan"
+    },
+    {
+      "Name": "StructuralQuotedRelationPlan",
+      "Type": "AsciiStructuralQuotedRelationPlan"
+    },
+    {
+      "Name": "OrderedLiteralWindowPlan",
+      "Type": "AsciiOrderedLiteralWindowPlan"
+    },
+    {
+      "Name": "LiteralUtf8",
+      "Type": "Byte[]"
+    },
+    {
+      "Name": "FallbackReason",
+      "Type": "String"
+    },
+    {
+      "Name": "FallbackDirectFamily",
+      "Type": "Utf8FallbackDirectFamilyPlan\u0026"
+    }
+  ]
+}
