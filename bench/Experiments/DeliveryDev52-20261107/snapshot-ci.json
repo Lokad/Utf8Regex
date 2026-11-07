@@ -1,0 +1,21 @@
+{
+  "RunId": 42383918616,
+  "HeadSha": "aa0f1eddf1c76b3a39f44ee52b9cc802e063597b",
+  "Status": "completed",
+  "Conclusion": "success",
+  "ObservedAt": "2026-11-07T16:08:08.8802305+01:00",
+  "Jobs": [
+    {
+      "Name": "tests (windows-latest)",
+      "Status": "completed",
+      "Conclusion": "success"
+    },
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Status": "completed",
+      "Conclusion": "success"
+    }
+  ],
+  "Terminal": true,
+  "Scope": "Full repository CI on snapshot commit,including both runtimes and disabled dynamic code;no rerun or repeated package qualification"
+}

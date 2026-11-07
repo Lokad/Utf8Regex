@@ -88,8 +88,8 @@ All 276 older staged files remain unchanged; six new assets bring
 `artifacts/nuget/` to 282. Both frozen Full51/Full52 eight-asset graphs were verified
 after Linux and costs. [Preservation](frozen-graphs.json),
 [Windows](windows-acceptance.json), [Linux](linux-archive-acceptance.json) and
-[inputs](boundary-inputs.json) record the boundary. Source CI passed on Windows
-and Linux. Platform/package compatibility is distinct
+[inputs](boundary-inputs.json) record the boundary. Source CI and [snapshot CI](snapshot-ci.json)
+passed on Windows and Linux. Platform/package compatibility is distinct
 from downstream adoption and the later POSIX work.
 
 All seven raw archives under `artifacts/experiments/delivery-dev52-20261107/` are
