@@ -80,3 +80,5 @@ candidate. Raw evidence is copied off VM and hash-verified:
 Parent `5e69d416`; Core before `00D7A259`, after `8AFEDEC7`; fixed PythonRe
 `47870A68`/PCRE2 `3236E597`; caller `6FE4020B`. Exact hashes, source patch and all
 samples are retained. No NuGet publication.
+
+Source CI [passed on Windows and Linux](ci.json) for `72195191`.
