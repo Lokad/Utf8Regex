@@ -1,11 +1,110 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReClassDelimiterWindowTests
 {
+    [Theory]
+    [InlineData(@"[a-z]+@z", "abc \t @z def@z")]
+    [InlineData(@"[a-z]+ z", "abc \t  z abc z")]
+    [InlineData(@"[a ]+ z", "a\t  z a a z")]
+    [InlineData(@"[a ]+@z", "a\t @z a a@z")]
+    [InlineData(@"[a\t]+@z", "a \t@z a\t@z")]
+    [InlineData(@"[\s\w]+@z", "a\t @z b @bad c@z")]
+    [InlineData(@"[a-z]{2,3}@z", "abcde@z a@z @z")]
+    [InlineData(@"[a-z]{1,3}?@z", "abcde@z a@z @z")]
+    [InlineData(@"[^\s]+@z", "a@bad@z b@z")]
+    [InlineData(@"[^ \t]+@z", "a@bad@z b@z")]
+    [InlineData(@"[a@]+@z", "aaa@@z aa@z a@bad@z")]
+    [InlineData(@".+@z", "abc\n @z def@z")]
+    [InlineData(@"[a-z]+\s+@z", "abc \t @z def@z")]
+    [InlineData(@"[a-z]+\s*.{0,2}@z", "abc \t ?@z uvw@z")]
+    [InlineData(@"([a-z]+)@\1", "ababc@abc def@def")]
+    [InlineData(@"[a-z]+@([a-z]+)-\1", "abc \t @x-x abc@x-y uvw@ab-ab")]
+    [InlineData(@"[a-z]+@(?<=ab@)[0-9]+", "zzab@12 ab@3 \t @4")]
+    [InlineData(@"[\w.+-]+@[\w.-]+\.[\w.-]+", "abc \t @mention abc@bad abc@x.y é@x.y")]
+    public void DirectAndExplicitWhitespaceWindowsKeepAllPossibleStarts(string pattern, string suffix)
+    {
+        var prefix = "é😀" + new string('x', 256) + " ";
+        var text = prefix + suffix;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern);
+        foreach (var finite in new[] { false, true })
+        {
+            using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
+                finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
+                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
+            Assert.Equal(oracle.Count(text), owner.Count(input));
+            Assert.Equal(oracle.Count(suffix), owner.Count(input, Encoding.UTF8.GetByteCount(prefix)));
+            var actual = owner.FindIterDetailed(input);
+            var wanted = oracle.Matches(text).ToArray();
+            Assert.Equal(wanted.Length, actual.Length);
+            for (var index = 0; index < actual.Length; index++)
+            {
+                Assert.Equal(wanted[index].Index, actual[index].Value.StartOffsetInUtf16);
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted[index].Index)), actual[index].Value.StartOffsetInBytes);
+                Assert.Equal(wanted[index].Groups.Cast<Group>().Select(group => group.Value),
+                    actual[index].Groups.Select(group => group.ValueText));
+            }
+        }
+    }
+
+    [Fact]
+    public void DirectWindowCountKeepsEveryWorkCutoffAndParentLoan()
+    {
+        var program = PythonReScalarCompiler.Compile(new PythonReParser(@"[a-z]+@z").Parse(default));
+        var input = Encoding.UTF8.GetBytes(new string('x', 256) + " \t @bad ok@z");
+        ulong Run(ulong cap)
+        {
+            var invocation = new Utf8SliceInvocation(new(cap, 256, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            try
+            {
+                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                Assert.Equal(1, outcome.Count);
+                return invocation.Budget.Steps;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw invocation.Budget.CreateResourceFailure(); }
+            finally { Assert.Equal(13UL, invocation.Ledger.ReservedBytes); }
+        }
+        var steps = Run(1_000_000);
+        Assert.InRange(steps, 1UL, 1024UL);
+        for (ulong cap = 1; cap < steps; cap++)
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
+        Assert.Equal(steps, Run(steps));
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void DirectWindowCountKeepsOriginalInterruption(bool timeout)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        using var owner = new Utf8PythonRegex(@"[a-z]+@z", default,
+            timeout ? TimeSpan.FromTicks(1) : Timeout.InfiniteTimeSpan);
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaaa \t @bad ", 512)) + "b@z");
+        var reached = false;
+        var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (timeout) ticks = 1000; else token.Cancel(); });
+        try
+        {
+            var error = Record.Exception(() => owner.Count(input, 0, token.Token));
+            Assert.True(reached);
+            if (timeout) Assert.IsType<RegexMatchTimeoutException>(error);
+            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        }
+        finally { session.Complete(); }
+    }
+
     [Theory]
     [InlineData(255, false)] [InlineData(256, false)] [InlineData(256, true)]
     [InlineData(2048, false)] [InlineData(2048, true)] [InlineData(4097, true)]

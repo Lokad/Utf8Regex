@@ -44,6 +44,9 @@ retain anchored verification. Whole-subject validation and capture-slot admissio
 remain; avoiding impossible starts can lower execution work and required VM
 workspace. Search blocks, rewound scalars, verification and publication keep the
 same invocation's cancellation, deadline and resource authority.
+Direct class/delimiter windows rewind the class itself, including any accepted
+whitespace. Explicit whitespace/gap prefixes keep their conservative windows;
+omitting impossible starts can lower numerical work requirements.
 
 On a validated ASCII subject, a leading positive class's ASCII mask can also
 guide starts when its only additional term is a positive non-ASCII range. Other

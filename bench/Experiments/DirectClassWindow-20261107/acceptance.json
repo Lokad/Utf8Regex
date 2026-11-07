@@ -1,0 +1,29 @@
+{
+  "Decision": "Promote",
+  "Source": "01ff9438ea12ee0371a8879469e47430e6d2d926 plus archived runtime.patch",
+  "Change": "Direct class/literal prefixes use only actual-class rewind, reusing existing shape proof; explicit whitespace/gap union and negated-pair SIMD unchanged",
+  "Contracts": "Strict UTF8/scalars, captures/refs, RTL/NonBacktracking, aliases, original controls and major allocation admission preserved",
+  "NumericalWork": "Can decrease due to eliminated impossible starts; documented in Core/Python specifications and changelog",
+  "TestsPerOSPerRuntime": {
+    "FinalDelimiterFixture": 40,
+    "Core": 1649,
+    "Pcre2": 46,
+    "Python": 104
+  },
+  "FinalTestAddition": "Two whitespace-literal rows added after timing; only tests changed, both OS/TFMs pass, Linux Core DLL equals measured after bytes",
+  "PreparationCorrections": "Use existing diagnostic clock helper; adequate finite depth4096; map neutral internal budget failures; correct fixed PCRE reference path. Failed/corrected logs retained, all before sole timing.",
+  "Comparison": "77178 terminal0/CLOSED;ONE98.452809381s/19rows380samples/min71.517ms",
+  "TestHandles": "12047/20458/85823 terminal0/CLOSED",
+  "Gains": "Mail-37.49%,finite/live-33.31%,deadline/live-36.73%,dense-5.09%; disjoint ranges/both processes",
+  "Adverse": "Partial+4.69%/+6.889405us in both process medians, overall ranges overlap; explicitWhitespace+0.46%/+0.824459us andUnicodeHit+0.77%/+11.169ns overlap",
+  "Allocations": "All19medians unchanged",
+  "Control": "Unchanged native Core literal-3.79% disjoint; no causal credit or normalization",
+  "RawArchive": "artifacts/experiments/mail-failed-window-20261107/evidence.tar.gz",
+  "RawSha256": "44D08BEF13E44F0927A9752E3BB8CA5509730D7113D32478A4A6765FE9CE08C4",
+  "RawBytes": 9507211,
+  "Supplement": "artifacts/experiments/mail-failed-window-20261107/final-validation.zip",
+  "SupplementSha256": "F693B1D3C97A1F4702FD0297B2EB1A25A6474B52A06FB5B51188B82451F336C0",
+  "Preserved": "All264stagedbytes and frozen Full49graph unchanged; no package/Full requalification for individual change",
+  "Confirmation": "None; no tuning variant",
+  "Timestamp": "2026-11-07T09:37:24.6830451+01:00"
+}

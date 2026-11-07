@@ -356,6 +356,10 @@ native eligibility.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
+For a direct class/literal prefix, only the actual class is rewound, including
+whitespace that belongs to it. Explicit whitespace/gap prefixes retain their
+conservative union. Omitting impossible starts across nonmember whitespace can
+lower numerical work requirements without changing allocation admission.
 Skipped starts need no VM work or scratch. Whole-subject strict validation,
 bounded search/rewind checkpoints and admission before live VM storage remain.
 Mandatory anchors can precede Count's ASCII start filter; the VM still checks

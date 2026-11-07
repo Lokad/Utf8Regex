@@ -184,8 +184,9 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
     {
         var code = program.Instructions;
-        if (gapMaximum == 0 && leadingClass > 0 && code.Length - leadingClass > 3 &&
-            code[leadingClass + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } &&
+        var directClassLiteral = gapMaximum == 0 && leadingClass > 0 && code.Length - leadingClass > 3 &&
+            code[leadingClass + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 };
+        if (directClassLiteral &&
             code[leadingClass - 1].RepeatMinimum == 1 && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
             code[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
             TryGetAsciiMaskPair(program.SetMasks[atom.A], out var first, out var second))
@@ -217,9 +218,10 @@ internal static partial class Utf8SliceRunner
             if (!TryGetScalarWidthEndingAt(input, position, out var width)) break;
             position -= width;
         }
-        // The classes can overlap. Cover the complete whitespace/class window,
-        // then let the VM test each start, rather than choosing a split here.
-        while (position > floor)
+        // Explicit whitespace can overlap the class: cover their complete union.
+        // A direct class/literal prefix has no intervening whitespace. Its actual
+        // class predicate below already includes any whitespace it can consume.
+        while (!directClassLiteral && position > floor)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
