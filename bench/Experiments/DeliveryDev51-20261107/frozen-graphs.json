@@ -1,0 +1,12 @@
+{
+  "Source": "6032b9286c6bdfe8dcf97a5d7e26ccb2f0ae1743",
+  "PreviousFull50Assets": 8,
+  "CurrentFull51Assets": 8,
+  "AllVerifiedAfterLinuxAndCosts": true,
+  "OlderStagedUnchanged": 270,
+  "StagedTotal": 276,
+  "CapacityRetirement": "Prior dev50 Linux scratch only;18391members/full-content comparison,canonicalBD950CEAoffVM preserved;36514terminal0/CLOSED",
+  "EvidenceSha256": "5733294E78E72C17CAC6D790FF85867C6D209329ADD8ED354AFD146A15089BC5",
+  "OffVmVerified": true,
+  "Scope": "Existing closed retirement evidence exported;read-only graph/package preservation checks;no new deletion,build,test or benchmark"
+}

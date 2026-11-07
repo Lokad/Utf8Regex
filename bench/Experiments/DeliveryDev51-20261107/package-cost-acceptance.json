@@ -1,0 +1,208 @@
+{
+  "Decision": "Accept substantial intended public gains;retain all adverse observations and historical source trade-offs,without a universal10percentgate",
+  "Complete": true,
+  "BeforeVersion": "0.5.0-dev.50",
+  "AfterVersion": "0.5.0-dev.51",
+  "BeforeSource": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "AfterSource": "6032b9286c6bdfe8dcf97a5d7e26ccb2f0ae1743",
+  "Seconds": 113.342995177,
+  "Rows": 22,
+  "Samples": 440,
+  "MinimumSampleMilliseconds": 54.0161,
+  "Allocations": "All22medians unchanged",
+  "Confirmation": "None",
+  "ProducerRetuning": "None",
+  "PersistentIntendedGains": [
+    {
+      "Name": "folded-search-miss",
+      "BeforeUs": 0.3857999689805828,
+      "AfterUs": 0.20891084138574795,
+      "DeltaUs": -0.17688912759483483,
+      "Percent": -45.84995899876228,
+      "BeforeMinimum": 0.382745779671245,
+      "BeforeMaximum": 0.3897354858771174,
+      "AfterMinimum": 0.20648372014772484,
+      "AfterMaximum": 0.21115265409232273
+    },
+    {
+      "Name": "folded-search-finite-live",
+      "BeforeUs": 0.5588548373889934,
+      "AfterUs": 0.3212398832165353,
+      "DeltaUs": -0.23761495417245815,
+      "Percent": -42.51818867357592,
+      "BeforeMinimum": 0.5510343236141404,
+      "BeforeMaximum": 0.5985652025618675,
+      "AfterMinimum": 0.3169082146749717,
+      "AfterMaximum": 0.3402679716533089
+    },
+    {
+      "Name": "folded-search-deadline-live",
+      "BeforeUs": 1.0471368340085614,
+      "AfterUs": 0.4280407769662251,
+      "DeltaUs": -0.6190960570423363,
+      "Percent": -59.122746611096154,
+      "BeforeMinimum": 1.0101777251184834,
+      "BeforeMaximum": 1.0815028283137136,
+      "AfterMinimum": 0.4204777733823782,
+      "AfterMaximum": 0.44789091453168517
+    },
+    {
+      "Name": "dense-folded-prefix-miss",
+      "BeforeUs": 9.334738816486615,
+      "AfterUs": 5.849042848866939,
+      "DeltaUs": -3.4856959676196757,
+      "Percent": -37.34111940511276,
+      "BeforeMinimum": 9.174240733853974,
+      "BeforeMaximum": 9.387666837782342,
+      "AfterMinimum": 5.7614003944773176,
+      "AfterMaximum": 5.962982103550579
+    },
+    {
+      "Name": "folded-miss-256",
+      "BeforeUs": 0.3902088532641086,
+      "AfterUs": 0.2225219630654352,
+      "DeltaUs": -0.1676868901986734,
+      "Percent": -42.973625225560006,
+      "BeforeMinimum": 0.37874912060766674,
+      "BeforeMaximum": 0.39695125534972936,
+      "AfterMinimum": 0.2150395755236562,
+      "AfterMaximum": 0.22907161190804795
+    },
+    {
+      "Name": "actual-detailed",
+      "BeforeUs": 1.543318897449406,
+      "AfterUs": 0.9593460800608061,
+      "DeltaUs": -0.5839728173886,
+      "Percent": -37.83876542649178,
+      "BeforeMinimum": 1.5232064546344788,
+      "BeforeMaximum": 1.5635554901259754,
+      "AfterMinimum": 0.8509774292955131,
+      "AfterMaximum": 1.0661672791966104
+    },
+    {
+      "Name": "actual-detailed-finite-live",
+      "BeforeUs": 2.2046250494657693,
+      "AfterUs": 1.3059968504199113,
+      "DeltaUs": -0.898628199045858,
+      "Percent": -40.7610445714393,
+      "BeforeMinimum": 2.165498855086686,
+      "BeforeMaximum": 2.21904481517828,
+      "AfterMinimum": 1.2929789207119164,
+      "AfterMaximum": 1.3184330474105443
+    },
+    {
+      "Name": "actual-detailed-deadline-live",
+      "BeforeUs": 3.0392519115519736,
+      "AfterUs": 1.987987863558597,
+      "DeltaUs": -1.0512640479933766,
+      "Percent": -34.58956607043987,
+      "BeforeMinimum": 3.002070675759454,
+      "BeforeMaximum": 3.0691376701966715,
+      "AfterMinimum": 1.9710142215568862,
+      "AfterMaximum": 2.023043584256576
+    },
+    {
+      "Name": "actual-value-search",
+      "BeforeUs": 1.2747520064424962,
+      "AfterUs": 0.6050535969681357,
+      "DeltaUs": -0.6696984094743605,
+      "Percent": -52.53558386962778,
+      "BeforeMinimum": 1.2559272097053726,
+      "BeforeMaximum": 1.2949546715676747,
+      "AfterMinimum": 0.5972771268881683,
+      "AfterMaximum": 0.6157088557326827
+    },
+    {
+      "Name": "detail-16",
+      "BeforeUs": 1.978010801805675,
+      "AfterUs": 0.9504886267397832,
+      "DeltaUs": -1.0275221750658918,
+      "Percent": -51.94724791835785,
+      "BeforeMinimum": 1.9432518512620434,
+      "BeforeMaximum": 2.0100789982803096,
+      "AfterMinimum": 0.8504964786682963,
+      "AfterMaximum": 1.0899689679258895
+    }
+  ],
+  "AdverseOverlapping": [
+    {
+      "Name": "pcre-literal-control",
+      "BeforeUs": 0.30626921466655704,
+      "AfterUs": 0.31599905577372905,
+      "DeltaUs": 0.00972984110717201,
+      "Percent": 3.1768916499704813,
+      "BeforeMinimum": 0.2973892631149214,
+      "BeforeMaximum": 0.3139531775369129,
+      "AfterMinimum": 0.3113234189574884,
+      "AfterMaximum": 0.32350135743113123
+    },
+    {
+      "Name": "actual-mail-count",
+      "BeforeUs": 2152.9208333333336,
+      "AfterUs": 2180.5385714285712,
+      "DeltaUs": 27.617738095237655,
+      "Percent": 1.2828032349186502,
+      "BeforeMinimum": 2107.3999999999996,
+      "BeforeMaximum": 2202.7971428571427,
+      "AfterMinimum": 2117.537142857143,
+      "AfterMaximum": 2215.908571428571
+    },
+    {
+      "Name": "actual-mail-finite-live",
+      "BeforeUs": 3250.444293478261,
+      "AfterUs": 3299.8760869565217,
+      "DeltaUs": 49.431793478260715,
+      "Percent": 1.5207703629144254,
+      "BeforeMinimum": 3210.552173913043,
+      "BeforeMaximum": 3287.875,
+      "AfterMinimum": 3243.391304347826,
+      "AfterMaximum": 3321.2043478260866
+    },
+    {
+      "Name": "full-unicode-hit-finite-adverse",
+      "BeforeUs": 1.683873872450319,
+      "AfterUs": 1.6887765239475128,
+      "DeltaUs": 0.004902651497193711,
+      "Percent": 0.29115313073060367,
+      "BeforeMinimum": 1.602382881797674,
+      "BeforeMaximum": 1.846994783397596,
+      "AfterMinimum": 1.643304468151587,
+      "AfterMaximum": 1.7303834602221138
+    },
+    {
+      "Name": "explicit-whitespace-control",
+      "BeforeUs": 4.855014410404552,
+      "AfterUs": 4.901504583626977,
+      "DeltaUs": 0.04649017322242521,
+      "Percent": 0.9575702416617871,
+      "BeforeMinimum": 4.825075173225258,
+      "BeforeMaximum": 4.889704930762262,
+      "AfterMinimum": 4.8073479286837975,
+      "AfterMaximum": 4.992469479830149
+    }
+  ],
+  "FiniteOverheads": [
+    {
+      "Ordinary": "folded-search-miss",
+      "Finite": "folded-search-finite-live",
+      "BeforeExtraUs": 0.17305486840841067,
+      "AfterExtraUs": 0.11232904183078735,
+      "BeforeRelativePercent": 44.85611257711648,
+      "AfterRelativePercent": 53.76889063568269
+    },
+    {
+      "Ordinary": "actual-detailed",
+      "Finite": "actual-detailed-finite-live",
+      "BeforeExtraUs": 0.6613061520163632,
+      "AfterExtraUs": 0.3466507703591052,
+      "BeforeRelativePercent": 42.8496115164068,
+      "AfterRelativePercent": 36.13406856648995
+    }
+  ],
+  "Uncertainty": "Detailed Search after-process medians1.046846/0.855148us;16byte after0.852037/1.050722us. Both improve clearly versus their before ranges,but exact effect sizes vary. Keep every process/sample.",
+  "Controls": "Core literal-2.60percent and anchored FullMatch-1.99percent have disjoint ranges but bypass edited algorithms;no causal credit. BCLcontrol-0.24percent and PCREcontrol+3.18percent overlap. No normalization.",
+  "UnicodeMiss": "Exact package0.304560->0.292905us,overlapping ranges. This does not reproduce a version regression implied by successive raw catalog medians0.337923->0.454325us;current paired catalog0.346134us is a different process/protocol. Retain all three scopes;do not replace the qualified9.03x.NETdiagnostic ratio with a composed A/B ratio.",
+  "HistoricalTradeoffs": "Earlier source15byte+8.92percent,denseclass+3.77percent,foldedmiss+5.35percent and257byte+7.87percent receipts remain valid separate observations. Current combined package boundary medians near unchanged do not erase or causally explain them. Prior48to49/49to50 costs remain separate.",
+  "Preparation": "Before timing,added actual837byte Unicode miss to original unexecuted21row plan,following fresh catalog discrepancy. Original declaration/source/input3F0CD397 preserved. Final22row caller inputC3B45141;no failed timed attempt,Full/package rerun or extra campaign.",
+  "ArchiveSha256": "4290BED6D53FD7A9C82896076EF0D7701B847FE34494981F3C8F77CCCB736E2F"
+}

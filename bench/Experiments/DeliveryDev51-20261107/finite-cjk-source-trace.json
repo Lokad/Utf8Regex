@@ -1,0 +1,13 @@
+{
+  "Source": "6032b9286c6bdfe8dcf97a5d7e26ccb2f0ae1743",
+  "Scope": "Read-only trace during frozen Full;no producer edit,prototype,benchmark or qualification rerun",
+  "Subject": "Core Chinese literal Count, finite/live",
+  "NeedleUtf8Bytes": 23,
+  "Findings": [
+    "Finite Core Count enters OwnedSliceCountFromByte and already calls metered ThrowIfInvalidOnly; UTF16 metadata is not calculated.",
+    "Pure literal Count then borrows TryCountNativeLiteralMatches with bounded checkpoints and no VM capture workspace.",
+    "The23byte needle selects PreparedExactSearchTier.SpanIndexOf; anchors remain default for needles>16. Thus bounded search already calls BCL span sequence search, as the ordinary literal counter does.",
+    "A private searcher call initially looked like a different kernel; tracing its length tier rules that out for this actual target. Shorter needles do use other tiers, but this is not evidence of their public cost."
+  ],
+  "Conclusion": "Neither discarded coordinate metadata nor a naive prepared search kernel explains this target. Preserve current semantics/metering; do not prototype either supposed fix or retune closed validation/search trials without a distinct live cause."
+}
