@@ -1,0 +1,10 @@
+{
+  "Source": "6f9b661ae5bce1259039e4e379a2a12b71a0686c",
+  "Complete": true,
+  "HostRuns": 6,
+  "Checks": 10.0,
+  "MatchingBinaries": true,
+  "Rebuilt": false,
+  "ArchiveSha256": "D3C64F8F339B4DCD89BB44AE72EDB2BF03A41B230AA503F1B58D6D5B2407D9FB",
+  "Bytes": 1138
+}

@@ -1,0 +1,13 @@
+{
+  "WindowsEvidence": {
+    "File": "windows-evidence.zip",
+    "Entries": 35,
+    "Sha256": "883A40A7B313EFA998B27BB926CA762B2BC1405244EDB0D83C7CBA5A764F1745"
+  },
+  "WindowsRestoreInputs": {
+    "File": "windows-restore-inputs.zip",
+    "Entries": 20,
+    "Sha256": "2CE4D33619F216062B731EE95781F64B220D928897DB94C65632E00FB782F91D"
+  },
+  "Scope": "Existing explicit ZIP inventories reused. No package regeneration or repeat consumer tests."
+}

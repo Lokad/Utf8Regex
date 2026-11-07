@@ -1,0 +1,601 @@
+{
+  "Source": "6f9b661ae5bce1259039e4e379a2a12b71a0686c",
+  "StartedAtUtc": "2026-11-07T13:49:21.8287700+00:00",
+  "UpdatedAtUtc": "2026-11-07T14:36:21.0057223+00:00",
+  "ElapsedSeconds": 2819.1771038,
+  "BudgetSeconds": 3600,
+  "Scope": "Full",
+  "Phases": [
+    "Build",
+    "Tests",
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Resources",
+    "Verify"
+  ],
+  "Complete": true,
+  "Steps": [
+    {
+      "Name": "build",
+      "Status": "Passed",
+      "Seconds": 70.5298927,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "tests",
+      "Status": "Passed",
+      "Seconds": 272.2683194,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "disabled-dynamic-net10.0",
+      "Status": "Passed",
+      "Seconds": 8.3731354,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "disabled-dynamic-net11.0",
+      "Status": "Passed",
+      "Seconds": 8.2379809,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "core",
+      "Status": "Passed",
+      "Seconds": 523.6399721,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-semantic",
+      "Status": "Passed",
+      "Seconds": 4.7535727,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-raw",
+      "Status": "Passed",
+      "Seconds": 486.0469374,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-paired",
+      "Status": "Passed",
+      "Seconds": 503.5526147,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-lifecycle",
+      "Status": "Passed",
+      "Seconds": 3.118266,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-scaling",
+      "Status": "Passed",
+      "Seconds": 20.2950426,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-raw",
+      "Status": "Passed",
+      "Seconds": 367.4542467,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-backtracking_alternation-repeat",
+      "Status": "Passed",
+      "Seconds": 3.5248792,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-backtracking_assertion-capture",
+      "Status": "Passed",
+      "Seconds": 3.4144751,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-backtracking_capture-backreference",
+      "Status": "Passed",
+      "Seconds": 3.347287,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-character_unicode-class-dense",
+      "Status": "Passed",
+      "Seconds": 3.498243,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_backtracking",
+      "Status": "Passed",
+      "Seconds": 3.4834291,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_date-match",
+      "Status": "Passed",
+      "Seconds": 3.425263,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_date-miss",
+      "Status": "Passed",
+      "Seconds": 3.3663809,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_email-match",
+      "Status": "Passed",
+      "Seconds": 3.4654622,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_email-miss",
+      "Status": "Passed",
+      "Seconds": 3.4892864,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_ip-match",
+      "Status": "Passed",
+      "Seconds": 3.4809004,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_ip-miss",
+      "Status": "Passed",
+      "Seconds": 3.468374,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_matches-boundary",
+      "Status": "Passed",
+      "Seconds": 3.5076342,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_matches-set",
+      "Status": "Passed",
+      "Seconds": 3.5938779,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_matches-word",
+      "Status": "Passed",
+      "Seconds": 3.4656155,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_matches-words",
+      "Status": "Passed",
+      "Seconds": 3.4867958,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_one-node-backtracking",
+      "Status": "Passed",
+      "Seconds": 3.5445664,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_replace-words",
+      "Status": "Passed",
+      "Seconds": 0.9934696,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_uri-match",
+      "Status": "Passed",
+      "Seconds": 3.4569277,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-common_uri-miss",
+      "Status": "Passed",
+      "Seconds": 3.4866738,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_boostdocs-credit-card-match",
+      "Status": "Passed",
+      "Seconds": 3.4417777,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_boostdocs-date-match",
+      "Status": "Passed",
+      "Seconds": 3.3918482,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_boostdocs-float-match",
+      "Status": "Passed",
+      "Seconds": 3.3104906,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_boostdocs-ftp-line-match",
+      "Status": "Passed",
+      "Seconds": 3.4627103,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_boostdocs-postcode-match",
+      "Status": "Passed",
+      "Seconds": 3.4508468,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_leipzig-name-family-count",
+      "Status": "Passed",
+      "Seconds": 6.9813606,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_leipzig-river-window-count",
+      "Status": "Passed",
+      "Seconds": 6.7974226,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_leipzig-symbol-count",
+      "Status": "Passed",
+      "Seconds": 13.619844,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_leipzig-twain-count",
+      "Status": "Passed",
+      "Seconds": 5.953718,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_mariomka-email-count",
+      "Status": "Passed",
+      "Seconds": 8.1945346,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_mariomka-ip-count",
+      "Status": "Passed",
+      "Seconds": 6.5820989,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_mariomka-uri-count",
+      "Status": "Passed",
+      "Seconds": 8.3736012,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_rust-sherlock-holmes-window-count",
+      "Status": "Passed",
+      "Seconds": 3.852298,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_rust-sherlock-ing-count",
+      "Status": "Passed",
+      "Seconds": 6.5814501,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_rust-sherlock-letter-count",
+      "Status": "Passed",
+      "Seconds": 6.9458177,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_rust-sherlock-nonnewline-count",
+      "Status": "Passed",
+      "Seconds": 4.394131,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-industry_rust-sherlock-word-holmes-count",
+      "Status": "Passed",
+      "Seconds": 5.7087326,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-literal_absolute-anchored",
+      "Status": "Passed",
+      "Seconds": 3.5192932,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-literal_early",
+      "Status": "Passed",
+      "Seconds": 3.4356372,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-literal_empty-unicode",
+      "Status": "Passed",
+      "Seconds": 8.1813866,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-literal_late",
+      "Status": "Passed",
+      "Seconds": 3.5487484,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-literal_missing",
+      "Status": "Passed",
+      "Seconds": 3.4035135,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_backslash-c-literal",
+      "Status": "Passed",
+      "Seconds": 3.5263285,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_branch-reset-backref",
+      "Status": "Passed",
+      "Seconds": 10.4297572,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_branch-reset-basic",
+      "Status": "Passed",
+      "Seconds": 8.1134774,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_branch-reset-followup",
+      "Status": "Passed",
+      "Seconds": 8.0998315,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_branch-reset-nested",
+      "Status": "Passed",
+      "Seconds": 7.9737408,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_conditional-accept-negative-lookahead",
+      "Status": "Passed",
+      "Seconds": 3.4298186,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_conditional-lookahead",
+      "Status": "Passed",
+      "Seconds": 3.4424215,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_conditional-negative-lookahead",
+      "Status": "Passed",
+      "Seconds": 3.442219,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_duplicate-names",
+      "Status": "Passed",
+      "Seconds": 8.1034852,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_grapheme-cluster",
+      "Status": "Passed",
+      "Seconds": 10.4457787,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_kreset-atomic-alt",
+      "Status": "Passed",
+      "Seconds": 8.0604768,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_kreset-bar-or-baz",
+      "Status": "Passed",
+      "Seconds": 8.1089332,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_kreset-captured-repeat",
+      "Status": "Passed",
+      "Seconds": 1.1046486,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_kreset-global",
+      "Status": "Passed",
+      "Seconds": 8.0858946,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_kreset-repeat",
+      "Status": "Passed",
+      "Seconds": 1.0964227,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_recursive-optional",
+      "Status": "Passed",
+      "Seconds": 3.4771956,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_recursive-palindrome",
+      "Status": "Passed",
+      "Seconds": 3.4600662,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_same-start-global",
+      "Status": "Passed",
+      "Seconds": 8.1560708,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-pcre2_subroutine-prefix-digits",
+      "Status": "Passed",
+      "Seconds": 3.446047,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-simple_ab-plus",
+      "Status": "Passed",
+      "Seconds": 10.4785961,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-simple_foo-dense",
+      "Status": "Passed",
+      "Seconds": 10.5826101,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-simple_foo-optional-bar",
+      "Status": "Passed",
+      "Seconds": 10.5423012,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-simple_httpclient-caseless",
+      "Status": "Passed",
+      "Seconds": 10.5378437,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-paired-simple_loglevel-multiline",
+      "Status": "Passed",
+      "Seconds": 10.6073044,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "pcre2-scaling",
+      "Status": "Passed",
+      "Seconds": 95.9442236,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "resources",
+      "Status": "Passed",
+      "Seconds": 101.1251894,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-core",
+      "Status": "Passed",
+      "Seconds": 0.1182162,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-python",
+      "Status": "Passed",
+      "Seconds": 0.249985,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-python-pairs",
+      "Status": "Passed",
+      "Seconds": 1.1270111,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-pcre2",
+      "Status": "Passed",
+      "Seconds": 0.1850679,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-pcre2-pairs",
+      "Status": "Passed",
+      "Seconds": 0.1574202,
+      "ExitCode": 0,
+      "Error": null
+    }
+  ]
+}

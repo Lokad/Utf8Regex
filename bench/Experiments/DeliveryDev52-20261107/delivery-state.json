@@ -1,0 +1,33 @@
+{
+  "Source": "6f9b661ae5bce1259039e4e379a2a12b71a0686c",
+  "Version": "0.5.0-dev.52",
+  "StagedBefore": 276,
+  "WindowsQualification": "73941terminal0/CLOSED;279.934953s,110246checks",
+  "Full": "84574terminal0/CLOSED;2819.1771038s/46m59s/83steps/110286sourcechecks;rawD131F7BBoffVMverified,7filesimported",
+  "Keeper": 10532,
+  "KeeperExpiresLocal": "16:50",
+  "OriginalFullGuards": "8GiB RAM,1GiB repo,8GiB shm,3600second cap",
+  "CompletedSourcePilots": [
+    "9cdb09a0 nativecoordinates",
+    "6f9b661a densitycensus"
+  ],
+  "NoPublication": true,
+  "SourceCi": "42378368036GREEN/CLOSED;no requery",
+  "Linux51Retirement": "92640terminal0/CLOSED;18395entries/content;original guards preserved",
+  "WindowsConsumers": "85250terminal0/CLOSED;originalAwk19/Lython118 perTFM/publicprobes/rootloans0,audit12passed",
+  "CompilerDocuments": 464,
+  "StagedTotal": 282,
+  "LinuxInput": "15780terminal0/CLOSED;66106terminal0/CLOSED;8fixtures110246,originalAwk19/Lython118 eachTFM/publicprobes/root0,24restores/12TRX;archiveF690C0A6/809000502BoffVMverified",
+  "WindowsAcceptance": "All3profiles,bothTFM;110246checks;Awk19/Lython118 eachTFM/publicprobes/rootloans0;464compilerinputs;12restores",
+  "NextActions": [
+    "All Windows/Full/guard/Linux/cost qualification jobs are terminal0/CLOSED;never repeat them for this candidate.",
+    "Snapshot/receipt commit and push;query NEW snapshot CI minutes apart while continuing fresh gap investigation. SourceCI42378368036 alreadyGREEN/CLOSED:no requery.",
+    "All282stagedassets and both frozen8asset Full51/52graphs verified after Linux/costs;all7raw archives canonical offVM. No publication or further cleanup.",
+    "Use fresh ranking and distinct avoidable live costs for next implementation;closed trials remain closed;preserve existing protected history/scope boundaries."
+  ],
+  "PackageCostPrepared": "36799terminal0/CLOSED;114.109186097seconds/22rows/440samples/min70.0828ms;archive3D41A2D9offVMverified;no confirmation",
+  "CostInputSha256": "43A8F50B41AD42A71C77525C65ECE9F649124C0144CA7C5DD369C0B911951B30",
+  "FullLastObserved": "84574terminal0/CLOSED15:36local;2819.1771038seconds/83steps,archiveD131F7BBoffVMverified",
+  "SnapshotGuards": "14568terminal0/CLOSED;6hosts10checks,archiveD3C64F8F",
+  "DeliveryAcceptance": "Full,Windows,Linux,originalconsumers,packagecosts and preservation accepted;receipt/snapshot commit and CI pending"
+}
