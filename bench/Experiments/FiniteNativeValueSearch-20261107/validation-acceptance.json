@@ -1,0 +1,32 @@
+{
+  "Focused": [
+    {
+      "OS": "Windows",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        97,
+        97
+      ]
+    },
+    {
+      "OS": "Linux",
+      "Frameworks": [
+        "net10.0",
+        "net11.0"
+      ],
+      "Passed": [
+        97,
+        97
+      ]
+    }
+  ],
+  "NewCases": 10,
+  "ProducerBytesUnchangedAfterFocusedChecks": true,
+  "InitialFailure": "Newtest0cutoff usedinternal unlimited sentinel;correctedpositivecutoffsandexactboundary;original logs retained",
+  "CoreIdentical": true,
+  "NoNewExecutorOrPublicOverload": true,
+  "RuntimePatch": "3EDD434ACD47D0D65C20ED98DF6D089E8DE9526897C60C31AB1CD22B6AE5ED5A"
+}

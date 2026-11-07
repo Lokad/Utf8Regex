@@ -51,6 +51,14 @@ unproved class shapes and non-ASCII subjects retain their existing routes. This
 necessary hint preserves full scalar verification and can reduce numerical work
 and VM scratch requirements under the same invocation.
 
+Value `Search` from byte zero can borrow the existing complete literal search
+under finite limits, a live token and an absolute deadline. It validates the whole
+subject before discovery; nonempty literal misses omit unused UTF-16 metadata,
+while hits derive their returned coordinates. No VM workspace or capture storage
+is needed for that route. Numerical work/depth/working requirements can decrease;
+actual payload admission and original interruption authority remain. Other
+patterns and nonzero offsets retain their existing routes.
+
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
 ordered choice and original invocation controls remain; required capacity can fall.

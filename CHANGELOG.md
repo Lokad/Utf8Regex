@@ -30,6 +30,8 @@
   require less numerical work and temporary capacity under finite policies.
   Use checked SIMD in bounded validator selection, preserving its threshold,
   validation policy and interruption checkpoints.
+  Reuse bounded literal value search under finite limits, live cancellation tokens
+  and deadlines, avoiding unused miss metadata and scalar cursor preparation.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.

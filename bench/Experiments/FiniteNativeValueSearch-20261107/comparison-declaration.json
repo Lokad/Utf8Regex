@@ -1,0 +1,26 @@
+{
+  "Source": "364eff9abb78ecdf04218e055e67d611a9ee56a7",
+  "Scope": "ONE public exact-literal zero-offset valueSearch finite-limit/cancellation/deadline gate removal. Existing native helper and same invocation; include hits,fullspanlarge,offset/shape/FullMatch/ordinary controls",
+  "Rows": 16,
+  "SamplesPerWorker": 5,
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Warmup": "750ms/min32",
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterCapSeconds": 120,
+  "MemoryAdmissionKiB": 2097152,
+  "Confirmation": "One within-worker calibration confirmation; no campaign rerun planned",
+  "CoreBefore": "714B97B86C29FFAE47B6EB8BA960945782D7FF7265769C09B3CB62FAA2136966",
+  "CoreAfter": "714B97B86C29FFAE47B6EB8BA960945782D7FF7265769C09B3CB62FAA2136966",
+  "PythonBefore": "8BFE1349965CD5EAD71F371876BDCFBF49D08B4043E6AB86664CB059DCE837C4",
+  "PythonAfter": "AFDD69EBFE8045FB6EE64D708BA14E3D9401E9C0997C597A7C812849E1569985",
+  "ActualInputBytes": 837,
+  "ActualInputSha256": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+  "Acceptance": "Public gains with explicit costs; no universal10%gate;retain full-hit regressions and controls/uncertainty; no new public overload/engine",
+  "ReferenceTiming": "None;Full48 qualification remains"
+}

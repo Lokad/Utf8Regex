@@ -48,8 +48,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         using var programUse = EnterProgramUse();
-        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
-            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && _utf8Regex is not null)
         {
             return MatchValueNative(input, startOffsetInBytes, 0, cancellationToken);
         }

@@ -1,0 +1,14 @@
+{
+  "Scope": "Untimed diagnostic count and one ordinary Windows sampled-thread-time profile; not VM throughput evidence",
+  "InputBytes": 6839410,
+  "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+  "Count": 92,
+  "CoreSha256": "592B393543F00343DF3B37BE810B0F6257B44668CFDD9AC4D1992C6588EF0C4B",
+  "Sha256": "3C1F0F577321753A071E21CCB84AF773404E5F0956B5BA8D4E6C83927EB45F04",
+  "Bytes": 280999,
+  "ValidationInclusivePercent": 36.81,
+  "CountFromBytesInclusivePercent": 54.32,
+  "RunSegmentInclusivePercent": 37,
+  "Conclusion": "No evidence for rewind-specific change; inspect ordinary verification/validation costs before editing",
+  "Profile": "dotnet-sampled-thread-time via installed dotnet-trace10.0.745401;one warm1s+8s loop,ordinary/no hook;28CPUstartupthenCPU2"
+}
