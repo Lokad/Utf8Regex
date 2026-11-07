@@ -16,47 +16,14 @@
 - Add persistent memory cursors, byte-range captures and retained result receipts.
   Current-call tokens supplement original cancellation and absolute deadlines;
   returned results remain valid across cursor advances and program closure.
-- Improve literal, candidate-window, class/repeat, declaration and token matching
-  through existing checked span/SIMD search and scalar execution. Reuse more native
-  plans under finite limits, avoid unnecessary backtracking/capture/coordinate
-  scratch and reduce small capture-trail allocations. PythonRe Count, Split and
-  FullMatch also reuse proved scalar/native work and materialized result buffers.
-  Global PythonRe matching skips proved impossible empty retries and word-interior
-  starts while retaining bounded interruption and resource controls.
-  Completed single-capture references avoid unnecessary opening journals, and
-  bounded repeat proofs reuse pure predicate dispatch with unchanged work charges.
-  Complete ASCII-range Count skips nonmembers, and PythonRe captured
-  class/delimiter searches avoid repeated impossible starts. These routes can
-  require less numerical work and temporary capacity under finite policies.
-  Use checked SIMD in bounded validator selection, preserving its threshold,
-  validation policy and interruption checkpoints.
-  Reuse bounded literal value search under finite limits, live cancellation tokens
-  and deadlines, avoiding unused miss metadata and scalar cursor preparation.
-  Reuse positive ASCII mask hits in category repeats while retaining full scalar
-  predicates for mask misses and unchanged per-scalar work charges.
-  Borrow immutable class instructions during scalar classification to avoid
-  repeated instruction copies.
-  Borrow invocation values through Python cursor construction, retaining one
-  owned state copy and the original controls.
-  Narrow direct class/delimiter candidate windows to the actual scalar class,
-  avoiding impossible starts across nonmember whitespace. Explicit whitespace
-  and gap prefixes retain their conservative windows; required work can decrease.
-  Reuse prepared prefix tries for short PythonRe searches under the same resource
-  and interruption authority, avoiding repeated case-expanded prefix checks.
-  Extend existing class/delimiter windows to short captured searches, avoiding
-  failed prefix retries before detailed-result projection.
-  Count native literal value coordinates over already validated scalar ranges,
-  avoiding repeated validation while keeping bounded resource/interruption checks.
-  Vectorize the common UTF-8 validator's existing lead-density census while
-  preserving its exact counts, selection window, scalar tail and fallback.
-  Evaluate bounded ASCII assertions within the current scalar VM segment, avoiding
-  unnecessary suspension while retaining scalar rewind, depth and interruption.
-  Reuse bounded prefix searches for selected mixed-width UTF-8 literals, with
-  complete verification and ordinary sequence-search fallback. Their preparation
-  uses the existing bounded construction scope and can require additional work.
-  Avoid discarded UTF-16 metadata in eligible PCRE2 literal Count. Controlled
-  Count reuses bounded candidate/comparison search under its original invocation;
-  its numerical work charges change. Strict whole-input validation remains.
+- Improve literal, class/repeat, assertion, declaration and token matching through
+  checked span/SIMD search and scalar execution. More finite-policy operations
+  reuse proved fast paths, and captures/coordinates/output avoid unused scratch,
+  journals and copies. PythonRe Count, Search, Split and FullMatch share these
+  improvements while retaining ordered scalar verification and interruption.
+  Class/delimiter Count can reject impossible windows before VM admission.
+  Literal string substitutions reuse validated output sizes and decode no-match
+  input directly, avoiding an intermediate byte array. Byte outputs remain owned.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.
