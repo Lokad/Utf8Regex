@@ -1,0 +1,20 @@
+{
+  "Source": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "Version": "0.5.0-dev.50",
+  "FullAccepted": true,
+  "FullSeconds": 2779.0054958,
+  "FullSteps": 83,
+  "WindowsPackagesAccepted": true,
+  "OriginalWindowsConsumersAccepted": true,
+  "LinuxAcceptance": "Complete",
+  "OriginalLinuxConsumersAccepted": true,
+  "FinalPackageCosts": "Accepted with documented local trade-offs",
+  "Prior264AssetsUnchanged": true,
+  "NewAssets": 6,
+  "AllStaged": 270,
+  "SourceCI": 42356334488,
+  "SourceCIGreenBothOS": true,
+  "SnapshotCI": 42361008016,
+  "SnapshotCIGreenBothOS": true,
+  "Published": false
+}

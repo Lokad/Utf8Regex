@@ -1,0 +1,12 @@
+{
+  "Source": "f2e8ec1f46bcd3b05081de71766f0b707e0eee4f",
+  "RunId": 42361008016,
+  "Status": "Completed",
+  "Conclusion": "Success",
+  "Platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "LastObserved": "2026-11-07T10:53:09.5691830+01:00",
+  "Scope": "Generated snapshot/source CI terminal GREEN;closed,no further query"
+}

@@ -1,0 +1,165 @@
+{
+  "Decision": "Accept documented local costs for substantial overall public gains",
+  "BeforeVersion": "0.5.0-dev.49",
+  "AfterVersion": "0.5.0-dev.50",
+  "BeforeSource": "c1a87495f78eeb2ab56005b5d653a1ccbc55ddf0",
+  "AfterSource": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "Complete": true,
+  "Seconds": 98.265182093,
+  "Rows": 19,
+  "Samples": 380,
+  "MinimumSampleMilliseconds": 51.0792,
+  "Allocations": "Unchanged in all19rows",
+  "PersistentGains": [
+    {
+      "Name": "captured-class-ascii-input",
+      "BeforeUs": 0.853529562605319,
+      "AfterUs": 0.8159944255691176,
+      "DeltaUs": -0.03753513703620137,
+      "Percent": -4.397637607492921
+    },
+    {
+      "Name": "anchored-fullmatch-control",
+      "BeforeUs": 0.34185958719477805,
+      "AfterUs": 0.30774033987709953,
+      "DeltaUs": -0.034119247317678514,
+      "Percent": -9.98048573031205
+    },
+    {
+      "Name": "actual-unicode-miss-unlimited",
+      "BeforeUs": 0.3531369649631698,
+      "AfterUs": 0.2868164498793231,
+      "DeltaUs": -0.06632051508384673,
+      "Percent": -18.78039448256672
+    },
+    {
+      "Name": "actual-unicode-miss-finite-live",
+      "BeforeUs": 0.42299253906110756,
+      "AfterUs": 0.364365844853235,
+      "DeltaUs": -0.05862669420787259,
+      "Percent": -13.85998304792867
+    },
+    {
+      "Name": "folded-search-miss",
+      "BeforeUs": 0.40880444732320176,
+      "AfterUs": 0.388373869990139,
+      "DeltaUs": -0.02043057733306275,
+      "Percent": -4.99764067314813
+    },
+    {
+      "Name": "folded-search-finite-live",
+      "BeforeUs": 0.5504429821336666,
+      "AfterUs": 0.5290864479842059,
+      "DeltaUs": -0.021356534149460704,
+      "Percent": -3.879881267025509
+    },
+    {
+      "Name": "full-unicode-hit-finite-adverse",
+      "BeforeUs": 1.7127961283202766,
+      "AfterUs": 1.606882188306293,
+      "DeltaUs": -0.10591394001398369,
+      "Percent": -6.1836863280309124
+    },
+    {
+      "Name": "unicode-hit-finite-live",
+      "BeforeUs": 1.4885485558662181,
+      "AfterUs": 1.3831266211501851,
+      "DeltaUs": -0.105421934716033,
+      "Percent": -7.08219656662028
+    },
+    {
+      "Name": "long-unicode-miss-finite-live",
+      "BeforeUs": 11.850987284195902,
+      "AfterUs": 9.709231640701343,
+      "DeltaUs": -2.141755643494559,
+      "Percent": -18.072381584197082
+    },
+    {
+      "Name": "actual-mail-count",
+      "BeforeUs": 3630.852380952381,
+      "AfterUs": 2285.854411764706,
+      "DeltaUs": -1344.9979691876747,
+      "Percent": -37.043587237079535
+    },
+    {
+      "Name": "actual-mail-finite-live",
+      "BeforeUs": 5074.169791666667,
+      "AfterUs": 3398.6652173913044,
+      "DeltaUs": -1675.5045742753628,
+      "Percent": -33.020270173596714
+    },
+    {
+      "Name": "actual-mail-deadline-live",
+      "BeforeUs": 5717.293681318682,
+      "AfterUs": 3611.4500000000003,
+      "DeltaUs": -2105.8436813186813,
+      "Percent": -36.83287580974803
+    },
+    {
+      "Name": "dense-ascii-class-union",
+      "BeforeUs": 138.32955387796505,
+      "AfterUs": 126.36753730293981,
+      "DeltaUs": -11.962016575025245,
+      "Percent": -8.647477158480676
+    },
+    {
+      "Name": "folded-category-control",
+      "BeforeUs": 173.46392177612006,
+      "AfterUs": 153.46295791591479,
+      "DeltaUs": -20.000963860205275,
+      "Percent": -11.530330719732817
+    }
+  ],
+  "PersistentAdverse": [
+    {
+      "Name": "long-captured-class-union",
+      "BeforeUs": 51.35186440923631,
+      "AfterUs": 53.35578687367678,
+      "DeltaUs": 2.003922464440464,
+      "Percent": 3.902336336750478
+    }
+  ],
+  "OverlappingRanges": [
+    {
+      "Name": "unchanged-core-literal-count",
+      "BeforeUs": 0.3252053485142443,
+      "AfterUs": 0.3247877572206533,
+      "DeltaUs": -0.0004175912935910353,
+      "Percent": -0.12840849497059992
+    },
+    {
+      "Name": "partial-letter-mask-adverse",
+      "BeforeUs": 154.40947918359862,
+      "AfterUs": 153.68504345783415,
+      "DeltaUs": -0.7244357257644651,
+      "Percent": -0.46916531912077897
+    },
+    {
+      "Name": "pcre-literal-control",
+      "BeforeUs": 0.32226142780926514,
+      "AfterUs": 0.31456005098139095,
+      "DeltaUs": -0.007701376827874196,
+      "Percent": -2.3897916918658835
+    },
+    {
+      "Name": "explicit-whitespace-control",
+      "BeforeUs": 189.30142016992596,
+      "AfterUs": 182.39769207190636,
+      "DeltaUs": -6.903728098019599,
+      "Percent": -3.646949976298375
+    }
+  ],
+  "MailFiniteExtraUsBefore": 1443.3174107142863,
+  "MailFiniteExtraUsAfter": 1112.8108056265983,
+  "MailFiniteExtraPercentBefore": 39.75147594228827,
+  "MailFiniteExtraPercentAfter": 48.68248825906176,
+  "Interpretation": "One cumulative package comparison;retain predecessor48->49 adverse evidence separately. No normalization or assignment of per-change causes. Coreliteral control stable/overlapping;Pcreliteral and explicit-whitespace controls overlap",
+  "Confirmation": "None;ONE complete ABBA,no tuning or additional campaign",
+  "Canonical": "artifacts/experiments/delivery-dev50-20261107/package-cost-evidence.tar.gz",
+  "Sha256": "14F10E36F0A575C0875AB76E05DDC1B9AF760F2A3E78D50D0CBAB87809D59AEA",
+  "Bytes": 3779425,
+  "OffVmVerified": true,
+  "Session": "51813terminal0CLOSED",
+  "Publication": false,
+  "CheckedAt": "2026-11-07T10:54:46.2219617+01:00"
+}

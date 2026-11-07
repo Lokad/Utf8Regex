@@ -54,7 +54,69 @@ and symbol files bring `artifacts/nuget/` to 270 assets; the previous 264 remain
 byte-for-byte unchanged. [Windows acceptance](windows-acceptance.json) and
 [asset preservation](staged-assets-preservation.json) record the boundary.
 
-Linux exact-Windows-byte acceptance and the single cumulative dev.49-to-dev.50
-public-operation comparison are in progress. This receipt does not yet claim
-completion of those checks or a universal package speedup. Publication is not
-authorized.
+Linux accepted the exact Windows bytes without rebuilding or repacking the
+producer: eight fixtures/110,110 checks, original Awk 19/Lython 118 per target,
+public probes with final root loans zero, 24 restore audits and 12 TRX identities.
+The original 1,565 consumer source files change only three exact package pins.
+[Linux acceptance](linux-archive-acceptance.json) and
+[consumer inputs](boundary-inputs.json) retain their identities.
+
+## Cumulative package costs
+
+ONE exact-package dev.49-to-dev.50 comparison completed in **98.265182093s**:
+Default-process ABBA, 19 public workloads, 380 samples, minimum 51.0792 ms.
+The fixed typed caller loads one producer per process, warms for 750 ms/minimum
+32 operations, calibrates lanes independently toward 75 ms with one calibration
+confirmation, and consumes results after timing. The outer cap remains 120 s.
+No noise confirmation, tuning, package qualification or Full repeat followed.
+
+| Public operation | Before us | After us | Change | B/op both |
+| --- | ---: | ---: | ---: | ---: |
+| Captured class FindAll | 0.85 | 0.82 | -4.40% | 128 |
+| Anchored FullMatch | 0.34 | 0.31 | -9.98% | 0 |
+| Unicode miss, unlimited | 0.35 | 0.29 | -18.78% | 0 |
+| Same finite/live | 0.42 | 0.36 | -13.86% | 112 |
+| Folded Search miss | 0.41 | 0.39 | -5.00% | 0 |
+| Same finite/live | 0.55 | 0.53 | -3.88% | 112 |
+| Full Unicode hit finite | 1.71 | 1.61 | -6.18% | 112 |
+| Unicode hit finite/live | 1.49 | 1.38 | -7.08% | 112 |
+| Long Unicode miss finite/live | 11.85 | 9.71 | -18.07% | 112 |
+| Actual mail Count | 3630.85 | 2285.85 | -37.04% | 1544 |
+| Same finite/live | 5074.17 | 3398.67 | -33.02% | 1656 |
+| Same deadline/live | 5717.29 | 3611.45 | -36.83% | 1704 |
+| Dense ASCII class union | 138.33 | 126.37 | -8.65% | 0 |
+| Long captured class union | 51.35 | 53.36 | +3.90% | 64 |
+| Folded category control | 173.46 | 153.46 | -11.53% | 0 |
+
+**Accept the documented local cost for the substantial public gains.** The gains
+above persist in both processes with disjoint overall ranges. Long captured
+class union is also persistently/disjointly slower: +2.003922 us/+3.9023%, with
+unchanged allocation. All 19 allocation medians are unchanged. Core's literal
+control (-0.13%), partial-letter (-0.47%), PCRE literal (-2.39%) and explicit
+whitespace (-3.65%) have overlapping ranges; retain their raw observations without
+normalization or causal credit. The finite-mail extra cost falls from 1443.32 to
+1112.81 us while its relative overhead rises from 39.75% to 48.68%.
+
+[Summary](package-cost-summary.json), [all process observations](package-cost-observations.json),
+[declaration](package-cost-declaration.json) and [acceptance](package-cost-acceptance.json)
+retain every row, source/binary identity, absolute cost and range. Earlier
+[dev.48-to-dev.49 costs](../DeliveryDev49-20261107/package-cost-acceptance.json)
+remain separate evidence; this comparison does not establish universal gains or
+attribute a particular change to each cumulative movement.
+
+One missing staging identity file stopped Linux setup before tests. One local
+analysis invocation initially looked for the local-only analysis helper inside
+the worker archive. Both preparation corrections are [recorded](preparation-corrections.json);
+neither changed producers nor repeated measurement or qualification.
+
+Additional immutable, off-VM archives:
+
+- `windows-evidence.zip`: `9B182445526441E734B31B9C881420C35FDCBC46F240BB7AA6C8525C32057CAC`.
+- `windows-restore-inputs.zip`: `711E369BF9292AF4C9A671BABD67562E1AEC19A9EA260060D6E1ACDA316D3C96`.
+- `linux-evidence.tar.gz`: `BD950CEA04F0B850DDFFAFD2C1F304C00C55E2356A15FA38CA749B67BE197D2D`, 808899755 bytes.
+- `package-cost-evidence.tar.gz`: `14F10E36F0A575C0875AB76E05DDC1B9AF760F2A3E78D50D0CBAB87809D59AEA`, 3779425 bytes.
+
+All delivery checks are complete. [Snapshot CI](snapshot-ci.json) passed on
+Windows/Linux for `f2e8ec1f46bcd3b05081de71766f0b707e0eee4f`.
+[Delivery state](delivery-state.json) records the completed checkpoint; broader
+performance/profile work remains separately planned. Publication is not authorized.

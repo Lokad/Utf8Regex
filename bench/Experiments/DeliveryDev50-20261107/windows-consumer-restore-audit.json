@@ -1,0 +1,152 @@
+{
+  "Complete": true,
+  "Source": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "Version": "0.5.0-dev.50",
+  "Scope": "Read-only feed/cache/lock audit of already-passed original copied Windows consumers; no build, test or pack repeated.",
+  "Restores": [
+    {
+      "Fixture": "Awk",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "8AE2D27910538074801E48028F735A21CF8D3E8D56A76334A104A13498DC0B1A",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+    },
+    {
+      "Fixture": "Awk",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "8AE2D27910538074801E48028F735A21CF8D3E8D56A76334A104A13498DC0B1A",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "B4A72C9DBD97A8A5BDBA579D215A5BA9D92BE047A2BA8FA421CFB84396E682EE",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "B4A72C9DBD97A8A5BDBA579D215A5BA9D92BE047A2BA8FA421CFB84396E682EE",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "B4A72C9DBD97A8A5BDBA579D215A5BA9D92BE047A2BA8FA421CFB84396E682EE",
+      "MetadataSha256": "3913AD1B06D0E9F38A137DC5F2AF4738954EB2479935DF0F7A3A5E42CB3C2440",
+      "ContentHash": "Z3/LcBwQEZHiuEgoAZ7VLfAhw6lDMP+FtrjEiAwDins58GQ4gdA5CraNO3WTcjfFBgBTa/59pwN5MbMb7urGIg==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "CE7888579586D3CBCA9BE38FF4D18BF466D7111958021DF4BD37141EF4055253",
+      "AssemblySha256": "1655E74420CD2B8EF926040BCD008F141C3538D1592A9517E58ECD1EA433DB9E"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "B4A72C9DBD97A8A5BDBA579D215A5BA9D92BE047A2BA8FA421CFB84396E682EE",
+      "MetadataSha256": "3913AD1B06D0E9F38A137DC5F2AF4738954EB2479935DF0F7A3A5E42CB3C2440",
+      "ContentHash": "Z3/LcBwQEZHiuEgoAZ7VLfAhw6lDMP+FtrjEiAwDins58GQ4gdA5CraNO3WTcjfFBgBTa/59pwN5MbMb7urGIg==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "CE7888579586D3CBCA9BE38FF4D18BF466D7111958021DF4BD37141EF4055253",
+      "AssemblySha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "0E779DA5A75547573BDDA9B102D6E10703558A19AB9105911FE45D9A7FA2F999"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "6FF80527A3C2B4F53EFC6C6252F66F9B12B7FFF15FDBB5B26A3134C009BC0707",
+      "ContentHash": "YQ561cU7P7JaBNuWxTldn0W558wIz7ZAnKXVMXg8yJJFYtC0Uooe1nFFLnJz6wO63nGBMDtZ/ZODGbU5ZVWKPA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "1EFE77D10AD7F94529EB85AFC99778D0379CB70838E4DF79E84692F21BDFD534",
+      "AssemblySha256": "B1C6F793F5D13758F93E3622936B1FC113EDAE7700934E149453D4951C048499"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "3913AD1B06D0E9F38A137DC5F2AF4738954EB2479935DF0F7A3A5E42CB3C2440",
+      "ContentHash": "Z3/LcBwQEZHiuEgoAZ7VLfAhw6lDMP+FtrjEiAwDins58GQ4gdA5CraNO3WTcjfFBgBTa/59pwN5MbMb7urGIg==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "CE7888579586D3CBCA9BE38FF4D18BF466D7111958021DF4BD37141EF4055253",
+      "AssemblySha256": "1655E74420CD2B8EF926040BCD008F141C3538D1592A9517E58ECD1EA433DB9E"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "3913AD1B06D0E9F38A137DC5F2AF4738954EB2479935DF0F7A3A5E42CB3C2440",
+      "ContentHash": "Z3/LcBwQEZHiuEgoAZ7VLfAhw6lDMP+FtrjEiAwDins58GQ4gdA5CraNO3WTcjfFBgBTa/59pwN5MbMb7urGIg==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "CE7888579586D3CBCA9BE38FF4D18BF466D7111958021DF4BD37141EF4055253",
+      "AssemblySha256": "0C2F72B1F5D08752DE69F62BCBA20673F5EA1766201AAF54B35D6F5A82264DFE"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "050F43A2667B57D0C852C5B6AAAA8C952D6DC3A764999C8500E477170AB043AC",
+      "ContentHash": "HlYscmrjnT293jgt7RfdA+dZ3xxAf9wODRbbJL5qLSn6UG1jpKx+spC4jgyRxleXzRwt4LSmjEbA4tLyVwGEiA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "B875F828ACE3E3044BE19572EF845C40216E8723C5994A94F6FC818FD5C3C18F",
+      "AssemblySha256": "79CBDA8D3F3CDE56C3D3A7F3975227DDEFB4959D275D27F942235C885C37B96A"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.50",
+      "LockSha256": "4F283F8851651D4A78657C6F25849FA4CB7DEF1F26E66AFA572D837236D2D9DE",
+      "MetadataSha256": "050F43A2667B57D0C852C5B6AAAA8C952D6DC3A764999C8500E477170AB043AC",
+      "ContentHash": "HlYscmrjnT293jgt7RfdA+dZ3xxAf9wODRbbJL5qLSn6UG1jpKx+spC4jgyRxleXzRwt4LSmjEbA4tLyVwGEiA==",
+      "Source": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.5.0-dev.50\\feed",
+      "PackageSha256": "B875F828ACE3E3044BE19572EF845C40216E8723C5994A94F6FC818FD5C3C18F",
+      "AssemblySha256": "FAF5FEAA7474BE4383BB79DD349FAAE20AB890DD0E521743F38B749AE3B9DC8F"
+    }
+  ]
+}

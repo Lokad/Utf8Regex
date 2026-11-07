@@ -1,0 +1,30 @@
+{
+  "SnapshotCICommit": "f2e8ec1f46bcd3b05081de71766f0b707e0eee4f",
+  "SnapshotCIRun": 42361008016,
+  "GreenBothOS": true,
+  "PackageAndFullSource": "34d35937625782f786bdb66c6bb2e214d6deed8f",
+  "NoTrackedProducerOrBuildInputChange": true,
+  "ChangedFiles": [
+    "bench/Experiments/DeliveryDev50-20261107/boundary-inputs.json",
+    "bench/Experiments/DeliveryDev50-20261107/ci-scope.json",
+    "bench/Experiments/DeliveryDev50-20261107/delivery-state.json",
+    "bench/Experiments/DeliveryDev50-20261107/frozen-graphs.json",
+    "bench/Experiments/DeliveryDev50-20261107/linux-archive-acceptance.json",
+    "bench/Experiments/DeliveryDev50-20261107/package-cost-acceptance.json",
+    "bench/Experiments/DeliveryDev50-20261107/package-cost-declaration.json",
+    "bench/Experiments/DeliveryDev50-20261107/package-cost-observations.json",
+    "bench/Experiments/DeliveryDev50-20261107/package-cost-summary.json",
+    "bench/Experiments/DeliveryDev50-20261107/preparation-corrections.json",
+    "bench/Experiments/DeliveryDev50-20261107/README.md",
+    "bench/Experiments/DeliveryDev50-20261107/snapshot-ci.json",
+    "bench/Experiments/DeliveryDev50-20261107/transfer-inputs.json",
+    "bench/Experiments/DeliveryDev50-20261107/windows-archive-hashes.json",
+    "bench/Experiments/DeliveryDev50-20261107/windows-compilation-inputs.json",
+    "bench/Experiments/DeliveryDev50-20261107/windows-consumer-restore-audit.json"
+  ],
+  "AllPathsIgnoredByExistingCI": true,
+  "NoAdditionalRunExpected": true,
+  "NoQualificationRepeated": true,
+  "Closed": true,
+  "CheckedAt": "2026-11-07T10:57:14.0257359+01:00"
+}
