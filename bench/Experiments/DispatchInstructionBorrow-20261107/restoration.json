@@ -1,0 +1,28 @@
+{
+  "Decision": "Reject and restore",
+  "Source": "0f06dc60e0b3af762963cfa37b2c92b2e44f7639",
+  "Production": "Exact production C# restored on both OS; accepted scoped invocation and class parameter borrowing retained",
+  "Reason": "No useful mail gain; dense/partial movements overlap; native Unicode controls bypass changed dispatch; persistent adverse FullMatch/PCRE controls",
+  "TestsPerRuntimePerOS": {
+    "Core": 1649,
+    "Python": 38,
+    "Pcre2": 46
+  },
+  "WindowsBaselineCore": "8BB7F8571C1ED9FBAD28F7A7020E8669F927FC7A7E9FAE76BC4652B9F5649507",
+  "WindowsRestoredCore": "8BB7F8571C1ED9FBAD28F7A7020E8669F927FC7A7E9FAE76BC4652B9F5649507",
+  "LinuxBaselineCore": "365EC92755091F2ABD78C63330F4BD6C8126A3DAB290AAD2E51C597FBDBE2427",
+  "LinuxRestoredCore": "365EC92755091F2ABD78C63330F4BD6C8126A3DAB290AAD2E51C597FBDBE2427",
+  "Comparison": "32237 terminal0/CLOSED; ONE93.364836154seconds/18rows360samples/min65.9471ms",
+  "Tests": "39300/73013/29140 terminal0/CLOSED",
+  "Restoration": "47578/24840 terminal0/CLOSED",
+  "LaunchCorrection": "Initial Linux restore wrapper omitted exported scratch path; redirection failed before tests ran. Corrected environment only, no timing rerun.",
+  "SourceCI": "42352964842 GREEN both OS/CLOSED; evidence-only changes match existing paths-ignore",
+  "Preserved": "Eight frozen Full49 DLL/PDB hashes unchanged; all264staged assets untouched; no Full or package requalification",
+  "Confirmation": "None; no tuning variant",
+  "Raw": "artifacts/experiments/dispatch-instruction-borrow-20261107/evidence.tar.gz",
+  "RawSha256": "9C9D1DECCF4C31DAE1FD3BBB150D27F4147AA23AD73C15B1295798CA3A4FA76D",
+  "RawBytes": 4867535,
+  "Timestamp": "2026-11-07T09:05:22.8304857+01:00",
+  "SupplementalArchive": "artifacts/experiments/dispatch-instruction-borrow-20261107/restoration.zip",
+  "SupplementalSha256": "0B5DD88A9FB96B395C18AAF1865688FD23AB840A561EEEF65008DA7A0F12F643"
+}
