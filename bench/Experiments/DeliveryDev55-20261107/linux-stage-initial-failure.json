@@ -1,0 +1,11 @@
+{
+  "Session": "21983 terminal1/CLOSED",
+  "Phase": "Linux staging, before extraction/tests",
+  "Reason": "Source identity file omitted from transfer; source.txt absent",
+  "CompletedChecks": "10 post-Full matching-binary snapshot checks; seven generated files exported/restored; frozen graph verified",
+  "Correction": "Transferred existing source.txt and resumed only stage-and-run-linux.sh in41946",
+  "ProducerChanged": false,
+  "Rebuilt": false,
+  "Repacked": false,
+  "RepeatedFull": false
+}

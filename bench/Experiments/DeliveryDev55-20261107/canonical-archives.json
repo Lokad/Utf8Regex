@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "capacity-and-graphs.tar.gz",
+    "Bytes": 5037,
+    "Sha256": "7BC37CD9410541E71EF794065ED05B1B34C08A2F3BCA7DC9EA6BE765103B1C62"
+  },
+  {
+    "Name": "full-evidence.tar.gz",
+    "Bytes": 34289911,
+    "Sha256": "1C93F59BAD6AA4BA4AAD19A2C07C565BB0CF192C5A78D73E4BF511C07F4CAB0E"
+  },
+  {
+    "Name": "linux-evidence.tar.gz",
+    "Bytes": 809072996,
+    "Sha256": "0B9900A7B9343F2AB4870E724C9BA2BD65F463112C6120F64F6021BEAEE0800F"
+  },
+  {
+    "Name": "package-cost-evidence.tar.gz",
+    "Bytes": 4779506,
+    "Sha256": "A3CBDFA6C82DEC713AFCBDEEBBBBB3F60E9C6FE272DE53DE1227EC5E7D134F1C"
+  },
+  {
+    "Name": "windows-evidence.zip",
+    "Bytes": 6763142,
+    "Sha256": "F2BCD255471D061041894814191A3735320680B85F88561FFF038DA763BC9118"
+  },
+  {
+    "Name": "windows-restore-inputs.zip",
+    "Bytes": 31382,
+    "Sha256": "F496AC2C2ADAEB0BAD1874B4FAF3E08A6C430BD3C4C14040DB3750676FF33B0B"
+  }
+]

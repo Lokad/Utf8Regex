@@ -1,0 +1,9 @@
+{
+  "Phase": "Original Windows consumers",
+  "Failure": "NU1301: relative PackageInputRoot generated a relative candidate feed in the detached NuGet.Config.",
+  "ConsumerTestsExecuted": 0,
+  "ProducerDefect": false,
+  "PackageBytesChanged": false,
+  "FailedOutput": "actual-windows/Awk-build.txt",
+  "Correction": "Pass the resolved absolute package-candidate root; keep failed output and use a distinct result root."
+}

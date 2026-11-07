@@ -1,0 +1,16 @@
+{
+  "Source": "d60679252cf6d16a76f7a77a7b50c34899cd0e50",
+  "Version": "0.5.0-dev.55",
+  "TerminalExit": 0,
+  "Seconds": 295.4822875,
+  "Fixtures": 8,
+  "Checks": 110324.0,
+  "Assets": 6,
+  "OriginalConsumers": "Awk19/Lython118perTFM;publicprobes/rootloans0",
+  "RestoreAudits": 12,
+  "CompilerDocuments": 464,
+  "PriorStaged": 294,
+  "StagedTotal": 300,
+  "NoRepack": true,
+  "InitialConsumerRestoreFailurePreserved": true
+}

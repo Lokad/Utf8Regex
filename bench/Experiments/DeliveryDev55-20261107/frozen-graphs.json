@@ -1,0 +1,11 @@
+{
+  "Source": "d60679252cf6d16a76f7a77a7b50c34899cd0e50",
+  "OffVmVerified": true,
+  "Sha256": "7BC37CD9410541E71EF794065ED05B1B34C08A2F3BCA7DC9EA6BE765103B1C62",
+  "Full55Assets": 8,
+  "Full54Assets": 8,
+  "Full52Assets": 8,
+  "PostFullSnapshotChecks": 10,
+  "NoFurtherCleanup": true,
+  "ProtectedScopesUnchanged": true
+}

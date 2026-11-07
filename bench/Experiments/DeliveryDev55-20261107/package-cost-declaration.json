@@ -1,0 +1,30 @@
+{
+  "Scope": "ONE exact54->55 cumulative public package comparison",
+  "BeforeSource": "553acbdfc895d993416e3bad3af47c468a181148",
+  "AfterSource": "d60679252cf6d16a76f7a77a7b50c34899cd0e50",
+  "BeforeVersion": "0.5.0-dev.54",
+  "AfterVersion": "0.5.0-dev.55",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Rows": 22,
+  "SamplesPerRow": 5,
+  "WarmMilliseconds": 750,
+  "MinimumWarmCalls": 32,
+  "TargetMilliseconds": 75,
+  "MinimumSampleMilliseconds": 20,
+  "OuterCapSeconds": 120,
+  "WorkerCapSeconds": 35,
+  "Confirmation": "At most one if genuine uncertainty prevents a decision",
+  "Acceptance": "Keep public costs, allocations, process observations, all adverse cases and uncertainty. Accept documented local costs for substantial benefits; no universal 10% gate, normalization, source-pilot composition or new tuning.",
+  "Worker": "A21B323FC166D507F226E4A72939CC9F0EFE2D9E73F48296A315CFC0F53815E2",
+  "CoreBefore": "D92F46FBF0E9CA1CA2856CD1464DA62F5062F427AF33B99A2F8CE350E3E57D25",
+  "PythonBefore": "364C554811A5B421A08B4F8C3EDC4B7B2D0C217B693D0588B67C3E397381BD51",
+  "PcreBefore": "A9A230202942F99D3697080B73DF0F36BB9A5333406055E6CB11EA9D785AB9B0",
+  "CoreAfter": "D293CEE169D322E2050F5B8693E13B91293BE1C48CD6F8C5F439EAC92C466C50",
+  "PythonAfter": "1249BFB73E2074C5094358680093C0867AF6C64992E83A8215A1D2E4258EC280",
+  "PcreAfter": "47E9162DFCF13A491F60D15C9E3BA2FEE503C5BCF1CD97FEB80050465A4003D1"
+}

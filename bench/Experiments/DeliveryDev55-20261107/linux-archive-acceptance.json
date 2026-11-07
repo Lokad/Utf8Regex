@@ -1,0 +1,17 @@
+{
+  "Source": "d60679252cf6d16a76f7a77a7b50c34899cd0e50",
+  "Version": "0.5.0-dev.55",
+  "Sha256": "0B9900A7B9343F2AB4870E724C9BA2BD65F463112C6120F64F6021BEAEE0800F",
+  "Bytes": 809072996,
+  "OffVmVerified": true,
+  "TerminalExit": "0",
+  "Assets": 6,
+  "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+  "DetachedFixtures": 8,
+  "DetachedChecks": 110324.0,
+  "Repacked": false,
+  "Rebuilt": false,
+  "RestoreAudits": 24,
+  "Complete": true,
+  "CheckedTrxFiles": 12
+}
