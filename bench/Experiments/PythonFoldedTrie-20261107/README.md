@@ -78,3 +78,6 @@ SHA256 `04504B53D920D1A6FA7CCD3D0F056C3DAC6FB69959E50ABC01BFC6D7DDD75534`.
 It preserves both graphs/PDBs, worker, patch/test sources, all samples and checks.
 Frozen Full50 assets and all 270 staged package/symbol files remain unchanged.
 No package/Full qualification or NuGet publication occurred.
+
+[Source CI](source-ci.json) for `e51096bc2de30f967b38051227b7f2c5304ad459`
+passed on Windows and Linux. The run is terminal and closed.

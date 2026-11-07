@@ -1,0 +1,13 @@
+{
+  "Source": "e51096bc2de30f967b38051227b7f2c5304ad459",
+  "RunId": 42365609815,
+  "Status": "Completed",
+  "Conclusion": "Success",
+  "Platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "ObservedAt": "2026-11-07T12:06:43.0838782+01:00",
+  "Closed": true,
+  "Scope": "Full source CI for accepted bounded prefix-trie change;no requery"
+}
