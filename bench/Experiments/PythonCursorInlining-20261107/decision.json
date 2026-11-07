@@ -1,0 +1,27 @@
+{
+  "Decision": "Reject before timing",
+  "Source": "39d3bcb3d6f8918f7641a68a499578dac5b6abce plus archived one-attribute patch",
+  "Hypothesis": "Inlining might remove 376B returned-cursor transfer",
+  "Observation": "Factory inlined, but both360B state and376B cursor bulk copies remain",
+  "BeforeCodegen": {
+    "BulkCopies": 2,
+    "CreateScalarCursorBytes": 356,
+    "MatchValueScalarBytes": 410
+  },
+  "TrialCodegen": {
+    "BulkCopies": 2,
+    "CreateScalarCursor": "Inlined",
+    "MatchValueScalarBytes": 658
+  },
+  "CoreBeforeAndAfter": "EFF2E61F37C76CD7A07CC5CD1D6CC506342BC1137761EEEC24664421CBFD8486",
+  "PythonBefore": "2CD2D361D069C8E7A9714DFEA820433999E03CF3A93334754692FD9A9FDFF224",
+  "PythonTrial": "45983D1437B13711F835A6B9416F662E75F0AE21772A8CB037463BAAFFD67282",
+  "Validation": "Windows/Linux net11Release builds and untimed public Search codegen smoke; restored Core/Python DLLs match baseline on both OS",
+  "PublicPerformance": "No new measurements; codegen failed declared transfer-removal condition",
+  "Contracts": "Production source restored exactly; no public or internal contract change retained",
+  "RawArchive": "artifacts/experiments/python-cursor-inlining-20261107/evidence.tar.gz",
+  "RawSha256": "19E0F79B51067596C01249F8823E26D2E7A4E2B69C54EE07109437ADEE473F59",
+  "RawBytes": 3738898,
+  "Preservation": "Frozen Full49 graph verified; all264stagedassets untouched; no package/Full qualification",
+  "Timestamp": "2026-11-07T09:11:51.5762497+01:00"
+}
