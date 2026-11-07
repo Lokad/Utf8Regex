@@ -71,3 +71,8 @@ worker/declarations, original/corrected preparation, checks, raw durations and
 allocations. [Acceptance](acceptance.json) records closed sessions. All eight
 Full48 DLL/PDB assets and all staged/published bytes remain unchanged. Remaining
 performance/delivery work stays active; no publication is authorized.
+
+A follow-up source audit confirms complete class-subtraction programs have a zero
+outer mask. Reused Release binaries pass318 existing subtraction/admission checks
+per OS/runtime. Supplemental `subtraction-validation.zip` preserves both logs:
+`04728715C7D6CB2F2E344304B004B826ED30325F40F33A704C3AA510776D8261`,1314B. No further code change or timing followed.

@@ -37,5 +37,14 @@
     "Sha256": "D4AE2C0E5C3A4DA3696135967F21E49E3E6D4ED0417C63BBF5F125AA1A8E5ED1"
   },
   "Preserved": "Allstaged/publishedbytesand8Full48DLL/PDBassetsunchanged;noFull/package/catalog/comparatorrequalification",
-  "Timestamp": "2026-11-07T06:40:43.0221982+01:00"
+  "Timestamp": "2026-11-07T06:40:43.0221982+01:00",
+  "SubtractionValidation": {
+    "PassedPerOSPerFramework": 318,
+    "MatchingBinariesReused": true,
+    "Reason": "solecompleteClassProgramwrapperhaszerooutermask;fullpredicatepreserved",
+    "Archive": "subtraction-validation.zip",
+    "Sha256": "04728715C7D6CB2F2E344304B004B826ED30325F40F33A704C3AA510776D8261",
+    "Bytes": 1314,
+    "Sessions": "50531/22732terminal0closed"
+  }
 }
