@@ -113,6 +113,64 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void UnprovedCategoryDefinitionsDecline(string pattern)
         => Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), true, out _, out _));
 
+    [Theory]
+    [InlineData("(?i:sherlock)", 83, 115)]
+    [InlineData("(?i:ſ)abc", 83, 115)]
+    [InlineData("(?i:K)abc", 75, 107)]
+    [InlineData("(?i:İ)abc", 73, 105)]
+    [InlineData("(?i:ı)abc", 73, 105)]
+    [InlineData("[éa]+", 97, 97)]
+    public void SingleUnicodeRemainderAddsNothingToAnAuthoritativeAsciiSubject(string pattern, int minimum, int maximum)
+    {
+        var program = Compile(pattern);
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
+        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    public void FoldedSearchGlobalsKeepCapturesOffsetsAndStrictValidation(int padding)
+    {
+        var regex = new Utf8PythonRegex("(?i:(?P<word>sherlock))");
+        var prefix = new string('9', padding);
+        var input = Encoding.UTF8.GetBytes(prefix + " SHERLOCK x sherlock!");
+        Assert.Equal(new[] { "SHERLOCK", "sherlock" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(padding + 1, regex.Search(input).StartOffsetInBytes);
+        Assert.Equal(padding + 12, regex.Search(input, padding + 2).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
+        Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, regex.SplitToStrings(input));
+        Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", regex.ReplaceToString(input, "[\\g<word>]"));
+        Assert.Throws<ArgumentException>(() => regex.Search([.. input, 0xff]));
+
+        // A non-ASCII subject keeps all CPython partners on the scalar route.
+        var match = regex.FindIterDetailed("π😀ſHERLOCK"u8)[0];
+        Assert.Equal("ſHERLOCK", match.Groups[1].ValueText);
+        Assert.Equal(6, match.Value.StartOffsetInBytes); Assert.Equal(3, match.Value.StartOffsetInUtf16);
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(8192)]
+    public void UnicodeRemainderSearchGlobalsUseTheAsciiHintUnderFiniteLimits(int padding)
+    {
+        var regex = new Utf8PythonRegex("(?P<word>[éa]+)", default, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 2000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var prefix = new string('9', padding);
+        var input = Encoding.UTF8.GetBytes(prefix + " aaa x aa!");
+        using var token = new CancellationTokenSource();
+        Assert.Equal(new[] { "aaa", "aa" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(padding + 1, regex.Search(input, 0, token.Token).StartOffsetInBytes);
+        Assert.Equal(padding + 2, regex.Search(input, padding + 2).StartOffsetInBytes);
+        Assert.Equal(padding + 7, regex.Search(input, padding + 4).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
+        Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, regex.SplitToStrings(input));
+        Assert.Equal(prefix + " [aaa] x [aa]!", regex.ReplaceToString(input, "[\\g<word>]"));
+        Assert.Throws<ArgumentException>(() => regex.Search([.. input, 0xff]));
+        var match = regex.FindIterDetailed("π😀éa"u8)[0];
+        Assert.Equal("éa", match.Groups[1].ValueText);
+        Assert.Equal(6, match.Value.StartOffsetInBytes); Assert.Equal(3, match.Value.StartOffsetInUtf16);
+    }
+
     [Fact]
     public void OptionalProofStopsAtItsFixedWorkAndBranchBounds()
     {
@@ -299,13 +357,13 @@ public sealed class PythonReLeadingAsciiRangeTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage(int kind)
     {
-        var pattern = kind switch { 1 => @"\b(?P<digits>\d+)\b", 2 => "(,)?;", _ => Pattern };
+        var pattern = kind switch { 1 => @"\b(?P<digits>\d+)\b", 2 => "(,)?;", 3 => "(?P<word>[éa]+)", _ => Pattern };
         var program = Compile(pattern);
         var input = Encoding.UTF8.GetBytes(new string(kind > 0 ? 'x' : '9', 8192) +
-            (kind == 1 ? " 123" : kind == 2 ? ",;" : "alpha"));
+            (kind == 1 ? " 123" : kind == 2 ? ",;" : kind == 3 ? "aaa" : "alpha"));
         var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
             null, pattern, new(Limits, Timeout.InfiniteTimeSpan, default));
         var constructionWork = probe.WorkingInvocation.Budget.Steps;
@@ -325,15 +383,16 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(false, 2)] [InlineData(true, 2)]
     [InlineData(false, 3)] [InlineData(true, 3)]
     [InlineData(false, 4)] [InlineData(true, 4)]
+    [InlineData(false, 5)] [InlineData(true, 5)]
     public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, int kind)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var pattern = kind switch { 1 => "(?P<word>[A-Za-z_]+)", 2 => @"\b(?P<digits>\d+)\b", 3 => "(?P<sep>,)?;", 4 => "(?>ab+)c", _ => Pattern };
+        var pattern = kind switch { 1 => "(?P<word>[A-Za-z_]+)", 2 => @"\b(?P<digits>\d+)\b", 3 => "(?P<sep>,)?;", 4 => "(?>ab+)c", 5 => "(?P<word>[éa]+)", _ => Pattern };
         var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string(kind is 2 or 3 ? 'x' : '9', 200000) +
-            (kind == 2 ? " 123" : kind == 3 ? ",;" : kind == 4 ? "abbbc" : "alpha")),
+            (kind == 2 ? " 123" : kind == 3 ? ",;" : kind == 4 ? "abbbc" : kind == 5 ? "aaa" : "alpha")),
             Compile(pattern), 0, timeout,
             null, pattern, new(Limits, timeout, cancellation.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

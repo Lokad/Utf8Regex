@@ -1,0 +1,24 @@
+{
+  "Source": "02dfc547539cacfb34ab26108ea08869bc2eb3e8",
+  "Scope": "ONE before/after Python positive Unicode-remainder ASCII candidate proof; primary actual folded Search miss plus finite/deadline/hit, long miss/late hit,densefalse,Unicode/ASCII/anchored/native controls and one captured class global",
+  "Rows": 13,
+  "SamplesPerWorker": 5,
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "Warmup": "750ms/min32",
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterCapSeconds": 120,
+  "MemoryAdmissionKiB": 2097152,
+  "Confirmation": "One within-worker calibration confirmation; no repeated campaign planned",
+  "CoreBefore": "48886FDEB1FC6DABCAB773F3C0D78224F01763174074407B36C6A82CDC81CABC",
+  "CoreAfter": "48886FDEB1FC6DABCAB773F3C0D78224F01763174074407B36C6A82CDC81CABC",
+  "PythonBefore": "AE9709110EBC0D830114213217A1B1332CB67345ACA9666362B8259AA9BEE22A",
+  "PythonAfter": "BE851B1914FABF916464AC49101FECF4FFC7590395030E4D0A85013EF7467F6A",
+  "ReferenceTiming": "None; preserve Full48 qualification and comparator scope",
+  "Acceptance": "Promote demonstrated public gains with explicit costs; no universal10%gate. If primary unchanged, do not claim it closes that gap."
+}

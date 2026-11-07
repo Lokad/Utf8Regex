@@ -298,18 +298,26 @@ internal struct PythonReScalarMatchState
         var upper = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
         if (atom.Kind == Utf8SliceInstructionKind.CategorySet)
         {
-            // The stored mask is only one term in a category union. Only the
-            // profile's fixed predicates supply these exact ASCII projections;
-            // a general table/subtraction keeps the scalar candidate loop.
+            // The mask is one term in a category union. Fixed profile predicates
+            // have known ASCII projections. A positive single non-ASCII range
+            // adds nothing on this validated ASCII subject (e.g. S/s plus long s).
+            // General tables/subtraction retain the scalar candidate loop.
             var members = program.CategorySetMembers[atom.D];
             if (members.Length != 1 || members[0].Negated) return false;
             var predicate = members[0].Table.ScalarPredicate;
             var ascii = predicate == PythonReScalarClassData.IsDigit ? PythonReScalarClassData.DigitAscii
                 : predicate == PythonReScalarClassData.IsWord ? PythonReScalarClassData.WordAscii
                 : predicate == PythonReScalarClassData.IsSpace ? PythonReScalarClassData.SpaceAscii : null;
-            if (ascii is null) return false;
-            lower |= BinaryPrimitives.ReadUInt64LittleEndian(ascii);
-            upper |= BinaryPrimitives.ReadUInt64LittleEndian(ascii.AsSpan(8));
+            if (ascii is null)
+            {
+                if (members[0].Table is not { Mask: 0, ClassProgram: null,
+                    ScalarPredicate: null, Ranges: [>= 128, _] }) return false;
+            }
+            else
+            {
+                lower |= BinaryPrimitives.ReadUInt64LittleEndian(ascii);
+                upper |= BinaryPrimitives.ReadUInt64LittleEndian(ascii.AsSpan(8));
+            }
         }
         if ((lower | upper) == 0) return false;
         var first = lower != 0 ? BitOperations.TrailingZeroCount(lower) : 64 + BitOperations.TrailingZeroCount(upper);

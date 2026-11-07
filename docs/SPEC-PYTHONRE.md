@@ -45,6 +45,12 @@ remain; avoiding impossible starts can lower execution work and required VM
 workspace. Search blocks, rewound scalars, verification and publication keep the
 same invocation's cancellation, deadline and resource authority.
 
+On a validated ASCII subject, a leading positive class's ASCII mask can also
+guide starts when its only additional term is a positive non-ASCII range. Other
+unproved class shapes and non-ASCII subjects retain their existing routes. This
+necessary hint preserves full scalar verification and can reduce numerical work
+and VM scratch requirements under the same invocation.
+
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
 ordered choice and original invocation controls remain; required capacity can fall.
