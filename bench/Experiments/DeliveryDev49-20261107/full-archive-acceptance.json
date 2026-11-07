@@ -1,0 +1,12 @@
+{
+  "Source": "6f855d8ec62e913bd402b3af6bd3e388883aaa4a",
+  "Canonical": "artifacts/experiments/delivery-dev49-20261107/full-evidence.tar.gz",
+  "Sha256": "5589C54EA5AD9F505EC30FBA54D6094054D751FD09E309BBAD0758E6556BA7DC",
+  "Bytes": 34281781,
+  "OffVmVerified": true,
+  "Session": "74183terminal0closed",
+  "ExpectedPassedSteps": 83,
+  "Complete": true,
+  "Publication": false,
+  "CheckedAt": "2026-11-07T07:38:57.6902309+01:00"
+}

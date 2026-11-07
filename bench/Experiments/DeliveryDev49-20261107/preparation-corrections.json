@@ -1,0 +1,8 @@
+{
+  "Stage": "Beforeimport",
+  "Issue": "OldREADMEusesfloor46m19s,templateexpectedrounded46m20s",
+  "Correction": "Scratchimportanchorcorrectedtoactualoldparagraph;priorguardfailedbeforemutation",
+  "RawMeasurementsChanged": false,
+  "Requalification": false,
+  "Timestamp": "2026-11-07T07:39:45.1550159+01:00"
+}

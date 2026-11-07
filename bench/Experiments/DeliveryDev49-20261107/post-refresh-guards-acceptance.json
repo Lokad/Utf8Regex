@@ -1,0 +1,9 @@
+{
+  "Source": "6f855d8ec62e913bd402b3af6bd3e388883aaa4a",
+  "RuntimeHosts": 6,
+  "Checks": 10,
+  "AllPassed": true,
+  "MatchingBinariesReused": true,
+  "TerminalSession": "96954terminal0closed",
+  "EvidenceSha256": "EEE765096DF22318FF330DAD17F83DEB106F322D7901E5D86315C2D303BC8AA7"
+}
