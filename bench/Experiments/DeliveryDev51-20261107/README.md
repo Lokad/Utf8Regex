@@ -83,7 +83,8 @@ All 270 older staged files remain unchanged; six new assets bring
 unchanged after Linux and costs. [Windows](windows-acceptance.json),
 [Linux](linux-archive-acceptance.json), [inputs](boundary-inputs.json) and
 [preservation](frozen-graphs.json) record the boundary. Source CI is green on
-Windows/Linux; snapshot CI follows the snapshot commit.
+Windows/Linux. [Snapshot CI](snapshot-ci.json) also passed on both platforms for
+`27a5922b5c032cae1b9e143020f92dd1de763bde`.
 
 Canonical raw evidence under `artifacts/experiments/delivery-dev51-20261107/` is
 verified off VM and immutable. Hashes live in the archive acceptance JSON files
