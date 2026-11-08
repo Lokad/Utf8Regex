@@ -21,7 +21,7 @@ internal static partial class BenchmarkInspectReporter
         var summary = new BenchmarkSummary
         {
             Profile = "Core",
-            Evidence = BenchmarkSummary.Archive(repository, Path.GetFileName(ReadmeBenchmarkSnapshotFileName)),
+            Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(ReadmeBenchmarkSnapshotFileName)),
         };
         foreach (var row in BuildReadmeParityReport(snapshot, BenchmarkSnapshotHash.HashNormalizedFile(rawPath)).Rows)
         {
@@ -88,7 +88,7 @@ internal static partial class BenchmarkInspectReporter
         var summary = new BenchmarkSummary
         {
             Profile = "Pcre2",
-            Evidence = BenchmarkSummary.Archive(repository, Path.GetFileName(Pcre2BenchmarkSnapshotFileName)),
+            Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(Pcre2BenchmarkSnapshotFileName)),
             Comparator = dependency is null ? null : new()
             {
                 PackageId = dependency.PackageId,
@@ -154,7 +154,7 @@ internal static partial class PythonReBenchmarkReporter
         var summary = new BenchmarkSummary
         {
             Profile = "PythonRe",
-            Evidence = BenchmarkSummary.Archive(repository, Path.GetFileName(SnapshotFileName)),
+            Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(SnapshotFileName)),
             CatalogSha256 = snapshot.CatalogSha256,
         };
         foreach (var (caseId, row) in snapshot.Cases)

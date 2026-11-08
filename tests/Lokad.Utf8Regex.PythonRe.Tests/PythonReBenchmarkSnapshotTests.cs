@@ -19,9 +19,6 @@ public sealed class PythonReBenchmarkSnapshotTests
         var evidence = root.GetProperty("Evidence");
         var hash = evidence.GetProperty("SnapshotSha256").GetString()!;
         Assert.Matches("^[0-9A-F]{64}$", hash);
-        Assert.EndsWith(hash.ToLowerInvariant() + ".json", evidence.GetProperty("Asset").GetString(), StringComparison.Ordinal);
-        Assert.EndsWith(evidence.GetProperty("Asset").GetString(), evidence.GetProperty("Url").GetString(), StringComparison.Ordinal);
-        Assert.True(evidence.GetProperty("Bytes").GetInt64() > 0);
         Assert.Matches("^[0-9A-F]{64}$", root.GetProperty("CatalogSha256").GetString());
         var catalog = PythonReBenchmarkCatalog.Cases.ToDictionary(static row => row.Id, StringComparer.Ordinal);
         var sections = root.GetProperty("Sections");

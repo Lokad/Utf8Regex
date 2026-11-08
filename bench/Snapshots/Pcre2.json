@@ -3,10 +3,7 @@
   "Profile": "Pcre2",
   "Evidence": {
     "Snapshot": "PCRE2.Benchmarks.json",
-    "SnapshotSha256": "B26E6012EA4A17458F61B6B49B34B42549673C4637B35132A7AB6EE364B3911F",
-    "Bytes": 1422919,
-    "Asset": "PCRE2.Benchmarks.b26e6012ea4a17458f61b6b49b34b42549673c4637b35132a7ab6ee364b3911f.json",
-    "Url": "https://github.com/Lokad/Utf8Regex/releases/download/benchmark-evidence/PCRE2.Benchmarks.b26e6012ea4a17458f61b6b49b34b42549673c4637b35132a7ab6ee364b3911f.json"
+    "SnapshotSha256": "B26E6012EA4A17458F61B6B49B34B42549673C4637B35132A7AB6EE364B3911F"
   },
   "Comparator": {
     "PackageId": "PCRE.NET",

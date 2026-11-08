@@ -82,10 +82,9 @@ old comparisons after source or binaries change.
   observations and uncertainty, with one producer loaded per process.
 - Track compact presentation summaries in bench/Snapshots/. Full samples and
   provenance live in artifacts/benchmark-refresh/current/ and content-addressed
-  evidence assets. Regenerate README blocks through existing rewrite/verify
+  local refresh outputs. Regenerate README blocks through existing rewrite/verify
   commands; never hand-edit generated tables. Ordinary CI uses summaries offline;
-  full qualification uses raw evidence. Upload each referenced raw asset before
-  committing refreshed summaries; never overwrite an existing evidence asset.
+  full qualification uses local raw evidence. No archive/upload step is required.
   Prefer selective refresh and preserve historical identities/uncertainty.
   New Core/PCRE2 refresh lanes calibrate independently and retain raw durations;
   Core V3 targets 75 ms with one calibration confirmation; samples below 20 ms

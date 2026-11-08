@@ -16,9 +16,6 @@ public sealed class ReadmeBenchmarkSnapshotTests
         var evidence = root.GetProperty("Evidence");
         var hash = evidence.GetProperty("SnapshotSha256").GetString()!;
         Assert.Matches("^[0-9A-F]{64}$", hash);
-        Assert.True(evidence.GetProperty("Bytes").GetInt64() > 0);
-        Assert.EndsWith(hash.ToLowerInvariant() + ".json", evidence.GetProperty("Asset").GetString(), StringComparison.Ordinal);
-        Assert.EndsWith(evidence.GetProperty("Asset").GetString(), evidence.GetProperty("Url").GetString(), StringComparison.Ordinal);
         var sections = root.GetProperty("Sections");
         foreach (var (section, count) in new[] { ("dotnet-performance", 55), ("dotnet-performance-compiled", 55), ("lokad", 34), ("lokad-compiled", 34) })
         {

@@ -62,43 +62,17 @@ internal sealed class BenchmarkSummary
         rows[caseId] = row;
     }
 
-    internal static BenchmarkSummaryEvidence Archive(string repository, string snapshotName)
+    internal static BenchmarkSummaryEvidence DescribeEvidence(string repository, string snapshotName) => new()
     {
-        var path = RawPath(repository, snapshotName);
-        var bytes = Encoding.UTF8.GetBytes(File.ReadAllText(path, Encoding.UTF8).ReplaceLineEndings("\n"));
-        var hash = Convert.ToHexString(SHA256.HashData(bytes));
-        var asset = Path.GetFileNameWithoutExtension(snapshotName) + "." + hash.ToLowerInvariant() + ".json";
-        var evidenceDirectory = Path.Combine(repository, "artifacts", "benchmark-refresh", "evidence");
-        Directory.CreateDirectory(evidenceDirectory);
-        var destination = Path.Combine(evidenceDirectory, asset);
-        if (File.Exists(destination))
-        {
-            if (!File.ReadAllBytes(destination).AsSpan().SequenceEqual(bytes))
-                throw new InvalidOperationException($"Immutable benchmark evidence differs: {destination}");
-        }
-        else
-        {
-            using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write);
-            output.Write(bytes);
-        }
-        return new()
-        {
-            Snapshot = snapshotName,
-            SnapshotSha256 = hash,
-            Bytes = bytes.Length,
-            Asset = asset,
-            Url = "https://github.com/Lokad/Utf8Regex/releases/download/benchmark-evidence/" + asset,
-        };
-    }
+        Snapshot = snapshotName,
+        SnapshotSha256 = BenchmarkSnapshotHash.HashNormalizedFile(RawPath(repository, snapshotName)),
+    };
 }
 
 internal sealed class BenchmarkSummaryEvidence
 {
     public required string Snapshot { get; init; }
     public required string SnapshotSha256 { get; init; }
-    public long Bytes { get; init; }
-    public required string Asset { get; init; }
-    public required string Url { get; init; }
 }
 
 internal sealed class BenchmarkSummaryRow

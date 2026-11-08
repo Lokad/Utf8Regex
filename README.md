@@ -87,8 +87,7 @@ The tables were refreshed on **7 November 2026** using **.NET 11 RC3**
 They measure public operations, including strict UTF-8 validation and required
 result materialization. Values come from
 [the compact Core summary](bench/Snapshots/Core.json). Qualification verdicts,
-raw samples and binary identities remain available through its immutable evidence
-references. Unqualified rows
+recorded source identities and snapshot hashes remain in that summary. Unqualified rows
 retain their observations without establishing parity. The complete Release
 build, .NET 10/11 tests, all-profile catalogs, paired comparators, lifecycle/scaling
 and resource checks passed in **47m17s**. The [run receipt](bench/Experiments/DeliveryDev55-20261107/full-refresh.json)
@@ -118,7 +117,7 @@ These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and re
 - `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`
 
 Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.
-Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and exact raw-evidence references; the full parity report is generated from the archived raw snapshot.
+Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and recorded snapshot hashes; the full parity report is generated from the local raw snapshot.
 
 All stress rows below are for `Count(...)`.
 Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.
@@ -200,7 +199,7 @@ These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and re
 - `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`
 
 Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.
-Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and exact raw-evidence references; the full parity report is generated from the archived raw snapshot.
+Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and recorded snapshot hashes; the full parity report is generated from the local raw snapshot.
 
 All stress rows below are for `Count(...)`.
 Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.
@@ -282,7 +281,7 @@ These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and re
 - `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`
 
 Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.
-Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and exact raw-evidence references; the full parity report is generated from the archived raw snapshot.
+Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and recorded snapshot hashes; the full parity report is generated from the local raw snapshot.
 
 This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.
 
@@ -333,7 +332,7 @@ These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and re
 - `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`
 
 Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.
-Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and exact raw-evidence references; the full parity report is generated from the archived raw snapshot.
+Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and recorded snapshot hashes; the full parity report is generated from the local raw snapshot.
 
 This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.
 
@@ -376,49 +375,18 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 <!-- END GENERATED LOKAD_COMPILED BENCHMARKS -->
 
 <details>
-<summary>Regenerating tables and retrieving raw evidence</summary>
+<summary>Regenerating benchmark tables</summary>
 
-The three compact summaries in `bench/Snapshots/` regenerate these README tables
-offline through the existing `--rewrite-*-benchmark-markdown` commands. Ordinary
-tests require no raw-data download. Regeneration preserves recorded measurements;
+The compact summaries in `bench/Snapshots/` regenerate the README tables offline
+through the existing `--rewrite-*-benchmark-markdown` commands. Ordinary tests need
+no raw measurements or downloads. Regeneration preserves recorded observations;
 it does not qualify the current engine or create a new benchmark run.
 
-Measurement refreshes and full evidence audits use the original snapshots under
-`artifacts/benchmark-refresh/current/`. Restore their exact referenced assets from
-the repository root when needed:
-
-```powershell
-$cache = 'artifacts/benchmark-refresh/evidence'
-$current = 'artifacts/benchmark-refresh/current'
-New-Item -ItemType Directory -Path $cache,$current -Force | Out-Null
-foreach ($profile in 'Core','PythonRe','Pcre2') {
-    $summary = Get-Content "bench/Snapshots/$profile.json" -Raw | ConvertFrom-Json
-    $asset = Join-Path $cache $summary.Evidence.Asset
-    if (!(Test-Path $asset)) {
-        gh release download benchmark-evidence --repo Lokad/Utf8Regex `
-            --pattern $summary.Evidence.Asset --dir $cache
-        if ($LASTEXITCODE) { throw 'Evidence download failed.' }
-    }
-    if ((Get-FileHash $asset -Algorithm SHA256).Hash -ne $summary.Evidence.SnapshotSha256) {
-        throw 'Evidence hash differs.'
-    }
-    $target = Join-Path $current $summary.Evidence.Snapshot
-    if (!(Test-Path $target)) { Copy-Item $asset $target }
-    elseif ((Get-FileHash $target -Algorithm SHA256).Hash -ne $summary.Evidence.SnapshotSha256) {
-        throw 'Existing raw data differs; preserve it before restoring another snapshot.'
-    }
-}
-```
-
-`--export-benchmark-summaries` reproduces the summaries from those raw snapshots.
-`--rewrite-readme-parity-report` generates the expanded Core report in that same
-artifact directory. Use `tools/bench.ps1`; build once, then reuse its matching
-binaries with `-SkipBuild` for subsequent commands.
-
-Refreshes stage content-addressed raw assets under `artifacts/benchmark-refresh/evidence/`.
-Upload the exact assets referenced by changed summaries with
-`gh release upload benchmark-evidence <asset-paths> --repo Lokad/Utf8Regex` before
-committing the summaries. Never use `--clobber`; existing evidence is immutable.
-Keep full-run logs, symbols and consumer qualification in their existing archives.
+Refreshes and full evidence checks use local raw snapshots under
+`artifacts/benchmark-refresh/current/`. `--export-benchmark-summaries` updates the
+compact summaries from those files; `--rewrite-readme-parity-report` generates the
+expanded Core report there on demand. Use `tools/bench.ps1`, build once and reuse
+matching binaries with `-SkipBuild`. Keep or share raw outputs when useful; there
+is no required archive service or upload step.
 
 </details>

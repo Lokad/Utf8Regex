@@ -16,9 +16,6 @@ public sealed class Pcre2BenchmarkSnapshotTests
         var evidence = root.GetProperty("Evidence");
         var hash = evidence.GetProperty("SnapshotSha256").GetString()!;
         Assert.Matches("^[0-9A-F]{64}$", hash);
-        Assert.EndsWith(hash.ToLowerInvariant() + ".json", evidence.GetProperty("Asset").GetString(), StringComparison.Ordinal);
-        Assert.EndsWith(evidence.GetProperty("Asset").GetString(), evidence.GetProperty("Url").GetString(), StringComparison.Ordinal);
-        Assert.True(evidence.GetProperty("Bytes").GetInt64() > 0);
         var comparator = root.GetProperty("Comparator");
         Assert.Equal("PCRE.NET", comparator.GetProperty("PackageId").GetString());
         Assert.Equal("1.5.0", comparator.GetProperty("PackageVersion").GetString());

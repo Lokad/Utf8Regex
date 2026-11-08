@@ -3,10 +3,7 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "38AD4C08734C82FDCE6785E58C1DBD9054840A1A06D3AEC45197E9E546CB5BD5",
-    "Bytes": 545004,
-    "Asset": "README.Benchmarks.38ad4c08734c82fdce6785e58c1dbd9054840a1a06d3aec45197e9e546cb5bd5.json",
-    "Url": "https://github.com/Lokad/Utf8Regex/releases/download/benchmark-evidence/README.Benchmarks.38ad4c08734c82fdce6785e58c1dbd9054840a1a06d3aec45197e9e546cb5bd5.json"
+    "SnapshotSha256": "38AD4C08734C82FDCE6785E58C1DBD9054840A1A06D3AEC45197E9E546CB5BD5"
   },
   "Sources": {
     "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5": {

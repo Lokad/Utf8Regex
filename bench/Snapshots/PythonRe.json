@@ -3,10 +3,7 @@
   "Profile": "PythonRe",
   "Evidence": {
     "Snapshot": "PythonRe.Benchmarks.json",
-    "SnapshotSha256": "A0BF8F16E55705D5845B1A07839D2A636C0F39E64AA936CA871E48BDF510C673",
-    "Bytes": 1956206,
-    "Asset": "PythonRe.Benchmarks.a0bf8f16e55705d5845b1a07839d2a636c0f39e64aa936ca871e48bdf510c673.json",
-    "Url": "https://github.com/Lokad/Utf8Regex/releases/download/benchmark-evidence/PythonRe.Benchmarks.a0bf8f16e55705d5845b1a07839d2a636c0f39e64aa936ca871e48bdf510c673.json"
+    "SnapshotSha256": "A0BF8F16E55705D5845B1A07839D2A636C0F39E64AA936CA871E48BDF510C673"
   },
   "CatalogSha256": "44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666",
   "Sources": {
