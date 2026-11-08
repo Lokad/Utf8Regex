@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex;
 
-/// <summary>Invocation resource budgets shared by all three regex profiles.</summary>
+/// <summary>Invocation resource budgets shared by the regex profiles.</summary>
 /// <remarks>Every budget is nullable with <see langword="null"/> meaning unlimited. Zero is never a valid budget: use <see langword="null"/> (or <see cref="Unlimited"/>) for no cap. Profiles enforce only the budgets they implement and reject the rest loudly instead of silently relaxing them.
 /// Core and the Python-compatible adapter omit the subject from timeout exception Input when either byte budget is finite, avoiding a subject-sized diagnostic decode after expiry. This does not cap exception metadata or process memory.</remarks>
 public readonly record struct Utf8ResourcePolicy

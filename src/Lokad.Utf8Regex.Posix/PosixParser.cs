@@ -131,7 +131,11 @@ internal sealed class PosixParser
     private void PushOperator(Utf8ConstructionBuffer<Utf8SliceNode> nodes,
         Utf8ConstructionBuffer<Pending> operators, Operator kind)
     {
-        while (operators.Count > 0 && operators.Peek().Kind != Operator.Open && operators.Peek().Kind >= kind)
+        // Concatenation's semantic hierarchy is right-associated: in abc, a
+        // takes priority over the remaining bc. Left-associated synthetic ab
+        // would incorrectly outrank a in cases such as a?(ab)?b?.
+        while (operators.Count > 0 && operators.Peek().Kind != Operator.Open &&
+            (operators.Peek().Kind > kind || kind == Operator.Alternate && operators.Peek().Kind == kind))
             Reduce(nodes, operators.Pop());
         operators.Push(new(kind, 0));
     }

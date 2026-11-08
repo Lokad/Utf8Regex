@@ -1,7 +1,7 @@
 # POSIX profile contract for 0.5.0
 
-P1 contract and independent fixture expectations; execution is not implemented yet.
-`Lokad.Utf8Regex.Posix` will be an optional .NET 10/11 adapter with an exact Core
+Initial 0.5.0 source contract; performance and package qualification remain open.
+`Lokad.Utf8Regex.Posix` is an optional .NET 10/11 adapter with an exact Core
 dependency. It owns ERE admission and POSIX selection. Core, PythonRe and PCRE2
 retain their contracts. This is an invariant, scalar ERE subset, not complete
 locale-sensitive POSIX, GNU or BSD compatibility.
@@ -41,7 +41,7 @@ well as absolute edges, and excludes LF from dot and negated bracket expressions
 Without it, dot and negated brackets can match LF, and `$` means true end (no
 special position before a trailing newline). CR has no special treatment.
 
-Reject BRE syntax, collating/equivalence elements, backreferences, lookarounds,
+Reject BRE-specific operator interpretations, collating/equivalence elements, backreferences, lookarounds,
 word boundaries, shorthand/property escapes, named/noncapturing groups, inline
 flags, lazy/possessive repetition, atomic/balancing/conditional groups and unknown
 options. Do not reinterpret these as Core syntax or invoke another matcher.
@@ -52,6 +52,8 @@ Choose the earliest possible whole-match start, then the greatest end at that
 start. Resolve equal whole matches through hierarchical POSIX subpattern priority:
 outer nodes before descendants, left parts before right parts. This includes
 unparenthesized concatenation/repetition parts, not only returned capture slots.
+Associate concatenation to the right for this hierarchy: the first part takes
+priority over the remaining suffix. Parentheses preserve their explicit scope.
 
 Within that hierarchy, compare occurrences in iteration order, preferring an
 earlier start and then a later end. Participation, including empty, beats absence.
@@ -87,8 +89,8 @@ Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
   returns `Utf8ValueMatch` for the selected whole match.
 - `Match(input, Span<Utf8ValueMatch> groups, startOffsetInBytes=0, token=default,
   workingMemoryAllowance=null)` also writes slots zero onward. Clear supplied
-  slots before publication, including after no match; leave no partial result on
-  refusal/interruption. Ignore excess slots. A shorter or empty span cannot alter
+  output slots before publication, including after no match; leave no partial
+  result on refusal/interruption. Excess slots are untouched. A shorter or empty span cannot alter
   selection, capture priority or the whole match.
 - `Count(input, startOffsetInBytes=0, token=default, workingMemoryAllowance=null)`
   counts nonoverlapping selected matches.
@@ -102,6 +104,7 @@ This surface deliberately uses caller-owned capture spans and value coordinates.
 Values survive later calls and cursor disposal without retaining regex storage or
 subject bytes. Keep a cursor's borrowed memory unchanged and alive until disposal;
 copied references alias one cursor, and disposal rejects further advancement.
+Use a cursor from one caller at a time; concurrent advances/disposal are unsupported.
 Dispose refunds temporary workspace synchronously. Callers wanting text or owned
 arrays materialize them themselves. No replacement/split API, capture-history
 collection, RTL option or separate NonBacktracking mode is part of this subset.
@@ -131,7 +134,10 @@ Working limits cover modeled matching/history/projection capacity, not borrowed
 input, the compiled program, fixed owner metadata, all GC traffic or process RAM.
 Caller-owned capture destinations and fixed value coordinates need no producer
 result payload; admit any producer-owned result staging before allocation.
-`MaxResultBytes` does not cap arrays/text that callers create afterward.
+These APIs currently create no producer-owned result payload or result staging;
+any positive `MaxResultBytes` therefore admits their value/caller-destination output.
+Matching histories remain working storage. This limit does not cap arrays/text
+that callers create afterward. Timeout exceptions omit subject text.
 Shared allowance loans release on completion, refusal, cancellation or disposal.
 
 ## Qualification boundary

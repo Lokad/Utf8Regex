@@ -10,6 +10,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <Using Include="Xunit" />
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex.Posix\Lokad.Utf8Regex.Posix.csproj" />
+    <Compile Include="..\Common\PublicApiSnapshot.cs" Link="Common\PublicApiSnapshot.cs" />
+    <Compile Include="..\Common\AssemblyDependencyInventory.cs" Link="Common\AssemblyDependencyInventory.cs" />
+    <None Update="PublicApi.Shipped.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Corpus\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

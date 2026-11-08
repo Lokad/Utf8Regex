@@ -7,7 +7,8 @@ derived interoperability, not matching units.
 ## Contracts and scope
 
 - Follow [Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md) and
-  [PCRE2](docs/SPEC-PCRE2.md) contracts. The ignored root PLAN.md holds active work.
+  [PCRE2](docs/SPEC-PCRE2.md) and [Posix](docs/SPEC-POSIX.md) contracts.
+  The ignored root PLAN.md holds active work.
 - Preserve scalar boundaries, captures, RTL/NonBacktracking behavior, retained
   results/cursor aliases, resource admission and synchronous original-token
   cancellation/deadlines. Do not restore UTF-16 parity or dormant fallback engines.
