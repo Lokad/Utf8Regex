@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Run bounded Release benchmarks or inspection commands from any working directory.
+.DESCRIPTION
+Builds the selected benchmark target unless skipped; sets repository CWD and caps owned child processes.
+#>
 param(
     [string]$Configuration = "Release",
     [ValidateSet("net10.0", "net11.0")]
@@ -18,7 +24,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = $PSScriptRoot
+$repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 $benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration $Framework
 

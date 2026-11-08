@@ -1,6 +1,9 @@
-# Shared provenance and detached-consumer checks for qualify-package-candidate.ps1.
-# verify-pcre2-qualification.ps1 also uses these readers for historical archives.
-
+<#
+.SYNOPSIS
+Provide shared package identity, provenance and isolated-consumer checks.
+.DESCRIPTION
+Dot-source from package tools; functions inspect artifacts or create detached fixtures only when called.
+#>
 function Invoke-DotNet {
     param([string[]] $Arguments)
 

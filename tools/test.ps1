@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Build and run selected tests with serialized project/target hosts.
+.DESCRIPTION
+Resolves repository-relative projects, supports matching-binary reuse, and recovers only observed checkout-owned stale hosts.
+#>
 param(
     [string]$Configuration = "Debug",
     [ValidateSet("net10.0", "net11.0")]
@@ -10,7 +16,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = $PSScriptRoot
+$repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
 function Stop-StaleProcess([System.Diagnostics.Process]$process, [string]$description) {

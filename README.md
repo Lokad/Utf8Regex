@@ -101,8 +101,8 @@ Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 Case IDs preserve upstream names: `common/ip-miss` matches a valid prefix of its
 subject, so it measures a hit.
 
-[refresh-benchmarks.ps1](refresh-benchmarks.ps1) runs the full cycle or selected
-phases; [bench.ps1](bench.ps1) supports focused single-case iterations.
+[refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
+phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
 
 Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks) and

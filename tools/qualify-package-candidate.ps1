@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Create one immutable common-version package candidate with detached consumers.
+.DESCRIPTION
+Requires clean source and a new version; builds/packs selected profiles and writes artifacts/nuget plus qualification evidence. Does not publish.
+#>
 [CmdletBinding()]
 param(
     [ValidateSet("Core", "PythonRe", "Pcre2")]
@@ -7,14 +13,11 @@ param(
     [switch] $SkipBuild
 )
 
-# One immutable candidate, one Core pack, selected adapter packages/tests.
-# Existing shared provenance, package-shape and isolated-consumer checks remain.
-# Publication and broader profile qualification are separate actions.
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot "test-packaged-common.ps1")
 
-$repositoryRoot = [IO.Path]::GetFullPath($PSScriptRoot)
+$repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 [xml] $buildProperties = Get-Content -LiteralPath (Join-Path $repositoryRoot "src/Directory.Build.props")
 $frameworks = $buildProperties.SelectSingleNode("//TargetFrameworks").InnerText.Split(';')
 $version = Read-CoherentPackageVersion $repositoryRoot

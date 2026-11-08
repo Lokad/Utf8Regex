@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Replay the archived Chinese-alternation route and Count attribution probe.
+.DESCRIPTION
+Historical VM commands for the receipt revision; runs bounded diagnostics/measurements with existing binaries.
+#>
 $ErrorActionPreference = 'Stop'
 Set-Location /home/vermorel/tmp/utf8regex-net11-memory/pilot
 ./bench.ps1 -Configuration Release -SkipBuild -CommandArgs @('--inspect-case','literal-alternate/sherlock-zh')

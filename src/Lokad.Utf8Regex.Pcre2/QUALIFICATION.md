@@ -149,7 +149,7 @@ delivery; no universal performance equivalence or fresh benchmark Status is clai
 For a future real package boundary, use the existing consolidated flow:
 
 ```powershell
-./qualify-package-candidate.ps1 -Profiles Core,PythonRe,Pcre2
+./tools/qualify-package-candidate.ps1 -Profiles Core,PythonRe,Pcre2
 ```
 
 It requires clean source/new coherent version, builds once, packs each selected

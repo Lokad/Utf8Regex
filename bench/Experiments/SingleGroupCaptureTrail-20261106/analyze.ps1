@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Summarize the archived single-group capture-trail comparison.
+.DESCRIPTION
+Requires terminal raw runs and the declaration beside this script; validates identities/results then writes cost-summary.json. Does not time execution.
+#>
 $ErrorActionPreference='Stop'
 $p=$PSScriptRoot
 $d=Get-Content (Join-Path $p 'comparison-declaration.json') -Raw|ConvertFrom-Json

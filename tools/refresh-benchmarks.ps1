@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Refresh selected benchmark phases or the complete one-hour delivery catalog.
+.DESCRIPTION
+Builds/tests once, reuses binaries, writes phase artifacts and regenerates recorded README results.
+#>
 [CmdletBinding()]
 param(
     [ValidateSet('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Resources', 'Verify')]
@@ -12,7 +18,8 @@ param(
 # delivery cycle. On the VM, wrap this command in timeout for a hard process-tree
 # cap that also covers a stuck build/test, not just benchmark children.
 $ErrorActionPreference = 'Stop'
-Set-Location $PSScriptRoot
+$repoRoot = Split-Path -Parent $PSScriptRoot
+Set-Location $repoRoot
 $clock = [Diagnostics.Stopwatch]::StartNew()
 $started = [DateTimeOffset]::UtcNow
 $revision = (& git rev-parse HEAD).Trim()
@@ -23,9 +30,9 @@ $unexpected = & git status --porcelain=v1 --untracked-files=normal -- . `
     ':(exclude)PCRE2.Benchmarks.json' ':(exclude)src/Lokad.Utf8Regex.Pcre2/README.md'
 if ($LASTEXITCODE -ne 0 -or $unexpected) { throw "Refresh requires clean source inputs: $unexpected" }
 if (!$OutputDirectory) {
-    $OutputDirectory = Join-Path $PSScriptRoot ('artifacts/benchmark-refresh/' + $started.ToString('yyyyMMdd-HHmmss'))
+    $OutputDirectory = Join-Path $repoRoot ('artifacts/benchmark-refresh/' + $started.ToString('yyyyMMdd-HHmmss'))
 }
-if (![IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory = Join-Path $PSScriptRoot $OutputDirectory }
+if (![IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory = Join-Path $repoRoot $OutputDirectory }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 if (Test-Path -LiteralPath $OutputDirectory) { throw "Output already exists: $OutputDirectory" }
 [void](New-Item -ItemType Directory -Path $OutputDirectory)
@@ -69,7 +76,7 @@ function Invoke-RefreshBenchmark([string]$name, [string[]]$arguments) {
     Invoke-RefreshStep $name {
         $remaining = [int][Math]::Floor($MaxWallTimeSeconds - $clock.Elapsed.TotalSeconds)
         if ($remaining -lt 1) { throw 'Refresh wall-time budget exhausted.' }
-        & ./bench.ps1 -Configuration Release -Framework net11.0 -SkipBuild -CommandArgs $arguments -MaxWallTimeSeconds $remaining
+        & ./tools/bench.ps1 -Configuration Release -Framework net11.0 -SkipBuild -CommandArgs $arguments -MaxWallTimeSeconds $remaining
     }
 }
 
@@ -80,17 +87,17 @@ try {
         }
     }
     if ('Tests' -in $Phase) {
-        Invoke-RefreshStep tests { & ./test.ps1 -Configuration Release -SkipBuild }
+        Invoke-RefreshStep tests { & ./tools/test.ps1 -Configuration Release -SkipBuild }
         foreach ($framework in @('net10.0', 'net11.0')) {
             Invoke-RefreshStep "disabled-dynamic-$framework" {
-                $path = Join-Path $PSScriptRoot "tests/Lokad.Utf8Regex.Tests/bin/Release/$framework/Lokad.Utf8Regex.Tests.runtimeconfig.json"
+                $path = Join-Path $repoRoot "tests/Lokad.Utf8Regex.Tests/bin/Release/$framework/Lokad.Utf8Regex.Tests.runtimeconfig.json"
                 $original = [IO.File]::ReadAllBytes($path)
                 try {
                     $runtime = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
                     $runtime.runtimeOptions.configProperties['System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported'] = $false
                     $runtime.runtimeOptions.configProperties['System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled'] = $false
                     $runtime | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $path
-                    & ./test.ps1 -Configuration Release -Framework $framework -SkipBuild `
+                    & ./tools/test.ps1 -Configuration Release -Framework $framework -SkipBuild `
                         -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8DynamicCodeCapabilityTests'
                 }
                 finally { [IO.File]::WriteAllBytes($path, $original) }

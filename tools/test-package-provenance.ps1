@@ -1,9 +1,15 @@
+<#
+.SYNOPSIS
+Exercise PE/PDB/NuSpec provenance checks against an existing package.
+.DESCRIPTION
+Copies fixtures into a new repository artifacts directory and mutates only those copies; original package bytes remain unchanged.
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $PackagePath,
     [Parameter(Mandatory)] [ValidatePattern('^[0-9a-fA-F]{40}$')] [string] $SourceRevision,
     [string] $ExpectedAssembly = "Lokad.Utf8Regex.dll",
-    [string] $OutputDirectory = (Join-Path $PSScriptRoot "artifacts/package-provenance-tests/$([Guid]::NewGuid())")
+    [string] $OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) "artifacts/package-provenance-tests/$([Guid]::NewGuid())")
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,7 +19,7 @@ $ErrorActionPreference = "Stop"
 $PackagePath = (Resolve-Path -LiteralPath $PackagePath).Path
 $symbolPackagePath = [IO.Path]::ChangeExtension($PackagePath, ".snupkg")
 $outputRoot = [IO.Path]::GetFullPath($OutputDirectory)
-$artifactsPrefix = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "artifacts")).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$artifactsPrefix = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $PSScriptRoot) "artifacts")).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 if (!$outputRoot.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIgnoreCase) -or
     (Test-Path -LiteralPath $outputRoot)) {
     throw "Provenance fixtures require a new directory inside repository artifacts."
@@ -135,6 +141,10 @@ try {
 finally { $inputZip.Dispose() }
 $metadataPath = "/*[local-name()='package']/*[local-name()='metadata']"
 $inputVersion = $inputManifest.SelectSingleNode("$metadataPath/*[local-name()='version']").InnerText
+# Freeze the trusted input's target set before mutating fixtures. The shared
+# shape checker also requires the actual DLL/XML set to match these targets.
+$inputFrameworks = @($inputManifest.SelectNodes("//*[local-name()='dependencies']/*[local-name()='group']") |
+    ForEach-Object { $_.GetAttribute('targetFramework') })
 $requiredDependency = if ($ExpectedAssembly -eq 'Lokad.Utf8Regex.dll') { '' } else { 'Lokad.Utf8Regex' }
 $shapeCases = @(
     @{ Name = 'shape-valid'; Error = $null; Edit = {} },
@@ -179,7 +189,7 @@ $shapeResults = @(foreach ($case in $shapeCases) {
         ,([Text.Encoding]::UTF8.GetBytes($xml.OuterXml))
     }
     $observedError = $null
-    try { Assert-PackageShape $fixturePackage $ExpectedAssembly $requiredDependency $inputVersion }
+    try { Assert-PackageShape $fixturePackage $ExpectedAssembly $requiredDependency $inputVersion $inputFrameworks }
     catch { $observedError = $_.Exception.Message }
     if (($null -eq $case.Error -and $null -ne $observedError) -or
         ($null -ne $case.Error -and ($null -eq $observedError -or !$observedError.Contains($case.Error, [StringComparison]::Ordinal)))) {

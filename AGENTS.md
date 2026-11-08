@@ -22,8 +22,8 @@ Use the SDK pinned by global.json (host install or ignored .dotnet/), and
 DLL launches and benchmark children use its runtimes. Prefer the repository scripts:
 
 ```powershell
-./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests'
-./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -SkipBuild -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
+./tools/test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests'
+./tools/test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -SkipBuild -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
 ```
 
 Use -Framework net10.0 or net11.0 for focused runs; the test default covers both.
@@ -40,7 +40,7 @@ and benchmark builds disable incidental packing.
 
 ## Benchmarks
 
-Use ./bench.ps1 in Release, sequentially, with a focused filter or custom command.
+Use ./tools/bench.ps1 in Release, sequentially, with a focused filter or custom command.
 Benchmarks default to net11.0; use -Framework net10.0 for compatibility controls.
 Let the existing benchmark code set affinity after runtime startup. An outer
 `taskset` changes .NET's visible processor count and defines a different environment.
@@ -50,18 +50,18 @@ milestone refreshes. The cap returns 124 and owns only its launched process tree
 normal runs do not shut down servers or kill other benchmark hosts.
 
 ```powershell
-./bench.ps1 -Configuration Release -Job Short -Filter '*Literal*'
-./bench.ps1 -SkipBuild -CommandArgs '--measure-case','literal/sherlock-en','20'
-./bench.ps1 -SkipBuild -CommandArgs '--measure-case-deep','lokad/imports/module-imports','20'
+./tools/bench.ps1 -Configuration Release -Job Short -Filter '*Literal*'
+./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-case','literal/sherlock-en','20'
+./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-case-deep','lokad/imports/module-imports','20'
 ```
 
-Use `./refresh-benchmarks.ps1 -Phase Resources` for a selected refresh phase.
+Use `./tools/refresh-benchmarks.ps1 -Phase Resources` for a selected refresh phase.
 The default runs one Release build, both-runtime tests and the complete .NET 11
 catalogs, lifecycle/scaling, paired comparators and resource checks, reusing those
 binaries. Phase logs and `refresh.json` go to `artifacts/benchmark-refresh/`.
 Only a completed full run counts toward the 60-minute VM target. Benchmark children
 share the remaining budget; on Linux wrap the runner in
-`timeout --kill-after=5s 3600s pwsh -NoProfile -File ./refresh-benchmarks.ps1`
+`timeout --kill-after=5s 3600s pwsh -NoProfile -File ./tools/refresh-benchmarks.ps1`
 to hard-cap builds/tests too. Set PATH and UTF8REGEX_CPYTHON before starting.
 Check disk capacity and actual available RAM first; free tmpfs capacity does not
 reserve physical memory. Retire archived fixture scratch before a full run.
@@ -99,7 +99,7 @@ old comparisons after source or binaries change.
 
 ## Package delivery
 
-Use ./qualify-package-candidate.ps1 at a delivery boundary; Core/PythonRe is the
+Use ./tools/qualify-package-candidate.ps1 at a delivery boundary; Core/PythonRe is the
 default, or select -Profiles Core,PythonRe,Pcre2. Require clean tracked source,
 a new common version and exact adapter-to-Core pins. -SkipBuild requires matching
 configuration/revision binaries for both targets; retain source/PDB/DLL/feed/cache/

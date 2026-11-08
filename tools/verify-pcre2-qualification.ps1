@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+Verify a previously archived PCRE2 qualification by its source-revision ID.
+.DESCRIPTION
+Reads the historical manifest and package/consumer evidence under artifacts/package-qualification/archive; does not rebuild or repack.
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
@@ -8,7 +14,7 @@ param(
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "test-packaged-common.ps1")
 
-$repositoryRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+$repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $archiveParent = [System.IO.Path]::GetFullPath(
     (Join-Path $repositoryRoot "artifacts\package-qualification\archive"))
 $archiveRoot = [System.IO.Path]::GetFullPath((Join-Path $archiveParent $QualificationId))
