@@ -42,7 +42,37 @@
       "Linux"
     ]
   },
-  "MetadataAndFixtureCI": "Pending latest change",
+  "MetadataAndFixtureCI": {
+    "Revision": "f483930fac73c3136c769b173e6315221eafbaf0",
+    "Run": 42508661136,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
   "LinuxRawSha256": "E5E164CE035362B51DC0A63BC769CECD16EE19B27E8FD66F37FBC17E236630A1",
-  "Scope": "Immutable common four-package candidate. No publication, adoption, full flavor equivalence, total heap guarantee or general native parity."
+  "Scope": "Immutable common four-package candidate. No publication, adoption, full flavor equivalence, total heap guarantee or general native parity.",
+  "FinalDocumentationCI": {
+    "Revision": "a5ad387b8f46ed2e3ca07abb7ff0f93cc8edb718",
+    "Run": 42509422680,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "CompletedAtUtc": "2026-11-08T18:28:09Z"
+  },
+  "ApprovedMilestonesComplete": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "H6",
+    "P1",
+    "P2",
+    "P3",
+    "P4"
+  ],
+  "Complete": true
 }

@@ -94,3 +94,12 @@ The benchmark/summary import and standalone-fixture fix are metadata/test change
 after the frozen production revision. They do not qualify new producer bytes or
 change the immutable packages. Publication, downstream adoption, broader PCRE2
 completion and further parity tuning remain separate work.
+
+## Acceptance closure
+
+Source `1c1cb97d`, fixture correction `f483930f` and final contract documentation
+`a5ad387b` are green on Windows/Linux. The final run is `42509422680`, completed
+2026-11-08 at 18:28:09 UTC. Production inputs remain identical to the frozen
+package/benchmark revision; later changes affect summaries, documentation and
+explicit test-project settings only. B1–B4, H6 and POSIX P1–P4 acceptance is complete.
+This receipt-only closure needs no repeated package, benchmark or source matrix.
