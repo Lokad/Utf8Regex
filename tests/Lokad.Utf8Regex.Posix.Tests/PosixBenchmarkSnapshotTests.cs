@@ -1,0 +1,62 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex.Benchmarks;
+
+namespace Lokad.Utf8Regex.Posix.Tests;
+
+[Trait("Category", "SourceOnly")]
+public sealed class PosixBenchmarkSnapshotTests
+{
+    [Fact]
+    public void CompactSummaryKeepsCatalogScopeAndRankedReadmeWithoutRawEvidence()
+    {
+        using var document = JsonDocument.Parse(Read("bench/Snapshots/Posix.json"));
+        var root = document.RootElement;
+        Assert.Equal(1, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal("Posix", root.GetProperty("Profile").GetString());
+        Assert.Equal("PCRE.NET", root.GetProperty("Comparator").GetProperty("PackageId").GetString());
+        var hash = root.GetProperty("Evidence").GetProperty("SnapshotSha256").GetString()!;
+        Assert.Matches("^[0-9A-F]{64}$", hash);
+        var page = Read("src/Lokad.Utf8Regex.Posix/README.md").ReplaceLineEndings("\n");
+        Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
+        var operations = root.GetProperty("Sections").GetProperty("Operations");
+        Assert.Equal(PosixBenchmarkCatalog.Cases.Length, operations.EnumerateObject().Count());
+        var previous = -1;
+        foreach (var item in operations.EnumerateObject()
+            .OrderByDescending(static item => item.Value.TryGetProperty("Ratio", out var ratio) ? ratio.GetDouble() : double.NegativeInfinity)
+            .ThenBy(static item => item.Name, StringComparer.Ordinal))
+        {
+            var row = item.Value;
+            var definition = PosixBenchmarkCatalog.Get(item.Name);
+            Assert.Equal(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(definition.Input))), row.GetProperty("InputSha256").GetString());
+            Assert.False(root.GetProperty("Sources").GetProperty(row.GetProperty("Source").GetString()!)
+                .GetProperty("Environment").GetProperty("TrackedDirty").GetBoolean());
+            var status = row.GetProperty("Status").GetString();
+            Assert.Contains(status, new[] { "ManagedFaster", "NativeFaster", "Equivalent", "Inconclusive", "Excluded", "Unqualified" });
+            if (status == "Excluded") Assert.False(string.IsNullOrWhiteSpace(row.GetProperty("Reason").GetString()));
+            else if (status != "Unqualified")
+                Assert.InRange(row.GetProperty("Ratio").GetDouble(), row.GetProperty("Lower95").GetDouble(), row.GetProperty("Upper95").GetDouble());
+            var at = page.IndexOf($"| `{item.Name}` |", StringComparison.Ordinal);
+            Assert.True(at > previous, $"Missing/misordered row: {item.Name}");
+            previous = at;
+            var cells = page[at..].Split('\n')[0].Split('|');
+            Assert.Equal(row.GetProperty("ManagedUs").GetDouble().ToString("F2", CultureInfo.InvariantCulture), cells[3].Trim());
+            Assert.Equal(row.TryGetProperty("Ratio", out var value) ? value.GetDouble().ToString("F2", CultureInfo.InvariantCulture) : "—", cells[7].Trim());
+            foreach (var lane in new[] { "FiniteLive", "FundedFiniteLive", "FiniteDeadlineLive" })
+                Assert.True(root.GetProperty("Sections").GetProperty(lane).GetProperty(item.Name).GetProperty("ManagedUs").GetDouble() > 0);
+        }
+    }
+
+    private static string Read(string name)
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            var path = Path.Combine(directory.FullName, name);
+            if (File.Exists(path)) return File.ReadAllText(path);
+        }
+        throw new FileNotFoundException(name);
+    }
+}
