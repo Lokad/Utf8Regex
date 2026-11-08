@@ -1,0 +1,48 @@
+{
+  "Source": "1c1cb97de7715df71ed11569a05da756f5aa93ea",
+  "Version": "0.5.0-dev.56",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix",
+    "Lokad.Utf8Regex.PythonRe"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 287.1487178,
+  "WindowsFixtures": 10,
+  "LinuxFixtures": 10,
+  "ChecksPerPlatform": 110506,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "LinuxVerifiedTrx": 14,
+  "OlderStagedAssetsUnchanged": 300,
+  "TotalStagedAssets": 308,
+  "Full": {
+    "Source": "1c1cb97de7715df71ed11569a05da756f5aa93ea",
+    "Seconds": 2845.881836,
+    "Steps": 85,
+    "Complete": true,
+    "ArchiveSha256": "C5A7C419BF3DE95AFD8AC8C032C7320FCF8429F1F1C13921C08E20AEE84F633A"
+  },
+  "SnapshotChecks": 5,
+  "SourceCI": {
+    "Run": 42503386814,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "MetadataAndFixtureCI": "Pending latest change",
+  "LinuxRawSha256": "E5E164CE035362B51DC0A63BC769CECD16EE19B27E8FD66F37FBC17E236630A1",
+  "Scope": "Immutable common four-package candidate. No publication, adoption, full flavor equivalence, total heap guarantee or general native parity."
+}

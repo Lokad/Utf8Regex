@@ -59,3 +59,38 @@ traffic or retained process memory. Values/caller-owned POSIX capture spans crea
 no producer result payload; a positive result-byte cap admits them. Strict UTF-8,
 scalar semantics, synchronous original cancellation/deadlines and working loans
 remain. Unsupported ERE syntax/locale behavior is documented in the profile spec.
+
+## Packages and original consumers
+
+Windows qualification passed in 287.149 seconds. Windows and Linux each accepted
+ten detached fixtures against the exact same eight package/symbol files: all four
+packages, both target frameworks, 110,506 checks per platform. Linux did not rebuild
+or repack a producer. POSIX contributes 91 public/API/resource/selection checks per
+target; source-only presentation checks stay in source CI.
+
+Original frozen Awk19/Lython118 checks pass per target/platform, along with public
+hosting probes whose final root working loan is zero. Only exact producer pins
+changed in those source fixtures. Twelve Windows and 28 Linux restore audits,
+477 original compiler inputs and 14 Linux TRX identities were checked. Core has
+no package dependency; adapters pin `[0.5.0-dev.56]`. Embedded migration/release
+guides describe POSIX, and packages contain no native assets. All 300 older staged
+assets are unchanged; eight new package/symbol files bring the total to 308.
+
+Linux first stopped while compiling the new POSIX detached fixture: its project
+inherited implicit usings/nullability inside the checkout. Make both settings
+explicit in that test project. A resume-helper XML-node selection error then
+stopped preparation before tests; it was corrected. Eight already-passed fixtures
+were reused, only the affected POSIX targets were resumed, and the previously
+unrun original consumers/audits followed. Test code and producer bytes did not
+change. No new candidate version, Full repeat or package matrix was needed.
+
+Final local Linux evidence is
+`artifacts/experiments/delivery-dev56-20261108/linux-final-evidence.tar.gz`, SHA-256
+`E5E164CE035362B51DC0A63BC769CECD16EE19B27E8FD66F37FBC17E236630A1`.
+The initial fixture/preparation failures remain separately under the same ordinary
+artifact directory; this does not create an archive/upload requirement.
+
+The benchmark/summary import and standalone-fixture fix are metadata/test changes
+after the frozen production revision. They do not qualify new producer bytes or
+change the immutable packages. Publication, downstream adoption, broader PCRE2
+completion and further parity tuning remain separate work.
