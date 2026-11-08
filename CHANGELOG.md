@@ -2,9 +2,15 @@
 
 ## Unreleased — 0.5.0
 
-- Target .NET 10 and .NET 11 in all three packages. Benchmarks default to .NET 11;
+- Target .NET 10 and .NET 11 in Core and the three adapters. Benchmarks default to .NET 11;
   the pinned SDK/runtime is currently RC3. Historical results keep their runtime
   labels. Adapters require the exact matching Core package version.
+- Add the optional Lokad.Utf8Regex.Posix package: a case-sensitive scalar ERE
+  subset with leftmost-longest matching and hierarchical capture priority.
+  Match into caller-owned capture spans, count, or iterate with a disposable
+  cursor under the existing cancellation and finite resource policies. Named
+  classes are fixed ASCII; locale collation, backreferences and lookarounds are
+  excluded. Worst-case linear matching is not promised.
 - Compile UTF-8 patterns and parse UTF-8 replacement templates directly across
   Core, PythonRe and PCRE2. Add UTF-8 capture-name lookup and caller-buffer pattern
   metadata. Owned byte keys replace mandatory whole-pattern/template strings;
@@ -44,9 +50,9 @@ covered acquisition, temporary loans refund synchronously, and strict whole-subj
 UTF-8 validation, scalar matching, captures and interruption contracts remain.
 
 See the [migration guide](docs/MIGRATION.md) and the
-[Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md) and
-[PCRE2](docs/SPEC-PCRE2.md) specifications for API contracts and profile limitations.
-Execution remains owned, managed and checked. POSIX remains outside this release.
+[Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md),
+[PCRE2](docs/SPEC-PCRE2.md) and [POSIX](docs/SPEC-POSIX.md) specifications for
+API contracts and profile limitations. Execution remains owned, managed and checked.
 
 ## 0.4.0 — 2026-10-27
 

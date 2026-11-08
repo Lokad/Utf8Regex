@@ -2,7 +2,7 @@
 
 ## 0.5.0 development: .NET 10 and .NET 11
 
-All three packages now build `net10.0` and `net11.0` assets. Adapters still require
+Core and all three adapters build `net10.0` and `net11.0` assets. Adapters still require
 exactly the same Core version; NuGet selects the asset matching the application.
 The build SDK is pinned in `global.json`; its .NET 11 version is currently a
 release candidate. Scalar matching, strict validation and primary byte coordinates
@@ -240,6 +240,16 @@ repair unpaired surrogates independently rather than joining fragments.
 | Core | .NET-style scalar grammar, captures/history, RTL, supported NonBacktracking subset | No UTF-16 parity or POSIX selection |
 | PythonRe | CPython 3.13.2 str profile; Unicode 15.1 data; opening-order captures and last-closed metadata | No bytes-pattern semantics, LOCALE, Unicode-name lookup or endpos |
 | PCRE2 | Selected managed 10.47 standard profile; final capture slots and explicit partial Probe | No DFA, callouts, invalid-UTF mode, split or full capture history; partial decisions are curated |
+| POSIX (new in 0.5.0) | Case-sensitive ERE subset, leftmost-longest whole match and hierarchical subexpression priority | Fixed ASCII named classes; no locale collation, backreferences, lookarounds, replacement or capture history API |
+
+Choose `Utf8PosixRegex` when longest selection is required: `(a|aa)(a*)` on
+`aaa` captures `aa` then `a`. Ordered Core/PythonRe/PCRE2 alternatives can choose
+different captures. POSIX returns existing byte/UTF-16 coordinate values, fills
+caller-owned capture spans and offers a disposable memory cursor. These outputs
+create no producer-owned result payload, so a positive result-byte cap admits
+them; working limits cover the competing histories. Ambiguous patterns may
+require substantial work: use finite work/depth/working limits for untrusted
+patterns. No worst-case linear-time guarantee or complete GNU/BSD equivalence.
 
 PCRE2 Hard decisions and generic marked partial misses can throw
 NotSupportedException. Treat that as unsupported, not NoMatch. None-mode matching
@@ -252,6 +262,6 @@ disabled; NativeAOT/trimming are not qualified.
 
 Specifications: [Core](SPEC.md),
 [PythonRe](SPEC-PYTHONRE.md),
-[PCRE2](SPEC-PCRE2.md).
+[PCRE2](SPEC-PCRE2.md), [POSIX](SPEC-POSIX.md).
 Historical benchmark rows retain their own versions and do not qualify this
 development source or promise complete flavor equivalence.

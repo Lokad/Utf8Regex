@@ -103,7 +103,7 @@ old comparisons after source or binaries change.
 ## Package delivery
 
 Use ./tools/qualify-package-candidate.ps1 at a delivery boundary; Core/PythonRe is the
-default, or select -Profiles Core,PythonRe,Pcre2. Require clean tracked source,
+default, or select -Profiles Core,PythonRe,Pcre2,Posix. Require clean tracked source,
 a new common version and exact adapter-to-Core pins. -SkipBuild requires matching
 configuration/revision binaries for both targets; retain source/PDB/DLL/feed/cache/
 lock checks for each asset and isolated consumer.

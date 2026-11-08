@@ -147,11 +147,13 @@ Shared allowance loans release on completion, refusal, cancellation or disposal.
 
 [Independent selection fixtures](../tests/Lokad.Utf8Regex.Posix.Tests/Corpus/selection.json)
 pin ambiguous, nested/repeated/nullable, absent/empty and supplementary-scalar
-coordinates before execution changes. P2 must exercise every capture-span size,
+coordinates before execution changes. Qualification covers every capture-span size,
 public discovery/count/cursor routes, malformed subjects/offsets, original-token
 and deadline interruption, each finite limit, shared refusal and alias disposal
 on both target frameworks. Fixture data alone is not implementation qualification.
 
-Release and performance acceptance remain in PLAN.md: representative warm public
-POSIX operations, finite/governed costs and a fresh four-package boundary. Do not
-claim complete POSIX equivalence or qualification of this adapter from dev.55.
+The [profile README](../src/Lokad.Utf8Regex.Posix/README.md#benchmarks) records warm
+public-operation and finite-policy costs. Four-package delivery also checks both
+target frameworks, Windows/Linux and isolated package consumers. The historical
+three-package dev.55 candidate does not qualify this adapter. No complete POSIX
+equivalence or general native throughput parity is claimed.

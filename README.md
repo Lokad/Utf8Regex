@@ -2,7 +2,7 @@
 
 Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
 enumerate and replace without first decoding the subject to a string.
-Core and both optional adapters are fully managed .NET libraries.
+Core and the optional adapters are fully managed .NET libraries.
 
 ## Quick start
 
@@ -30,8 +30,9 @@ slices.
 | [Lokad.Utf8Regex](docs/SPEC.md) | .NET-style grammar, captures/history, backreferences, lookarounds, RTL and a NonBacktracking subset |
 | [Lokad.Utf8Regex.PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) | Python re-style grammar, capture numbering and result shaping |
 | [Lokad.Utf8Regex.Pcre2](src/Lokad.Utf8Regex.Pcre2/README.md) | Managed PCRE2-style grammar, capture slots, substitution and partial probing |
+| [Lokad.Utf8Regex.Posix](src/Lokad.Utf8Regex.Posix/README.md) | POSIX ERE subset with leftmost-longest selection and hierarchical capture priority; new in 0.5.0 |
 
-Both adapters require the matching Core package version. Their specifications
+Adapters require the matching Core package version. Their specifications
 define the supported grammar and operation boundaries.
 
 ## Unicode and input
@@ -105,8 +106,9 @@ subject, so it measures a hit.
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
 
 Profile comparisons are in the
-[PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks) and
-[PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) README sections.
+[PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks),
+[PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) and
+[POSIX](src/Lokad.Utf8Regex.Posix/README.md#benchmarks) README sections.
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks

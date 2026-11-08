@@ -6,7 +6,7 @@ Requires clean source and a new version; builds/packs selected profiles and writ
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet("Core", "PythonRe", "Pcre2")]
+    [ValidateSet("Core", "PythonRe", "Pcre2", "Posix")]
     [string[]] $Profiles = @("Core", "PythonRe"),
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
@@ -45,7 +45,7 @@ $steps = [Collections.Generic.List[object]]::new()
 # Core is always required by the selected adapter graph and the shared fixture suite.
 $packages = @("Lokad.Utf8Regex")
 $testProjects = @("Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests")
-foreach ($adapter in @("PythonRe", "Pcre2")) {
+foreach ($adapter in @("PythonRe", "Pcre2", "Posix")) {
     if ($adapter -in $Profiles) {
         $packages += "Lokad.Utf8Regex.$adapter"
         $testProjects += "Lokad.Utf8Regex.$adapter.Tests"
@@ -149,6 +149,7 @@ try {
                 "Lokad.Utf8Regex.DiffTests" { "diff" }
                 "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
                 "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
+                "Lokad.Utf8Regex.Posix.Tests" { "posix" }
             }
             $consumerName += "/$framework"
             $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
@@ -159,6 +160,7 @@ try {
                 $packageIds += "Lokad.Utf8Regex.PythonRe"
             }
             if ($testProjectName -eq "Lokad.Utf8Regex.Pcre2.Tests") { $packageIds += "Lokad.Utf8Regex.Pcre2" }
+            if ($testProjectName -eq "Lokad.Utf8Regex.Posix.Tests") { $packageIds += "Lokad.Utf8Regex.Posix" }
             $resultsDirectory = Join-Path $consumerRoot "results"
             Invoke-CandidateStep "consumer/$testProjectName/$framework" {
                 Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $consumerRoot `
