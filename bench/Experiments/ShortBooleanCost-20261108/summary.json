@@ -1,0 +1,384 @@
+{
+  "Source": "c80612cb297514f3c9dd481fa56f5bcfdbaf992b",
+  "BaselinePackage": "Lokad.Utf8Regex.0.4.0",
+  "BaselinePackageSha256": "70E86DE68CF661E445A88801CA755685758CD88D2A253A4D1899D21939C91010",
+  "RawArtifacts": "artifacts/experiments/short-boolean-cost-20261108",
+  "RawSha256": "542551DFE2A0163696E0EF54583E431E786F7E9123E8A0E955699B3CFCB60373",
+  "TotalSeconds": 44.846815288066864,
+  "Order": [
+    "baseline-a",
+    "current-a",
+    "current-b",
+    "baseline-b",
+    "funded"
+  ],
+  "Processes": [
+    {
+      "Label": "baseline-a",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "StartupProcessors": 8,
+      "Affinity": "4",
+      "CoreSha256": "AF5FB1E550CF23559BC7E26EF3D895B45E5EF98D57BCF46B414785A6E24CC857",
+      "WorkerSha256": "6484D0E81E312307C945404B0BC00875B19773AC636E9EA3F2E9195977F7C126",
+      "Version": "0.4.0+3d120bdcbbd49e25e9a3c6af7d408e34d239adca",
+      "LoadedCoreAssemblies": 1,
+      "ManagedHeapDeltaAfterCollection": 596176,
+      "HeapDeltaScope": "Whole worker including prepared controls/pools; not exact regex retained storage",
+      "Funded": null
+    },
+    {
+      "Label": "current-a",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "StartupProcessors": 8,
+      "Affinity": "4",
+      "CoreSha256": "7A70B3A9101D63609F238D9078D675B7A6C66F75EC911B531F3FA3204C6BFFC2",
+      "WorkerSha256": "6484D0E81E312307C945404B0BC00875B19773AC636E9EA3F2E9195977F7C126",
+      "Version": "0.5.0-dev.55+c80612cb297514f3c9dd481fa56f5bcfdbaf992b",
+      "LoadedCoreAssemblies": 1,
+      "ManagedHeapDeltaAfterCollection": 596520,
+      "HeapDeltaScope": "Whole worker including prepared controls/pools; not exact regex retained storage",
+      "Funded": null
+    },
+    {
+      "Label": "current-b",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "StartupProcessors": 8,
+      "Affinity": "4",
+      "CoreSha256": "7A70B3A9101D63609F238D9078D675B7A6C66F75EC911B531F3FA3204C6BFFC2",
+      "WorkerSha256": "6484D0E81E312307C945404B0BC00875B19773AC636E9EA3F2E9195977F7C126",
+      "Version": "0.5.0-dev.55+c80612cb297514f3c9dd481fa56f5bcfdbaf992b",
+      "LoadedCoreAssemblies": 1,
+      "ManagedHeapDeltaAfterCollection": 596520,
+      "HeapDeltaScope": "Whole worker including prepared controls/pools; not exact regex retained storage",
+      "Funded": null
+    },
+    {
+      "Label": "baseline-b",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "StartupProcessors": 8,
+      "Affinity": "4",
+      "CoreSha256": "AF5FB1E550CF23559BC7E26EF3D895B45E5EF98D57BCF46B414785A6E24CC857",
+      "WorkerSha256": "6484D0E81E312307C945404B0BC00875B19773AC636E9EA3F2E9195977F7C126",
+      "Version": "0.4.0+3d120bdcbbd49e25e9a3c6af7d408e34d239adca",
+      "LoadedCoreAssemblies": 1,
+      "ManagedHeapDeltaAfterCollection": 596176,
+      "HeapDeltaScope": "Whole worker including prepared controls/pools; not exact regex retained storage",
+      "Funded": null
+    },
+    {
+      "Label": "funded",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "StartupProcessors": 8,
+      "Affinity": "4",
+      "CoreSha256": "7A70B3A9101D63609F238D9078D675B7A6C66F75EC911B531F3FA3204C6BFFC2",
+      "WorkerSha256": "5EAC336A5F61EF7B65DF3D75AB686BDB99A6C0C31BBD6E17F203D2A26937B465",
+      "Version": "0.5.0-dev.55+c80612cb297514f3c9dd481fa56f5bcfdbaf992b",
+      "LoadedCoreAssemblies": 1,
+      "ManagedHeapDeltaAfterCollection": 607608,
+      "HeapDeltaScope": "Whole worker including prepared controls/pools; not exact regex retained storage",
+      "Funded": {
+        "Peak": 0,
+        "Reservations": 0,
+        "Outstanding": 0,
+        "RefusalOutstanding": 0
+      }
+    }
+  ],
+  "Rows": [
+    {
+      "Process": "baseline-a",
+      "Case": "mixed",
+      "Ns": 420.04,
+      "Min": 409.55,
+      "Max": 428.06,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "positive",
+      "Ns": 491.27,
+      "Min": 484.44,
+      "Max": 494.6,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "negative",
+      "Ns": 336.39,
+      "Min": 334.87,
+      "Max": 340.88,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "unicode",
+      "Ns": 653.58,
+      "Min": 647.06,
+      "Max": 654.95,
+      "Bytes": 3664
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "finite-mixed",
+      "Ns": 477.45,
+      "Min": 474.16,
+      "Max": 486.98,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "finite-deadline-mixed",
+      "Ns": 594.42,
+      "Min": 593.2,
+      "Max": 596.75,
+      "Bytes": 1840
+    },
+    {
+      "Process": "baseline-a",
+      "Case": "unchanged-bcl-control",
+      "Ns": 28.27,
+      "Min": 28.04,
+      "Max": 28.38,
+      "Bytes": 0
+    },
+    {
+      "Process": "current-a",
+      "Case": "mixed",
+      "Ns": 163.86,
+      "Min": 162.41,
+      "Max": 165.88,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-a",
+      "Case": "positive",
+      "Ns": 143.18,
+      "Min": 141.33,
+      "Max": 144.59,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-a",
+      "Case": "negative",
+      "Ns": 179.08,
+      "Min": 178.63,
+      "Max": 180.64,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-a",
+      "Case": "unicode",
+      "Ns": 427.78,
+      "Min": 423.43,
+      "Max": 428.42,
+      "Bytes": 640
+    },
+    {
+      "Process": "current-a",
+      "Case": "finite-mixed",
+      "Ns": 171.13,
+      "Min": 169.38,
+      "Max": 172.44,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-a",
+      "Case": "finite-deadline-mixed",
+      "Ns": 369.97,
+      "Min": 369.89,
+      "Max": 370.44,
+      "Bytes": 160
+    },
+    {
+      "Process": "current-a",
+      "Case": "unchanged-bcl-control",
+      "Ns": 29.29,
+      "Min": 29.05,
+      "Max": 31.36,
+      "Bytes": 0
+    },
+    {
+      "Process": "current-b",
+      "Case": "mixed",
+      "Ns": 163.93,
+      "Min": 163.12,
+      "Max": 164.98,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-b",
+      "Case": "positive",
+      "Ns": 149.26,
+      "Min": 145.62,
+      "Max": 152.92,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-b",
+      "Case": "negative",
+      "Ns": 182.62,
+      "Min": 181.3,
+      "Max": 187.7,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-b",
+      "Case": "unicode",
+      "Ns": 405.34,
+      "Min": 401.96,
+      "Max": 409.57,
+      "Bytes": 640
+    },
+    {
+      "Process": "current-b",
+      "Case": "finite-mixed",
+      "Ns": 173.17,
+      "Min": 171.83,
+      "Max": 176.2,
+      "Bytes": 112
+    },
+    {
+      "Process": "current-b",
+      "Case": "finite-deadline-mixed",
+      "Ns": 380.61,
+      "Min": 379.93,
+      "Max": 382.27,
+      "Bytes": 160
+    },
+    {
+      "Process": "current-b",
+      "Case": "unchanged-bcl-control",
+      "Ns": 36.11,
+      "Min": 32.22,
+      "Max": 36.36,
+      "Bytes": 0
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "mixed",
+      "Ns": 435.55,
+      "Min": 432.43,
+      "Max": 444.71,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "positive",
+      "Ns": 482.75,
+      "Min": 477.33,
+      "Max": 489.31,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "negative",
+      "Ns": 336.13,
+      "Min": 331.65,
+      "Max": 339.68,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "unicode",
+      "Ns": 648.69,
+      "Min": 641.14,
+      "Max": 649.64,
+      "Bytes": 3664
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "finite-mixed",
+      "Ns": 489.84,
+      "Min": 480.31,
+      "Max": 493.73,
+      "Bytes": 1792
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "finite-deadline-mixed",
+      "Ns": 591.95,
+      "Min": 587.34,
+      "Max": 595.09,
+      "Bytes": 1840
+    },
+    {
+      "Process": "baseline-b",
+      "Case": "unchanged-bcl-control",
+      "Ns": 27.66,
+      "Min": 27.48,
+      "Max": 27.77,
+      "Bytes": 0
+    },
+    {
+      "Process": "funded",
+      "Case": "mixed",
+      "Ns": 163.93,
+      "Min": 162.76,
+      "Max": 166.06,
+      "Bytes": 112
+    },
+    {
+      "Process": "funded",
+      "Case": "positive",
+      "Ns": 147.75,
+      "Min": 146.72,
+      "Max": 149.71,
+      "Bytes": 112
+    },
+    {
+      "Process": "funded",
+      "Case": "negative",
+      "Ns": 182.68,
+      "Min": 181.62,
+      "Max": 184.17,
+      "Bytes": 112
+    },
+    {
+      "Process": "funded",
+      "Case": "unicode",
+      "Ns": 417.63,
+      "Min": 414.11,
+      "Max": 422.19,
+      "Bytes": 640
+    },
+    {
+      "Process": "funded",
+      "Case": "finite-mixed",
+      "Ns": 174.72,
+      "Min": 173.49,
+      "Max": 175.11,
+      "Bytes": 112
+    },
+    {
+      "Process": "funded",
+      "Case": "finite-deadline-mixed",
+      "Ns": 362.9,
+      "Min": 361.15,
+      "Max": 365.85,
+      "Bytes": 160
+    },
+    {
+      "Process": "funded",
+      "Case": "unchanged-bcl-control",
+      "Ns": 27.73,
+      "Min": 27.51,
+      "Max": 27.77,
+      "Bytes": 0
+    },
+    {
+      "Process": "funded",
+      "Case": "funded-finite-mixed",
+      "Ns": 195.3,
+      "Min": 193.71,
+      "Max": 198.31,
+      "Bytes": 112
+    }
+  ],
+  "Caveats": [
+    "Rows report process medians and observed sample ranges, not confidence intervals.",
+    "Controls are retained without normalization; current-b BCL movement limits precise attribution.",
+    "Whole-worker heap delta includes prepared controls and pools; it is not regex retained workspace.",
+    "Funded loan peak0 excludes fixed invocation metadata; 112B remains allocated per matching call.",
+    "Finite .NET10/net11 preflights check counts, malformed UTF8, original canceled token and work refusal; these are not full package qualification."
+  ]
+}
