@@ -129,6 +129,9 @@ them, including growth overlap. Charge matching transitions, candidate discovery
 history comparison/copy and scalar/coordinate scans at bounded interruption
 checkpoints. Bound pending alternatives/history workspace and recursion depth;
 do not promise worst-case linear matching merely because ERE is regular.
+Numerical work/depth/working requirements depend on the execution route and can
+change between versions, including when redundant internal histories are omitted.
+Recheck finite policies when upgrading; these limits do not measure exact heap size.
 
 Working limits cover modeled matching/history/projection capacity, not borrowed
 input, the compiled program, fixed owner metadata, all GC traffic or process RAM.

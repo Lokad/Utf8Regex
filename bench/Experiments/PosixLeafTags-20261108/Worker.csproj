@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Lokad.Utf8Regex"><HintPath>$(ProducerDirectory)/Lokad.Utf8Regex.dll</HintPath></Reference>
+    <Reference Include="Lokad.Utf8Regex.Posix"><HintPath>$(ProducerDirectory)/Lokad.Utf8Regex.Posix.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

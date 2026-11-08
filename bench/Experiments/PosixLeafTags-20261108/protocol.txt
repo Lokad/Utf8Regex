@@ -1,0 +1,11 @@
+One bounded .NET11 quiet-VM separate-process ABBA comparison, unchanged worker.
+Before: measured source053ec0de frozen Core/Posix DLLs. After: same Core DLL and
+PosixProgram leaf-history simplification only, patch/hash/source retained.
+Eleven public rows: nullable/sku007/ambiguous/repeated/Unicode captures,
+sku007 finite/funded/deadline, unchanged Posix IsMatch and ambiguous Count, Core literal Count.
+Prepared inputs/compiled regex/reused caller capture destination. Independent calibration
+to75ms;500ms warm per row;5samples >=20ms; result/loan checks after clock.
+No outer affinity: existing policy after runtime startup, one producer/defaultALC/process.
+ABBA total cap180s. One focused confirmation only if noise prevents a decision.
+Retain all process observations, absolute times/allocations, identities/loan peaks.
+Do not normalize by controls or compose ratios with catalog/native measurements.

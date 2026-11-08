@@ -33,7 +33,20 @@ internal sealed class PosixProgram
             {
                 frame.Tag = parents.Count;
                 parents.Add(frame.Parent);
-                if (frame.Node is Utf8SliceNode.CaptureNode capture) captureTags[capture.Slot] = frame.Tag;
+                if (frame.Node is Utf8SliceNode.CaptureNode capture)
+                {
+                    captureTags[capture.Slot] = frame.Tag;
+                    // With no public descendants, equal occurrence boundaries
+                    // leave no observable choice inside this capture. Keep its
+                    // complete history, but omit its internal fictive tags.
+                    if (!ContainsCapture(capture.Body, budget))
+                    {
+                        completed = budget.AllocateObject((frame.Tag, capture.Body),
+                            static x => new Utf8SliceNode.CaptureNode(x.Tag, x.Body));
+                        frames.Pop();
+                        continue;
+                    }
+                }
                 if (frame.Node is Utf8SliceNode.ConcatNode concat)
                     frame.Children = budget.AllocateArray<Utf8SliceNode>(concat.Children.Length, false);
                 if (frame.Node is Utf8SliceNode.AlternationNode alternate)
@@ -93,6 +106,33 @@ internal sealed class PosixProgram
             static x => new PosixProgram(x.scalar, x.Parents, x.captureTags));
         construction.Complete();
         return result;
+    }
+
+    private static bool ContainsCapture(Utf8SliceNode root, Utf8ConstructionBudget budget)
+    {
+        using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root, -1));
+        while (frames.Count != 0)
+        {
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            if (frame.Node is Utf8SliceNode.CaptureNode) return true;
+            Utf8SliceNode? child = null;
+            switch (frame.Node)
+            {
+                case Utf8SliceNode.ConcatNode concat when frame.Child < concat.Children.Length:
+                    child = concat.Children[frame.Child++]; break;
+                case Utf8SliceNode.AlternationNode alternate:
+                    while (frame.Branch < alternate.Branches.Length && frame.Child == alternate.Branches[frame.Branch].Length)
+                    { frame.Branch++; frame.Child = 0; }
+                    if (frame.Branch < alternate.Branches.Length) child = alternate.Branches[frame.Branch][frame.Child++];
+                    break;
+                case Utf8SliceNode.RepeatNode repeat when frame.Child++ == 0: child = repeat.Body; break;
+            }
+            if (child is null) frames.Pop();
+            else { frames[index] = frame; frames.Push(new(child, -1)); }
+        }
+        return false;
     }
 
     private struct Frame(Utf8SliceNode node, int parent)
