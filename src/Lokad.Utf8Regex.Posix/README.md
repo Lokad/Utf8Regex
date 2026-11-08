@@ -43,41 +43,41 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/empty` | Captures | 2.16 | 0.15 | 240 | Native faster | 14.46 |
-| `capture/sku007` | Captures × 4096 | 7977.30 | 599.98 | 1114286 | Native faster | 13.32 |
-| `capture/nonzero` | Captures | 1.10 | 0.20 | 240 | Native faster | 5.50 |
-| `capture/unicode` | Captures | 1.04 | 0.19 | 240 | Native faster | 5.48 |
-| `capture/absent` | Captures | 0.74 | 0.17 | 232 | Native faster | 4.48 |
-| `count/dense` | Count | 59.84 | 14.71 | 225 | Native faster | 4.07 |
-| `cursor/absent` | Cursor | 1.42 | 0.58 | 408 | Native faster | 2.42 |
-| `is-match/miss` | IsMatch | 0.34 | 0.20 | 256 | Native faster | 1.73 |
-| `is-match/hit` | IsMatch | 0.35 | 0.24 | 256 | Native faster | 1.45 |
-| `cursor/scalars` | Cursor | 0.88 | 0.71 | 360 | Native faster | 1.24 |
-| `capture/ambiguous` | Captures | 1.69 | — | 256 | Excluded | — |
-| `capture/repeated` | Captures | 4.20 | — | 232 | Excluded | — |
-| `count/ambiguous` | Count | 1.05 | — | 208 | Excluded | — |
-| `cursor/ambiguous` | Cursor | 1.20 | — | 384 | Excluded | — |
+| `capture/empty` | Captures | 1.59 | 0.14 | 208 | Native faster | 10.98 |
+| `capture/sku007` | Captures × 4096 | 5324.71 | 613.18 | 983098 | Native faster | 8.74 |
+| `capture/nonzero` | Captures | 0.93 | 0.20 | 200 | Native faster | 4.75 |
+| `capture/unicode` | Captures | 0.88 | 0.19 | 200 | Native faster | 4.60 |
+| `count/dense` | Count | 58.18 | 14.84 | 225 | Native faster | 3.91 |
+| `capture/absent` | Captures | 0.64 | 0.17 | 200 | Native faster | 3.78 |
+| `cursor/absent` | Cursor | 1.10 | 0.59 | 376 | Native faster | 1.85 |
+| `is-match/miss` | IsMatch | 0.29 | 0.20 | 256 | Native faster | 1.50 |
+| `is-match/hit` | IsMatch | 0.33 | 0.24 | 256 | Native faster | 1.42 |
+| `cursor/scalars` | Cursor | 0.76 | 0.71 | 352 | Native faster | 1.06 |
+| `capture/ambiguous` | Captures | 1.08 | — | 200 | Excluded | — |
+| `capture/repeated` | Captures | 2.12 | — | 192 | Excluded | — |
+| `count/ambiguous` | Count | 0.99 | — | 208 | Excluded | — |
+| `cursor/ambiguous` | Cursor | 1.17 | — | 384 | Excluded | — |
 
 The ratio is the median paired managed/native time; raw samples retain 95% bootstrap intervals and lane-order observations. Excluded rows have different native ranges/captures and no ratio. All rows retain ordinary costs, even when no equivalent native result exists.
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/absent` | 1.04 µs | 1.19 µs | 1.37 µs | 1.61 |
-| `cursor/scalars` | 1.29 µs | 1.38 µs | 1.97 µs | 1.57 |
-| `is-match/miss` | 0.49 µs | 0.52 µs | 0.61 µs | 1.50 |
-| `capture/unicode` | 1.40 µs | 1.56 µs | 1.81 µs | 1.50 |
-| `capture/nonzero` | 1.47 µs | 1.64 µs | 1.89 µs | 1.49 |
-| `cursor/ambiguous` | 1.60 µs | 1.77 µs | 2.08 µs | 1.48 |
-| `is-match/hit` | 0.48 µs | 0.51 µs | 0.66 µs | 1.46 |
-| `cursor/absent` | 1.89 µs | 2.04 µs | 2.49 µs | 1.44 |
-| `capture/ambiguous` | 2.21 µs | 2.41 µs | 2.70 µs | 1.43 |
-| `capture/sku007` | 10109.90 µs | 11164.21 µs | 12467.26 µs | 1.40 |
-| `count/ambiguous` | 1.29 µs | 1.44 µs | 1.54 µs | 1.38 |
-| `capture/empty` | 2.75 µs | 2.90 µs | 3.27 µs | 1.34 |
-| `capture/repeated` | 4.99 µs | 5.24 µs | 5.58 µs | 1.25 |
-| `count/dense` | 69.55 µs | 69.52 µs | 72.09 µs | 1.16 |
+| `capture/absent` | 0.91 µs | 1.05 µs | 1.25 µs | 1.64 |
+| `cursor/scalars` | 1.15 µs | 1.24 µs | 1.85 µs | 1.63 |
+| `is-match/miss` | 0.44 µs | 0.47 µs | 0.59 µs | 1.61 |
+| `cursor/absent` | 1.59 µs | 1.71 µs | 2.20 µs | 1.56 |
+| `is-match/hit` | 0.48 µs | 0.51 µs | 0.67 µs | 1.54 |
+| `capture/unicode` | 1.17 µs | 1.31 µs | 1.59 µs | 1.49 |
+| `capture/ambiguous` | 1.46 µs | 1.60 µs | 1.91 µs | 1.49 |
+| `cursor/ambiguous` | 1.60 µs | 1.74 µs | 2.11 µs | 1.48 |
+| `capture/nonzero` | 1.23 µs | 1.37 µs | 1.67 µs | 1.47 |
+| `count/ambiguous` | 1.28 µs | 1.42 µs | 1.56 µs | 1.43 |
+| `capture/sku007` | 6910.16 µs | 7483.27 µs | 8748.21 µs | 1.41 |
+| `capture/repeated` | 2.82 µs | 2.94 µs | 3.34 µs | 1.39 |
+| `capture/empty` | 2.06 µs | 2.20 µs | 2.58 µs | 1.38 |
+| `count/dense` | 66.30 µs | 66.62 µs | 69.67 µs | 1.15 |
 
 Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `83E954A46DF60CDC54BD3988B0DE6ECFF05024196E99F0A33BC7AE2EF70248F4`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `BB8DAD967BEA7E04FE242B5B9C73F87B27650C8702D8EDB5F59290533C11867E`.
 <!-- END GENERATED POSIX BENCHMARKS -->

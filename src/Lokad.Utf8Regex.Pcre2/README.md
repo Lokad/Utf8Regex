@@ -206,187 +206,187 @@ Public managed PCRE2 operations over UTF-8, compared with the native PCRE2 NFA t
 
 Times are elapsed microseconds per operation from paired measurements when available. Tables rank `Utf8Pcre2 / PCRE2 NFA` from highest to lowest; lower is better. Status retains paired 95% uncertainty, lane stability and result compatibility. A point ratio is not a winner. Excluded/unqualified rows appear last without a qualified ratio; independently measured discovery values remain observations only.
 
-Snapshot SHA-256: `B26E6012EA4A17458F61B6B49B34B42549673C4637B35132A7AB6EE364B3911F`.
+Snapshot SHA-256: `03F000F30A668557DAF4854270FFA3F9F5888F44D8234C33A03BAFE36CED8476`.
 
-Comparator Status: `76` managed faster, `1` equivalent, `13` native faster, `11` inconclusive, `0` unqualified, `25` excluded.
+Comparator Status: `81` managed faster, `0` equivalent, `10` native faster, `10` inconclusive, `0` unqualified, `25` excluded.
 
-Measured source `d60679252cf6`: .NET 11.0.0-rc.3.26522.148. Selective updates retain each row's identity.
+Measured source `1c1cb97de771`: .NET 11.0.0-rc.3.26522.148. Selective updates retain each row's identity.
 
 ### Compatible IsMatch
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `common/date-match` | 0.657 us | 0.156 us | Native faster | 4.21x |
-| `common/date-miss` | 2.312 us | 0.565 us | Native faster | 4.10x |
-| `common/one-node-backtracking` | 0.170 us | 0.077 us | Native faster | 2.21x |
-| `simple/httpclient-caseless` | 0.112 us | 0.119 us | Managed faster | 0.94x |
-| `simple/foo-dense` | 0.066 us | 0.086 us | Managed faster | 0.77x |
-| `industry/boostdocs-float-match` | 0.057 us | 0.123 us | Inconclusive | 0.47x |
-| `simple/loglevel-multiline` | 0.073 us | 0.199 us | Managed faster | 0.37x |
-| `common/email-match` | 0.099 us | 0.296 us | Managed faster | 0.33x |
-| `industry/boostdocs-ftp-line-match` | 0.087 us | 0.272 us | Managed faster | 0.32x |
-| `common/ip-match` | 0.090 us | 0.287 us | Inconclusive | 0.31x |
-| `common/email-miss` | 0.106 us | 0.348 us | Managed faster | 0.30x |
-| `backtracking/assertion-capture` | 0.609 us | 2.291 us | Inconclusive | 0.26x |
-| `common/ip-miss` | 0.078 us | 0.311 us | Managed faster | 0.25x |
-| `industry/boostdocs-credit-card-match` | 0.032 us | 0.151 us | Managed faster | 0.21x |
-| `industry/boostdocs-postcode-match` | 0.023 us | 0.113 us | Inconclusive | 0.21x |
-| `industry/boostdocs-date-match` | 0.021 us | 0.110 us | Managed faster | 0.19x |
-| `common/uri-match` | 0.033 us | 0.197 us | Managed faster | 0.17x |
-| `simple/foo-optional-bar` | 0.013 us | 0.107 us | Managed faster | 0.12x |
-| `common/uri-miss` | 0.060 us | 0.596 us | Managed faster | 0.10x |
+| `common/date-match` | 0.696 us | 0.157 us | Native faster | 4.43x |
+| `common/date-miss` | 2.300 us | 0.568 us | Native faster | 4.04x |
+| `common/one-node-backtracking` | 0.173 us | 0.073 us | Inconclusive | 2.38x |
+| `simple/httpclient-caseless` | 0.114 us | 0.121 us | Managed faster | 0.94x |
+| `simple/foo-dense` | 0.067 us | 0.088 us | Managed faster | 0.76x |
+| `industry/boostdocs-float-match` | 0.057 us | 0.116 us | Managed faster | 0.49x |
+| `simple/loglevel-multiline` | 0.076 us | 0.209 us | Managed faster | 0.36x |
+| `common/email-match` | 0.108 us | 0.299 us | Managed faster | 0.36x |
+| `industry/boostdocs-ftp-line-match` | 0.083 us | 0.267 us | Managed faster | 0.31x |
+| `common/ip-match` | 0.086 us | 0.289 us | Managed faster | 0.30x |
+| `common/email-miss` | 0.105 us | 0.355 us | Managed faster | 0.30x |
+| `backtracking/assertion-capture` | 0.610 us | 2.414 us | Inconclusive | 0.25x |
+| `common/ip-miss` | 0.078 us | 0.312 us | Managed faster | 0.25x |
+| `industry/boostdocs-credit-card-match` | 0.034 us | 0.149 us | Managed faster | 0.23x |
+| `industry/boostdocs-postcode-match` | 0.022 us | 0.118 us | Managed faster | 0.19x |
+| `industry/boostdocs-date-match` | 0.020 us | 0.112 us | Managed faster | 0.18x |
+| `common/uri-match` | 0.033 us | 0.196 us | Managed faster | 0.17x |
+| `simple/foo-optional-bar` | 0.014 us | 0.110 us | Managed faster | 0.13x |
+| `common/uri-miss` | 0.061 us | 0.606 us | Managed faster | 0.10x |
 | `simple/ab-plus` | 0.009 us | 0.098 us | Managed faster | 0.09x |
-| `literal/late` | 0.154 us | 1.976 us | Managed faster | 0.08x |
-| `literal/early` | 0.127 us | 1.693 us | Managed faster | 0.07x |
-| `literal/missing` | 0.150 us | 2.168 us | Inconclusive | 0.07x |
-| `backtracking/capture-backreference` | 0.694 us | 10.640 us | Inconclusive | 0.07x |
-| `literal/absolute-anchored` | 0.116 us | 1.808 us | Managed faster | 0.06x |
-| `common/backtracking` | 0.011 us | 1.212 us | Managed faster | 0.01x |
+| `literal/missing` | 0.151 us | 1.847 us | Managed faster | 0.08x |
+| `literal/late` | 0.157 us | 2.016 us | Inconclusive | 0.08x |
+| `literal/early` | 0.124 us | 1.698 us | Inconclusive | 0.07x |
+| `literal/absolute-anchored` | 0.118 us | 1.938 us | Inconclusive | 0.06x |
+| `backtracking/capture-backreference` | 0.719 us | 12.060 us | Inconclusive | 0.06x |
+| `common/backtracking` | 0.011 us | 1.242 us | Managed faster | 0.01x |
 
 ### Compatible Count
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `common/matches-set` | 236.579 us | 203.996 us | Native faster | 1.16x |
-| `industry/rust-sherlock-ing-count` | 12,315.667 us | 13,320.800 us | Managed faster | 0.92x |
-| `simple/httpclient-caseless` | 0.852 us | 1.106 us | Managed faster | 0.77x |
-| `simple/foo-dense` | 0.485 us | 0.812 us | Managed faster | 0.60x |
-| `backtracking/alternation-repeat` | 76.301 us | 156.708 us | Managed faster | 0.49x |
-| `industry/leipzig-twain-count` | 5,274.850 us | 11,716.100 us | Inconclusive | 0.45x |
-| `simple/foo-optional-bar` | 0.286 us | 1.160 us | Managed faster | 0.25x |
-| `industry/mariomka-ip-count` | 4,826.500 us | 21,550.700 us | Managed faster | 0.22x |
-| `simple/loglevel-multiline` | 0.148 us | 0.827 us | Managed faster | 0.18x |
-| `industry/mariomka-uri-count` | 22,024.000 us | 131,611.400 us | Managed faster | 0.17x |
-| `industry/leipzig-name-family-count` | 4,098.038 us | 28,404.500 us | Inconclusive | 0.15x |
-| `common/matches-word` | 3.342 us | 23.522 us | Managed faster | 0.14x |
-| `industry/rust-sherlock-holmes-window-count` | 135.798 us | 991.373 us | Managed faster | 0.14x |
-| `simple/ab-plus` | 0.141 us | 1.083 us | Managed faster | 0.13x |
-| `industry/mariomka-email-count` | 18,636.750 us | 143,405.300 us | Managed faster | 0.13x |
-| `character/unicode-class-dense` | 39.364 us | 306.611 us | Managed faster | 0.13x |
-| `common/matches-words` | 9.413 us | 80.108 us | Managed faster | 0.12x |
-| `industry/rust-sherlock-word-holmes-count` | 1,557.377 us | 19,743.850 us | Inconclusive | 0.08x |
-| `industry/rust-sherlock-nonnewline-count` | 184.381 us | 2,773.821 us | Managed faster | 0.07x |
-| `industry/leipzig-river-window-count` | 3,329.842 us | 54,511.900 us | Managed faster | 0.06x |
-| `common/matches-boundary` | 9.487 us | 206.966 us | Managed faster | 0.05x |
-| `industry/rust-sherlock-letter-count` | 2,792.550 us | 97,018.500 us | Managed faster | 0.03x |
-| `industry/leipzig-symbol-count` | 1,962.276 us | 486,816.900 us | Inconclusive | 0.00x |
+| `common/matches-set` | 232.967 us | 214.814 us | Native faster | 1.08x |
+| `industry/rust-sherlock-ing-count` | 11,282.350 us | 13,464.167 us | Managed faster | 0.84x |
+| `simple/httpclient-caseless` | 0.849 us | 1.130 us | Managed faster | 0.75x |
+| `simple/foo-dense` | 0.481 us | 0.823 us | Managed faster | 0.59x |
+| `backtracking/alternation-repeat` | 78.275 us | 159.325 us | Managed faster | 0.49x |
+| `industry/leipzig-twain-count` | 5,393.717 us | 11,031.800 us | Managed faster | 0.49x |
+| `simple/foo-optional-bar` | 0.300 us | 1.173 us | Managed faster | 0.26x |
+| `industry/mariomka-ip-count` | 4,909.262 us | 21,859.900 us | Managed faster | 0.22x |
+| `simple/loglevel-multiline` | 0.162 us | 0.855 us | Managed faster | 0.19x |
+| `industry/mariomka-uri-count` | 22,416.300 us | 134,390.500 us | Managed faster | 0.17x |
+| `common/matches-word` | 3.392 us | 23.553 us | Managed faster | 0.14x |
+| `industry/leipzig-name-family-count` | 4,168.625 us | 28,918.200 us | Managed faster | 0.14x |
+| `industry/rust-sherlock-holmes-window-count` | 140.773 us | 982.816 us | Managed faster | 0.14x |
+| `simple/ab-plus` | 0.151 us | 1.075 us | Managed faster | 0.14x |
+| `character/unicode-class-dense` | 39.572 us | 282.798 us | Managed faster | 0.14x |
+| `industry/mariomka-email-count` | 18,820.000 us | 145,417.800 us | Managed faster | 0.13x |
+| `common/matches-words` | 9.567 us | 81.439 us | Managed faster | 0.12x |
+| `industry/rust-sherlock-word-holmes-count` | 1,580.360 us | 20,110.100 us | Managed faster | 0.08x |
+| `industry/rust-sherlock-nonnewline-count` | 187.477 us | 2,853.829 us | Managed faster | 0.07x |
+| `industry/leipzig-river-window-count` | 3,308.108 us | 54,675.500 us | Inconclusive | 0.06x |
+| `common/matches-boundary` | 9.485 us | 210.039 us | Managed faster | 0.05x |
+| `industry/rust-sherlock-letter-count` | 2,815.550 us | 98,576.700 us | Managed faster | 0.03x |
+| `industry/leipzig-symbol-count` | 1,931.395 us | 477,708.000 us | Inconclusive | 0.00x |
 
 ### Compatible EnumerateMatches
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `simple/httpclient-caseless` | 1.302 us | 1.111 us | Native faster | 1.17x |
-| `simple/foo-dense` | 0.790 us | 0.810 us | Inconclusive | 0.97x |
-| `simple/loglevel-multiline` | 0.778 us | 0.848 us | Managed faster | 0.92x |
-| `simple/foo-optional-bar` | 1.046 us | 1.172 us | Managed faster | 0.89x |
-| `simple/ab-plus` | 0.937 us | 1.092 us | Managed faster | 0.86x |
+| `simple/httpclient-caseless` | 1.208 us | 1.139 us | Native faster | 1.06x |
+| `simple/foo-dense` | 0.809 us | 0.833 us | Managed faster | 0.97x |
+| `simple/loglevel-multiline` | 0.805 us | 0.853 us | Managed faster | 0.94x |
+| `simple/foo-optional-bar` | 0.982 us | 1.186 us | Managed faster | 0.83x |
+| `simple/ab-plus` | 0.951 us | 1.172 us | Managed faster | 0.81x |
 
 ### Compatible MatchMany
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `simple/httpclient-caseless` | 0.905 us | 1.110 us | Managed faster | 0.82x |
-| `simple/foo-dense` | 0.497 us | 0.815 us | Managed faster | 0.61x |
-| `simple/foo-optional-bar` | 0.706 us | 1.174 us | Managed faster | 0.60x |
-| `simple/loglevel-multiline` | 0.491 us | 0.851 us | Managed faster | 0.58x |
-| `simple/ab-plus` | 0.599 us | 1.096 us | Managed faster | 0.55x |
+| `simple/httpclient-caseless` | 0.925 us | 1.135 us | Managed faster | 0.81x |
+| `simple/foo-optional-bar` | 0.713 us | 1.183 us | Managed faster | 0.60x |
+| `simple/foo-dense` | 0.493 us | 0.834 us | Managed faster | 0.59x |
+| `simple/loglevel-multiline` | 0.475 us | 0.850 us | Managed faster | 0.56x |
+| `simple/ab-plus` | 0.580 us | 1.147 us | Managed faster | 0.51x |
 
 ### Compatible Replace
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `common/replace-words` | 59.882 us | — | Excluded | — |
-| `simple/ab-plus` | 3.569 us | — | Excluded | — |
-| `simple/foo-dense` | 1.035 us | — | Excluded | — |
-| `simple/foo-optional-bar` | 1.206 us | — | Excluded | — |
-| `simple/httpclient-caseless` | 1.474 us | — | Excluded | — |
-| `simple/loglevel-multiline` | 3.507 us | — | Excluded | — |
+| `common/replace-words` | 61.145 us | — | Excluded | — |
+| `simple/ab-plus` | 3.662 us | — | Excluded | — |
+| `simple/foo-dense` | 1.079 us | — | Excluded | — |
+| `simple/foo-optional-bar` | 1.236 us | — | Excluded | — |
+| `simple/httpclient-caseless` | 1.512 us | — | Excluded | — |
+| `simple/loglevel-multiline` | 3.504 us | — | Excluded | — |
 
 ### PCRE2-only IsMatch
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `pcre2/subroutine-prefix-digits` | 0.461 us | 0.107 us | Native faster | 4.31x |
-| `pcre2/conditional-accept-negative-lookahead` | 0.390 us | 0.103 us | Native faster | 3.77x |
-| `pcre2/conditional-negative-lookahead` | 0.387 us | 0.106 us | Native faster | 3.66x |
-| `pcre2/conditional-lookahead` | 0.388 us | 0.114 us | Native faster | 3.40x |
-| `pcre2/grapheme-cluster` | 0.813 us | 0.341 us | Native faster | 2.39x |
-| `pcre2/backslash-c-literal` | 0.085 us | 0.081 us | Native faster | 1.04x |
-| `pcre2/branch-reset-backref` | 0.012 us | 0.115 us | Managed faster | 0.11x |
-| `pcre2/recursive-palindrome` | 0.012 us | 0.502 us | Managed faster | 0.02x |
-| `pcre2/recursive-optional` | 0.011 us | 0.617 us | Managed faster | 0.02x |
+| `pcre2/subroutine-prefix-digits` | 0.466 us | 0.108 us | Native faster | 4.31x |
+| `pcre2/conditional-negative-lookahead` | 0.397 us | 0.107 us | Native faster | 3.74x |
+| `pcre2/conditional-accept-negative-lookahead` | 0.378 us | 0.105 us | Native faster | 3.58x |
+| `pcre2/conditional-lookahead` | 0.406 us | 0.118 us | Inconclusive | 3.42x |
+| `pcre2/grapheme-cluster` | 0.795 us | 0.345 us | Inconclusive | 2.32x |
+| `pcre2/backslash-c-literal` | 0.095 us | 0.081 us | Native faster | 1.18x |
+| `pcre2/branch-reset-backref` | 0.013 us | 0.128 us | Managed faster | 0.10x |
+| `pcre2/recursive-palindrome` | 0.012 us | 0.507 us | Managed faster | 0.02x |
+| `pcre2/recursive-optional` | 0.012 us | 0.631 us | Managed faster | 0.02x |
 
 ### PCRE2-only Count
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `pcre2/kreset-atomic-alt` | 0.258 us | 0.310 us | Managed faster | 0.83x |
-| `literal/empty-unicode` | 8.243 us | 10.100 us | Managed faster | 0.81x |
-| `pcre2/duplicate-names` | 0.283 us | 0.374 us | Managed faster | 0.76x |
-| `pcre2/same-start-global` | 0.496 us | 0.662 us | Managed faster | 0.75x |
-| `pcre2/kreset-bar-or-baz` | 0.263 us | 0.387 us | Managed faster | 0.69x |
-| `pcre2/branch-reset-basic` | 0.310 us | 0.460 us | Managed faster | 0.67x |
-| `pcre2/kreset-global` | 0.183 us | 0.281 us | Managed faster | 0.66x |
-| `pcre2/branch-reset-followup` | 0.284 us | 0.478 us | Managed faster | 0.59x |
-| `pcre2/grapheme-cluster` | 4.927 us | 8.657 us | Managed faster | 0.57x |
-| `pcre2/branch-reset-nested` | 0.294 us | 0.574 us | Managed faster | 0.51x |
-| `pcre2/branch-reset-backref` | 0.293 us | 1.031 us | Managed faster | 0.28x |
-| `pcre2/kreset-captured-repeat` | 3.795 us | — | Excluded | — |
-| `pcre2/kreset-repeat` | 3.661 us | — | Excluded | — |
+| `pcre2/kreset-atomic-alt` | 0.263 us | 0.311 us | Managed faster | 0.84x |
+| `pcre2/duplicate-names` | 0.305 us | 0.365 us | Managed faster | 0.83x |
+| `literal/empty-unicode` | 8.225 us | 10.498 us | Managed faster | 0.78x |
+| `pcre2/same-start-global` | 0.524 us | 0.682 us | Managed faster | 0.77x |
+| `pcre2/branch-reset-basic` | 0.323 us | 0.449 us | Managed faster | 0.72x |
+| `pcre2/branch-reset-followup` | 0.299 us | 0.471 us | Managed faster | 0.64x |
+| `pcre2/kreset-global` | 0.189 us | 0.294 us | Managed faster | 0.64x |
+| `pcre2/kreset-bar-or-baz` | 0.273 us | 0.429 us | Managed faster | 0.63x |
+| `pcre2/grapheme-cluster` | 4.981 us | 8.761 us | Managed faster | 0.57x |
+| `pcre2/branch-reset-nested` | 0.295 us | 0.584 us | Managed faster | 0.51x |
+| `pcre2/branch-reset-backref` | 0.328 us | 1.041 us | Managed faster | 0.32x |
+| `pcre2/kreset-captured-repeat` | 3.822 us | — | Excluded | — |
+| `pcre2/kreset-repeat` | 3.735 us | — | Excluded | — |
 
 ### PCRE2-only EnumerateMatches
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `pcre2/kreset-atomic-alt` | 0.910 us | 0.875 us | Native faster | 1.04x |
-| `pcre2/duplicate-names` | 0.980 us | 0.944 us | Native faster | 1.04x |
-| `pcre2/kreset-bar-or-baz` | 0.958 us | 0.951 us | Equivalent | 1.00x |
-| `pcre2/kreset-global` | 0.813 us | 0.841 us | Managed faster | 0.97x |
-| `pcre2/branch-reset-followup` | 0.924 us | 1.015 us | Managed faster | 0.91x |
-| `pcre2/branch-reset-backref` | 0.951 us | 1.060 us | Managed faster | 0.89x |
-| `pcre2/branch-reset-nested` | 0.968 us | 1.139 us | Managed faster | 0.85x |
-| `pcre2/branch-reset-basic` | 0.993 us | 1.169 us | Managed faster | 0.85x |
-| `pcre2/same-start-global` | 0.834 us | 1.228 us | Managed faster | 0.68x |
-| `pcre2/grapheme-cluster` | 5.638 us | 8.636 us | Managed faster | 0.65x |
-| `literal/empty-unicode` | 9.775 us | 30.264 us | Managed faster | 0.32x |
-| `pcre2/kreset-captured-repeat` | 5.033 us | — | Excluded | — |
-| `pcre2/kreset-repeat` | 4.843 us | — | Excluded | — |
+| `pcre2/duplicate-names` | 0.997 us | 0.941 us | Native faster | 1.06x |
+| `pcre2/kreset-atomic-alt` | 0.908 us | 0.881 us | Native faster | 1.03x |
+| `pcre2/kreset-global` | 0.833 us | 0.861 us | Managed faster | 0.96x |
+| `pcre2/branch-reset-followup` | 0.946 us | 1.029 us | Managed faster | 0.92x |
+| `pcre2/branch-reset-backref` | 0.967 us | 1.054 us | Managed faster | 0.92x |
+| `pcre2/kreset-bar-or-baz` | 0.924 us | 1.013 us | Managed faster | 0.91x |
+| `pcre2/branch-reset-basic` | 1.005 us | 1.178 us | Managed faster | 0.85x |
+| `pcre2/branch-reset-nested` | 0.991 us | 1.167 us | Managed faster | 0.85x |
+| `pcre2/same-start-global` | 0.925 us | 1.298 us | Managed faster | 0.71x |
+| `pcre2/grapheme-cluster` | 5.778 us | 8.829 us | Managed faster | 0.65x |
+| `literal/empty-unicode` | 9.901 us | 28.533 us | Managed faster | 0.35x |
+| `pcre2/kreset-captured-repeat` | 4.957 us | — | Excluded | — |
+| `pcre2/kreset-repeat` | 4.835 us | — | Excluded | — |
 
 ### PCRE2-only MatchMany
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `pcre2/grapheme-cluster` | 1.995 us | 2.161 us | Managed faster | 0.92x |
-| `pcre2/duplicate-names` | 0.645 us | 0.949 us | Managed faster | 0.68x |
-| `pcre2/kreset-atomic-alt` | 0.593 us | 0.884 us | Managed faster | 0.67x |
-| `literal/empty-unicode` | 1.456 us | 2.240 us | Managed faster | 0.65x |
-| `pcre2/kreset-bar-or-baz` | 0.593 us | 0.955 us | Managed faster | 0.62x |
-| `pcre2/branch-reset-followup` | 0.593 us | 1.006 us | Managed faster | 0.59x |
-| `pcre2/branch-reset-backref` | 0.621 us | 1.058 us | Managed faster | 0.59x |
-| `pcre2/branch-reset-basic` | 0.663 us | 1.166 us | Managed faster | 0.57x |
-| `pcre2/kreset-global` | 0.481 us | 0.849 us | Managed faster | 0.57x |
-| `pcre2/branch-reset-nested` | 0.628 us | 1.154 us | Managed faster | 0.54x |
-| `pcre2/same-start-global` | 0.514 us | 1.235 us | Managed faster | 0.42x |
-| `pcre2/kreset-captured-repeat` | 4.682 us | — | Excluded | — |
-| `pcre2/kreset-repeat` | 4.599 us | — | Excluded | — |
+| `pcre2/grapheme-cluster` | 2.041 us | 2.188 us | Managed faster | 0.93x |
+| `pcre2/kreset-atomic-alt` | 0.601 us | 0.886 us | Managed faster | 0.68x |
+| `pcre2/duplicate-names` | 0.612 us | 0.944 us | Managed faster | 0.65x |
+| `literal/empty-unicode` | 1.448 us | 2.272 us | Managed faster | 0.64x |
+| `pcre2/branch-reset-followup` | 0.650 us | 1.029 us | Managed faster | 0.63x |
+| `pcre2/branch-reset-backref` | 0.659 us | 1.068 us | Managed faster | 0.62x |
+| `pcre2/kreset-bar-or-baz` | 0.606 us | 1.010 us | Managed faster | 0.60x |
+| `pcre2/kreset-global` | 0.496 us | 0.867 us | Managed faster | 0.57x |
+| `pcre2/branch-reset-basic` | 0.666 us | 1.182 us | Managed faster | 0.56x |
+| `pcre2/branch-reset-nested` | 0.647 us | 1.226 us | Managed faster | 0.53x |
+| `pcre2/same-start-global` | 0.540 us | 1.255 us | Managed faster | 0.43x |
+| `pcre2/kreset-captured-repeat` | 4.706 us | — | Excluded | — |
+| `pcre2/kreset-repeat` | 4.612 us | — | Excluded | — |
 
 ### PCRE2-only Replace
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `literal/empty-unicode` | 17.132 us | — | Excluded | — |
-| `pcre2/branch-reset-backref` | 1.130 us | — | Excluded | — |
-| `pcre2/branch-reset-basic` | 1.231 us | — | Excluded | — |
-| `pcre2/branch-reset-followup` | 1.105 us | — | Excluded | — |
-| `pcre2/branch-reset-nested` | 1.135 us | — | Excluded | — |
-| `pcre2/duplicate-names` | 1.109 us | — | Excluded | — |
-| `pcre2/grapheme-cluster` | 6.766 us | — | Excluded | — |
-| `pcre2/kreset-atomic-alt` | 1.144 us | — | Excluded | — |
-| `pcre2/kreset-bar-or-baz` | 1.140 us | — | Excluded | — |
-| `pcre2/kreset-captured-repeat` | 21.617 us | — | Excluded | — |
-| `pcre2/kreset-global` | 1.064 us | — | Excluded | — |
-| `pcre2/kreset-repeat` | 16.458 us | — | Excluded | — |
-| `pcre2/same-start-global` | 4.515 us | — | Excluded | — |
+| `literal/empty-unicode` | 17.767 us | — | Excluded | — |
+| `pcre2/branch-reset-backref` | 1.154 us | — | Excluded | — |
+| `pcre2/branch-reset-basic` | 1.257 us | — | Excluded | — |
+| `pcre2/branch-reset-followup` | 1.166 us | — | Excluded | — |
+| `pcre2/branch-reset-nested` | 1.159 us | — | Excluded | — |
+| `pcre2/duplicate-names` | 1.125 us | — | Excluded | — |
+| `pcre2/grapheme-cluster` | 6.890 us | — | Excluded | — |
+| `pcre2/kreset-atomic-alt` | 1.147 us | — | Excluded | — |
+| `pcre2/kreset-bar-or-baz` | 1.149 us | — | Excluded | — |
+| `pcre2/kreset-captured-repeat` | 22.570 us | — | Excluded | — |
+| `pcre2/kreset-global` | 1.076 us | — | Excluded | — |
+| `pcre2/kreset-repeat` | 16.689 us | — | Excluded | — |
+| `pcre2/same-start-global` | 4.401 us | — | Excluded | — |
 
 <details>
 <summary>Qualification, allocations and scaling evidence</summary>
