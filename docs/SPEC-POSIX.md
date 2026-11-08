@@ -1,6 +1,5 @@
 # POSIX profile contract for 0.5.0
 
-Initial 0.5.0 source contract; performance and package qualification remain open.
 `Lokad.Utf8Regex.Posix` is an optional .NET 10/11 adapter with an exact Core
 dependency. It owns ERE admission and POSIX selection. Core, PythonRe and PCRE2
 retain their contracts. This is an invariant, scalar ERE subset, not complete
