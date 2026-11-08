@@ -7,6 +7,11 @@ using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using Lokad.Utf8Regex.Benchmarks;
 
+if (BenchmarkInspectReporter.TryHandlePosixCommand(args, out var posixExitCode))
+{
+    return posixExitCode;
+}
+
 if (args.Length == 2 && args[0].Equals("--measure-byte-set-kernels", StringComparison.Ordinal))
 {
     return PreparedByteSetReporter.Run(args[1]);

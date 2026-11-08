@@ -44,7 +44,8 @@ internal static partial class PythonReBenchmarkReporter
         ":(exclude)README.md",
         ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
         ":(exclude)bench/Snapshots",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md");
+        ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
+        ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
 
     // The producer revision checks build inputs; matched portable PDB document
     // checksums also reject code built from a dirty tree and later reverted.
@@ -58,23 +59,30 @@ internal static partial class PythonReBenchmarkReporter
             ("PythonRe", environment.PythonReAssembly, "src/Lokad.Utf8Regex.PythonRe", typeof(Utf8PythonRegex).Assembly),
         })
         {
-            var plus = identity.LastIndexOf('+');
-            var hash = identity.IndexOf(" sha256=", StringComparison.Ordinal);
-            var producer = plus >= 0 && hash > plus ? identity[(plus + 1)..hash] : string.Empty;
-            if (producer.Length != 40 || !producer.All(char.IsAsciiHexDigit))
-                throw new InvalidOperationException($"PythonRe qualification cannot verify the {label} producer. Rebuild matching Release binaries.");
-            var changes = RunGit("diff", "--name-only", producer, "--",
-                "Directory.Build.props", "Directory.Build.targets", "src/Directory.Build.props", "global.json",
-                $":(glob){project}/**/*.cs", $":(glob){project}/*.csproj");
-            if (changes is null)
-                throw new InvalidOperationException($"PythonRe qualification cannot resolve the {label} producer {producer} in this checkout.");
-            if (!string.IsNullOrWhiteSpace(changes))
-                throw new InvalidOperationException($"PythonRe qualification loaded stale {label} code from {producer}. Rebuild matching Release binaries. Changed source: {changes}");
-            RequirePythonReCompiledDocuments(assembly, project);
+            RequireLoadedAssemblySources(label, identity, project, assembly);
         }
     }
 
-    private static void RequirePythonReCompiledDocuments(Assembly assembly, string project)
+    // Shared with the POSIX reporter: reuse the existing producer/PDB evidence,
+    // without introducing another manifest or qualification protocol.
+    internal static void RequireLoadedAssemblySources(string label, string identity, string project, Assembly assembly)
+    {
+        var plus = identity.LastIndexOf('+');
+        var hash = identity.IndexOf(" sha256=", StringComparison.Ordinal);
+        var producer = plus >= 0 && hash > plus ? identity[(plus + 1)..hash] : string.Empty;
+        if (producer.Length != 40 || !producer.All(char.IsAsciiHexDigit))
+            throw new InvalidOperationException($"Benchmark qualification cannot verify the {label} producer. Rebuild matching Release binaries.");
+        var changes = RunGit("diff", "--name-only", producer, "--",
+            "Directory.Build.props", "Directory.Build.targets", "src/Directory.Build.props", "global.json",
+            $":(glob){project}/**/*.cs", $":(glob){project}/*.csproj");
+        if (changes is null)
+            throw new InvalidOperationException($"Benchmark qualification cannot resolve the {label} producer {producer} in this checkout.");
+        if (!string.IsNullOrWhiteSpace(changes))
+            throw new InvalidOperationException($"Benchmark qualification loaded stale {label} code from {producer}. Rebuild matching Release binaries. Changed source: {changes}");
+        RequireCompiledDocuments(assembly, project);
+    }
+
+    private static void RequireCompiledDocuments(Assembly assembly, string project)
     {
         var repository = Path.GetDirectoryName(FindRepositoryFile("README.md"))!;
         var symbols = Path.ChangeExtension(assembly.Location, ".pdb");
@@ -82,7 +90,7 @@ internal static partial class PythonReBenchmarkReporter
         using var pe = new PEReader(image);
         var module = pe.GetMetadataReader();
         if (module.GetGuid(module.GetModuleDefinition().Mvid) != assembly.ManifestModule.ModuleVersionId)
-            throw new InvalidOperationException($"PythonRe qualification found a replaced loaded assembly: {assembly.GetName().Name}.");
+            throw new InvalidOperationException($"Benchmark qualification found a replaced loaded assembly: {assembly.GetName().Name}.");
         // Reuse the compiler's PE/PDB association check. A copied DLL must carry
         // its matching symbols; never silently borrow another build's PDB.
         if (!pe.TryOpenAssociatedPortablePdb(assembly.Location,
@@ -90,7 +98,7 @@ internal static partial class PythonReBenchmarkReporter
                 OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) && File.Exists(path)
                 ? File.OpenRead(path) : null,
             out var provider, out _) || provider is null)
-            throw new InvalidOperationException($"PythonRe qualification requires the matching portable PDB beside {assembly.GetName().Name}. Rebuild matching Release binaries.");
+            throw new InvalidOperationException($"Benchmark qualification requires the matching portable PDB beside {assembly.GetName().Name}. Rebuild matching Release binaries.");
         using (provider)
         {
             var reader = provider.GetMetadataReader();
@@ -105,18 +113,18 @@ internal static partial class PythonReBenchmarkReporter
                     : Path.GetFullPath(name);
                 var relative = Path.GetRelativePath(repository, path).Replace('\\', '/');
                 if (!relative.StartsWith(project + "/", StringComparison.Ordinal))
-                    throw new InvalidOperationException($"PythonRe qualification cannot associate compiled source {name} with {project}.");
+                    throw new InvalidOperationException($"Benchmark qualification cannot associate compiled source {name} with {project}.");
                 // SDK-generated assembly/target attributes and implicit usings
                 // belong to the checked project/build inputs, not tracked text.
                 if (relative.StartsWith(project + "/obj/", StringComparison.Ordinal)) continue;
                 if (reader.GetGuid(document.HashAlgorithm) != sha256 ||
                     !File.Exists(path) ||
                     !reader.GetBlobBytes(document.Hash).AsSpan().SequenceEqual(SHA256.HashData(File.ReadAllBytes(path))))
-                    throw new InvalidOperationException($"PythonRe qualification loaded different compiled source for {relative}. Rebuild matching Release binaries.");
+                    throw new InvalidOperationException($"Benchmark qualification loaded different compiled source for {relative}. Rebuild matching Release binaries.");
                 sourceDocuments++;
             }
             if (sourceDocuments == 0)
-                throw new InvalidOperationException($"PythonRe qualification found no compiled source evidence for {project}.");
+                throw new InvalidOperationException($"Benchmark qualification found no compiled source evidence for {project}.");
         }
     }
 

@@ -6,8 +6,8 @@ Builds/tests once, reuses binaries, writes phase artifacts and regenerates recor
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Resources', 'Verify')]
-    [string[]]$Phase = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Resources', 'Verify'),
+    [ValidateSet('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify')]
+    [string[]]$Phase = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify'),
     [ValidateRange(1, 86400)]
     [int]$MaxWallTimeSeconds = 3600,
     [string]$OutputDirectory
@@ -27,7 +27,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the source revision.' }
 $unexpected = & git status --porcelain=v1 --untracked-files=normal -- . `
     ':(exclude)README.md' ':(exclude)bench/Snapshots' `
     ':(exclude)src/Lokad.Utf8Regex.PythonRe/README.md' `
-    ':(exclude)src/Lokad.Utf8Regex.Pcre2/README.md'
+    ':(exclude)src/Lokad.Utf8Regex.Pcre2/README.md' `
+    ':(exclude)src/Lokad.Utf8Regex.Posix/README.md'
 if ($LASTEXITCODE -ne 0 -or $unexpected) { throw "Refresh requires clean source inputs: $unexpected" }
 if (!$OutputDirectory) {
     $OutputDirectory = Join-Path $repoRoot ('artifacts/benchmark-refresh/' + $started.ToString('yyyyMMdd-HHmmss'))
@@ -38,7 +39,7 @@ if (Test-Path -LiteralPath $OutputDirectory) { throw "Output already exists: $Ou
 [void](New-Item -ItemType Directory -Path $OutputDirectory)
 $steps = [Collections.Generic.List[object]]::new()
 $complete = $false
-$full = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Resources', 'Verify').Where({ $_ -notin $Phase }).Count -eq 0
+$full = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify').Where({ $_ -notin $Phase }).Count -eq 0
 
 function Save-Receipt {
     [ordered]@{
@@ -126,12 +127,16 @@ try {
     if ('Resources' -in $Phase) {
         Invoke-RefreshBenchmark resources @('--measure-slice-policy-lanes', '20000', '5')
     }
+    if ('Posix' -in $Phase) {
+        Invoke-RefreshBenchmark posix @('--refresh-posix-benchmarks', '', '9')
+    }
     if ('Verify' -in $Phase) {
         Invoke-RefreshBenchmark verify-core @('--verify-readme-parity-report')
         Invoke-RefreshBenchmark verify-python @('--verify-pythonre-benchmark-markdown')
         Invoke-RefreshBenchmark verify-python-pairs @('--verify-pythonre-qualifications')
         Invoke-RefreshBenchmark verify-pcre2 @('--verify-pcre2-benchmark-markdown')
         Invoke-RefreshBenchmark verify-pcre2-pairs @('--verify-pcre2-qualification-consistency')
+        Invoke-RefreshBenchmark verify-posix @('--verify-posix-benchmark-evidence')
     }
     if ($full) {
         # Reject a successful command sequence that retained rows from a different
@@ -139,12 +144,14 @@ try {
         $core = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/README.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $python = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PythonRe.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $pcre2 = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PCRE2.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
+        $posix = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/Posix.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $environments = @($core.Sections.Values | ForEach-Object { $_.Cases.Values.Environment }) +
             @($python.Cases.Values.Environment) +
             @($pcre2.Sections.Values | ForEach-Object { $_.Cases.Values.Environment }) +
             @($python.Lifecycle.Values.ManagedEnvironment) +
             @($python.ScalingFamilies.Values.ManagedEnvironment) +
-            @($pcre2.ScalingFamilies.Values | ForEach-Object { $_.Points.Environment })
+            @($pcre2.ScalingFamilies.Values | ForEach-Object { $_.Points.Environment }) +
+            @($posix.Cases.Values.Environment)
         foreach ($environment in $environments) {
             if ($environment.Runtime -notlike '.NET 11*' -or
                 $environment.SourceCommit -ne $revision.Substring(0, 12)) {

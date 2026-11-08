@@ -30,3 +30,12 @@ brackets. Locale collation, backreferences, lookarounds and non-ERE extensions
 are rejected. Matching is resource-metered; worst-case linear time is not promised.
 Result-byte policy does not cap caller-owned destinations; these APIs return
 values and allocate no producer-owned result payload.
+
+Use `tools/bench.ps1 -CommandArgs '--inspect-posix-cases'` for result preflight,
+or `tools/refresh-benchmarks.ps1 -Phase Posix` for the bounded .NET 11 catalog.
+Raw measurements stay under `artifacts/benchmark-refresh/current/`; Markdown
+regenerates offline from `bench/Snapshots/Posix.json` once measurements exist.
+
+<!-- BEGIN GENERATED POSIX BENCHMARKS -->
+Benchmark measurements are pending the P3 qualification batch.
+<!-- END GENERATED POSIX BENCHMARKS -->

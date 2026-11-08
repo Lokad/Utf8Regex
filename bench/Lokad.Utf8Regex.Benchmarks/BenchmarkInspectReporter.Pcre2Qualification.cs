@@ -15,6 +15,59 @@ internal static partial class BenchmarkInspectReporter
     private const double Pcre2QualificationCalibrationMinimumMilliseconds = 30;
     private const double Pcre2QualificationCalibrationMaximumMilliseconds = 50;
 
+    private static (Pcre2NativeComparisonStatus Status, string? Reason) DerivePairedStatus(
+        double lowerLogRatio,
+        double upperLogRatio,
+        double orderEffectRatio,
+        double managedInterquartileSpread,
+        double comparatorInterquartileSpread,
+        bool sampleDurationsQualified)
+    {
+        if (!sampleDurationsQualified)
+        {
+            return (
+                Pcre2NativeComparisonStatus.Unqualified,
+                $"At least one paired lane sample was shorter than {Pcre2QualificationMinimumSampleMilliseconds:F0} ms.");
+        }
+
+        if (managedInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread ||
+            comparatorInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread)
+        {
+            return (
+                Pcre2NativeComparisonStatus.Inconclusive,
+                $"Lane interquartile spreads are {managedInterquartileSpread:F3}/{comparatorInterquartileSpread:F3}; " +
+                $"the maximum is {Pcre2FastLaneMaximumInterquartileSpread:F2}.");
+        }
+
+        if (orderEffectRatio is < 0.98 or > 1.02)
+        {
+            return (
+                Pcre2NativeComparisonStatus.Inconclusive,
+                $"Lane-order median ratios differ by {Math.Abs(orderEffectRatio - 1) * 100:F2}%.");
+        }
+
+        var lowerRatio = Math.Exp(lowerLogRatio);
+        var upperRatio = Math.Exp(upperLogRatio);
+        if (upperRatio < 0.98)
+        {
+            return (Pcre2NativeComparisonStatus.ManagedFaster, null);
+        }
+
+        if (lowerRatio > 1.02)
+        {
+            return (Pcre2NativeComparisonStatus.NativeFaster, null);
+        }
+
+        if (lowerRatio >= 0.98 && upperRatio <= 1.02)
+        {
+            return (Pcre2NativeComparisonStatus.Equivalent, null);
+        }
+
+        return (
+            Pcre2NativeComparisonStatus.Inconclusive,
+            "The paired 95% interval crosses a Status decision boundary.");
+    }
+
     public static int RunInvalidateStalePcre2Qualifications()
     {
         var snapshot = LoadPcre2BenchmarkSnapshot();
@@ -51,7 +104,8 @@ internal static partial class BenchmarkInspectReporter
             ":(exclude)README.md",
             ":(exclude)bench/Snapshots",
             ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md");
+            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
+            ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
         if (unexpectedWorktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PCRE2 qualification.");
@@ -221,7 +275,7 @@ internal static partial class BenchmarkInspectReporter
                                                        static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds) &&
                                                    comparatorMilliseconds.All(
                                                        static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds);
-                    var (status, statusReason) = DeriveStatus(
+                    var (status, statusReason) = DerivePairedStatus(
                         bootstrap.Lower,
                         bootstrap.Upper,
                         orderEffectRatio,
@@ -305,58 +359,7 @@ internal static partial class BenchmarkInspectReporter
                     };
                 }
 
-                static (Pcre2NativeComparisonStatus Status, string? Reason) DeriveStatus(
-                    double lowerLogRatio,
-                    double upperLogRatio,
-                    double orderEffectRatio,
-                    double managedInterquartileSpread,
-                    double comparatorInterquartileSpread,
-                    bool sampleDurationsQualified)
-                {
-                    if (!sampleDurationsQualified)
-                    {
-                        return (
-                            Pcre2NativeComparisonStatus.Unqualified,
-                            $"At least one paired lane sample was shorter than {Pcre2QualificationMinimumSampleMilliseconds:F0} ms.");
-                    }
 
-                    if (managedInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread ||
-                        comparatorInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread)
-                    {
-                        return (
-                            Pcre2NativeComparisonStatus.Inconclusive,
-                            $"Lane interquartile spreads are {managedInterquartileSpread:F3}/{comparatorInterquartileSpread:F3}; " +
-                            $"the maximum is {Pcre2FastLaneMaximumInterquartileSpread:F2}.");
-                    }
-
-                    if (orderEffectRatio is < 0.98 or > 1.02)
-                    {
-                        return (
-                            Pcre2NativeComparisonStatus.Inconclusive,
-                            $"Lane-order median ratios differ by {Math.Abs(orderEffectRatio - 1) * 100:F2}%.");
-                    }
-
-                    var lowerRatio = Math.Exp(lowerLogRatio);
-                    var upperRatio = Math.Exp(upperLogRatio);
-                    if (upperRatio < 0.98)
-                    {
-                        return (Pcre2NativeComparisonStatus.ManagedFaster, null);
-                    }
-
-                    if (lowerRatio > 1.02)
-                    {
-                        return (Pcre2NativeComparisonStatus.NativeFaster, null);
-                    }
-
-                    if (lowerRatio >= 0.98 && upperRatio <= 1.02)
-                    {
-                        return (Pcre2NativeComparisonStatus.Equivalent, null);
-                    }
-
-                    return (
-                        Pcre2NativeComparisonStatus.Inconclusive,
-                        "The paired 95% interval crosses a Status decision boundary.");
-                }
             }
             catch (PCRE.PcreException exception)
             {
