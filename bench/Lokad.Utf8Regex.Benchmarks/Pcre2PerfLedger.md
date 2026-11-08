@@ -8,7 +8,7 @@ are historical; that hash is not the current PCRE2.Benchmarks.json hash.
 The original ledger, including identities, comparisons, limitations and follow-ups,
 remains in Git history. No measurements are rerun by this page.
 
-Use the [snapshot JSON](../../PCRE2.Benchmarks.json) and its
+Use the [snapshot JSON](../Snapshots/Pcre2.json) and its
 [generated page](../../src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) for recorded row
 provenance and Status. They identify their own dates and exclusions; historical
 rows do not qualify today's engine. Do not maintain another manually copied
@@ -22,7 +22,7 @@ defects: **do not publish those PCRE2 bytes**. Its
 their original scope. Detailed local-only handoffs are absent from a source
 checkout. For current source/candidate status, use the
 [qualification page](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and
-[benchmark snapshot](../../PCRE2.Benchmarks.json).
+[benchmark snapshot](../Snapshots/Pcre2.json).
 This historical ledger establishes no current throughput or benchmark Status.
 
 The legacy `--emit-pcre2-perf-ledger` and `--emit-pcre2-managed-perf-ledger`

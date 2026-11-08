@@ -42,12 +42,9 @@ internal static partial class PythonReBenchmarkReporter
     private static string? ReadPythonReQualificationWorktree() => RunGit(
         "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
         ":(exclude)README.md",
-        ":(exclude)README.Benchmarks.json",
-        ":(exclude)README.Parity.json",
-        ":(exclude)PCRE2.Benchmarks.json",
         ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-        ":(exclude)PythonRe.Benchmarks.json",
-        ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md");
+        ":(exclude)bench/Snapshots",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md");
 
     // The producer revision checks build inputs; matched portable PDB document
     // checksums also reject code built from a dirty tree and later reverted.
@@ -640,7 +637,7 @@ internal static partial class PythonReBenchmarkReporter
         if (writeMode == PythonReQualificationWriteMode.Snapshot)
         {
             PersistPythonReQualification(caseId, benchmarkCase, context.InputBytes.Length, qualification, measuredAtUtc);
-            Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
+            Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
         }
 
         return 0;
@@ -1946,7 +1943,7 @@ internal static partial class PythonReBenchmarkReporter
         PythonReQualificationMeasurement qualification,
         DateTimeOffset measuredAtUtc)
     {
-        var snapshotPath = FindRepositoryFile(SnapshotFileName);
+        var snapshotPath = GetPythonReSnapshotPath();
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
         if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
         {

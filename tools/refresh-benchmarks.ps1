@@ -25,9 +25,9 @@ $started = [DateTimeOffset]::UtcNow
 $revision = (& git rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the source revision.' }
 $unexpected = & git status --porcelain=v1 --untracked-files=normal -- . `
-    ':(exclude)README.md' ':(exclude)README.Benchmarks.json' ':(exclude)README.Parity.json' `
-    ':(exclude)PythonRe.Benchmarks.json' ':(exclude)src/Lokad.Utf8Regex.PythonRe/README.md' `
-    ':(exclude)PCRE2.Benchmarks.json' ':(exclude)src/Lokad.Utf8Regex.Pcre2/README.md'
+    ':(exclude)README.md' ':(exclude)bench/Snapshots' `
+    ':(exclude)src/Lokad.Utf8Regex.PythonRe/README.md' `
+    ':(exclude)src/Lokad.Utf8Regex.Pcre2/README.md'
 if ($LASTEXITCODE -ne 0 -or $unexpected) { throw "Refresh requires clean source inputs: $unexpected" }
 if (!$OutputDirectory) {
     $OutputDirectory = Join-Path $repoRoot ('artifacts/benchmark-refresh/' + $started.ToString('yyyyMMdd-HHmmss'))
@@ -116,7 +116,7 @@ try {
     }
     if ('Pcre2' -in $Phase) {
         Invoke-RefreshBenchmark pcre2-raw @('--refresh-pcre2-benchmarks', '', '1', '5')
-        $snapshot = Get-Content PCRE2.Benchmarks.json -Raw | ConvertFrom-Json -AsHashtable
+        $snapshot = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PCRE2.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $ids = @($snapshot.Sections.Values | ForEach-Object { $_.Cases.Keys } | Sort-Object -Unique)
         foreach ($id in $ids) {
             Invoke-RefreshBenchmark ('pcre2-paired-' + $id.Replace('/', '_')) @('--qualify-pcre2-comparator-case', $id, '9')
@@ -136,9 +136,9 @@ try {
     if ($full) {
         # Reject a successful command sequence that retained rows from a different
         # revision/runtime. Existing fixtures own catalog/result/statistical rules.
-        $core = Get-Content README.Benchmarks.json -Raw | ConvertFrom-Json -AsHashtable
-        $python = Get-Content PythonRe.Benchmarks.json -Raw | ConvertFrom-Json -AsHashtable
-        $pcre2 = Get-Content PCRE2.Benchmarks.json -Raw | ConvertFrom-Json -AsHashtable
+        $core = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/README.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
+        $python = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PythonRe.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
+        $pcre2 = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PCRE2.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $environments = @($core.Sections.Values | ForEach-Object { $_.Cases.Values.Environment }) +
             @($python.Cases.Values.Environment) +
             @($pcre2.Sections.Values | ForEach-Object { $_.Cases.Values.Environment }) +

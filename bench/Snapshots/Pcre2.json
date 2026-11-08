@@ -1,0 +1,1545 @@
+{
+  "SchemaVersion": 1,
+  "Profile": "Pcre2",
+  "Evidence": {
+    "Snapshot": "PCRE2.Benchmarks.json",
+    "SnapshotSha256": "B26E6012EA4A17458F61B6B49B34B42549673C4637B35132A7AB6EE364B3911F",
+    "Bytes": 1422919,
+    "Asset": "PCRE2.Benchmarks.b26e6012ea4a17458f61b6b49b34b42549673c4637b35132a7ab6ee364b3911f.json",
+    "Url": "https://github.com/Lokad/Utf8Regex/releases/download/benchmark-evidence/PCRE2.Benchmarks.b26e6012ea4a17458f61b6b49b34b42549673c4637b35132a7ab6ee364b3911f.json"
+  },
+  "Comparator": {
+    "PackageId": "PCRE.NET",
+    "PackageVersion": "1.5.0",
+    "Engine": "10.47 2025-10-21",
+    "License": "BSD-3-Clause WITH PCRE2-exception",
+    "BuildFingerprintSha256": "64226A8AB2D3AC9BE986279368957F1D3364E89B35FDDD9EFB10FA02EB91654B"
+  },
+  "Sources": {
+    "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5": {
+      "BenchmarkAssembly": "1.0.0\u002Bd60679252cf6d16a76f7a77a7b50c34899cd0e50 sha256=C5F8A9A44A1D09781559C014121E0115F2364D5AA4B658DA456F48AEC0B57578",
+      "CoreAssembly": "0.5.0-dev.55\u002Bd60679252cf6d16a76f7a77a7b50c34899cd0e50 sha256=C4DA809F2457C4709A8111EB651CB86CD846348B52FFF3FE4FAE6D1BCE87D6FB",
+      "Pcre2Assembly": "0.5.0-dev.55\u002Bd60679252cf6d16a76f7a77a7b50c34899cd0e50 sha256=DD8D7571A84715C094E448728FD0336E8C23A565351815377CC145E96502C79D",
+      "PythonReAssembly": "0.5.0-dev.55\u002Bd60679252cf6d16a76f7a77a7b50c34899cd0e50 sha256=47D9B1C840FEB8A0DBC89C75BECFAC98120292BE2B470F4532A5EEC152985852",
+      "SourceCommit": "d60679252cf6",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    }
+  },
+  "Sections": {
+    "pcre2-managed-compatible-count": {
+      "backtracking/alternation-repeat": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 76.3013698630137,
+        "ReferenceUs": 156.70843373493977,
+        "Ratio": 0.49200130739848685,
+        "Lower95": 0.4850986925933339,
+        "Upper95": 0.49551202422591006,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "character/unicode-class-dense": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 39.36393442622951,
+        "ReferenceUs": 306.61063829787236,
+        "Ratio": 0.12842923284914676,
+        "Lower95": 0.12817405336373303,
+        "Upper95": 0.12851321212255595,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/matches-boundary": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 9.486690647482014,
+        "ReferenceUs": 206.96616161616163,
+        "Ratio": 0.04587456119900853,
+        "Lower95": 0.04538915376517342,
+        "Upper95": 0.04604094711715216,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/matches-set": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 236.57939393939392,
+        "ReferenceUs": 203.9963157894737,
+        "Ratio": 1.1566658496636668,
+        "Lower95": 1.1505784550352744,
+        "Upper95": 1.175524192592463,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/matches-word": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3.3423968200270635,
+        "ReferenceUs": 23.52226651480638,
+        "Ratio": 0.14241932723684503,
+        "Lower95": 0.13933913792096347,
+        "Upper95": 0.14321644383762755,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/matches-words": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 9.413448193347692,
+        "ReferenceUs": 80.10766129032258,
+        "Ratio": 0.11746164865943115,
+        "Lower95": 0.11652120787113472,
+        "Upper95": 0.11820306621204965,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/leipzig-name-family-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4098.0375,
+        "ReferenceUs": 28404.5,
+        "Ratio": 0.14501758737955123,
+        "Lower95": 0.14165939892902618,
+        "Upper95": 0.1499825176098659,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.51%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/leipzig-river-window-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3329.8416666666667,
+        "ReferenceUs": 54511.9,
+        "Ratio": 0.06094337181202183,
+        "Lower95": 0.0601065601065601,
+        "Upper95": 0.06195714059443239,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/leipzig-symbol-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1962.2761904761905,
+        "ReferenceUs": 486816.9,
+        "Ratio": 0.0040230101946466135,
+        "Lower95": 0.0039053599784544014,
+        "Upper95": 0.0040444649698382325,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.49%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/leipzig-twain-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 5274.849999999999,
+        "ReferenceUs": 11716.1,
+        "Ratio": 0.45466494823362724,
+        "Lower95": 0.43550883352610953,
+        "Upper95": 0.48508544365150447,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.91%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/mariomka-email-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 18636.75,
+        "ReferenceUs": 143405.3,
+        "Ratio": 0.1299585859100047,
+        "Lower95": 0.12855936876551993,
+        "Upper95": 0.13217128970082964,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/mariomka-ip-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4826.5,
+        "ReferenceUs": 21550.7,
+        "Ratio": 0.22365050787213406,
+        "Lower95": 0.22234933177792898,
+        "Upper95": 0.22776040801913822,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/mariomka-uri-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 22024,
+        "ReferenceUs": 131611.4,
+        "Ratio": 0.16672327915456028,
+        "Lower95": 0.16588515801829404,
+        "Upper95": 0.17052719983688208,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/rust-sherlock-holmes-window-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 135.79760273972605,
+        "ReferenceUs": 991.3725000000001,
+        "Ratio": 0.135966664256489,
+        "Lower95": 0.13507410706453224,
+        "Upper95": 0.1372492719992877,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/rust-sherlock-ing-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 12315.666666666666,
+        "ReferenceUs": 13320.800000000001,
+        "Ratio": 0.9235010286141762,
+        "Lower95": 0.9202508825959589,
+        "Upper95": 0.9299477473811664,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/rust-sherlock-letter-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 2792.5499999999997,
+        "ReferenceUs": 97018.5,
+        "Ratio": 0.02887659347097226,
+        "Lower95": 0.028726923717881457,
+        "Upper95": 0.028966787049296956,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/rust-sherlock-nonnewline-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 184.38130841121495,
+        "ReferenceUs": 2773.8214285714284,
+        "Ratio": 0.06662892329857878,
+        "Lower95": 0.06544431420554249,
+        "Upper95": 0.06779006586678406,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/rust-sherlock-word-holmes-count": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1557.3769230769233,
+        "ReferenceUs": 19743.85,
+        "Ratio": 0.07845194019937805,
+        "Lower95": 0.07736555204890457,
+        "Upper95": 0.08016679142491671,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.08%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/ab-plus": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.14104055246897554,
+        "ReferenceUs": 1.083097855964816,
+        "Ratio": 0.1302525076640239,
+        "Lower95": 0.12883925613202904,
+        "Upper95": 0.13137302887893976,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-dense": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.48466652471195026,
+        "ReferenceUs": 0.8117612123694451,
+        "Ratio": 0.5993535396575721,
+        "Lower95": 0.5966052380151052,
+        "Upper95": 0.6011450313723561,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-optional-bar": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.2861160822783412,
+        "ReferenceUs": 1.159969360619725,
+        "Ratio": 0.24662786512504473,
+        "Lower95": 0.24535846412879325,
+        "Upper95": 0.24787546415316486,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/httpclient-caseless": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.8517121261912587,
+        "ReferenceUs": 1.106314871822813,
+        "Ratio": 0.7703973108152713,
+        "Lower95": 0.7646301082064637,
+        "Upper95": 0.7733802917710477,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/loglevel-multiline": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.14793480753723118,
+        "ReferenceUs": 0.8268124680633624,
+        "Ratio": 0.17892183929414845,
+        "Lower95": 0.17759399425350286,
+        "Upper95": 0.1796493217846146,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-managed-compatible-enumerate": {
+      "simple/ab-plus": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9372351559411123,
+        "ReferenceUs": 1.0919415757639788,
+        "Ratio": 0.858741538685157,
+        "Lower95": 0.8527451769689887,
+        "Upper95": 0.8606691713672835,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-dense": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.7901004331659447,
+        "ReferenceUs": 0.8101726913217145,
+        "Ratio": 0.9715766793595262,
+        "Lower95": 0.9623858084258141,
+        "Upper95": 0.9824379059710796,
+        "Status": "Inconclusive",
+        "Reason": "The paired 95% interval crosses a Status decision boundary.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-optional-bar": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.0463982690297329,
+        "ReferenceUs": 1.172438868930351,
+        "Ratio": 0.8899263432080546,
+        "Lower95": 0.8876192107101857,
+        "Upper95": 0.8961051826190497,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/httpclient-caseless": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.3017826155545038,
+        "ReferenceUs": 1.1112470522957414,
+        "Ratio": 1.1657324705105603,
+        "Lower95": 1.1593159575170535,
+        "Upper95": 1.180508271402847,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/loglevel-multiline": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.7784123563218391,
+        "ReferenceUs": 0.8479704410810358,
+        "Ratio": 0.9173736764183159,
+        "Lower95": 0.9120815905215416,
+        "Upper95": 0.9230249377405041,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-managed-compatible-ismatch": {
+      "backtracking/assertion-capture": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6091996577196445,
+        "ReferenceUs": 2.291466572504708,
+        "Ratio": 0.26335762460904255,
+        "Lower95": 0.2312388018445499,
+        "Upper95": 0.304471097461073,
+        "Status": "Inconclusive",
+        "Reason": "Lane interquartile spreads are 1.022/1.155; the maximum is 1.10.",
+        "ManagedBytes": 800,
+        "ReferenceBytes": 0
+      },
+      "backtracking/capture-backreference": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.693576381503382,
+        "ReferenceUs": 10.64003628666465,
+        "Ratio": 0.06531966595031705,
+        "Lower95": 0.059072634342678114,
+        "Upper95": 0.07436523370449855,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 7.80%.",
+        "ManagedBytes": 64,
+        "ReferenceBytes": 0
+      },
+      "common/backtracking": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.010654428443202468,
+        "ReferenceUs": 1.2118841768998563,
+        "Ratio": 0.008786359221558546,
+        "Lower95": 0.008757741357897825,
+        "Upper95": 0.008877542768834316,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/date-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6567739986494652,
+        "ReferenceUs": 0.15552231160576038,
+        "Ratio": 4.208330482879427,
+        "Lower95": 4.182884145103671,
+        "Upper95": 4.256314969135048,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/date-miss": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 2.3123825285182336,
+        "ReferenceUs": 0.5645000419076356,
+        "Ratio": 4.096337213198275,
+        "Lower95": 4.06089074139949,
+        "Upper95": 4.125422363464353,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/email-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.09860145433359532,
+        "ReferenceUs": 0.29588054490949794,
+        "Ratio": 0.3320606012163791,
+        "Lower95": 0.32958962588749124,
+        "Upper95": 0.3334781443657915,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/email-miss": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.10561733954136945,
+        "ReferenceUs": 0.3484247193910463,
+        "Ratio": 0.30312437604507764,
+        "Lower95": 0.30234466328381615,
+        "Upper95": 0.30324236324219106,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/ip-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.08981262663920096,
+        "ReferenceUs": 0.2866207930235727,
+        "Ratio": 0.3149814686042184,
+        "Lower95": 0.2665572356008308,
+        "Upper95": 0.31846280489372397,
+        "Status": "Inconclusive",
+        "Reason": "Lane interquartile spreads are 1.116/1.015; the maximum is 1.10.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/ip-miss": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.07835386487205809,
+        "ReferenceUs": 0.3106640499839795,
+        "Ratio": 0.2521987065952931,
+        "Lower95": 0.24706261686270578,
+        "Upper95": 0.2543766764916226,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/one-node-backtracking": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.1703738361684036,
+        "ReferenceUs": 0.07690341534242762,
+        "Ratio": 2.2131001482445454,
+        "Lower95": 2.177265963861983,
+        "Upper95": 2.2624415268239635,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/uri-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.03295078393900838,
+        "ReferenceUs": 0.19651850461713175,
+        "Ratio": 0.16750830800190478,
+        "Lower95": 0.16571711612776083,
+        "Upper95": 0.168220383435207,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "common/uri-miss": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.05976936587656469,
+        "ReferenceUs": 0.5962916376873788,
+        "Ratio": 0.10011107804189677,
+        "Lower95": 0.0995781936365108,
+        "Upper95": 0.10070130978116067,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/boostdocs-credit-card-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.0324335258179307,
+        "ReferenceUs": 0.15136362095142655,
+        "Ratio": 0.21469086727185047,
+        "Lower95": 0.21302568949750883,
+        "Upper95": 0.21941619969829565,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/boostdocs-date-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.020555055450053848,
+        "ReferenceUs": 0.11016307427875087,
+        "Ratio": 0.18743915977930567,
+        "Lower95": 0.17957707798142397,
+        "Upper95": 0.1882153640004207,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/boostdocs-float-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.0572567174835943,
+        "ReferenceUs": 0.12283854698209734,
+        "Ratio": 0.46729612946639865,
+        "Lower95": 0.46061647763418884,
+        "Upper95": 0.47602896867831457,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.48%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/boostdocs-ftp-line-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.08739984545518406,
+        "ReferenceUs": 0.27192320993849467,
+        "Ratio": 0.32024563916783705,
+        "Lower95": 0.3104392510183661,
+        "Upper95": 0.33446660116771165,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "industry/boostdocs-postcode-match": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.02345577071338529,
+        "ReferenceUs": 0.11292608749501148,
+        "Ratio": 0.21038571430973899,
+        "Lower95": 0.19715451931354055,
+        "Upper95": 0.21400898198276655,
+        "Status": "Inconclusive",
+        "Reason": "Lane-order median ratios differ by 2.87%.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "literal/absolute-anchored": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.11591803200542865,
+        "ReferenceUs": 1.808362713904893,
+        "Ratio": 0.06380352883358338,
+        "Lower95": 0.06274113798172122,
+        "Upper95": 0.06513820016638619,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "literal/early": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.12674282304940923,
+        "ReferenceUs": 1.6928931791999364,
+        "Ratio": 0.07464733414129564,
+        "Lower95": 0.06180947141473056,
+        "Upper95": 0.07664899062010552,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "literal/late": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.1543890969090649,
+        "ReferenceUs": 1.9762168083885439,
+        "Ratio": 0.07856116466575928,
+        "Lower95": 0.07388252538112168,
+        "Upper95": 0.08216362845160843,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "literal/missing": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.14982808607351505,
+        "ReferenceUs": 2.167681887503364,
+        "Ratio": 0.06874484634858033,
+        "Lower95": 0.06293387410050577,
+        "Upper95": 0.0789095224369933,
+        "Status": "Inconclusive",
+        "Reason": "Lane interquartile spreads are 1.010/1.198; the maximum is 1.10.",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/ab-plus": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.00867922188283301,
+        "ReferenceUs": 0.09815237294749797,
+        "Ratio": 0.08833178521013366,
+        "Lower95": 0.08737462218324979,
+        "Upper95": 0.08948374287382514,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-dense": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.06640627422816711,
+        "ReferenceUs": 0.08591802228040589,
+        "Ratio": 0.7709109960997818,
+        "Lower95": 0.7555897416961712,
+        "Upper95": 0.7790230540072676,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-optional-bar": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.013288247986220839,
+        "ReferenceUs": 0.10706701343922792,
+        "Ratio": 0.12395029186338791,
+        "Lower95": 0.12336213802689633,
+        "Upper95": 0.12489598759030385,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/httpclient-caseless": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.11182068736703327,
+        "ReferenceUs": 0.11904842177486373,
+        "Ratio": 0.9392874403534802,
+        "Lower95": 0.9274727808021541,
+        "Upper95": 0.9496217389025534,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/loglevel-multiline": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.07347818738380064,
+        "ReferenceUs": 0.1985597859743863,
+        "Ratio": 0.37005573421236027,
+        "Lower95": 0.368351356724185,
+        "Upper95": 0.3723129134182371,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-managed-compatible-matchmany": {
+      "simple/ab-plus": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.5986197078484773,
+        "ReferenceUs": 1.0960103585012542,
+        "Ratio": 0.5457269565038765,
+        "Lower95": 0.5451690612918881,
+        "Upper95": 0.5498527381385722,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-dense": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.4972367556518142,
+        "ReferenceUs": 0.8154938060915133,
+        "Ratio": 0.611974748426747,
+        "Lower95": 0.6107383878494067,
+        "Upper95": 0.6141565412614151,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/foo-optional-bar": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.7064039145907474,
+        "ReferenceUs": 1.1741516645756134,
+        "Ratio": 0.6028600578651425,
+        "Lower95": 0.6015352323001077,
+        "Upper95": 0.6041189738723778,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/httpclient-caseless": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9045301520594681,
+        "ReferenceUs": 1.1100992522093813,
+        "Ratio": 0.8166846192765416,
+        "Lower95": 0.8128006651606007,
+        "Upper95": 0.8220379964608514,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "simple/loglevel-multiline": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.4913764448137795,
+        "ReferenceUs": 0.8514822175299134,
+        "Ratio": 0.5780346264756183,
+        "Lower95": 0.57145305830664,
+        "Upper95": 0.5804356848538191,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-managed-compatible-replace": {
+      "common/replace-words": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 59.88216303470541,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 13648
+      },
+      "simple/ab-plus": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3.568586437900622,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 1152
+      },
+      "simple/foo-dense": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.0350690843866484,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "simple/foo-optional-bar": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.2056676930094652,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "simple/httpclient-caseless": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.4744090019569471,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 56
+      },
+      "simple/loglevel-multiline": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3.5067124760435657,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 400
+      }
+    },
+    "pcre2-special-count": {
+      "literal/empty-unicode": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 8.243455497382199,
+        "ReferenceUs": 10.099772094201063,
+        "Ratio": 0.8110262382163738,
+        "Lower95": 0.8084154896171188,
+        "Upper95": 0.8240157488587619,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-backref": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.293128594169021,
+        "ReferenceUs": 1.0307393378916818,
+        "Ratio": 0.2846745690125218,
+        "Lower95": 0.28327547363161554,
+        "Upper95": 0.28561702235493736,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-basic": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.3098539780131654,
+        "ReferenceUs": 0.45971053749124835,
+        "Ratio": 0.6738998099630777,
+        "Lower95": 0.6517111892091417,
+        "Upper95": 0.6779395783281017,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-followup": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.28440652713166004,
+        "ReferenceUs": 0.4784732433987597,
+        "Ratio": 0.5941452737577444,
+        "Lower95": 0.5928290699772936,
+        "Upper95": 0.5970032745813296,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-nested": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.2936688244582786,
+        "ReferenceUs": 0.5740195372158027,
+        "Ratio": 0.5088335902654698,
+        "Lower95": 0.5072485685835392,
+        "Upper95": 0.5106732172702865,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/duplicate-names": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.28342930871745137,
+        "ReferenceUs": 0.37353614274731367,
+        "Ratio": 0.764163429456636,
+        "Lower95": 0.7567288025450635,
+        "Upper95": 0.7666312527078164,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/grapheme-cluster": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4.92715086522057,
+        "ReferenceUs": 8.657114839834387,
+        "Ratio": 0.5685033957124425,
+        "Lower95": 0.5681765775943964,
+        "Upper95": 0.571077354114221,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-atomic-alt": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.2582508123973584,
+        "ReferenceUs": 0.31022413875559945,
+        "Ratio": 0.8326481893154196,
+        "Lower95": 0.8269599252325165,
+        "Upper95": 0.8422568810726094,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-bar-or-baz": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.2632393627341779,
+        "ReferenceUs": 0.3868552350226957,
+        "Ratio": 0.6854028674871355,
+        "Lower95": 0.6684690255462813,
+        "Upper95": 0.6938787360922075,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-captured-repeat": {
+        "Operation": "count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3.7951954804519548,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=10D75503432F5794, comparator=9EB15884DB649A19.",
+        "ManagedBytes": 0
+      },
+      "pcre2/kreset-global": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.18347689752902593,
+        "ReferenceUs": 0.2814781235376696,
+        "Ratio": 0.6556095406903357,
+        "Lower95": 0.6416658478832097,
+        "Upper95": 0.6585304469404826,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-repeat": {
+        "Operation": "count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 3.6609811694747276,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=10D75503432F5794, comparator=9EB15884DB649A19.",
+        "ManagedBytes": 0
+      },
+      "pcre2/same-start-global": {
+        "Operation": "Count",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.4961746111670583,
+        "ReferenceUs": 0.6620833265282791,
+        "Ratio": 0.746424941727314,
+        "Lower95": 0.7418317093967679,
+        "Upper95": 0.7527285609870074,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-special-enumerate": {
+      "literal/empty-unicode": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 9.775468331846566,
+        "ReferenceUs": 30.264436090225562,
+        "Ratio": 0.3222434756076855,
+        "Lower95": 0.31982024644486695,
+        "Upper95": 0.3232917793432382,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-backref": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9511987589319294,
+        "ReferenceUs": 1.059955608488523,
+        "Ratio": 0.8947567018240001,
+        "Lower95": 0.8935950132883247,
+        "Upper95": 0.9055908511475113,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-basic": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.993031465068441,
+        "ReferenceUs": 1.1686149297856616,
+        "Ratio": 0.8516606683668887,
+        "Lower95": 0.8449301602153408,
+        "Upper95": 0.8556949159890248,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-followup": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9241478657860911,
+        "ReferenceUs": 1.0154765476547656,
+        "Ratio": 0.9144196772630384,
+        "Lower95": 0.9091596998440541,
+        "Upper95": 0.9187916497440293,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-nested": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9679545512315397,
+        "ReferenceUs": 1.1387169896860478,
+        "Ratio": 0.8521847871172618,
+        "Lower95": 0.8483459559836365,
+        "Upper95": 0.8574284153262424,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/duplicate-names": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9795723239523166,
+        "ReferenceUs": 0.943697669669397,
+        "Ratio": 1.0357825502274283,
+        "Lower95": 1.0338066497977094,
+        "Upper95": 1.0424974181781366,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/grapheme-cluster": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 5.637613751263903,
+        "ReferenceUs": 8.636407461748062,
+        "Ratio": 0.6547879713362257,
+        "Lower95": 0.6514667747817118,
+        "Upper95": 0.6562340684819231,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-atomic-alt": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9096827358879275,
+        "ReferenceUs": 0.8749304567557811,
+        "Ratio": 1.0386081087805539,
+        "Lower95": 1.0351801690799338,
+        "Upper95": 1.0462675809146038,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-bar-or-baz": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.9578567268491555,
+        "ReferenceUs": 0.9512233259749817,
+        "Ratio": 0.9971577561026972,
+        "Lower95": 0.9910878595961942,
+        "Upper95": 1.0163268361033637,
+        "Status": "Equivalent",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-captured-repeat": {
+        "Operation": "enumerate",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 5.032773892773893,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=D112C845A4F1BD78, comparator=027ACCB0FF65E9DB.",
+        "ManagedBytes": 0
+      },
+      "pcre2/kreset-global": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.8133695028018137,
+        "ReferenceUs": 0.8413875498670214,
+        "Ratio": 0.9711597269893282,
+        "Lower95": 0.9651665156137882,
+        "Upper95": 0.9755723221797243,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-repeat": {
+        "Operation": "enumerate",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4.843211446740859,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=D112C845A4F1BD78, comparator=027ACCB0FF65E9DB.",
+        "ManagedBytes": 0
+      },
+      "pcre2/same-start-global": {
+        "Operation": "EnumerateMatches",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.8339989426166172,
+        "ReferenceUs": 1.2278990279084352,
+        "Ratio": 0.6766967300496635,
+        "Lower95": 0.6737161803496202,
+        "Upper95": 0.6799361178546152,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-special-ismatch": {
+      "pcre2/backslash-c-literal": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.084677357958235,
+        "ReferenceUs": 0.08080814038582948,
+        "Ratio": 1.0445462787945148,
+        "Lower95": 1.022568394240308,
+        "Upper95": 1.0533500196975254,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-backref": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.01226560368255351,
+        "ReferenceUs": 0.11514279749836284,
+        "Ratio": 0.1064967224419703,
+        "Lower95": 0.1060037119357178,
+        "Upper95": 0.10682548011904547,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/conditional-accept-negative-lookahead": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.38960235993338194,
+        "ReferenceUs": 0.10321169429585299,
+        "Ratio": 3.774586944429999,
+        "Lower95": 3.732982933811007,
+        "Upper95": 3.7922329585281362,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/conditional-lookahead": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.38817390169922705,
+        "ReferenceUs": 0.11350514783163757,
+        "Ratio": 3.395427056869432,
+        "Lower95": 3.370596126399801,
+        "Upper95": 3.415966437274251,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/conditional-negative-lookahead": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.3869357135034498,
+        "ReferenceUs": 0.10551729357450995,
+        "Ratio": 3.663714694641903,
+        "Lower95": 3.6312622653933104,
+        "Upper95": 3.6728676505637616,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/grapheme-cluster": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.8134563174382179,
+        "ReferenceUs": 0.34103111359918825,
+        "Ratio": 2.3896897470407676,
+        "Lower95": 2.3392659999719805,
+        "Upper95": 2.433376943262463,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/recursive-optional": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.011197790796660237,
+        "ReferenceUs": 0.6173201547857708,
+        "Ratio": 0.018188995341920356,
+        "Lower95": 0.018006794484287096,
+        "Upper95": 0.0182078225469942,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/recursive-palindrome": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.011815093619331096,
+        "ReferenceUs": 0.5019282718876226,
+        "Ratio": 0.023367636456406212,
+        "Lower95": 0.022462280328495683,
+        "Upper95": 0.023859148712854106,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/subroutine-prefix-digits": {
+        "Operation": "IsMatch",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.46140712993400096,
+        "ReferenceUs": 0.1066430830467152,
+        "Ratio": 4.312550462250289,
+        "Lower95": 4.26965522640984,
+        "Upper95": 4.351877813179414,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-special-matchmany": {
+      "literal/empty-unicode": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.4559749096321495,
+        "ReferenceUs": 2.2402159778368294,
+        "Ratio": 0.648677449421947,
+        "Lower95": 0.6464029955402667,
+        "Upper95": 0.6508821854608001,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-backref": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6205764172408785,
+        "ReferenceUs": 1.0579520349224094,
+        "Ratio": 0.5867776507317891,
+        "Lower95": 0.5843880528137997,
+        "Upper95": 0.5938939503456098,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-basic": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6634933789430995,
+        "ReferenceUs": 1.1656259845902672,
+        "Ratio": 0.5725323724741828,
+        "Lower95": 0.5676846963272033,
+        "Upper95": 0.5764674520533252,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-followup": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.5933207256660865,
+        "ReferenceUs": 1.0055836287301707,
+        "Ratio": 0.5900262382108579,
+        "Lower95": 0.5891011414222515,
+        "Upper95": 0.5911614141352088,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/branch-reset-nested": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6278885854030363,
+        "ReferenceUs": 1.1542644309907095,
+        "Ratio": 0.5441971646522423,
+        "Lower95": 0.541058454115346,
+        "Upper95": 0.5468746313493281,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/duplicate-names": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.6449350563505966,
+        "ReferenceUs": 0.9487898089171974,
+        "Ratio": 0.6847031636429665,
+        "Lower95": 0.678335969416425,
+        "Upper95": 0.6866208949191502,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/grapheme-cluster": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.994949391152443,
+        "ReferenceUs": 2.1606416484279083,
+        "Ratio": 0.9237310464062762,
+        "Lower95": 0.9166098876597316,
+        "Upper95": 0.9272511021164054,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-atomic-alt": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.5930393265485614,
+        "ReferenceUs": 0.8844150838347716,
+        "Ratio": 0.6727048421851103,
+        "Lower95": 0.6701000545074305,
+        "Upper95": 0.6746027476130478,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-bar-or-baz": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.5928937604877073,
+        "ReferenceUs": 0.9551502821574753,
+        "Ratio": 0.6202998929520075,
+        "Lower95": 0.6151069181710587,
+        "Upper95": 0.6238393575425408,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-captured-repeat": {
+        "Operation": "matchmany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4.68193248683803,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=A8517ACD40FBB4CC, comparator=454EE9D126605347.",
+        "ManagedBytes": 0
+      },
+      "pcre2/kreset-global": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.481123632960242,
+        "ReferenceUs": 0.84888656496063,
+        "Ratio": 0.5676134610312642,
+        "Lower95": 0.5667921988563183,
+        "Upper95": 0.5689319621084025,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      },
+      "pcre2/kreset-repeat": {
+        "Operation": "matchmany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4.598865576969993,
+        "Status": "Excluded",
+        "Reason": "Structured checksum mismatch: managed=A8517ACD40FBB4CC, comparator=454EE9D126605347.",
+        "ManagedBytes": 0
+      },
+      "pcre2/same-start-global": {
+        "Operation": "MatchMany",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 0.5140161445220235,
+        "ReferenceUs": 1.234546350173948,
+        "Ratio": 0.4159972489920054,
+        "Lower95": 0.4154363147407188,
+        "Upper95": 0.41933155297511343,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0
+      }
+    },
+    "pcre2-special-replace": {
+      "literal/empty-unicode": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 17.13210018382353,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 480
+      },
+      "pcre2/branch-reset-backref": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.1302239382239383,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/branch-reset-basic": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.2305867767246863,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/branch-reset-followup": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.1048314657037557,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/branch-reset-nested": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.135212192477437,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/duplicate-names": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.1085141978657984,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/grapheme-cluster": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 6.766351351351352,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 64
+      },
+      "pcre2/kreset-atomic-alt": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.1441562953117448,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 40
+      },
+      "pcre2/kreset-bar-or-baz": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.1403452920288968,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 40
+      },
+      "pcre2/kreset-captured-repeat": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 21.617073170731707,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 1216
+      },
+      "pcre2/kreset-global": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 1.0644866395480874,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 48
+      },
+      "pcre2/kreset-repeat": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 16.45765306122449,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 928
+      },
+      "pcre2/same-start-global": {
+        "Operation": "replace",
+        "Source": "84E142E22948BF5602BD20C107E9F53C4549EA9E748296B74BF4D3BBA3ED89B5",
+        "ManagedUs": 4.51540702968494,
+        "Status": "Excluded",
+        "Reason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+        "ManagedBytes": 4496
+      }
+    }
+  },
+  "Lifecycle": {},
+  "Scaling": {
+    "branch-repeat-linear": {
+      "Operation": "IsMatch",
+      "Points": 4
+    },
+    "branch-reset-coordinate-projection": {
+      "Operation": "EnumerateMatches",
+      "Points": 4
+    },
+    "candidate-heavy-misses": {
+      "Operation": "IsMatch",
+      "Points": 4
+    },
+    "capture-rollback": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "cartesian-literal-families": {
+      "Operation": "IsMatch",
+      "Points": 4
+    },
+    "character-class-dense": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "dense-non-ascii-coordinates": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "dense-plus-sparse-candidate-portfolios": {
+      "Operation": "Count",
+      "Points": 6
+    },
+    "excluded-ascii-repeat-count": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "leading-word-boundary-run-candidates": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "literal-family-global-cursor": {
+      "Operation": "Replace",
+      "Points": 4
+    },
+    "long-flat-patterns": {
+      "Operation": "IsMatch",
+      "Points": 4
+    },
+    "replacement-growth": {
+      "Operation": "Replace",
+      "Points": 4
+    },
+    "required-literal-all-a-miss": {
+      "Operation": "Count",
+      "Points": 4
+    },
+    "single-token-repeat-vm": {
+      "Operation": "IsMatch",
+      "Points": 4
+    },
+    "zero-width-iteration": {
+      "Operation": "Count",
+      "Points": 4
+    }
+  }
+}

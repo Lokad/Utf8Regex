@@ -200,6 +200,14 @@ if (args.Length >= 1 && args[0].Equals("--measure-small-ascii-literal-family-spl
     return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilySplitControls(args.Length >= 2 ? args[1] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--export-benchmark-summaries", StringComparison.Ordinal))
+{
+    BenchmarkInspectReporter.ExportReadmeBenchmarkSummary();
+    PythonReBenchmarkReporter.ExportBenchmarkSummary();
+    BenchmarkInspectReporter.ExportPcre2BenchmarkSummary();
+    return 0;
+}
+
 if (args.Length >= 1 && args[0].Equals("--emit-readme-benchmark-markdown", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunEmitReadmeBenchmarkMarkdown(

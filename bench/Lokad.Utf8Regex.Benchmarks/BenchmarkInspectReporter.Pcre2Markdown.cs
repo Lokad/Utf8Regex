@@ -9,13 +9,13 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunEmitPcre2BenchmarkMarkdown()
     {
-        Console.Write(BuildPcre2BenchmarkMarkdown(LoadPcre2BenchmarkSnapshot()));
+        Console.Write(BuildPcre2BenchmarkMarkdown(LoadPcre2Summary()));
         return 0;
     }
 
     public static int RunRewritePcre2BenchmarkMarkdown()
     {
-        RewritePcre2BenchmarkMarkdown(LoadPcre2BenchmarkSnapshot());
+        RewritePcre2BenchmarkMarkdown();
         Console.WriteLine($"Benchmark README: {GetPcre2BenchmarkPagePath()}");
         return 0;
     }
@@ -25,7 +25,7 @@ internal static partial class BenchmarkInspectReporter
         var path = GetPcre2BenchmarkPagePath();
         var actual = File.ReadAllText(path, Encoding.UTF8);
         var expected = BenchmarkFileWriter.ReplaceGeneratedSection(
-            actual, "PCRE2", BuildPcre2BenchmarkMarkdown(LoadPcre2BenchmarkSnapshot()));
+            actual, "PCRE2", BuildPcre2BenchmarkMarkdown(LoadPcre2Summary()));
         if (actual.ReplaceLineEndings("\n") == expected.ReplaceLineEndings("\n"))
         {
             Console.WriteLine($"PCRE2 benchmark README is current: {path}");
@@ -35,23 +35,23 @@ internal static partial class BenchmarkInspectReporter
         return 1;
     }
 
-    private static void RewritePcre2BenchmarkMarkdown(Pcre2BenchmarkSnapshot snapshot)
+    private static void RewritePcre2BenchmarkMarkdown()
     {
         var path = GetPcre2BenchmarkPagePath();
         BenchmarkFileWriter.WriteTextAtomically(path, BenchmarkFileWriter.ReplaceGeneratedSection(
-            File.ReadAllText(path, Encoding.UTF8), "PCRE2", BuildPcre2BenchmarkMarkdown(snapshot)));
+            File.ReadAllText(path, Encoding.UTF8), "PCRE2", BuildPcre2BenchmarkMarkdown(LoadPcre2Summary())));
     }
 
     private static string GetPcre2BenchmarkPagePath() =>
         Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkPageRelativePath);
 
-    private static string BuildPcre2BenchmarkMarkdown(Pcre2BenchmarkSnapshot snapshot)
+    private static string BuildPcre2BenchmarkMarkdown(BenchmarkSummary snapshot)
     {
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var sections = snapshot.Sections.OrderBy(static section => GetPcre2MarkdownSectionOrder(section.Key))
             .ThenBy(static section => section.Key, StringComparer.Ordinal).ToArray();
-        var rows = sections.SelectMany(static section => section.Value.Cases.Values).ToArray();
-        var counts = rows.GroupBy(static row => row.PcreNetNativeStatus)
+        var rows = sections.SelectMany(static section => section.Value.Values).ToArray();
+        var counts = rows.GroupBy(static row => row.Status)
             .ToDictionary(static group => group.Key, static group => group.Count());
         writer.WriteLine("## Benchmarks");
         writer.WriteLine();
@@ -59,17 +59,18 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         writer.WriteLine("Times are elapsed microseconds per operation from paired measurements when available. Tables rank `Utf8Pcre2 / PCRE2 NFA` from highest to lowest; lower is better. Status retains paired 95% uncertainty, lane stability and result compatibility. A point ratio is not a winner. Excluded/unqualified rows appear last without a qualified ratio; independently measured discovery values remain observations only.");
         writer.WriteLine();
-        writer.WriteLine($"Snapshot SHA-256: `{ComputePcre2SnapshotSha256()}`.");
+        writer.WriteLine($"Snapshot SHA-256: `{snapshot.Evidence.SnapshotSha256}`.");
         writer.WriteLine();
         writer.WriteLine($"Comparator Status: `{Count(Pcre2NativeComparisonStatus.ManagedFaster)}` managed faster, " +
             $"`{Count(Pcre2NativeComparisonStatus.Equivalent)}` equivalent, `{Count(Pcre2NativeComparisonStatus.NativeFaster)}` native faster, " +
             $"`{Count(Pcre2NativeComparisonStatus.Inconclusive)}` inconclusive, `{Count(Pcre2NativeComparisonStatus.Unqualified)}` unqualified, " +
             $"`{Count(Pcre2NativeComparisonStatus.Excluded)}` excluded.");
         writer.WriteLine();
-        foreach (var source in rows.Select(static row => row.PcreNetNativePair?.Environment)
-            .OfType<BenchmarkEnvironmentJson>().GroupBy(static environment => environment.SourceCommit, StringComparer.Ordinal)
+        foreach (var source in rows.Select(row => snapshot.Sources[row.Source])
+            .Where(static item => item.ValueKind == System.Text.Json.JsonValueKind.Object)
+            .GroupBy(static item => item.GetProperty("SourceCommit").GetString(), StringComparer.Ordinal)
             .OrderBy(static group => group.Key, StringComparer.Ordinal))
-            writer.WriteLine($"Measured source `{source.Key}`: {string.Join(", ", source.Select(static row => row.Runtime).Distinct(StringComparer.Ordinal))}. Selective updates retain each row's identity.");
+            writer.WriteLine($"Measured source `{source.Key}`: {string.Join(", ", source.Select(static item => item.GetProperty("Runtime").GetString()).Distinct(StringComparer.Ordinal))}. Selective updates retain each row's identity.");
         foreach (var (sectionName, section) in sections)
         {
             writer.WriteLine();
@@ -77,15 +78,15 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             writer.WriteLine("| Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |");
             writer.WriteLine("| --- | ---: | ---: | --- | ---: |");
-            foreach (var (caseId, row) in section.Cases
-                .OrderByDescending(static row => Pcre2DisplayRatio(row.Value) ?? double.NegativeInfinity)
+            foreach (var (caseId, row) in section
+                .OrderByDescending(static row => row.Value.DisplayRatio ?? double.NegativeInfinity)
                 .ThenBy(static row => row.Key, StringComparer.Ordinal))
             {
-                var managed = row.PcreNetNativePair?.ManagedMedianMicroseconds ?? row.Utf8Pcre2;
-                var reference = row.PcreNetNativePair?.ComparatorMedianMicroseconds ?? row.PcreNetNative;
-                var ratio = Pcre2DisplayRatio(row);
+                var managed = row.ManagedUs;
+                var reference = row.ReferenceUs;
+                var ratio = row.DisplayRatio;
                 writer.WriteLine($"| `{caseId}` | {managed:N3} us | " +
-                    $"{(reference is > 0 ? $"{reference:N3} us" : "—")} | {FormatStatus(row.PcreNetNativeStatus)} | " +
+                    $"{(reference is > 0 ? $"{reference:N3} us" : "—")} | {row.DisplayStatus} | " +
                     $"{(ratio is > 0 ? $"{ratio:F2}x" : "—")} |");
             }
         }
@@ -93,15 +94,15 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine("<details>");
         writer.WriteLine("<summary>Qualification, allocations and scaling evidence</summary>");
         writer.WriteLine();
-        writer.WriteLine("The [full snapshot](../../PCRE2.Benchmarks.json) retains per-row confidence intervals, exclusion reasons, input/source/binary identities, allocation probes, native build/plan fingerprints and managed/comparator workspace contracts. Managed-thread allocation probes do not measure retained native memory. Reusable match buffers are neither thread-safe nor reentrant; finite/token/deadline costs remain separate from these ordinary rows.");
+        writer.WriteLine("The [summary and raw-evidence reference](../../bench/Snapshots/Pcre2.json) retains per-row confidence intervals, exclusion reasons, input/source/binary identities, allocation probes, native build/plan fingerprints and managed/comparator workspace contracts. Managed-thread allocation probes do not measure retained native memory. Reusable match buffers are neither thread-safe nor reentrant; finite/token/deadline costs remain separate from these ordinary rows.");
         writer.WriteLine();
-        if (snapshot.PcreNetNativeBaseline is { } dependency)
-            writer.WriteLine($"Benchmark comparator: [PCRE.NET {dependency.PackageVersion}](https://www.nuget.org/packages/PCRE.NET/{dependency.PackageVersion}), native PCRE2 `{dependency.NativePcre2Version}`, license `{dependency.License}`. This private benchmark dependency is absent from shipped projects.");
+        if (snapshot.Comparator is { } dependency)
+            writer.WriteLine($"Benchmark comparator: [PCRE.NET {dependency.PackageVersion}](https://www.nuget.org/packages/PCRE.NET/{dependency.PackageVersion}), native PCRE2 `{dependency.Engine}`, license `{dependency.License}`. This private benchmark dependency is absent from shipped projects.");
         writer.WriteLine();
         foreach (var (sectionName, section) in sections)
-            foreach (var (caseId, row) in section.Cases.Where(static row => Pcre2DisplayRatio(row.Value) is null)
+            foreach (var (caseId, row) in section.Where(static row => row.Value.DisplayRatio is null)
                 .OrderBy(static row => row.Key, StringComparer.Ordinal))
-                writer.WriteLine($"- `{sectionName}/{caseId}`: {row.PcreNetNativeStatusReason ?? row.PcreNetNativeUnavailableReason ?? "No paired qualification evidence."}");
+                writer.WriteLine($"- `{sectionName}/{caseId}`: {row.Reason ?? "No paired qualification evidence."}");
         writer.WriteLine();
         writer.WriteLine("### Scaling evidence");
         writer.WriteLine();
@@ -109,20 +110,16 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         writer.WriteLine("| Family | Operation | Points |");
         writer.WriteLine("| --- | --- | ---: |");
-        foreach (var (id, row) in snapshot.ScalingFamilies.OrderBy(static row => row.Key, StringComparer.Ordinal))
-            writer.WriteLine($"| `{id}` | {row.Operation} | {row.Points.Count} |");
+        foreach (var (id, row) in snapshot.Scaling.OrderBy(static row => row.Key, StringComparer.Ordinal))
+            writer.WriteLine($"| `{id}` | {row.Operation} | {row.Points} |");
         writer.WriteLine();
         writer.WriteLine("Regenerate with `--rewrite-pcre2-benchmark-markdown`; validate with `--verify-pcre2-benchmark-markdown`. Use `--verify-pcre2-qualification-consistency` and `--emit-pcre2-priority-report` for the full evidence through the repository benchmark script.");
         writer.WriteLine();
         writer.WriteLine("</details>");
         return writer.ToString();
 
-        int Count(Pcre2NativeComparisonStatus status) => counts.GetValueOrDefault(status);
+        int Count(Pcre2NativeComparisonStatus status) => counts.GetValueOrDefault(status.ToString());
     }
-
-    private static double? Pcre2DisplayRatio(Pcre2CaseMeasurementJson row) =>
-        row.PcreNetNativeStatus is not (Pcre2NativeComparisonStatus.Excluded or Pcre2NativeComparisonStatus.Unqualified)
-            ? row.PcreNetNativePair?.RatioMedian : null;
 
     private static int GetPcre2MarkdownSectionOrder(string section) => section switch
     {
@@ -154,6 +151,6 @@ internal static partial class BenchmarkInspectReporter
         _ => section,
     };
 
-    private static string ComputePcre2SnapshotSha256() =>
-        BenchmarkSnapshotHash.HashNormalizedFile(FindRepoFile(Pcre2BenchmarkSnapshotFileName));
+    private static BenchmarkSummary LoadPcre2Summary() =>
+        BenchmarkSummary.Read(Path.GetDirectoryName(FindRepoFile("README.md"))!, "Pcre2");
 }

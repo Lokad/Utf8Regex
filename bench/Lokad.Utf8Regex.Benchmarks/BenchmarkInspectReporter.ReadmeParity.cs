@@ -10,7 +10,7 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunEmitReadmeParityReport()
     {
-        var snapshotPath = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
+        var snapshotPath = GetReadmeSnapshotPath();
         var snapshot = LoadReadmeBenchmarkSnapshot();
         Console.Write(SerializeReadmeParityReport(snapshot, snapshotPath));
         return 0;
@@ -18,9 +18,9 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunVerifyReadmeParityReport()
     {
-        var snapshotPath = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
+        var snapshotPath = GetReadmeSnapshotPath();
         var expected = SerializeReadmeParityReport(LoadReadmeBenchmarkSnapshot(), snapshotPath);
-        var reportPath = FindRepoFile(ReadmeParityReportFileName);
+        var reportPath = BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeParityReportFileName);
         // Snapshot files travel across autocrlf checkouts: normalize before comparing so the
         // gate checks report content, not the platform that last wrote the file.
         var actual = File.ReadAllText(reportPath, Encoding.UTF8).ReplaceLineEndings("\n");
@@ -36,7 +36,7 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunRewriteReadmeParityReport()
     {
-        var snapshotPath = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
+        var snapshotPath = GetReadmeSnapshotPath();
         WriteReadmeParityReport(LoadReadmeBenchmarkSnapshot(), snapshotPath);
         Console.WriteLine($"Rewrote {ReadmeParityReportFileName} from {ReadmeBenchmarkSnapshotFileName}.");
         return 0;

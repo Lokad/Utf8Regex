@@ -1,5 +1,4 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -8,213 +7,97 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class ReadmeBenchmarkSnapshotTests
 {
     [Fact]
-    public void SnapshotContainsCompleteCleanCalibratedSectionPairs()
+    public void SummaryPreservesQualifiedRowsAndEvidenceIdentity()
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Benchmarks.json")));
+        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("bench/Snapshots/Core.json")));
         var root = document.RootElement;
-        Assert.InRange(root.GetProperty("SchemaVersion").GetInt32(), 5, 6);
-
+        Assert.Equal(1, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal("Core", root.GetProperty("Profile").GetString());
+        var evidence = root.GetProperty("Evidence");
+        var hash = evidence.GetProperty("SnapshotSha256").GetString()!;
+        Assert.Matches("^[0-9A-F]{64}$", hash);
+        Assert.True(evidence.GetProperty("Bytes").GetInt64() > 0);
+        Assert.EndsWith(hash.ToLowerInvariant() + ".json", evidence.GetProperty("Asset").GetString(), StringComparison.Ordinal);
+        Assert.EndsWith(evidence.GetProperty("Asset").GetString(), evidence.GetProperty("Url").GetString(), StringComparison.Ordinal);
         var sections = root.GetProperty("Sections");
-        AssertSection(sections, "dotnet-performance", 55);
-        AssertSection(sections, "dotnet-performance-compiled", 55);
-        AssertSection(sections, "lokad", 34);
-        AssertSection(sections, "lokad-compiled", 34);
-        AssertPairedSections(sections, "dotnet-performance", "dotnet-performance-compiled");
-        AssertPairedSections(sections, "lokad", "lokad-compiled");
-
-        // Incremental refreshes retain each row's real environment. AssertSection
-        // checks that provenance is present and clean; AssertPairedSections keeps
-        // ordinary/compiled lanes on the same measurement and environment.
-    }
-
-    [Fact]
-    public void ParityReportMatchesSnapshotAndContainsAllQualifiedRows()
-    {
-        var snapshotPath = FindRepositoryFile("README.Benchmarks.json");
-        var expectedHash = HashNormalizedSnapshotBytes(snapshotPath);
-        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
-        var root = document.RootElement;
-        Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
-        Assert.Equal("README.Benchmarks.json", root.GetProperty("GeneratedFrom").GetString());
-        Assert.Equal(expectedHash, root.GetProperty("SnapshotSha256").GetString());
-        Assert.Equal("PredecodedRegex", root.GetProperty("PrimaryCpuComparator").GetString());
-        Assert.Equal("DecodeThenRegex", root.GetProperty("SecondaryCpuComparator").GetString());
-
-        var summary = root.GetProperty("Summary");
-        Assert.Equal(178, summary.GetProperty("Rows").GetInt32());
-        Assert.InRange(summary.GetProperty("Unqualified").GetInt32(), 0, 178);
-        Assert.Equal(
-            178,
-            summary.GetProperty("Wins").GetInt32() +
-            summary.GetProperty("TieCandidates").GetInt32() +
-            summary.GetProperty("Gaps").GetInt32() +
-            summary.GetProperty("Unqualified").GetInt32());
-
-        var rows = root.GetProperty("Rows").EnumerateArray().ToArray();
-        Assert.Equal(178, rows.Length);
-        Assert.All(rows, row =>
+        foreach (var (section, count) in new[] { ("dotnet-performance", 55), ("dotnet-performance-compiled", 55), ("lokad", 34), ("lokad-compiled", 34) })
         {
-            Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap", "Unqualified" });
-            Assert.Contains(row.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2", "IndependentSixLaneV3" });
-            if (row.GetProperty("Status").GetString() == "Unqualified")
+            var rows = sections.GetProperty(section);
+            Assert.Equal(count, rows.EnumerateObject().Count());
+            foreach (var row in rows.EnumerateObject())
             {
-                Assert.False(string.IsNullOrWhiteSpace(row.GetProperty("StatusReason").GetString()));
-                Assert.False(row.TryGetProperty("RatioToDecode", out var decode) && decode.ValueKind != JsonValueKind.Null);
-                Assert.False(row.TryGetProperty("RatioToPredecoded", out var predecoded) && predecoded.ValueKind != JsonValueKind.Null);
-                return;
-            }
-            Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
-            var ratioToPredecoded = row.GetProperty("RatioToPredecoded").GetDouble();
-            Assert.True(ratioToPredecoded > 0);
-            Assert.Equal(ClassifyRatio(ratioToPredecoded), row.GetProperty("Status").GetString());
-            Assert.True(row.GetProperty("Utf8AllocatedBytes").GetDouble() >= 0);
-            Assert.True(row.GetProperty("PredecodedRegexAllocatedBytes").GetDouble() >= 0);
-            Assert.True(row.GetProperty("DecodeThenRegexAllocatedBytes").GetDouble() >= 0);
-        });
-    }
-
-    private static string ClassifyRatio(double ratio)
-        => ratio <= 0.98
-            ? "Win"
-            : ratio <= 1.02
-                ? "TieCandidate"
-                : "Gap";
-
-    [Fact]
-    public void PublicOperationRowsContainMeasuredValues()
-    {
-        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Benchmarks.json")));
-        var sections = document.RootElement.GetProperty("Sections");
-
-        AssertPositiveRow(sections.GetProperty("dotnet-performance"), "common/split-words");
-        AssertPositiveRow(sections.GetProperty("dotnet-performance"), "common/replace-words");
-        AssertPositiveRow(sections.GetProperty("dotnet-performance-compiled"), "common/split-words");
-        AssertPositiveRow(sections.GetProperty("dotnet-performance-compiled"), "common/replace-words");
-
-        // Script prefix workloads aggregate public Match calls, not Count calls.
-        using var parity = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
-        foreach (var row in parity.RootElement.GetProperty("Rows").EnumerateArray())
-        {
-            var expectedOperation = row.GetProperty("CaseId").GetString() switch
-            {
-                "lokad/lexer/number" or "lokad/docs/inline-doc-prefix" => "MatchLoop",
-                "lokad/imports/module-imports" or "lokad/folding/region-marker" => "Count",
-                _ => null,
-            };
-            if (expectedOperation is not null)
-                Assert.Equal(expectedOperation, row.GetProperty("Operation").GetString());
-        }
-    }
-
-    private static void AssertPositiveRow(JsonElement section, string caseId)
-    {
-        var measurement = section.GetProperty("Cases").GetProperty(caseId);
-        Assert.True(measurement.GetProperty("Utf8Regex").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("Utf8Compiled").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("PredecodedRegex").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("CompiledRegex").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("DecodeThenRegex").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("DecodeThenCompiledRegex").GetDouble() > 0);
-        Assert.True(measurement.GetProperty("Utf8RegexAllocatedBytes").GetDouble() >= 0);
-        Assert.True(measurement.GetProperty("Utf8CompiledAllocatedBytes").GetDouble() >= 0);
-        Assert.True(measurement.GetProperty("PredecodedRegexAllocatedBytes").GetDouble() >= 0);
-        Assert.True(measurement.GetProperty("CompiledRegexAllocatedBytes").GetDouble() >= 0);
-        Assert.True(measurement.GetProperty("DecodeThenRegexAllocatedBytes").GetDouble() >= 0);
-        Assert.True(measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetDouble() >= 0);
-    }
-
-    private static void AssertSection(JsonElement sections, string sectionName, int expectedCount)
-    {
-        var cases = sections.GetProperty(sectionName).GetProperty("Cases");
-        Assert.Equal(expectedCount, cases.EnumerateObject().Count());
-        foreach (var benchmarkCase in cases.EnumerateObject())
-        {
-            var measurement = benchmarkCase.Value;
-            var requestedIterations = measurement.GetProperty("RequestedIterations").GetInt32();
-            Assert.Contains(measurement.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2", "IndependentSixLaneV3" });
-            Assert.True(requestedIterations > 0, benchmarkCase.Name);
-            Assert.True(measurement.GetProperty("EffectiveIterations").GetInt32() >= requestedIterations, benchmarkCase.Name);
-            Assert.True(measurement.GetProperty("Samples").GetInt32() >= 5, benchmarkCase.Name);
-            AssertPositiveRow(sections.GetProperty(sectionName), benchmarkCase.Name);
-            if (measurement.GetProperty("MeasurementProtocol").GetString() == "IndependentSixLaneV3")
-            {
-                string[] metrics = ["Utf8Regex", "Utf8Compiled", "PredecodedRegex", "CompiledRegex", "DecodeThenRegex", "DecodeThenCompiledRegex"];
-                var counts = measurement.GetProperty("LaneIterations").EnumerateArray().Select(x => x.GetInt32()).ToArray();
-                var samples = measurement.GetProperty("SampleMicroseconds").EnumerateArray().ToArray();
-                Assert.Equal(6, counts.Length);
-                Assert.Equal(6, samples.Length);
-                for (var lane = 0; lane < counts.Length; lane++)
+                var value = row.Value;
+                Assert.True(value.GetProperty("ManagedUs").GetDouble() > 0);
+                Assert.True(value.GetProperty("ReferenceUs").GetDouble() > 0);
+                Assert.True(value.GetProperty("DecodeUs").GetDouble() > 0);
+                Assert.True(value.GetProperty("ManagedBytes").GetDouble() >= 0);
+                Assert.True(value.GetProperty("ReferenceBytes").GetDouble() >= 0);
+                var source = root.GetProperty("Sources").GetProperty(value.GetProperty("Source").GetString()!);
+                var status = value.GetProperty("Status").GetString();
+                Assert.Contains(status, new[] { "Win", "TieCandidate", "Gap", "Unqualified" });
+                if (status == "Unqualified")
                 {
-                    Assert.True(counts[lane] >= requestedIterations);
-                    var durations = samples[lane].EnumerateArray().Select(x => x.GetDouble()).Order().ToArray();
-                    Assert.Equal(measurement.GetProperty("Samples").GetInt32(), durations.Length);
-                    Assert.All(durations, duration => Assert.True(double.IsFinite(duration) && duration > 0));
-                    Assert.Equal(durations[durations.Length / 2] / counts[lane], measurement.GetProperty(metrics[lane]).GetDouble(), 8);
+                    Assert.False(string.IsNullOrWhiteSpace(value.GetProperty("Reason").GetString()));
+                    continue;
                 }
+                Assert.False(source.GetProperty("TrackedDirty").GetBoolean());
+                Assert.False(string.IsNullOrWhiteSpace(source.GetProperty("CoreAssembly").GetString()));
+                var ratio = value.GetProperty("ManagedUs").GetDouble() / value.GetProperty("ReferenceUs").GetDouble();
+                Assert.Equal(ratio, value.GetProperty("Ratio").GetDouble());
+                Assert.Equal(ratio <= .98 ? "Win" : ratio <= 1.02 ? "TieCandidate" : "Gap", status);
             }
-
-            var environment = measurement.GetProperty("Environment");
-            Assert.False(environment.GetProperty("TrackedDirty").GetBoolean(), benchmarkCase.Name);
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("SourceCommit").GetString()), benchmarkCase.Name);
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Runtime").GetString()), benchmarkCase.Name);
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("OperatingSystem").GetString()), benchmarkCase.Name);
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Processor").GetString()), benchmarkCase.Name);
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("TieredPgo").GetString()), benchmarkCase.Name);
         }
+        Assert.Equal("MatchLoop", sections.GetProperty("lokad").GetProperty("lokad/lexer/number").GetProperty("Operation").GetString());
+        Assert.Equal("Count", sections.GetProperty("lokad").GetProperty("lokad/imports/module-imports").GetProperty("Operation").GetString());
     }
 
-    private static void AssertPairedSections(JsonElement sections, string firstName, string secondName)
+    [Fact]
+    public void ReadmeTablesMatchSummaryValuesAndDescendingRatios()
     {
-        var first = sections.GetProperty(firstName).GetProperty("Cases");
-        var second = sections.GetProperty(secondName).GetProperty("Cases");
-        foreach (var benchmarkCase in first.EnumerateObject())
+        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("bench/Snapshots/Core.json")));
+        var readme = File.ReadAllText(FindRepositoryFile("README.md")).ReplaceLineEndings("\n");
+        foreach (var (section, marker) in new[] { ("dotnet-performance", "DOTNET_PERFORMANCE"), ("dotnet-performance-compiled", "DOTNET_PERFORMANCE_COMPILED"), ("lokad", "LOKAD"), ("lokad-compiled", "LOKAD_COMPILED") })
         {
-            var other = second.GetProperty(benchmarkCase.Name);
-            Assert.Equal(
-                ProjectPairedMeasurement(benchmarkCase.Value),
-                ProjectPairedMeasurement(other));
-        }
-    }
-
-    private static string ProjectPairedMeasurement(JsonElement measurement)
-        => (
-            measurement.GetProperty("RequestedIterations").GetRawText() + ";" +
-            measurement.GetProperty("EffectiveIterations").GetRawText() + ";" +
-            measurement.GetProperty("Samples").GetRawText() + ";" +
-            measurement.GetProperty("Utf8Regex").GetRawText() + ";" +
-            measurement.GetProperty("Utf8Compiled").GetRawText() + ";" +
-            measurement.GetProperty("PredecodedRegex").GetRawText() + ";" +
-            measurement.GetProperty("CompiledRegex").GetRawText() + ";" +
-            measurement.GetProperty("DecodeThenRegex").GetRawText() + ";" +
-            measurement.GetProperty("DecodeThenCompiledRegex").GetRawText() + ";" +
-            measurement.GetProperty("Utf8RegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("Utf8CompiledAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("PredecodedRegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("CompiledRegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("DecodeThenRegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("Environment").GetRawText());
-
-    private static string FindRepositoryFile(string fileName)
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var candidate = Path.Combine(directory.FullName, fileName);
-            if (File.Exists(candidate))
+            var start = readme.IndexOf($"<!-- BEGIN GENERATED {marker} BENCHMARKS -->", StringComparison.Ordinal);
+            var end = readme.IndexOf($"<!-- END GENERATED {marker} BENCHMARKS -->", StringComparison.Ordinal);
+            Assert.True(start >= 0 && end > start);
+            var rows = document.RootElement.GetProperty("Sections").GetProperty(section);
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var previous = double.PositiveInfinity;
+            var offset = 2;
+            foreach (var line in readme[start..end].Split('\n'))
             {
-                return candidate;
+                if (line.StartsWith("| Case |", StringComparison.Ordinal))
+                {
+                    previous = double.PositiveInfinity;
+                    offset = line.Contains("| Operation |", StringComparison.Ordinal) ? 3 : 2;
+                }
+                if (!line.StartsWith("| `", StringComparison.Ordinal)) continue;
+                var cells = line.Split('|');
+                var id = cells[1].Trim().Trim('`');
+                Assert.True(seen.Add(id), $"Duplicate table row: {section}/{id}");
+                var row = rows.GetProperty(id);
+                var managed = row.GetProperty("ManagedUs").GetDouble();
+                var reference = row.GetProperty("ReferenceUs").GetDouble();
+                Assert.Equal(managed.ToString("N3", CultureInfo.InvariantCulture) + " us", cells[offset].Trim());
+                Assert.Equal(reference.ToString("N3", CultureInfo.InvariantCulture) + " us", cells[offset + 1].Trim());
+                Assert.Equal(row.GetProperty("DecodeUs").GetDouble().ToString("N3", CultureInfo.InvariantCulture) + " us", cells[offset + 2].Trim());
+                var ratio = managed / reference;
+                Assert.True(ratio <= previous, $"Wrong ratio order: {section}/{id}");
+                Assert.Equal(ratio.ToString(ratio is > 0 and < .01 ? "G2" : "F2", CultureInfo.InvariantCulture) + "x", cells[^2].Trim());
+                previous = ratio;
             }
-
-            directory = directory.Parent;
+            Assert.Equal(rows.EnumerateObject().Count(), seen.Count);
         }
-
-        throw new FileNotFoundException($"Could not locate repository file '{fileName}'.");
     }
-    private static string HashNormalizedSnapshotBytes(string path)
+
+    private static string FindRepositoryFile(string name)
     {
-        // Mirror BenchmarkSnapshotHash: snapshot files travel across autocrlf checkouts.
-        var text = File.ReadAllText(path, Encoding.UTF8).Replace("\r\n", "\n");
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            var path = Path.Combine(directory.FullName, name);
+            if (File.Exists(path)) return path;
+        }
+        throw new FileNotFoundException(name);
     }
 }

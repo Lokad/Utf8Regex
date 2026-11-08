@@ -302,7 +302,7 @@ internal static partial class PythonReBenchmarkReporter
                 ScalingFamilies = snapshot.ScalingFamilies,
             });
         }
-        Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
+        Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
         return 0;
     }
 
@@ -316,13 +316,13 @@ internal static partial class PythonReBenchmarkReporter
             return 1;
         }
 
-        if (!File.Exists(SnapshotFileName))
+        if (!File.Exists(GetPythonReSnapshotPath()))
         {
-            Console.Error.WriteLine($"PythonRe snapshot '{Path.GetFullPath(SnapshotFileName)}' does not exist.");
+            Console.Error.WriteLine($"PythonRe snapshot '{GetPythonReSnapshotPath()}' does not exist.");
             return 1;
         }
 
-        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(SnapshotFileName));
+        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(GetPythonReSnapshotPath()));
         if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
@@ -347,7 +347,7 @@ internal static partial class PythonReBenchmarkReporter
             ScalingFamilies = snapshot.ScalingFamilies,
         });
         Console.WriteLine();
-        Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
+        Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
         return 0;
     }
 
@@ -411,10 +411,11 @@ internal static partial class PythonReBenchmarkReporter
     private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot)
     {
         var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
-        var snapshotPath = Path.GetFullPath(SnapshotFileName);
+        var snapshotPath = GetPythonReSnapshotPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
         BenchmarkFileWriter.WriteTextAtomically(snapshotPath, json + Environment.NewLine);
-
-        RewritePythonReBenchmarkMarkdown(snapshot);
+        WriteBenchmarkSummary(snapshot);
+        WritePythonReBenchmarkMarkdown();
     }
 
     private static int MeasureCase(string id, int iterations, int samples)
@@ -1749,11 +1750,8 @@ internal static partial class PythonReBenchmarkReporter
             "--",
             ".",
             ":(exclude)README.md",
-            ":(exclude)README.Benchmarks.json",
-            ":(exclude)README.Parity.json",
-            ":(exclude)PCRE2.Benchmarks.json",
             ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-            ":(exclude)PythonRe.Benchmarks.json",
+            ":(exclude)bench/Snapshots",
             ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md");
         var untrackedStatus = RunGit(
             "ls-files",

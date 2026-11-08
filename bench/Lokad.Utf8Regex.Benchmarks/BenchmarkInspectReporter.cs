@@ -1248,7 +1248,7 @@ internal static partial class BenchmarkInspectReporter
     {
         _ = iterationsText;
         _ = samplesText;
-        var snapshot = LoadReadmeBenchmarkSnapshot();
+        var snapshot = LoadReadmePresentationSnapshot();
         foreach (var section in ParseReadmeSections(sectionsText))
         {
             Console.Write(BuildReadmeSectionMarkdownFromSnapshot(section, snapshot));
@@ -1260,8 +1260,8 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunRewriteReadmeBenchmarkMarkdown()
     {
-        RewriteReadmeFromSnapshot(LoadReadmeBenchmarkSnapshot());
-        Console.WriteLine($"Rewrote README.md benchmark sections from {ReadmeBenchmarkSnapshotFileName}.");
+        RewriteReadmeFromSnapshot(LoadReadmePresentationSnapshot());
+        Console.WriteLine("Rewrote README.md benchmark sections from bench/Snapshots/Core.json.");
         return 0;
     }
 
@@ -1416,7 +1416,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot()
     {
-        var path = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
+        var path = BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = File.ReadAllText(path, Encoding.UTF8);
         return JsonSerializer.Deserialize<ReadmeBenchmarkSnapshot>(json, ReadmeBenchmarkSnapshotJsonOptions) ?? throw new InvalidOperationException($"Could not deserialize {ReadmeBenchmarkSnapshotFileName}.");
     }
@@ -1424,10 +1424,12 @@ internal static partial class BenchmarkInspectReporter
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
         snapshot.SchemaVersion = 6;
-        var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
+        var path = BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
         WriteReadmeParityReport(snapshot, path);
+        WriteReadmeBenchmarkSummary(snapshot);
     }
 
     private static string FindRepoFile(string fileName)
@@ -1809,7 +1811,7 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.DotNetPerformance:
                 writer.WriteLine("## DotNetPerformance Benchmarks");
                 writer.WriteLine();
-                writer.WriteLine("These numbers are stored in `README.Benchmarks.json` and refreshed incrementally from the `DotNetPerformanceReplica` suite in `Release`. They compare:");
+                writer.WriteLine("These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and refreshed incrementally from the `DotNetPerformanceReplica` suite in `Release`. They compare:");
                 writer.WriteLine("- `Utf8Regex`: direct UTF-8 input");
                 writer.WriteLine("- `.NET predecoded`: `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`");
@@ -1841,7 +1843,7 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.DotNetPerformanceCompiled:
                 writer.WriteLine("## DotNetPerformance Benchmarks (Compiled)");
                 writer.WriteLine();
-                writer.WriteLine("These numbers are stored in `README.Benchmarks.json` and refreshed incrementally from the `DotNetPerformanceReplica` suite in `Release`. They compare:");
+                writer.WriteLine("These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and refreshed incrementally from the `DotNetPerformanceReplica` suite in `Release`. They compare:");
                 writer.WriteLine("- `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`");
                 writer.WriteLine("- `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`");
@@ -1873,7 +1875,7 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.Lokad:
                 writer.WriteLine("## Lokad Benchmarks");
                 writer.WriteLine();
-                writer.WriteLine("These numbers are stored in `README.Benchmarks.json` and refreshed incrementally from the combined `LokadReplica` suite in `Release`. They compare:");
+                writer.WriteLine("These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and refreshed incrementally from the combined `LokadReplica` suite in `Release`. They compare:");
                 writer.WriteLine("- `Utf8Regex`: direct UTF-8 input");
                 writer.WriteLine("- `.NET predecoded`: `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`");
@@ -1891,7 +1893,7 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.LokadCompiled:
                 writer.WriteLine("## Lokad Benchmarks (Compiled)");
                 writer.WriteLine();
-                writer.WriteLine("These numbers are stored in `README.Benchmarks.json` and refreshed incrementally from the combined `LokadReplica` suite in `Release`. They compare:");
+                writer.WriteLine("These numbers are stored in [the Core summary](bench/Snapshots/Core.json) and refreshed incrementally from the combined `LokadReplica` suite in `Release`. They compare:");
                 writer.WriteLine("- `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`");
                 writer.WriteLine("- `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`");
@@ -1917,7 +1919,7 @@ internal static partial class BenchmarkInspectReporter
     {
         writer.WriteLine();
         writer.WriteLine("Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.");
-        writer.WriteLine("Ratios describe recorded medians; qualification verdicts and unqualified rows are recorded separately in [README.Parity.json](README.Parity.json).");
+        writer.WriteLine("Ratios describe recorded medians. [The compact summary](bench/Snapshots/Core.json) retains qualification verdicts and exact raw-evidence references; the full parity report is generated from the archived raw snapshot.");
     }
 
     private static IEnumerable<ReadmeBenchmarkSection> GetReadmeTargetsForCase(string caseId)
@@ -6081,11 +6083,8 @@ internal static partial class BenchmarkInspectReporter
                 "--",
                 ".",
                 ":(exclude)README.md",
-                ":(exclude)README.Benchmarks.json",
-                ":(exclude)README.Parity.json",
-                ":(exclude)PythonRe.Benchmarks.json",
-                ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-                ":(exclude)PCRE2.Benchmarks.json",
+                ":(exclude)bench/Snapshots",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
                 ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
                 ":(exclude)bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md")),
             HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),

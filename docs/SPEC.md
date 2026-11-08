@@ -747,4 +747,4 @@ Qualify scalar/boundary, grammar, captures, RTL/NonBacktracking, malformed-input
 interruption, admission and lifetime behavior through public fixtures. Benchmark
 only equal-result workloads with warm throughput against both strict-decode and
 predecoded controls. Historical measurements are not current qualification:
-[benchmark snapshots](../README.Benchmarks.json).
+[benchmark summary](../bench/Snapshots/Core.json).

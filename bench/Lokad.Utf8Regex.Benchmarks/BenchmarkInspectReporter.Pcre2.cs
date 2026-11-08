@@ -1162,7 +1162,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static Pcre2BenchmarkSnapshot LoadPcre2BenchmarkSnapshot()
     {
-        var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName);
+        var path = GetPcre2SnapshotPath();
         if (!File.Exists(path))
         {
             return new Pcre2BenchmarkSnapshot();
@@ -1194,10 +1194,12 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SavePcre2BenchmarkSnapshot(Pcre2BenchmarkSnapshot snapshot)
     {
-        var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName);
+        var path = GetPcre2SnapshotPath();
         var json = JsonSerializer.Serialize(snapshot, Pcre2BenchmarkSnapshotJsonOptions);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
-        RewritePcre2BenchmarkMarkdown(snapshot);
+        WritePcre2BenchmarkSummary(snapshot);
+        RewritePcre2BenchmarkMarkdown();
     }
 
     private static IReadOnlyList<Pcre2BenchmarkSection> ParsePcre2Sections(string? sectionsText)
