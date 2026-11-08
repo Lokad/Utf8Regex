@@ -1755,24 +1755,6 @@ internal static partial class BenchmarkInspectReporter
         return ratio.ToString(ratio is > 0 and < 0.01 ? "G2" : "F2", CultureInfo.InvariantCulture) + "x";
     }
 
-    private static string ReplaceMarkedSection(string text, string beginMarker, string endMarker, string replacement)
-    {
-        var start = text.IndexOf(beginMarker, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            throw new InvalidOperationException($"README marker not found: {beginMarker}");
-        }
-
-        var end = text.IndexOf(endMarker, start, StringComparison.Ordinal);
-        if (end < 0)
-        {
-            throw new InvalidOperationException($"README marker not found: {endMarker}");
-        }
-
-        end += endMarker.Length;
-        return text[..start] + replacement + text[end..];
-    }
-
     private static string GetMarkedSection(string text, string beginMarker, string endMarker)
     {
         var start = text.IndexOf(beginMarker, StringComparison.Ordinal);
@@ -1977,12 +1959,8 @@ internal static partial class BenchmarkInspectReporter
         foreach (var section in ParseReadmeSections(null))
         {
             var markerName = GetReadmeMarkerName(section);
-            var beginMarker = $"<!-- BEGIN GENERATED {markerName} BENCHMARKS -->";
-            var endMarker = $"<!-- END GENERATED {markerName} BENCHMARKS -->";
-            var replacement = beginMarker + Environment.NewLine
-                + BuildReadmeSectionMarkdownFromSnapshot(section, snapshot).TrimEnd()
-                + Environment.NewLine + endMarker;
-            readme = ReplaceMarkedSection(readme, beginMarker, endMarker, replacement);
+            readme = BenchmarkFileWriter.ReplaceGeneratedSection(
+                readme, markerName, BuildReadmeSectionMarkdownFromSnapshot(section, snapshot));
         }
 
         File.WriteAllText(readmePath, readme, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -6106,9 +6084,9 @@ internal static partial class BenchmarkInspectReporter
                 ":(exclude)README.Benchmarks.json",
                 ":(exclude)README.Parity.json",
                 ":(exclude)PythonRe.Benchmarks.json",
-                ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+                ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
                 ":(exclude)PCRE2.Benchmarks.json",
-                ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+                ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
                 ":(exclude)bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md")),
             HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),
             Runtime = RuntimeInformation.FrameworkDescription,

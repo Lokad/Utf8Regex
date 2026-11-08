@@ -82,7 +82,7 @@ runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 
 ## Benchmarks
 
-The tables were refreshed on **4 November 2026** using **.NET 11 RC3**
+The tables were refreshed on **7 November 2026** using **.NET 11 RC3**
 (`11.0.0-rc.3.26522.148`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
 They measure public operations, including strict UTF-8 validation and required
 result materialization. Values come from
@@ -105,8 +105,8 @@ subject, so it measures a hit.
 phases; [bench.ps1](bench.ps1) supports focused single-case iterations.
 
 Profile comparisons are in the
-[PythonRe](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) and
-[PCRE2](src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md) benchmark pages.
+[PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks) and
+[PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) README sections.
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks

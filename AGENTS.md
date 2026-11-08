@@ -95,7 +95,7 @@ old comparisons after source or binaries change.
   existing paired protocol; do not refresh data merely to update provenance.
 - PCRE.NET is a private benchmark-only native comparator. Keep it out of shipped
   projects and mark unsupported/result-incompatible rows with exclusion reasons.
-  Command details live in the profile benchmark pages and CLI help.
+  Command details live in the profile README benchmark sections and CLI help.
 
 ## Package delivery
 

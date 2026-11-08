@@ -598,6 +598,6 @@ Assert.Throws<OperationCanceledException>(() => regex.Count("cat horse"u8, 0, ca
 ```
 
 Use the [package README](../src/Lokad.Utf8Regex.PythonRe/README.md) for call examples
-and [benchmarks](../src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) for measurement scope.
+and [benchmarks](../src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks) for measurement scope.
 Safe finite defaults, complete preparation/retention containment and full grammar
 equivalence are not implied.

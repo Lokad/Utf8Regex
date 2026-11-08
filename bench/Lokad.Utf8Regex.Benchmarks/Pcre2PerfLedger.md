@@ -9,7 +9,7 @@ The original ledger, including identities, comparisons, limitations and follow-u
 remains in Git history. No measurements are rerun by this page.
 
 Use the [snapshot JSON](../../PCRE2.Benchmarks.json) and its
-[generated page](../../src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md) for recorded row
+[generated page](../../src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) for recorded row
 provenance and Status. They identify their own dates and exclusions; historical
 rows do not qualify today's engine. Do not maintain another manually copied
 qualification summary or priority queue in this file.

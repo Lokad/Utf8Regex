@@ -1752,9 +1752,9 @@ internal static partial class PythonReBenchmarkReporter
             ":(exclude)README.Benchmarks.json",
             ":(exclude)README.Parity.json",
             ":(exclude)PCRE2.Benchmarks.json",
-            ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
             ":(exclude)PythonRe.Benchmarks.json",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md");
         var untrackedStatus = RunGit(
             "ls-files",
             "--others",

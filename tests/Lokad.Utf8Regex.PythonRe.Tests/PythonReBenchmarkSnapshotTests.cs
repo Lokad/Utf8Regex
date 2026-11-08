@@ -166,49 +166,56 @@ public sealed class PythonReBenchmarkSnapshotTests
             cases.GetProperty("family/count").GetProperty("ComparatorOwner").GetString());
 
         var snapshotPath = FindRepositoryFile("PythonRe.Benchmarks.json");
-        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"));
-        var hash = HashNormalizedSnapshotBytes(snapshotPath);
-        var cpythonVersions = cases.EnumerateObject()
-            .Select(static benchmarkCase => benchmarkCase.Value
-                .GetProperty("Cpython")
-                .GetProperty("Environment")
-                .GetProperty("Version")
-                .GetString())
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/README.md"))
+            .ReplaceLineEndings("\n");
+        Assert.StartsWith("# Lokad.Utf8Regex.PythonRe\n", page, StringComparison.Ordinal);
+        Assert.Contains($"Snapshot SHA-256: `{HashNormalizedSnapshotBytes(snapshotPath)}`", page, StringComparison.Ordinal);
         Assert.Contains($"Catalog SHA-256: `{catalogSha256}`", page, StringComparison.Ordinal);
-        Assert.All(catalogCaseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
-        Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
-        Assert.Contains("`Rbyte` is representation-neutral engine evidence", page, StringComparison.Ordinal);
-        Assert.Contains("## Operation ownership and managed route", page, StringComparison.Ordinal);
-        Assert.Contains("## Coverage summary", page, StringComparison.Ordinal);
-        Assert.Contains("### Reused subjects and corpus identities", page, StringComparison.Ordinal);
-        Assert.Contains("### Direct matching", page, StringComparison.Ordinal);
-        Assert.Contains("### Scaling evidence", page, StringComparison.Ordinal);
-        Assert.Contains("every alternating paired sample", page, StringComparison.Ordinal);
-        Assert.Contains("--verify-pythonre-scaling", page, StringComparison.Ordinal);
-        Assert.All(s_scalingFamilyIds, familyId =>
-            Assert.Contains($"#### `{familyId}`", page, StringComparison.Ordinal));
-        Assert.Contains("contextual uncached-construction throughput", page, StringComparison.Ordinal);
+        Assert.Contains("<!-- BEGIN GENERATED PYTHONRE BENCHMARKS -->", page, StringComparison.Ordinal);
+        Assert.Contains("<!-- END GENERATED PYTHONRE BENCHMARKS -->", page, StringComparison.Ordinal);
+        Assert.Contains("| Ratio (lower is better) |", page, StringComparison.Ordinal);
+        Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
+        Assert.All(s_scalingFamilyIds, id => Assert.Contains($"| `{id}` |", page, StringComparison.Ordinal));
+        foreach (var section in cases.EnumerateObject().GroupBy(static row =>
+            row.Value.GetProperty("Coverage").GetProperty("Section").GetString()))
+        {
+            var start = page.IndexOf($"### {section.Key}\n", StringComparison.Ordinal);
+            Assert.True(start >= 0, $"Missing result section: {section.Key}");
+            var end = page.IndexOf("\n### ", start + 1, StringComparison.Ordinal);
+            var body = end < 0 ? page[start..] : page[start..end];
+            var previous = -1;
+            foreach (var item in section.Select(static row =>
+            {
+                var qualification = row.Value.GetProperty("Qualification");
+                var ratio = qualification.GetProperty("Status").GetString() != "Unqualified" &&
+                    qualification.TryGetProperty("PairedEvidence", out var pair) && pair.ValueKind == JsonValueKind.Object
+                    ? pair.GetProperty("StrongRatioMedian").GetDouble() : (double?)null;
+                return (Row: row, Ratio: ratio);
+            }).OrderByDescending(static item => item.Ratio ?? double.NegativeInfinity)
+                .ThenBy(static item => item.Row.Name, StringComparer.Ordinal))
+            {
+                var row = item.Row;
+                var at = body.IndexOf($"| `{row.Name}` |", StringComparison.Ordinal);
+                Assert.True(at > previous, $"Wrong ratio order or missing row: {row.Name}");
+                previous = at;
+                var line = body[at..].Split('\n')[0].Split('|');
+                Assert.Equal(8, line.Length);
+                var pair = row.Value.GetProperty("Qualification").GetProperty("PairedEvidence");
+                var managed = pair.GetProperty("ManagedMedianMicroseconds").GetDouble();
+                var reference = pair.GetProperty("CpythonMedianMicroseconds").GetDouble();
+                Assert.Equal(managed.ToString("N3", System.Globalization.CultureInfo.InvariantCulture) + " us", line[3].Trim());
+                Assert.Equal(reference.ToString("N3", System.Globalization.CultureInfo.InvariantCulture) + " us", line[4].Trim());
+                Assert.Equal(item.Ratio is double ratio
+                    ? ratio.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "x" : "—", line[6].Trim());
+            }
+        }
         var statusCounts = cases.EnumerateObject()
-            .GroupBy(
-                static benchmarkCase => benchmarkCase.Value
-                    .GetProperty("Qualification")
-                    .GetProperty("Status")
-                    .GetString() ?? throw new InvalidOperationException("PythonRe Status must be a string."),
-                StringComparer.Ordinal)
+            .GroupBy(static row => row.Value.GetProperty("Qualification").GetProperty("Status").GetString()!)
             .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
-        Assert.Contains(
-            $"Public Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
-            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, " +
-            $"`{statusCounts.GetValueOrDefault("CpythonFaster")}` CPython faster, " +
-            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, " +
-            $"`{statusCounts.GetValueOrDefault("Unqualified")}` unqualified",
-            page,
-            StringComparison.Ordinal);
-        Assert.DoesNotContain(" CPU |", page, StringComparison.Ordinal);
-        Assert.All(cpythonVersions, version => Assert.Contains($"CPython {version}", page, StringComparison.Ordinal));
+        Assert.Contains($"Public Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
+            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, `{statusCounts.GetValueOrDefault("CpythonFaster")}` CPython faster, " +
+            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, `{statusCounts.GetValueOrDefault("Unqualified")}` unqualified",
+            page, StringComparison.Ordinal);
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)

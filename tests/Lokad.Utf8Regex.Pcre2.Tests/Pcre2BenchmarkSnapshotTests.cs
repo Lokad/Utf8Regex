@@ -112,49 +112,57 @@ public sealed class Pcre2BenchmarkSnapshotTests
         }
 
         var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
-        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"));
-        var hash = HashNormalizedSnapshotBytes(snapshotPath);
-        var statusCounts = operationRows
-            .GroupBy(static row => row.Value.GetProperty("PcreNetNativeStatus").GetString())
-            .ToDictionary(static group => group.Key!, static group => group.Count(), StringComparer.Ordinal);
-        Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
-        Assert.Contains("PCRE.NET / PCRE2 NFA elapsed", page, StringComparison.Ordinal);
-        Assert.Contains(
-            $"Comparator Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
-            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, " +
-            $"`{statusCounts.GetValueOrDefault("NativeFaster")}` native faster, " +
-            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, " +
-            $"`{statusCounts.GetValueOrDefault("Unqualified")}` unqualified, " +
-            $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
-            page,
-            StringComparison.Ordinal);
-        Assert.Contains($"Rows with paired qualification evidence: `{pairedRowCount}/101`", page, StringComparison.Ordinal);
-        if (pairedRowCount > 0)
+        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/README.md"))
+            .ReplaceLineEndings("\n");
+        Assert.StartsWith("# Lokad.Utf8Regex.Pcre2\n", page, StringComparison.Ordinal);
+        Assert.Contains($"Snapshot SHA-256: `{HashNormalizedSnapshotBytes(snapshotPath)}`", page, StringComparison.Ordinal);
+        Assert.Contains("<!-- BEGIN GENERATED PCRE2 BENCHMARKS -->", page, StringComparison.Ordinal);
+        Assert.Contains("<!-- END GENERATED PCRE2 BENCHMARKS -->", page, StringComparison.Ordinal);
+        Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
+        Assert.Contains("| Ratio (lower is better) |", page, StringComparison.Ordinal);
+        Assert.All(s_scalingFamilies, id => Assert.Contains($"| `{id}` |", page, StringComparison.Ordinal));
+        var statusCounts = operationRows.GroupBy(static row => row.Value.GetProperty("PcreNetNativeStatus").GetString()!)
+            .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
+        Assert.Contains($"Comparator Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
+            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, `{statusCounts.GetValueOrDefault("NativeFaster")}` native faster, " +
+            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, `{statusCounts.GetValueOrDefault("Unqualified")}` unqualified, " +
+            $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded", page, StringComparison.Ordinal);
+        foreach (var section in sections.EnumerateObject())
         {
-            Assert.Contains("Qualification processor sets: `", page, StringComparison.Ordinal);
-            foreach (var row in operationRows)
-                if (row.Value.TryGetProperty("PcreNetNativePair", out var pair))
-                    Assert.Contains($"{pair.GetProperty("ProcessorSetPolicy").GetString()} {pair.GetProperty("ProcessorAffinityMask").GetString()}",
-                        page, StringComparison.Ordinal);
-            Assert.Contains("Managed qualification lifecycle", page, StringComparison.Ordinal);
-            Assert.Contains("IQR ", page, StringComparison.Ordinal);
-            Assert.Contains("Plan SHA-256", page, StringComparison.Ordinal);
+            var operation = section.Name.Split('-')[^1] switch
+            {
+                "ismatch" => "IsMatch", "count" => "Count", "enumerate" => "EnumerateMatches",
+                "matchmany" => "MatchMany", "replace" => "Replace", _ => throw new InvalidOperationException(),
+            };
+            var title = section.Name.StartsWith("pcre2-managed-compatible-", StringComparison.Ordinal) ? "Compatible" : "PCRE2-only";
+            var start = page.IndexOf($"### {title} {operation}\n", StringComparison.Ordinal);
+            Assert.True(start >= 0, $"Missing section: {section.Name}");
+            var end = page.IndexOf("\n### ", start + 1, StringComparison.Ordinal);
+            var body = end < 0 ? page[start..] : page[start..end];
+            var previous = -1;
+            foreach (var item in section.Value.GetProperty("Cases").EnumerateObject().Select(static row =>
+            {
+                var status = row.Value.GetProperty("PcreNetNativeStatus").GetString();
+                var ratio = status is not ("Excluded" or "Unqualified") &&
+                    row.Value.TryGetProperty("PcreNetNativePair", out var pair) && pair.ValueKind == JsonValueKind.Object
+                    ? pair.GetProperty("RatioMedian").GetDouble() : (double?)null;
+                return (Row: row, Ratio: ratio);
+            }).OrderByDescending(static row => row.Ratio ?? double.NegativeInfinity)
+                .ThenBy(static row => row.Row.Name, StringComparer.Ordinal))
+            {
+                var at = body.IndexOf($"| `{item.Row.Name}` |", StringComparison.Ordinal);
+                Assert.True(at > previous, $"Wrong ratio order or missing row: {section.Name}/{item.Row.Name}");
+                previous = at;
+                var line = body[at..].Split('\n')[0].Split('|');
+                Assert.Equal(7, line.Length);
+                Assert.Equal(item.Ratio is double ratio ? ratio.ToString("F2", CultureInfo.InvariantCulture) + "x" : "—", line[5].Trim());
+                if (item.Row.Value.TryGetProperty("PcreNetNativePair", out var pair))
+                {
+                    Assert.Equal(pair.GetProperty("ManagedMedianMicroseconds").GetDouble().ToString("N3", CultureInfo.InvariantCulture) + " us", line[2].Trim());
+                    Assert.Equal(pair.GetProperty("ComparatorMedianMicroseconds").GetDouble().ToString("N3", CultureInfo.InvariantCulture) + " us", line[3].Trim());
+                }
+            }
         }
-        Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
-        Assert.Contains("interquartile spread ratios", page, StringComparison.Ordinal);
-        Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
-        Assert.Contains($"Native build fingerprint: `{buildFingerprintSha256}`", page, StringComparison.Ordinal);
-        Assert.Contains("## Qualified comparator plans", page, StringComparison.Ordinal);
-        Assert.Contains("Comparator qualification lifecycle (`PcreMatchBuffer8Bit`)", page, StringComparison.Ordinal);
-        Assert.Contains("not thread-safe and not reentrant", page, StringComparison.Ordinal);
-        Assert.Contains("Retained native match-data heap-frame high water: unavailable", page, StringComparison.Ordinal);
-        Assert.Contains("median of five managed-thread allocation probes", page, StringComparison.Ordinal);
-        Assert.Contains("Utf8Pcre2 managed alloc | Comparator managed alloc", page, StringComparison.Ordinal);
-        Assert.Contains("--qualify-pcre2-comparator-case-reversed", page, StringComparison.Ordinal);
-        Assert.Contains("--verify-pcre2-qualification-consistency", page, StringComparison.Ordinal);
-        Assert.Contains("--emit-pcre2-priority-report\",\"relative", page, StringComparison.Ordinal);
-        Assert.Contains("--emit-pcre2-priority-report\",\"absolute", page, StringComparison.Ordinal);
-        Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
 
         Assert.Contains(
             "<PackageReference Include=\"PCRE.NET\" Version=\"1.5.0\" PrivateAssets=\"all\" />",

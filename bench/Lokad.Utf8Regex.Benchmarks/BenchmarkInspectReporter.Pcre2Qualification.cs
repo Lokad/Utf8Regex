@@ -52,9 +52,9 @@ internal static partial class BenchmarkInspectReporter
             ":(exclude)README.Benchmarks.json",
             ":(exclude)README.Parity.json",
             ":(exclude)PythonRe.Benchmarks.json",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
             ":(exclude)PCRE2.Benchmarks.json",
-            ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md");
+            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md");
         if (unexpectedWorktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PCRE2 qualification.");
