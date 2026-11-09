@@ -77,7 +77,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
     internal PosixBenchmarkResult[] ReadTrace(bool native)
     {
         if (_case.Operation == PosixBenchmarkOperation.IsMatch) return [Execute(native ? 4 : 0)];
-        if (_case.Operation == PosixBenchmarkOperation.Captures) return [Execute(native ? 4 : 0)];
+        if (_case.Operation == PosixBenchmarkOperation.Captures) return ReadCaptureTrace(native ? 4 : 0);
         var result = new List<PosixBenchmarkResult>();
         if (native)
         {
@@ -97,6 +97,25 @@ internal sealed class PosixBenchmarkContext : IDisposable
             }
         }
         return result.ToArray();
+    }
+
+    // Untimed preflight observes every independent record. Keep the timed loop's
+    // reused destination and last-result consumption unchanged.
+    internal PosixBenchmarkResult[] ReadCaptureTrace(int lane)
+    {
+        var result = new PosixBenchmarkResult[_case.Records];
+        for (var record = 0; record < result.Length; record++)
+        {
+            if (lane == 4) result[record] = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes), _case.Records);
+            else
+            {
+                var whole = _managed[lane].Match(_input, _groups, _case.StartOffsetInBytes,
+                    lane == 0 ? default : _token.Token, lane == 2 ? _account : null);
+                result[record] = Result(whole.Success ? _case.Records : 0, whole);
+            }
+        }
+        if (_account.Used != 0) throw new InvalidOperationException("POSIX preflight leaked working storage.");
+        return result;
     }
 
     private PosixBenchmarkResult ExecuteNative()

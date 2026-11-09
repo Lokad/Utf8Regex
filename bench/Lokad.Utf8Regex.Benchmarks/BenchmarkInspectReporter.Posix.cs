@@ -41,11 +41,19 @@ internal static partial class BenchmarkInspectReporter
     {
         var expected = PosixBenchmarkCatalog.Expected(row.Id);
         for (var lane = 0; lane < 4; lane++)
+        {
             if (context.Execute(lane) != expected) throw new InvalidOperationException($"POSIX {row.Id}/{PosixLanes[lane]} differs from the pinned result.");
+            if (row.Records > 1)
+            {
+                var records = context.ReadCaptureTrace(lane);
+                if (records.Length != row.Records || records.Any(actual => actual != expected))
+                    throw new InvalidOperationException($"POSIX {row.Id}/{PosixLanes[lane]} repeated captures changed.");
+                if (row.Id == "capture/sku007" && records.Sum(actual =>
+                    1 + actual.Group1.LengthInBytes + actual.Group2.IndexInBytes + actual.Group2.LengthInBytes) != 40960)
+                    throw new InvalidOperationException("The observed sku007 capture checksum changed.");
+            }
+        }
         if (context.OutstandingWorkingBytes != 0) throw new InvalidOperationException("POSIX preflight leaked working storage.");
-        if (row.Id == "capture/sku007" &&
-            (1 + expected.Group1.LengthInBytes + expected.Group2.IndexInBytes + expected.Group2.LengthInBytes) * expected.Count != 40960)
-            throw new InvalidOperationException("The sku007 capture checksum changed.");
         return context.Execute(4) == expected && context.ReadTrace(false).SequenceEqual(context.ReadTrace(true))
             ? null : "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.";
     }
@@ -117,24 +125,7 @@ internal static partial class BenchmarkInspectReporter
                 }
             }
             result.PeakFundedWorkingBytes = context.PeakWorkingBytes;
-            result.Status = "Excluded";
-            result.StatusReason = exclusion;
-            if (result.Lanes.Values.Any(lane => lane.Milliseconds.Min() < 20))
-            { result.Status = "Unqualified"; result.StatusReason = "A sample fell below the existing 20 ms duration floor."; }
-            else if (exclusion is null)
-            {
-                var logRatios = result.Lanes["Unlimited"].Microseconds.Zip(result.Lanes["NativeNfa"].Microseconds,
-                    (managed, native) => Math.Log(managed / native)).ToArray();
-                var confidence = BenchmarkPairedStatistics.BootstrapMedianLogRatio(logRatios, Pcre2QualificationBootstrapSeed, Pcre2QualificationBootstrapResamples);
-                result.Ratio = Math.Exp(BenchmarkPairedStatistics.Median(logRatios));
-                result.Lower95 = Math.Exp(confidence.Lower); result.Upper95 = Math.Exp(confidence.Upper);
-                result.OrderEffect = Median(logRatios.Where((_, index) => (index & 1) == 0).Select(Math.Exp)) /
-                    Median(logRatios.Where((_, index) => (index & 1) != 0).Select(Math.Exp));
-                var (status, reason) = DerivePairedStatus(confidence.Lower, confidence.Upper, result.OrderEffect,
-                    BenchmarkPairedStatistics.InterquartileSpread(result.Lanes["Unlimited"].Microseconds),
-                    BenchmarkPairedStatistics.InterquartileSpread(result.Lanes["NativeNfa"].Microseconds), true);
-                result.Status = status.ToString(); result.StatusReason = reason;
-            }
+            QualifyPosixRow(result);
             snapshot.Cases[benchmarkCase.Id] = result;
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             BenchmarkFileWriter.WriteTextAtomically(path, JsonSerializer.Serialize(snapshot, PosixJsonOptions) + "\n");
@@ -166,6 +157,28 @@ internal static partial class BenchmarkInspectReporter
     private static void CheckPosixResult(PosixBenchmarkResult result, string id)
     { if (result != PosixBenchmarkCatalog.Expected(id)) throw new InvalidOperationException($"POSIX timed result changed: {id}"); }
 
+    private static void QualifyPosixRow(PosixBenchmarkRow row)
+    {
+        row.Status = "Excluded"; row.StatusReason = row.NativeExclusion;
+        row.Ratio = row.Lower95 = row.Upper95 = null; row.OrderEffect = 0;
+        if (row.Lanes.Values.Any(lane => lane.Milliseconds.Min() < 20))
+        { row.Status = "Unqualified"; row.StatusReason = "A sample fell below the existing 20 ms duration floor."; }
+        else if (row.NativeExclusion is null)
+        {
+            var logRatios = row.Lanes["Unlimited"].Microseconds.Zip(row.Lanes["NativeNfa"].Microseconds,
+                (managed, native) => Math.Log(managed / native)).ToArray();
+            var confidence = BenchmarkPairedStatistics.BootstrapMedianLogRatio(logRatios, Pcre2QualificationBootstrapSeed, Pcre2QualificationBootstrapResamples);
+            row.Ratio = Math.Exp(BenchmarkPairedStatistics.Median(logRatios));
+            row.Lower95 = Math.Exp(confidence.Lower); row.Upper95 = Math.Exp(confidence.Upper);
+            row.OrderEffect = Median(logRatios.Where((_, index) => (index & 1) == 0).Select(Math.Exp)) /
+                Median(logRatios.Where((_, index) => (index & 1) != 0).Select(Math.Exp));
+            var (status, reason) = DerivePairedStatus(confidence.Lower, confidence.Upper, row.OrderEffect,
+                BenchmarkPairedStatistics.InterquartileSpread(row.Lanes["Unlimited"].Microseconds),
+                BenchmarkPairedStatistics.InterquartileSpread(row.Lanes["NativeNfa"].Microseconds), true);
+            row.Status = status.ToString(); row.StatusReason = reason;
+        }
+    }
+
     private static JsonElement PosixResultJson(PosixBenchmarkResult result)
     {
         static object? Range(Utf8ValueMatch value) => value.Success ? new
@@ -182,7 +195,9 @@ internal static partial class BenchmarkInspectReporter
         File.ReadAllText(BenchmarkSummary.RawPath(PosixRepository(), PosixSnapshotName)), PosixJsonOptions)
         ?? throw new InvalidOperationException("Missing POSIX raw benchmark evidence.");
 
-    private static void WritePosixSummary(PosixBenchmarkSnapshot snapshot)
+    private static void WritePosixSummary(PosixBenchmarkSnapshot snapshot) => BuildPosixSummary(snapshot).Write(PosixRepository());
+
+    private static BenchmarkSummary BuildPosixSummary(PosixBenchmarkSnapshot snapshot)
     {
         var repository = PosixRepository();
         var summary = new BenchmarkSummary
@@ -212,7 +227,7 @@ internal static partial class BenchmarkInspectReporter
                     Reason = lane == "FundedFiniteLive" ? $"Peak covered host working storage {row.PeakFundedWorkingBytes} bytes; zero outstanding loans." : null,
                 });
         }
-        summary.Write(repository);
+        return summary;
     }
 
     private static void RewritePosixMarkdown(bool verify)
@@ -251,22 +266,59 @@ internal static partial class BenchmarkInspectReporter
     {
         var snapshot = ReadPosixSnapshot();
         var current = CaptureBenchmarkEnvironment();
-        if (snapshot.SchemaVersion != 1 || snapshot.CatalogSha256 != PosixCatalogHash()) throw new InvalidOperationException("POSIX benchmark catalog changed.");
+        var nativeAssembly = GetAssemblyIdentity(typeof(PCRE.PcreRegexUtf8).Assembly);
+        var nativeBuild = PcreNetNativeBenchmarkBaseline.CaptureBuildFingerprint().Sha256;
+        if (snapshot.SchemaVersion != 1 || snapshot.CatalogSha256 != PosixCatalogHash() ||
+            snapshot.Cases.Count != PosixBenchmarkCatalog.Cases.Length)
+            throw new InvalidOperationException("POSIX benchmark catalog changed.");
         foreach (var row in PosixBenchmarkCatalog.Cases)
         {
             if (!snapshot.Cases.TryGetValue(row.Id, out var evidence) || evidence.Status == "Unqualified" ||
                 JsonSerializer.Serialize(evidence.Expected) != JsonSerializer.Serialize(PosixResultJson(PosixBenchmarkCatalog.Expected(row.Id))) ||
                 evidence.InputSha256 != Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(row.Input))) ||
-                evidence.Operation != row.Operation.ToString() || evidence.Records != row.Records || evidence.StartOffsetInBytes != row.StartOffsetInBytes ||
-                evidence.Lanes.Values.Any(lane => lane.Microseconds.Count < 9 || lane.Milliseconds.Min() < 20))
+                evidence.Operation != row.Operation.ToString() || evidence.Records != row.Records || evidence.StartOffsetInBytes != row.StartOffsetInBytes)
                 throw new InvalidOperationException($"POSIX benchmark evidence is incomplete: {row.Id}");
             if (evidence.Environment.CoreAssembly != current.CoreAssembly || evidence.Environment.BenchmarkAssembly != current.BenchmarkAssembly ||
                 evidence.Environment.Runtime != RuntimeInformation.FrameworkDescription ||
-                evidence.PosixAssembly != GetAssemblyIdentity(typeof(Utf8PosixRegex).Assembly))
+                evidence.Environment.TrackedDirty || evidence.Environment.HasUntrackedFiles ||
+                evidence.PosixAssembly != GetAssemblyIdentity(typeof(Utf8PosixRegex).Assembly) ||
+                evidence.NativeAssembly != nativeAssembly || evidence.NativeBuild != nativeBuild)
                 throw new InvalidOperationException($"POSIX benchmark evidence does not identify this loaded source/runtime: {row.Id}");
+            using var context = new PosixBenchmarkContext(row);
+            if (PreflightPosix(row, context) != evidence.NativeExclusion)
+                throw new InvalidOperationException($"POSIX native exclusion changed: {row.Id}");
+            var expectedLanes = PosixLanes.Take(evidence.NativeExclusion is null ? 5 : 4).Order(StringComparer.Ordinal);
+            var sampleCount = evidence.LaneOrders.Count;
+            if (sampleCount is < 9 or > 31 || !evidence.Lanes.Keys.SequenceEqual(expectedLanes) ||
+                !evidence.LaneOrders.SequenceEqual(Enumerable.Range(0, sampleCount).Select(index => (index & 1) == 0 ? "forward" : "reverse")))
+                throw new InvalidOperationException($"POSIX benchmark lanes/orders are incomplete: {row.Id}");
+            foreach (var lane in evidence.Lanes.Values)
+            {
+                if (lane.Iterations <= 0 || lane.Microseconds.Count != sampleCount || lane.Milliseconds.Count != sampleCount ||
+                    lane.AllocatedBytes.Count != sampleCount || lane.AllocatedBytes.Any(value => !double.IsFinite(value) || value < 0) ||
+                    lane.Milliseconds.Any(value => !double.IsFinite(value) || value < 20) ||
+                    lane.Microseconds.Where((value, index) => !double.IsFinite(value) || value <= 0 ||
+                        !Same(value, lane.Milliseconds[index] * 1000 / lane.Iterations)).Any())
+                    throw new InvalidOperationException($"POSIX benchmark samples are inconsistent: {row.Id}");
+            }
+            var recorded = (evidence.Status, evidence.StatusReason, evidence.Ratio, evidence.Lower95, evidence.Upper95, evidence.OrderEffect);
+            QualifyPosixRow(evidence);
+            if (evidence.Status != recorded.Status || evidence.StatusReason != recorded.StatusReason ||
+                !Same(evidence.Ratio, recorded.Ratio) || !Same(evidence.Lower95, recorded.Lower95) ||
+                !Same(evidence.Upper95, recorded.Upper95) || !Same(evidence.OrderEffect, recorded.OrderEffect))
+                throw new InvalidOperationException($"POSIX benchmark qualification differs from its samples: {row.Id}");
+            // Keep the recorded observations after a tolerance-aware recomputation:
+            // platform libm rounding must not rewrite historical summary values.
+            (evidence.Status, evidence.StatusReason, evidence.Ratio, evidence.Lower95, evidence.Upper95, evidence.OrderEffect) = recorded;
         }
+        if (JsonSerializer.Serialize(BuildPosixSummary(snapshot), PosixJsonOptions) !=
+            JsonSerializer.Serialize(BenchmarkSummary.Read(PosixRepository(), "Posix"), PosixJsonOptions))
+            throw new InvalidOperationException("POSIX raw evidence differs from its compact summary.");
         RewritePosixMarkdown(verify: true);
         Console.WriteLine("POSIX catalog, result contracts, durations and loaded identities verified.");
+
+        static bool Same(double? a, double? b) => a is null || b is null ? a == b :
+            Math.Abs(a.Value - b.Value) <= Math.Max(1e-9, Math.Abs(b.Value) * 1e-9);
     }
 
     private sealed class PosixBenchmarkSnapshot

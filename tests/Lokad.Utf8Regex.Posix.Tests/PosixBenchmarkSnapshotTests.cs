@@ -26,7 +26,7 @@ public sealed class PosixBenchmarkSnapshotTests
         Assert.Equal(PosixBenchmarkCatalog.Cases.Length, operations.EnumerateObject().Count());
         var previous = -1;
         foreach (var item in operations.EnumerateObject()
-            .OrderByDescending(static item => item.Value.TryGetProperty("Ratio", out var ratio) ? ratio.GetDouble() : double.NegativeInfinity)
+            .OrderByDescending(static item => DisplayRatio(item.Value) ?? double.NegativeInfinity)
             .ThenBy(static item => item.Name, StringComparer.Ordinal))
         {
             var row = item.Value;
@@ -44,11 +44,14 @@ public sealed class PosixBenchmarkSnapshotTests
             previous = at;
             var cells = page[at..].Split('\n')[0].Split('|');
             Assert.Equal(row.GetProperty("ManagedUs").GetDouble().ToString("F2", CultureInfo.InvariantCulture), cells[3].Trim());
-            Assert.Equal(row.TryGetProperty("Ratio", out var value) ? value.GetDouble().ToString("F2", CultureInfo.InvariantCulture) : "—", cells[7].Trim());
+            Assert.Equal(DisplayRatio(row)?.ToString("F2", CultureInfo.InvariantCulture) ?? "—", cells[7].Trim());
             foreach (var lane in new[] { "FiniteLive", "FundedFiniteLive", "FiniteDeadlineLive" })
                 Assert.True(root.GetProperty("Sections").GetProperty(lane).GetProperty(item.Name).GetProperty("ManagedUs").GetDouble() > 0);
         }
     }
+
+    private static double? DisplayRatio(JsonElement row) => row.GetProperty("Status").GetString() is "Excluded" or "Unqualified"
+        ? null : row.TryGetProperty("Ratio", out var ratio) ? ratio.GetDouble() : null;
 
     private static string Read(string name)
     {
