@@ -302,7 +302,10 @@ internal sealed class PosixWorkspace
         start = end = -1;
         if (close < 0) return false;
         var open = _best[close].Opening;
-        for (var parent = _program.Parents[tag]; parent >= 0; parent = _program.Parents[parent])
+        // Tag zero encloses the entire winning trace, including when it is a
+        // public root capture. Only repeated inner parents can make a group's
+        // last occurrence absent from its parent's final occurrence.
+        for (var parent = _program.Parents[tag]; parent > 0; parent = _program.Parents[parent])
         {
             Charge(ref invocation);
             var parentClose = _state[_lastOffset + parent];
