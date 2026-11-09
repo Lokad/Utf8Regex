@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -17,63 +18,89 @@ public sealed class PosixPublicContractTests
     public void AdapterReferencesOnlyCoreAndBclWithoutAnExternalMatcher()
         => AssemblyDependencyInventory.AssertNoExternalMatchers(typeof(Utf8PosixRegex).Assembly.Location);
 
-    [Fact]
-    public void PublicMatchPreservesWinnerForEveryCaptureSpanSize()
+    public static IEnumerable<object[]> SelectionCases() => FixtureRows("cases");
+    public static IEnumerable<object[]> IterationCases() => FixtureRows("iterationCases");
+    public static IEnumerable<object[]> RejectedPatterns()
     {
-        using var fixtures = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Corpus", "selection.json")));
+        using var fixtures = Fixtures();
+        foreach (var pattern in fixtures.RootElement.GetProperty("rejectedPatterns").EnumerateArray())
+            yield return [pattern.GetString()!];
+    }
+
+    private static JsonDocument Fixtures() => JsonDocument.Parse(File.ReadAllText(
+        Path.Combine(AppContext.BaseDirectory, "Corpus", "selection.json")));
+
+    private static IEnumerable<object[]> FixtureRows(string family)
+    {
+        using var fixtures = Fixtures();
+        foreach (var row in fixtures.RootElement.GetProperty(family).EnumerateArray())
+            yield return [row.GetProperty("id").GetString()!, row.GetRawText()];
+    }
+
+    [Theory]
+    [MemberData(nameof(RejectedPatterns))]
+    public void UnsupportedPatternsFailAtPublicAdmission(string pattern)
+        => Assert.Throws<ArgumentException>(() => new Utf8PosixRegex(pattern));
+
+    [Theory]
+    [MemberData(nameof(SelectionCases))]
+    public void PublicMatchPreservesWinnerForEveryCaptureSpanSize(string id, string fixture)
+    {
+        using var document = JsonDocument.Parse(fixture);
+        var row = document.RootElement;
+        Assert.Equal(id, row.GetProperty("id").GetString());
         using var token = new CancellationTokenSource();
         var account = new Account();
-        foreach (var row in fixtures.RootElement.GetProperty("cases").EnumerateArray())
+        var pattern = row.GetProperty("pattern").GetString()!;
+        var options = row.TryGetProperty("options", out var flag) ? Enum.Parse<PosixCompileOptions>(flag.GetString()!) : default;
+        var regex = new Utf8PosixRegex(pattern, options, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
+        var start = row.TryGetProperty("startOffsetInBytes", out var floor) ? floor.GetInt32() : 0;
+        var expected = row.GetProperty("groups");
+        // IsMatch has no search floor; the fixture's selected Match does.
+        if (start == 0) Assert.Equal(expected.ValueKind != JsonValueKind.Null, regex.IsMatch(input, token.Token, account));
+        var value = regex.Match(input, start, token.Token, account);
+        Check(value, expected.ValueKind == JsonValueKind.Null ? default : expected[0]);
+        for (var size = 0; size <= regex.GroupCount + 2; size++)
         {
-            var pattern = row.GetProperty("pattern").GetString()!;
-            var options = row.TryGetProperty("options", out var flag) ? Enum.Parse<PosixCompileOptions>(flag.GetString()!) : default;
-            var regex = new Utf8PosixRegex(pattern, options, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
-            var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
-            var start = row.TryGetProperty("startOffsetInBytes", out var floor) ? floor.GetInt32() : 0;
-            var expected = row.GetProperty("groups");
-            Assert.Equal(expected.ValueKind != JsonValueKind.Null, regex.IsMatch(input, token.Token, account));
-            var value = regex.Match(input, start, token.Token, account);
-            Check(value, expected.ValueKind == JsonValueKind.Null ? default : expected[0]);
-            for (var size = 0; size <= regex.GroupCount + 2; size++)
+            var sentinel = new Utf8ValueMatch(true, true, 99, 2, 99, 2);
+            var output = Enumerable.Repeat(sentinel, size).ToArray();
+            var actual = regex.Match(input, output, start, token.Token, account);
+            Assert.Equal(value, actual);
+            for (var slot = 0; slot < output.Length; slot++)
             {
-                var sentinel = new Utf8ValueMatch(true, true, 99, 2, 99, 2);
-                var output = Enumerable.Repeat(sentinel, size).ToArray();
-                var actual = regex.Match(input, output, start, token.Token, account);
-                Assert.Equal(value, actual);
-                for (var slot = 0; slot < output.Length; slot++)
-                {
-                    if (slot > regex.GroupCount) Assert.Equal(sentinel, output[slot]);
-                    else Check(output[slot], expected.ValueKind == JsonValueKind.Null ? default : expected[slot]);
-                }
-                Assert.Equal(0UL, account.Used);
+                if (slot > regex.GroupCount) Assert.Equal(sentinel, output[slot]);
+                else Check(output[slot], expected.ValueKind == JsonValueKind.Null ? default : expected[slot]);
             }
+            Assert.Equal(0UL, account.Used);
         }
     }
 
-    [Fact]
-    public void PublicCountAndCursorAgreeOnScalarEmptyProgression()
+    [Theory]
+    [MemberData(nameof(IterationCases))]
+    public void PublicCountAndCursorAgreeOnScalarEmptyProgression(string id, string fixture)
     {
-        using var fixtures = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Corpus", "selection.json")));
-        foreach (var row in fixtures.RootElement.GetProperty("iterationCases").EnumerateArray())
+        using var document = JsonDocument.Parse(fixture);
+        var row = document.RootElement;
+        Assert.Equal(id, row.GetProperty("id").GetString());
+        var regex = new Utf8PosixRegex(row.GetProperty("pattern").GetString()!);
+        var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
+        var start = row.TryGetProperty("startOffsetInBytes", out var floor) ? floor.GetInt32() : 0;
+        var expected = row.GetProperty("matches"); var count = 0;
+        var account = new Account();
+        Assert.Equal(expected.GetArrayLength(), regex.Count(input, start, workingMemoryAllowance: account));
+        using var cursor = regex.CreateMatchCursor(input, start, workingMemoryAllowance: account);
+        var output = new Utf8ValueMatch[regex.GroupCount + 1];
+        while (cursor.MoveNext(output, out var match))
         {
-            var regex = new Utf8PosixRegex(row.GetProperty("pattern").GetString()!);
-            var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
-            var start = row.TryGetProperty("startOffsetInBytes", out var floor) ? floor.GetInt32() : 0;
-            var expected = row.GetProperty("matches"); var count = 0;
-            var account = new Account();
-            Assert.Equal(expected.GetArrayLength(), regex.Count(input, start, workingMemoryAllowance: account));
-            using var cursor = regex.CreateMatchCursor(input, start, workingMemoryAllowance: account);
-            var output = new Utf8ValueMatch[regex.GroupCount + 1];
-            while (cursor.MoveNext(output, out var match))
-            {
-                Check(match, expected[count++]);
-                Assert.Equal(match, output[0]);
-            }
-            Assert.Equal(expected.GetArrayLength(), count);
-            Assert.All(output, value => Assert.False(value.Success));
-            Assert.Equal(0UL, account.Used);
+            Assert.True(count < expected.GetArrayLength(), "Cursor produced an extra match.");
+            Check(match, expected[count++]);
+            Assert.Equal(match, output[0]);
         }
+        Assert.Equal(expected.GetArrayLength(), count);
+        Assert.All(output, value => Assert.False(value.Success));
+        Assert.Equal(0UL, account.Used);
     }
 
     [Fact]
@@ -136,6 +163,41 @@ public sealed class PosixPublicContractTests
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("a"u8, output, 0, token.Token, account)).CancellationToken);
             Assert.True(triggered);
             Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
+        }
+        finally { diagnostics.Complete(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        using var token = new CancellationTokenSource();
+        var account = new Account();
+        var regex = new Utf8PosixRegex("((a|aa)*)", default,
+            deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
+        var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+        var output = new[] { retained, retained, retained }; var triggered = false;
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            // Test-only phase observation through the existing checkpoint hook:
+            // do not cancel at an arbitrary step or add a production phase switch.
+            if (triggered || !new StackTrace().GetFrames().Any(frame =>
+                frame.GetMethod() is { Name: "BetterHistory", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
+            triggered = true;
+            if (deadline) now = 101; else token.Cancel();
+        });
+        try
+        {
+            if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("aaaaaaaaaaaa"u8, output, 0, token.Token, account));
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+                regex.Match("aaaaaaaaaaaa"u8, output, 0, token.Token, account)).CancellationToken);
+            Assert.True(triggered, "The injection must reach history comparison, after a competing acceptance.");
+            Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
+            Assert.True(retained.Success);
         }
         finally { diagnostics.Complete(); }
     }
@@ -211,6 +273,50 @@ public sealed class PosixPublicContractTests
         if (start >= 0) { Assert.Equal(start, groups[slot].IndexInBytes); Assert.Equal(length, groups[slot].LengthInBytes); }
     }
 
+    [Theory]
+    [InlineData(0, "a", "")]
+    [InlineData(1, "a", "")]
+    [InlineData(2, "a", "")]
+    [InlineData(3, "a", "")]
+    [InlineData(4, "a", "")]
+    [InlineData(5, "a", "")]
+    [InlineData(6, "a", "")]
+    [InlineData(5, "😀", "éz")]
+    public void RepeatedNestedAlternativesFollowTheDerivedLongestFirstPartition(int count, string atom, string prefix)
+    {
+        // Among equal whole matches, the first outer occurrence takes two
+        // atoms when possible, then the next does. The final occurrence is
+        // one atom iff count is odd. Its other child is absent, including
+        // when that child participated in an earlier outer occurrence.
+        var regex = new Utf8PosixRegex($"(({atom})|({atom}{atom}))*");
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(atom, count)));
+        var floor = Encoding.UTF8.GetByteCount(prefix); var width = Encoding.UTF8.GetByteCount(atom);
+        var output = new Utf8ValueMatch[4];
+        var whole = regex.Match(input, output, floor);
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length, count * atom.Length, floor, count * width), whole);
+        Assert.Equal(whole, output[0]);
+        if (count == 0) { Assert.All(output[1..], capture => Assert.False(capture.Success)); return; }
+        var last = (count & 1) == 0 ? 2 : 1;
+        var expected = new Utf8ValueMatch(true, true, prefix.Length + (count - last) * atom.Length,
+            last * atom.Length, floor + (count - last) * width, last * width);
+        Assert.Equal(expected, output[1]);
+        Assert.Equal(expected, output[last == 1 ? 2 : 3]);
+        Assert.False(output[last == 1 ? 3 : 2].Success);
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    public void RequiredNullableIterationsKeepOnlyNecessaryEmptyTails(int count)
+    {
+        // Earlier occurrences consume the available atoms. The two required
+        // iterations force a final empty capture only when fewer than two
+        // atoms exist; optional empty iterations lose to a shorter history.
+        var regex = new Utf8PosixRegex("(a?){2,4}"); var groups = new Utf8ValueMatch[2];
+        Assert.Equal(count, regex.Match(Encoding.ASCII.GetBytes(new string('a', count)), groups).LengthInBytes);
+        var length = count >= 2 ? 1 : 0; var start = count - length;
+        Assert.Equal(new Utf8ValueMatch(true, true, start, length, start, length), groups[1]);
+    }
+
     [Fact]
     public void SmallAsciiLanguagesHaveIndependentLeftmostLongestWholeMatches()
     {
@@ -261,7 +367,7 @@ public sealed class PosixPublicContractTests
     }
 
     [Fact]
-    public void CursorWorkIsCumulativeAndNumericWorkingAdmissionIncludesGrowthOverlap()
+    public void CursorWorkIsCumulativeAcrossAdvances()
     {
         var account = new Account();
         var regex = new Utf8PosixRegex("a", default, Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 256 });
@@ -272,7 +378,11 @@ public sealed class PosixPublicContractTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.InRange(hits, 1, 127); Assert.Equal(0UL, account.Used);
         Assert.True(regex.IsMatch("a"u8));
+    }
 
+    [Fact]
+    public void NumericWorkingAdmissionIncludesGrowthOverlap()
+    {
         var broad = new Utf8PosixRegex("(a|aa)*"); var measured = new Account();
         Assert.True(broad.Match("aaaaaa"u8, workingMemoryAllowance: measured).Success);
         var capped = new Utf8PosixRegex("(a|aa)*", default, Timeout.InfiniteTimeSpan,
