@@ -2,8 +2,8 @@
 
 The optional POSIX ERE adapter for .NET 10/11 matches Unicode scalars over strict
 UTF-8, with leftmost-longest selection and hierarchical capture priority.
-It is under qualification for 0.5.0, and is not available in 0.4.0 or the qualified
-three-package dev.55 candidate. See the [supported ERE contract](../../docs/SPEC-POSIX.md).
+It is included in the qualified [four-package 0.5.0-dev.56 candidate](../../bench/Experiments/DeliveryDev56-20261108/README.md),
+and is not available in the published 0.4.0 release. See the [supported ERE contract](../../docs/SPEC-POSIX.md).
 
 The adapter depends only on Core. Execution is fully managed and checked,
 without a native or BCL regex fallback.
