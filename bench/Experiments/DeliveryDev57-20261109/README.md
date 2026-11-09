@@ -19,6 +19,9 @@ The existing evidence verifier now checks required lanes/orders, finite sample
 alignment, native identities, recomputed statuses and exact raw/summary agreement.
 A valid isolated fixture passed and nine targeted corruptions failed. These are
 correctness probes, not performance evidence.
+The probes cover missing deadline output, native identity, coherent raw/summary
+drift, false status, sample alignment, an extra native lane, summary value, false
+exclusion and incorrect units.
 
 The POSIX catalog has 25 timed lanes instead of 66. It measures longest selection,
 capture participation, nesting/nullable histories and representative finite-policy
@@ -120,5 +123,16 @@ Both volatile-VM archives are copied off and verified. The structured
 publication, downstream adoption, complete flavor equivalence and further tuning.
 
 The imported summaries and authored candidate-status links follow the frozen
-producer revision. They do not change or requalify package bytes. Final
-documentation CI is pending; no repeated package or benchmark matrix is needed.
+producer revision. They do not change or requalify package bytes. Final relevant
+CI for `3d0bec30` passed Windows/Linux, run `42615453342`, completed
+2026-11-09 at 12:22:57 UTC. This receipt-only closure needs no repeated matrix.
+
+The request audit covers the production/dead-material review, independent tests,
+POSIX-specific benchmark scope, measured simplifications and current parity queue
+for all three adapters. R0–R5's bounded batch and this package/consumer/operating-cost
+boundary are complete. The larger gaps above remain follow-up work; R4 completed
+its investigation without a promoted change. No general parity claim.
+
+Automatic approval review rejected deletion of temporary delivery extraction/input
+directories with a policy block. Those ignored task directories remain intact;
+qualified assets and accepted evidence are unaffected.

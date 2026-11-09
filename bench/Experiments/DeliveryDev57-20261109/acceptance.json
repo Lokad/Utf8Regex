@@ -53,8 +53,27 @@
     "R4 bounded investigation",
     "R5"
   ],
-  "Pending": [
-    "Final summary/documentation CI"
+  "Pending": [],
+  "Complete": true,
+  "FinalDocumentationCI": {
+    "Revision": "3d0bec30ec14c880ca2c0d0f0cc9f088f71df932",
+    "Run": 42615453342,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "CompletedAtUtc": "2026-11-09T12:22:57Z"
+  },
+  "ApprovedMilestonesComplete": [
+    "R0",
+    "R1",
+    "R2",
+    "R3 bounded simplifications",
+    "R4 bounded investigation",
+    "R5",
+    "dev57 four-profile delivery boundary"
   ],
-  "Complete": false
+  "RemainingWork": "Qualified parity queue and proof-backed general POSIX history optimization are later work. No general parity, publication or adoption claimed.",
+  "Housekeeping": "Automatic approval review rejected removal of ignored delivery extraction/input scratch with a policy block; directories remain. No effect on accepted assets/evidence."
 }
