@@ -135,6 +135,47 @@ public sealed class PosixPublicContractTests
         Assert.False(new Utf8PosixRegex("^a").Match("ba"u8, 1).Success);
     }
 
+    [Fact]
+    public void ValidatedCoordinateProjectionKeepsScalarsAcrossCountingBlocks()
+    {
+        const int prefix = 4093, repeats = 2048;
+        var input = Encoding.UTF8.GetBytes(new string('x', prefix) + "😀" + new string('é', repeats));
+        var regex = new Utf8PosixRegex("(😀)(é+)"); var groups = new Utf8ValueMatch[3];
+        var whole = regex.Match(input, groups, prefix);
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix, repeats + 2, prefix, 4 + 2 * repeats), whole);
+        Assert.Equal(whole, groups[0]);
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix, 2, prefix, 4), groups[1]);
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix + 2, repeats, prefix + 4, 2 * repeats), groups[2]);
+    }
+
+    [Fact]
+    public void CoordinateProjectionWorkRefusalUsesThePublicFailureAndClearsOutput()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "a");
+        using var token = new CancellationTokenSource(); var account = new Account();
+        var baseline = new Utf8PosixRegex("a");
+        var invocation = baseline.StartInvocation(token.Token, account);
+        ulong beforeProjection;
+        Utf8PosixRegex.ValidateInput(input, 8192, ref invocation);
+        var workspace = baseline.CreateWorkspace(ref invocation);
+        try
+        {
+            Assert.True(workspace.Find(input, 8192, false, ref invocation, out _, out _));
+            beforeProjection = invocation.Budget.Steps;
+        }
+        finally { workspace.Release(ref invocation); }
+        // ClearOutput consumes one step. The next charge is the coordinate
+        // scan, whose shared helper reports an internal breach to the adapter.
+        var limited = new Utf8PosixRegex("a", default, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = beforeProjection + 1 });
+        var output = new[] { new Utf8ValueMatch(true, true, 0, 1, 0, 1) };
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            limited.Match(input, output, 8192, token.Token, account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+        Assert.Equal(beforeProjection + 2, error.Requested);
+        Assert.False(output[0].Success); Assert.Equal(0UL, account.Used);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

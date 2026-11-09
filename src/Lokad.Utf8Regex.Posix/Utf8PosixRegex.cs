@@ -167,11 +167,17 @@ public sealed class Utf8PosixRegex
 
     private static Utf8ValueMatch ProjectRange(ReadOnlySpan<byte> input, int from, int to, ref Utf8SliceInvocation invocation)
     {
-        var startBreach = Utf8Validation.TryValidate(input[..from], ref invocation, out var prefix);
-        if (startBreach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-        var lengthBreach = Utf8Validation.TryValidate(input[from..to], ref invocation, out var content);
-        if (lengthBreach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-        return new(true, true, prefix.Utf16Length, content.Utf16Length, from, to - from);
+        // Invocation entry validated the whole subject; the scalar interpreter
+        // produced complete ranges. Count coordinates without validating again.
+        try
+        {
+            var prefix = Utf8SliceBufferWork.CountUtf16(input[..from], ref invocation);
+            var content = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
+            return new(true, true, prefix, content, from, to - from);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw invocation.Budget.CreateResourceFailure(); }
     }
 
     internal static void ClearOutput(Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
