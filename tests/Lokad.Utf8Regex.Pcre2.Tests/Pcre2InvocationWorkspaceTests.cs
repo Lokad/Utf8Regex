@@ -41,6 +41,48 @@ public sealed class Pcre2InvocationWorkspaceTests
         Bytes(workspace.RepeatRestoreIds) + Bytes(workspace.RepeatRestoreSnapshots));
 
     [Theory]
+    [InlineData("cancellation")]
+    [InlineData("deadline")]
+    [InlineData("working denial")]
+    public void EmptyWorkspaceKeepsOriginalAuthorityAndParentLoan(string interruption)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(0, 0, 8, 0),
+            interruption == "deadline" ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, token.Token);
+        var budget = new Pcre2ResourceBudget(new() { HeapLimitInBytes = 8 }, invocation, false);
+        budget.ReserveWorking(7);
+        var workspace = new Pcre2BacktrackingWorkspace();
+        try
+        {
+            workspace.EnsureInitialized(0, 0, true, ref budget);
+            Assert.Equal(0UL, Physical(ref workspace));
+            if (interruption == "cancellation") token.Cancel();
+            else if (interruption == "deadline") now = 101;
+            else
+            {
+                try { budget.ReserveWorking(2); Assert.Fail("Expected working denial."); }
+                catch (Pcre2MatchException error) { Assert.Equal(Pcre2ErrorKind.HeapLimit, error.ErrorKind); }
+            }
+            Exception? failure = null;
+            try { workspace.EnsureInitialized(0, 0, true, ref budget); }
+            catch (Exception error) { failure = error; }
+            if (interruption == "cancellation")
+                Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            else Assert.Equal(interruption == "deadline" ? Pcre2ErrorKind.Timeout : Pcre2ErrorKind.HeapLimit,
+                Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        }
+        finally
+        {
+            workspace.Dispose(ref budget);
+            Assert.Equal(7UL, budget.ReservedWorkingBytes);
+            budget.ReleaseWorking(7);
+        }
+        Assert.Equal(0UL, budget.ReservedWorkingBytes);
+    }
+
+    [Theory]
     [InlineData(0, 0, true)]
     [InlineData(1, 0, true)]
     [InlineData(0, 2, true)]

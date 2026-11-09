@@ -22,10 +22,10 @@ internal ref struct Pcre2BacktrackingWorkspace
 
     internal bool EnsureInitialized(int repeatCount, int captureSlotCount, bool restoreSubroutines, scoped ref Pcre2ResourceBudget budget)
     {
-        if (_reservedBytes != 0)
+        if (_reservedBytes != 0 || repeatCount == 0 && captureSlotCount == 0)
         {
-            // Reuse still reaches the original synchronous token/deadline and
-            // sticky-denial checkpoint, without charging another acquisition.
+            // Reused or empty capacity still reaches the original synchronous
+            // token/deadline and sticky-denial checkpoint. No vectors need rent.
             budget.ReserveWorking(0);
             return false;
         }
