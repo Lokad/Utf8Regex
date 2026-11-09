@@ -230,10 +230,33 @@ internal sealed class PosixParser
                 merged[merged.Count - 1] = Math.Max(merged[merged.Count - 1], range.End);
             else { merged.Add(range.Start); merged.Add(range.End); }
         }
-        var table = Utf8SliceCategoryTable.ForScalarRanges(merged.Take());
-        var members = _budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
-        members[0] = Utf8SliceNode.CategorySetMember.Create(table, false);
         var mask = _budget.AllocateArray<byte>(16, false);
+        var retained = 0;
+        for (var index = 0; index < merged.Count; index += 2)
+        {
+            _budget.ChargeWork(1);
+            var start = merged[index]; var end = merged[index + 1];
+            for (var value = start; value < Math.Min(end, 128); value++)
+            {
+                _budget.ChargeWork(1);
+                mask[value >> 3] |= (byte)(1 << (value & 7));
+            }
+            if (end > 128)
+            {
+                merged[retained++] = Math.Max(start, 128);
+                merged[retained++] = end;
+            }
+        }
+        merged.Truncate(retained);
+        // Use the existing ASCII representation; keep only non-ASCII ranges in
+        // the table. ASCII-only brackets need no category-table descriptor.
+        Utf8SliceNode.CategorySetMember[] members = [];
+        if (merged.Count != 0)
+        {
+            var table = Utf8SliceCategoryTable.ForScalarRanges(merged.Take());
+            members = _budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
+            members[0] = Utf8SliceNode.CategorySetMember.Create(table, false);
+        }
         return _budget.AllocateObject((mask, negated, members),
             static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, false));
     }
