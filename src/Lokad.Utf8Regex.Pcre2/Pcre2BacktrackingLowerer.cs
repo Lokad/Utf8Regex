@@ -97,29 +97,56 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitNode(
         IPcre2BacktrackingNode node,
-        Pcre2CharacterToken? requiredFollowingLiteral)
+        Pcre2CharacterToken? requiredFollowingToken)
     {
         var budget = Pcre2BacktrackingCompiler.EnterDepth();
         try
         {
             bool CanAutoPossess(
                 Pcre2RepeatBacktrackingNode repeat,
-                Pcre2CharacterToken followingLiteral)
+                Pcre2CharacterToken followingToken)
             {
-                // The current lowering uses an atomic checkpoint. Keep metered plans on
-                // their original instruction/depth accounting until commitment has a
-                // dedicated instruction that preserves those observable limits.
+                // Keep controlled plans on their established instruction/depth
+                // accounting. Uncontrolled plans still meter actual VM/scan work
+                // when invoked with an original token or working allowance.
                 if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
                     repeat.Maximum == 0 ||
                     repeat.Body is not Pcre2TokenBacktrackingNode repeated ||
-                    followingLiteral.Kind != Pcre2CharacterTokenKind.Literal ||
-                    followingLiteral.Options != Pcre2CharacterOptions.None)
+                    followingToken.Options != Pcre2CharacterOptions.None)
                 {
                     return false;
                 }
 
-                var following = followingLiteral.Literal;
+                var following = followingToken.Literal;
                 var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
+                if (followingToken.Kind == Pcre2CharacterTokenKind.WordBoundary)
+                {
+                    // Shortening a word-only run leaves two word scalars next
+                    // to each other, so it cannot make this boundary succeed.
+                    // With minimum zero, giving back the entire run can expose
+                    // a boundary at its start; retain that alternative.
+                    if (repeat.Minimum == 0 || repeated.Token.Options != Pcre2CharacterOptions.None) return false;
+                    if (repeated.Token.Kind == Pcre2CharacterTokenKind.Literal)
+                        return Pcre2CharacterSemantics.IsWord(repeated.Token.Literal, ucp);
+                    if (repeated.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
+                        repeated.Token.CharacterClass.Negated) return false;
+                    foreach (var term in repeated.Token.CharacterClass.Terms)
+                    {
+                        budget.ChargeWork(1);
+                        if (term.Negated || (term.Kind switch
+                        {
+                            Pcre2CharacterClassTermKind.Digit or Pcre2CharacterClassTermKind.Word => false,
+                            Pcre2CharacterClassTermKind.Range =>
+                                !(term.Range.Low >= '0' && term.Range.High <= '9' ||
+                                  term.Range.Low >= 'A' && term.Range.High <= 'Z' ||
+                                  term.Range.Low >= 'a' && term.Range.High <= 'z' ||
+                                  term.Range.Low == '_' && term.Range.High == '_'),
+                            _ => true,
+                        })) return false;
+                    }
+                    return true;
+                }
+                if (followingToken.Kind != Pcre2CharacterTokenKind.Literal) return false;
                 return repeated.Token.Kind switch
                 {
                     Pcre2CharacterTokenKind.Literal =>
@@ -130,7 +157,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 };
             }
 
-            static bool TryGetRequiredLeadingLiteral(
+            static bool TryGetRequiredLeadingToken(
                 IPcre2BacktrackingNode candidate,
                 out Pcre2CharacterToken literal)
             {
@@ -141,40 +168,40 @@ internal sealed class Pcre2BacktrackingLowerer
                     {
                         Token:
                         {
-                            Kind: Pcre2CharacterTokenKind.Literal,
+                            Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.WordBoundary,
                             Options: Pcre2CharacterOptions.None,
                         } token,
                     }:
                         literal = token;
                         return true;
                     case Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence:
-                        return TryGetRequiredLeadingLiteral(sequence.Children[0], out literal);
+                        return TryGetRequiredLeadingToken(sequence.Children[0], out literal);
                     case Pcre2AlternationBacktrackingNode alternation:
                         Pcre2CharacterToken? common = null;
                         foreach (var alternative in alternation.Alternatives)
                         {
-                            if (!TryGetRequiredLeadingLiteral(alternative, out var branchLiteral) ||
-                                common is { } value && value.Literal != branchLiteral.Literal)
+                            if (!TryGetRequiredLeadingToken(alternative, out var branchToken) ||
+                                common is { } value && (value.Kind != branchToken.Kind || value.Literal != branchToken.Literal))
                             {
                                 literal = default;
                                 return false;
                             }
 
-                            common = branchLiteral;
+                            common = branchToken;
                         }
 
-                        if (common is { } commonLiteral)
+                        if (common is { } commonToken)
                         {
-                            literal = commonLiteral;
+                            literal = commonToken;
                             return true;
                         }
                         break;
                     case Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat:
-                        return TryGetRequiredLeadingLiteral(repeat.Body, out literal);
+                        return TryGetRequiredLeadingToken(repeat.Body, out literal);
                     case Pcre2CaptureBacktrackingNode capture:
-                        return TryGetRequiredLeadingLiteral(capture.Body, out literal);
+                        return TryGetRequiredLeadingToken(capture.Body, out literal);
                     case Pcre2AtomicBacktrackingNode atomic:
-                        return TryGetRequiredLeadingLiteral(atomic.Body, out literal);
+                        return TryGetRequiredLeadingToken(atomic.Body, out literal);
                 }
 
                 literal = default;
@@ -191,29 +218,29 @@ internal sealed class Pcre2BacktrackingLowerer
                 case Pcre2SequenceBacktrackingNode sequence:
                     for (var index = 0; index < sequence.Children.Length; index++)
                     {
-                        Pcre2CharacterToken? childFollowingLiteral = null;
+                        Pcre2CharacterToken? childFollowingToken = null;
                         if (index + 1 < sequence.Children.Length)
                         {
-                            if (TryGetRequiredLeadingLiteral(sequence.Children[index + 1], out var nextLiteral))
+                            if (TryGetRequiredLeadingToken(sequence.Children[index + 1], out var nextToken))
                             {
-                                childFollowingLiteral = nextLiteral;
+                                childFollowingToken = nextToken;
                             }
                         }
                         else
                         {
-                            childFollowingLiteral = requiredFollowingLiteral;
+                            childFollowingToken = requiredFollowingToken;
                         }
 
-                        EmitNode(sequence.Children[index], childFollowingLiteral);
+                        EmitNode(sequence.Children[index], childFollowingToken);
                     }
                     return;
                 case Pcre2AlternationBacktrackingNode alternation:
-                    EmitAlternation(alternation, requiredFollowingLiteral);
+                    EmitAlternation(alternation, requiredFollowingToken);
                     return;
                 case Pcre2RepeatBacktrackingNode repeat:
                     var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
-                        requiredFollowingLiteral is { } followingLiteral &&
-                        CanAutoPossess(repeat, followingLiteral);
+                        requiredFollowingToken is { } followingToken &&
+                        CanAutoPossess(repeat, followingToken);
                     if (autoPossessive)
                     {
                         _autoPossessiveRepeatCount++;
@@ -270,7 +297,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 case Pcre2CaptureBacktrackingNode capture:
                     _hasCaptureWrites = true;
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
-                    EmitNode(capture.Body, requiredFollowingLiteral);
+                    EmitNode(capture.Body, requiredFollowingToken);
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
                     return;
                 case Pcre2BackreferenceBacktrackingNode backreference:
@@ -332,7 +359,7 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitAlternation(
         Pcre2AlternationBacktrackingNode alternation,
-        Pcre2CharacterToken? requiredFollowingLiteral)
+        Pcre2CharacterToken? requiredFollowingToken)
     {
         var parentThenPatches = _thenPatches;
         var exitJumps = new List<int>(alternation.Alternatives.Length - 1);
@@ -343,7 +370,7 @@ internal sealed class Pcre2BacktrackingLowerer
             var splitIndex = _instructions.Count;
             _instructions.Add(default);
             var primaryTarget = _instructions.Count;
-            EmitNode(alternation.Alternatives[i], requiredFollowingLiteral);
+            EmitNode(alternation.Alternatives[i], requiredFollowingToken);
             var jumpIndex = _instructions.Count;
             _instructions.Add(default);
             exitJumps.Add(jumpIndex);
@@ -360,7 +387,7 @@ internal sealed class Pcre2BacktrackingLowerer
         }
 
         _thenPatches = parentThenPatches;
-        EmitNode(alternation.Alternatives[^1], requiredFollowingLiteral);
+        EmitNode(alternation.Alternatives[^1], requiredFollowingToken);
         var exitTarget = _instructions.Count;
         foreach (var jumpIndex in exitJumps)
         {

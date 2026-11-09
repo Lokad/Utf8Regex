@@ -222,6 +222,9 @@ Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
 reuse it under the same synchronous invocation lifetime. Required capture and
 assertion storage remains admitted. Work and heap requirements can therefore fall.
+Uncontrolled compilation can also omit rewind state for positive word-only repeats
+before `\b`; explicit finite execution policies retain their established lowering.
+Original tokens and working allowances still meter/admit actual optimized work.
 Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
 most 2048 bytes after whole-subject validation, retaining scalar endpoints and
 bounded work/interruption checks. This can reduce route-dependent work charges.

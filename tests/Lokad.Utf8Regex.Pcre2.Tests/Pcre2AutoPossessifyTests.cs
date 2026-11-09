@@ -5,11 +5,10 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // Auto-possessification soundness (native pcre2_auto_possess.c analog): a
-// greedy single-token repeat followed by a disjoint plain literal may run
-// atomically, but overlapping classes, nullable suffixes, and end-of-pattern
-// must decline. Engagement is proven by the lowered-program counter; behavior
-// is proven by BCL parity on shapes valid in both syntaxes. See the R08 pcre2
-// disposition in PLAN.md.
+// A disjoint literal or required word boundary can make a greedy single-token
+// repeat's shorter alternatives impossible. Keep zero-minimum boundary runs,
+// overlapping classes and nullable suffixes. Counters prove engagement; public
+// ASCII results use BCL only on overlapping semantics.
 public sealed class Pcre2AutoPossessifyTests
 {
     private static void AssertAutoPossessCount(string pattern, int expected)
@@ -74,5 +73,43 @@ public sealed class Pcre2AutoPossessifyTests
         // runner; caseless still routes the backtracking program, where the
         // overlap decline is proven.
         AssertAutoPossessCount(pattern, options, 0);
+    }
+
+    [Fact]
+    public void DateWordBoundaryCommitsOnlyUncontrolledPlans()
+    {
+        const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
+        AssertAutoPossessCount(pattern, 3);
+        var controlled = Utf8Pcre2Regex.Create(pattern, default, default,
+            new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 512 }, Timeout.InfiniteTimeSpan);
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.IsMatch);
+        Assert.Equal(0, program.Program.AutoPossessiveRepeatCount);
+    }
+
+    [Theory]
+    [InlineData(@"\d+\b", "123 ")]
+    [InlineData(@"\d{2,4}\b", "12345 ")]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2019 11/19/201A")]
+    [InlineData(@"([A-Za-z0-9_]+)\b", "abc_12!")]
+    [InlineData(@"\w+\b", "abc_12x")]
+    [InlineData(@"a+(?:\bX|\bY)", "aaaY")]
+    [InlineData(@"\d*\b1", "123x")]
+    [InlineData(@"\d+\B3", "123")]
+    [InlineData(@"[^a]+\bA", "12 A")]
+    [InlineData(@"[\w ]+\bA", "12 A")]
+    [InlineData(@"\d+(?:\b|3)", "123x")]
+    public void BoundaryCommitmentPreservesPublicAsciiResults(string pattern, string inputText)
+        => AssertMatchesBcl(pattern, inputText);
+
+    [Theory]
+    [InlineData(Pcre2CompileOptions.Ucp, "١٢ ", "١٢")]
+    [InlineData(Pcre2CompileOptions.Ucp, "𝟘𝟙 ", "𝟘𝟙")]
+    [InlineData(Pcre2CompileOptions.None, "١٢ ", "")]
+    public void BoundaryWordProofUsesTheSameUnicodeMode(Pcre2CompileOptions options, string input, string expected)
+    {
+        var regex = new Utf8Pcre2Regex(@"\b\d+\b", options);
+        var match = regex.Match(Encoding.UTF8.GetBytes(input));
+        Assert.Equal(expected.Length != 0, match.Success);
+        if (match.Success) Assert.Equal(expected, match.GetValueString());
     }
 }
