@@ -210,6 +210,52 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             }
             case Pcre2CaptureBacktrackingNode capture:
                 return TryExpand(capture.Body, program, out alternatives);
+            case Pcre2ConditionalBacktrackingNode
+            {
+                ConditionKind: Pcre2BacktrackingConditionKind.Assertion,
+                Assertion: { AssertionKind: Pcre2AssertionKind.PositiveLookahead or Pcre2AssertionKind.NegativeLookahead } assertion,
+            } conditional:
+            {
+                var body = assertion.Body;
+                while (body is Pcre2CaptureBacktrackingNode guardCapture)
+                {
+                    budget.ChargeWork(1);
+                    body = guardCapture.Body;
+                }
+                if (body is not Pcre2TokenBacktrackingNode guard ||
+                    !TryGetAsciiClass(guard.Token, out var guardClass) ||
+                    !TryExpand(conditional.YesBranch, program, out var yes) ||
+                    !TryExpand(conditional.NoBranch, program, out var no) ||
+                    yes.Length + no.Length > MaximumAlternatives)
+                    break;
+
+                // Both branches must consume an ASCII byte here. Its membership
+                // decides this one-token lookahead, so intersect the first class
+                // rather than retaining an assertion or conditional executor.
+                // Empty branches and observable/control-dependent guards decline.
+                using var expanded = new Utf8ConstructionBuffer<AsciiCharClass[]>(budget);
+                for (var branch = 0; branch < 2; branch++)
+                {
+                    var requireHit = (branch == 0) == (assertion.AssertionKind == Pcre2AssertionKind.PositiveLookahead);
+                    var low = requireHit ? guardClass.ActualLowMask : ~guardClass.ActualLowMask;
+                    var high = requireHit ? guardClass.ActualHighMask : ~guardClass.ActualHighMask;
+                    foreach (var alternative in branch == 0 ? yes : no)
+                    {
+                        budget.ChargeWork(1);
+                        if (alternative.Length == 0)
+                        {
+                            alternatives = [];
+                            return false;
+                        }
+                        var first = new AsciiCharClass(alternative[0].ActualLowMask & low, alternative[0].ActualHighMask & high);
+                        if (first.IsEmpty) continue;
+                        alternative[0] = first;
+                        expanded.Add(alternative);
+                    }
+                }
+                alternatives = expanded.Take();
+                return true;
+            }
             case Pcre2SubroutineCallBacktrackingNode call:
                 if (TryGetAsciiSubroutineClass(call.Target, program, out var callClass))
                 {

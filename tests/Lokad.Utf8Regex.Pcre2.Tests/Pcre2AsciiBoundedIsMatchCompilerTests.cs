@@ -8,6 +8,71 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     private const string CreditCardPattern = @"(\d{4}[- ]){3}\d{3,4}";
 
     [Theory]
+    [InlineData("^(?(?=(a))abc|def)", "abc", true)]
+    [InlineData("^(?(?=(a))abc|def)", "def", true)]
+    [InlineData("^(?(?=(a))abc|def)", "abd", false)]
+    [InlineData("^(?(?!(a))def|abc)", "def", true)]
+    [InlineData("^(?(?!(a))def|abc)", "abc", true)]
+    [InlineData("^(?(?!(a))def|abc)", "dabc", false)]
+    [InlineData("^(?(?=[ab])[b-d]|[ab])$", "a", false)]
+    [InlineData("^(?(?=[ab])[b-d]|[ab])$", "b", true)]
+    [InlineData("^(?(?=[ab])[b-d]|[ab])$", "c", false)]
+    [InlineData("^(?(?!a)[ab]|[ab])$", "a", true)]
+    [InlineData("^(?(?!a)[ab]|[ab])$", "b", true)]
+    [InlineData("^(?(?!a)[ab]|[ab])$", "c", false)]
+    [InlineData("^x(?(?=([ab]))[a-c]|[a-c])y$", "xcy", true)]
+    [InlineData("^(?(?=a)(?(?!b)a|b)|c)$", "a", true)]
+    public void SingleTokenAssertionConditionalsFilterTheExistingFiniteLanguage(string pattern, string text, bool expected)
+    {
+        var direct = new Utf8Pcre2Regex(pattern);
+        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, direct.IsMatch(input));
+        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+    }
+
+    [Fact]
+    public void ConditionalBooleanProofKeepsScalarFloorsCapturesValidationAndRefusal()
+    {
+        const string pattern = "(?(?=(a))(a)b|(c)d)";
+        var direct = new Utf8Pcre2Regex(pattern);
+        var metered = CreateMetered(pattern, 1_000_000);
+        var input = Encoding.UTF8.GetBytes("😀ab écd");
+        for (var start = 0; start <= input.Length; start++)
+        {
+            if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;
+            Assert.Equal(metered.IsMatch(input, start), direct.IsMatch(input, start));
+            Assert.Equal(metered.IsMatch(input, start, Pcre2MatchOptions.Anchored), direct.IsMatch(input, start, Pcre2MatchOptions.Anchored));
+        }
+        Assert.Equal(2, direct.Count(input));
+        var retained = direct.MatchDetailed(input);
+        Assert.Equal("ab", retained.GetValueString());
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a", retained.GetGroup(2).GetValueString());
+        Assert.False(retained.GetGroup(3).Success);
+        Assert.True(direct.IsMatch("cd"u8));
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Throws<ArgumentException>(() => direct.IsMatch([.. "ab"u8, 0xff]));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token,
+            Assert.Throws<OperationCanceledException>(() => direct.IsMatch("ab"u8, 0, default, canceled.Token)).CancellationToken);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("ab"u8)).ErrorKind);
+    }
+
+    [Theory]
+    [InlineData("^(?(?!(a)(*ACCEPT))def|abc)")]
+    [InlineData("^(?(?=ab)abc|def)")]
+    [InlineData("(?(?<=a)b|c)")]
+    [InlineData("^(?(?=a)a|)$")]
+    [InlineData("^(?(?=a)a?|b)$")]
+    [InlineData("^(?(?=(é))é|a)$")]
+    [InlineData(@"^(?(?=(a))a\1|b)$")]
+    public void UnprovenConditionalLanguagesKeepTheirOwnedVm(string pattern)
+        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
+            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
+
+    [Theory]
     [InlineData(@"^(?1)\d{3}(a)", "a123a", true)]
     [InlineData(@"^(?1)\d{3}(a)", "b123a", false)]
     [InlineData(@"^(?1)\d{3}([a-c])$", "b123c", true)]
