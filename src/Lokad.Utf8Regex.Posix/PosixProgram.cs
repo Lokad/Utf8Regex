@@ -8,12 +8,13 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags)
-    { Scalar = scalar; Parents = parents; CaptureTags = captureTags; }
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest)
+    { Scalar = scalar; Parents = parents; CaptureTags = captureTags; FirstAcceptanceIsLongest = firstAcceptanceIsLongest; }
 
     internal Utf8SliceProgram Scalar { get; }
     internal int[] Parents { get; }
     internal int[] CaptureTags { get; }
+    internal bool FirstAcceptanceIsLongest { get; }
 
     internal static PosixProgram Compile(string pattern, PosixCompileOptions options)
     {
@@ -108,10 +109,47 @@ internal sealed class PosixProgram
         }
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags));
+        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
+        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest),
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest));
         construction.Complete();
         return result;
+    }
+
+    private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        // For one scalar R, each piece consumes x_i in [min_i,max_i]. First
+        // greedy success reserves remaining minima and consumes the maximum
+        // feasible total. Tags outside the loops enclose contiguous pieces:
+        // preorder priority first maximizes each parent's total, then its
+        // children's left-to-right split. Every tag participates exactly once.
+        // Repeated tags, different atoms and control flow need general ranking.
+        var code = program.Instructions;
+        var literal = -1;
+        for (var index = 0; index < code.Length; index++)
+        {
+            budget.ChargeWork(1);
+            var instruction = code[index];
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                continue;
+            if (instruction.Kind == Utf8SliceInstructionKind.Accept)
+                return literal >= 0 && index == code.Length - 1;
+            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && index <= code.Length - 4 &&
+                instruction.A == index + 3 &&
+                code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } repeatEnd && repeatEnd.A == index &&
+                code[index + 3] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == instruction.B)
+            {
+                // Exactly one literal in the body; no public or fictive tag
+                // can acquire repeated occurrence histories through this loop.
+                instruction = code[index + 1];
+                index += 3;
+            }
+            if (instruction.Kind != Utf8SliceInstructionKind.Literal || instruction.B != 0 ||
+                literal >= 0 && literal != instruction.A)
+                return false;
+            literal = instruction.A;
+        }
+        return false;
     }
 
     private static bool ContainsCapture(Utf8SliceNode root, Utf8ConstructionBudget budget)

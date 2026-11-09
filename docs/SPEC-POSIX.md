@@ -126,6 +126,11 @@ also resolve hierarchical capture priority. Whole-only output can omit unobserva
 tag histories because this ERE subset has no capture-dependent acceptance.
 An internal body tag with exactly its enclosing capture's occurrences and
 boundaries can be omitted; descendant priority and public captures remain intact.
+For greedy pieces of one scalar literal, with every tag outside repeated bodies,
+a bounded construction proof can select the first acceptance: suffix minima are
+reserved, the total endpoint is maximal, and nested tags retain preorder priority.
+Different atoms, repeated tags, alternatives and assertions retain general
+competition. The proof adds accounted program metadata, without a second executor.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,

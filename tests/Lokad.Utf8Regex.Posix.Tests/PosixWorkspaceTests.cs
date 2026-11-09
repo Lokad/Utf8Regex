@@ -4,6 +4,17 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixWorkspaceTests
 {
+    [Fact]
+    public void HomogeneousProofEngagesThePublicGapAndDeclinesHistoryCounterexamples()
+    {
+        Assert.True(PosixProgram.Compile("(a*)(a*)", default).FirstAcceptanceIsLongest);
+        Assert.True(PosixProgram.Compile("((😀{0,2})(😀{1,2}))", default).FirstAcceptanceIsLongest);
+        Assert.False(PosixProgram.Compile("a?(ab*)?", default).FirstAcceptanceIsLongest);
+        Assert.False(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
+        Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
+        Assert.False(PosixProgram.Compile("(a*)(b*)", default).FirstAcceptanceIsLongest);
+    }
+
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]

@@ -173,6 +173,7 @@ internal sealed class PosixWorkspace
                             }
                         }
                     }
+                    if (_program.FirstAcceptanceIsLongest) return true;
                     failed = true;
                     break;
                 default: throw new InvalidOperationException($"Unsupported POSIX instruction {instruction.Kind}.");
