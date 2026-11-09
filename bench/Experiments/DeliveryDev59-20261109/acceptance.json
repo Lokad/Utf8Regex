@@ -28,10 +28,8 @@
     "PCRE2 one-token bounded call proof"
   ],
   "ExcludedTrial": "Bulk ASCII repeat path withdrawn after fixed-original public capture comparison",
-  "Pending": [
-    "Final CI after GitHub Actions recovery: both latest workflow runs have internal server errors"
-  ],
-  "Complete": false,
+  "Pending": [],
+  "Complete": true,
   "Full": {
     "Source": "d6120197de6bdeef688836561a7b299dcdaa4096",
     "Seconds": 2837.3646809,
@@ -78,26 +76,52 @@
     }
   ],
   "FinalDocumentationCI": {
-    "Revision": "4895e4fcf44250f7b4f9334ad5635d976e68ac8a",
-    "Run": 42672300686,
-    "Conclusion": "failure",
-    "PassedPlatforms": [
+    "Revision": "987099210820e116264eaecebaa18a22a96b161b",
+    "Run": 42678363036,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
       "Linux"
     ],
-    "MissingPlatforms": [
-      "Windows"
-    ],
-    "InfrastructureError": "Internal server error. Correlation ID: 699b56ad-5e6d-44c1-92a6-85325481322e",
-    "FailedJobsRetry": "GitHub refused: This workflow run cannot be retried",
-    "ActionsIncident": "tp8cghg7tlc4, investigating since 2026-11-09T18:12:37Z",
-    "AcceptanceComplete": false
+    "CompletedAtUtc": "2026-11-09T19:03:45Z"
   },
   "LatestSourceCI": {
-    "Revision": "02ac92dee043233f479407b69e0d140fcd8363e4",
-    "Run": 42673474884,
-    "Conclusion": "failure",
-    "JobsCreated": 0,
-    "InfrastructureError": "Internal server error. Correlation ID: a1a6e36c-8d10-4830-8802-c43de155e34f",
-    "SourceFailureDemonstrated": false
-  }
+    "Revision": "987099210820e116264eaecebaa18a22a96b161b",
+    "Run": 42678363036,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "CompletedAtUtc": "2026-11-09T19:03:45Z"
+  },
+  "InfrastructureFailures": [
+    {
+      "Revision": "4895e4fcf44250f7b4f9334ad5635d976e68ac8a",
+      "Run": 42672300686,
+      "Conclusion": "failure",
+      "PassedPlatforms": [
+        "Linux"
+      ],
+      "MissingPlatforms": [
+        "Windows"
+      ],
+      "InfrastructureError": "Internal server error. Correlation ID: 699b56ad-5e6d-44c1-92a6-85325481322e",
+      "FailedJobsRetry": "GitHub refused: This workflow run cannot be retried",
+      "ActionsIncident": "tp8cghg7tlc4, investigating since 2026-11-09T18:12:37Z",
+      "AcceptanceComplete": false
+    },
+    {
+      "Revision": "02ac92dee043233f479407b69e0d140fcd8363e4",
+      "Run": 42673474884,
+      "Conclusion": "failure",
+      "JobsCreated": 0,
+      "InfrastructureError": "Internal server error. Correlation ID: a1a6e36c-8d10-4830-8802-c43de155e34f",
+      "SourceFailureDemonstrated": false
+    }
+  ],
+  "PostFreezeSourceChanges": [
+    "N12 POSIX root projection, source only",
+    "N13 PCRE2 conditional proof, source only"
+  ]
 }

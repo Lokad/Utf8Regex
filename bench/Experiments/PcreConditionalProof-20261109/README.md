@@ -58,5 +58,5 @@ observations are copied off the VM at
 `artifacts/experiments/pcre-conditional-proof-20261109/evidence.tar.gz`, SHA-256
 `6C83B8924D2918E6328749B0EAC5C32B315541140AC20F30F6907B2B31283376`.
 Windows logs are alongside it. Immutable dev59 packages and generated tables are
-unchanged. No package/catalog qualification was run. Source CI remains pending
-during the GitHub Actions outage; push/check it after service recovery.
+unchanged. Source fc5ce5fb is included in98709921, which passes CI42678363036 on
+Windows/Linux after Actions recovery. No package/catalog qualification was repeated.
