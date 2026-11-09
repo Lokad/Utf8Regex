@@ -53,4 +53,5 @@ Raw patches, worker, before/after graphs, Linux checks and observations are veri
 off VM at `artifacts/experiments/posix-bulk-pop-20261109/evidence.tar.gz`, SHA-256
 `58E745963E21DD01E4125E37B8D2101BE47C82891C0711A7EC1DE86EE7565F89`.
 Windows checks and the test-only resume script are alongside it. Dev61 packages
-and snapshots remain immutable. Source CI follows the scoped commit.
+and snapshots remain immutable. Source CI42715400011 passes Windows/Linux for
+38c42eb8.

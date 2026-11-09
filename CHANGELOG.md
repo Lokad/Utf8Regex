@@ -33,6 +33,9 @@
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
+  Prove fixed-length literal-alternative ties, prune redundant optional empty
+  iterations and discard history buffers in bounded chunks without changing
+  capture priority, working admission or interruption guarantees.
   Prove first-acceptance selection for homogeneous literal repeats with captures
   outside repeated bodies, retaining general history competition elsewhere.
   PCRE2 commits word-only repeats
