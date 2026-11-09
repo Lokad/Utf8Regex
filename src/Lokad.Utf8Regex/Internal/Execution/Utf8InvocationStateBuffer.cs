@@ -87,6 +87,16 @@ internal struct Utf8InvocationStateBuffer<T>
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default;
     }
 
+    // Callers retain their bounded interruption checkpoints around each chunk.
+    // Value-only records need no per-item write; borrowed references still clear.
+    internal void Pop(int count)
+    {
+        if ((uint)count > (uint)_count) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count == 0) return;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems().AsSpan(_count - count, count).Clear();
+        _count -= count;
+    }
+
     // A completed result can own an exactly filled array. Relinquish both the
     // leaf and its existing working reservation without returning it to the pool.
     internal T[]? TakeFullArray(out ulong reservedBytes)

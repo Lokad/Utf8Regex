@@ -129,8 +129,11 @@ boundaries can be omitted; descendant priority and public captures remain intact
 For greedy pieces of one scalar literal, with every tag outside repeated bodies,
 a bounded construction proof can select the first acceptance: suffix minima are
 reserved, the total endpoint is maximal, and nested tags retain preorder priority.
-Different atoms, repeated tags, alternatives and assertions retain general
-competition. The proof adds accounted program metadata, without a second executor.
+A flat two-way alternative of capture-wrapped literal words can reuse this proof
+when both have the same positive scalar length and no consuming suffix: tied
+endpoints prefer the earlier branch's participating whole-span tag. Empty/unequal
+branches, nested forks, repeated tags and assertions retain general competition.
+The proof uses accounted program metadata, without a second executor.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,

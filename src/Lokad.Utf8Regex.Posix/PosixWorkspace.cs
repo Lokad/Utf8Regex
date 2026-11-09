@@ -218,10 +218,10 @@ internal sealed class PosixWorkspace
             if ((iteration & 63) == 0) Charge(ref invocation);
             var mutation = _undo[_undo.Count - 1]; _undo.Pop(); _state[mutation.Index] = mutation.OldValue;
         }
-        for (var iteration = 0; _trace.Count > frame.TraceCount; iteration++)
+        while (_trace.Count > frame.TraceCount)
         {
-            if ((iteration & 63) == 0) Charge(ref invocation);
-            _trace.Pop();
+            Charge(ref invocation);
+            _trace.Pop(Math.Min(64, _trace.Count - frame.TraceCount));
         }
         pc = frame.Pc; at = frame.Position;
         return true;
@@ -330,10 +330,10 @@ internal sealed class PosixWorkspace
 
     private static void Clear<T>(ref Utf8InvocationStateBuffer<T> buffer, ref Utf8SliceInvocation invocation)
     {
-        for (var index = 0; buffer.Count != 0; index++)
+        while (buffer.Count != 0)
         {
-            if ((index & 63) == 0) Charge(ref invocation);
-            buffer.Pop();
+            Charge(ref invocation);
+            buffer.Pop(Math.Min(64, buffer.Count));
         }
     }
 

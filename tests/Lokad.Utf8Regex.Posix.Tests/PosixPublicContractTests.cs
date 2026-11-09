@@ -352,6 +352,31 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    public void LongRepeatedHistoriesKeepTheLastScalarAndCursorAlias(int count)
+    {
+        var input = Encoding.UTF8.GetBytes("é" + string.Concat(Enumerable.Repeat("😀", count)));
+        var regex = new Utf8PosixRegex("(😀)*");
+        var account = new Account();
+        using var cursor = regex.CreateMatchCursor(input, 2, workingMemoryAllowance: account);
+        var alias = cursor;
+        var captures = new Utf8ValueMatch[2];
+        Assert.True(cursor.MoveNext(captures, out var retained));
+        Assert.Equal(4 * count, retained.LengthInBytes);
+        Assert.Equal(2 + 4 * (count - 1), captures[1].IndexInBytes);
+        Assert.Equal(4, captures[1].LengthInBytes);
+        Assert.True(alias.MoveNext(captures, out var empty));
+        Assert.Equal(2 + 4 * count, empty.IndexInBytes);
+        Assert.Equal(0, empty.LengthInBytes);
+        Assert.False(alias.MoveNext(captures, out _));
+        alias.Dispose();
+        Assert.Equal(0UL, account.Used);
+        Assert.Equal(4 * count, retained.LengthInBytes);
+    }
+
+    [Theory]
     [InlineData(0, "a", "")]
     [InlineData(1, "a", "")]
     [InlineData(2, "a", "")]

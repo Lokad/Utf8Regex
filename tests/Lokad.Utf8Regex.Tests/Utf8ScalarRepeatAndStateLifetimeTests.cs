@@ -26,6 +26,36 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
     }
 
     private readonly record struct ReferenceState(object? Graph, int Value);
+    private readonly record struct BulkReferenceState(object? Graph, int Value);
+
+    [Fact]
+    public void BulkPopClearsBorrowedReferencesWithoutReleasingCapacity()
+    {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        var buffer = new Utf8InvocationStateBuffer<BulkReferenceState>();
+        try
+        {
+            for (var index = 0; index < 3; index++)
+                Assert.Equal(Utf8ExecutionLimitKind.None, buffer.TryPush(new(new object(), index + 1), ref invocation));
+            var storage = buffer.WrittenItems;
+            var reserved = invocation.Ledger.ReservedBytes;
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Pop(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Pop(4));
+            Assert.Equal(3, buffer.Count);
+            buffer.Pop(2);
+            Assert.Equal(1, buffer.Count);
+            Assert.NotNull(storage[0].Graph);
+            Assert.Equal(default, storage[1]);
+            Assert.Equal(default, storage[2]);
+            buffer.Pop(0);
+            Assert.Equal(1, buffer.Count);
+            buffer.Pop(1);
+            Assert.Equal(default, storage[0]);
+            Assert.Equal(reserved, invocation.Ledger.ReservedBytes);
+        }
+        finally { buffer.Release(ref invocation); }
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
 
 
 
