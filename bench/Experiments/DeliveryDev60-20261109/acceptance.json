@@ -1,0 +1,79 @@
+{
+  "Source": "848dbb295d31b9181918393ddc829eb6fde4585d",
+  "Version": "0.5.0-dev.60",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 389.5373734,
+  "WindowsFixtures": 10,
+  "ChecksPerPlatform": 110836,
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "C02310B980367AAFE04456115DDAAFF82CFC813F3EFE9E4A97AC0C60F1639452",
+  "OlderStagedAssetsUnchanged": 332,
+  "TotalStagedAssets": 340,
+  "SourceCI": {
+    "Run": 42682098018,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "AcceptedChanges": [
+    "POSIX root projection",
+    "PCRE2 one-token conditional proof",
+    "PCRE2 terminal ACCEPT guard proof"
+  ],
+  "ExcludedTrial": "Committed capture-close compaction: deferred, exact source/tests restored",
+  "Pending": [
+    "Final metadata CI"
+  ],
+  "Complete": false,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "LinuxFixtures": 10,
+  "LinuxVerifiedTrx": 14,
+  "LinuxRawSha256": "67566621DD6EA3547B13DA54986F36AAF0EA7E3EF9C5D59002F33C2531C23A2B",
+  "LinuxRebuilt": false,
+  "LinuxRepacked": false,
+  "Full": {
+    "ArchiveSha256": "CA8D9A64E5578336E7985D17FB7F8119ED9116BFEFB45D23B329C60B2D04392C",
+    "Steps": 85,
+    "Seconds": 2774.5098652,
+    "Source": "848dbb295d31b9181918393ddc829eb6fde4585d",
+    "Complete": true
+  },
+  "SnapshotChecksPerFramework": 5,
+  "SnapshotLogHashes": [
+    {
+      "Sha256": "EEEF624F318DF2303FC571FD21B94F7AEF8BE454FD33F003244E03E8792ECDAF",
+      "File": "snapshot-Core.txt"
+    },
+    {
+      "Sha256": "6059438EB4505AD821C6046DFEAC02E87832E717081CE6A4477CAD5C15B16807",
+      "File": "snapshot-Pcre2.txt"
+    },
+    {
+      "Sha256": "DD2E3417A36A04F099EE07486D6E68358A5EE2C79A5D8688F2B72ED08BBF6587",
+      "File": "snapshot-Posix.txt"
+    },
+    {
+      "Sha256": "2BE19C2C5D282E2F822ACEB7AC07BCA5E2605827FD6EBF5D9C991EFB93E6495D",
+      "File": "snapshot-PythonRe.txt"
+    }
+  ],
+  "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
+  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable."
+}
