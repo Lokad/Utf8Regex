@@ -46,6 +46,12 @@ internal sealed class PosixProgram
                         frames.Pop();
                         continue;
                     }
+                    // This body has exactly its enclosing capture's occurrences
+                    // and boundaries. Its fictive tag cannot break a tie after
+                    // that capture; lower the body under the same tag instead.
+                    // A directly nested public capture keeps its own tag.
+                    if (capture.Body is not Utf8SliceNode.CaptureNode)
+                        frame.Node = capture.Body;
                 }
                 if (frame.Node is Utf8SliceNode.ConcatNode concat)
                     frame.Children = budget.AllocateArray<Utf8SliceNode>(concat.Children.Length, false);
@@ -137,7 +143,7 @@ internal sealed class PosixProgram
 
     private struct Frame(Utf8SliceNode node, int parent)
     {
-        internal readonly Utf8SliceNode Node = node;
+        internal Utf8SliceNode Node = node;
         internal readonly int Parent = parent;
         internal int Tag = -1;
         internal int Child, Branch;

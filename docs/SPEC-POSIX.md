@@ -124,6 +124,8 @@ answer after refusal. Boolean existence can stop on a proved hit. Selected whole
 matches and Count finish longest-match competition; operations returning captures
 also resolve hierarchical capture priority. Whole-only output can omit unobservable
 tag histories because this ERE subset has no capture-dependent acceptance.
+An internal body tag with exactly its enclosing capture's occurrences and
+boundaries can be omitted; descendant priority and public captures remain intact.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,
