@@ -9,6 +9,27 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReClassDelimiterWindowTests
 {
     [Theory]
+    [InlineData("([a-z]+)-([0-9]+)", "xx-! good-12 tail", 0, 5, "good-12", "good", "12")]
+    [InlineData("([a-z]{2,3})-([0-9]+)", "abcde-12 tail", 0, 2, "cde-12", "cde", "12")]
+    [InlineData("([a-z]+)-([0-9]+)", "😀xx-! good-12 tail", 4, 9, "good-12", "good", "12")]
+    public void FailedInitialCandidatesPreserveLaterStartsAndCaptureValues(string pattern, string text,
+        int floor, int expectedStart, string expectedWhole, string first, string second)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = new byte[bytes.Length + 7]; bytes.CopyTo(storage, 3);
+        foreach (var finite in new[] { false, true })
+        {
+            using var token = new CancellationTokenSource();
+            using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
+                finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 128,
+                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
+            var result = owner.SearchDetailedData(storage.AsSpan(3, bytes.Length), floor, token.Token);
+            Assert.Equal(expectedStart, result.Value.StartOffsetInBytes);
+            Assert.Equal(new[] { expectedWhole, first, second }, result.Groups.Select(group => group.ValueText));
+        }
+    }
+
+    [Theory]
     [InlineData(@"[a-z]+@z", "abc \t @z def@z")]
     [InlineData(@"[a-z]+ z", "abc \t  z abc z")]
     [InlineData(@"[a ]+ z", "a\t  z a a z")]

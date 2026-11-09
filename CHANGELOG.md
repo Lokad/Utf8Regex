@@ -30,6 +30,8 @@
   journals and copies. PythonRe Count, Search, Split and FullMatch share these
   improvements while retaining ordered scalar verification and interruption.
   Class/delimiter Count can reject impossible windows before VM admission.
+  PythonRe can verify a bounded first candidate before redundant delimiter
+  search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
   PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding

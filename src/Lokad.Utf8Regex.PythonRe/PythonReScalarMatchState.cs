@@ -358,6 +358,8 @@ internal struct PythonReScalarMatchState
             }
         }
         var windowEnd = -1;
+        var verifyFirstCandidate = delimiter >= 0 && _leadingAsciiLow >= 0 &&
+            (delimiter < _leadingAsciiLow || delimiter > _leadingAsciiHigh);
         try
         {
             while (!_finished)
@@ -380,7 +382,22 @@ internal struct PythonReScalarMatchState
                     }
                     else
                     {
-                        if (delimiter >= 0 && _position > windowEnd)
+                        // A necessary range already identifies a possible start.
+                        // Verify it once before seeking/rewinding its delimiter;
+                        // a failure resumes the original window-guided search.
+                        var bypassWindow = false;
+                        if (verifyFirstCandidate)
+                        {
+                            verifyFirstCandidate = false;
+                            if (((uint)_position >= (uint)input.Length ||
+                                (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow)) &&
+                                !SeekCandidate(input)) { _finished = true; return false; }
+                            // The excluded delimiter bounds this first class run.
+                            // Long/no-delimiter prefixes keep window discovery.
+                            var prefix = input.Slice(_position, Math.Min(64, input.Length - _position));
+                            bypassWindow = prefix.IndexOf((byte)delimiter) >= 0;
+                        }
+                        if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
                         {
                             var floor = _position;
                             windowEnd = floor;
@@ -401,7 +418,7 @@ internal struct PythonReScalarMatchState
                             !SeekCandidate(input)) { _finished = true; return false; }
                         // The range hint may have jumped past this delimiter.
                         // Discover the next window before entering the verifier.
-                        if (delimiter >= 0 && _position > windowEnd) continue;
+                        if (delimiter >= 0 && _position > windowEnd && !bypassWindow) continue;
                         _invocation.AnchorOriginByte = _position;
                         // Once scratch is admitted, a positive leading boundary
                         // cannot match between two ASCII word scalars. Borrow the
