@@ -220,7 +220,9 @@ internal static partial class BenchmarkInspectReporter
             summary.AddRow(section, id, new()
             {
                 Source = source, Operation = row.Records > 1 ? $"{row.Operation} × {row.Records}" : row.Operation,
-                InputSha256 = row.InputSha256, ResultContract = row.Expected.GetRawText(),
+                // Canonicalize embedded JSON: raw snapshot indentation must not
+                // change the result contract after a write/read round trip.
+                InputSha256 = row.InputSha256, ResultContract = JsonSerializer.Serialize(row.Expected),
                 ManagedUs = Median(row.Lanes["Unlimited"].Microseconds), ManagedBytes = Median(row.Lanes["Unlimited"].AllocatedBytes),
                 ReferenceUs = row.Lanes.TryGetValue("NativeNfa", out var native) ? Median(native.Microseconds) : null,
                 ReferenceBytes = native is not null ? Median(native.AllocatedBytes) : null,
