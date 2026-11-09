@@ -49,4 +49,5 @@ passed without a production change. The failed fixture log is retained.
 Raw protocol, patch, before/after graphs, Linux checks and samples are verified
 off VM at `artifacts/experiments/posix-fixed-alternative-20261109/evidence.tar.gz`,
 SHA-256 `8E75548E4C0A1E03CAB3A005CF5B102174E1A9F4B52BB1BBBF1D15D42F7F38FE`.
-Windows checks are alongside it. Source CI follows the scoped commit.
+Windows checks are alongside it. Source CI42714168068 passes Windows/Linux for
+97a8df7f.

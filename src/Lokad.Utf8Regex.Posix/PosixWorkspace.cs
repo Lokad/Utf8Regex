@@ -130,7 +130,16 @@ internal sealed class PosixWorkspace
                         SetState(slot + 1, at, ref invocation);
                         pc++;
                     }
-                    else if (count >= maximum || count > 0 && _state[slot + 1] == at) pc = instruction.A;
+                    else if (count >= maximum || count > 0 && _state[slot + 1] == at)
+                    {
+                        // The saved optional exit has the same endpoint and
+                        // earlier occurrences. A redundant empty body loses to
+                        // its shorter history before descendants can break ties.
+                        // Keep first/mandatory empties; saturated min0 counts
+                        // cannot establish a prior occurrence and remain1.
+                        if (count > 1 && count > minimum && _state[slot + 1] == at) failed = true;
+                        else pc = instruction.A;
+                    }
                     else
                     {
                         PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);

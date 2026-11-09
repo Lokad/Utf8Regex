@@ -134,6 +134,9 @@ when both have the same positive scalar length and no consuming suffix: tied
 endpoints prefer the earlier branch's participating whole-span tag. Empty/unequal
 branches, nested forks, repeated tags and assertions retain general competition.
 The proof uses accounted program metadata, without a second executor.
+When a repeat counter proves earlier occurrences and the minimum is satisfied,
+a redundant optional empty iteration can be discarded in favor of its saved exit
+at the same position. First and required empty occurrences remain eligible.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,
