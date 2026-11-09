@@ -66,7 +66,7 @@ public sealed class Utf8PosixRegex
         try
         {
             ValidateInput(input, 0, ref invocation);
-            workspace = CreateWorkspace(ref invocation);
+            workspace = CreateWorkspace(ref invocation, captureHistory: false);
             return workspace.Find(input, 0, true, ref invocation, out _, out _);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateTimeout(); }
@@ -89,8 +89,9 @@ public sealed class Utf8PosixRegex
         try
         {
             ValidateInput(input, startOffsetInBytes, ref invocation);
-            workspace = CreateWorkspace(ref invocation);
-            if (!workspace.Find(input, startOffsetInBytes, false, ref invocation, out var start, out var end))
+            var captureHistory = output.Length > 1;
+            workspace = CreateWorkspace(ref invocation, captureHistory);
+            if (!workspace.Find(input, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
             return Project(input, start, end, workspace, output, ref invocation);
         }
@@ -108,9 +109,9 @@ public sealed class Utf8PosixRegex
         try
         {
             ValidateInput(input, startOffsetInBytes, ref invocation);
-            workspace = CreateWorkspace(ref invocation);
+            workspace = CreateWorkspace(ref invocation, captureHistory: false);
             var count = 0; var position = startOffsetInBytes;
-            while (workspace.Find(input, position, false, ref invocation, out var start, out var end))
+            while (workspace.Find(input, position, false, ref invocation, out var start, out var end, captureHistory: false))
             {
                 count = checked(count + 1);
                 if (start == end && end == input.Length) break;
@@ -135,7 +136,8 @@ public sealed class Utf8PosixRegex
         return new(_limits, MatchTimeout, token, allowance);
     }
 
-    internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation) => new(_program, ref invocation);
+    internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)
+        => new(_program, ref invocation, captureHistory);
 
     internal static void ValidateInput(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {

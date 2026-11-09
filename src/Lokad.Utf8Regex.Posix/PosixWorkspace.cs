@@ -9,6 +9,8 @@ namespace Lokad.Utf8Regex.Posix;
 // paths at the earliest start; keep the longest, then compare hierarchical tag
 // histories. Empty-repeat progress guards bound epsilon traversal. All growing
 // storage uses the existing admitted invocation buffers, without a second ledger.
+// Whole-only output needs no tag history: captures cannot affect ERE acceptance.
+// A cursor reserves tag capacity because later advances can request captures.
 internal sealed class PosixWorkspace
 {
     private readonly PosixProgram _program;
@@ -25,12 +27,14 @@ internal sealed class PosixWorkspace
     private readonly record struct Mutation(int Index, int OldValue);
     private readonly record struct TagEvent(int Tag, int Position, int Opening);
 
-    internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation)
+    internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
         _program = program;
         _openOffset = checked(program.Scalar.RepeatCount * 2);
-        _lastOffset = checked(_openOffset + program.Parents.Length);
-        var count = checked(_lastOffset + program.Parents.Length);
+        var tags = captureHistory ? program.Parents.Length : 0;
+        _lastOffset = checked(_openOffset + tags);
+        var count = checked(_lastOffset + tags);
+        if (count == 0) return;
         var bytes = Utf8ConstructionBudget.ArrayBytes<int>(count);
         Check(invocation.TryReserveWorking(bytes), ref invocation);
         try
@@ -43,16 +47,17 @@ internal sealed class PosixWorkspace
     }
 
     internal bool Find(ReadOnlySpan<byte> input, int fromByte, bool existenceOnly,
-        ref Utf8SliceInvocation invocation, out int start, out int end)
+        ref Utf8SliceInvocation invocation, out int start, out int end, bool captureHistory = true)
     {
+        captureHistory &= !existenceOnly;
         for (var candidate = fromByte; candidate <= input.Length;)
         {
             Charge(ref invocation);
             Reset(ref invocation);
-            if (MatchAt(input, candidate, existenceOnly, ref invocation, out end))
+            if (MatchAt(input, candidate, existenceOnly, captureHistory, ref invocation, out end))
             {
                 start = candidate;
-                if (!existenceOnly)
+                if (captureHistory)
                 {
                     var trace = _best.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
@@ -72,7 +77,7 @@ internal sealed class PosixWorkspace
         return false;
     }
 
-    private bool MatchAt(ReadOnlySpan<byte> input, int start, bool existenceOnly,
+    private bool MatchAt(ReadOnlySpan<byte> input, int start, bool existenceOnly, bool captureHistory,
         ref Utf8SliceInvocation invocation, out int end)
     {
         var code = _program.Scalar.Instructions;
@@ -141,7 +146,7 @@ internal sealed class PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
-                    if (!existenceOnly)
+                    if (captureHistory)
                     {
                         SetState(_openOffset + instruction.A, _trace.Count, ref invocation);
                         Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
@@ -149,20 +154,23 @@ internal sealed class PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
-                    if (!existenceOnly)
+                    if (captureHistory)
                         Check(_trace.TryPush(new(instruction.A, at, _state[_openOffset + instruction.A]), ref invocation), ref invocation);
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
                     if (existenceOnly) { end = at; return true; }
-                    if (at > end || at == end && BetterHistory(ref invocation))
+                    if (at > end || at == end && captureHistory && BetterHistory(ref invocation))
                     {
                         end = at;
-                        Clear(ref _best, ref invocation);
-                        for (var index = 0; index < _trace.Count; index++)
+                        if (captureHistory)
                         {
-                            if ((index & 63) == 0) Charge(ref invocation);
-                            Check(_best.TryPush(_trace[index], ref invocation), ref invocation);
+                            Clear(ref _best, ref invocation);
+                            for (var index = 0; index < _trace.Count; index++)
+                            {
+                                if ((index & 63) == 0) Charge(ref invocation);
+                                Check(_best.TryPush(_trace[index], ref invocation), ref invocation);
+                            }
                         }
                     }
                     failed = true;

@@ -120,6 +120,43 @@ public sealed class PosixPublicContractTests
     }
 
     [Fact]
+    public void CursorAliasesCanAlternateWholeAndCaptureWindows()
+    {
+        var regex = new Utf8PosixRegex("(a|aa)(a*)b"); var account = new Account();
+        using var cursor = regex.CreateMatchCursor("aaabaaabaaab"u8.ToArray(), workingMemoryAllowance: account);
+        var alias = cursor;
+        Assert.True(cursor.MoveNext(out var first)); Assert.Equal(4, first.LengthInBytes);
+        var groups = new Utf8ValueMatch[3];
+        Assert.True(alias.MoveNext(groups, out var second));
+        Assert.Equal(new Utf8ValueMatch(true, true, 4, 2, 4, 2), groups[1]);
+        Assert.Equal(new Utf8ValueMatch(true, true, 6, 1, 6, 1), groups[2]);
+        var retained = groups[1]; var whole = new Utf8ValueMatch[1];
+        Assert.True(cursor.MoveNext(whole, out var third));
+        Assert.Equal(8, third.IndexInBytes); Assert.Equal(third, whole[0]);
+        Assert.False(alias.MoveNext(groups, out _));
+        Assert.All(groups, value => Assert.False(value.Success));
+        Assert.Equal(2, retained.LengthInBytes); Assert.Equal(4, second.IndexInBytes);
+        Assert.Equal(0UL, account.Used);
+    }
+
+    [Fact]
+    public void FlatWholeOperationsDoNotRequestAbsentTagBuffers()
+    {
+        var regex = new Utf8PosixRegex("(a)", default, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var account = new Account { Maximum = 0 };
+        Assert.True(regex.IsMatch("aa"u8, workingMemoryAllowance: account));
+        Assert.True(regex.Match("aa"u8, workingMemoryAllowance: account).Success);
+        Assert.Equal(2, regex.Count("aa"u8, workingMemoryAllowance: account));
+        // Requesting captures needs the tag buffers and still admits before
+        // acquiring them. Fixed workspace owner metadata is outside this policy.
+        var groups = new Utf8ValueMatch[2];
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("aa"u8, groups, workingMemoryAllowance: account)).ResourceKind);
+        Assert.Equal(0, account.Attempts); Assert.Equal(0UL, account.Used);
+    }
+
+    [Fact]
     public void MalformedWholeSubjectsCannotBeHiddenByEarlyHitsOrSearchFloors()
     {
         var regex = new Utf8PosixRegex("a"); byte[] malformed = [(byte)'a', 0xff];
@@ -157,10 +194,10 @@ public sealed class PosixPublicContractTests
         var invocation = baseline.StartInvocation(token.Token, account);
         ulong beforeProjection;
         Utf8PosixRegex.ValidateInput(input, 8192, ref invocation);
-        var workspace = baseline.CreateWorkspace(ref invocation);
+        var workspace = baseline.CreateWorkspace(ref invocation, captureHistory: false);
         try
         {
-            Assert.True(workspace.Find(input, 8192, false, ref invocation, out _, out _));
+            Assert.True(workspace.Find(input, 8192, false, ref invocation, out _, out _, captureHistory: false));
             beforeProjection = invocation.Budget.Steps;
         }
         finally { workspace.Release(ref invocation); }
@@ -270,7 +307,7 @@ public sealed class PosixPublicContractTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("a"u8, workingMemoryAllowance: account)).ResourceKind);
         Assert.Equal(0, account.Attempts);
-        var normal = new Utf8PosixRegex("a"); var refused = new Account { Maximum = 0 };
+        var normal = new Utf8PosixRegex("a|aa"); var refused = new Account { Maximum = 0 };
         Assert.Throws<Utf8MemoryAdmissionException>(() => normal.Count("a"u8, workingMemoryAllowance: refused));
         Assert.Equal(1, refused.Attempts); Assert.Equal(0UL, refused.Used);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();

@@ -120,8 +120,10 @@ original synchronous cancellation, one absolute deadline from invocation entry,
 finite work/depth/working/result policies and caller-owned working admission.
 The cursor keeps its original token/deadline and cumulative work/result charges
 across advances. No fallback, retry under another budget or partial successful
-answer after refusal. Boolean existence can stop on a proved hit; selected matches
-and Count must finish the required longest/capture competition.
+answer after refusal. Boolean existence can stop on a proved hit. Selected whole
+matches and Count finish longest-match competition; operations returning captures
+also resolve hierarchical capture priority. Whole-only output can omit unobservable
+tag histories because this ERE subset has no capture-dependent acceptance.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,
@@ -143,6 +145,11 @@ any positive `MaxResultBytes` therefore admits their value/caller-destination ou
 Matching histories remain working storage. This limit does not cap arrays/text
 that callers create afterward. Timeout exceptions omit subject text.
 Shared allowance loans release on completion, refusal, cancellation or disposal.
+Whole-only calls admit only their required repeat/alternative state; flat patterns
+can need no covered buffer. A cursor reserves tag capacity at construction because
+later advances can request captures, but collects histories only when needed for
+that advance. Switching output sizes through aliases preserves capture selection
+and retained values; it does not reset cumulative work or interruption authority.
 
 ## Qualification boundary
 

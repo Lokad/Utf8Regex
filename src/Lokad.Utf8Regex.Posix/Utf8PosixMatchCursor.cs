@@ -40,7 +40,8 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         try
         {
             PosixWorkspace.Finish(ref _invocation);
-            if (_completed || !_workspace!.Find(_input.Span, _position, false, ref _invocation, out var start, out var end))
+            if (_completed || !_workspace!.Find(_input.Span, _position, false, ref _invocation, out var start, out var end,
+                captureHistory: output.Length > 1))
             {
                 Utf8PosixRegex.ClearOutput(output, ref _invocation);
                 Complete();

@@ -1,0 +1,340 @@
+[
+  {
+    "Name": "capture/empty/unlimited",
+    "Before": {
+      "Us": 1.621584018749579,
+      "Bytes": 208,
+      "Processes": [
+        1.614767076997345,
+        1.6284009605018128
+      ],
+      "Minimum": 1.565423606082549,
+      "Maximum": 1.6570150935999213,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 1.5669496590809109,
+      "Bytes": 208,
+      "Processes": [
+        1.5624955630753212,
+        1.5714037550865003
+      ],
+      "Minimum": 1.5078421164722309,
+      "Maximum": 1.5996521451051846,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -3.3691969726488247
+  },
+  {
+    "Name": "capture/sku007/unlimited",
+    "Before": {
+      "Us": 5513.435714285714,
+      "Bytes": 983040,
+      "Processes": [
+        5439.057142857143,
+        5527.849999999999
+      ],
+      "Minimum": 5419.771428571429,
+      "Maximum": 5631.321428571428,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 5319.736666666666,
+      "Bytes": 983040,
+      "Processes": [
+        5345.653333333333,
+        5278.793333333333
+      ],
+      "Minimum": 5266.526666666667,
+      "Maximum": 5362.486666666666,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -3.51321857471123
+  },
+  {
+    "Name": "capture/nested/unlimited",
+    "Before": {
+      "Us": 4.306001930611549,
+      "Bytes": 224,
+      "Processes": [
+        4.308801317358469,
+        4.294321289346599
+      ],
+      "Minimum": 4.288921859545005,
+      "Maximum": 4.3147237522003286,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 4.241568960634382,
+      "Bytes": 224,
+      "Processes": [
+        4.2407136788445206,
+        4.245477145601447
+      ],
+      "Minimum": 4.211401774111531,
+      "Maximum": 4.251254602095723,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -1.4963525566282332
+  },
+  {
+    "Name": "count/ambiguous/unlimited",
+    "Before": {
+      "Us": 1.0135730795277889,
+      "Bytes": 208,
+      "Processes": [
+        1.0067661704897788,
+        1.0248578591881192
+      ],
+      "Minimum": 1.002283129538408,
+      "Maximum": 1.033782247126358,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 0.3396516075392935,
+      "Bytes": 144,
+      "Processes": [
+        0.34770602697484476,
+        0.3329852751553187
+      ],
+      "Minimum": 0.3316471447507236,
+      "Maximum": 0.34963167715379734,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -66.48967751811907
+  },
+  {
+    "Name": "whole/history12/unlimited",
+    "Before": {
+      "Us": 295.45645620410323,
+      "Bytes": 224,
+      "Processes": [
+        290.98416988416994,
+        297.7396078431372
+      ],
+      "Minimum": 289.73436293436293,
+      "Maximum": 301.1894117647058,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 55.62138059701492,
+      "Bytes": 176,
+      "Processes": [
+        55.53358042994811,
+        55.64432835820895
+      ],
+      "Minimum": 55.34277242401779,
+      "Maximum": 55.74350746268656,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -81.17442369964957
+  },
+  {
+    "Name": "existence/history12/unlimited",
+    "Before": {
+      "Us": 1.0649054073132853,
+      "Bytes": 224,
+      "Processes": [
+        1.064817167866723,
+        1.0650824621870283
+      ],
+      "Minimum": 1.0622012704019144,
+      "Maximum": 1.0755732475004984,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 1.0297939094708202,
+      "Bytes": 176,
+      "Processes": [
+        1.033926215964788,
+        1.0176028545169489
+      ],
+      "Minimum": 1.0092542033843328,
+      "Maximum": 1.0406381472070647,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -3.2971471082159365
+  },
+  {
+    "Name": "count/capture-ties/unlimited",
+    "Before": {
+      "Us": 11.256389926924628,
+      "Bytes": 216,
+      "Processes": [
+        11.288406235810504,
+        11.21003745318352
+      ],
+      "Minimum": 11.185558052434457,
+      "Maximum": 11.302557893143636,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 5.726216046406018,
+      "Bytes": 176,
+      "Processes": [
+        5.702144339405119,
+        5.743002602970449
+      ],
+      "Minimum": 5.699046960264392,
+      "Maximum": 5.779903536977493,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -49.129196095906
+  },
+  {
+    "Name": "cursor/whole-capture-ties/unlimited",
+    "Before": {
+      "Us": 12.299374417257699,
+      "Bytes": 392,
+      "Processes": [
+        12.39394831534184,
+        12.262268141880897
+      ],
+      "Minimum": 12.15244061178002,
+      "Maximum": 12.43868171409879,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 6.475256531861689,
+      "Bytes": 392,
+      "Processes": [
+        6.444730010384216,
+        6.488350435457447
+      ],
+      "Minimum": 6.431680512287989,
+      "Maximum": 6.510591900311527,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -47.352960303606814
+  },
+  {
+    "Name": "whole/history12/funded",
+    "Before": {
+      "Us": 325.8994284107946,
+      "Bytes": 8072,
+      "Processes": [
+        326.22913043478263,
+        325.08577586206894
+      ],
+      "Minimum": 324.23879310344824,
+      "Maximum": 327.92739130434785,
+      "AllowancePeakWithinFamily": 5120.0
+    },
+    "After": {
+      "Us": 72.74179069933058,
+      "Bytes": 1256,
+      "Processes": [
+        70.45714285714286,
+        74.9630109670987
+      ],
+      "Minimum": 69.81419172932331,
+      "Maximum": 75.15603190428713,
+      "AllowancePeakWithinFamily": 1040.0
+    },
+    "ChangePct": -77.67968141151819
+  },
+  {
+    "Name": "existence/history12/funded",
+    "Before": {
+      "Us": 1.6743077907616848,
+      "Bytes": 1304,
+      "Processes": [
+        1.6657587722233376,
+        1.683716814159292
+      ],
+      "Minimum": 1.6572665015949495,
+      "Maximum": 1.6903416601321835,
+      "AllowancePeakWithinFamily": 5120.0
+    },
+    "After": {
+      "Us": 1.6779128794246096,
+      "Bytes": 1256,
+      "Processes": [
+        1.6698956548824169,
+        1.6883063071134206
+      ],
+      "Minimum": 1.6592253098093313,
+      "Maximum": 1.6927947500447946,
+      "AllowancePeakWithinFamily": 1040.0
+    },
+    "ChangePct": 0.2153181561249662
+  },
+  {
+    "Name": "count/capture-ties/funded",
+    "Before": {
+      "Us": 13.585246785717704,
+      "Bytes": 1192,
+      "Processes": [
+        13.667471410419315,
+        13.475044851094365
+      ],
+      "Minimum": 13.438912809472551,
+      "Maximum": 13.861590125249592,
+      "AllowancePeakWithinFamily": 5120.0
+    },
+    "After": {
+      "Us": 7.308044459574782,
+      "Bytes": 720,
+      "Processes": [
+        7.024640695915279,
+        7.578007265179036
+      ],
+      "Minimum": 6.971208396369137,
+      "Maximum": 7.597228853139594,
+      "AllowancePeakWithinFamily": 1040.0
+    },
+    "ChangePct": -46.20602352798039
+  },
+  {
+    "Name": "cursor/whole-capture-ties/funded",
+    "Before": {
+      "Us": 15.128828406735384,
+      "Bytes": 1368,
+      "Processes": [
+        15.245482295482295,
+        15.06350626118068
+      ],
+      "Minimum": 14.996442059232757,
+      "Maximum": 15.259238909238912,
+      "AllowancePeakWithinFamily": 5120.0
+    },
+    "After": {
+      "Us": 8.860591343759424,
+      "Bytes": 936,
+      "Processes": [
+        8.620896040750173,
+        9.100281276751865
+      ],
+      "Minimum": 8.585864783514703,
+      "Maximum": 9.109930292283233,
+      "AllowancePeakWithinFamily": 1040.0
+    },
+    "ChangePct": -41.4324023939972
+  },
+  {
+    "Name": "unchanged/Core-literal-count",
+    "Before": {
+      "Us": 0.8510535872024939,
+      "Bytes": 0,
+      "Processes": [
+        0.8526377358061987,
+        0.8498709239130434
+      ],
+      "Minimum": 0.8487884963768116,
+      "Maximum": 0.853385046962487,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "After": {
+      "Us": 0.8418029626264428,
+      "Bytes": 0,
+      "Processes": [
+        0.8446951198928784,
+        0.8392998293362077
+      ],
+      "Minimum": 0.83863513877661,
+      "Maximum": 0.8460307636911929,
+      "AllowancePeakWithinFamily": 0.0
+    },
+    "ChangePct": -1.086961469307579
+  }
+]
