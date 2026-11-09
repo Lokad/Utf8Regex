@@ -134,6 +134,8 @@ internal sealed class PosixProgram
                 continue;
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
                 return literal >= 0 && index == code.Length - 1;
+            if (instruction.Kind == Utf8SliceInstructionKind.Fork && literal < 0)
+                return CanSelectFixedAlternative(code, index, budget);
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && index <= code.Length - 4 &&
                 instruction.A == index + 3 &&
                 code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } repeatEnd && repeatEnd.A == index &&
@@ -150,6 +152,58 @@ internal sealed class PosixProgram
             literal = instruction.A;
         }
         return false;
+    }
+
+    private static bool CanSelectFixedAlternative(ReadOnlySpan<Utf8SliceInstruction> code, int fork,
+        Utf8ConstructionBudget budget)
+    {
+        var right = code[fork].A;
+        if (code[fork].B != 0 || right <= fork + 2 || right >= code.Length ||
+            code[right - 1] is not { Kind: Utf8SliceInstructionKind.Jump } jump ||
+            jump.A <= right || jump.A >= code.Length)
+            return false;
+        var leftBody = code.Slice(fork + 1, right - fork - 2);
+        var rightBody = code.Slice(right, jump.A - right);
+        var length = FixedLiteralBranchLength(leftBody, budget, out var leftTag);
+        if (length <= 0 || FixedLiteralBranchLength(rightBody, budget, out var rightTag) != length ||
+            leftTag >= rightTag)
+            return false;
+        // Both successful branches consume the same scalar prefix. The earlier
+        // whole-branch tag has higher preorder priority and participation beats
+        // its absence. No suffix may introduce a longer competing endpoint.
+        for (var index = jump.A; index < code.Length; index++)
+        {
+            budget.ChargeWork(1);
+            if (code[index].Kind == Utf8SliceInstructionKind.Accept)
+                return index == code.Length - 1;
+            if (code[index].Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
+                return false;
+        }
+        return false;
+    }
+
+    private static int FixedLiteralBranchLength(ReadOnlySpan<Utf8SliceInstruction> body,
+        Utf8ConstructionBudget budget, out int tag)
+    {
+        tag = -1;
+        if (body.Length < 3 || body[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart } open ||
+            body[^1] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || open.A != close.A)
+            return -1;
+        tag = open.A;
+        var length = 0;
+        foreach (var instruction in body)
+        {
+            budget.ChargeWork(1);
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+            {
+                // Internal descendants follow the whole-branch tag; a shared
+                // ancestor cannot masquerade as an earlier participating branch.
+                if (instruction.A < tag) return -1;
+            }
+            else if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0) length++;
+            else return -1;
+        }
+        return length;
     }
 
     private static bool ContainsCapture(Utf8SliceNode root, Utf8ConstructionBudget budget)

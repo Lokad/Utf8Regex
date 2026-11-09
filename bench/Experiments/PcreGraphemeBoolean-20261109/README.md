@@ -49,4 +49,4 @@ graphs, Linux checks and public results are verified off VM at
 `artifacts/experiments/pcre-grapheme-boolean-20261109/evidence.tar.gz`, SHA-256
 `1A9B3F10B7668E3E9357294C9D9C8A418BBF401BF480CEB43606AAC52B1EC450`.
 Windows checks/preflight refusal are alongside it. Dev61 packages/snapshots remain
-immutable; source CI follows the scoped commit.
+immutable. Source CI42712031823 passes Windows/Linux for dbf438a0.
