@@ -3,7 +3,7 @@
   "Profile": "Posix",
   "Evidence": {
     "Snapshot": "Posix.Benchmarks.json",
-    "SnapshotSha256": "B6DAD7413357582C1EEF945E6CF353EC26F45D4FB21ADF0F0E9D15E9AF61A303"
+    "SnapshotSha256": "63E250172997DB72A610881BEF6F563CA0FF8A39269E069B8C88E74620F9004F"
   },
   "CatalogSha256": "BB12FB19E6F777811B3B06F81CE7152D9139536D5D7AD274005A7524687804AE",
   "Comparator": {
@@ -13,13 +13,13 @@
     "License": "BSD-3-Clause"
   },
   "Sources": {
-    "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B": {
+    "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A": {
       "Environment": {
-        "BenchmarkAssembly": "1.0.0\u002B03f6839ec23cfe40046cd131f228665cc0dea440 sha256=9D37D108449108933D1C90B01389AEB5C249BB1374A4FBDA1E61CF7839E186BF",
-        "CoreAssembly": "0.5.0-dev.57\u002B03f6839ec23cfe40046cd131f228665cc0dea440 sha256=FCD5EA243CF2FFA22BDFDA28AF7A4423B24D83FE3879569384F25DFAF7AA7480",
-        "Pcre2Assembly": "0.5.0-dev.57\u002B03f6839ec23cfe40046cd131f228665cc0dea440 sha256=F6F79D332FF5FEA619A599AFF2648399E7A9BCB59038B149F0B520589B003111",
-        "PythonReAssembly": "0.5.0-dev.57\u002B03f6839ec23cfe40046cd131f228665cc0dea440 sha256=A89683F36A757EFD92FE4FC7E966E363A32622F0C47A93A95D4AA4DA0D25A935",
-        "SourceCommit": "03f6839ec23c",
+        "BenchmarkAssembly": "1.0.0\u002B41e05e7655e44a233d68c725bbf4efad62929189 sha256=7444F417505BA95E3D95B3CC8DDC623B4E82CC4F28823760883F1CFE893190AA",
+        "CoreAssembly": "0.5.0-dev.58\u002B41e05e7655e44a233d68c725bbf4efad62929189 sha256=7B1440A23CAD52E12040348F2102E7EE9FA4578156208EFE23B38FC921EF67B6",
+        "Pcre2Assembly": "0.5.0-dev.58\u002B41e05e7655e44a233d68c725bbf4efad62929189 sha256=042C2B353BCB5F258680CCB442ACD614C6CFD0E5F95B55A956782CF41D57AC86",
+        "PythonReAssembly": "0.5.0-dev.58\u002B41e05e7655e44a233d68c725bbf4efad62929189 sha256=78E07B6E714C17E5D25646DA6CEE8E33AE3469D554854BEA567D66FE09C3E312",
+        "SourceCommit": "41e05e7655e4",
         "TrackedDirty": false,
         "HasUntrackedFiles": false,
         "Runtime": ".NET 11.0.0-rc.3.26522.148",
@@ -27,7 +27,7 @@
         "Processor": "X64",
         "TieredPgo": "runtime-default"
       },
-      "PosixAssembly": "0.5.0-dev.57\u002B03f6839ec23cfe40046cd131f228665cc0dea440 sha256=95922B2DA8E19702B47A1AC523256EE61FFFECE8621E7300B4F9FEF469989DEE",
+      "PosixAssembly": "0.5.0-dev.58\u002B41e05e7655e44a233d68c725bbf4efad62929189 sha256=FB9D390D9EB1F52D2AED1A02E8CE855364EC48185B8ECF62C22F2B249ECDAF15",
       "NativeAssembly": "1.5.0\u002Be5e5deaa30d50dd3a7ac68ec7fd9e9556551a84f sha256=43D101170346B3F0070D3DC0C3F5223F5117B2F39ACD52113C553955977716B3",
       "NativeBuild": "64226A8AB2D3AC9BE986279368957F1D3364E89B35FDDD9EFB10FA02EB91654B"
     }
@@ -36,16 +36,16 @@
     "AdapterControl": {
       "capture/sku007": {
         "Operation": "Captures \u00D7 4096",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
         "ResultContract": "{\u0022Count\u0022:4096,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:6,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:6},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:3},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:3,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:3,\u0022LengthInUtf16\u0022:3},\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 5122.45,
-        "ReferenceUs": 676.1398230088496,
-        "Ratio": 7.571267865136104,
-        "Lower95": 7.523765912135069,
-        "Upper95": 7.673436594091888,
+        "ManagedUs": 5181.8133333333335,
+        "ReferenceUs": 677.4919642857143,
+        "Ratio": 7.648523682190923,
+        "Lower95": 7.5165266369070896,
+        "Upper95": 7.710235639341589,
         "Status": "NativeFaster",
-        "ManagedBytes": 983101.7142857143,
+        "ManagedBytes": 983097.6,
         "ReferenceBytes": 0,
         "PeakWorkingBytes": 1008
       }
@@ -53,25 +53,25 @@
     "FiniteDeadlineLive": {
       "capture/empty": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 2.324302603407081,
-        "Ratio": 1.4731993342723881,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 2.057993121810517,
+        "Ratio": 1.339876228313508,
         "Status": "Measured",
         "ManagedBytes": 1232
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 7515.17,
-        "Ratio": 1.4671046081464925,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 6953.654545454545,
+        "Ratio": 1.3419345889446446,
         "Status": "Measured",
         "ManagedBytes": 5177344
       },
       "cursor/ambiguous": {
         "Operation": "Cursor",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 1.903025757074932,
-        "Ratio": 2.022373581274404,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 1.6547558697972253,
+        "Ratio": 1.7130016364847342,
         "Status": "Measured",
         "ManagedBytes": 1224
       }
@@ -79,53 +79,53 @@
     "FiniteLive": {
       "capture/empty": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 1.9821268587483765,
-        "Ratio": 1.2563200525057039,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 1.8244153573423347,
+        "Ratio": 1.1878031767776516,
         "Status": "Measured",
-        "ManagedBytes": 1183.9770986296287
+        "ManagedBytes": 1183.9790184317249
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 6354.099999999999,
-        "Ratio": 1.240441585569405,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 6025.807692307692,
+        "Ratio": 1.1628762567623094,
         "Status": "Measured",
-        "ManagedBytes": 4980664
+        "ManagedBytes": 4980669.538461538
       },
       "cursor/ambiguous": {
         "Operation": "Cursor",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 1.3755553079266027,
-        "Ratio": 1.4618229437989694,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 1.2142431263265339,
+        "Ratio": 1.2569832810096495,
         "Status": "Measured",
-        "ManagedBytes": 1175.9867766139216
+        "ManagedBytes": 1175.9884642180134
       }
     },
     "FundedFiniteLive": {
       "capture/empty": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 2.1343697359029266,
-        "Ratio": 1.352815278619132,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 1.9661391240338608,
+        "Ratio": 1.2800737990477435,
         "Status": "Measured",
         "Reason": "Peak covered host working storage 976 bytes; zero outstanding loans.",
         "ManagedBytes": 1184
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 7002.281818181818,
-        "Ratio": 1.3669790467807044,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 6588.95,
+        "Ratio": 1.2715529441431055,
         "Status": "Measured",
         "Reason": "Peak covered host working storage 1008 bytes; zero outstanding loans.",
         "ManagedBytes": 4980736
       },
       "cursor/ambiguous": {
         "Operation": "Cursor",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
-        "ManagedUs": 1.4954743795036027,
-        "Ratio": 1.5892627124656054,
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
+        "ManagedUs": 1.335861697350696,
+        "Ratio": 1.3828827052049864,
         "Status": "Measured",
         "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans.",
         "ManagedBytes": 1176
@@ -134,10 +134,10 @@
     "HistoryScaling": {
       "history/length-12": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "F24ABC34B13FADE76E805799F71187DA6CD90B9CAC373AE65ED57F143BD664E5",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:12,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:12},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:10,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:10,\u0022LengthInUtf16\u0022:2},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 113.96671732522798,
+        "ManagedUs": 108.3356005788712,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 192,
@@ -145,10 +145,10 @@
       },
       "history/length-4": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "61BE55A8E2F6B4E172338BDDF184D6DBEE29C98853E0A0485ECEE7F27B9AF0B4",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:4,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:4},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:2,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:2},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 2.122603382123064,
+        "ManagedUs": 2.0564297311428494,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 192,
@@ -156,10 +156,10 @@
       },
       "history/length-8": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "1F3CE40415A2081FA3EEE75FC39FFF8E56C22270D1A978A7249B592DCEBD20B4",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:8,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:8},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:6,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:6,\u0022LengthInUtf16\u0022:2},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 14.488419010669254,
+        "ManagedUs": 14.36107910906298,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 192,
@@ -169,14 +169,14 @@
     "Operations": {
       "capture/absent": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "CA978112CA1BBDCAFAC231B39A23DC4DA786EFF8147C4E72B9807785AFEE48BB",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:1},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:1},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 0.6768367989918085,
-        "ReferenceUs": 0.14992443435134847,
-        "Ratio": 4.512097560749676,
-        "Lower95": 4.497913776466106,
-        "Upper95": 4.545093574526185,
+        "ManagedUs": 0.6672019247905898,
+        "ReferenceUs": 0.1515192428226223,
+        "Ratio": 4.415422527727206,
+        "Lower95": 4.38191233091803,
+        "Upper95": 4.436051812539613,
         "Status": "NativeFaster",
         "ManagedBytes": 192,
         "ReferenceBytes": 0,
@@ -184,10 +184,10 @@
       },
       "capture/ambiguous": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:3},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:2},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:2,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:1},\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 1.0730116329168462,
+        "ManagedUs": 1.0608443519890574,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 200,
@@ -195,25 +195,25 @@
       },
       "capture/empty": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:3},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:3},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:3,\u0022LengthInBytes\u0022:0,\u0022IndexInUtf16\u0022:3,\u0022LengthInUtf16\u0022:0},\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 1.577724445928461,
-        "ReferenceUs": 0.1712027696613592,
-        "Ratio": 9.243530667183963,
-        "Lower95": 9.18887251505666,
-        "Upper95": 9.25216601999364,
+        "ManagedUs": 1.535957634236781,
+        "ReferenceUs": 0.1707518147133745,
+        "Ratio": 9.019540927702357,
+        "Lower95": 8.900200101576884,
+        "Upper95": 9.07835105594558,
         "Status": "NativeFaster",
-        "ManagedBytes": 208.01803080262115,
+        "ManagedBytes": 208.01770020281484,
         "ReferenceBytes": 0,
         "PeakWorkingBytes": 976
       },
       "capture/nested": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "61BE55A8E2F6B4E172338BDDF184D6DBEE29C98853E0A0485ECEE7F27B9AF0B4",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:4,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:4},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:4,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:4},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:2,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:2},\u0022Group3\u0022:null,\u0022Group4\u0022:{\u0022IndexInBytes\u0022:2,\u0022LengthInBytes\u0022:2,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:2}}",
-        "ManagedUs": 4.340270971461516,
+        "ManagedUs": 4.378019917984769,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 224,
@@ -221,14 +221,14 @@
       },
       "capture/nullable": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "CA978112CA1BBDCAFAC231B39A23DC4DA786EFF8147C4E72B9807785AFEE48BB",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:1},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:1,\u0022LengthInBytes\u0022:0,\u0022IndexInUtf16\u0022:1,\u0022LengthInUtf16\u0022:0},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 1.161256302326657,
-        "ReferenceUs": 0.1991941919899641,
-        "Ratio": 5.819321716386985,
-        "Lower95": 5.790939964042449,
-        "Upper95": 5.851806962480746,
+        "ManagedUs": 1.1552299989411428,
+        "ReferenceUs": 0.20132044785548192,
+        "Ratio": 5.713301373987383,
+        "Lower95": 5.697780629649296,
+        "Upper95": 5.7964274686455255,
         "Status": "NativeFaster",
         "ManagedBytes": 200,
         "ReferenceBytes": 0,
@@ -236,10 +236,10 @@
       },
       "capture/unicode-longest": {
         "Operation": "Captures",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "F8DD8629C32B971DCAAB3D1ECD04FBF4621BDED5D6967AED7B9D930152AC371D",
         "ResultContract": "{\u0022Count\u0022:1,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:4,\u0022LengthInBytes\u0022:7,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:4},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:4,\u0022LengthInBytes\u0022:6,\u0022IndexInUtf16\u0022:2,\u0022LengthInUtf16\u0022:3},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:10,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:5,\u0022LengthInUtf16\u0022:1},\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 1.2337349397590363,
+        "ManagedUs": 1.200425470192912,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 200,
@@ -247,10 +247,10 @@
       },
       "count/ambiguous": {
         "Operation": "Count",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "61BE55A8E2F6B4E172338BDDF184D6DBEE29C98853E0A0485ECEE7F27B9AF0B4",
         "ResultContract": "{\u0022Count\u0022:2,\u0022Whole\u0022:null,\u0022Group1\u0022:null,\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 0.30567407490730686,
+        "ManagedUs": 0.320316096758015,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
         "ManagedBytes": 144,
@@ -258,13 +258,13 @@
       },
       "cursor/ambiguous": {
         "Operation": "Cursor",
-        "Source": "D22FA6F88955C9DDD234F920EC927AEFEBEBCB673A287C43B80059741DD7C14B",
+        "Source": "73A5A701DDC07052A5B3B82B4D76C02A58B98B84B74AEE697C3D084899EBB56A",
         "InputSha256": "ED968E840D10D2D313A870BC131A4E2C311D7AD09BDF32B3418147221F51A6E2",
         "ResultContract": "{\u0022Count\u0022:3,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:4,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:4,\u0022LengthInUtf16\u0022:1},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:4,\u0022LengthInBytes\u0022:1,\u0022IndexInUtf16\u0022:4,\u0022LengthInUtf16\u0022:1},\u0022Group2\u0022:null,\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 0.940986262229422,
+        "ManagedUs": 0.9659978335998349,
         "Status": "Excluded",
         "Reason": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
-        "ManagedBytes": 352.0090819801778,
+        "ManagedBytes": 352.00918141022333,
         "PeakWorkingBytes": 784
       }
     }

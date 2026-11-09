@@ -1,0 +1,57 @@
+{
+  "Source": "41e05e7655e44a233d68c725bbf4efad62929189",
+  "Version": "0.5.0-dev.58",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 450.6538641,
+  "WindowsFixtures": 10,
+  "LinuxFixtures": 10,
+  "ChecksPerPlatform": 110700,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "70102AB98A1D3C1FB25335BF28506EF8D88D5D6CECC88E4A95C99C728C94818C",
+  "LinuxVerifiedTrx": 14,
+  "OlderStagedAssetsUnchanged": 316,
+  "TotalStagedAssets": 324,
+  "Full": {
+    "Source": "41e05e7655e44a233d68c725bbf4efad62929189",
+    "Seconds": 2790.6100207,
+    "Steps": 85,
+    "Complete": true,
+    "ArchiveSha256": "0AED256BD339F674BEB68CEF30A2AC3E0082702609268C5EEA146A904C7C9D73"
+  },
+  "SnapshotChecksPerFramework": 5,
+  "SourceCI": {
+    "Run": 42636096807,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "LinuxRawSha256": "62BA927D47D40730A054A4C85485BAE7C3F059F33B8804000B95F8AEACC48BA2",
+  "AcceptedChanges": [
+    "POSIX root history bounds",
+    "PCRE2 required word-boundary proof"
+  ],
+  "ExcludedTrial": "Python search preparation: inconclusive after the one permitted confirmation; source reverted.",
+  "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
+  "Pending": [
+    "Final summary/documentation CI"
+  ],
+  "Complete": false
+}
