@@ -42,6 +42,8 @@
   calls, assertion conditionals including terminal unnamed ACCEPT guards, and
   outer word boundaries around languages with word-only ASCII endpoints;
   controlled matching and capture results retain the owned VM.
+  Unlimited default `\X` Boolean calls avoid computing an unused cluster endpoint,
+  retaining strict whole-input validation and the candidate charge.
   Literal string substitutions reuse validated output sizes and decode no-match
   input directly, avoiding an intermediate byte array. Byte outputs remain owned.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote

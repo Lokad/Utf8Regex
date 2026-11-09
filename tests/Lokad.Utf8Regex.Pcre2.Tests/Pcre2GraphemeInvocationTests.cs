@@ -6,6 +6,50 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2GraphemeInvocationTests
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("a\u0301b")]
+    [InlineData("\u0301")]
+    [InlineData("👩🏽‍💻")]
+    [InlineData("🇫🇷🇩")]
+    [InlineData("\r\n")]
+    [InlineData("\0")]
+    public void LoneGraphemeExistenceKeepsEveryScalarFloorAndOffsetSpan(string text)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = new byte[bytes.Length + 5]; bytes.CopyTo(storage, 2);
+        var direct = new Utf8Pcre2Regex(@"\X");
+        var finite = Utf8Pcre2Regex.Create(@"\X", default, default,
+            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        for (var start = 0; start <= bytes.Length; start++)
+        {
+            if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) continue;
+            Assert.Equal(start < bytes.Length, direct.IsMatch(storage.AsSpan(2, bytes.Length), start));
+            Assert.Equal(start < bytes.Length, finite.IsMatch(storage.AsSpan(2, bytes.Length), start));
+        }
+    }
+
+    [Fact]
+    public void BooleanGraphemeProofKeepsValidationFlagsAndReturnedClusterEndpoints()
+    {
+        var regex = new Utf8Pcre2Regex(@"\X");
+        var input = "áb"u8.ToArray();
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. input, 0xff]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, input.Length + 1));
+        Assert.False(regex.IsMatch("ab"u8, 0, Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored));
+        Assert.False(new Utf8Pcre2Regex(@"\X", Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored).IsMatch("ab"u8));
+        Assert.False(new Utf8Pcre2Regex(@"\X\X").IsMatch("a"u8));
+        var match = regex.Match(input);
+        Assert.Equal("á", match.GetValueString());
+        Assert.Equal(3, match.EndOffsetInBytes);
+        Assert.Equal(2, regex.Count(input));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch(input, 0, default, canceled.Token)).CancellationToken);
+    }
+
     public static IEnumerable<object[]> Routes()
     {
         foreach (var pattern in new[] { @"\X", @"(?=a)\X" })

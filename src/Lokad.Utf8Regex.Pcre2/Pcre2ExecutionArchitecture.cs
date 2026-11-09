@@ -1831,6 +1831,18 @@ internal static partial class Pcre2Runner
 
         if (program is Pcre2CharacterDirectProgram characterProgram)
         {
+            if (invocation.IsUnmetered && invocation.CheckpointHook is null &&
+                matchOptions == Pcre2MatchOptions.None &&
+                characterProgram.Program.Request.Options == Pcre2CompileOptions.None &&
+                characterProgram.Program.Tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster, Options: Pcre2CharacterOptions.None }])
+            {
+                // Strict validation and scalar-floor admission already ran. A
+                // lone \X consumes any remaining scalar; Boolean existence
+                // needs no cluster endpoint. Retain the basic candidate charge.
+                budget.ChargeCandidate();
+                result = start.Value < input.Bytes.Length;
+                return true;
+            }
             result = Pcre2CharacterRunner.Match(
                 characterProgram.Program,
                 ref input,

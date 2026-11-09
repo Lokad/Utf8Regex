@@ -101,6 +101,11 @@ no-break-before-ZWJ rules where native 10.47 differs, including after a regional
 indicator. Extended replacement uppercasing of final sigma intentionally yields
 uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
+A lone default `\X` under unlimited Boolean matching can answer existence from
+validated nonempty scalar input, retaining the candidate charge without computing
+an unused cluster endpoint. Whole-input strict validation still runs. Explicit
+flags, finite/token/deadline/funded calls, hooks and range-returning operations
+retain the established execution and grapheme metering.
 
 ## Reported ranges and global progress
 

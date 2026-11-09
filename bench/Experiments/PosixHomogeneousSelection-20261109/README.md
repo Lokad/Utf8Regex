@@ -53,5 +53,5 @@ Raw source, protocol, matching graphs, Linux checks and public observations are
 verified off VM at
 `artifacts/experiments/posix-homogeneous-selection-20261109/evidence.tar.gz`, SHA-256
 `AEF6355225A1C50A22241602B4D002B5166BAFD4D2B535AE551089A24F717902`.
-Windows checks are alongside it. Source CI follows the scoped commit; no producer
-repack or change to the accepted dev61 delivery.
+Windows checks are alongside it. Source CI42709700192 passes Windows/Linux for
+2a3c77cd. No producer repack or change to the accepted dev61 delivery.
