@@ -29,7 +29,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
             new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
             new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite),
         ];
-        if (_managed[0].GroupCount > 2) throw new InvalidOperationException("The POSIX catalog destination supports two captures.");
+        if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
         _groups = new Utf8ValueMatch[_managed[0].GroupCount + 1];
         // Private benchmark-only NFA baseline. Keep UTF validation enabled,
         // ASCII POSIX classes, dot-all and true-end dollar semantics. Do not
@@ -49,8 +49,6 @@ internal sealed class PosixBenchmarkContext : IDisposable
         var account = lane == 2 ? _account : null;
         switch (_case.Operation)
         {
-            case PosixBenchmarkOperation.IsMatch:
-                return new(regex.IsMatch(_input, token, account) ? 1 : 0, default, default, default);
             case PosixBenchmarkOperation.Count:
                 return new(regex.Count(_input, _case.StartOffsetInBytes, token, account), default, default, default);
             case PosixBenchmarkOperation.Captures:
@@ -76,7 +74,6 @@ internal sealed class PosixBenchmarkContext : IDisposable
 
     internal PosixBenchmarkResult[] ReadTrace(bool native)
     {
-        if (_case.Operation == PosixBenchmarkOperation.IsMatch) return [Execute(native ? 4 : 0)];
         if (_case.Operation == PosixBenchmarkOperation.Captures) return ReadCaptureTrace(native ? 4 : 0);
         var result = new List<PosixBenchmarkResult>();
         if (native)
@@ -122,8 +119,6 @@ internal sealed class PosixBenchmarkContext : IDisposable
     {
         switch (_case.Operation)
         {
-            case PosixBenchmarkOperation.IsMatch:
-                return new(_buffer.IsMatch(_input) ? 1 : 0, default, default, default);
             case PosixBenchmarkOperation.Captures:
                 PosixBenchmarkResult last = default;
                 for (var record = 0; record < _case.Records; record++)
@@ -143,13 +138,16 @@ internal sealed class PosixBenchmarkContext : IDisposable
     }
 
     private PosixBenchmarkResult Result(int count, Utf8ValueMatch whole)
-        => new(count, whole, _groups.Length > 1 ? _groups[1] : default, _groups.Length > 2 ? _groups[2] : default);
+        => new(count, whole, _groups.Length > 1 ? _groups[1] : default, _groups.Length > 2 ? _groups[2] : default,
+            _groups.Length > 3 ? _groups[3] : default, _groups.Length > 4 ? _groups[4] : default);
 
     private PosixBenchmarkResult NativeResult(PcreRefMatch8Bit match, int count)
         => !match.Success ? default : new(count,
             Project(true, match.Index, match.Length),
             _groups.Length > 1 ? Project(match[1].Success, match[1].Index, match[1].Length) : default,
-            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length) : default);
+            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length) : default,
+            _groups.Length > 3 ? Project(match[3].Success, match[3].Index, match[3].Length) : default,
+            _groups.Length > 4 ? Project(match[4].Success, match[4].Index, match[4].Length) : default);
 
     private Utf8ValueMatch Project(bool success, int start, int length) => success
         ? new(true, true, Encoding.UTF8.GetCharCount(_input.AsSpan(0, start)),

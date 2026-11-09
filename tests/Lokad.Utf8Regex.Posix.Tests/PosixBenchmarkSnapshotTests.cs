@@ -22,11 +22,14 @@ public sealed class PosixBenchmarkSnapshotTests
         var page = Read("src/Lokad.Utf8Regex.Posix/README.md").ReplaceLineEndings("\n");
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
-        var operations = root.GetProperty("Sections").GetProperty("Operations");
-        Assert.Equal(PosixBenchmarkCatalog.Cases.Length, operations.EnumerateObject().Count());
+        var sections = root.GetProperty("Sections");
+        Assert.Equal(PosixBenchmarkCatalog.Cases.Length, new[] { "Operations", "HistoryScaling", "AdapterControl" }
+            .Sum(section => sections.GetProperty(section).EnumerateObject().Count()));
         var previous = -1;
-        foreach (var item in operations.EnumerateObject()
-            .OrderByDescending(static item => DisplayRatio(item.Value) ?? double.NegativeInfinity)
+        foreach (var section in new[] { "Operations", "HistoryScaling", "AdapterControl" })
+        foreach (var item in sections.GetProperty(section).EnumerateObject()
+            .OrderByDescending(item => section == "Operations" ? DisplayRatio(item.Value) ?? double.NegativeInfinity
+                : section == "HistoryScaling" ? -PosixBenchmarkCatalog.Get(item.Name).Input.Length : 0)
             .ThenBy(static item => item.Name, StringComparer.Ordinal))
         {
             var row = item.Value;
@@ -43,10 +46,19 @@ public sealed class PosixBenchmarkSnapshotTests
             Assert.True(at > previous, $"Missing/misordered row: {item.Name}");
             previous = at;
             var cells = page[at..].Split('\n')[0].Split('|');
-            Assert.Equal(row.GetProperty("ManagedUs").GetDouble().ToString("F2", CultureInfo.InvariantCulture), cells[3].Trim());
-            Assert.Equal(DisplayRatio(row)?.ToString("F2", CultureInfo.InvariantCulture) ?? "—", cells[7].Trim());
+            var scale = section == "AdapterControl" ? definition.Records : 1;
+            Assert.Equal((row.GetProperty("ManagedUs").GetDouble() / scale).ToString("F2", CultureInfo.InvariantCulture),
+                cells[section == "AdapterControl" ? 2 : 3].Trim());
+            if (section != "HistoryScaling")
+                Assert.Equal(DisplayRatio(row)?.ToString("F2", CultureInfo.InvariantCulture) ?? "—",
+                    cells[section == "AdapterControl" ? 5 : 7].Trim());
+            else Assert.Equal(row.GetProperty("PeakWorkingBytes").GetUInt64().ToString(CultureInfo.InvariantCulture), cells[5].Trim());
             foreach (var lane in new[] { "FiniteLive", "FundedFiniteLive", "FiniteDeadlineLive" })
-                Assert.True(root.GetProperty("Sections").GetProperty(lane).GetProperty(item.Name).GetProperty("ManagedUs").GetDouble() > 0);
+            {
+                var measured = sections.GetProperty(lane).TryGetProperty(item.Name, out var policy);
+                Assert.Equal(definition.MeasurePolicies, measured);
+                if (measured) Assert.True(policy.GetProperty("ManagedUs").GetDouble() > 0);
+            }
         }
     }
 

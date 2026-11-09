@@ -101,6 +101,7 @@ internal sealed class BenchmarkSummaryRow
     public double? ManagedBytes { get; init; }
     public double? ReferenceBytes { get; init; }
     public double? DecodeBytes { get; init; }
+    public ulong? PeakWorkingBytes { get; init; }
 }
 
 internal sealed class BenchmarkSummaryComparator
