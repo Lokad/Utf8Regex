@@ -9,6 +9,10 @@ public sealed class Utf8DisjointClassRepeatTests
 {
     [Theory]
     [InlineData("([a-z]+)-([0-9]+)", "abc-12 other-345")]
+    [InlineData(@"([\x3f-\x40]{2,4})-", "???@- ??-?")]
+    [InlineData(@"([\x00-\x7f]+)é", "é\0@\u007fé")]
+    [InlineData(@"([\x3f\x41]+)@", "?A@ @@?A@")]
+    [InlineData(@"([\x7e-\x7f]{0,3})é", "~\u007fé é")]
     [InlineData("([a-z]{2,3})-", "a- abc- abcde-")]
     [InlineData("([a-z]{0,3})-", "- abc- abcde-")]
     [InlineData("([a-z]{0})-", "abc--")]
@@ -124,6 +128,22 @@ public sealed class Utf8DisjointClassRepeatTests
             Assert.Equal(expected, match.GetGroup(1).GetValueString());
             Assert.Equal(Encoding.UTF8.GetByteCount(text), match.LengthInBytes);
         }
+    }
+
+    [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
+    public void AsciiCaptureBlocksRespectFiniteMaximaAndSupplementaryPrefixes(int length)
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + new string('a', length) + "-");
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        using var token = new CancellationTokenSource();
+        var match = new Utf8Regex("([a-z]{1,4096})-", RegexOptions.None,
+            Timeout.InfiniteTimeSpan, policy).MatchDetailed(input, token.Token);
+        Assert.True(match.Success);
+        Assert.Equal(4 + Math.Max(0, length - 4096), match.IndexInBytes);
+        Assert.Equal(Math.Min(length, 4096) + 1, match.LengthInBytes);
+        Assert.Equal(new string('a', Math.Min(length, 4096)), match.GetGroup(1).GetValueString());
     }
 
     [Fact]
@@ -312,15 +332,16 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false, 1, false)] [InlineData(true, 1, false)]
-    [InlineData(false, 2, false)] [InlineData(true, 2, false)]
-    [InlineData(false, 1, true)] [InlineData(true, 1, true)]
-    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting, bool exact)
+    [InlineData(false, 1, false, false)] [InlineData(true, 1, false, false)]
+    [InlineData(false, 2, false, false)] [InlineData(true, 2, false, false)]
+    [InlineData(false, 1, true, false)] [InlineData(true, 1, true, false)]
+    [InlineData(false, 1, false, true)] [InlineData(true, 1, false, true)]
+    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting, bool exact, bool ascii)
     {
-        var regex = new Utf8Regex(new string('(', nesting) + (exact ? @"\p{L}{2048}" : @"\p{L}+") +
+        var regex = new Utf8Regex(new string('(', nesting) + (ascii ? "[a-z]+" : exact ? @"\p{L}{2048}" : @"\p{L}+") +
             new string(')', nesting) + (exact ? "." : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
-        var input = Encoding.UTF8.GetBytes(new string('é', 2048) + "-");
+        var input = Encoding.UTF8.GetBytes((ascii ? new string('a', 262144) : new string('é', 2048)) + "-");
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

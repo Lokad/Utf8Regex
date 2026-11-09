@@ -473,8 +473,27 @@ internal static partial class Utf8SliceRunner
         }
         ReadOnlySpan<byte> asciiMask = atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
+        byte asciiLast = 0;
+        var asciiFirst = atom.Kind == Utf8SliceInstructionKind.Set
+            ? GetUnfoldedAsciiRange(program, atom, out asciiLast) : -1;
         while (count < maximum)
         {
+            if (asciiFirst >= 0)
+            {
+                // This exact positive ASCII interval cannot consume a wider
+                // scalar. A checked range search stops at its lead byte. Keep
+                // finite maxima and interruption bounded independently of input.
+                var blockBreach = invocation.TryChargeInputStep();
+                if (blockBreach != Utf8ExecutionLimitKind.None) return new(false, -1, blockBreach, null, null);
+                var length = (int)Math.Min(Math.Min(2048, input.Length - position), maximum - count);
+                if (length == 0) break;
+                var stop = input.Slice(position, length).IndexOfAnyExceptInRange((byte)asciiFirst, asciiLast);
+                var consumed = stop < 0 ? length : stop;
+                position += consumed;
+                count += consumed;
+                if (stop >= 0) break;
+                continue;
+            }
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
             // A positive, unfolded mask proves its ASCII hits without decoding

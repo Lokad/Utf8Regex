@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Numerics;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -56,19 +58,15 @@ internal static partial class Utf8SliceRunner
         if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
         var mask = program.SetMasks[set.A].AsSpan();
         if (mask.Length != 16) return -1;
-        var first = -1;
-        var ended = false;
-        for (var value = 0; value < 128; value++)
-        {
-            if ((mask[value >> 3] & (1 << (value & 7))) != 0)
-            {
-                if (ended) return -1; // A union is not its enclosing range.
-                if (first < 0) first = value;
-                last = (byte)value;
-            }
-            else if (first >= 0) ended = true;
-        }
-        return first;
+        var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+        var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
+        if ((low | high) == 0) return -1;
+        var first = low != 0 ? BitOperations.TrailingZeroCount(low)
+            : 64 + BitOperations.TrailingZeroCount(high);
+        last = (byte)(high != 0 ? 127 - BitOperations.LeadingZeroCount(high)
+            : 63 - BitOperations.LeadingZeroCount(low));
+        // Equal population and width prove there are no holes in the interval.
+        return BitOperations.PopCount(low) + BitOperations.PopCount(high) == last - first + 1 ? first : -1;
     }
 
     internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
