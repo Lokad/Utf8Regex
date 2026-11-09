@@ -56,6 +56,7 @@ are checked. Both raw archives and snapshot logs are copied off VM and verified:
 - `artifacts/experiments/delivery-dev60-20261109/linux-evidence.tar.gz`, SHA-256
   67566621DD6EA3547B13DA54986F36AAF0EA7E3EF9C5D59002F33C2531C23A2B.
 
-Final metadata CI is pending; package/consumer and Full acceptance are done.
+Final metadata CI42691459592 is green on Windows/Linux for e45e6c54.
+Package/consumer, Full and final metadata acceptance are complete.
 Publication, performance and actual downstream adoption remain separate claims.
 The active parity queue continues in the ignored root PLAN.md.

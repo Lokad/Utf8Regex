@@ -38,10 +38,8 @@
     "PCRE2 terminal ACCEPT guard proof"
   ],
   "ExcludedTrial": "Committed capture-close compaction: deferred, exact source/tests restored",
-  "Pending": [
-    "Final metadata CI"
-  ],
-  "Complete": false,
+  "Pending": [],
+  "Complete": true,
   "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
   "LinuxFixtures": 10,
   "LinuxVerifiedTrx": 14,
@@ -75,5 +73,15 @@
     }
   ],
   "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
-  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable."
+  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable.",
+  "FinalDocumentationCI": {
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Conclusion": "success",
+    "CompletedAtUtc": "2026-11-09T20:25:12Z",
+    "Run": 42691459592,
+    "Revision": "e45e6c545ca48fc6552b029e321f1fe68150c938"
+  }
 }
