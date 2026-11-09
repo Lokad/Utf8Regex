@@ -1,0 +1,60 @@
+{
+  "Source": "03f6839ec23cfe40046cd131f228665cc0dea440",
+  "Version": "0.5.0-dev.57",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 432.0562778,
+  "WindowsFixtures": 10,
+  "LinuxFixtures": 10,
+  "ChecksPerPlatform": 110662,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "FD586697FA3055D0036DFBEDDAB9BDA8A084CC6BA2CB789E5CA6109853983997",
+  "LinuxVerifiedTrx": 14,
+  "OlderStagedAssetsUnchanged": 308,
+  "TotalStagedAssets": 316,
+  "Full": {
+    "Source": "03f6839ec23cfe40046cd131f228665cc0dea440",
+    "Seconds": 2822.3893744,
+    "Steps": 85,
+    "Complete": true,
+    "ArchiveSha256": "D66080A2E6D1612F262BCF4B277712D67DEE8EBED891AAE620EC27B9210C8BB9"
+  },
+  "SnapshotChecksPerFramework": 5,
+  "SourceCI": {
+    "Run": 42607437052,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "LinuxRawSha256": "C55617321A0FFC564B272079AF686C1C219B2AA1EE09FB575A980AB131BC10CD",
+  "Scope": "Reviewed POSIX batch, scoped catalogs and immutable common four-package candidate. R4 trials reverted; remaining parity gaps stay explicit. No publication, downstream adoption, full flavor equivalence or exact total-heap guarantee.",
+  "CompletedReviewItems": [
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "R4 bounded investigation",
+    "R5"
+  ],
+  "Pending": [
+    "Final summary/documentation CI"
+  ],
+  "Complete": false
+}
