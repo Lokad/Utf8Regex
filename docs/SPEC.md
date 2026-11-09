@@ -487,14 +487,6 @@ precedes counting; no capture workspace or result payload is introduced.
 Nonmember work charges can fall from per-scalar steps to bounded scan units.
 Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
 
-Shared scalar repeat matching can consume a proved contiguous positive ASCII
-class through checked span range searches in blocks of at most 2048 bytes, once
-the existing no-rewind proof permits selecting that endpoint. Minimum/maximum
-counts, capture instructions and terminal interruption stay authoritative; work
-charges can fall from per-scalar steps to bounded scan units. Wider scalars stop
-the ASCII run at their lead byte. Holey, folded and unproved predicates retain
-scalar membership testing; working/result admission is unchanged.
-
 Greedy unbounded word repeats with a positive minimum, optionally enclosed by
 word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
 proof. That counter needs no capture workspace and admits one work unit before

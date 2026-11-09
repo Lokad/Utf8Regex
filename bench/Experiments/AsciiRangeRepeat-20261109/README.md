@@ -1,5 +1,10 @@
 # Shared ASCII-range repeat trial
 
+Follow-up: the bulk-repeat path was subsequently withdrawn after the
+[fallback comparison](../AsciiRangeFallback-20261109/README.md). Only the smaller
+constant-time mask proof remains. The measurements and intermediate decision
+below are preserved as evidence, not the current delivery contract.
+
 Baseline `3fd56b21`, .NET 11 RC3 quiet VM. The existing no-rewind repeat runner
 can consume exact positive ASCII sets through checked span
 `IndexOfAnyExceptInRange`, bounded to 2,048 bytes and the remaining finite maximum.
