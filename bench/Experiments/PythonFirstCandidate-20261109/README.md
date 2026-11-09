@@ -11,7 +11,7 @@ Actual discovery charges can change; original admission and bounded authority
 remain. No useful metering is removed.
 
 An untimed probe of the **actual facade program** confirms no native candidate
-regex, leading range97–122, direct Set class1/2, delimiter45 at instruction6 and
+regex, leading range97–122, direct Set class2, delimiter45 at instruction6 and
 gap0. The three new independent public cases cover failed initial candidates,
 later bounded starts and supplementary prefixes/floors over offset spans.
 All5,012 PythonRe Release checks pass per target on Windows/Linux, .NET10/11,
@@ -58,4 +58,4 @@ Linux checks are verified off VM at
 `artifacts/experiments/python-first-candidate-20261109/evidence.tar.gz`, SHA-256
 `5A7AE12B2D5A5BEC132606C8FD2F883ECE8A491AA5FC033A0B095E4E85982DB3`.
 Windows checks/refusal logs are alongside it. No new native parity claim; dev60
-packages and snapshots remain immutable. Source CI follows the dev61 freeze.
+packages and snapshots remain immutable. Source CI42698788274 is green on Windows/Linux for9bbf54de.
