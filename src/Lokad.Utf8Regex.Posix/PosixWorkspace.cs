@@ -233,6 +233,16 @@ internal sealed class PosixWorkspace
         {
             Charge(ref invocation);
             var parent = _program.Parents[tag];
+            if (parent == 0)
+            {
+                // Compilation wraps the whole expression in tag0, outside all
+                // alternatives/repeats. Every acceptance has its single opening
+                // at0 and closing last; do not search both traces for it again.
+                var order = CompareOccurrences(current, best, tag, 0, current.Length - 1,
+                    0, best.Length - 1, ref invocation);
+                if (order != 0) return order < 0;
+                continue;
+            }
             var a = 0; var b = 0;
             while (true)
             {
