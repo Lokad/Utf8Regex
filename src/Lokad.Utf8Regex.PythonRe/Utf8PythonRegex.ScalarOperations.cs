@@ -267,9 +267,11 @@ public sealed partial class Utf8PythonRegex
                     var tuple = cursor.AllocateResultArray<string>(count);
                     for (var i = 0; i < count; i++)
                     {
-                        tuple[i] = cursor.TryGetCaptureByteRange(i + 1, out var start, out var end)
-                            ? cursor.GetText(start, end) : string.Empty;
-                        cursor.Checkpoint();
+                        // GetText already checks before and after decoding. An
+                        // absent group still needs bounded shaping authority.
+                        if (cursor.TryGetCaptureByteRange(i + 1, out var start, out var end))
+                            tuple[i] = cursor.GetText(start, end);
+                        else { cursor.Checkpoint(); tuple[i] = string.Empty; }
                     }
                     cursor.AddResult(ref tuples, tuple);
                 }

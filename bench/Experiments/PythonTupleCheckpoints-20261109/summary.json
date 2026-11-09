@@ -1,0 +1,332 @@
+[
+  {
+    "Name": "python/one-capture/unlimited",
+    "BeforeUs": 1222.3487295081968,
+    "AfterUs": 1211.6274193548386,
+    "ChangePct": -0.8771073176205513,
+    "BeforeBytes": 94344,
+    "AfterBytes": 94344,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      1224.345,
+      1220.3524590163934
+    ],
+    "AfterProcesses": [
+      1229.322950819672,
+      1208.5709677419354
+    ],
+    "BeforeMin": 450.51147540983607,
+    "BeforeMax": 1237.2283333333332,
+    "AfterMin": 450.3370967741935,
+    "AfterMax": 1235.8426229508195
+  },
+  {
+    "Name": "python/one-capture/finite-live",
+    "BeforeUs": 587.1448849182314,
+    "AfterUs": 574.062213740458,
+    "ChangePct": -2.228184476067663,
+    "BeforeBytes": 98544,
+    "AfterBytes": 98544,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      590.6850393700787,
+      579.1638461538462
+    ],
+    "AfterProcesses": [
+      570.6731343283583,
+      575.190076335878
+    ],
+    "BeforeMin": 578.6976923076923,
+    "BeforeMax": 599.0818897637795,
+    "AfterMin": 566.1440298507462,
+    "AfterMax": 583.9862595419847
+  },
+  {
+    "Name": "python/many-capture/unlimited",
+    "BeforeUs": 844.0601679219657,
+    "AfterUs": 812.0173455377575,
+    "ChangePct": -3.7962723040344426,
+    "BeforeBytes": 242008,
+    "AfterBytes": 242008,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      831.910989010989,
+      848.7808988764045
+    ],
+    "AfterProcesses": [
+      798.7926315789474,
+      815.2652173913044
+    ],
+    "BeforeMin": 831.2340659340659,
+    "BeforeMax": 859.520224719101,
+    "AfterMin": 796.6442105263158,
+    "AfterMax": 828.6282608695652
+  },
+  {
+    "Name": "python/captured-count/unlimited",
+    "BeforeUs": 475.9581378986867,
+    "AfterUs": 486.0883407793498,
+    "ChangePct": 2.128381064222795,
+    "BeforeBytes": 272,
+    "AfterBytes": 272,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      481.2108974358974,
+      470.6737804878049
+    ],
+    "AfterProcesses": [
+      476.91202531645564,
+      492.2444444444444
+    ],
+    "BeforeMin": 467.4719512195122,
+    "BeforeMax": 482.25769230769237,
+    "AfterMin": 476.28227848101267,
+    "AfterMax": 492.9209150326797
+  },
+  {
+    "Name": "python/range-cursor/unlimited",
+    "BeforeUs": 818.6451169590644,
+    "AfterUs": 788.2712371134021,
+    "ChangePct": -3.7102621412424597,
+    "BeforeBytes": 148184,
+    "AfterBytes": 148184,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      837.3299999999999,
+      796.2431578947369
+    ],
+    "AfterProcesses": [
+      774.2979381443298,
+      800.5926315789472
+    ],
+    "BeforeMin": 791.1063157894738,
+    "BeforeMax": 841.0388888888889,
+    "AfterMin": 772.9237113402063,
+    "AfterMax": 805.9652631578947
+  },
+  {
+    "Name": "python/many-capture/finite-live",
+    "BeforeUs": 1266.3058333333333,
+    "AfterUs": 1190.3412282878412,
+    "ChangePct": -5.998914562805757,
+    "BeforeBytes": 246208,
+    "AfterBytes": 246208,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      1267.435,
+      1253.7666666666667
+    ],
+    "AfterProcesses": [
+      1156.9984615384615,
+      1211.9725806451613
+    ],
+    "BeforeMin": 1247.9883333333335,
+    "BeforeMax": 1549.7116666666666,
+    "AfterMin": 1154.4415384615386,
+    "AfterMax": 1237.2483870967744
+  },
+  {
+    "Name": "python/captured-count/finite-live",
+    "BeforeUs": 675.2130630630631,
+    "AfterUs": 608.3248390243903,
+    "ChangePct": -9.906239629790115,
+    "BeforeBytes": 384,
+    "AfterBytes": 384,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      675.3117117117116,
+      674.4936936936936
+    ],
+    "AfterProcesses": [
+      606.3216,
+      610.1178861788618
+    ],
+    "BeforeMin": 673.50990990991,
+    "BeforeMax": 676.7936936936937,
+    "AfterMin": 604.8904,
+    "AfterMax": 610.5422764227642
+  },
+  {
+    "Name": "python/range-cursor/finite-live",
+    "BeforeUs": 1162.6884615384615,
+    "AfterUs": 1118.823023715415,
+    "ChangePct": -3.7727593653938962,
+    "BeforeBytes": 148296,
+    "AfterBytes": 148296,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      1162.9292307692308,
+      1160.32
+    ],
+    "AfterProcesses": [
+      1095.2304347826087,
+      1143.769696969697
+    ],
+    "BeforeMin": 1155.706153846154,
+    "BeforeMax": 1165.8138461538463,
+    "AfterMin": 1093.4260869565217,
+    "AfterMax": 1149.5439393939394
+  },
+  {
+    "Name": "python/absent-tuples/unlimited",
+    "BeforeUs": 32.297173068623216,
+    "AfterUs": 31.883187048289265,
+    "ChangePct": -1.2818026502020352,
+    "BeforeBytes": 12376,
+    "AfterBytes": 12376,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      32.32287440656021,
+      32.19268396427052
+    ],
+    "AfterProcesses": [
+      31.95912190963342,
+      31.669511677282376
+    ],
+    "BeforeMin": 32.075627392598896,
+    "BeforeMax": 32.49356927060854,
+    "AfterMin": 31.620254777070063,
+    "AfterMax": 32.1154305200341
+  },
+  {
+    "Name": "python/absent-tuples/finite-live",
+    "BeforeUs": 46.227381837934075,
+    "AfterUs": 45.57336389670827,
+    "ChangePct": -1.4147847341185904,
+    "BeforeBytes": 14504,
+    "AfterBytes": 14504,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      46.56956793988729,
+      45.71331325301205
+    ],
+    "AfterProcesses": [
+      45.14419024683925,
+      45.91812039312039
+    ],
+    "BeforeMin": 45.520542168674694,
+    "BeforeMax": 56.420162805259864,
+    "AfterMin": 44.984467188440696,
+    "AfterMax": 46.11584766584767
+  },
+  {
+    "Name": "python/unicode-tuples",
+    "BeforeUs": 109.65974006428519,
+    "AfterUs": 109.56173272480291,
+    "ChangePct": -0.08937403957444134,
+    "BeforeBytes": 23352,
+    "AfterBytes": 23352,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      109.53927007299271,
+      109.7858615611193
+    ],
+    "AfterProcesses": [
+      108.26757925072046,
+      110.2590308370044
+    ],
+    "BeforeMin": 109.42364963503651,
+    "BeforeMax": 110.03298969072166,
+    "AfterMin": 108.11556195965417,
+    "AfterMax": 111.34052863436125
+  },
+  {
+    "Name": "python/unicode-strings",
+    "BeforeUs": 185.83019801980197,
+    "AfterUs": 189.3047368925831,
+    "ChangePct": 1.869738562303458,
+    "BeforeBytes": 41808,
+    "AfterBytes": 41808,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      185.82326732673266,
+      186.36493827160496
+    ],
+    "AfterProcesses": [
+      191.24987212276213,
+      186.38174999999998
+    ],
+    "BeforeMin": 185.19333333333333,
+    "BeforeMax": 188.69901234567902,
+    "AfterMin": 186.03149999999997,
+    "AfterMax": 192.63529411764708
+  },
+  {
+    "Name": "control/python-fullmatch",
+    "BeforeUs": 0.446071730722746,
+    "AfterUs": 0.4553881687167511,
+    "ChangePct": 2.08855153831653,
+    "BeforeBytes": 272,
+    "AfterBytes": 272,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      0.4435316074653822,
+      0.4471325839980662
+    ],
+    "AfterProcesses": [
+      0.44029658208672595,
+      0.46968953423828025
+    ],
+    "BeforeMin": 0.4421270319084888,
+    "BeforeMax": 0.44850737249214406,
+    "AfterMin": 0.43874147888657455,
+    "AfterMax": 0.4707239995963062
+  },
+  {
+    "Name": "control/python-early-search",
+    "BeforeUs": 0.8210689084878788,
+    "AfterUs": 0.8108748003492658,
+    "ChangePct": -1.2415654804646015,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      0.8158967938598878,
+      0.8256275437245628
+    ],
+    "AfterProcesses": [
+      0.8122070714734765,
+      0.8101934660596295
+    ],
+    "BeforeMin": 0.8135637689837243,
+    "BeforeMax": 0.8601209987900121,
+    "AfterMin": 0.8094159249927004,
+    "AfterMax": 0.9354299898111816
+  },
+  {
+    "Name": "control/core-count",
+    "BeforeUs": 0.8605102430334648,
+    "AfterUs": 0.8904991114949903,
+    "ChangePct": 3.4850100512236803,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforePeak": 0,
+    "AfterPeak": 0,
+    "BeforeProcesses": [
+      0.8603974597739708,
+      0.8614958480924454
+    ],
+    "AfterProcesses": [
+      0.887682188150672,
+      0.8951709234258302
+    ],
+    "BeforeMin": 0.8577202253063121,
+    "BeforeMax": 0.8623842982405203,
+    "AfterMin": 0.8842892296043916,
+    "AfterMax": 0.8955686958999751
+  }
+]
