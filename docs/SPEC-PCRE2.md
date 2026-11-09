@@ -257,6 +257,13 @@ preparation holds its additional peak reservation through output; its checkpoint
 also spend invocation work. Warm plans use their bounded cache. See
 [construction contract](SPEC.md#construction-preparation-and-caches).
 
+Bounded ASCII Boolean plans can include subroutine calls whose authoritative
+lowered body is exactly capture-start, one eligible ASCII token, capture-end and
+return. They reuse the existing 64-alternative/128-token limits and construction
+admission, without recursive expansion. Strict whole-input validation still runs;
+controlled matching, match flags and capture-returning operations retain the
+owned VM and their original interruption/resource authority.
+
 `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation
 uses the existing shared allowance before substantial acquisition, without an

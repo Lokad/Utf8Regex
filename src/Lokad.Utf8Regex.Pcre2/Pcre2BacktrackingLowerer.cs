@@ -617,11 +617,8 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         var slot = target.Kind switch
         {
-            Pcre2BackreferenceTargetKind.Absolute => target.Number,
-            Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
-                target.CaptureCountAtReference + target.Number,
-            Pcre2BackreferenceTargetKind.Relative =>
-                target.CaptureCountAtReference + target.Number + 1,
+            Pcre2BackreferenceTargetKind.Absolute or Pcre2BackreferenceTargetKind.Relative =>
+                Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target),
             Pcre2BackreferenceTargetKind.Named when _nameSlots.TryGetValue(target.Name, out var slots) => slots[0],
             _ => -1,
         };

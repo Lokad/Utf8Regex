@@ -7,6 +7,76 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
 {
     private const string CreditCardPattern = @"(\d{4}[- ]){3}\d{3,4}";
 
+    [Theory]
+    [InlineData(@"^(?1)\d{3}(a)", "a123a", true)]
+    [InlineData(@"^(?1)\d{3}(a)", "b123a", false)]
+    [InlineData(@"^(?1)\d{3}([a-c])$", "b123c", true)]
+    [InlineData(@"^(?&x)\d{3}(?<x>a)$", "a123a", true)]
+    [InlineData(@"^(?+1)\d{3}(a)$", "a123a", true)]
+    [InlineData(@"^(a)(?-1)$", "aa", true)]
+    [InlineData(@"^(?<x>a)(?&x)$", "aa", true)]
+    [InlineData(@"^(?1)-(\d)$", "1-2", true)]
+    [InlineData(@"^(?1)-(\d)$", "١-2", false)]
+    public void SingleAsciiTokenCallsUseTheExistingBooleanPlan(string pattern, string text, bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input));
+        using var token = new CancellationTokenSource();
+        Assert.Equal(expected, regex.IsMatch(input, 0, default, token.Token));
+        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+    }
+
+    [Fact]
+    public void SingleTokenCallsKeepScalarOriginsOptionsAndCallerCaptures()
+    {
+        const string pattern = @"(?1)\d{3}(a)";
+        var regex = new Utf8Pcre2Regex(pattern);
+        var metered = CreateMetered(pattern, 1_000_000);
+        var input = Encoding.UTF8.GetBytes("😀a123a éa345a");
+        for (var start = 0; start <= input.Length; start++)
+        {
+            if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;
+            Assert.Equal(metered.IsMatch(input, start), regex.IsMatch(input, start));
+            Assert.Equal(metered.IsMatch(input, start, Pcre2MatchOptions.Anchored),
+                regex.IsMatch(input, start, Pcre2MatchOptions.Anchored));
+        }
+        Assert.Equal(2, regex.Count(input));
+        var retained = regex.MatchDetailed(input);
+        Assert.Equal("a123a", retained.GetValueString());
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal(8, retained.GetGroup(1).StartOffsetInBytes);
+        Assert.True(regex.IsMatch("a456a"u8));
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+    }
+
+    [Fact]
+    public void SingleTokenCallsKeepWholeInputValidationAndOriginalRefusal()
+    {
+        const string pattern = @"^(?1)\d{3}(a)";
+        var regex = new Utf8Pcre2Regex(pattern);
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "a123a"u8, 0xff]));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.IsMatch("a123a"u8, 0, default, canceled.Token)).CancellationToken);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("a123a"u8)).ErrorKind);
+    }
+
+    [Theory]
+    [InlineData(@"^(a|ab)(?1)$")]
+    [InlineData(@"^()(?1)$")]
+    [InlineData(@"^(😀)(?1)$")]
+    [InlineData(@"^([^a])(?1)$")]
+    [InlineData(@"^(?i:(a))(?1)$")]
+    [InlineData(@"^(a)(?1)\1$")]
+    [InlineData(@"^(a)(?1)(?(1)b|c)$")]
+    [InlineData(@"^(a(?1)?)$")]
+    public void NonTokenOrCaptureDependentCallsKeepTheirOwnedVm(string pattern)
+        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
+            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
+
     [Fact]
     public void BoundedAsciiLanguageUsesAnIsMatchOnlyDirectPlan()
     {

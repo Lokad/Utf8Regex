@@ -284,7 +284,7 @@ internal static class Pcre2BacktrackingAnalysis
         return minimum;
     }
 
-    private static int ResolveReferenceSlot(Pcre2BackreferenceTarget target) => target.Kind switch
+    internal static int ResolveReferenceSlot(Pcre2BackreferenceTarget target) => target.Kind switch
     {
         Pcre2BackreferenceTargetKind.Absolute => target.Number,
         Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
