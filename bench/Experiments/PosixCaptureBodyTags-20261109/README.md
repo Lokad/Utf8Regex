@@ -52,5 +52,5 @@ Raw protocol, patch, matching graphs, Linux checks and public observations are
 verified off VM at
 `artifacts/experiments/posix-capture-body-tags-20261109/evidence.tar.gz`, SHA-256
 `12D3F980DDA4DBACFE9B754781B0EA87BE22EC0EB25B71B8F4163D6E39B8FC81`.
-Windows checks are alongside it. Source CI is recorded after the scoped commit;
+Windows checks are alongside it. Source CI42693168125 is green on Windows/Linux for5880c17a;
 dev60 delivery remains independently complete and immutable.

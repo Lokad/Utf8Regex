@@ -10,12 +10,14 @@ internal sealed class Pcre2AsciiBoundedIsMatchDirectProgram : IPcre2DirectProgra
         AsciiCharClass[][] alternatives,
         bool beginningOfSubject,
         bool endOfSubjectOrFinalNewline,
-        Pcre2BacktrackingProgram fallback)
+        Pcre2BacktrackingProgram fallback,
+        bool wordBoundaries = false)
     {
         Alternatives = alternatives;
         BeginningOfSubject = beginningOfSubject;
         EndOfSubjectOrFinalNewline = endOfSubjectOrFinalNewline;
         Fallback = fallback;
+        WordBoundaries = wordBoundaries;
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget; budget.EnterDepth();
         try
@@ -46,6 +48,8 @@ internal sealed class Pcre2AsciiBoundedIsMatchDirectProgram : IPcre2DirectProgra
 
     internal bool EndOfSubjectOrFinalNewline { get; }
 
+    internal bool WordBoundaries { get; }
+
     internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
@@ -70,18 +74,50 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             request.Settings.AllowDuplicateNames ||
             request.Settings.BackslashC != Pcre2BackslashCPolicy.Forbid ||
             request.Settings.AllowLookaroundBackslashK ||
-            !TryGetMatchBody(root, out var matchBody, out var beginningOfSubject, out var endOfSubjectOrFinalNewline) ||
-            !TryExpand(matchBody, fallback, out var alternatives) ||
+            !TryGetMatchBody(root, out var matchBody, out var beginningOfSubject, out var endOfSubjectOrFinalNewline))
+        {
+            return null;
+        }
+
+        var budget = construction.Budget;
+        var wordBoundaries = matchBody is Pcre2SequenceBacktrackingNode
+        {
+            Children: [Pcre2TokenBacktrackingNode { Token: { Kind: Pcre2CharacterTokenKind.WordBoundary, Options: Pcre2CharacterOptions.None } },
+                .., Pcre2TokenBacktrackingNode { Token: { Kind: Pcre2CharacterTokenKind.WordBoundary, Options: Pcre2CharacterOptions.None } }],
+        };
+        if (wordBoundaries)
+        {
+            var sequence = (Pcre2SequenceBacktrackingNode)matchBody;
+            var children = budget.AllocateArray<IPcre2BacktrackingNode>(sequence.Children.Length - 2, false);
+            budget.ChargeWork((ulong)children.Length);
+            sequence.Children.AsSpan(1, children.Length).CopyTo(children);
+            matchBody = budget.AllocateObject(children, static nodes => new Pcre2SequenceBacktrackingNode(nodes));
+        }
+
+        if (!TryExpand(matchBody, fallback, out var alternatives) ||
             alternatives.Length == 0 ||
             alternatives.Any(static alternative => alternative.Length == 0))
         {
             return null;
         }
 
+        if (wordBoundaries)
+        {
+            // With default non-UCP semantics, word-only ASCII endpoints need
+            // only a nonword neighbor outside each complete alternative.
+            // Mixed endpoints and interior assertions keep the owned VM.
+            budget.ChargeWork(128ul + (ulong)alternatives.Length);
+            var word = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsWord);
+            foreach (var alternative in alternatives)
+                if (((alternative[0].ActualLowMask | alternative[^1].ActualLowMask) & ~word.ActualLowMask) != 0 ||
+                    ((alternative[0].ActualHighMask | alternative[^1].ActualHighMask) & ~word.ActualHighMask) != 0)
+                    return null;
+        }
+
         var result = construction.Budget.AllocateObject(
-            (alternatives, beginningOfSubject, endOfSubjectOrFinalNewline, fallback),
+            (alternatives, beginningOfSubject, endOfSubjectOrFinalNewline, fallback, wordBoundaries),
             static state => new Pcre2AsciiBoundedIsMatchDirectProgram(state.alternatives,
-                state.beginningOfSubject, state.endOfSubjectOrFinalNewline, state.fallback));
+                state.beginningOfSubject, state.endOfSubjectOrFinalNewline, state.fallback, state.wordBoundaries));
         construction.Complete();
         return result;
     }
@@ -480,6 +516,9 @@ internal static class Pcre2AsciiBoundedIsMatchRunner
         ReadOnlySpan<byte> input,
         int candidate)
     {
+        if (program.WordBoundaries && candidate > 0 && Utf8AsciiBytePredicates.IsWord(input[candidate - 1]))
+            return false;
+
         foreach (var alternative in program.Alternatives)
         {
             var matchEnd = candidate + alternative.Length;
@@ -489,6 +528,7 @@ internal static class Pcre2AsciiBoundedIsMatchRunner
                 (!program.EndOfSubjectOrFinalNewline ||
                  matchEnd == input.Length ||
                  matchEnd == input.Length - 1 && input[^1] == (byte)'\n') &&
+                (!program.WordBoundaries || matchEnd == input.Length || !Utf8AsciiBytePredicates.IsWord(input[matchEnd])) &&
                 MatchesAt(input, candidate, alternative))
             {
                 return true;

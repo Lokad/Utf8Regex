@@ -30,11 +30,13 @@
   journals and copies. PythonRe Count, Search, Split and FullMatch share these
   improvements while retaining ordered scalar verification and interruption.
   Class/delimiter Count can reject impossible windows before VM admission.
-- Reduce repeated POSIX root-history scans. PCRE2 commits word-only repeats
+- Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
+  PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding
   unused rewind workspace while retaining cancellation and working admission.
   Its bounded ASCII Boolean compiler also accepts proved single-token subroutine
-  calls and assertion conditionals, including terminal unnamed ACCEPT guards;
+  calls, assertion conditionals including terminal unnamed ACCEPT guards, and
+  outer word boundaries around languages with word-only ASCII endpoints;
   controlled matching and capture results retain the owned VM.
   Literal string substitutions reuse validated output sizes and decode no-match
   input directly, avoiding an intermediate byte array. Byte outputs remain owned.

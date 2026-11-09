@@ -8,6 +8,68 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     private const string CreditCardPattern = @"(\d{4}[- ]){3}\d{3,4}";
 
     [Theory]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2019", true)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/201A", false)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "x11/18/20", false)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/20_", false)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "111/18/20", false)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/20199", false)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "é11/18/20é", true)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀1/2/34😀", true)]
+    [InlineData(@"^\b\d{1,2}/\d{1,2}/\d{2,4}\b$", "1/2/34\n", true)]
+    [InlineData(@"^\b\d{1,2}/\d{1,2}/\d{2,4}\b$", " 1/2/34", false)]
+    public void FiniteWordBoundaryLanguagesPreserveIndependentBooleanResults(string pattern, string text, bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+        using var token = new CancellationTokenSource();
+        Assert.Equal(expected, regex.IsMatch(input, 0, default, token.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\ba!\b")]
+    [InlineData(@"\b!a\b")]
+    [InlineData(@"\b(a|!)\b")]
+    [InlineData(@"\ba?\b")]
+    [InlineData(@"\ba\bb\b")]
+    [InlineData(@"\Ba\b")]
+    public void UnprovedBoundaryEndpointsKeepTheirExistingExecutors(string pattern)
+        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
+            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
+
+    [Fact]
+    public void FiniteBoundariesKeepSubjectContextCapturesValidationAndAuthority()
+    {
+        const string pattern = @"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b";
+        var regex = new Utf8Pcre2Regex(pattern);
+        var metered = CreateMetered(pattern, 1_000_000);
+        var input = Encoding.UTF8.GetBytes("😀11/18/2019 1/2/34é");
+        for (var start = 0; start <= input.Length; start++)
+        {
+            if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;
+            Assert.Equal(metered.IsMatch(input, start), regex.IsMatch(input, start));
+            Assert.Equal(metered.IsMatch(input, start, Pcre2MatchOptions.Anchored),
+                regex.IsMatch(input, start, Pcre2MatchOptions.Anchored));
+        }
+        var retained = regex.MatchDetailed(input);
+        Assert.Equal("11", retained.GetGroup(1).GetValueString());
+        Assert.Equal("18", retained.GetGroup(2).GetValueString());
+        Assert.Equal("2019", retained.GetGroup(3).GetValueString());
+        Assert.Equal(2, regex.Count(input));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "1/2/34"u8, 0xff]));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch(input, 0, default, canceled.Token)).CancellationToken);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch(input)).ErrorKind);
+        Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
+            new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp).DebugCompiledProgram.Operations.IsMatch);
+    }
+
+    [Theory]
     [InlineData("^(?(?=(a))abc|def)", "abc", true)]
     [InlineData("^(?(?=(a))abc|def)", "def", true)]
     [InlineData("^(?(?=(a))abc|def)", "abd", false)]

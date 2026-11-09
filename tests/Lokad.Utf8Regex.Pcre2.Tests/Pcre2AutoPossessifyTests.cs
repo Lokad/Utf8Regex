@@ -79,10 +79,14 @@ public sealed class Pcre2AutoPossessifyTests
     public void DateWordBoundaryCommitsOnlyUncontrolledPlans()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
-        AssertAutoPossessCount(pattern, 3);
+        // Count consumes the same lowered VM program even when Boolean calls
+        // have an independently proved finite-language plan.
+        var uncontrolled = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(3, Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            uncontrolled.DebugCompiledProgram.Operations.Count).Program.AutoPossessiveRepeatCount);
         var controlled = Utf8Pcre2Regex.Create(pattern, default, default,
             new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 512 }, Timeout.InfiniteTimeSpan);
-        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.IsMatch);
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.Count);
         Assert.Equal(0, program.Program.AutoPossessiveRepeatCount);
     }
 

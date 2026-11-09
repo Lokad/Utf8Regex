@@ -272,6 +272,12 @@ can use this proof; capture results still retain the PCRE2 conditional capture
 flow. Empty branches, lookbehind, multi-token/Unicode guards and other control
 verbs keep the VM; named ACCEPT guards and capture-dependent syntax remain
 ineligible. Existing construction caps apply.
+Paired outer `\b` assertions can surround a nonempty bounded ASCII language
+whose first and last classes contain only word bytes. With default non-UCP
+semantics, the existing Boolean runner checks their outside neighbors; Unicode
+neighbors remain nonword in that mode. Interior assertions, mixed/nonword
+endpoints and UCP keep their established executors. Flags, controlled calls and
+capture-returning operations retain the owned VM.
 
 `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation
