@@ -217,10 +217,23 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             } conditional:
             {
                 var body = assertion.Body;
-                while (body is Pcre2CaptureBacktrackingNode guardCapture)
+                while (true)
                 {
+                    // Terminal ACCEPT determines the assertion condition's
+                    // truth just like reaching its end. Result operations still
+                    // use the VM to preserve the conditional capture flow.
+                    var prefix = body switch
+                    {
+                        Pcre2CaptureBacktrackingNode guardCapture => guardCapture.Body,
+                        Pcre2SequenceBacktrackingNode
+                        {
+                            Children: [var beforeAccept, Pcre2ControlVerbBacktrackingNode { VerbKind: Pcre2ControlVerbKind.Accept, Name.Length: 0 }],
+                        } => beforeAccept,
+                        _ => null,
+                    };
+                    if (prefix is null) break;
                     budget.ChargeWork(1);
-                    body = guardCapture.Body;
+                    body = prefix;
                 }
                 if (body is not Pcre2TokenBacktrackingNode guard ||
                     !TryGetAsciiClass(guard.Token, out var guardClass) ||

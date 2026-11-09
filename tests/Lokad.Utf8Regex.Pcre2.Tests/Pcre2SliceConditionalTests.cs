@@ -3,11 +3,9 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R03 conditionals for the PCRE2 profile: group tests ride the shared runner
-// with identical behavior (BCL and positional numbering agree on unnamed
-// shapes); expression tests stay native because native PCRE2 flows assertion
-// captures (even from negative tests) while the shared runner follows BCL
-// (failed negatives leak nothing; group tests commit once).
+// Capture-set conditions overlap the BCL on these ASCII positional groups.
+// Assertion conditions preserve PCRE2 capture flow even from a matching
+// negative condition; Boolean planning cannot change result semantics.
 public sealed class Pcre2SliceConditionalTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
@@ -30,15 +28,22 @@ public sealed class Pcre2SliceConditionalTests
 
     [Theory]
     [MemberData(nameof(SharedCases))]
-    public void GroupTestsRouteShared(string pattern, string inputText, bool expected)
+    public void CaptureSetConditionsPreservePositionalCaptures(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.Contains("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
+        var oracle = Bcl(pattern).Match(inputText);
+        var actual = regex.MatchDetailed(Utf8(inputText));
+        Assert.Equal(expected, actual.Success);
+        for (var number = 0; number < oracle.Groups.Count; number++)
+        {
+            Assert.Equal(oracle.Groups[number].Success, actual.GetGroup(number).Success);
+            if (oracle.Groups[number].Success)
+                Assert.Equal(oracle.Groups[number].Value, actual.GetGroup(number).GetValueString());
+        }
     }
 
-    public static IEnumerable<object?[]> NativeCases()
+    public static IEnumerable<object?[]> AssertionCases()
     {
         yield return new object?[] { "(?(?=a)b|c)", "c", true };
         yield return new object?[] { "^(?(?=(a))abc|def)", "abc", true };
@@ -46,17 +51,15 @@ public sealed class Pcre2SliceConditionalTests
     }
 
     [Theory]
-    [MemberData(nameof(NativeCases))]
-    public void ExpressionTestsStayNative(string pattern, string inputText, bool expected)
+    [MemberData(nameof(AssertionCases))]
+    public void AssertionConditionsPreserveBranchResults(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-        Assert.DoesNotContain("Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
     [Fact]
-    public void NativeNegativeAssertionCapturesFlow()
+    public void NegativeAssertionConditionRetainsMatchedCaptures()
     {
         var negative = new Utf8Pcre2Regex("^(?(?!(a))def|abc)").MatchDetailed("abc"u8);
         Assert.True(negative.Success);

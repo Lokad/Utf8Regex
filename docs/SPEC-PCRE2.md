@@ -266,9 +266,12 @@ owned VM and their original interruption/resource authority.
 The same Boolean plans can filter nonempty ASCII conditional branches guarded
 by one positive/negative lookahead token, including plain capture wrappers.
 Intersecting each branch's first class with the guard or its ASCII complement
-preserves the finite language without retaining an assertion executor. Empty
-branches, lookbehind, multi-token/Unicode guards and control verbs keep the VM;
-capture-dependent syntax remains ineligible. Existing construction caps apply.
+preserves the finite language without retaining an assertion executor. A terminal
+unnamed `(*ACCEPT)` wrapper around that token has the same condition truth and
+can use this proof; capture results still retain the PCRE2 conditional capture
+flow. Empty branches, lookbehind, multi-token/Unicode guards and other control
+verbs keep the VM; named ACCEPT guards and capture-dependent syntax remain
+ineligible. Existing construction caps apply.
 
 `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation

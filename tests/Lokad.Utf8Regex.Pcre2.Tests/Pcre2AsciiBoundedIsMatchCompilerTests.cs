@@ -14,6 +14,15 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     [InlineData("^(?(?!(a))def|abc)", "def", true)]
     [InlineData("^(?(?!(a))def|abc)", "abc", true)]
     [InlineData("^(?(?!(a))def|abc)", "dabc", false)]
+    [InlineData("^(?(?!(a)(*ACCEPT))def|abc)", "def", true)]
+    [InlineData("^(?(?!(a)(*ACCEPT))def|abc)", "abc", true)]
+    [InlineData("^(?(?!(a)(*ACCEPT))def|abc)", "a", false)]
+    [InlineData("^(?(?=(a)(*ACCEPT))abc|def)", "abc", true)]
+    [InlineData("^(?(?=(a)(*ACCEPT))abc|def)", "def", true)]
+    [InlineData("^(?(?=(a)(*ACCEPT))abc|def)", "a", false)]
+    [InlineData("^(?(?!(a(*ACCEPT)))def|abc)", "abc", true)]
+    [InlineData("^(?(?=[ab](*ACCEPT))[b-d]|[ab])$", "a", false)]
+    [InlineData("^(?(?=[ab](*ACCEPT))[b-d]|[ab])$", "b", true)]
     [InlineData("^(?(?=[ab])[b-d]|[ab])$", "a", false)]
     [InlineData("^(?(?=[ab])[b-d]|[ab])$", "b", true)]
     [InlineData("^(?(?=[ab])[b-d]|[ab])$", "c", false)]
@@ -61,7 +70,9 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     }
 
     [Theory]
-    [InlineData("^(?(?!(a)(*ACCEPT))def|abc)")]
+    [InlineData("^(?(?!(a)(*ACCEPT:named))def|abc)")]
+    [InlineData("^(?(?!(a)(*COMMIT))def|abc)")]
+    [InlineData("^(?(?!(a)(*ACCEPT)b)def|abc)")]
     [InlineData("^(?(?=ab)abc|def)")]
     [InlineData("(?(?<=a)b|c)")]
     [InlineData("^(?(?=a)a|)$")]
@@ -71,6 +82,34 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     public void UnprovenConditionalLanguagesKeepTheirOwnedVm(string pattern)
         => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
             new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
+
+    [Theory]
+    [InlineData("(?(?!(a)(*ACCEPT))def|abc)")]
+    [InlineData("(?(?=(a)(*ACCEPT))abc|def)")]
+    [InlineData("(?(?!(a(*ACCEPT)))def|abc)")]
+    public void AcceptGuardBooleanProofPreservesCallerCapturesAndAuthority(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var metered = CreateMetered(pattern, 1_000_000);
+        var input = Encoding.UTF8.GetBytes("😀abc édef");
+        for (var start = 0; start <= input.Length; start++)
+        {
+            if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;
+            Assert.Equal(metered.IsMatch(input, start), regex.IsMatch(input, start));
+        }
+        var retained = regex.MatchDetailed(input);
+        Assert.Equal("abc", retained.GetValueString());
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal(4, retained.GetGroup(1).StartOffsetInBytes);
+        Assert.True(regex.IsMatch("def"u8));
+        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "abc"u8, 0xff]));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.IsMatch("abc"u8, 0, default, canceled.Token)).CancellationToken);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("abc"u8)).ErrorKind);
+    }
 
     [Theory]
     [InlineData(@"^(?1)\d{3}(a)", "a123a", true)]
