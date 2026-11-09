@@ -10,7 +10,9 @@
   Match into caller-owned capture spans, count, or iterate with a disposable
   cursor under the existing cancellation and finite resource policies. Named
   classes are fixed ASCII; locale collation, backreferences and lookarounds are
-  excluded. Worst-case linear matching is not promised.
+  excluded. Whole-only operations omit unused capture histories; coordinate
+  projection reuses validated ranges, and ASCII classes reuse Core's masks.
+  Worst-case linear matching is not promised.
 - Compile UTF-8 patterns and parse UTF-8 replacement templates directly across
   Core, PythonRe and PCRE2. Add UTF-8 capture-name lookup and caller-buffer pattern
   metadata. Owned byte keys replace mandatory whole-pattern/template strings;
