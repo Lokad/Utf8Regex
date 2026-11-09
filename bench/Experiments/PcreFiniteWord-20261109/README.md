@@ -26,8 +26,8 @@ public results and zero outstanding loans are checked after timing.
 | Date miss, finite/live |9.222|6.671|−27.7%|
 | Date hit, funded/live |1.706|1.430|−16.2%|
 | Date miss, funded/live |6.343|4.928|−22.3%|
-| Unchanged word-boundary hit |0.332|0.393|+18.3%|
-| Unchanged word-boundary miss |0.181|0.232|+27.8%|
+| Unchanged word-boundary hit |0.330|0.391|+18.3%|
+| Unchanged word-boundary miss |0.176|0.225|+27.8%|
 | Date Count |1.132|1.297|+14.5%|
 | Date construction |167.849|181.062|+7.9%|
 | Unchanged Core Count |0.857|0.869|+1.4%|
@@ -60,4 +60,4 @@ and Linux checks are verified off VM at
 `7C941C697E7DE018401DC6ACCA86F2852CE6E0EBE0F6D93F64258CE9FFDFBA26`.
 Windows checks/preparation failure logs are alongside it. No package or catalog
 qualification is repeated; dev60 packages/snapshots remain immutable. Source CI
-follows the scoped commit.
+42695036869 is green on Windows/Linux for77207676.

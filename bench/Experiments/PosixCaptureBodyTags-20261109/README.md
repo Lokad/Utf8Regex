@@ -18,15 +18,15 @@ catalog refresh or package qualification.
 | Public operation | Before (µs) | After (µs) | Change |
 |---|---:|---:|---:|
 | Nested captures |4.073|2.842|−30.2%|
-| Empty captures |1.435|1.490|+3.9%|
+| Empty captures |1.434|1.490|+3.9%|
 | Nullable captures |1.062|1.075|+1.2%|
-| Absent capture |0.650|0.662|+1.8%|
-| Empty captures, finite/live |1.890|1.918|+1.5%|
+| Absent capture |0.645|0.656|+1.8%|
+| Empty captures, finite/live |1.894|1.922|+1.5%|
 | Empty captures, funded/live |2.058|2.096|+1.9%|
-| Empty captures, deadline/live |2.219|2.265|+2.1%|
-| History length12 |101.700|102.871|+1.2%|
-| SKU control,4096 calls |5145.588|5188.987|+0.8%|
-| Unchanged Core Count |0.835|0.842|+0.8%|
+| Empty captures, deadline/live |2.221|2.267|+2.1%|
+| History length12 |101.697|102.872|+1.2%|
+| SKU control,4096 calls |5145.587|5188.993|+0.8%|
+| Unchanged Core Count |0.839|0.845|+0.8%|
 
 Nested-call allocation falls224→208B. Both independent before processes measure
 4.045/4.114µs and after2.790/2.902µs; the benefit is clear. Other allocations
