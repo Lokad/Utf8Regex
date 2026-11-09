@@ -1,0 +1,80 @@
+{
+  "Source": "d6120197de6bdeef688836561a7b299dcdaa4096",
+  "Version": "0.5.0-dev.59",
+  "Published": false,
+  "WindowsSeconds": 414.9879368,
+  "WindowsFixtures": 10,
+  "ChecksPerPlatform": 110764,
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "4EFCC5059FABBFE84221A139571FCE08C8F5F4A4D3CD664494A439446EAE72E9",
+  "OlderStagedAssetsUnchanged": 324,
+  "TotalStagedAssets": 332,
+  "SourceCI": {
+    "Run": 42662251081,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "AcceptedChanges": [
+    "PCRE2 empty fixed workspace",
+    "Python tuple checkpoint reuse",
+    "Constant contiguous-mask proof",
+    "PCRE2 one-token bounded call proof"
+  ],
+  "ExcludedTrial": "Bulk ASCII repeat path withdrawn after fixed-original public capture comparison",
+  "Pending": [
+    "Final metadata CI"
+  ],
+  "Complete": false,
+  "Full": {
+    "Source": "d6120197de6bdeef688836561a7b299dcdaa4096",
+    "Seconds": 2837.3646809,
+    "Steps": 85,
+    "Complete": true,
+    "ArchiveSha256": "D7FBF57BF59561073190435DBF1C0C25079C9856D25FDDB59651664FB5953516"
+  },
+  "SnapshotChecksPerFramework": 5,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "LinuxFixtures": 10,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "LinuxVerifiedTrx": 14,
+  "LinuxRawSha256": "9965308F384F643CCEB9C1F7F70EF570EAD43926C62AC9D4FD7AF21B690911F2",
+  "LinuxRebuilt": false,
+  "LinuxRepacked": false,
+  "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
+  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable.",
+  "SnapshotLogHashes": [
+    {
+      "File": "snapshot-Core.txt",
+      "Sha256": "72367EDB5DD237AC2FD1B673E779AAD242DB4493A1F859DDC56BE0AAD4CFE43A"
+    },
+    {
+      "File": "snapshot-Pcre2.txt",
+      "Sha256": "29601C2E2D5C29D4CB3D215C85E85E116E13C10B829E9BC409E7D0E9475FFF6D"
+    },
+    {
+      "File": "snapshot-Posix.txt",
+      "Sha256": "622ACF2276F1B7306CDE06A7C7ED36A624099B0FDFEB265CC67A2933AE372F01"
+    },
+    {
+      "File": "snapshot-PythonRe.txt",
+      "Sha256": "132C97DD51F92DD57ECAEB766C3CCFAFB1B478FBC29E4A8B3A27143B55738970"
+    }
+  ]
+}
