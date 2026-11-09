@@ -29,7 +29,7 @@
   ],
   "ExcludedTrial": "Bulk ASCII repeat path withdrawn after fixed-original public capture comparison",
   "Pending": [
-    "Final metadata CI"
+    "Final CI after GitHub Actions recovery: both latest workflow runs have internal server errors"
   ],
   "Complete": false,
   "Full": {
@@ -76,5 +76,28 @@
       "File": "snapshot-PythonRe.txt",
       "Sha256": "132C97DD51F92DD57ECAEB766C3CCFAFB1B478FBC29E4A8B3A27143B55738970"
     }
-  ]
+  ],
+  "FinalDocumentationCI": {
+    "Revision": "4895e4fcf44250f7b4f9334ad5635d976e68ac8a",
+    "Run": 42672300686,
+    "Conclusion": "failure",
+    "PassedPlatforms": [
+      "Linux"
+    ],
+    "MissingPlatforms": [
+      "Windows"
+    ],
+    "InfrastructureError": "Internal server error. Correlation ID: 699b56ad-5e6d-44c1-92a6-85325481322e",
+    "FailedJobsRetry": "GitHub refused: This workflow run cannot be retried",
+    "ActionsIncident": "tp8cghg7tlc4, investigating since 2026-11-09T18:12:37Z",
+    "AcceptanceComplete": false
+  },
+  "LatestSourceCI": {
+    "Revision": "02ac92dee043233f479407b69e0d140fcd8363e4",
+    "Run": 42673474884,
+    "Conclusion": "failure",
+    "JobsCreated": 0,
+    "InfrastructureError": "Internal server error. Correlation ID: a1a6e36c-8d10-4830-8802-c43de155e34f",
+    "SourceFailureDemonstrated": false
+  }
 }

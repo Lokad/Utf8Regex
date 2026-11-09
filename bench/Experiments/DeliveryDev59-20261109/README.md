@@ -53,6 +53,14 @@ and14 TRX identities are checked. The off-VM archive is verified at
 `9965308F384F643CCEB9C1F7F70EF570EAD43926C62AC9D4FD7AF21B690911F2`.
 Snapshot-check logs are preserved alongside both raw archives.
 
-Final documentation CI is pending; package and full-refresh acceptance are done.
+Final documentation CI42672300686 passes Linux but fails at workflow level with
+GitHub's "Internal server error" (correlation699b56ad-5e6d-44c1-92a6-85325481322e).
+No Windows job was created. GitHub refuses the single failed-jobs retry as
+non-retriable. Its Actions incident tp8cghg7tlc4 began18:12:37UTC. Subsequent source
+run42673474884 also fails before creating any jobs, with internal-error correlation
+a1a6e36c-8d10-4830-8802-c43de155e34f. Acceptance remains incomplete until both OS
+checks pass after service recovery; no repeated retries during the incident.
+Frozen producer CI42662251081 already passes both OS. Package and Full acceptance
+are done; this infrastructure failure does not revise their results or bytes.
 Package, performance, publication and actual downstream adoption remain separate
 claims. The active parity queue continues in the ignored root PLAN.md.

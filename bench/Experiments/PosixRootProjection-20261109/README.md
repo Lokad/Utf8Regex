@@ -46,4 +46,10 @@ are copied off the VM at
 `artifacts/experiments/posix-root-projection-20261109/evidence.tar.gz`, SHA-256
 `E7D2E6B6BDA0265F4861FA9D734D3585468430AC05301DC52BEE2D6E38EF8E98`.
 Windows checks are alongside it. Dev59 packages and fresh snapshots remain
-immutable; this is subsequent source work. Source CI is pending.
+immutable; this is subsequent source work in `02ac92de`. Source CI42673474884 fails
+before creating any jobs during GitHub's Actions incident tp8cghg7tlc4, with internal
+server error a1a6e36c-8d10-4830-8802-c43de155e34f. The preceding metadata run passes
+Linux but receives another GitHub internal server error before Windows starts.
+Final CI acceptance remains pending; no source failure is demonstrated by those
+workflow-level errors. Retry after service recovery, without repeating packages
+or the full benchmark refresh.
