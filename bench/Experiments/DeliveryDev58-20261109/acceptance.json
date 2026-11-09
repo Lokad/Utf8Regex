@@ -50,8 +50,23 @@
   ],
   "ExcludedTrial": "Python search preparation: inconclusive after the one permitted confirmation; source reverted.",
   "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
-  "Pending": [
-    "Final summary/documentation CI"
+  "Pending": [],
+  "Complete": true,
+  "FinalDocumentationCI": {
+    "Revision": "675714d56b5eba8e1d517e42fd2e915d95662081",
+    "Run": 42645828812,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "CompletedAtUtc": "2026-11-09T15:40:50Z"
+  },
+  "CompletedMilestones": [
+    "N1 POSIX root comparison",
+    "N2 PCRE2 boundary proof",
+    "N3 bounded trial deferred/source reverted",
+    "N4 dev58 delivery"
   ],
-  "Complete": false
+  "RemainingWork": "Active qualified parity queue continues separately; accepted packages are immutable. No publication/adoption/general parity claim."
 }

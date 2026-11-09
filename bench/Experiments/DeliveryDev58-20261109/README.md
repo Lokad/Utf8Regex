@@ -79,5 +79,11 @@ The [acceptance record](acceptance.json) separates package/consumer/performance
 evidence from publication, downstream adoption and complete flavor parity.
 
 The imported summaries and authored candidate links follow the frozen producer
-source; they do not change accepted package bytes. Final documentation CI remains
-pending. No repeated package or benchmark matrix is needed for these edits.
+source; they do not change accepted package bytes. Final relevant CI for
+`675714d5` passed Windows/Linux, run `42645828812`, completed2026-11-09 at15:40:50UTC.
+This receipt-only closure needs no repeated package, benchmark or source matrix.
+
+N1–N4's bounded batch and this common four-package delivery boundary are accepted.
+The Python trial is excluded, remaining qualified gaps stay in PLAN.md and no
+publication, downstream adoption or general parity is claimed. The next bounded
+investigation resumes separately against these accepted bytes/source.
