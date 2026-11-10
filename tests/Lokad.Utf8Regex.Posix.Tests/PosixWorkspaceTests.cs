@@ -4,6 +4,40 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixWorkspaceTests
 {
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ExactStateLoansResetWithoutChangingAnotherActiveWorkspace(bool finite)
+    {
+        var program = PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default);
+        var invocation = new Utf8SliceInvocation(finite ? new(1000000, 128, 1 << 20) : Utf8ExecutionLimits.Unlimited,
+            Timeout.InfiniteTimeSpan, default);
+        Assert.True(invocation.Ledger.TryReserve(17));
+        PosixWorkspace first = default, second = default, reused = default;
+        try
+        {
+            first = new(program, ref invocation);
+            second = new(program, ref invocation);
+            Assert.True(first.Find("sku007"u8, 0, false, ref invocation, out _, out _));
+            Assert.True(second.Find("xyz42"u8, 0, false, ref invocation, out _, out _));
+            second.Release(ref invocation);
+            reused = new(program, ref invocation);
+            Assert.False(reused.Find("1"u8, 0, false, ref invocation, out _, out _));
+            Assert.False(reused.GetCapture(2, ref invocation, out _, out _));
+            Assert.True(reused.Find("q4"u8, 0, false, ref invocation, out _, out _));
+            Assert.True(reused.GetCapture(2, ref invocation, out var start, out var end));
+            Assert.Equal((1, 2), (start, end));
+            Assert.True(first.GetCapture(2, ref invocation, out start, out end));
+            Assert.Equal((3, 6), (start, end));
+        }
+        finally
+        {
+            first.Release(ref invocation);
+            second.Release(ref invocation); // Default and repeated release remain valid.
+            reused.Release(ref invocation);
+        }
+        Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
+    }
+
     [Fact]
     public void HomogeneousProofEngagesThePublicGapAndDeclinesHistoryCounterexamples()
     {

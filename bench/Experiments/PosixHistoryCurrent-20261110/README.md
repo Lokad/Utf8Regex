@@ -46,15 +46,13 @@ live batches take3560.573/4014.542/4616.347µs, about856/856/904B/call; modeled
 funded peak784B. Preserve the actual useful resource cost; no native policy match
 is claimed. Shared accounts return to zero. Raw row includes confidence/order data.
 
-Live allocation audit: PosixWorkspace always allocates a fresh exact int[] for
-repeat/open/last state after admission; Release discards it. SKU's16-int state
-fits the existing bounded exact-state pool, whereas4-int history state is outside
-its retention buckets. A bounded reuse pilot can preserve exact capacities and
-all ledger admission, reset the full borrowed span before use, and use the same
-retention eligibility/global caps as existing state buffers. Do not widen pool
-buckets, add another owner/cache or assume reduced allocation means faster calls.
-Measure public SKU/governed/cursor and unchanged Core/PCRE2 consumers before
-promotion; preserve multiple simultaneous same-capacity vectors and cursor aliases.
+Live allocation audit: PosixWorkspace allocates/discards a fresh exact int[]
+after admission. The initial estimate that SKU used16 integers was wrong. The
+[subsequent exact probe and rejected pilot](../PosixStateReuse-20261110/README.md)
+find18 integers for SKU,2 for its cursor control,6 for the history case; none
+fits the existing pool buckets. Reuse saved no allocations and was withdrawn.
+Do not infer element counts from rounded allocation bytes or claim this as a
+remaining low-cost pool win. Current capacities, admission and pool caps remain.
 
 Raw frozen graph, protocol, commands and all observations:
 `artifacts/experiments/posix-history-current-20261110/evidence.tar.gz`, SHA256
