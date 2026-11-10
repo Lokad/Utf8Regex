@@ -39,10 +39,8 @@
     "Complete Singleline EOF repeat proof",
     "Controlled PCRE2 class-run Count"
   ],
-  "Pending": [
-    "Final metadata CI"
-  ],
-  "Complete": false,
+  "Pending": [],
+  "Complete": true,
   "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
   "LinuxFixtures": 10,
   "LinuxVerifiedTrx": 14,
@@ -76,5 +74,15 @@
     }
   ],
   "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
-  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable."
+  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable.",
+  "FinalDocumentationCI": {
+    "Source": "44af47c5926bfc182eb58b986791a78e2f55bc5e",
+    "Run": 42761565318,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "SerializedProjectAndTargetHosts": true
+  }
 }

@@ -44,8 +44,9 @@ Raw archives and snapshot logs are verified off VM:
 - `artifacts/experiments/delivery-dev64-20261110/linux-evidence.tar.gz`,
   SHA-256 `852BD528BE620D19A3540530CFBA41CDA219094780B43A68CC81E86983963117`.
 
-Frozen-source CI42755373448 is green on Windows/Linux. Final imported-metadata
-CI remains pending. [Acceptance](acceptance.json) records the exact scope.
+Frozen-source CI42755373448 and final metadata CI42761565318 are green on
+Windows/Linux. Final metadata44af47c5926bfc182eb58b986791a78e2f55bc5e uses serialized
+project/target hosts. [Acceptance](acceptance.json) records the exact scope.
 Publication and downstream adoption remain separate. Remaining parity
 work continues in the ignored root PLAN.md; this is no full flavor-equivalence or
 total-heap guarantee.
