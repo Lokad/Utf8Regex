@@ -4,12 +4,10 @@
     <PackageId>Lokad.Utf8Regex.PythonRe</PackageId>
     <Title>Lokad.Utf8Regex.PythonRe</Title>
     <Description>Optional Python re companion package for Lokad.Utf8Regex, providing a UTF-8 oriented Python-style regular expression API without forcing Python-specific semantics into the base library.</Description>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>regex;utf8;utf-8;python;re;span;bytes;performance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

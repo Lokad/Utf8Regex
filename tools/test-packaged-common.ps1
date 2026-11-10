@@ -354,6 +354,11 @@ function Assert-PackageShape {
         if ($null -eq $id -or $id.InnerText -cne ($ExpectedAssembly -replace '\.dll$', '')) {
             throw "$PackagePath has an unexpected package identity."
         }
+        $readme = $metadata.SelectSingleNode("*[local-name()='readme']")
+        if ($null -eq $readme -or [string]::IsNullOrWhiteSpace($readme.InnerText) -or
+            $readme.InnerText -cnotin $entryNames) {
+            throw "$PackagePath must contain its declared package README."
+        }
 
         # Inspect the actual graph, including groups we would otherwise overlook.
         # Core has no package dependencies; an adapter has only its exact Core pin.

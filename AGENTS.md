@@ -120,6 +120,8 @@ staged bytes are immutable. Platform, performance and original consumer acceptan
 remain separate checks. Detached fixtures stage API snapshots and filter
 Category!=SourceOnly; source CI keeps repository/layout/snapshot guards.
 Core-only qualification must not require adapters or the benchmark executable.
+NuGet uses the self-contained docs/nuget/README.md; profile READMEs retain
+repository examples, navigation and benchmarks.
 
 ## Files and documentation
 
