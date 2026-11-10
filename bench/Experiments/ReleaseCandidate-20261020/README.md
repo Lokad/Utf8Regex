@@ -1,5 +1,8 @@
 # Common 0.4.0-rc.1 release preparation
 
+**Historical acceptance, superseded:** the unpublished PCRE2 bytes have known
+defects and must not be published. See the [retained rejection](ERRATA.md).
+
 All three immutable packages are READY, not published or tagged. Producer
 `2e97ac974e6e8c60aac95db1e4808cbda2ff9736` freezes documentation and shared version;
 both adapters pin exactly Core `[0.4.0-rc.1]`. No production C# changed from

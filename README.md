@@ -3,6 +3,8 @@
 Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
 enumerate and replace without first decoding the subject to a string.
 Core and the optional adapters are fully managed .NET libraries.
+This README describes 0.5.0 development source. Published 0.4.0 and frozen
+development candidates retain the scope recorded in their release evidence.
 
 ## Quick start
 

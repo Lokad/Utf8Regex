@@ -6,7 +6,7 @@ captures, replacement and failure types. It does not add a flavor switch to Core
 or promise complete native PCRE2 equivalence.
 
 See [release notes](../CHANGELOG.md), [migration](MIGRATION.md),
-[qualification](../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and the
+[delivery evidence](../src/Lokad.Utf8Regex.Pcre2/README.md#delivery-evidence) and the
 [API snapshot](../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 Historical receipts retain their original product/runtime identities.
 
@@ -46,7 +46,7 @@ must be in [0,input.Length]; text-aware execution requires a valid scalar bounda
 ## Grammar and lexical rules
 
 Supported families and operation-specific coverage are recorded in
-[QUALIFICATION.md](../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and the corpus.
+[profile README](../src/Lokad.Utf8Regex.Pcre2/README.md#supported-scope-and-limitations) and the corpus.
 The following rules prevent accepting broader Core syntax or losing PCRE2 scope.
 
 | Area | Contract |

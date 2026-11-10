@@ -164,6 +164,6 @@ asset, external matcher, or generated native payload. Removing the companion
 project and the explicitly tagged core hooks leaves the Core scalar library
 and its .NET-style grammar intact.
 
-Release evidence and the reviewed ownership, C#-guideline, package, corpus,
-allocation, and scaling inventories are recorded in
-[`QUALIFICATION.md`](QUALIFICATION.md).
+The [profile README](README.md#delivery-evidence) links frozen delivery evidence.
+The specification defines current admission and ownership; historical receipts
+retain their original source, package, runtime and performance scope.

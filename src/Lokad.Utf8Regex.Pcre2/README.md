@@ -34,7 +34,7 @@ it does not identify machine code or a particular fast path.
 backends. A scalar token can contribute one byte even when its accepted scalars
 require more; zero can mean that no positive bound was established.
 
-Subjects are strictly validated UTF-8 throughout. Normal character matching and
+Subjects must be valid UTF-8 throughout under the selected validation policy. Normal character matching and
 empty-match progression use scalars and primary byte coordinates. Explicit `\C`
 is a separately opted-in byte atom: it can report a slice splitting a scalar.
 `\K` in an opted-in lookaround can report non-slice ranges. Check the reported
@@ -110,6 +110,22 @@ explicit compile and execution settings.
 Replacement evaluator delegates must be non-null, even on misses; otherwise
 `ArgumentNullException` names `evaluator`. An already-cancelled explicit token
 still takes precedence. Return-value rules for valid callbacks are unchanged.
+
+## Delivery evidence
+
+Core, PythonRe and PCRE2 0.4.0 are published. The last frozen development boundary
+is the [four-package dev65 candidate](../../bench/Experiments/DeliveryDev65-20261110/README.md).
+This page describes subsequent development source; `inputValidation` requires a
+later candidate. Frozen packages and measurements retain their own identities.
+
+Use `tools/qualify-package-candidate.ps1 -Profiles Core,PythonRe,Pcre2,Posix` at a
+coherent boundary with a fresh common version and exact Core pins. It checks
+package/symbol provenance, APIs, restore identities and isolated consumers.
+Windows/Linux correctness, original consumer acceptance and current performance
+remain separate checks. Publication does not establish downstream adoption or
+complete profile equivalence. Historical [RC1 rejection](../../bench/Experiments/ReleaseCandidate-20261020/ERRATA.md)
+and [RC2 performance uncertainty](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md)
+stay with their original receipts.
 
 ## Resource controls and ownership
 

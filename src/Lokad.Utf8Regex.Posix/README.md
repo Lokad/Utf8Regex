@@ -4,6 +4,8 @@ The optional POSIX ERE adapter for .NET 10/11 matches Unicode scalars over stric
 UTF-8, with leftmost-longest selection and hierarchical capture priority.
 It is included in the qualified [four-package 0.5.0-dev.65 candidate](../../bench/Experiments/DeliveryDev65-20261110/README.md),
 and is not available in the published 0.4.0 release. See the [supported ERE contract](../../docs/SPEC-POSIX.md).
+This page describes later development source; `inputValidation` requires a
+subsequent candidate. Frozen dev65 keeps its original APIs and package bytes.
 
 The adapter depends only on Core. Execution is fully managed and checked,
 without a native or BCL regex fallback.
