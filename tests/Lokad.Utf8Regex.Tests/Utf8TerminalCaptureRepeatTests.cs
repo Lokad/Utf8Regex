@@ -154,11 +154,20 @@ public sealed class Utf8TerminalCaptureRepeatTests
     public void OriginalInterruptionInsideTerminalRunReleasesScratch(bool timeout, bool ascii)
     {
         var program = new Utf8Regex(ascii ? "([a-z]+)" : @"(\p{L}+)").Inspection.AvailableOwnedSliceProgram!;
-        var input = Encoding.UTF8.GetBytes(new string(ascii ? 'a' : 'é', 2048));
+        // ASCII ranges charge bounded 2 KiB blocks; keep enough input to reach
+        // the diagnostic hook's 64-step cadence inside either repeat loop.
+        var input = Encoding.UTF8.GetBytes(new string(ascii ? 'a' : 'é', ascii ? 262144 : 2048));
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else token.Cancel(); });
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (entered || !new System.Diagnostics.StackTrace().GetFrames().Any(frame =>
+                frame.GetMethod()?.Name == "RunClassRepeat")) return;
+            entered = true;
+            if (timeout) ticks = 25; else token.Cancel();
+        });
         var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
@@ -168,6 +177,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
             var failure = Record.Exception(() => Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            Assert.True(entered);
             Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
         }
         finally { session.Complete(); }

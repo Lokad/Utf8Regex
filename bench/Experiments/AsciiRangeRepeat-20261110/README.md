@@ -64,3 +64,10 @@ Linux evidence: `linux-checks.tar.gz`, SHA256
 `49E447C0F8DE919EA934D93A4012F62E6FA9DD1ADD78CAFD977444C6A4A8D693`.
 Complete derived summary and Windows logs accompany these archives. No package/
 Full refresh, ordinary benchmark-table rewrite or immutable-artifact change.
+
+CI42887365988 exposed a stale interruption fixture on Windows/Linux and both
+targets: 2 KiB ASCII now completes before the diagnostic hook at step64. The
+fixture uses256 KiB ASCII and verifies hook entry inside RunClassRepeat; the
+original-token/deadline and borrowed-loan assertions remain. All172 terminal/
+disjoint-repeat Release tests pass per target. This correction changes no
+production code, benchmark graph or timing claim.
