@@ -92,13 +92,13 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
 
     [Theory]
     [MemberData(nameof(Routes))]
-    public void EveryWorkCutoffRecoversParentAndSuccessRetainsItsOwnedArrayAndSet(int route)
+    public void EveryWorkCutoffRecoversParentAndSuccessRetainsItsRequiredStorage(int route)
     {
         var charClass = Class(4); byte[] caller = [0, 1, 2, 3]; ulong work, retained;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Produce(route, charClass, caller); work = measure.Budget.WorkSteps; retained = measure.Budget.ReservedBytes; }
-        Assert.Equal(route switch { 0 or 1 => 8ul, 2 => 248ul, 3 => 270ul, 4 or 5 => 266ul, _ => 258ul }, work);
-        var setBytes = route >= 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0;
+        Assert.Equal(route switch { 0 or 1 or 3 or 4 or 5 => 8ul, 2 => 248ul, _ => 258ul }, work);
+        var setBytes = route >= 6 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0;
         Assert.Equal(setBytes + (route >= 6 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(route == 2 ? 124 : 4)), retained);
         for (var cutoff = 0ul; cutoff <= work; cutoff++)
         {
@@ -123,7 +123,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         var charClass = Class(4); byte[] caller = [0, 1, 2, 3]; ulong peak;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Produce(route, charClass, caller); peak = measure.Budget.PeakBytes; }
-        var setBytes = route >= 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0;
+        var setBytes = route >= 6 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0;
         Assert.Equal(setBytes + (route >= 6 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(route == 2 ? 124 : 4)), peak);
         for (var allowance = 0ul; allowance <= peak; allowance++)
         {

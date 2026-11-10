@@ -34,7 +34,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         from depth in Enumerable.Range(0, 5) select new object[] { family, depth };
 
     private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count)
-        + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+        + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static PreparedMultiLiteralPackedNibbleSimdPrefilter Prefilter(PreparedAsciiIgnoreCaseLiteralSetSearch set)
         => (PreparedMultiLiteralPackedNibbleSimdPrefilter)typeof(PreparedAsciiIgnoreCaseLiteralSetSearch)
             .GetProperty("CorrelatedPrefilter", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(set)!;
@@ -48,7 +48,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         var result = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedAsciiIgnoreCaseLiteralSetSearchDataState>())
             + Utf8ConstructionBudget.ArrayBytes<AsciiIgnoreCaseLiteralBucket>(groups.Length)
             + Utf8ConstructionBudget.ArrayBytes<int>(256) + Utf8ConstructionBudget.ArrayBytes<byte>(searchCount)
-            + (searchCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+            + (searchCount > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
         foreach (var group in groups)
         {
             result += Utf8ConstructionBudget.ArrayBytes<byte[]>(group.Length);

@@ -56,7 +56,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
             var pair = Pair(values); var accepted = PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter);
             Assert.Equal(pair.HasValue, accepted);
             var count = accepted ? values.Select(v => v[pair!.Value.Primary]).Distinct().Count() : 0;
-            Assert.Equal(128 + (accepted ? Utf8ConstructionBudget.ArrayBytes<byte>(count) + (count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0) : 0), owner.Budget.ReservedBytes);
+            Assert.Equal(128 + (accepted ? Utf8ConstructionBudget.ArrayBytes<byte>(count) + (count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0) : 0), owner.Budget.ReservedBytes);
             if (accepted)
             {
                 Assert.Equal(pair!.Value.Primary, Assert.IsType<int>(Field(counter, "_primaryOffset")));
@@ -121,10 +121,10 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-        // Four distinct primary values exercise the owned set's extra frame.
-        // Family 2 now needs only a two-byte search after membership deduplication.
+        // Four distinct primary values borrow the checked BCL search; only the
+        // counter and independent byte-array preparation frames remain.
         var error = Record.Exception(() => Assert.True(Prepare(Family(14), kind)));
-        if (depth < (kind == 0 ? 3 : 1))
+        if (depth < (kind == 0 ? 2 : 1))
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
             Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);

@@ -37,7 +37,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         _ => new PreparedMultiLiteralRareBytePrefilter(values),
     };
 
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong Loan(object value) => value switch
     {
         PreparedMultiLiteralPackedNibbleSimdPrefilter p => Utf8ConstructionBudget.ArrayBytes<int>(p.MaskLength)

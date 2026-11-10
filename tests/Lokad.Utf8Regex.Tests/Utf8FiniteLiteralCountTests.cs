@@ -41,6 +41,8 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("😀😀|😀|中", "😀😀😀中", 3)]
     [InlineData("😀|😀😀|中", "😀😀😀中", 4)]
     [InlineData("(a)|(bc)|(def)", "adefbca", 4)]
+    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom 😀Finn Sawyer Huckleberry", 4)]
+    [InlineData("aa|bb|cc|dd|ee", "aa😀bb cc ee dd", 5)]
     public void SmallOrderedFamiliesCountWithoutVmStorage(string pattern, string text, int expected)
     {
         var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
@@ -55,6 +57,8 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("aa|a", "aaa")]
     [InlineData("😀😀|😀|中", "😀😀😀中")]
     [InlineData("中文語|夏洛克|约翰华", "中文語 夏洛克 约翰华")]
+    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom 😀Finn Sawyer Huckleberry")]
+    [InlineData("aa|bb|cc|dd|ee", "aa😀bb cc ee dd")]
     public void SmallFamilyWorkDenialIsCumulativeAndNeverPublishesPartialCount(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);

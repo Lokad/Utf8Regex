@@ -33,7 +33,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         from depth in Enumerable.Range(0, 5) select new object[] { family, depth };
     private static object? Field(object value, string name) => value.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value);
     private static object? Property(object value, string name) => value.GetType().GetProperty(name)!.GetValue(value);
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong DataLoan(AsciiExactLiteralSearchData data)
     {
         if (data.Buckets is null) return 0;
@@ -56,7 +56,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
     private static ulong ExtraLoan(byte[][] values)
     {
         var offsets = Ranking(values); var anchorCount = values.Select(v => v[offsets[0]]).Distinct().Count();
-        var loan = Utf8ConstructionBudget.ArrayBytes<byte>(anchorCount) + (anchorCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0)
+        var loan = Utf8ConstructionBudget.ArrayBytes<byte>(anchorCount) + (anchorCount > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0)
             + (offsets.Length == 1 ? 0 : 32ul + ((16ul * (ulong)(offsets.Length - 1) + 15) & ~15ul));
         foreach (var offset in offsets.Skip(1)) loan += Utf8ConstructionBudget.ArrayBytes<byte>(values.Select(v => v[offset]).Distinct().Count());
         if (values.Length != 3 && Secondary(values, offsets[0]) >= 0) loan += 32 + ((16ul * (ulong)values.Length + 15) & ~15ul);

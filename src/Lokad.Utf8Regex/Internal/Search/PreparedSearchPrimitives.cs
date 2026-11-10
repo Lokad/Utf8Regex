@@ -53,7 +53,7 @@ internal readonly struct PreparedByteSearch
             var owned = budget.AllocateArray<byte>(values.Length, false);
             budget.ChargeWork((ulong)values.Length);
             values.CopyTo(owned);
-            var result = FromOwnedValues(owned, owned.Length > 3 ? PreparedByteSet.CreateOwned(owned) : null);
+            var result = FromOwnedValues(owned, owned.Length > 5 ? PreparedByteSet.CreateOwned(owned) : null);
             scope.Complete();
             return result;
         }
@@ -72,6 +72,7 @@ internal readonly struct PreparedByteSearch
             1 => input.IndexOf(_values[0]),
             2 => input.IndexOfAny(_values[0], _values[1]),
             3 => input.IndexOfAny(_values[0], _values[1], _values[2]),
+            4 or 5 => input.IndexOfAny(_values),
             _ => GetRequiredByteSet().IndexOf(input),
         };
     }
@@ -84,6 +85,7 @@ internal readonly struct PreparedByteSearch
             1 => input.LastIndexOf(_values[0]),
             2 => input.LastIndexOfAny(_values[0], _values[1]),
             3 => input.LastIndexOfAny(_values[0], _values[1], _values[2]),
+            4 or 5 => input.LastIndexOfAny(_values),
             _ => GetRequiredByteSet().LastIndexOf(input),
         };
     }

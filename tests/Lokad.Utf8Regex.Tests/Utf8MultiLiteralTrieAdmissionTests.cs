@@ -37,7 +37,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
             + prefixes.Values.Aggregate(0ul, (sum, children) => sum + Utf8ConstructionBudget.ArrayBytes<byte>(children.Count)
                 + Utf8ConstructionBudget.ArrayBytes<int>(children.Count))
             + Utf8ConstructionBudget.ArrayBytes<byte>(rootCount)
-            + (rootCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+            + (rootCount > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     }
 
     [Theory]

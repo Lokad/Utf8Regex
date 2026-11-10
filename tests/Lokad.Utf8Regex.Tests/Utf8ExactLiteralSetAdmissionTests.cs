@@ -53,7 +53,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         if (UniqueOffset(groups, shortest) >= 0) return PreparedLiteralSetStrategy.UniqueAnchorByte;
         return shortest > 0 && groups.Sum(g => g.Length) >= 8 ? PreparedLiteralSetStrategy.MultiLiteralTrie : PreparedLiteralSetStrategy.Bucketed;
     }
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong DataLoan(AsciiExactLiteralSearchData data) => SearchLoan(data.FirstByteSearch)
         + Utf8ConstructionBudget.ArrayBytes<int>(data.BucketIndexMap.Length) + Utf8ConstructionBudget.ArrayBytes<AsciiExactLiteralBucket>(data.Buckets.Length)
         + data.Buckets.Aggregate(0ul, (sum, b) => sum + Utf8ConstructionBudget.ArrayBytes<byte[]>(b.Literals.Length)
@@ -161,7 +161,8 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     public void PreparationOwnersAndNestedSearchDenyDepthBeforeAcquisition(int kind, int depth)
     {
         var values = kind == 0 ? Family(13) : kind == 1 ? Family(7) : Family(9);
-        var required = kind == 2 ? 4 : 3;
+        // Four-byte search membership no longer acquires a nested set owner.
+        var required = 3;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => { if (kind == 0) _ = AsciiSearch.CreateExactLiteralSearchData(values); else _ = new PreparedLiteralSetSearch(values); });

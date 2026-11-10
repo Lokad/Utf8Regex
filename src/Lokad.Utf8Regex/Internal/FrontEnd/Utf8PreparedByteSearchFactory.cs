@@ -15,7 +15,7 @@ internal static class Utf8PreparedByteSearchFactory
             // The class producer owns this exact admitted array. Arbitrary
             // caller arrays use Create's independent copy instead.
             var values = charClass.GetPositiveMatchBytes();
-            var result = PreparedByteSearch.FromOwnedValues(values, values.Length > 3 ? CreateSet(charClass) : null);
+            var result = PreparedByteSearch.FromOwnedValues(values, values.Length > 5 ? CreateSet(charClass) : null);
             scope.Complete();
             return result;
         }

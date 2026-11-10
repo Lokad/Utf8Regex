@@ -21,9 +21,9 @@ public sealed class Utf8SharedByteSearchAdmissionTests
         var search = span ? PreparedByteSearch.Create(caller.AsSpan()) : PreparedByteSearch.Create(caller);
         Array.Fill(caller, (byte)11);
         Assert.Equal(expected, search.Values.ToArray()); Assert.Equal(length, search.Count);
-        Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 3 ? SetBytes : 0), owner.Budget.ReservedBytes);
-        Assert.Equal(length > 3 ? (ulong)(3 * length + 258) : (ulong)(2 * length), owner.Budget.WorkSteps);
-        Assert.Equal(length == 0 ? 0ul : length > 3 ? 2ul : 1ul, owner.Budget.PeakDepth);
+        Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 5 ? SetBytes : 0), owner.Budget.ReservedBytes);
+        Assert.Equal(length > 5 ? (ulong)(3 * length + 258) : (ulong)(2 * length), owner.Budget.WorkSteps);
+        Assert.Equal(length == 0 ? 0ul : length > 5 ? 2ul : 1ul, owner.Budget.PeakDepth);
         Assert.Equal(length > 0, owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
         byte[] subject = [11, 17, 96, 175, 254, 128, 255];
@@ -41,8 +41,8 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     public void EveryByteAndWorkCutoffPreservesParentObjectAndDoesNotRefundWork(int length, bool span)
     {
         var input = Enumerable.Range(0, length).Select(value => (byte)value).ToArray();
-        var bytes = Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 3 ? SetBytes : 0);
-        var work = length > 3 ? (ulong)(3 * length + 258) : (ulong)(2 * length);
+        var bytes = Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 5 ? SetBytes : 0);
+        var work = length > 5 ? (ulong)(3 * length + 258) : (ulong)(2 * length);
         foreach (var byteLimit in new[] { false, true })
             for (var allowance = 0ul; allowance <= (byteLimit ? bytes : work); allowance++)
             {

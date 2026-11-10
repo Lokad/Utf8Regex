@@ -95,6 +95,40 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.Equal(7, PreparedByteSearch.Create((byte)'q', (byte)'d', (byte)'w', (byte)'e').LastIndexOf(input));
     }
 
+    [Theory]
+    [InlineData("00010203")] [InlineData("00117FFF")]
+    [InlineData("00010980FF")] [InlineData("A1A2A3A4A5")]
+    [InlineData("01010101")] [InlineData("0101010101")]
+    public void FourAndFiveValueSearchesKeepAllBytesOffsetsAndVectorTails(string hex)
+    {
+        var values = Convert.FromHexString(hex);
+        var search = PreparedByteSearch.Create(values);
+        foreach (var length in new[] { 0, 1, 2, 3, 4, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, 95 })
+        foreach (var offset in new[] { 0, 1, 7, 31 })
+        {
+            // Matching sentinels outside the view must never affect a result.
+            var storage = Enumerable.Repeat(values[0], offset + length + 33).ToArray();
+            var view = storage.AsSpan(offset, length);
+            view.Fill(0x55); // Absent from every supplied value vector.
+            if (length == 0)
+            {
+                Assert.Equal(-1, search.IndexOf(view));
+                Assert.Equal(-1, search.LastIndexOf(view));
+                continue;
+            }
+            foreach (var position in new[] { 0, length / 2, length - 1 })
+            for (var value = 0; value < 256; value++)
+            {
+                view[position] = (byte)value;
+                var member = false;
+                foreach (var candidate in values) member |= candidate == value;
+                Assert.Equal(member ? position : -1, search.IndexOf(view));
+                Assert.Equal(member ? position : -1, search.LastIndexOf(view));
+                view[position] = 0x55;
+            }
+        }
+    }
+
     [Fact]
     public void PreparedSubstringSearchSupportsExactAndIgnoreCaseSearch()
     {

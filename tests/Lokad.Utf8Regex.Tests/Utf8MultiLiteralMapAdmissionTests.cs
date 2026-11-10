@@ -37,7 +37,7 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
         return Enumerable.Range(0, literals.Min(v => v.Length))
             .Where(offset => literals.Select(v => v[offset]).Distinct().Count() == literals.Length).DefaultIfEmpty(-1).First();
     }
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong PackedLoan(PreparedMultiLiteralPackedSearch p) => Utf8ConstructionBudget.ArrayBytes<byte[]>(256)
         + Utf8ConstructionBudget.ArrayBytes<int>(256) + (p.HasSecondByteAnchor ? Utf8ConstructionBudget.ArrayBytes<byte>(256) : 0)
         + (p.HasThirdByteAnchor ? Utf8ConstructionBudget.ArrayBytes<byte>(256) : 0) + SearchLoan(p.DiscriminatorSearch);
