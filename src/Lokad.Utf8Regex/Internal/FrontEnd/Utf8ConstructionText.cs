@@ -78,17 +78,6 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
     internal string ToText() => budget.CopyText(characters.Span);
     internal string ToText(int start, int length) => budget.CopyText(characters.Span.Slice(start, length));
     internal void Clear() => characters.Clear();
-    internal byte[] ToAscii()
-    {
-        var result = budget.AllocateArray<byte>(Length, false);
-        try
-        {
-            budget.ChargeWork((ulong)Length);
-            for (var index = 0; index < result.Length; index++) result[index] = (byte)characters[index];
-            return result;
-        }
-        catch { budget.ReleaseArray(result, false); throw; }
-    }
     internal static string EscapeScalar(int scalar)
     {
         Span<char> escaped = stackalloc char[2];

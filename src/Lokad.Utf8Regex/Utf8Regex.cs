@@ -3449,19 +3449,6 @@ public sealed partial class Utf8Regex
         new(limits.MaxWorkingBytes != 0 || limits.MaxResultBytes != 0
             ? string.Empty : Encoding.UTF8.GetString(input), pattern, timeout);
 
-    private static bool TryEncodeUtf8ToDestination(string value, Span<byte> destination, out int bytesWritten)
-    {
-        var requiredLength = Encoding.UTF8.GetByteCount(value);
-        if (requiredLength > destination.Length)
-        {
-            bytesWritten = 0;
-            return false;
-        }
-
-        bytesWritten = Encoding.UTF8.GetBytes(value, destination);
-        return true;
-    }
-
     internal bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
         // Both ordinary and emitted window selections use the same owned
