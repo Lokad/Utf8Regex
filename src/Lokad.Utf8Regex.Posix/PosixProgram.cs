@@ -109,7 +109,7 @@ internal sealed class PosixProgram
         }
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
-        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
+        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget) || CanSelectDisjointAsciiRuns(scalar, budget);
         var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest),
             static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest));
         construction.Complete();
@@ -150,6 +150,47 @@ internal sealed class PosixProgram
                 literal >= 0 && literal != instruction.A)
                 return false;
             literal = instruction.A;
+        }
+        return false;
+    }
+
+    private static bool CanSelectDisjointAsciiRuns(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        // Mutually disjoint positive classes give each transition one possible
+        // input boundary. Greedy selection maximizes the final run; tags outside
+        // the bodies have no competing occurrence history at that endpoint.
+        Span<byte> seen = stackalloc byte[16];
+        seen.Clear();
+        var runs = 0;
+        var code = program.Instructions;
+        for (var index = 0; index < code.Length; index++)
+        {
+            budget.ChargeWork(1);
+            var instruction = code[index];
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+                Utf8SliceInstructionKind.Anchor) continue;
+            if (instruction.Kind == Utf8SliceInstructionKind.Accept)
+                return runs >= 2 && index == code.Length - 1;
+            if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 1 ||
+                index > code.Length - 4 || instruction.A != index + 3 ||
+                code[index + 2] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
+                code[index + 3] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B ||
+                code[index + 1] is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } atom ||
+                program.CategorySetMembers[atom.D].Length != 0)
+                return false;
+            var mask = program.SetMasks[atom.A];
+            if (mask.Length != seen.Length) return false;
+            var nonempty = false;
+            for (var octet = 0; octet < seen.Length; octet++)
+            {
+                budget.ChargeWork(1);
+                if ((seen[octet] & mask[octet]) != 0) return false;
+                nonempty |= mask[octet] != 0;
+                seen[octet] |= mask[octet];
+            }
+            if (!nonempty) return false;
+            runs++;
+            index += 3;
         }
         return false;
     }
