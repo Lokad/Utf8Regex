@@ -40,8 +40,10 @@ Raw archives and snapshot logs are verified off VM:
 - `artifacts/experiments/delivery-dev66-20261110/validation.tar.gz`,
   SHA-256 `71556D6490ABB87320DC42AFC98D5F6F487D01D011C2F79D290D230733585AE9`.
 
-Frozen-source CI42815704840 is green on Windows/Linux. Final imported-metadata
-CI remains pending. [Acceptance](acceptance.json) records the exact scope.
+Frozen-source CI42815704840 and imported-metadata CI42826304590 are green on
+Windows/Linux, including disabled dynamic code. Metadata revision
+`7b0cc1c35e080a9142be8585a9ab361eb3c0c171` is accepted.
+[Acceptance](acceptance.json) records the exact scope.
 Publication and downstream adoption remain separate. Remaining parity
 work continues in the ignored root PLAN.md; this is no full flavor-equivalence or
 total-heap guarantee.

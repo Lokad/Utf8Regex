@@ -42,10 +42,8 @@
     "Self-contained common NuGet README",
     "Direct resolved Python dot/anchor nodes"
   ],
-  "Pending": [
-    "Final metadata CI"
-  ],
-  "Complete": false,
+  "Pending": [],
+  "Complete": true,
   "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
   "LinuxFixtures": 10,
   "LinuxVerifiedTrx": 14,
@@ -79,7 +77,7 @@
     }
   ],
   "Scope": "Immutable common four-profile candidate with inputValidation and bounded simplifications; exact Windows packages accepted on Linux and original consumers. Performance is source-qualified separately; no publication, adoption, full flavor equivalence or total-heap guarantee.",
-  "RemainingWork": "Further qualified-gap optimization and broader profile completion are deferred independent scope. This finite delivery awaits final metadata CI.",
+  "RemainingWork": "Further qualified-gap optimization and broader profile completion remain deferred independent scope. This finite delivery batch is complete.",
   "InputContract": "Validate default; AssumeValid trusts valid unchanged borrowed UTF-8; ordinary catalogs Validate, closed policy receipt labels both.",
   "PackageReadmeSha256": "8728E427C7D8971F609B5C4CD223F6AF7A6DB84E53B806992C109AEE98369E8D",
   "ValidationArchiveSha256": "71556D6490ABB87320DC42AFC98D5F6F487D01D011C2F79D290D230733585AE9",
@@ -90,5 +88,20 @@
     "SummaryRawHashesMatch": true,
     "RelativeLinksAndAnchorsChecked": 61,
     "Passed": true
+  },
+  "FinalDocumentationCI": {
+    "Source": "7b0cc1c35e080a9142be8585a9ab361eb3c0c171",
+    "Run": 42826304590,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "SerializedProjectAndTargetHosts": true
+  },
+  "PolicyPackageCoverage": {
+    "ProfilePlatformTargetCombinations": 16,
+    "AllPassed": true,
+    "EvidenceSha256": "F20DDE54B12C2CC63032959FD2E2AB517C54319D65FE963CD5F3603EC1782F7E"
   }
 }
