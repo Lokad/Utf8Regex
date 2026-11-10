@@ -16,16 +16,25 @@ public sealed class PythonReCaptureCompletionTests
     public void MultipleCaptureCompletionSurvivesReducedRollbackStorage(
         string pattern, string text, int last, string name, string capture)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
-        var input = Encoding.UTF8.GetBytes(text);
-        var result = regex.SearchDetailedData(input);
-        Assert.True(result.Success);
-        Assert.Equal(last, result.LastIndex);
-        Assert.Equal(name, result.LastGroup);
-        Assert.Equal(capture, result.Groups[last].ValueText);
-        Assert.True(regex.SearchDetailedData(input).Success);
-        Assert.Equal(capture, result.Groups[last].ValueText);
+        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+                new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 }, inputValidation);
+            var input = Encoding.UTF8.GetBytes(text);
+            var result = regex.SearchDetailedData(input);
+            Assert.True(result.Success);
+            Assert.Equal(last, result.LastIndex);
+            Assert.Equal(name, result.LastGroup);
+            Assert.Equal(capture, result.Groups[last].ValueText);
+
+            var expected = result.Groups.Skip(1).Select(group => group.Success ? group.ValueText : string.Empty).ToArray();
+            Assert.Equal(expected, Assert.Single(regex.FindAllToStrings(input).TupleValues));
+            Assert.Equal(expected, Assert.Single(regex.FindAllToUtf8(input).TupleValues).Select(value => Encoding.UTF8.GetString(value)));
+            Assert.Equal(last, regex.SearchDetailedData(input).LastIndex);
+            Assert.Equal(last, result.LastIndex);
+            Assert.Equal(name, result.LastGroup);
+            Assert.Equal(capture, result.Groups[last].ValueText);
+        }
     }
 
     [Theory]
