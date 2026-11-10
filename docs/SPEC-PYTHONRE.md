@@ -47,6 +47,11 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+Anchored Match/FullMatch can reuse a bounded necessary-start proof to reject an
+impossible starting byte before mandatory-literal screening or VM scratch. This
+never establishes success; possible starts retain screening and verification.
+Validate still checks the whole subject first.
+
 A prepared prefix trie can search a whole remaining suffix of at most 256 bytes
 between charged entry/completion checkpoints. It returns only a necessary start;
 the scalar verifier retains ordered matching and captures. Reusing shared prefixes
@@ -58,8 +63,8 @@ markers between them, including short subjects of at least 16 bytes.
 Existing checked, metered search and scalar rewind locate
 a necessary window; the profile VM still verifies its candidates with complete
 prefix context and original capture/backreference order. Match and FullMatch
-retain anchored verification. Whole-subject validation and capture-slot admission
-remain; avoiding impossible starts can lower execution work and required VM
+retain anchored verification. The validation policy and admission for used capture
+slots remain; avoiding impossible starts can lower execution work and required VM
 workspace. Search blocks, rewound scalars, verification and publication keep the
 same invocation's cancellation, deadline and resource authority.
 Direct class/delimiter windows rewind the class itself, including any accepted

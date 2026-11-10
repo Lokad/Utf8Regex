@@ -57,10 +57,16 @@ internal struct PythonReScalarMatchState
                 _validation = Utf8Validation.Subject(input, ref _invocation);
             else
                 Utf8Validation.CheckSubject(input, ref _invocation);
-            // An unconditional Fail or an absent necessary literal can finish
-            // before scalar scratch. Strict validation and final publication
-            // still use this invocation; other programs retain their verifier.
+            // Anchored calls cannot skip a rejected starting byte. Reuse the
+            // bounded necessary-start proof before scanning for a required
+            // literal elsewhere; possible starts keep that useful screen.
+            // Strict validation and final publication still use this invocation.
             if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
+                !prepareSearch && candidateRegex is not null &&
+                (uint)startOffsetInBytes <= (uint)input.Length &&
+                TryGetLeadingAsciiRange(program, false, out var startLow, out var startHigh) &&
+                (startOffsetInBytes == input.Length ||
+                 (uint)(input[startOffsetInBytes] - startLow) > (uint)(startHigh - startLow)) ||
                 !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
                 required.RejectMissingExactRequiredLiteral(input, ref _invocation))
             {
