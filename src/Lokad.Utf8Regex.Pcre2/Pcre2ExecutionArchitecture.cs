@@ -2501,7 +2501,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2SingleTokenRepeatDirectProgram { Program: var repeat } &&
             input.Validation.IsAscii && matchOptions == Pcre2MatchOptions.None &&
-            invocation.IsUnmetered && invocation.CheckpointHook is null &&
+            invocation.CheckpointHook is null &&
             repeat.Minimum > 0 && repeat.Maximum == int.MaxValue && repeat.Preference != Pcre2RepeatPreference.Lazy &&
             !repeat.Request.SkipsCrLfContinuation &&
             (repeat.Request.Options & (Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine)) == 0 &&
@@ -2512,6 +2512,10 @@ internal static class Pcre2GlobalOperationDriver
             // Every scalar is one byte here. A complete greedy root selects
             // each maximal member run; shorter runs cannot qualify at a suffix.
             var asciiBudget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
+            // This counter acquires no scratch/result storage. Observe existing
+            // shared admission failures and original interruption authority;
+            // do not invent an allowance loan for storage it does not need.
+            if (!invocation.IsUnmetered) asciiBudget.ReserveWorking(0);
             result = Pcre2SingleTokenRepeatRunner.CountAsciiClassRuns(asciiSet, repeat.Minimum,
                 input.Bytes[start.Value..], ref asciiBudget);
             return true;

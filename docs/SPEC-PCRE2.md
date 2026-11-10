@@ -210,6 +210,14 @@ Create maps positive nullable common policies to these limits; null becomes zero
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
 the managed route, not native PCRE2. Proved search/count shortcuts can change work
 counts or avoid VM workspace; exact denial thresholds are not version-stable.
+Complete positive-minimum, unbounded greedy ASCII class-run Count also supports
+finite policies, live tokens, deadlines and caller working allowances. It charges
+each candidate and at most 4096 bytes per scan block, using the original shared
+budget and publication checks. The counter needs no scratch or result storage:
+it makes no working-allowance loan, and depth/working/result ceilings need not
+reject work that acquires none of that storage. Existing shared denials remain
+authoritative, including for an empty stream. Non-ASCII subjects, lazy/bounded/
+caseless forms, anchoring, match flags and diagnostic hooks retain their runners.
 Class/delimiter Count windows can reject an unproved prefix using the original
 scalar predicate before VM admission. Classification retains bounded work and
 the original token/deadline; viable starts retain complete verification. Skipped
