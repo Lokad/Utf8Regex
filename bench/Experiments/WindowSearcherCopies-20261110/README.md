@@ -72,3 +72,12 @@ samples verified off VM at
 Windows checks and [codegen summary](codegen-summary.json) are alongside the
 archive. Immutable staged/published packages, including dev65, remain unchanged.
 Source CI42778531948 passes Windows/Linux for `c004f88c20d4499bdc889493d3f0c66350da50cb`, including both scoped changes.
+
+The closing delivery audit rechecked the eight immutable dev65 package/symbol
+assets in both canonical and qualified-feed locations, and the Full, Linux and
+window-comparison raw archives against their recorded hashes. All match. The
+[qualified four-package candidate](../DeliveryDev65-20261110/README.md) remains
+frozen at `998c630f`; these later source changes are not included in its bytes.
+A future package incorporating them needs a new version at a coherent delivery
+boundary. This audit reuses accepted tests/CI and performs no new benchmark or
+package qualification. Remaining performance gaps are not a claim of full parity.
