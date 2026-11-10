@@ -39,7 +39,10 @@
   Prove first-acceptance selection for homogeneous literal repeats with captures
   outside repeated bodies, retaining general history competition elsewhere.
   Flat positive ASCII class runs also admit this proof when their sets are
-  mutually disjoint. Synchronous POSIX operations own workspace state inline,
+  mutually disjoint. A restricted repeated single-literal capture can select its
+  first acceptance while retaining required empty tails. Proven winners transfer
+  their admitted history instead of allocating and copying a second trace;
+  general capture competition remains. Synchronous POSIX operations own workspace state inline,
   avoiding a separate helper allocation while preserving cursor aliases.
   PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding
