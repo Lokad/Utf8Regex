@@ -9,7 +9,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
     private Utf8PosixRegex? _regex;
     private ReadOnlyMemory<byte> _input;
     private Utf8SliceInvocation _invocation;
-    private PosixWorkspace? _workspace;
+    private PosixWorkspace _workspace;
     private int _position;
     private bool _completed;
 
@@ -40,14 +40,14 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         try
         {
             PosixWorkspace.Finish(ref _invocation);
-            if (_completed || !_workspace!.Find(_input.Span, _position, false, ref _invocation, out var start, out var end,
+            if (_completed || !_workspace.Find(_input.Span, _position, false, ref _invocation, out var start, out var end,
                 captureHistory: output.Length > 1))
             {
                 Utf8PosixRegex.ClearOutput(output, ref _invocation);
                 Complete();
                 return false;
             }
-            match = regex.Project(_input.Span, start, end, _workspace, output, ref _invocation);
+            match = regex.Project(_input.Span, start, end, in _workspace, output, ref _invocation);
             PosixWorkspace.Charge(ref _invocation);
             if (start == end && end == _input.Length) Complete();
             else _position = start == end ? Utf8SliceRunner.AdvancePastScalar(_input.Span, end, false) : end;
@@ -62,7 +62,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
     private void Complete()
     {
         _completed = true;
-        _workspace?.Release(ref _invocation); _workspace = null;
+        _workspace.Release(ref _invocation);
         _input = default;
     }
 

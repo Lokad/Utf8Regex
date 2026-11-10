@@ -38,7 +38,7 @@ public sealed class PosixWorkspaceTests
             kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1UL : 1 << 20, 1);
         var account = new Account(1 << 20);
         var invocation = new Utf8SliceInvocation(limits, Timeout.InfiniteTimeSpan, default, account);
-        PosixWorkspace? workspace = null;
+        PosixWorkspace workspace = default;
         try
         {
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
@@ -48,7 +48,7 @@ public sealed class PosixWorkspaceTests
             });
             Assert.Equal(kind, error.ResourceKind);
         }
-        finally { workspace?.Release(ref invocation); }
+        finally { workspace.Release(ref invocation); }
         Assert.Equal(0UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 

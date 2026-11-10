@@ -62,7 +62,7 @@ public sealed class Utf8PosixRegex
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
-        PosixWorkspace? workspace = null;
+        PosixWorkspace workspace = default;
         try
         {
             ValidateInput(input, 0, ref invocation);
@@ -70,7 +70,7 @@ public sealed class Utf8PosixRegex
             return workspace.Find(input, 0, true, ref invocation, out _, out _);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateTimeout(); }
-        finally { workspace?.Release(ref invocation); }
+        finally { workspace.Release(ref invocation); }
     }
 
     /// <summary>Finds the selected whole match at or after a scalar-aligned byte floor.</summary>
@@ -85,7 +85,7 @@ public sealed class Utf8PosixRegex
     {
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
         var output = OutputWindow(groups);
-        PosixWorkspace? workspace = null;
+        PosixWorkspace workspace = default;
         try
         {
             ValidateInput(input, startOffsetInBytes, ref invocation);
@@ -93,11 +93,11 @@ public sealed class Utf8PosixRegex
             workspace = CreateWorkspace(ref invocation, captureHistory);
             if (!workspace.Find(input, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
-            return Project(input, start, end, workspace, output, ref invocation);
+            return Project(input, start, end, in workspace, output, ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { output.Clear(); throw CreateTimeout(); }
         catch { output.Clear(); throw; }
-        finally { workspace?.Release(ref invocation); }
+        finally { workspace.Release(ref invocation); }
     }
 
     /// <summary>Counts nonoverlapping selected matches, advancing one scalar after each empty match.</summary>
@@ -105,7 +105,7 @@ public sealed class Utf8PosixRegex
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
-        PosixWorkspace? workspace = null;
+        PosixWorkspace workspace = default;
         try
         {
             ValidateInput(input, startOffsetInBytes, ref invocation);
@@ -121,7 +121,7 @@ public sealed class Utf8PosixRegex
             return count;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateTimeout(); }
-        finally { workspace?.Release(ref invocation); }
+        finally { workspace.Release(ref invocation); }
     }
 
     /// <summary>Creates an exclusive disposable cursor borrowing unchanged input memory.</summary>
@@ -152,7 +152,7 @@ public sealed class Utf8PosixRegex
     internal Span<Utf8ValueMatch> OutputWindow(Span<Utf8ValueMatch> output) => output[..Math.Min(output.Length, GroupCount + 1)];
 
     internal Utf8ValueMatch Project(ReadOnlySpan<byte> input, int start, int end,
-        PosixWorkspace workspace, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
+        in PosixWorkspace workspace, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
     {
         ClearOutput(output, ref invocation);
         var whole = ProjectRange(input, start, end, ref invocation);

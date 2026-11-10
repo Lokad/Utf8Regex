@@ -11,7 +11,9 @@ namespace Lokad.Utf8Regex.Posix;
 // storage uses the existing admitted invocation buffers, without a second ledger.
 // Whole-only output needs no tag history: captures cannot affect ERE acceptance.
 // A cursor reserves tag capacity because later advances can request captures.
-internal sealed class PosixWorkspace
+// Own one mutable local or cursor field; pass by reference, never copy live loans.
+// Projection borrows readonly state; Release also accepts the default empty value.
+internal struct PosixWorkspace
 {
     private readonly PosixProgram _program;
     private int[] _state = [];
@@ -305,7 +307,7 @@ internal sealed class PosixWorkspace
         return -1;
     }
 
-    internal bool GetCapture(int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
+    internal readonly bool GetCapture(int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
     {
         var tag = _program.CaptureTags[slot];
         var close = _state[_lastOffset + tag];
@@ -350,7 +352,8 @@ internal sealed class PosixWorkspace
     {
         _frames.Release(ref invocation); _undo.Release(ref invocation);
         _trace.Release(ref invocation); _best.Release(ref invocation);
-        invocation.Ledger.Release(_stateBytes); _stateBytes = 0; _state = [];
+        invocation.Ledger.Release(_stateBytes);
+        this = default;
     }
 
     internal static void Charge(ref Utf8SliceInvocation invocation)
