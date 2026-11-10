@@ -22,8 +22,8 @@ public sealed partial class Utf8Regex
             return false;
         try
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token) { InputValidation = InputValidation };
+            var validation = Utf8Validation.Subject(input, ref invocation);
             // Mixed subjects need scalar discovery unless the native proof
             // guarantees complete UTF-8 boundaries. Keep the same invocation.
             var byteSafe = _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue

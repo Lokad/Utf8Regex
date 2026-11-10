@@ -35,7 +35,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         _invocation.ShareStorageForCursor();
         try
         {
-            _ = Utf8Validation.Validate(input.Span, ref _invocation);
+            Utf8Validation.CheckSubject(input.Span, ref _invocation);
             if ((uint)start > (uint)input.Length || start < input.Length && (input.Span[start] & 0xc0) == 0x80)
                 throw new ArgumentOutOfRangeException("startOffsetInBytes");
             _position = _origin = start;

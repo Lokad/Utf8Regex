@@ -42,9 +42,27 @@ Matching uses **Unicode scalars**. For example,
 Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
 
 The entire subject must be valid UTF-8, including text after an early match.
+The default Validate policy checks this; AssumeValid makes it a caller guarantee.
 Byte coordinates are primary; UTF-16 coordinates and strings are derived
 conveniences. Keep borrowed input unchanged and its owner alive while a view or
 cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
+
+## Subject validation policy
+
+Choose once when constructing an engine or through its factory:
+
+```csharp
+var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
+// regex.InputValidation is read-only.
+```
+
+`Validate` (default) checks the whole subject at most once per operation or cursor
+lifetime. `AssumeValid` omits that pass when the caller guarantees valid UTF-8 and
+unchanged borrowed bytes. All four packages inherit the choice through matching,
+counting, output, splitting and cursors where supported. Pattern/replacement
+validation, checked memory access, scalar semantics and cooperative cancellation
+remain. Coordinate/result work may still scan input. Read the
+[contract](docs/SPEC.md#subject-input-validation) before choosing AssumeValid.
 
 ## Cancellation and limits
 
@@ -86,7 +104,8 @@ runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 The tables were refreshed on **10 November 2026** using **.NET 11 RC3**
 (`11.0.0-rc.3.26522.148`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
 They measure public operations, including strict UTF-8 validation and required
-result materialization. Values come from
+result materialization. Existing tables use **Validate**; AssumeValid
+measurements have a separate caller-validity contract. Values come from
 [the compact Core summary](bench/Snapshots/Core.json). Qualification verdicts,
 recorded source identities and snapshot hashes remain in that summary. Unqualified rows
 retain their observations without establishing parity. The complete Release

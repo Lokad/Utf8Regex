@@ -51,7 +51,7 @@ internal struct PythonReScalarMatchState
         _invocation = invocation;
         try
         {
-            _validation = Utf8Validation.Validate(input, ref _invocation);
+            _validation = Utf8Validation.Subject(input, ref _invocation);
             // An unconditional Fail or an absent necessary literal can finish
             // before scalar scratch. Strict validation and final publication
             // still use this invocation; other programs retain their verifier.
@@ -569,10 +569,10 @@ internal struct PythonReScalarMatchState
             // Entry validation already supplies coordinates at both subject ends.
             var startUtf16 = _validation.IsAscii || start == 0 ? start : start == input.Length ? _validation.Utf16Length
                 : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
-                : Utf8Validation.Validate(input[..start], ref _invocation).Utf16Length;
+                : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
             var endUtf16 = _validation.IsAscii ? end : end == input.Length ? _validation.Utf16Length
                 : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
-                : startUtf16 + Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length;
+                : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
             var value = new PythonReGroupData
             {
                 Number = 0, Success = true,

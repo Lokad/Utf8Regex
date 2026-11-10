@@ -9,6 +9,21 @@ namespace Lokad.Utf8Regex.Posix;
 /// <remarks>Selected matches are leftmost-longest with hierarchical subpattern priority. Instances are immutable and reusable; there is no native or BCL matcher fallback.</remarks>
 public sealed class Utf8PosixRegex
 {
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
+        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
+        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        => Compile(pattern, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
+
+
+    /// <summary>Gets the immutable subject UTF-8 validation policy.</summary>
+    public Utf8InputValidation InputValidation { get; }
+
+    /// <summary>Compiles an ERE with an immutable subject validation policy.</summary>
+    public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None, TimeSpan? matchTimeout = null,
+        Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        : this(pattern, options, matchTimeout ?? Regex.InfiniteMatchTimeout, resourcePolicy, inputValidation) { }
+
     private readonly PosixProgram _program;
     private readonly Utf8ExecutionLimits _limits;
 
@@ -17,7 +32,14 @@ public sealed class Utf8PosixRegex
 
     /// <summary>Compiles an ERE with explicit newline semantics, timeout and resource policy.</summary>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+        : this(pattern, options, matchTimeout, resourcePolicy, Utf8InputValidation.Validate) { }
+
+    /// <summary>Compiles an ERE with explicit execution and subject validation policies.</summary>
+    public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8InputValidation inputValidation)
     {
+        Utf8Validation.ValidatePolicy(inputValidation);
+        InputValidation = inputValidation;
         ArgumentNullException.ThrowIfNull(pattern);
         if ((options & ~PosixCompileOptions.Newline) != 0) throw new ArgumentOutOfRangeException(nameof(options));
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
@@ -31,7 +53,8 @@ public sealed class Utf8PosixRegex
     /// <summary>Compiles with separate bounded eager construction and execution controls.</summary>
     public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        TimeSpan constructionTimeout, CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
@@ -39,7 +62,7 @@ public sealed class Utf8PosixRegex
         using var owner = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
         try
         {
-            var result = new Utf8PosixRegex(pattern, options, matchTimeout, resourcePolicy);
+            var result = new Utf8PosixRegex(pattern, options, matchTimeout, resourcePolicy, inputValidation);
             owner.Budget.ChargeWork(0);
             owner.Complete();
             return result;
@@ -133,7 +156,7 @@ public sealed class Utf8PosixRegex
     internal Utf8SliceInvocation StartInvocation(CancellationToken token, IUtf8MemoryAllowance? allowance)
     {
         token.ThrowIfCancellationRequested();
-        return new(_limits, MatchTimeout, token, allowance);
+        return new(_limits, MatchTimeout, token, allowance) { InputValidation = InputValidation };
     }
 
     internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)
@@ -142,7 +165,7 @@ public sealed class Utf8PosixRegex
     internal static void ValidateInput(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {
         if ((uint)start > (uint)input.Length) throw new ArgumentOutOfRangeException("startOffsetInBytes");
-        var breach = Utf8Validation.TryValidateOnly(input, ref invocation);
+        var breach = Utf8Validation.TryCheckSubject(input, ref invocation);
         if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
         if (start < input.Length && (input[start] & 0xc0) == 0x80)
             throw new ArgumentOutOfRangeException("startOffsetInBytes", "The start must be a Unicode scalar boundary.");

@@ -54,7 +54,7 @@ internal abstract class Utf8CompiledEngineRuntime
     {
         return validation.ByteLength == input.Length
             ? validation
-            : Utf8InputAnalyzer.ValidateOnly(input);
+            : Utf8Validation.DescribeValid(input);
     }
 
     /// <summary>

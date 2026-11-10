@@ -120,7 +120,7 @@ public sealed partial class Utf8Regex
             {
                 return scalarIsMatch;
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
@@ -158,7 +158,7 @@ public sealed partial class Utf8Regex
             }
             else
             {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref invocation);
             }
         }
@@ -195,7 +195,7 @@ public sealed partial class Utf8Regex
             {
                 return scalarCount;
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             return OwnedSliceCountFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
@@ -227,7 +227,7 @@ public sealed partial class Utf8Regex
                     return Utf8ValueMatch.NoMatch;
                 }
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, validation, ref invocation);
         }
@@ -248,14 +248,14 @@ public sealed partial class Utf8Regex
         {
             if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
             {
-                var analysis = Utf8InputAnalyzer.Analyze(input);
+                var analysis = Utf8ValidatedInput.Create(input, InputValidation);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
                     .WithTimeoutMapping(input, this);
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             if (validation.ByteLength != input.Length)
-                validation = Utf8Validation.Validate(input, ref invocation);
+                validation = Utf8Validation.Subject(input, ref invocation);
             var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }

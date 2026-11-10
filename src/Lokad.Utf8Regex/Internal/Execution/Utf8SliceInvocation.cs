@@ -16,6 +16,11 @@ internal struct Utf8SliceInvocation
     private Utf8StorageLedger _inlineLedger;
     private SharedInvocationState? _sharedWork;
 
+    // One immutable engine policy and one logical subject per invocation.
+    // Pattern/template validation uses separate helpers and never consults these.
+    internal Utf8InputValidation InputValidation;
+    internal bool SubjectValidationCompleted;
+
     internal Utf8SliceInvocation(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
         : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
     {

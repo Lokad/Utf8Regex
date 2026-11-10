@@ -5,7 +5,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Input;
 
 /// <summary>
-/// Operation-local authority that a complete subject is well-formed UTF-8.
+/// Operation-local authority for well-formed UTF-8, established by validation
+/// or the immutable engine's caller-validity contract.
 /// Derived coordinate projection state is materialized only when requested.
 /// </summary>
 internal ref struct Utf8ValidatedInput
@@ -21,9 +22,9 @@ internal ref struct Utf8ValidatedInput
         _boundaryMap = null;
     }
 
-    // PCRE2-INTEGRATION-POINT: durable strict validation authority for unchanged
-    // borrowed memory. Only this validating factory can set its metadata; each
-    // synchronous borrower gets the same subject, without a public revalidation bypass.
+    // PCRE2-INTEGRATION-POINT: durable subject authority for unchanged borrowed
+    // memory. The factory applies the invocation's immutable validation policy
+    // and derives metadata; borrowers cannot supply fabricated coordinates.
     internal readonly struct Memory
     {
         private readonly ReadOnlyMemory<byte> _bytes;
@@ -38,7 +39,7 @@ internal ref struct Utf8ValidatedInput
         internal static Utf8ExecutionLimitKind TryCreate(ReadOnlyMemory<byte> bytes,
             scoped ref Utf8SliceInvocation invocation, out Memory memory)
         {
-            var breach = Utf8Validation.TryValidate(bytes.Span, ref invocation, out var validation);
+            var breach = Utf8Validation.TrySubject(bytes.Span, ref invocation, out var validation);
             memory = breach == Utf8ExecutionLimitKind.None ? new(bytes, validation) : default;
             return breach;
         }
@@ -56,20 +57,16 @@ internal ref struct Utf8ValidatedInput
 
     public Utf8BoundaryMap BoundaryMap => GetRandomAccessMap();
 
-    public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input)
-        => new(input, Utf8InputAnalyzer.ValidateOnly(input));
+    public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => new(input, Utf8Validation.Subject(input, inputValidation));
 
-    // PCRE2-INTEGRATION-POINT: validate under the caller's existing invocation
-    // without exposing an unchecked construction from caller-supplied metadata.
+    // PCRE2-INTEGRATION-POINT: apply the caller's existing invocation policy
+    // without exposing construction from caller-supplied metadata.
     internal static Utf8ExecutionLimitKind TryCreate(ReadOnlySpan<byte> input,
         scoped ref Utf8SliceInvocation invocation, out Utf8ValidatedInput validated)
     {
-        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
-        {
-            validated = Create(input);
-            return Utf8ExecutionLimitKind.None;
-        }
-        var breach = Utf8Validation.TryValidate(input, ref invocation, out var validation);
+        var breach = Utf8Validation.TrySubject(input, ref invocation, out var validation);
         validated = breach == Utf8ExecutionLimitKind.None ? new(input, validation) : default;
         return breach;
     }

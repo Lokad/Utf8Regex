@@ -7,11 +7,14 @@ namespace Lokad.Utf8Regex.Pcre2;
 /// <remarks>Dispose closes new calls and refunds compilation after active calls finish. Temporary matching storage uses the program allowance unless a separate working account is supplied. Borrowed input and fixed invocation metadata are outside modeled buffer storage.</remarks>
 public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
 {
+    /// <summary>Gets the immutable subject validation policy selected at compilation.</summary>
+    public Utf8InputValidation InputValidation { get; }
+
     private Utf8Pcre2Regex? _regex;
     private readonly Utf8FundedStorage _storage;
 
     internal Utf8Pcre2RegexProgramOwner(Utf8Pcre2Regex regex, Utf8FundedStorage storage)
-    { _regex = regex; _storage = storage; }
+    { _regex = regex; _storage = storage; InputValidation = regex.InputValidation; }
 
     /// <summary>Gets the number of defined capture slots, excluding whole-match group zero.</summary>
     /// <remarks>Rejects access after close. Branch-reset numbering and duplicate names retain the validated profile semantics.</remarks>

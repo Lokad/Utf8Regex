@@ -17,7 +17,7 @@ internal static class Utf8OwnedSplitPreparation
         try
         {
             invocation.ShareStorageForCursor();
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapBytes);
             // Published maps stay charged for this shared invocation. Views own
             // ordinary managed references; getters decode only their UTF-8 slice.

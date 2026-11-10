@@ -444,7 +444,7 @@ internal static class Utf8ScalarSimplePatternVerifier
             return false;
         }
 
-        var map = Utf8BoundaryMap.Create(input);
+        var map = Utf8BoundaryMap.Create(input, Utf8Validation.DescribeValid(input));
         if (!map.TryGetUtf16OffsetForByteOffset(startByte, out var startUnit) ||
             !map.TryGetUtf16OffsetForByteOffset(startByte + matchedByteLength, out var endUnit))
         {

@@ -594,7 +594,7 @@ internal ref partial struct Utf8OperationMatchCursor
             var suffixStartUtf16 = suffixStart;
             if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
-                suffixStartUtf16 = Utf8Validation.Validate(_input[..suffixStart], ref _sliceInvocation).Utf16Length;
+                suffixStartUtf16 = Utf8SliceBufferWork.CountUtf16(_input[..suffixStart], ref _sliceInvocation);
             }
 
             _current = new Utf8ValueMatch(true, true, suffixStartUtf16, suffixLiteral.Length, suffixStart, suffixLiteral.Length);
@@ -636,7 +636,7 @@ internal ref partial struct Utf8OperationMatchCursor
             var foldedSuffixStartUtf16 = foldedSuffixStart;
             if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
-                foldedSuffixStartUtf16 = Utf8Validation.Validate(_input[..foldedSuffixStart], ref _sliceInvocation).Utf16Length;
+                foldedSuffixStartUtf16 = Utf8SliceBufferWork.CountUtf16(_input[..foldedSuffixStart], ref _sliceInvocation);
             }
 
             _current = new Utf8ValueMatch(true, true, foldedSuffixStartUtf16, foldedSuffixLiteral.Length, foldedSuffixStart, foldedSuffixLiteral.Length);

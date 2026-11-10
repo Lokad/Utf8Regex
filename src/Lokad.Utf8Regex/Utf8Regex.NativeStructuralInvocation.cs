@@ -26,8 +26,8 @@ public sealed partial class Utf8Regex
             _ownedSliceProgram is { IgnoreCase: true } or { HasBalancing: true } or
                 { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true })
             return false;
-        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        validation = Utf8Validation.Validate(input, ref invocation);
+        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token) { InputValidation = InputValidation };
+        validation = Utf8Validation.Subject(input, ref invocation);
         return true;
     }
 }

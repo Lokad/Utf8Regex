@@ -466,8 +466,8 @@ internal static class Pcre2SliceDriver
                 request.DefaultLimits.HeapLimitInBytes,
                 request.DefaultLimits.ResultLimitInBytes);
         return memoryAllowance is null
-            ? new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken)
-            : new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken, memoryAllowance);
+            ? new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken) { InputValidation = request.InputValidation }
+            : new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken, memoryAllowance) { InputValidation = request.InputValidation };
     }
 
     // Global cursors retain this authority across waits/copies. A return check

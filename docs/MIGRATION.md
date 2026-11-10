@@ -11,6 +11,24 @@ Benchmark runs default to .NET 11; use `-Framework net10.0` with
 the test/benchmark scripts for .NET 10 controls. Historical measurements retain
 their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
 
+Subject validation is now an explicit immutable choice in Core, PythonRe,
+PCRE2 and POSIX:
+
+```csharp
+var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
+```
+
+The default `Validate` preserves strict whole-input rejection. `AssumeValid` skips
+that pass because the host guarantees valid UTF-8 and unchanged borrowed storage;
+it does not guarantee rejection of malformed subjects. Choose it once at engine
+construction or a `Compile`/`Create` factory and inspect `InputValidation` afterward.
+Matching, replacement, splitting and cursor APIs inherit the engine policy.
+Both modes retain managed bounds, scalar semantics, byte offsets and cooperative
+interruption/admission. Patterns and replacements keep their separate validation.
+Required coordinates/materialization may still scan input. Validation runs at most
+once per logical operation/cursor lifetime; omitted/redundant passes can reduce
+numeric work requirements. See the [input contract](SPEC.md#subject-input-validation).
+
 Core also accepts native UTF-8 patterns, including the funded program overload:
 
 ```csharp

@@ -36,6 +36,18 @@ or `tools/refresh-benchmarks.ps1 -Phase Posix` for the bounded .NET 11 catalog.
 Raw measurements stay under `artifacts/benchmark-refresh/current/`; Markdown
 regenerates offline from `bench/Snapshots/Posix.json`.
 
+## Subject validation policy
+
+Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
+host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
+`InputValidation` reports the choice; `Validate` is default and checks the whole
+subject at most once per logical operation or cursor lifetime. Matching, counting,
+replacement/splitting where supported and cursors inherit the engine policy.
+Pattern/replacement validation, checked accesses, scalar/byte semantics,
+cooperative cancellation/deadlines and admission remain. Required coordinate or
+output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
+Existing benchmark tables use Validate unless explicitly labeled otherwise.
+
 <!-- BEGIN GENERATED POSIX BENCHMARKS -->
 ## Benchmarks
 

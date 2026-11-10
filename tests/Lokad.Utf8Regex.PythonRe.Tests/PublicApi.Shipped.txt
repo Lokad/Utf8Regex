@@ -95,10 +95,12 @@ readonly struct PythonRe.Utf8PythonRangeMatch
   method ReadOnlyMemory<Byte> GetValueMemory()
 sealed class PythonRe.Utf8PythonRegex : IDisposable
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
+  ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options = 0, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = 0)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   ctor Utf8PythonRegex(String pattern)
+  ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options = 0, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = 0)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
@@ -107,6 +109,7 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   property PythonRe.PythonReCompileOptions Options { get; }
   property String Pattern { get; }
   property TimeSpan MatchTimeout { get; }
+  property Utf8InputValidation InputValidation { get; }
   property Utf8ResourcePolicy ResourcePolicy { get; }
   property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
@@ -227,8 +230,12 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method Void Dispose()
   method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
   method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+  method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance, Utf8InputValidation inputValidation = 0)
+  method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, Utf8InputValidation inputValidation = 0)
   method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
   method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+  method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance, Utf8InputValidation inputValidation = 0)
+  method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, Utf8InputValidation inputValidation = 0)
 sealed class PythonRe.Utf8PythonRetainedRangeMatch : IDisposable
   property PythonRe.Utf8PythonRangeMatch Match { get; }
   property UInt64 ChargedBytes { get; }

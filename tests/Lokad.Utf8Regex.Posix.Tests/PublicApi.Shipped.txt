@@ -5,14 +5,18 @@ sealed class Posix.Utf8PosixMatchCursor : IDisposable
   method Void Dispose()
 sealed class Posix.Utf8PosixRegex
   ctor Utf8PosixRegex(String pattern)
+  ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options = 0, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = 0)
   ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+  ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8InputValidation inputValidation)
   property Int32 GroupCount { get; }
   property Posix.PosixCompileOptions Options { get; }
   property String Pattern { get; }
   property TimeSpan MatchTimeout { get; }
+  property Utf8InputValidation InputValidation { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Posix.Utf8PosixMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Span<Utf8ValueMatch> groups, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method static Posix.Utf8PosixRegex Compile(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method static Posix.Utf8PosixRegex Compile(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, Utf8InputValidation inputValidation = 0)

@@ -17,7 +17,7 @@ The owned managed engine supports documented .NET-style grammar, captures/histor
 backreferences, assertions, RTL and a supported NonBacktracking subset, with
 native UTF-8 search paths. It does not execute BCL Regex matchers/results or
 promise UTF-16 parity. CultureInvariant is the primary supported mode. Whole
-subjects must be valid UTF-8, including suffixes after an early match. Core uses
+subjects must be valid UTF-8, including suffixes after an early match; Validate checks this and AssumeValid trusts the caller. Core uses
 ordered alternatives, not POSIX leftmost-longest matching.
 
 Optional IL preparation is skipped when the host disables dynamic code,
@@ -64,3 +64,15 @@ Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRAT
 The [repository specification](../../docs/SPEC.md)
 defines the target contract; qualification fixtures establish implemented scope.
 Performance snapshots retain their recorded source/package/runtime identities.
+
+## Subject validation policy
+
+Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
+host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
+`InputValidation` reports the choice; `Validate` is default and checks the whole
+subject at most once per logical operation or cursor lifetime. Matching, counting,
+replacement/splitting where supported and cursors inherit the engine policy.
+Pattern/replacement validation, checked accesses, scalar/byte semantics,
+cooperative cancellation/deadlines and admission remain. Required coordinate or
+output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
+Existing benchmark tables use Validate unless explicitly labeled otherwise.

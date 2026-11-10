@@ -10,6 +10,18 @@ See [release notes](../CHANGELOG.md), [migration](MIGRATION.md),
 [API snapshot](../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 Historical receipts retain their original product/runtime identities.
 
+## Subject input validation
+
+The immutable constructor/factory `inputValidation` option and read-only
+`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
+`Validate` is default: strict whole-input validation runs at most once per operation
+or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
+unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
+Unicode semantics, coordinates, cancellation/deadlines and resource admission
+remain independent. Below, mandatory subject-validation statements apply to
+Validate mode; coordinate/scalar/result work can still inspect input in either mode.
+No per-call policy or public validation-token API is introduced.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,
@@ -103,7 +115,7 @@ uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
 A lone default `\X` under unlimited Boolean matching can answer existence from
 validated nonempty scalar input, retaining the candidate charge without computing
-an unused cluster endpoint. Whole-input strict validation still runs. Explicit
+an unused cluster endpoint. Whole-input strict validation runs in Validate mode. Explicit
 flags, finite/token/deadline/funded calls, hooks and range-returning operations
 retain the established execution and grapheme metering.
 
@@ -117,7 +129,7 @@ non-monotone result with `NotSupportedException`.
 
 `HasUtf16Projection` can be false when explicitly allowed `\C` splits a
 scalar. Such ranges reject UTF-16/string extraction. `\C` consumes one byte,
-is forbidden in UTF lookbehind, and never disables whole-subject strict validation.
+is forbidden in UTF lookbehind, and does not change the selected subject validation policy.
 Successive global matches can expose individual bytes. Byte replacement can
 produce invalid UTF-8 in this mode; string replacement rejects invalid output.
 
@@ -273,7 +285,7 @@ also spend invocation work. Warm plans use their bounded cache. See
 Bounded ASCII Boolean plans can include subroutine calls whose authoritative
 lowered body is exactly capture-start, one eligible ASCII token, capture-end and
 return. They reuse the existing 64-alternative/128-token limits and construction
-admission, without recursive expansion. Strict whole-input validation still runs;
+admission, without recursive expansion. Strict whole-input validation runs in Validate mode;
 controlled matching, match flags and capture-returning operations retain the
 owned VM and their original interruption/resource authority.
 The same Boolean plans can filter nonempty ASCII conditional branches guarded
@@ -350,7 +362,7 @@ required for this funded route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
 on expressions and program owners returns `Utf8Pcre2MatchCursor`. The entire
-unchanged subject is validated once. Explicit starts are scalar-aligned bytes;
+unchanged subject is validated once in Validate mode; AssumeValid trusts the caller. Explicit starts are scalar-aligned bytes;
 prefix/lookbehind/anchor context remains the original subject. Sequential advances
 can cross awaits under the creation token, absolute deadline and cumulative limits.
 An advance token applies only to that synchronous call; if both cancel, the

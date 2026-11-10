@@ -11,7 +11,7 @@ public sealed partial class Utf8Regex
     private static Utf8BoundaryMap PrepareOffsetInput(ReadOnlySpan<byte> input, int utf16Offset,
         ref Utf8SliceInvocation invocation, out Utf8ValidationResult validation, out int startByte, out ulong reservation)
     {
-        validation = Utf8Validation.Validate(input, ref invocation);
+        validation = Utf8Validation.Subject(input, ref invocation);
         var start = Utf16Position.CreateChecked(validation, utf16Offset, nameof(utf16Offset));
         var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
         var boundary = map.Resolve(start.Value);
@@ -25,7 +25,7 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatchEnumerator CreateOwnedOffsetEnumerator(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken token)
     {
         var program = _ownedSliceProgram;
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         ulong reservation = 0;
         try
         {
@@ -104,12 +104,12 @@ public sealed partial class Utf8Regex
         ulong reservation = 0;
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
             if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var startUnit = validation.IsAscii ? startOffsetInBytes : startOffsetInBytes == 0 ? 0 :
-                Utf8Validation.Validate(input[..startOffsetInBytes], ref invocation).Utf16Length;
+                Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
             Utf8OperationMatchCursor cursor;
             if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
                 cursor = anchored

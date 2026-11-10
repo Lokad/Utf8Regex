@@ -10,6 +10,18 @@ See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
 [API snapshot](../tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
 This is a selected profile, not complete Python equivalence.
 
+## Subject input validation
+
+The immutable constructor/factory `inputValidation` option and read-only
+`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
+`Validate` is default: strict whole-input validation runs at most once per operation
+or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
+unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
+Unicode semantics, coordinates, cancellation/deadlines and resource admission
+remain independent. Below, mandatory subject-validation statements apply to
+Validate mode; coordinate/scalar/result work can still inspect input in either mode.
+No per-call policy or public validation-token API is introduced.
+
 ## Operations and result shape
 
 | Family | Contract |
@@ -26,7 +38,7 @@ This is a selected profile, not complete Python equivalence.
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
 and suffix context. FullMatch covers [pos,end). There is no `endpos` parameter.
-The whole subject is validated even when discovery starts later or returns early.
+In Validate mode, the whole subject is validated even when discovery starts later or returns early.
 
 Nonempty scalar programs can reject an absent mandatory exact literal, proved by
 their existing native rendering, before acquiring VM scratch. The search observes

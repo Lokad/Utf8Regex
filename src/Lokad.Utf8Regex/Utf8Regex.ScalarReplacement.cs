@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex;
 public sealed partial class Utf8Regex
 {
     private Utf8SliceByteOutputScope CreateOwnedOutputScope(CancellationToken token)
-        => CreateOwnedOutputScope(new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token));
+        => CreateOwnedOutputScope(new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation });
 
     private Utf8SliceByteOutputScope CreateOwnedOutputScope(Utf8SliceInvocation invocation)
     {
@@ -38,7 +38,7 @@ public sealed partial class Utf8Regex
     {
         var state = 0;
         return OwnedSliceReplace(input, program, new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog),
-            ref state, resultKind, destination, new Utf8SliceInvocation(InvocationLimits, deadline, token));
+            ref state, resultKind, destination, new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation });
     }
 
     private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
@@ -46,7 +46,7 @@ public sealed partial class Utf8Regex
         Span<byte> destination, CancellationToken token)
         where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
         => OwnedSliceReplace(input, program, expansion, ref state, resultKind, destination,
-            new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token));
+            new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation });
 
     private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
         Utf8SliceProgram program, TExpansion expansion, ref TState state, Utf8SliceReplacementResultKind resultKind,
@@ -62,7 +62,7 @@ public sealed partial class Utf8Regex
         var boundary = 0;
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             if (program.IsNonBacktracking)
             {
                 var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
@@ -202,7 +202,7 @@ public sealed partial class Utf8Regex
         var boundary = 0;
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             if (program.IsNonBacktracking)
             {
                 var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);

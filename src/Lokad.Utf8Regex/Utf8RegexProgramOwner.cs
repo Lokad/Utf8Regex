@@ -7,11 +7,14 @@ namespace Lokad.Utf8Regex;
 /// <remarks>Dispose closes new operations and refunds compilation after active calls finish. The underlying expression stays private. Temporary matching storage uses the program allowance unless a separate working allowance is supplied. Borrowed input and fixed invocation metadata remain outside modeled storage.</remarks>
 public sealed class Utf8RegexProgramOwner : IDisposable
 {
+    /// <summary>Gets the immutable subject validation policy selected at compilation.</summary>
+    public Utf8InputValidation InputValidation { get; }
+
     private Utf8Regex? _regex;
     private readonly Utf8FundedStorage _storage;
 
     internal Utf8RegexProgramOwner(Utf8Regex regex, Utf8FundedStorage storage)
-    { _regex = regex; _storage = storage; }
+    { _regex = regex; _storage = storage; InputValidation = regex.InputValidation; }
 
     /// <summary>Gets the number of defined capture slots, excluding whole-match group zero.</summary>
     /// <remarks>Rejects access after close. Sparse numbers and shared declarations retain their validated slot identities.</remarks>

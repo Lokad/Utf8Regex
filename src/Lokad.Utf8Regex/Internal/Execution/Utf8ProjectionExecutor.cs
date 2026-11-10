@@ -16,9 +16,9 @@ internal static class Utf8ProjectionExecutor
         var length = byteLength;
         if (!validation.IsAscii)
         {
-            var breach = Utf8Validation.TryValidate(input[..index], ref invocation, out var prefix);
+            var breach = Utf8Validation.TryDescribeValid(input[..index], ref invocation, out var prefix);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            breach = Utf8Validation.TryValidate(input.Slice(index, length), ref invocation, out var extent);
+            breach = Utf8Validation.TryDescribeValid(input.Slice(index, length), ref invocation, out var extent);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             index = prefix.Utf16Length;
             length = extent.Utf16Length;
@@ -45,7 +45,7 @@ internal static class Utf8ProjectionExecutor
         var matchedUtf16Length = alternateLiteralUtf16Lengths is { Length: > 0 } utf16Lengths &&
             (uint)match.LiteralId < (uint)utf16Lengths.Length
             ? utf16Lengths[match.LiteralId]
-            : Utf8Validation.Validate(input.Slice(match.Index, matchedByteLength), ref invocation).Utf16Length;
+            : Utf8SliceBufferWork.CountUtf16(input.Slice(match.Index, matchedByteLength), ref invocation);
 
         return ProjectMatch(
             projectionPlan,
@@ -97,7 +97,7 @@ internal static class Utf8ProjectionExecutor
         if ((projectionPlan.Kind is Utf8ProjectionKind.Utf16Incremental or Utf8ProjectionKind.Utf16BoundaryMap) &&
             matchIndex != consumedBytes)
         {
-            breach = Utf8Validation.TryValidate(input.Slice(consumedBytes, matchIndex - consumedBytes),
+            breach = Utf8Validation.TryDescribeValid(input.Slice(consumedBytes, matchIndex - consumedBytes),
                 ref invocation, out var gap);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             relativeUtf16Index = gap.Utf16Length;

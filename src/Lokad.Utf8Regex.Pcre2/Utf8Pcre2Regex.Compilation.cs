@@ -8,6 +8,21 @@ namespace Lokad.Utf8Regex.Pcre2;
 /// <inheritdoc />
 public sealed partial class Utf8Pcre2Regex
 {
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8Pcre2Regex Compile(string pattern, Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
+        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
+        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        => Compile(pattern, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
+
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8Pcre2Regex Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
+        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
+        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        => Compile(patternUtf8, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
+
+
     /// <summary>Compiles pattern text under explicit eager construction and execution policies.</summary>
     /// <remarks>Construction admission and interruption use one synchronous owner,
     /// independently of later invocation limits. Positive construction limits may
@@ -20,9 +35,10 @@ public sealed partial class Utf8Pcre2Regex
     public static Utf8Pcre2Regex Compile(string pattern, Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        TimeSpan constructionTimeout, CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => Compile(new Utf8ConstructionPattern(pattern), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken);
+            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
     /// <remarks>Admission and interruption include bounded strict validation and
@@ -37,14 +53,16 @@ public sealed partial class Utf8Pcre2Regex
     public static Utf8Pcre2Regex Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        TimeSpan constructionTimeout, CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => Compile(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken);
+            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
 
     private static Utf8Pcre2Regex Compile(Utf8ConstructionPattern pattern, Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        TimeSpan constructionTimeout, CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
@@ -53,7 +71,7 @@ public sealed partial class Utf8Pcre2Regex
         using var construction = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
         try
         {
-            var result = new Utf8Pcre2Regex(pattern, options, compileSettings, executionLimits, matchTimeout);
+            var result = new Utf8Pcre2Regex(pattern, options, compileSettings, executionLimits, matchTimeout, inputValidation: inputValidation);
             construction.Budget.ChargeWork(0);
             construction.Complete();
             return result;

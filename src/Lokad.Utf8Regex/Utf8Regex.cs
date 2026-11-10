@@ -31,6 +31,15 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
 /// <remarks>Byte ranges are primary; UTF-16 coordinates are derived interoperability values.</remarks>
 public sealed partial class Utf8Regex
 {
+    /// <summary>Gets the immutable subject UTF-8 validation policy.</summary>
+    public Utf8InputValidation InputValidation { get; }
+
+    /// <summary>Compiles an expression with an immutable subject validation policy.</summary>
+    /// <remarks>AssumeValid requires valid unchanged borrowed input. Pattern and replacement validation are independent.</remarks>
+    public Utf8Regex(string pattern, RegexOptions options = RegexOptions.CultureInvariant, TimeSpan? matchTimeout = null,
+        Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        : this(pattern, options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true, inputValidation) { }
+
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
@@ -84,11 +93,15 @@ public sealed partial class Utf8Regex
     }
 
     /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
-    private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy) { }
+    private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy, inputValidation) { }
 
-    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
+        Utf8Validation.ValidatePolicy(inputValidation);
+        InputValidation = inputValidation;
         if (checkPolicy)
         {
             ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
@@ -291,6 +304,12 @@ public sealed partial class Utf8Regex
 
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
         => resourcePolicy.Validate(paramName);
+
+    private static Utf8ValidationResult DescribeKelvinInput(ReadOnlySpan<byte> input, out bool containsKelvinSign)
+    {
+        containsKelvinSign = input.IndexOf("K"u8) >= 0;
+        return Utf8Validation.DescribeValid(input);
+    }
 
     /// <summary>Gets or sets the timeout used by constructors and cached operations that do not specify one.</summary>
     /// <remarks>The initial value is <see cref="Regex.InfiniteMatchTimeout"/>.</remarks>
@@ -544,16 +563,18 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatch OwnedSliceMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
         => OwnedSliceMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
 
-    private Utf8MatchContext OwnedSliceMatchDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
-        => OwnedSliceMatchDetailedFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
+    private Utf8MatchContext OwnedSliceMatchDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token,
+        Utf8ValidationResult? subjectValidation = null)
+        => OwnedSliceMatchDetailedFromByte(input, program, program.RightToLeft ? input.Length : 0, token, subjectValidation);
 
     private Utf8MatchContext OwnedSliceMatchDetailedFromByte(ReadOnlySpan<byte> input,
-        Utf8SliceProgram program, int fromByte, CancellationToken token)
+        Utf8SliceProgram program, int fromByte, CancellationToken token, Utf8ValidationResult? subjectValidation = null)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token)
+            { InputValidation = InputValidation, SubjectValidationCompleted = subjectValidation.HasValue };
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = subjectValidation ?? Utf8Validation.Subject(input, ref invocation);
             return OwnedSliceMatchDetailedFromByte(input, program, fromByte, validation, null, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -622,10 +643,10 @@ public sealed partial class Utf8Regex
             !_ownedSliceProgram.HasExplicitCaptureNumbers && !_ownedSliceProgram.HasContiguousAnchor &&
             !_ownedSliceProgram.HasConditionalTest && !_ownedSliceProgram.UsesInterpretedLazyLoopSemantics)
         {
-            var simpleInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var simpleInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var simpleValidation = Utf8Validation.Validate(input, ref simpleInvocation);
+                var simpleValidation = Utf8Validation.Subject(input, ref simpleInvocation);
                 if (!simpleValidation.IsAscii)
                     return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref simpleInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
@@ -657,10 +678,10 @@ public sealed partial class Utf8Regex
         if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole &&
             (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout))
         {
-            var decimalInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var decimalInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var decimalValidation = Utf8Validation.Validate(input, ref decimalInvocation);
+                var decimalValidation = Utf8Validation.Subject(input, ref decimalInvocation);
                 if (!decimalValidation.IsAscii)
                     return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref decimalInvocation);
                 var breach = Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input,
@@ -754,7 +775,7 @@ public sealed partial class Utf8Regex
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
-                Utf8Validation.ThrowIfInvalidOnly(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
@@ -766,7 +787,7 @@ public sealed partial class Utf8Regex
             return IsMatchViaCompiledEngine(input, default, fastBudget);
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
         {
             return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
@@ -832,7 +853,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
         ulong mapReservation = 0;
         try
         {
@@ -875,10 +896,10 @@ public sealed partial class Utf8Regex
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
-            Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+            Utf8Validation.CheckSubject(input, ref invocation);
             return OwnedSliceIsMatchFromByte(input, program, startByte, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -1050,10 +1071,10 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount &&
             !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
         {
-            var starInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var starInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                _ = Utf8Validation.Validate(input, ref starInvocation);
+                Utf8Validation.CheckSubject(input, ref starInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiUntilByteStar);
                 var breach = Utf8AsciiUntilByteStarExecutor.TryCountValidated(input,
                     _fallbackDirectFamily.TerminatorByte, ref starInvocation, out var starCount);
@@ -1070,10 +1091,10 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount &&
             !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
         {
-            var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var categoryValidation = Utf8Validation.Validate(input, ref categoryInvocation);
+                var categoryValidation = Utf8Validation.Subject(input, ref categoryInvocation);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
                     categoryValidation.ContainsSupplementaryScalars, _fallbackDirectFamily,
                     ref categoryInvocation, out var categoryCount);
@@ -1091,10 +1112,10 @@ public sealed partial class Utf8Regex
             _fallbackDirectFamily.MinCount > 0 && !UsesRightToLeft() &&
             (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
         {
-            var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var wordValidation = Utf8Validation.Validate(input, ref wordInvocation);
+                var wordValidation = Utf8Validation.Subject(input, ref wordInvocation);
                 if (!wordValidation.IsAscii)
                     return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref wordInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiWordBounded);
@@ -1114,7 +1135,7 @@ public sealed partial class Utf8Regex
         if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout)
         {
-            return invariantCyrillicLiteralCountStrategy.Count(input);
+            return invariantCyrillicLiteralCountStrategy.Count(input, InputValidation);
         }
         // A byte window proves its ASCII intersection only. Explicit Unicode
         // class constraints (for example [^α-ω]) still require the scalar VM.
@@ -1156,7 +1177,7 @@ public sealed partial class Utf8Regex
             !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
         {
-            Utf8Validation.ThrowIfInvalidOnly(input);
+            Utf8Validation.CheckSubject(input, InputValidation);
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad);
             return Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
         }
@@ -1168,7 +1189,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
             boundedSuffixLiteralPlan.SupportsValidatedUtf8Input && !Utf8InputAnalyzer.IsAscii(input))
         {
-            Utf8Validation.ThrowIfInvalidOnly(input);
+            Utf8Validation.CheckSubject(input, InputValidation);
             return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, CreateExecutionBudget());
         }
 
@@ -1198,7 +1219,7 @@ public sealed partial class Utf8Regex
 
         if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
         {
-            Utf8Validation.ThrowIfInvalidOnly(input);
+            Utf8Validation.CheckSubject(input, InputValidation);
             return packedNibbleLiteralFamilyCountStrategy.Count(input);
         }
 
@@ -1219,8 +1240,8 @@ public sealed partial class Utf8Regex
                     return orderedWindowCount;
                 }
 
-                var windowInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, orderedWindowBudget, cancellationToken);
-                _ = Utf8Validation.Validate(input, ref windowInvocation);
+                var windowInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, orderedWindowBudget, cancellationToken) { InputValidation = InputValidation };
+                Utf8Validation.CheckSubject(input, ref windowInvocation);
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref windowInvocation);
             }
         }
@@ -1231,7 +1252,7 @@ public sealed partial class Utf8Regex
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
-                Utf8Validation.ThrowIfInvalidOnly(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());
@@ -1239,10 +1260,17 @@ public sealed partial class Utf8Regex
 
         if (CanValidateKelvinSignDuringNativeCount())
         {
-            var kelvinValidation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
+            bool containsKelvinSign;
+            if (InputValidation == Utf8InputValidation.Validate)
+                Utf8SearchDiagnosticsSession.Current?.CountSubjectValidation();
+            var kelvinValidation = InputValidation == Utf8InputValidation.Validate
+                ? Utf8InputAnalyzer.ValidateOnly(input, out containsKelvinSign)
+                : DescribeKelvinInput(input, out containsKelvinSign);
             if (containsKelvinSign && !ScalarVerifierServesInput(input))
             {
-                return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
+                var kelvinInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken)
+                    { InputValidation = InputValidation, SubjectValidationCompleted = true };
+                return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref kelvinInvocation);
             }
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
@@ -1281,7 +1309,7 @@ public sealed partial class Utf8Regex
             Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
             Utf8FallbackDirectFamilyKind.Utf8UriToken)
         {
-            Utf8Validation.ThrowIfInvalidOnly(input);
+            Utf8Validation.CheckSubject(input, InputValidation);
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());
         }
 
@@ -1305,7 +1333,7 @@ public sealed partial class Utf8Regex
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
-                Utf8Validation.ThrowIfInvalidOnly(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
@@ -1330,7 +1358,7 @@ public sealed partial class Utf8Regex
             {
                 if (!TryUseAsciiInputValidationShortcut(input))
                 {
-                    Utf8Validation.ThrowIfInvalidOnly(input);
+                    Utf8Validation.CheckSubject(input, InputValidation);
                 }
 
                 countValidation = default;
@@ -1354,7 +1382,7 @@ public sealed partial class Utf8Regex
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
-                Utf8Validation.ThrowIfInvalidOnly(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
@@ -1374,7 +1402,7 @@ public sealed partial class Utf8Regex
             return CountViaCompiledEngine(input, default, fastBudget);
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
         {
             return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
@@ -1424,7 +1452,7 @@ public sealed partial class Utf8Regex
 
     private int CountFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
         ulong mapReservation = 0;
         try
         {
@@ -1462,7 +1490,7 @@ public sealed partial class Utf8Regex
         int startByte,
         CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
             if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8) ||
@@ -1470,7 +1498,7 @@ public sealed partial class Utf8Regex
             {
                 // These complete counters consume validated bytes, not coordinate metadata.
                 // Keep structural validation and the existing counting kernel intact.
-                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                Utf8Validation.CheckSubject(input, ref invocation);
                 return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
             }
             if (HasFiniteExecutionLimits && startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
@@ -1480,7 +1508,7 @@ public sealed partial class Utf8Regex
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
                 _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
-                var isAscii = Utf8Validation.ValidateIsAscii(input, ref invocation);
+                var isAscii = Utf8Validation.SubjectIsAscii(input, ref invocation);
                 // The family proof resolves proper-start overlap behind word boundaries
                 // and still rejects same-start alternatives requiring scalar retry.
                 if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
@@ -1517,7 +1545,7 @@ public sealed partial class Utf8Regex
             else
             {
                 // Count consumes bytes only, without derived coordinate metadata.
-                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                Utf8Validation.CheckSubject(input, ref invocation);
             }
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
         }
@@ -1803,7 +1831,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
         {
             return MatchFallback(input);
@@ -1852,7 +1880,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
         ulong mapReservation = 0;
         try
         {
@@ -1938,10 +1966,10 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatch OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             return OwnedSliceMatchFromByte(input, program, startByte, validation, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -2026,7 +2054,7 @@ public sealed partial class Utf8Regex
             var utf16Length = ascii ? length
                 : completeValidation && outcome.StartByte == 0 && length == input.Length
                     ? validation.Utf16Length
-                    : Utf8Validation.Validate(input.Slice(outcome.StartByte, length), ref invocation).Utf16Length;
+                    : Utf8SliceBufferWork.CountUtf16(input.Slice(outcome.StartByte, length), ref invocation);
             return Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(
                     ascii ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental),
                 input, 0, 0, outcome.StartByte, length, utf16Length, ref invocation, out _, out _);
@@ -2059,7 +2087,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchDetailed(input, ownedProgram, cancellationToken);
         }
 
-        var analysis = Utf8InputAnalyzer.Analyze(input);
+        var analysis = Utf8ValidatedInput.Create(input, InputValidation);
         // Anchored ASCII literal prefixes shape directly from the prefix compare:
         // byte-exact on every input, so detailed matches never construct the BCL engine.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -2098,7 +2126,7 @@ public sealed partial class Utf8Regex
             Utf8ValueMatch first;
             try
             {
-                first = MatchCore(input, cancellationToken);
+                first = MatchViaCompiledEngine(input, analysis.Validation, CreateExecutionBudget());
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -2125,7 +2153,7 @@ public sealed partial class Utf8Regex
             Utf8ValueMatch groupedFirst;
             try
             {
-                groupedFirst = MatchCore(input, cancellationToken);
+                groupedFirst = MatchViaCompiledEngine(input, analysis.Validation, CreateExecutionBudget());
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -2152,7 +2180,7 @@ public sealed partial class Utf8Regex
             Utf8ValueMatch alternationFirst;
             try
             {
-                alternationFirst = MatchCore(input, cancellationToken);
+                alternationFirst = MatchViaCompiledEngine(input, analysis.Validation, CreateExecutionBudget());
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -2185,7 +2213,9 @@ public sealed partial class Utf8Regex
             Utf8ValueMatch grouplessFirst;
             try
             {
-                grouplessFirst = MatchCore(input, cancellationToken);
+                // The detailed operation already established the subject's
+                // authority and metadata; reuse them instead of a new public root.
+                grouplessFirst = MatchViaCompiledEngine(input, analysis.Validation, CreateExecutionBudget());
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -2202,7 +2232,7 @@ public sealed partial class Utf8Regex
 
         // Native discovery may lack complete capture history. Borrow the same
         // admitted scalar program for the remaining detailed projection.
-        return OwnedSliceMatchDetailed(input, _ownedSliceProgram, cancellationToken);
+        return OwnedSliceMatchDetailed(input, _ownedSliceProgram, cancellationToken, analysis.Validation);
     }
 
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input, observing cancellation during validation, matching and required result processing.</summary>
@@ -2255,7 +2285,7 @@ public sealed partial class Utf8Regex
 
     private Utf8MatchContext MatchDetailedFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
         ulong mapReservation = 0;
         try
         {
@@ -2568,7 +2598,7 @@ public sealed partial class Utf8Regex
 
         var validation = TryUseAsciiInputValidationShortcut(input)
             ? default
-            : Utf8Validation.Validate(input);
+            : Utf8Validation.Subject(input, InputValidation);
         var budget = CreateExecutionBudget();
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
@@ -2715,7 +2745,7 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, this);
         }
 
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.Create(input, InputValidation);
         var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
         var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
         return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
@@ -2724,10 +2754,10 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator OwnedSliceEnumerateMatches(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             // Complete ASCII branches use the same controlled finder as finite
             // Count, without acquiring scalar attempt scratch for every value.
             ref readonly var simple = ref _preparedRegex.OperationMatchCursorPlans.SimplePatternPlan;
@@ -2788,10 +2818,10 @@ public sealed partial class Utf8Regex
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
                 NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var validation = Utf8Validation.Validate(input, ref invocation);
+                var validation = Utf8Validation.Subject(input, ref invocation);
                 return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
                     input, _preparedRegex, validation.IsAscii, UsesRightToLeft(), invocation))
                     .WithTimeoutMapping(input, this);
@@ -2805,10 +2835,10 @@ public sealed partial class Utf8Regex
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var validation = Utf8Validation.Validate(input, ref invocation);
+                var validation = Utf8Validation.Subject(input, ref invocation);
                 return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
                     input, _preparedRegex, validation.IsAscii, invocation)).WithTimeoutMapping(input, this);
             }
@@ -2873,7 +2903,7 @@ public sealed partial class Utf8Regex
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
         {
-            var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var rtlAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
             var rtlBudget = CreateExecutionBudget();
             return new Utf8ValueSplitEnumerator(
                 input,
@@ -2902,7 +2932,7 @@ public sealed partial class Utf8Regex
         var usesAsciiValidationShortcut = TryUseAsciiInputValidationShortcut(input);
         var validation = usesAsciiValidationShortcut
             ? new Utf8ValidationResult(input.Length, input.Length, true, false)
-            : Utf8Validation.Validate(input);
+            : Utf8Validation.Subject(input, InputValidation);
         var totalUtf16Length = usesAsciiValidationShortcut
             ? input.Length
             : validation.Utf16Length;
@@ -2964,7 +2994,7 @@ public sealed partial class Utf8Regex
         // remaining shapes use the cached scalar program below.
         if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var analysis = Utf8InputAnalyzer.Analyze(input);
+            var analysis = Utf8ValidatedInput.Create(input, InputValidation);
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget),
@@ -2993,7 +3023,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueSplitEnumerator OwnedSliceEnumerateSplits(ReadOnlySpan<byte> input, Utf8SliceProgram program, int count, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
             return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation)
@@ -3108,7 +3138,7 @@ public sealed partial class Utf8Regex
 
         var validation = TryUseAsciiInputValidationShortcut(input)
             ? default
-            : Utf8Validation.Validate(input);
+            : Utf8Validation.Subject(input, InputValidation);
 
         if (replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
@@ -3289,7 +3319,7 @@ public sealed partial class Utf8Regex
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
-            var validation = Utf8Validation.Validate(input);
+            var validation = Utf8Validation.Subject(input, InputValidation);
             // The worker consumes the template synchronously. Own it only when
             // writing the destination could overwrite bytes still needed later.
             ReadOnlySpan<byte> directReplacementBytes = replacementPatternUtf8.Overlaps(destination)

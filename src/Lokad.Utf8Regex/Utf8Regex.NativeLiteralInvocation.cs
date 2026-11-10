@@ -18,7 +18,7 @@ public sealed partial class Utf8Regex
         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
             _preparedRegex.LiteralUtf8 is not { } literal || UsesRightToLeft())
             throw new InvalidOperationException("Literal result discovery requires an exact LTR literal.");
-        validation = Utf8Validation.Validate(input, ref invocation);
+        validation = Utf8Validation.Subject(input, ref invocation);
         // Validation and search own their bounded checkpoints; the adapter
         // retains its final publication check.
         if (literal.Length == 0)
@@ -43,8 +43,9 @@ public sealed partial class Utf8Regex
     {
         // No coordinate metadata escapes Count. Keep unmetered validation's
         // established strategy; controlled calls only need strict validity.
-        if (invocation.IsUnmetered) _ = Utf8Validation.Validate(input, ref invocation);
-        else Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+        if (invocation.IsUnmetered && invocation.InputValidation == Utf8InputValidation.Validate)
+            _ = Utf8Validation.Subject(input, ref invocation);
+        else Utf8Validation.CheckSubject(input, ref invocation);
         if (!CanCountNativeLiteralForResult)
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
@@ -114,7 +115,8 @@ public sealed partial class Utf8Regex
         out Utf8SliceInvocation invocation)
     {
         invocation = default;
-        if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
+        if (InputValidation == Utf8InputValidation.Validate &&
+            MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
         if (_requiresKelvinSignFallback ||
@@ -126,10 +128,10 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is { Length: 0 })
             return false;
         // Empty literals use the shared scalar program and its boundary progression.
-        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token) { InputValidation = InputValidation };
         // These roots consume bytes or project their selected range separately.
         // Keep full metered validity without deriving discarded UTF-16 metadata.
-        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+        Utf8Validation.CheckSubject(input, ref invocation);
         return true;
     }
 }

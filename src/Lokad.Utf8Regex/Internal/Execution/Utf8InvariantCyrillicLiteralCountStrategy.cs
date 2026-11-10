@@ -244,9 +244,9 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         return true;
     }
 
-    public int Count(ReadOnlySpan<byte> input)
+    public int Count(ReadOnlySpan<byte> input, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
-        if (_literals.Length == 1 &&
+        if (inputValidation == Utf8InputValidation.Validate && _literals.Length == 1 &&
             TryCountSingleLiteralAndValidateTwoByte(input, _literals[0], out var fusedCount))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(
@@ -254,7 +254,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             return fusedCount;
         }
 
-        Utf8Validation.ThrowIfInvalidOnly(input);
+        Utf8Validation.CheckSubject(input, inputValidation);
         if (_literals.Length == 1)
         {
             return CountSingleLiteral(input, _literals[0]);

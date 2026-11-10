@@ -26,7 +26,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Bytes,
@@ -164,7 +164,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken, deadline).Text;
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Text,
@@ -216,7 +216,7 @@ public sealed partial class Utf8Regex
             return result.Status;
         }
 
-        var validation = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Subject(input, InputValidation);
         var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Destination,
@@ -263,7 +263,7 @@ public sealed partial class Utf8Regex
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var scalarAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var scalarAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
             var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
@@ -291,7 +291,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
-        var inputValidation = Utf8Validation.Validate(input, ref invocation);
+        var inputValidation = Utf8Validation.Subject(input, ref invocation);
         var replacementValidation = Utf8Validation.Validate(literalReplacementUtf8, ref invocation);
         var bytes = Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
@@ -310,7 +310,7 @@ public sealed partial class Utf8Regex
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var scalarAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var scalarAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
             var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
             var scalarSuccess = Utf8CursorReplaceEngine.TryReplace(
                 input,
@@ -378,7 +378,7 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        var invocation = new Utf8SliceInvocation(InvocationLimits, deadline, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation };
         // Simple-pattern discovery reaches this same factory through public
         // enumeration's validation and zero-offset routing. Reuse the complete
         // validation above; diagnostic hooks retain their invocation route.
@@ -393,7 +393,7 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        var analysis = Utf8InputAnalyzer.Analyze(input);
+        var analysis = Utf8ValidatedInput.Create(input, InputValidation);
         var writer = default(Utf8SliceOutputWriter);
         var sourcePosition = 0;
         var first = true;

@@ -16,7 +16,7 @@ public sealed partial class Utf8Regex
     {
         token.ThrowIfCancellationRequested();
         bytesWritten = 0;
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working) { InputValidation = InputValidation };
         try
         {
             using var construction = Utf8ConstructionScope.Enter(
@@ -52,10 +52,10 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
         try
         {
-            Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+            Utf8Validation.CheckSubject(input, ref invocation);
             bool result;
             if (CanUseNativeLiteralSearch(_ownedSliceProgram))
             {
@@ -82,10 +82,10 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             int result;
             // Borrow the same complete family proofs/counters as ordinary Count.
             // They need no capture scratch but still meter every bounded block.

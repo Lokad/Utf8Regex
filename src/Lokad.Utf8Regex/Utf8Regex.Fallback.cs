@@ -259,7 +259,7 @@ public sealed partial class Utf8Regex
             {
                 var suffixUtf16Index = Utf8InputAnalyzer.IsAscii(input)
                     ? suffixByteIndex
-                    : Utf8Validation.Validate(input[..suffixByteIndex]).Utf16Length;
+                    : Utf8Validation.DescribeValid(input[..suffixByteIndex]).Utf16Length;
                 match = new Utf8ValueMatch(true, true, suffixUtf16Index, suffixLength, suffixByteIndex, suffixLength);
             }
 
@@ -565,7 +565,7 @@ public sealed partial class Utf8Regex
             return default;
         }
 
-        Utf8Validation.ThrowIfInvalidOnly(input);
+        Utf8Validation.CheckSubject(input, InputValidation);
         return default;
     }
 

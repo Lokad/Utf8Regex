@@ -13,6 +13,19 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <remarks>The adapter preserves Python operation shaping while exposing both UTF-8 byte and UTF-16 coordinate projections.</remarks>
 public sealed partial class Utf8PythonRegex
 {
+    /// <summary>Gets the immutable subject UTF-8 validation policy.</summary>
+    public Utf8InputValidation InputValidation { get; }
+
+    /// <summary>Compiles an expression with an immutable subject validation policy.</summary>
+    public Utf8PythonRegex(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
+        Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true, inputValidation) { }
+
+    /// <summary>Compiles a strict UTF-8 pattern with an immutable subject validation policy.</summary>
+    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
+        Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true, inputValidation) { }
+
     private readonly record struct PythonReUtf8MatchRange(
         int IndexInBytes,
         int LengthInBytes,
@@ -155,8 +168,11 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
-    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
+        Utf8Validation.ValidatePolicy(inputValidation);
+        InputValidation = inputValidation;
         if (checkPolicy)
         {
             ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
@@ -256,7 +272,7 @@ public sealed partial class Utf8PythonRegex
         {
             try
             {
-                var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
+                var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy, InputValidation);
                 // Preparation can discover useful native result lanes or exact
                 // start hints. Discard roots declined by every current consumer;
                 // their transient construction remains conservatively admitted.

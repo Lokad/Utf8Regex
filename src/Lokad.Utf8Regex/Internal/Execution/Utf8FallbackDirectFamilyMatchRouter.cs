@@ -43,7 +43,7 @@ internal static class Utf8FallbackDirectFamilyMatchRouter
         {
             var stringUtf16Length = input[..stringByteLength].IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0
                 ? stringByteLength
-                : Utf8Validation.Validate(input[..stringByteLength]).Utf16Length;
+                : Utf8Validation.DescribeValid(input[..stringByteLength]).Utf16Length;
             match = new Utf8ValueMatch(true, true, 0, stringUtf16Length, 0, stringByteLength);
             return true;
         }

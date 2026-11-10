@@ -5,11 +5,23 @@ dependency. It owns ERE admission and POSIX selection. Core, PythonRe and PCRE2
 retain their contracts. This is an invariant, scalar ERE subset, not complete
 locale-sensitive POSIX, GNU or BSD compatibility.
 
+## Subject input validation
+
+The immutable constructor/factory `inputValidation` option and read-only
+`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
+`Validate` is default: strict whole-input validation runs at most once per operation
+or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
+unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
+Unicode semantics, coordinates, cancellation/deadlines and resource admission
+remain independent. Below, mandatory subject-validation statements apply to
+Validate mode; coordinate/scalar/result work can still inspect input in either mode.
+No per-call policy or public validation-token API is introduced.
+
 ## Input and syntax
 
 Patterns are well-formed Unicode strings; subjects are strict UTF-8. A matching
 character is one Unicode scalar, including supplementary characters and U+0000.
-Validate the entire subject before matching, including bytes outside a requested
+Validate mode checks the entire subject before matching, including bytes outside a requested
 search range. Primary offsets refer to the original bytes; UTF-16 coordinates are
 derived. A start offset must be a scalar boundary in `[0,input.Length]` and does
 not rebase anchors or remove prefix context.

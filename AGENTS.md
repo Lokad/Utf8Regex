@@ -12,6 +12,10 @@ derived interoperability, not matching units.
 - Preserve scalar boundaries, captures, RTL/NonBacktracking behavior, retained
   results/cursor aliases, resource admission and synchronous original-token
   cancellation/deadlines. Do not restore UTF-16 parity or dormant fallback engines.
+- Subject validation follows immutable inputValidation: Validate is default;
+  AssumeValid trusts valid unchanged borrowed UTF-8 and omits the validity pass.
+  Pattern/replacement validation remains independent. Validate at most once per
+  logical operation/cursor lifetime; no public per-call validation token.
 - Shipped execution is fully managed and owned: no BCL matcher/results, native
   regex dependency or unchecked reads. Actual Unsafe.SizeOf<T>() is permitted.
   BCL Regex is a test/benchmark comparator only on overlapping semantics.

@@ -7,6 +7,35 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <inheritdoc />
 public sealed partial class Utf8PythonRegex
 {
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken)
+        => Compile(pattern, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
+
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken)
+        => Compile(patternUtf8, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
+
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        => Compile(pattern, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: Utf8InputValidation.Validate);
+
+    /// <summary>Compiles with default strict subject validation.</summary>
+    public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        => Compile(patternUtf8, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: Utf8InputValidation.Validate);
+
+
     /// <summary>Compiles pattern text under explicit eager construction and execution policies.</summary>
     /// <remarks>Construction admission and interruption cover eager compilation,
     /// including the derived FullMatch program, independently of later invocation
@@ -17,9 +46,10 @@ public sealed partial class Utf8PythonRegex
     public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => Compile(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy,
-            constructionPolicy, constructionTimeout, cancellationToken);
+            constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
     /// <remarks>Admission and interruption include strict validation and direct scalar parsing.
@@ -29,14 +59,16 @@ public sealed partial class Utf8PythonRegex
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => Compile(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy,
-            constructionPolicy, constructionTimeout, cancellationToken);
+            constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
 
     private static Utf8PythonRegex Compile(Utf8ConstructionPattern pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken, IUtf8MemoryAllowance? programMemoryAllowance = null)
+        CancellationToken cancellationToken, IUtf8MemoryAllowance? programMemoryAllowance = null,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
@@ -47,7 +79,7 @@ public sealed partial class Utf8PythonRegex
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
         try
         {
-            var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true);
+            var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true, inputValidation: inputValidation);
             // Explicit compilation finishes both operation programs under this
             // one owner. Do not retain its policy/token for later invocations.
             _ = result._lazyScalarFullProgram.Value;
@@ -78,7 +110,8 @@ public sealed partial class Utf8PythonRegex
     public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(programMemoryAllowance);
@@ -91,7 +124,8 @@ public sealed partial class Utf8PythonRegex
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(programMemoryAllowance);

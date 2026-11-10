@@ -20,6 +20,8 @@ internal readonly record struct Pcre2CompileRequest(
     Utf8Pcre2ExecutionLimits DefaultLimits,
     TimeSpan MatchTimeout)
 {
+    internal Utf8InputValidation InputValidation { get; init; }
+
     internal Utf8ConstructionPattern ConstructionPattern => PatternSource is byte[] bytes
         ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)PatternSource);
 
@@ -85,8 +87,8 @@ internal static class Pcre2Compiler
         {
             var source = request.ConstructionPattern;
             regex = source.IsUtf8
-                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy)
-                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
+                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, request.InputValidation)
+                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, inputValidation: request.InputValidation);
             return true;
         }
         catch (ArgumentException)

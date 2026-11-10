@@ -41,10 +41,44 @@ rejected, and the private `_xmlC`/`_xmlD`/`_xmlI`/`_xmlW` sets retain their froz
 expectations where .NET 11 changed behavior; they do not redefine this contract.
 
 The entire subject must be well-formed UTF-8, including a suffix after an early
-match. Malformed, overlong, surrogate-encoding and truncated input throws
-`ArgumentException` with an offending byte offset. UTF-8 pattern and replacement
-inputs are strict too. Interruption or resource denial can occur before a later
-invalid byte is visited; successful matching cannot bypass validation.
+match. With the default `Utf8InputValidation.Validate`, malformed, overlong,
+surrogate-encoding and truncated input throws `ArgumentException` with an offending
+byte offset. Interruption or resource denial can occur before a later invalid byte
+is visited. UTF-8 pattern and replacement validation is independent and remains strict.
+
+### Subject input validation
+
+Core and all three compatibility packages select an immutable `inputValidation`
+constructor/factory option and expose it as read-only `InputValidation`:
+
+```csharp
+public enum Utf8InputValidation { Validate = 0, AssumeValid }
+
+var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
+```
+
+`Validate` is the default and validates the entire subject, including an unsearched
+prefix or suffix after an early hit, at most once per logical operation or cursor
+lifetime. `AssumeValid` omits that validity pass: the caller guarantees the entire
+subject is valid UTF-8 and borrowed bytes remain unchanged throughout use. It
+provides no malformed-subject rejection guarantee. There is no per-call override
+or public validation token. Static matching conveniences keep default validation.
+
+The policy covers matching/counting, detailed results, replacements, splits and
+value/persistent cursors wherever a profile offers them, including funded and
+derived operation programs. Managed bounds checking, Unicode/scalar semantics,
+byte coordinates, cooperative cancellation/deadlines and resource admission
+remain active. Required coordinate/ASCII classification, scalar decoding and
+result sizing may still inspect input; these are not a mandatory validity pass.
+Pattern, capture-name, replacement-template and assembled-output validation keep
+their separate existing rules. Trusting subject input does not trust those inputs.
+Work requirements can decrease when validation is omitted or redundant validation
+is removed; finite policies remain enforceable and version/route dependent.
+
+An integration may select AssumeValid once when its own text representation
+already guarantees valid UTF-8. It must still keep borrowed storage alive and
+unchanged. Comparisons between policies must label this different input contract;
+the existing recorded benchmark tables use Validate unless explicitly stated.
 
 Core admits documented .NET-style syntax: literals/classes/subtraction, inline
 options, greedy/lazy repetition, captures/history, references, balancing groups,

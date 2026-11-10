@@ -174,10 +174,13 @@ internal static partial class Utf8CompiledOperationCursorFactory
         ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline,
         bool retainMap, out Utf8BoundaryMap map)
     {
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
+        // Public entry already established its subject contract. Missing
+        // coordinate metadata requires description, never a second validation.
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default)
+            { SubjectValidationCompleted = true };
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned cursor preparation exceeded {breach}.");
-        if (validation.ByteLength != input.Length) validation = Utf8Validation.Validate(input, ref invocation);
+        if (validation.ByteLength != input.Length) validation = Utf8Validation.Subject(input, ref invocation);
         var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Owned cursor preparation requires its admitted scalar program.");
         return Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retainMap, out map);
     }

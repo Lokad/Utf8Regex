@@ -47,7 +47,7 @@ public sealed partial class Utf8PythonRegex
         }
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
             if (invocation.TryReserveWorking(0) != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Literal repeat exceeded the working budget.");
             var control = new Utf8InvocationBufferControl(ref invocation);
@@ -73,7 +73,7 @@ public sealed partial class Utf8PythonRegex
             Utf8InvocationOutput.Checkpoint(control);
             if (!matched) return default;
             var startUtf16 = validation.IsAscii || startOffsetInBytes == 0 ? startOffsetInBytes
-                : Utf8Validation.Validate(input[..startOffsetInBytes], ref invocation).Utf16Length;
+                : Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
             var completed = Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
                 Number = 0, Success = true,
@@ -385,7 +385,7 @@ public sealed partial class Utf8PythonRegex
             var bytes = input[start..end];
             var count = validation.IsAscii ? bytes.Length
                 : start == 0 && end == input.Length ? validation.Utf16Length
-                : Utf8Validation.Validate(bytes, ref invocation).Utf16Length;
+                : Utf8SliceBufferWork.CountUtf16(bytes, ref invocation);
             var completed = results.DecodeUtf8(bytes, count, ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
@@ -414,7 +414,7 @@ public sealed partial class Utf8PythonRegex
                 ValidateScalarStartOffset(input, startOffsetInBytes);
                 // A miss has no interoperability coordinates. Validate the whole
                 // subject before discovery, then project only an actual range.
-                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                Utf8Validation.CheckSubject(input, ref invocation);
                 if (!literal.TryFindNativeLiteralForResult(input, startOffsetInBytes,
                     ref invocation, out var found, out start, out end))
                     throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
@@ -438,9 +438,9 @@ public sealed partial class Utf8PythonRegex
                     return default;
                 }
                 startUtf16 = validation.IsAscii || start == 0 ? start
-                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
+                    : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
                 endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
-                    : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
+                    : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
             }
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
@@ -471,14 +471,14 @@ public sealed partial class Utf8PythonRegex
         validation = default;
         if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
         {
-            validation = Utf8Validation.Validate(input, ref invocation);
+            validation = Utf8Validation.Subject(input, ref invocation);
             start = 0;
             end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, prefix, ref invocation);
             return end != 0;
         }
         if (kind == 2 && _asciiDotAllFullMatchPrefix is { } head && _asciiDotAllFullMatchSuffix is { } tail)
         {
-            validation = Utf8Validation.Validate(input, ref invocation);
+            validation = Utf8Validation.Subject(input, ref invocation);
             var subject = input[startOffsetInBytes..];
             if (subject.Length < head.Length || subject.Length - head.Length < tail.Length ||
                 !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject, head, ref invocation) ||
@@ -499,7 +499,7 @@ public sealed partial class Utf8PythonRegex
                 // A required start permits one bounded comparison of the complete
                 // literal, within the profile's existing 256-byte comparison
                 // block. Validate the whole subject before any rejection.
-                validation = Utf8Validation.Validate(input, ref invocation);
+                validation = Utf8Validation.Subject(input, ref invocation);
                 var remaining = input.Length - startOffsetInBytes;
                 if (remaining < literal.Length || kind == 2 && remaining != literal.Length) return false;
                 Utf8InvocationOutput.Checkpoint(control);

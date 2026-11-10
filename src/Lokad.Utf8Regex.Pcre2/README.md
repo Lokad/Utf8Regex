@@ -6,6 +6,18 @@ matching the adapter. It can coexist with PythonRe at the same version. There is
 no P/Invoke, native PCRE2 binary, RID-specific payload or implementation dependency
 other than Core and the BCL.
 
+## Subject validation policy
+
+Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
+host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
+`InputValidation` reports the choice; `Validate` is default and checks the whole
+subject at most once per logical operation or cursor lifetime. Matching, counting,
+replacement/splitting where supported and cursors inherit the engine policy.
+Pattern/replacement validation, checked accesses, scalar/byte semantics,
+cooperative cancellation/deadlines and admission remain. Required coordinate or
+output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
+Existing benchmark tables use Validate unless explicitly labeled otherwise.
+
 ## Supported scope and limitations
 
 The admitted profile includes literals/classes, branching/repetition, captures,

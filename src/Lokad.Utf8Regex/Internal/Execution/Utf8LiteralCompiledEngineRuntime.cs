@@ -1228,7 +1228,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             }
 
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            var matchedUtf16Length = Utf8Validation.Validate(input.Slice(index, matchedByteLength), ref invocation).Utf16Length;
+            var matchedUtf16Length = Utf8SliceBufferWork.CountUtf16(input.Slice(index, matchedByteLength), ref invocation);
             return Utf8BackendInstructionExecutor.ProjectMatch(
                 _firstMatchProgram,
                 input,
@@ -1483,7 +1483,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
     private static int GetUtf16LengthOfPrefix(ReadOnlySpan<byte> input, int byteCount)
     {
-        return byteCount == 0 ? 0 : Utf8Validation.Validate(input[..byteCount]).Utf16Length;
+        return byteCount == 0 ? 0 : Utf8Validation.DescribeValid(input[..byteCount]).Utf16Length;
     }
 
     private static bool ShouldPreferSmallAsciiLiteralFamilyPrimitive(ReadOnlySpan<byte> input, PreparedSmallAsciiLiteralFamilySearch primitive)
