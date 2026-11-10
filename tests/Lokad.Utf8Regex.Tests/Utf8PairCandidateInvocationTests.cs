@@ -95,19 +95,23 @@ public sealed class Utf8PairCandidateInvocationTests
         }
     }
 
-    [Theory] [InlineData(1024)] [InlineData(1025)] [InlineData(2047)] [InlineData(2048)]
+    [Theory] [InlineData(31)] [InlineData(63)] [InlineData(64)]
+    [InlineData(1024)] [InlineData(1025)] [InlineData(2047)] [InlineData(2048)]
     public void PreparedPairLookaheadKeepsEarlierLongerStart(int padding)
     {
-        var longer = Encoding.ASCII.GetBytes("zabc" + new string('q', 1019) + "!");
-        var input = new byte[padding + longer.Length];
-        input.AsSpan(0, padding).Fill((byte)'x');
-        longer.CopyTo(input, padding);
-        var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["abc"u8.ToArray(), longer], false));
-        var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
-            ref invocation, out var match, out var found));
-        Assert.True(found);
-        Assert.Equal((padding, longer.Length, 1), (match.Index, match.Length, match.LiteralId));
+        foreach (var length in new[] { 16, 1024 })
+        {
+            var longer = Encoding.ASCII.GetBytes("zabc" + new string('q', length - 5) + "!");
+            var input = new byte[padding + longer.Length];
+            input.AsSpan(0, padding).Fill((byte)'x');
+            longer.CopyTo(input, padding);
+            var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["abc"u8.ToArray(), longer], false));
+            var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
+                ref invocation, out var match, out var found));
+            Assert.True(found);
+            Assert.Equal((padding, longer.Length, 1), (match.Index, match.Length, match.LiteralId));
+        }
     }
 
     [Theory] [InlineData(false)] [InlineData(true)]

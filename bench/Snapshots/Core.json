@@ -3,9 +3,22 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "EA42285213C077F1B88990B92EFDA9D941F777746F07F4D4C37B728386C3114A"
+    "SnapshotSha256": "C28F1DD683D1540782DCE99D1C2EF3A8BF4ECF073B80683E257DD859D7C24143"
   },
   "Sources": {
+    "3F08481CD7F538017320213E5FDC75B8A31DBAEC02181F0C7D582BAC5AD42103": {
+      "BenchmarkAssembly": "1.0.0\u002Bdf3fc4541dcce8112739db76bd4e0bcdc28fcf93 sha256=861894F46ECD2E856119F09D43DD1673CFC489ABC6B47635C7E27C346A76A10E",
+      "CoreAssembly": "0.5.0-dev.66\u002B86440ee007cf4dd42e0ff5fbad9bb2d7d3804ee9 sha256=E82D9F8CE47E9E75C5076B571838D4D1D55B763C7FA0185E4F55DEEA15BB6114",
+      "Pcre2Assembly": "0.5.0-dev.66\u002B86440ee007cf4dd42e0ff5fbad9bb2d7d3804ee9 sha256=F0EFF43BFEFFC7B29ED97781D82B3C248F1F1F110180DE031225ECA4A80D65A5",
+      "PythonReAssembly": "0.5.0-dev.66\u002B86440ee007cf4dd42e0ff5fbad9bb2d7d3804ee9 sha256=45254AE6E29AA384294F2426F213ECA8B1EA250104FEFB05AE2760C043CCCFDB",
+      "SourceCommit": "df3fc4541dcc",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
     "B2A582405E4615DE112318657C72A52A40478BDAE11CF7CE6756B0DCA4F2A4F6": {
       "BenchmarkAssembly": "1.0.0\u002Bb478f853f722b7c34de83bdcd14693ee594ca053 sha256=F04EAE52057AD25081D1AE06C66F80A3B0BD4B135ACAFFFE164F8438A039120B",
       "CoreAssembly": "0.5.0-dev.66\u002Bb478f853f722b7c34de83bdcd14693ee594ca053 sha256=BD62C0CCFBF93DD2BFA4311382F74A313622EE444C6856D27BFE23C129CBBA42",
@@ -384,11 +397,11 @@
       },
       "industry/leipzig-river-window-count": {
         "Operation": "Count",
-        "Source": "B2A582405E4615DE112318657C72A52A40478BDAE11CF7CE6756B0DCA4F2A4F6",
-        "ManagedUs": 3259.058333333333,
-        "ReferenceUs": 33196.933333333334,
-        "DecodeUs": 40566.15,
-        "Ratio": 0.09817347586323233,
+        "Source": "3F08481CD7F538017320213E5FDC75B8A31DBAEC02181F0C7D582BAC5AD42103",
+        "ManagedUs": 2146.58,
+        "ReferenceUs": 32199.984999999997,
+        "DecodeUs": 39303.12,
+        "Ratio": 0.06666400620994078,
         "Status": "Win",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,
@@ -1046,11 +1059,11 @@
       },
       "industry/leipzig-river-window-count": {
         "Operation": "Count",
-        "Source": "B2A582405E4615DE112318657C72A52A40478BDAE11CF7CE6756B0DCA4F2A4F6",
-        "ManagedUs": 3263.0304347826086,
-        "ReferenceUs": 1534.5980392156862,
-        "DecodeUs": 8538.92,
-        "Ratio": 2.126309529530158,
+        "Source": "3F08481CD7F538017320213E5FDC75B8A31DBAEC02181F0C7D582BAC5AD42103",
+        "ManagedUs": 2166.8,
+        "ReferenceUs": 1528.632,
+        "DecodeUs": 8343.095,
+        "Ratio": 1.4174765411165016,
         "Status": "Gap",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,

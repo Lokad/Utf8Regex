@@ -211,8 +211,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/one-node-backtracking` | `IsMatch` | 0.078 us | 0.619 us | 0.656 us | 0.13x |
 | `common/backtracking` | `IsMatch` | 0.090 us | 0.843 us | 0.882 us | 0.11x |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,986.724 us | 19,525.800 us | 20,064.675 us | 0.10x |
-| `industry/leipzig-river-window-count` | `Count` | 3,259.058 us | 33,196.933 us | 40,566.150 us | 0.10x |
 | `industry/leipzig-symbol-count` | `Count` | 1,838.629 us | 23,050.400 us | 30,463.200 us | 0.08x |
+| `industry/leipzig-river-window-count` | `Count` | 2,146.580 us | 32,199.985 us | 39,303.120 us | 0.07x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 508.345 us | 8,194.430 us | 8,670.156 us | 0.06x |
 | `common/matches-boundary` | `Count` | 7.956 us | 165.341 us | 166.412 us | 0.05x |
 | `common/matches-set` | `Count` | 8.251 us | 195.625 us | 197.854 us | 0.04x |
@@ -267,7 +267,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 |---|---|---:|---:|---:|---:|
 | `industry/mariomka-email-count` | `Count` | 1,161.738 us | 454.396 us | 7,801.950 us | 2.56x |
 | `common/match-word` | `Match` | 0.197 us | 0.081 us | 1.022 us | 2.42x |
-| `industry/leipzig-river-window-count` | `Count` | 3,263.030 us | 1,534.598 us | 8,538.920 us | 2.13x |
 | `common/backtracking` | `IsMatch` | 0.089 us | 0.044 us | 0.075 us | 2.04x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 115.867 us | 58.690 us | 268.568 us | 1.97x |
 | `common/uri-miss` | `IsMatch` | 0.121 us | 0.067 us | 0.085 us | 1.81x |
@@ -279,6 +278,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-miss` | `IsMatch` | 0.078 us | 0.050 us | 0.070 us | 1.57x |
 | `common/ip-match` | `IsMatch` | 0.074 us | 0.048 us | 0.069 us | 1.52x |
 | `industry/leipzig-symbol-count` | `Count` | 1,840.222 us | 1,227.068 us | 7,461.560 us | 1.50x |
+| `industry/leipzig-river-window-count` | `Count` | 2,166.800 us | 1,528.632 us | 8,343.095 us | 1.42x |
 | `industry/leipzig-name-family-count` | `Count` | 4,048.463 us | 3,050.556 us | 8,104.400 us | 1.33x |
 | `industry/mariomka-uri-count` | `Count` | 1,466.902 us | 1,107.203 us | 8,452.025 us | 1.32x |
 | `common/email-match` | `IsMatch` | 0.098 us | 0.081 us | 0.108 us | 1.20x |
