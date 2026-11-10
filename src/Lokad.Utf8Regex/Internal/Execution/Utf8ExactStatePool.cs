@@ -23,6 +23,7 @@ internal static class Utf8ExactStatePool
     private static SpinLock s_gate = new(enableThreadOwnerTracking: false);
     private static Entry[]? s_items;
     private static int s_retainedBytes;
+    private static int s_count;
     private static int s_nextVictim;
 
     internal static int TableBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Entry>(MaximumEntries));
@@ -45,8 +46,8 @@ internal static class Utf8ExactStatePool
             s_gate.Enter(ref taken);
             var bytes = 0;
             if (s_items is { } cache)
-                foreach (var entry in cache)
-                    if (entry.Value?.GetType() == typeof(T[])) bytes += entry.Bytes;
+                for (var index = 0; index < s_count; index++)
+                    if (cache[index].Value?.GetType() == typeof(T[])) bytes += cache[index].Bytes;
             return bytes;
         }
         finally { if (taken) s_gate.Exit(); }
@@ -71,11 +72,10 @@ internal static class Utf8ExactStatePool
                     catch { s_retainedBytes = 0; throw; }
                 }
                 if (taken && s_items is { } cache)
-                    for (var index = 0; index < cache.Length; index++)
+                    for (var index = 0; index < s_count; index++)
                         if (cache[index].Value is T[] items && items.GetType() == typeof(T[]) && items.Length == capacity)
                         {
-                            s_retainedBytes -= cache[index].Bytes;
-                            cache[index] = default;
+                            RemoveAt(cache, index);
                             return items;
                         }
             }
@@ -102,31 +102,36 @@ internal static class Utf8ExactStatePool
             s_gate.TryEnter(0, ref taken);
             if (!taken) return;
             if (s_items is not { } cache) return;
-            var empty = -1;
             var typeBytes = 0;
             // Identical capacities can belong to distinct simultaneous loans.
             // Every returned leaf contributes to both retention bounds.
-            for (var index = 0; index < cache.Length; index++)
+            for (var index = 0; index < s_count; index++)
             {
                 var entry = cache[index];
-                if (entry.Value is null) { if (empty < 0) empty = index; }
-                else if (ReferenceEquals(entry.Value, items)) return;
-                else if (entry.Value.GetType() == typeof(T[])) typeBytes += entry.Bytes;
+                if (ReferenceEquals(entry.Value, items)) return;
+                if (entry.Value!.GetType() == typeof(T[])) typeBytes += entry.Bytes;
             }
             if (bytes > Utf8ExactStatePool<T>.MaximumRetainedBytes - typeBytes) return;
-            while (empty < 0 || bytes > MaximumRetainedBytes - s_retainedBytes)
+            while (s_count == cache.Length || bytes > MaximumRetainedBytes - s_retainedBytes)
             {
-                var victim = s_nextVictim;
+                var victim = s_nextVictim % s_count;
                 s_nextVictim = (s_nextVictim + 1) % cache.Length;
-                if (cache[victim].Value is null) continue;
-                s_retainedBytes -= cache[victim].Bytes;
-                cache[victim] = default;
-                if (empty < 0) empty = victim;
+                RemoveAt(cache, victim);
             }
             s_retainedBytes += bytes; // Admit the physical leaf before adoption.
-            cache[empty] = new(items, bytes);
+            cache[s_count++] = new(items, bytes);
         }
         finally { if (taken) s_gate.Exit(); }
+    }
+
+    // Under the gate, keep all retained leaves in one dense prefix. Vacated
+    // suffix slots release their roots; several same-type/capacity loans remain
+    // independent entries. Optional eviction order is not an ownership contract.
+    private static void RemoveAt(Entry[] cache, int index)
+    {
+        s_retainedBytes -= cache[index].Bytes;
+        cache[index] = cache[--s_count];
+        cache[s_count] = default;
     }
 
     // Explicit release of the shared owner. Active working loans are independent
@@ -139,6 +144,7 @@ internal static class Utf8ExactStatePool
             s_gate.Enter(ref taken);
             s_items = null;
             s_retainedBytes = 0;
+            s_count = 0;
             s_nextVictim = 0;
         }
         finally { if (taken) s_gate.Exit(); }

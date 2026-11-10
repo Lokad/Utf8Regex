@@ -357,9 +357,10 @@ public sealed class Utf8SharedStatePoolTests
     {
         var flags = BindingFlags.Static | BindingFlags.NonPublic;
         var type = typeof(Utf8ExactStatePool);
-        Assert.Equal(4, type.GetFields(flags).Count(field => !field.IsLiteral));
+        var count = (int)type.GetField("s_count", flags)!.GetValue(null)!;
+        Assert.InRange(count, 0, Utf8ExactStatePool.MaximumEntries);
         var table = (Array?)type.GetField("s_items", flags)!.GetValue(null);
-        if (table is null) { Assert.Equal(0, Utf8ExactStatePool.RetainedBytes); return (0, 0); }
+        if (table is null) { Assert.Equal(0, count); Assert.Equal(0, Utf8ExactStatePool.RetainedBytes); return (0, 0); }
         Assert.Equal(Utf8ExactStatePool.MaximumEntries, table.Length);
         var entryType = table.GetType().GetElementType()!;
         Assert.Equal(2, entryType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Length);
@@ -367,14 +368,19 @@ public sealed class Utf8SharedStatePoolTests
         var bytesProperty = entryType.GetProperty("Bytes")!;
         var bytes = Physical(table);
         var identities = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        foreach (var entry in table)
+        for (var index = 0; index < table.Length; index++)
         {
-            if (valueProperty.GetValue(entry) is not Array leaf) { Assert.Equal(0, bytesProperty.GetValue(entry)); continue; }
+            var entry = table.GetValue(index)!;
+            var value = valueProperty.GetValue(entry);
+            if (index < count) Assert.NotNull(value);
+            else Assert.Null(value);
+            if (value is not Array leaf) { Assert.Equal(0, bytesProperty.GetValue(entry)); continue; }
             Assert.True(identities.Add(leaf));
             var extent = Physical(leaf);
             Assert.Equal(extent, bytesProperty.GetValue(entry));
             bytes += extent;
         }
+        Assert.Equal(count, identities.Count);
         Assert.Equal(bytes, Utf8ExactStatePool.RetainedBytes);
         Assert.InRange(bytes, 0, Utf8ExactStatePool.MaximumRetainedBytes);
         return (bytes, identities.Count);
