@@ -18,10 +18,13 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
         6 => Bytes("😀", "中"), 7 => Bytes("中文词", "中文人", "日本人"),
         8 => Bytes("中文", "日本", "韩国"), 9 => Bytes("中", "日", "韩"),
         10 => [[], "abc"u8.ToArray()],
+        24 => Bytes("Tom", "Sawyer", "Huckleberry", "Finn"),
+        25 => Bytes("abcdefghijklmnop", "qrstuvwxy", "ABCDEFGHIJK", "LMNOPQRSTUVWX"),
+        26 => Bytes("abcdefghijklmnopq", "xyz"),
         _ => Enumerable.Range(0, 2 + id % 4).Select(i => Enumerable.Range(0, 3 + id % 7)
             .Select(j => (byte)(33 + (i * 7 + j + id) % 90)).ToArray()).ToArray()
     };
-    public static IEnumerable<object[]> Families() => from family in Enumerable.Range(0, 24)
+    public static IEnumerable<object[]> Families() => from family in Enumerable.Range(0, 27)
         from kind in new[] { 0, 1 } select new object[] { family, kind };
     public static IEnumerable<object[]> Cutoffs() => from family in new[] { 1, 2 }
         from kind in new[] { 0, 1 } from bytes in new[] { false, true } select new object[] { family, kind, bytes };

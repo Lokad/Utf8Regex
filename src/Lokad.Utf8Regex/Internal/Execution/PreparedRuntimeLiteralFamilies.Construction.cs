@@ -81,6 +81,9 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
             foreach (var literal in literals)
             {
                 budget.ChargeWork(1);
+                // This is a search-strategy gate, not the comparator's safety
+                // limit. Wider mixed-length families can give this counter a
+                // much weaker primary filter than prepared first-byte search.
                 if (literal.Length is < 3 or > 8) { scope.Complete(); return false; }
                 budget.ChargeWork((ulong)literal.Length);
                 if (!Utf8InputAnalyzer.IsAscii(literal)) { scope.Complete(); return false; }

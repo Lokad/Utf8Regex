@@ -1,5 +1,6 @@
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -897,6 +898,35 @@ public sealed class PreparedSearchPrimitivesTests
 
         Assert.True(PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out var counter));
         Assert.Equal(5, counter.Count(input));
+    }
+
+    [Theory]
+    [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)]
+    [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
+    [InlineData(11)] [InlineData(12)] [InlineData(13)] [InlineData(14)]
+    [InlineData(15)] [InlineData(16)] [InlineData(17)]
+    public void LiteralFamiliesKeepOffsetsAndTailsAcrossComparisonWidths(int length)
+    {
+        var literals = new[] { 'Q', 'W', 'E', 'R' }.Select((head, index) =>
+            head + new string('k', length - 2) + index).ToArray();
+        var bytes = literals.Select(Encoding.UTF8.GetBytes).ToArray();
+        var hasCounter = PreparedShortAsciiLiteralFamilyCounter.TryCreate(bytes, out var counter);
+        var pattern = string.Join('|', literals.Select(Regex.Escape));
+        var regexes = new[] { RegexOptions.None, RegexOptions.Compiled,
+            RegexOptions.RightToLeft, RegexOptions.NonBacktracking }
+            .Select(options => new Utf8Regex(pattern, options)).Append(new Utf8Regex("(" + pattern + ")")).ToArray();
+        var rejected = literals[1][..(length / 2)] + "?" + literals[1][(length / 2 + 1)..];
+        foreach (var padding in new[] { 0, 1, 7, 15, 31 })
+        for (var tail = 0; tail < length; tail++)
+        {
+            var text = "é😀" + new string('!', padding) + string.Join('!', literals) + "!" +
+                rejected + "!" + literals[0][..tail];
+            var input = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xFF, .. input, 0xFF];
+            var view = storage.AsSpan(1, input.Length);
+            if (hasCounter) Assert.Equal(4, counter.Count(view));
+            foreach (var regex in regexes) Assert.Equal(4, regex.Count(view));
+        }
     }
 
     [Fact]
