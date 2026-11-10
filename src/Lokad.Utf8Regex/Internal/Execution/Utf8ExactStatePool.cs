@@ -19,11 +19,12 @@ internal static class Utf8ExactStatePool
 {
     internal const int MaximumRetainedBytes = 256 * 1024;
     internal const int MaximumEntries = 64;
+    private const int BucketCount = 5;
+    internal const int MaximumLeafBytes = Utf8ExactStatePool<byte>.MaximumRetainedBytes / BucketCount;
     private readonly record struct Entry(Array? Value, int Bytes);
     private static SpinLock s_gate = new(enableThreadOwnerTracking: false);
     private static Entry[]? s_items;
     private static int s_retainedBytes;
-    private static int s_nextVictim;
 
     internal static int TableBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Entry>(MaximumEntries));
 
@@ -54,7 +55,8 @@ internal static class Utf8ExactStatePool
 
     internal static T[] Rent<T>(int capacity, bool retain)
     {
-        if (Bucket(capacity) >= 0)
+        var bucket = Bucket(capacity);
+        if (bucket >= 0)
         {
             var taken = false;
             try
@@ -62,7 +64,7 @@ internal static class Utf8ExactStatePool
                 // Optional retention never waits behind another invocation.
                 s_gate.TryEnter(0, ref taken);
                 if (taken && s_items is null && retain &&
-                    Utf8ConstructionBudget.ArrayBytes<T>(capacity) <= (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes)
+                    Utf8ConstructionBudget.ArrayBytes<T>(capacity) <= MaximumLeafBytes)
                 {
                     // Reserve the complete table extent before acquisition. A
                     // failed allocation restores the shared owner's loan.
@@ -71,13 +73,15 @@ internal static class Utf8ExactStatePool
                     catch { s_retainedBytes = 0; throw; }
                 }
                 if (taken && s_items is { } cache)
-                    for (var index = 0; index < cache.Length; index++)
-                        if (cache[index].Value is T[] items && items.GetType() == typeof(T[]) && items.Length == capacity)
-                        {
-                            s_retainedBytes -= cache[index].Bytes;
-                            cache[index] = default;
-                            return items;
-                        }
+                {
+                    var index = Slot<T>(bucket);
+                    if (cache[index].Value is T[] items && items.GetType() == typeof(T[]) && items.Length == capacity)
+                    {
+                        s_retainedBytes -= cache[index].Bytes;
+                        cache[index] = default;
+                        return items;
+                    }
+                }
             }
             finally { if (taken) s_gate.Exit(); }
         }
@@ -89,9 +93,10 @@ internal static class Utf8ExactStatePool
         // Reference arrays are covariant. A pooled leaf must have the exact
         // requested element type so later borrowers can write any T safely.
         if (items.GetType() != typeof(T[])) return;
-        if (!retain || Bucket(items.Length) < 0) return;
+        var bucket = Bucket(items.Length);
+        if (!retain || bucket < 0) return;
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(items.Length);
-        if (extent > (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes) return;
+        if (extent > MaximumLeafBytes) return;
         var bytes = (int)extent;
         // Return relinquishes the working leaf. Clear its bounded graph slots
         // before optional publication, including a contended retention bypass.
@@ -102,29 +107,12 @@ internal static class Utf8ExactStatePool
             s_gate.TryEnter(0, ref taken);
             if (!taken) return;
             if (s_items is not { } cache) return;
-            var empty = -1;
-            var typeBytes = 0;
-            // Identical capacities can belong to distinct simultaneous loans.
-            // Every returned leaf contributes to both retention bounds.
-            for (var index = 0; index < cache.Length; index++)
-            {
-                var entry = cache[index];
-                if (entry.Value is null) { if (empty < 0) empty = index; }
-                else if (ReferenceEquals(entry.Value, items)) return;
-                else if (entry.Value.GetType() == typeof(T[])) typeBytes += entry.Bytes;
-            }
-            if (bytes > Utf8ExactStatePool<T>.MaximumRetainedBytes - typeBytes) return;
-            while (empty < 0 || bytes > MaximumRetainedBytes - s_retainedBytes)
-            {
-                var victim = s_nextVictim;
-                s_nextVictim = (s_nextVictim + 1) % cache.Length;
-                if (cache[victim].Value is null) continue;
-                s_retainedBytes -= cache[victim].Bytes;
-                cache[victim] = default;
-                if (empty < 0) empty = victim;
-            }
-            s_retainedBytes += bytes; // Admit the physical leaf before adoption.
-            cache[empty] = new(items, bytes);
+            // One slot per exact type/capacity permits replacement without
+            // identity tracking or per-type totals. Five bounded leaves fit the
+            // type ceiling; the fixed table and all slots fit the global one.
+            var index = Slot<T>(bucket);
+            s_retainedBytes = s_retainedBytes - cache[index].Bytes + bytes;
+            cache[index] = new(items, bytes);
         }
         finally { if (taken) s_gate.Exit(); }
     }
@@ -139,7 +127,6 @@ internal static class Utf8ExactStatePool
             s_gate.Enter(ref taken);
             s_items = null;
             s_retainedBytes = 0;
-            s_nextVictim = 0;
         }
         finally { if (taken) s_gate.Exit(); }
     }
@@ -147,4 +134,7 @@ internal static class Utf8ExactStatePool
     private static int Bucket(int capacity)
         => capacity is >= 16 and <= 256 && BitOperations.IsPow2((uint)capacity)
             ? BitOperations.Log2((uint)capacity) - 4 : -1;
+
+    private static int Slot<T>(int bucket)
+        => (RuntimeHelpers.GetHashCode(typeof(T[])) ^ bucket) & (MaximumEntries - 1);
 }

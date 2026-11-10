@@ -715,6 +715,13 @@ PCRE2 envelope; it does not establish downstream adoption. Source witnesses are
 `Utf8ExecutionBudget.TryChargeResultBytes`, `Utf8InvocationResultLedger.ReleaseSince`
 and `Utf8PythonMatchCursor.MoveNext`, with finite-result/working/cursor fixtures.
 
+The optional exact-state array pool has one shared bounded owner across threads
+and element types. Retention is opportunistic: indexed collisions can evict a
+leaf, and at most one leaf per type/capacity is retained. A conservative per-leaf
+ceiling preserves the modeled 16 KiB/type and 256 KiB total bounds, including the
+table in the total. Active working admission and exclusive ownership do not depend on reuse;
+finite-storage calls may borrow existing leaves but cannot create retained roots.
+
 ## Construction, preparation and caches
 
 Explicit `Compile` accepts separate construction policy, timeout and token;

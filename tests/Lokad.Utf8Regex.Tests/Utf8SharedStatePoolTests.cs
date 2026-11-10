@@ -80,7 +80,7 @@ public sealed class Utf8SharedStatePoolTests
             objects[0] = new object();
             Utf8ExactStatePool<object>.Return(objects, true);
 
-            Assert.Same(strings, Utf8ExactStatePool<string>.Rent(16, false));
+            Assert.IsType<string[]>(Utf8ExactStatePool<string>.Rent(16, false));
             Assert.All(strings, value => Assert.Null(value));
             Assert.Same(objects, Utf8ExactStatePool<object>.Rent(16, false));
             Assert.All(objects, value => Assert.Null(value));
@@ -96,20 +96,19 @@ public sealed class Utf8SharedStatePoolTests
         try
         {
             var small = Utf8ExactStatePool<int>.Rent(16, true);
-            var wide = Utf8ExactStatePool<long>.Rent(128, true);
+            var wide = Utf8ExactStatePool<int>.Rent(128, true);
             Utf8ExactStatePool<int>.Return(small, true);
-            Utf8ExactStatePool<long>.Return(wide, true);
+            Utf8ExactStatePool<int>.Return(wide, true);
             var actual = Inspect();
             Assert.Equal(2, actual.Leaves);
-            Assert.Equal(Physical(small), Utf8ExactStatePool<int>.RetainedBytes);
-            Assert.Equal(Physical(wide), Utf8ExactStatePool<long>.RetainedBytes);
+            Assert.Equal(Physical(small) + Physical(wide), Utf8ExactStatePool<int>.RetainedBytes);
             Assert.Equal(Utf8ExactStatePool.TableBytes + Physical(small) + Physical(wide), actual.Bytes);
             var replacement = new int[16];
             Utf8ExactStatePool<int>.Return(replacement, true);
-            Assert.Equal(actual.Bytes + Physical(replacement), Inspect().Bytes);
-            Assert.Equal(3, Inspect().Leaves);
-            Assert.Same(small, Utf8ExactStatePool<int>.Rent(16, false));
+            Assert.Equal(actual.Bytes, Inspect().Bytes);
+            Assert.Equal(2, Inspect().Leaves);
             Assert.Same(replacement, Utf8ExactStatePool<int>.Rent(16, false));
+            Assert.NotSame(small, Utf8ExactStatePool<int>.Rent(16, false));
             Assert.Equal(1, Inspect().Leaves);
         }
         finally { Utf8ExactStatePool.Clear(); }
@@ -129,12 +128,12 @@ public sealed class Utf8SharedStatePoolTests
                 Assert.InRange(Utf8ExactStatePool<WideState>.RetainedBytes, 0, Utf8ExactStatePool<WideState>.MaximumRetainedBytes);
                 Inspect();
             }
-            Assert.Equal(15488, Utf8ExactStatePool<WideState>.RetainedBytes);
-            var oversized = Utf8ExactStatePool<WideState>.Rent(256, false);
+            Assert.Equal(Physical(new WideState[16]) + Physical(new WideState[32]), Utf8ExactStatePool<WideState>.RetainedBytes);
+            var oversized = Utf8ExactStatePool<WideState>.Rent(64, false);
             var before = Inspect();
             Utf8ExactStatePool<WideState>.Return(oversized, true);
             Assert.Equal(before.Bytes, Inspect().Bytes);
-            Assert.NotSame(oversized, Utf8ExactStatePool<WideState>.Rent(256, false));
+            Assert.NotSame(oversized, Utf8ExactStatePool<WideState>.Rent(64, false));
         }
         finally { Utf8ExactStatePool.Clear(); }
     }
@@ -148,7 +147,7 @@ public sealed class Utf8SharedStatePoolTests
             var leaves = new WideState[20][];
             for (var i = 0; i < leaves.Length; i++) leaves[i] = Utf8ExactStatePool<WideState>.Rent(16, true);
             foreach (var leaf in leaves) Utf8ExactStatePool<WideState>.Return(leaf, true);
-            var expectedLeaves = Utf8ExactStatePool<WideState>.MaximumRetainedBytes / Physical(leaves[0]);
+            const int expectedLeaves = 1; // Same type/capacity replaces its optional retained leaf.
             var actual = Inspect();
             Assert.Equal(expectedLeaves, actual.Leaves);
             Assert.Equal(expectedLeaves * Physical(leaves[0]), Utf8ExactStatePool<WideState>.RetainedBytes);
@@ -197,7 +196,7 @@ public sealed class Utf8SharedStatePoolTests
             var actual = Inspect();
             Assert.True(attemptedBytes > Utf8ExactStatePool.MaximumRetainedBytes);
             Assert.True(attemptedLeaves > actual.Leaves);
-            if (!large) Assert.Equal(Utf8ExactStatePool.MaximumEntries, actual.Leaves);
+            if (!large) Assert.True(actual.Leaves > 0); // Collisions may evict before the table fills.
 
             void Fill<T>() where T : struct
             {
@@ -357,24 +356,27 @@ public sealed class Utf8SharedStatePoolTests
     {
         var flags = BindingFlags.Static | BindingFlags.NonPublic;
         var type = typeof(Utf8ExactStatePool);
-        Assert.Equal(4, type.GetFields(flags).Count(field => !field.IsLiteral));
         var table = (Array?)type.GetField("s_items", flags)!.GetValue(null);
         if (table is null) { Assert.Equal(0, Utf8ExactStatePool.RetainedBytes); return (0, 0); }
         Assert.Equal(Utf8ExactStatePool.MaximumEntries, table.Length);
         var entryType = table.GetType().GetElementType()!;
-        Assert.Equal(2, entryType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Length);
         var valueProperty = entryType.GetProperty("Value")!;
         var bytesProperty = entryType.GetProperty("Bytes")!;
         var bytes = Physical(table);
         var identities = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var typeBytes = new Dictionary<Type, int>();
         foreach (var entry in table)
         {
             if (valueProperty.GetValue(entry) is not Array leaf) { Assert.Equal(0, bytesProperty.GetValue(entry)); continue; }
             Assert.True(identities.Add(leaf));
             var extent = Physical(leaf);
             Assert.Equal(extent, bytesProperty.GetValue(entry));
+            Assert.True(extent <= Utf8ExactStatePool.MaximumLeafBytes);
+            typeBytes.TryGetValue(leaf.GetType(), out var retained);
+            typeBytes[leaf.GetType()] = retained + extent;
             bytes += extent;
         }
+        Assert.All(typeBytes.Values, value => Assert.InRange(value, 0, Utf8ExactStatePool<byte>.MaximumRetainedBytes));
         Assert.Equal(bytes, Utf8ExactStatePool.RetainedBytes);
         Assert.InRange(bytes, 0, Utf8ExactStatePool.MaximumRetainedBytes);
         return (bytes, identities.Count);
