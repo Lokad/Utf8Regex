@@ -13,6 +13,8 @@ public sealed class PythonReCaptureCompletionTests
     [InlineData("(?P<one>a)(?P<two>)", "a", 2, "two", "")]
     [InlineData("(?P<one>a)+(?P<two>b)", "aab", 2, "two", "b")]
     [InlineData("(?P<one>a)(?P<two>b)|(?P<three>c)", "c", 3, "three", "c")]
+    [InlineData("(?P<a>a)(?P<b>b)(?P<c>c|cd)e", "abcde", 3, "c", "cd")]
+    [InlineData("(?P<a>a)(?P<b>b)(?:(?P<c>c)d|ce)", "abce", 2, "b", "b")]
     public void MultipleCaptureCompletionSurvivesReducedRollbackStorage(
         string pattern, string text, int last, string name, string capture)
     {
