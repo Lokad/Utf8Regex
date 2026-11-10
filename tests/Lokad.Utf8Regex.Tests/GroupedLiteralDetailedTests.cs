@@ -3,16 +3,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-/// <summary>
-/// R05 grouped-literal detailed shaping: single exact literals with fixed-span captures
-/// shape detailed matches from the owned discovery hit without constructing the fallback
-/// engine. Single-optional shapes project present or absent spans by hit length.
-/// Divergent single alternations project the winning branch identified by ordinal
-/// text comparison. Nested divergent alternations and loops inside alternation
-/// branches expand to one flat BCL-ordered entry list and shape the same way.
-/// A lone capture wrapping the whole tree projects group 1 from the whole span.
-/// Nested loops, loop-plus-alternation combos, and seven-loop shapes keep BCL shaping.
-/// </summary>
+// Scalar detailed results: group participation, history and coordinate projection.
+// BCL oracles apply to the overlapping semantics of these distinct family cases.
 public sealed class GroupedLiteralDetailedTests
 {
     public static IEnumerable<object?[]> GroupedLiteralHitCases()
@@ -60,34 +52,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Match(text);
         var actual = regex.MatchDetailed(input);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            var expectedGroup = expected.Groups[i];
-            var actualGroup = actual.GetGroup(i);
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-            Assert.True(actual.TryGetGroup(i, out var tryGroup));
-            Assert.Equal(expectedGroup.Success, tryGroup.Success);
-            var groupName = expected.Groups[i].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        AssertDetailedMatch(expected, actual);
     }
     public static IEnumerable<object?[]> GroupedLiteralMissCases()
     {
@@ -203,34 +168,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Match(text);
         var actual = regex.MatchDetailed(input);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            var expectedGroup = expected.Groups[i];
-            var actualGroup = actual.GetGroup(i);
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-            Assert.True(actual.TryGetGroup(i, out var tryGroup));
-            Assert.Equal(expectedGroup.Success, tryGroup.Success);
-            var groupName = expected.Groups[i].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        AssertDetailedMatch(expected, actual);
     }
 
     public static IEnumerable<object?[]> OptionalGroupedLiteralMissCases()
@@ -301,34 +239,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Match(text);
         var actual = regex.MatchDetailed(input);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            var expectedGroup = expected.Groups[i];
-            var actualGroup = actual.GetGroup(i);
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-            Assert.True(actual.TryGetGroup(i, out var tryGroup));
-            Assert.Equal(expectedGroup.Success, tryGroup.Success);
-            var groupName = expected.Groups[i].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        AssertDetailedMatch(expected, actual);
     }
 
     public static IEnumerable<object?[]> DivergentBranchHitCases()
@@ -370,34 +281,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Match(text);
         var actual = regex.MatchDetailed(input);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            var expectedGroup = expected.Groups[i];
-            var actualGroup = actual.GetGroup(i);
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-            Assert.True(actual.TryGetGroup(i, out var tryGroup));
-            Assert.Equal(expectedGroup.Success, tryGroup.Success);
-            var groupName = expected.Groups[i].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        AssertDetailedMatch(expected, actual);
     }
 
     public static IEnumerable<object?[]> MultiLoopHitCases()
@@ -438,34 +322,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Match(text);
         var actual = regex.MatchDetailed(input);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            var expectedGroup = expected.Groups[i];
-            var actualGroup = actual.GetGroup(i);
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-            Assert.True(actual.TryGetGroup(i, out var tryGroup));
-            Assert.Equal(expectedGroup.Success, tryGroup.Success);
-            var groupName = expected.Groups[i].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        AssertDetailedMatch(expected, actual);
     }
 
     public static IEnumerable<object?[]> LiteralEnumerationNonAsciiCases()
@@ -1708,4 +1565,36 @@ public sealed class GroupedLiteralDetailedTests
         }
         Assert.Equal(expected, actual);
     }
+    private static void AssertDetailedMatch(Match expected, Utf8MatchContext actual)
+    {
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (!expected.Success)
+        {
+            return;
+        }
+
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(expected.Value, actual.GetValueString());
+        for (var i = 0; i < expected.Groups.Count; i++)
+        {
+            var expectedGroup = expected.Groups[i];
+            var actualGroup = actual.GetGroup(i);
+            Assert.Equal(expectedGroup.Success, actualGroup.Success);
+            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
+            Assert.True(actual.TryGetGroup(i, out var tryGroup));
+            Assert.Equal(expectedGroup.Success, tryGroup.Success);
+            var groupName = expected.Groups[i].Name;
+            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
+            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
+        }
+
+        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+    }
+
 }

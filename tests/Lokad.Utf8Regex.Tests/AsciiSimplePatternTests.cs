@@ -1313,51 +1313,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarEnumerationOwnedCases))]
     public void ScalarEnumerationOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: enumeration projects every scalar-verified hit through the boundary
-        // map, so coordinates never construct the fallback engine. Grouped shapes
-        // enumerate values only; their shaping keeps existing routes.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarEnumerationOwnedCases()
@@ -1384,51 +1340,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedScalarEnumerationOwnedCases))]
     public void ScalarEnumerationOwnsFoldedNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: folded enumeration projects every scalar-verified hit through the
-        // boundary map exactly like the case-sensitive battery above, so folded
-        // coordinates and splits never construct the fallback engine either.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarGrouplessTemplateOwnedCases()
@@ -1650,50 +1562,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DigitDiscoveryMatchDetailedCases))]
     public void DigitEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: the scalar cursor projects every Nd-verified hit, driving
-        // enumeration and splits owned with exact coordinates.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DigitTemplateCases()
@@ -1895,50 +1764,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
     public void WordSpaceEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: the scalar cursor projects every table-verified hit, driving
-        // enumeration and splits owned with exact coordinates.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceTemplateCases()
@@ -2134,50 +1960,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
     public void NegatedShorthandEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: the scalar cursor projects every complemented hit, driving
-        // enumeration and splits owned with exact coordinates.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandTemplateCases()
@@ -2406,50 +2189,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
     public void SinglelineDotEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: the scalar cursor projects every dot-verified hit, driving
-        // enumeration and splits owned with exact coordinates.
-        const int count = int.MaxValue;
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-
-        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (Match expectedMatch in oracle.Matches(text))
-        {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
-        }
-
-        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in regex.EnumerateMatches(input))
-        {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].Index);
-            Assert.Equal(expected[i].Length, actual[i].Length);
-        }
-
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-
-        var splitRegex = new Utf8Regex(pattern, options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
-        }
-
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, count))
-        {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(expectedSplits, actualSplits);
+        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineDotTemplateCases()
@@ -16052,7 +15792,6 @@ public sealed class AsciiSimplePatternTests
         var isMatchProbe = new Utf8Regex(pattern, options);
         var isMatchDiagnostics = isMatchProbe.CollectIsMatchDiagnostics(subject.Input);
         Assert.Equal(oracle.IsMatch(subject.Projected), isMatchDiagnostics.Result);
-        // The diagnostic mode retains its legacy name until selector cleanup.
         Assert.Equal(0, isMatchDiagnostics.VerifierInvocations);
         Assert.Equal(0, isMatchDiagnostics.SearchCandidates);
         Utf8AsciiScalarOperationAssertions.Owned(isMatchProbe);
@@ -16999,6 +16738,54 @@ public sealed class AsciiSimplePatternTests
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
+    }
+
+    private static void AssertEnumerationAndSplits(string pattern, RegexOptions options, string text)
+    {
+        // These fixture cases have overlapping BCL semantics. Compare ordered
+        // enumeration/split coordinates while retaining the owned-route check.
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Utf8AsciiScalarOperationAssertions.Owned(regex);
+
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, count))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expectedSplits, actualSplits);
     }
 
 }
