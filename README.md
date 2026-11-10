@@ -63,6 +63,8 @@ counting, output, splitting and cursors where supported. Pattern/replacement
 validation, checked memory access, scalar semantics and cooperative cancellation
 remain. Coordinate/result work may still scan input. Read the
 [contract](docs/SPEC.md#subject-input-validation) before choosing AssumeValid.
+Representative [policy measurements](bench/Experiments/InputValidation-20261110/README.md)
+report both input contracts separately, including finite-limit and output costs.
 
 ## Cancellation and limits
 

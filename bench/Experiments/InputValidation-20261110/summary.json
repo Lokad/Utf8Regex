@@ -1,0 +1,905 @@
+{
+  "Initial": {
+    "Source": "4d4a42a493bc122d526849e628dfb784d3c23470",
+    "Comparison": "Same producer, distinct input contracts; not before/after producer attribution",
+    "InputContracts": {
+      "Validate": "Library checks whole subject",
+      "AssumeValid": "Caller guarantees valid unchanged UTF-8"
+    },
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "Producer": [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Revision": "0.5.0-dev.65+4d4a42a493bc122d526849e628dfb784d3c23470",
+        "DllSha256": "B638B76122D68855BAFE763A0AEF1DE0B893515F297D662AF8858EF17275F10C",
+        "PdbSha256": "21C94AB5B44BCDA523067E47E3587014B65F0A6F5C4173CAEB9735467F4AF8E1"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Revision": "0.5.0-dev.65+4d4a42a493bc122d526849e628dfb784d3c23470",
+        "DllSha256": "A705C5E80B3EB176339D458FA08D1558EBCB00ED48990766993CB142A1E7F2E8",
+        "PdbSha256": "28651977982B79A8749DB4ADD373385ED6FF03F1959DA6016432084CDC30B3C6"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Pcre2",
+        "Revision": "0.5.0-dev.65+4d4a42a493bc122d526849e628dfb784d3c23470",
+        "DllSha256": "163212E8F04E9DEAAEB4A51568C488586F444393D738A42164DF55F271520257",
+        "PdbSha256": "76328F9B0ADCF536B1CC4785274D463E1C4F95540A937A95C003809B99CBBCCF"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Posix",
+        "Revision": "0.5.0-dev.65+4d4a42a493bc122d526849e628dfb784d3c23470",
+        "DllSha256": "4DC6D3FC76E5167C08FF8F707C09EA345DF6FB4C1D45C5B9934F3A134158DC2E",
+        "PdbSha256": "A03D2EE024A1315857D20208CF3078509346766911A9632A2846F25BD360EC93"
+      }
+    ],
+    "Run": {
+      "ComparisonSeconds": 58.195979595184326,
+      "Complete": true,
+      "PolicyOrder": [
+        "Validate",
+        "AssumeValid",
+        "AssumeValid",
+        "Validate"
+      ],
+      "OuterSeconds": 180,
+      "WorkerSeconds": 45
+    },
+    "Rows": [
+      {
+        "Id": "core/ismatch-early",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 7.247516418462677,
+        "AssumeValidUs": 0.07054613256345482,
+        "ChangePercent": -99.02661645051619,
+        "ValidateOverAssumeValid": 102.7344257595366,
+        "ProcessMedianUs": [
+          7.234446573592481,
+          0.07054993596139286,
+          0.07053565801258921,
+          7.256590509666081
+        ],
+        "ValidateRangeUs": [
+          7.188374851720047,
+          7.316078109316544
+        ],
+        "AssumeValidRangeUs": [
+          0.07039708980125536,
+          0.07086022247224404
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-unicode-literal",
+        "Kind": "Public operation",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 4096,
+        "ValidateUs": 90.19116100464032,
+        "AssumeValidUs": 138.47302785165826,
+        "ChangePercent": 53.53281442350415,
+        "ValidateOverAssumeValid": 0.6513265608755174,
+        "ProcessMedianUs": [
+          90.48296639629201,
+          138.2732297063903,
+          139.0873889875666,
+          89.76624423963135
+        ],
+        "ValidateRangeUs": [
+          89.41900921658986,
+          90.60544611819235
+        ],
+        "AssumeValidRangeUs": [
+          137.9677029360967,
+          142.5792184724689
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-ascii-dense",
+        "Kind": "Public operation",
+        "SubjectBytes": 69632,
+        "SubjectSha256": "00ABBDEA1303971094AD4291CE8E76E53C7A2D20D211E008691516E1C0D55623",
+        "SingleResultChecksum": 8192,
+        "ValidateUs": 3577.830434782609,
+        "AssumeValidUs": 3513.3465579710146,
+        "ChangePercent": -1.8023178567855291,
+        "ValidateOverAssumeValid": 1.018353975546561,
+        "ProcessMedianUs": [
+          3556.1913043478257,
+          3510.941666666667,
+          3515.9260869565214,
+          3588.2130434782607
+        ],
+        "ValidateRangeUs": [
+          3553.7782608695657,
+          3600.7260869565216
+        ],
+        "AssumeValidRangeUs": [
+          3501.4,
+          3522.8478260869565
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-unicode-finite",
+        "Kind": "Public operation",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 4096,
+        "ValidateUs": 149.80258918171626,
+        "AssumeValidUs": 101.6125470514429,
+        "ChangePercent": -32.16903151908609,
+        "ValidateOverAssumeValid": 1.4742528706211488,
+        "ProcessMedianUs": [
+          148.72832369942196,
+          102.23600508905852,
+          101.46097867001255,
+          150.86403013182675
+        ],
+        "ValidateRangeUs": [
+          147.46473988439305,
+          151.03182674199624
+        ],
+        "AssumeValidRangeUs": [
+          99.03425345043915,
+          103.78625954198473
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 112.0,
+        "AssumeValidAllocatedBytes": 112.0
+      },
+      {
+        "Id": "core/replace",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 6695717165539379749,
+        "ValidateUs": 573.1095705253979,
+        "AssumeValidUs": 569.3338345864662,
+        "ChangePercent": -0.6588157192123467,
+        "ValidateOverAssumeValid": 1.0066318488548536,
+        "ProcessMedianUs": [
+          569.1697841726618,
+          565.5401515151516,
+          570.0203007518797,
+          577.2560606060606
+        ],
+        "ValidateRangeUs": [
+          568.1028776978418,
+          578.7977272727273
+        ],
+        "AssumeValidRangeUs": [
+          562.6401515151515,
+          576.975939849624
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 29936.0,
+        "AssumeValidAllocatedBytes": 29936.0
+      },
+      {
+        "Id": "core/cursor",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 256,
+        "ValidateUs": 669.6453918152627,
+        "AssumeValidUs": 664.7161157024793,
+        "ChangePercent": -0.7361024466129962,
+        "ValidateOverAssumeValid": 1.0074156109598367,
+        "ProcessMedianUs": [
+          666.1154471544716,
+          664.8692307692307,
+          664.5719008264463,
+          672.5722689075631
+        ],
+        "ValidateRangeUs": [
+          664.0089430894309,
+          674.7932773109243
+        ],
+        "AssumeValidRangeUs": [
+          663.202479338843,
+          668.4410256410257
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 18896.0,
+        "AssumeValidAllocatedBytes": 18896.0
+      },
+      {
+        "Id": "python/search-early",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 4.519962525689465,
+        "AssumeValidUs": 0.06736867464655037,
+        "ChangePercent": -98.50953023916334,
+        "ValidateOverAssumeValid": 67.09294118376887,
+        "ProcessMedianUs": [
+          4.521684732472324,
+          0.06759619644922639,
+          0.0667074440524886,
+          4.5182403189066065
+        ],
+        "ValidateRangeUs": [
+          4.50190844095941,
+          4.537773348519362
+        ],
+        "AssumeValidRangeUs": [
+          0.06615405243894565,
+          0.07725466251569388
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "python/findall-captures",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 5414592815224918016,
+        "ValidateUs": 816.6869150690579,
+        "AssumeValidUs": 815.7272206602104,
+        "ChangePercent": -0.11751068752784422,
+        "ValidateOverAssumeValid": 1.0011764893760329,
+        "ProcessMedianUs": [
+          812.7515151515153,
+          824.6494845360825,
+          806.7737373737373,
+          820.1969387755103
+        ],
+        "ValidateRangeUs": [
+          810.3373737373737,
+          821.9785714285714
+        ],
+        "AssumeValidRangeUs": [
+          803.7969696969698,
+          825.6134020618557
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 30024.0,
+        "AssumeValidAllocatedBytes": 30024.0
+      },
+      {
+        "Id": "python/split",
+        "Kind": "Public operation",
+        "SubjectBytes": 4608,
+        "SubjectSha256": "A59C7257570B1B23EF480EC2107CCB3F675FC48B09701A2F3DCAD3CFF0F0B9FD",
+        "SingleResultChecksum": 11907580590154253093,
+        "ValidateUs": 119.33268656716419,
+        "AssumeValidUs": 115.87112068965516,
+        "ChangePercent": -2.9007692503099314,
+        "ValidateOverAssumeValid": 1.0298742763244721,
+        "ProcessMedianUs": [
+          119.68447761194028,
+          114.14474053295932,
+          117.42715517241378,
+          116.66586059743953
+        ],
+        "ValidateRangeUs": [
+          113.83911806543385,
+          149.17194029850745
+        ],
+        "AssumeValidRangeUs": [
+          112.0001402524544,
+          157.31009817671807
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 45136.0,
+        "AssumeValidAllocatedBytes": 45136.0
+      },
+      {
+        "Id": "pcre/count-branch-reset",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 1280,
+        "ValidateUs": 398.7542264049212,
+        "AssumeValidUs": 392.5101328333701,
+        "ChangePercent": -1.5659002859597093,
+        "ValidateOverAssumeValid": 1.015908107967755,
+        "ProcessMedianUs": [
+          396.9428571428572,
+          395.58059701492544,
+          389.9339901477832,
+          400.5965174129354
+        ],
+        "ValidateRangeUs": [
+          396.3738916256157,
+          401.00248756218906
+        ],
+        "AssumeValidRangeUs": [
+          389.0270935960591,
+          395.7109452736318
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "pcre/ismatch-grapheme",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 2.791194863711136,
+        "AssumeValidUs": 5.557320304736668,
+        "ChangePercent": 99.10183903633758,
+        "ValidateOverAssumeValid": 0.5022555315611588,
+        "ProcessMedianUs": [
+          3.0746037896694696,
+          5.608187052380283,
+          5.55585293143425,
+          2.5159342386520813
+        ],
+        "ValidateRangeUs": [
+          2.515035206840186,
+          3.080935405122641
+        ],
+        "AssumeValidRangeUs": [
+          5.461430937396488,
+          5.663038899031035
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "posix/captures-prefix",
+        "Kind": "Public operation",
+        "SubjectBytes": 98307,
+        "SubjectSha256": "EFC2DAA935DF74E9093718E584AA57FCF5AF8CDE3DF65F6AF3F5BD0BE27D2E44",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 535.269,
+        "AssumeValidUs": 399.37750000000005,
+        "ChangePercent": -25.387515436163866,
+        "ValidateOverAssumeValid": 1.3402582769434932,
+        "ProcessMedianUs": [
+          534.9593333333333,
+          399.49550000000005,
+          398.83762886597935,
+          536.2913333333335
+        ],
+        "ValidateRangeUs": [
+          534.4626666666667,
+          537.056
+        ],
+        "AssumeValidRangeUs": [
+          398.7855670103093,
+          400.28453608247423
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 64.0,
+        "AssumeValidAllocatedBytes": 64.0
+      },
+      {
+        "Id": "control/strict-small-count",
+        "Kind": "Unchanged control",
+        "SubjectBytes": 6,
+        "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 0.10567835406977372,
+        "AssumeValidUs": 0.11870572912699744,
+        "ChangePercent": 12.327382624281258,
+        "ValidateOverAssumeValid": 0.8902548752024734,
+        "ProcessMedianUs": [
+          0.10556295928607655,
+          0.11885029438388856,
+          0.11860496290767286,
+          0.10630338929026774
+        ],
+        "ValidateRangeUs": [
+          0.104527199320017,
+          0.11171841797705058
+        ],
+        "AssumeValidRangeUs": [
+          0.1162016543025576,
+          0.13731500946367517
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "phase/strict-validity-only",
+        "Kind": "Phase",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 77.05641674366692,
+        "AssumeValidUs": 77.47304490783918,
+        "ChangePercent": 0.5406793902164031,
+        "ValidateOverAssumeValid": 0.9946222823090549,
+        "ProcessMedianUs": [
+          76.83173996175908,
+          77.14177093359,
+          77.68973862536302,
+          77.22411483253589
+        ],
+        "ValidateRangeUs": [
+          76.33250478011473,
+          77.36995215311005
+        ],
+        "AssumeValidRangeUs": [
+          77.09749759384022,
+          77.7051306873185
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      }
+    ],
+    "Samples": 280,
+    "MinimumSampleMs": 74.2685
+  },
+  "Final": {
+    "Source": "40509f3e0c7ddcfa01a339cd7b16c057785fa44d",
+    "Comparison": "Same producer, distinct input contracts; not before/after producer attribution",
+    "InputContracts": {
+      "Validate": "Library checks whole subject",
+      "AssumeValid": "Caller guarantees valid unchanged UTF-8"
+    },
+    "Runtime": ".NET 11.0.0-rc.3.26522.148",
+    "Producer": [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Revision": "0.5.0-dev.65+40509f3e0c7ddcfa01a339cd7b16c057785fa44d",
+        "DllSha256": "A9C7830DAC5E8DE0BA0CD26826A815A9AEE0E9C81D27FCE641C4D62B20AD13B6",
+        "PdbSha256": "A3EE44EE5E9E2AC89EBECD093B0F41DCAD4DB20C30CF109CFFE3CFE8864CE421"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Revision": "0.5.0-dev.65+40509f3e0c7ddcfa01a339cd7b16c057785fa44d",
+        "DllSha256": "1ABADF644041D48F6CDC665E0B24E21CA46270EA807CD8D9DF85E21089078918",
+        "PdbSha256": "7EFC7B4EF925C9A1C8D2CE01F07813613CAC5708479A09D4F0BBD3B1D54EEF46"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Pcre2",
+        "Revision": "0.5.0-dev.65+40509f3e0c7ddcfa01a339cd7b16c057785fa44d",
+        "DllSha256": "98DDB4C84F1E801902C5711A34287A54C413A2A575EDB688C32EED4175DE9053",
+        "PdbSha256": "91C89B9DBFD9326EB06552CDCB87421AF666CEB14B2B6E524BF705E9C037C686"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Posix",
+        "Revision": "0.5.0-dev.65+40509f3e0c7ddcfa01a339cd7b16c057785fa44d",
+        "DllSha256": "5D82BF2C524ED250AD7DECF69AAE42D6AA0EDA94B91C696955A9DE325B564607",
+        "PdbSha256": "276E5562B1E52CAA524D104FB33DCA133D9E5197CB11E27049A1098EE9D59E5D"
+      }
+    ],
+    "Run": {
+      "ComparisonSeconds": 58.29887413978577,
+      "Complete": true,
+      "PolicyOrder": [
+        "Validate",
+        "AssumeValid",
+        "AssumeValid",
+        "Validate"
+      ],
+      "OuterSeconds": 180,
+      "WorkerSeconds": 45
+    },
+    "Rows": [
+      {
+        "Id": "core/ismatch-early",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 7.234678242482808,
+        "AssumeValidUs": 0.06998672540562223,
+        "ChangePercent": -99.03262145101833,
+        "ValidateOverAssumeValid": 103.37214951196482,
+        "ProcessMedianUs": [
+          7.240820734341253,
+          0.06904675831273896,
+          0.07055337631201138,
+          7.2285357506243635
+        ],
+        "ValidateRangeUs": [
+          7.1793358616224205,
+          7.263046896679307
+        ],
+        "AssumeValidRangeUs": [
+          0.06872157474909994,
+          0.07096831333635052
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-unicode-literal",
+        "Kind": "Public operation",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 4096,
+        "ValidateUs": 90.8438679245283,
+        "AssumeValidUs": 90.23431069473624,
+        "ChangePercent": -0.6709943595735846,
+        "ValidateOverAssumeValid": 1.0067552710836811,
+        "ProcessMedianUs": [
+          91.77328767123286,
+          89.53867141162513,
+          90.87096385542168,
+          90.5946933962264
+        ],
+        "ValidateRangeUs": [
+          90.11860730593607,
+          92.54463470319635
+        ],
+        "AssumeValidRangeUs": [
+          89.41897983392644,
+          91.3389156626506
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-ascii-dense",
+        "Kind": "Public operation",
+        "SubjectBytes": 69632,
+        "SubjectSha256": "00ABBDEA1303971094AD4291CE8E76E53C7A2D20D211E008691516E1C0D55623",
+        "SingleResultChecksum": 8192,
+        "ValidateUs": 3551.145652173913,
+        "AssumeValidUs": 3530.9108695652176,
+        "ChangePercent": -0.5698099878361229,
+        "ValidateOverAssumeValid": 1.0057307542886764,
+        "ProcessMedianUs": [
+          3545.4434782608696,
+          3550.469565217391,
+          3509.8086956521743,
+          3559.595652173913
+        ],
+        "ValidateRangeUs": [
+          3529.678260869565,
+          3570.965217391304
+        ],
+        "AssumeValidRangeUs": [
+          3507.5304347826086,
+          3560.7130434782607
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "core/count-unicode-finite",
+        "Kind": "Public operation",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 4096,
+        "ValidateUs": 149.95864661654133,
+        "AssumeValidUs": 96.09999128056128,
+        "ChangePercent": -35.91567178763743,
+        "ValidateOverAssumeValid": 1.5604439149088076,
+        "ProcessMedianUs": [
+          149.94793713163065,
+          95.35561993047509,
+          97.9960199004975,
+          149.9607142857143
+        ],
+        "ValidateRangeUs": [
+          149.22907662082517,
+          151.04022556390976
+        ],
+        "AssumeValidRangeUs": [
+          92.72329084588644,
+          98.35858208955223
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 112.0,
+        "AssumeValidAllocatedBytes": 112.0
+      },
+      {
+        "Id": "core/replace",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 6695717165539379749,
+        "ValidateUs": 567.9654761904762,
+        "AssumeValidUs": 570.3581144781144,
+        "ChangePercent": 0.4212647401891978,
+        "ValidateOverAssumeValid": 0.9958050245505361,
+        "ProcessMedianUs": [
+          567.7642857142857,
+          569.4399999999999,
+          575.4795454545455,
+          568.1666666666666
+        ],
+        "ValidateRangeUs": [
+          566.1157142857144,
+          569.7007092198581
+        ],
+        "AssumeValidRangeUs": [
+          561.4644444444446,
+          649.6259259259259
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 29936.0,
+        "AssumeValidAllocatedBytes": 29936.0
+      },
+      {
+        "Id": "core/cursor",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 256,
+        "ValidateUs": 661.5985225237636,
+        "AssumeValidUs": 652.5971774193549,
+        "ChangePercent": -1.360544922330198,
+        "ValidateOverAssumeValid": 1.0137931106904319,
+        "ProcessMedianUs": [
+          661.7172131147541,
+          648.4427419354838,
+          654.8152,
+          661.479831932773
+        ],
+        "ValidateRangeUs": [
+          659.2901639344263,
+          664.2386554621849
+        ],
+        "AssumeValidRangeUs": [
+          647.0943548387097,
+          657.1504
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 18896.0,
+        "AssumeValidAllocatedBytes": 18896.0
+      },
+      {
+        "Id": "python/search-early",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 4.488335008765592,
+        "AssumeValidUs": 0.06813902977657997,
+        "ChangePercent": -98.48186399536785,
+        "ValidateOverAssumeValid": 65.87025121259175,
+        "ProcessMedianUs": [
+          4.518167639073422,
+          0.06842355244398102,
+          0.06798444087330137,
+          4.437430360117167
+        ],
+        "ValidateRangeUs": [
+          4.420016081787376,
+          4.543775633989949
+        ],
+        "AssumeValidRangeUs": [
+          0.06729952663676768,
+          0.07895661055901942
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "python/findall-captures",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 5414592815224918016,
+        "ValidateUs": 821.9212371134022,
+        "AssumeValidUs": 809.6564999999999,
+        "ChangePercent": -1.4922034569244347,
+        "ValidateOverAssumeValid": 1.0151480746630235,
+        "ProcessMedianUs": [
+          812.7209999999999,
+          808.3217821782179,
+          809.837,
+          834.3721649484537
+        ],
+        "ValidateRangeUs": [
+          810.3530000000001,
+          835.0536082474227
+        ],
+        "AssumeValidRangeUs": [
+          807.6297029702971,
+          812.1435643564356
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 30024.0,
+        "AssumeValidAllocatedBytes": 30024.0
+      },
+      {
+        "Id": "python/split",
+        "Kind": "Public operation",
+        "SubjectBytes": 4608,
+        "SubjectSha256": "A59C7257570B1B23EF480EC2107CCB3F675FC48B09701A2F3DCAD3CFF0F0B9FD",
+        "SingleResultChecksum": 11907580590154253093,
+        "ValidateUs": 118.44381881861038,
+        "AssumeValidUs": 118.00602263956779,
+        "ChangePercent": -0.36962349188778276,
+        "ValidateOverAssumeValid": 1.0037099477573257,
+        "ProcessMedianUs": [
+          120.07737752161383,
+          117.69695652173912,
+          118.31508875739645,
+          116.81026011560694
+        ],
+        "ValidateRangeUs": [
+          114.57406340057636,
+          154.5856936416185
+        ],
+        "AssumeValidRangeUs": [
+          114.56057971014494,
+          163.18446745562133
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 45136.0,
+        "AssumeValidAllocatedBytes": 45136.0
+      },
+      {
+        "Id": "pcre/count-branch-reset",
+        "Kind": "Public operation",
+        "SubjectBytes": 5888,
+        "SubjectSha256": "07CC0E78DB0C246DC677730E92ACF183C8CE389A8D5039A63DAE43BB73A6F0AE",
+        "SingleResultChecksum": 1280,
+        "ValidateUs": 392.18334050796386,
+        "AssumeValidUs": 407.2033606723884,
+        "ChangePercent": 3.829846557217409,
+        "ValidateOverAssumeValid": 0.9631142038228198,
+        "ProcessMedianUs": [
+          393.3367149758454,
+          396.4733990147783,
+          417.9005154639175,
+          391.61633663366337
+        ],
+        "ValidateRangeUs": [
+          391.0188405797101,
+          393.96135265700485
+        ],
+        "AssumeValidRangeUs": [
+          395.4512315270936,
+          418.49484536082474
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "pcre/ismatch-grapheme",
+        "Kind": "Public operation",
+        "SubjectBytes": 131085,
+        "SubjectSha256": "55A37A8CAFCD38B290A1DDE89A58979635BA49FA5ED4EF81D1705A1192D9A490",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 4.333262563826928,
+        "AssumeValidUs": 0.06151991190070254,
+        "ChangePercent": -98.58028653942513,
+        "ValidateOverAssumeValid": 70.43674852495104,
+        "ProcessMedianUs": [
+          4.3329965063155065,
+          0.061670947133928,
+          0.061422208069724635,
+          4.336651437785542
+        ],
+        "ValidateRangeUs": [
+          4.320698736898684,
+          4.342440204246171
+        ],
+        "AssumeValidRangeUs": [
+          0.060983185800917106,
+          0.06808604423687448
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "posix/captures-prefix",
+        "Kind": "Public operation",
+        "SubjectBytes": 98307,
+        "SubjectSha256": "EFC2DAA935DF74E9093718E584AA57FCF5AF8CDE3DF65F6AF3F5BD0BE27D2E44",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 534.1103333333334,
+        "AssumeValidUs": 401.02140953396287,
+        "ChangePercent": -24.917870989084754,
+        "ValidateOverAssumeValid": 1.3318748591354177,
+        "ProcessMedianUs": [
+          534.3693333333333,
+          399.0771144278607,
+          403.3076530612245,
+          533.92
+        ],
+        "ValidateRangeUs": [
+          533.2213333333333,
+          535.1953333333333
+        ],
+        "AssumeValidRangeUs": [
+          397.21592039801,
+          403.59234693877556
+        ],
+        "DisjointRanges": true,
+        "ValidateAllocatedBytes": 64.0,
+        "AssumeValidAllocatedBytes": 64.0
+      },
+      {
+        "Id": "control/strict-small-count",
+        "Kind": "Unchanged control",
+        "SubjectBytes": 6,
+        "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 0.1070032413628356,
+        "AssumeValidUs": 0.10725232680529251,
+        "ChangePercent": 0.23278308141367887,
+        "ValidateOverAssumeValid": 0.9976775753974167,
+        "ProcessMedianUs": [
+          0.10712087119669361,
+          0.10750480957556749,
+          0.10699984403501751,
+          0.10661735810559352
+        ],
+        "ValidateRangeUs": [
+          0.10447823925756089,
+          0.11700650883416136
+        ],
+        "AssumeValidRangeUs": [
+          0.10511700764228414,
+          0.11051301693746014
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      },
+      {
+        "Id": "phase/strict-validity-only",
+        "Kind": "Phase",
+        "SubjectBytes": 131072,
+        "SubjectSha256": "00DC82917BFD7769806D81C4B0B8C80C6F45ABB2EA22DB289B37088986A776A0",
+        "SingleResultChecksum": 1,
+        "ValidateUs": 76.8454326436723,
+        "AssumeValidUs": 77.80164376610779,
+        "ChangePercent": 1.2443304560069146,
+        "ValidateOverAssumeValid": 0.987709628278419,
+        "ProcessMedianUs": [
+          76.91548757170172,
+          77.27821497120921,
+          78.24323271665044,
+          76.760819828408
+        ],
+        "ValidateRangeUs": [
+          76.65004766444234,
+          76.97705544933078
+        ],
+        "AssumeValidRangeUs": [
+          76.86468330134358,
+          78.25258033106134
+        ],
+        "DisjointRanges": false,
+        "ValidateAllocatedBytes": 0.0,
+        "AssumeValidAllocatedBytes": 0.0
+      }
+    ],
+    "Samples": 280,
+    "MinimumSampleMs": 74.7336
+  },
+  "Archives": [
+    {
+      "Path": "artifacts/experiments/input-validation-20261110/evidence.tar.gz",
+      "Bytes": 1333556,
+      "Sha256": "A241F308B179B72469A23D8C9EA5D25FEAF05CD6E014ECF526FB8AEA44475945"
+    },
+    {
+      "Path": "artifacts/experiments/input-validation-20261110/evidence-final.tar.gz",
+      "Bytes": 1333635,
+      "Sha256": "653A38E59444480743FC8FA0EAC8669F97C89BD50C2D783FB6A4F4EC66D2A909"
+    },
+    {
+      "Path": "artifacts/experiments/input-validation-20261110/driver.tar.gz",
+      "Bytes": 5725,
+      "Sha256": "5849CD56DE0111046FD0F2ADDE0470112E7D0E94D4BD650A2E778A8B54B5C677"
+    }
+  ]
+}
