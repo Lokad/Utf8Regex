@@ -38,6 +38,9 @@
   capture priority, working admission or interruption guarantees.
   Prove first-acceptance selection for homogeneous literal repeats with captures
   outside repeated bodies, retaining general history competition elsewhere.
+  Flat positive ASCII class runs also admit this proof when their sets are
+  mutually disjoint. Synchronous POSIX operations own workspace state inline,
+  avoiding a separate helper allocation while preserving cursor aliases.
   PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding
   unused rewind workspace while retaining cancellation and working admission.
@@ -47,6 +50,8 @@
   controlled matching and capture results retain the owned VM.
   Unlimited default `\X` Boolean calls avoid computing an unused cluster endpoint,
   retaining strict whole-input validation and the candidate charge.
+  Unlimited complete greedy ASCII class-repeat Count scans maximal member runs
+  once; controlled, flagged and other scalar cases retain their existing runners.
   Literal string substitutions reuse validated output sizes and decode no-match
   input directly, avoiding an intermediate byte array. Byte outputs remain owned.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
