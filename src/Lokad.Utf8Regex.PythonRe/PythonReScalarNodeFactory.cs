@@ -61,11 +61,11 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.EmptyNode Empty() =>
         Create(0, static _ => new Utf8SliceNode.EmptyNode());
 
-    internal static Utf8SliceNode.DotNode Dot() =>
-        Create(true, static state => new Utf8SliceNode.DotNode(state));
+    internal static Utf8SliceNode.DotNode Dot(bool matchNewline = true) =>
+        Create(matchNewline, static state => new Utf8SliceNode.DotNode(state));
 
-    internal static Utf8SliceNode.AnchorNode Anchor(Utf8SliceAnchorKind kind) =>
-        Create(kind, static state => new Utf8SliceNode.AnchorNode(state, false));
+    internal static Utf8SliceNode.AnchorNode Anchor(Utf8SliceAnchorKind kind, bool multiline = false) =>
+        Create((kind, multiline), static state => new Utf8SliceNode.AnchorNode(state.kind, state.multiline));
 
     internal static Utf8SliceNode.BoundaryNode AsciiBoundary(bool wordBoundary) =>
         Create(wordBoundary, static state => new Utf8SliceNode.BoundaryNode(state, Utf8SliceWordKind.Ascii));

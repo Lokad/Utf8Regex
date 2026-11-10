@@ -79,6 +79,19 @@ internal static partial class PythonReScalarCompiler
                         // parser; isolated surrogates retain the impossible atom.
                         nodes[node] = PythonReScalarNodeFactory.Literal(literal.Value);
                         break;
+                    case PythonReRawNode { Kind: PythonReRawKind.Dot } dot:
+                        // The Python parser fixed DotAll at this lexical scope.
+                        // Reuse that semantic choice without rendering/reparsing.
+                        nodes[node] = PythonReScalarNodeFactory.Dot(dot.Text == PythonReParser.UnicodeScalarPattern);
+                        break;
+                    case PythonReRawNode { Kind: PythonReRawKind.StartAnchor }:
+                        nodes[node] = PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.Beginning,
+                            (frame.Options & PythonReCompileOptions.Multiline) != 0);
+                        break;
+                    case PythonReRawNode { Kind: PythonReRawKind.EndAnchor }:
+                        nodes[node] = PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.End,
+                            (frame.Options & PythonReCompileOptions.Multiline) != 0);
+                        break;
                     case PythonReSequenceNode sequence:
                     {
                         if (frame.Stage == 0) frame.Children = arena.Allocate<Utf8SliceNode>(sequence.Elements.Count, false);
