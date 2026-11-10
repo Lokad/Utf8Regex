@@ -53,6 +53,11 @@ cooperative cancellation/deadlines and admission remain. Required coordinate or
 output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
 Existing benchmark tables use Validate unless explicitly labeled otherwise.
 
+Use `--measure-posix-case capture/sku007 9 AssumeValid` for a focused trusted-input
+comparison, including its finite/live/funded lanes. Omit the final argument for
+`Validate`. The command prints labeled raw evidence without changing these tables;
+the native comparator keeps UTF validation enabled.
+
 <!-- BEGIN GENERATED POSIX BENCHMARKS -->
 ## Benchmarks
 

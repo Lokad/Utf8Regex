@@ -128,6 +128,10 @@ subject, so it measures a hit.
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
 
+Focused Core counts accept a final validation policy, for example
+`--measure-readme-public-case industry/mariomka-email-count 1 9 AssumeValid`.
+These measurements label their input contract and leave recorded tables unchanged.
+
 Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks),
 [PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md#benchmarks) and

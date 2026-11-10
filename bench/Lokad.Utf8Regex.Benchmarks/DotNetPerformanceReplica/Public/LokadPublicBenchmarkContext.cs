@@ -65,14 +65,14 @@ internal sealed class LokadPublicBenchmarkContext
 
     private static readonly string[] s_caseIds = s_cases.Select(static c => c.Id).ToArray();
 
-    public LokadPublicBenchmarkContext(string caseId)
+    public LokadPublicBenchmarkContext(string caseId, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         CaseId = caseId;
         (InputString, Replacement, Pattern, Options) = Resolve(caseId);
         Operation = GetOperation(caseId);
         InputBytes = Encoding.UTF8.GetBytes(InputString);
-        Utf8Regex = new Utf8Regex(Pattern, Options);
-        CompiledUtf8Regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled);
+        Utf8Regex = new Utf8Regex(Pattern, Options, inputValidation: inputValidation);
+        CompiledUtf8Regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled, inputValidation: inputValidation);
         Regex = new Regex(Pattern, Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
         HasCompiledLiteralFamilyRawMatch = CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out _compiledLiteralFamilyRawIndex, out _compiledLiteralFamilyRawLength);

@@ -187,6 +187,10 @@ reference aliases share position/disposal. No finalizer-based lease is required.
 Read [release notes](../../CHANGELOG.md). Benchmark observations below retain their
 recorded source/runtime and qualification scope.
 
+Use `--measure-pythonre-paired-case findall/many-capture-strings 9 AssumeValid`
+for a focused trusted-input comparison. Omit the final argument for `Validate`.
+The command prints labeled raw paired evidence without changing the recorded tables.
+
 <!-- BEGIN GENERATED PYTHONRE BENCHMARKS -->
 ## Benchmarks
 

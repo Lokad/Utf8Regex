@@ -1325,24 +1325,30 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText)
-        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
+    public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false, inputValidation);
 
-    public static int RunMeasureReadmeCaseReversed(string caseId, string? iterationsText, string? samplesText)
-        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
+    public static int RunMeasureReadmeCaseReversed(string caseId, string? iterationsText, string? samplesText,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true, inputValidation);
 
     private static int RunMeasureReadmeCase(
         string caseId,
         string? iterationsText,
         string? samplesText,
-        bool reverseMeasurementOrder)
+        bool reverseMeasurementOrder, Utf8InputValidation inputValidation)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
+        Console.WriteLine($"InputValidation   : {inputValidation}; whole-subject validity is {(inputValidation == Utf8InputValidation.Validate ? "checked by the engine" : "guaranteed by the caller")}");
+        Console.WriteLine($"Environment       : {JsonSerializer.Serialize(CaptureBenchmarkEnvironment())}");
 
         var lokadScriptCase = LokadReplicaScriptBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId);
         if (lokadScriptCase is not null)
         {
+            if (inputValidation != Utf8InputValidation.Validate)
+                throw new ArgumentException("Input-policy measurements currently cover replica Count cases, not script loops.", nameof(inputValidation));
             var context = new LokadReplicaScriptBenchmarkContext(lokadScriptCase);
             var expected = lokadScriptCase.Model == LokadReplicaScriptBenchmarkModel.PrefixMatchLoop
                 ? context.VerifyPrefixMatchResults() : (Bytes: 0, Units: 0);
@@ -1363,13 +1369,16 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        var utf8Regex = inputValidation == Utf8InputValidation.Validate ? benchmarkCase.Utf8Regex
+            : new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options, inputValidation: inputValidation);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled, inputValidation: inputValidation);
+        Console.WriteLine($"CaseId            : {caseId}; InputBytes={benchmarkCase.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(benchmarkCase.InputBytes))}");
         var iterationTarget = GetReadmeReplicaIterationTarget(benchmarkCase, requestedIterations);
         var row = MeasureReadmeCase(
             requestedIterations,
             iterationTarget,
             samples,
-            () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes),
+            () => utf8Regex.Count(benchmarkCase.InputBytes),
             () => compiledUtf8Regex.Count(benchmarkCase.InputBytes),
             benchmarkCase.CountPredecodedRegex,
             benchmarkCase.CountPredecodedCompiledRegex,
@@ -1380,21 +1389,26 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText)
-        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
+    public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false, inputValidation);
 
-    public static int RunMeasureReadmePublicCaseReversed(string caseId, string? iterationsText, string? samplesText)
-        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
+    public static int RunMeasureReadmePublicCaseReversed(string caseId, string? iterationsText, string? samplesText,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true, inputValidation);
 
     private static int RunMeasureReadmePublicCase(
         string caseId,
         string? iterationsText,
         string? samplesText,
-        bool reverseMeasurementOrder)
+        bool reverseMeasurementOrder, Utf8InputValidation inputValidation)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var context = new LokadPublicBenchmarkContext(caseId);
+        var context = new LokadPublicBenchmarkContext(caseId, inputValidation);
+        Console.WriteLine($"InputValidation   : {inputValidation}; whole-subject validity is {(inputValidation == Utf8InputValidation.Validate ? "checked by the engine" : "guaranteed by the caller")}");
+        Console.WriteLine($"Environment       : {JsonSerializer.Serialize(CaptureBenchmarkEnvironment())}");
+        Console.WriteLine($"CaseId            : {caseId}; InputBytes={context.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(context.InputBytes))}");
         var iterationTarget = GetReadmePublicIterationTarget(context, requestedIterations);
         var row = MeasureReadmeCase(
             requestedIterations,
@@ -2040,7 +2054,7 @@ internal static partial class BenchmarkInspectReporter
             ("three-literal-miss", "alpha|bravo|charlie", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ", true),
             ("two-short-literals", "foo|bar", "foo x bar y ", false),
             ("seven-literals", "alpha|bravo|charlie|deltaa|echoo|foxtrot|golfx", "alpha foxtrot golfx ", false),
-            ("unicode-family", "éclair|bravo|charlie", "éclair bravo charlie ", false),
+            ("unicode-family", "Ã©clair|bravo|charlie", "Ã©clair bravo charlie ", false),
         ];
 
         Console.WriteLine($"Iterations        : {iterations}");

@@ -17,17 +17,18 @@ internal sealed class PosixBenchmarkContext : IDisposable
     private readonly PcreRegexUtf8 _native;
     private readonly PcreMatchBuffer8Bit _buffer;
 
-    internal PosixBenchmarkContext(PosixBenchmarkCase benchmarkCase)
+    internal PosixBenchmarkContext(PosixBenchmarkCase benchmarkCase,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
     {
         _case = benchmarkCase; _input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var finite = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxDepth = 4096,
             MaxWorkingBytes = 16 << 20, MaxResultBytes = 1 };
         _managed =
         [
-            new(benchmarkCase.Pattern),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite),
+            new(benchmarkCase.Pattern, inputValidation: inputValidation),
+            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite, inputValidation),
+            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite, inputValidation),
+            new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite, inputValidation),
         ];
         if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
         _groups = new Utf8ValueMatch[_managed[0].GroupCount + 1];
