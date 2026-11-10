@@ -3,7 +3,7 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "C28F1DD683D1540782DCE99D1C2EF3A8BF4ECF073B80683E257DD859D7C24143"
+    "SnapshotSha256": "3338E375B1D262BFA5C55985EA5F347C8AEC587414FA3B55BF5A098881F6D8AE"
   },
   "Sources": {
     "3F08481CD7F538017320213E5FDC75B8A31DBAEC02181F0C7D582BAC5AD42103": {
@@ -12,6 +12,19 @@
       "Pcre2Assembly": "0.5.0-dev.66\u002B86440ee007cf4dd42e0ff5fbad9bb2d7d3804ee9 sha256=F0EFF43BFEFFC7B29ED97781D82B3C248F1F1F110180DE031225ECA4A80D65A5",
       "PythonReAssembly": "0.5.0-dev.66\u002B86440ee007cf4dd42e0ff5fbad9bb2d7d3804ee9 sha256=45254AE6E29AA384294F2426F213ECA8B1EA250104FEFB05AE2760C043CCCFDB",
       "SourceCommit": "df3fc4541dcc",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
+    "833CEF87BAD10404431743971833AD3C3F6AEF23C906F87DA4B98DF5BAA85C89": {
+      "BenchmarkAssembly": "1.0.0\u002Bfadb8a7c934a1d538837cd9a0bfaf23dfcd2b58c sha256=C9DB7F1D9316C8E794CA357A2EA18D1AD4DE8C6E7F8DA6D3A55FA104CFF29BD7",
+      "CoreAssembly": "0.5.0-dev.66\u002Bfadb8a7c934a1d538837cd9a0bfaf23dfcd2b58c sha256=B09AC1068B585196FD9FC7B1C43852BA6E68E918A0C1F9D9652E89F034252AA2",
+      "Pcre2Assembly": "0.5.0-dev.66\u002Bf663d77b4335015f6917cbe61271740ab8c32223 sha256=C0B78983AB98C8D522BAD29F60E6C72636CA43263235DE8139B504240AB26A69",
+      "PythonReAssembly": "0.5.0-dev.66\u002Bf663d77b4335015f6917cbe61271740ab8c32223 sha256=A6007EA6C4C5C9235D66AF380F4911E050A11F0AFD27446E87B7B2797627CFB5",
+      "SourceCommit": "fadb8a7c934a",
       "TrackedDirty": false,
       "HasUntrackedFiles": false,
       "Runtime": ".NET 11.0.0-rc.3.26522.148",
@@ -385,11 +398,11 @@
       },
       "industry/leipzig-name-family-count": {
         "Operation": "Count",
-        "Source": "B2A582405E4615DE112318657C72A52A40478BDAE11CF7CE6756B0DCA4F2A4F6",
-        "ManagedUs": 4040.8578947368424,
-        "ReferenceUs": 9817.7125,
-        "DecodeUs": 17078.166666666668,
-        "Ratio": 0.41158853396214673,
+        "Source": "833CEF87BAD10404431743971833AD3C3F6AEF23C906F87DA4B98DF5BAA85C89",
+        "ManagedUs": 3660.557142857143,
+        "ReferenceUs": 9450.57,
+        "DecodeUs": 16223.689999999999,
+        "Ratio": 0.3873371810226413,
         "Status": "Win",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,
@@ -1047,11 +1060,11 @@
       },
       "industry/leipzig-name-family-count": {
         "Operation": "Count",
-        "Source": "B2A582405E4615DE112318657C72A52A40478BDAE11CF7CE6756B0DCA4F2A4F6",
-        "ManagedUs": 4048.463157894737,
-        "ReferenceUs": 3050.5559999999996,
-        "DecodeUs": 8104.4,
-        "Ratio": 1.327123041797868,
+        "Source": "833CEF87BAD10404431743971833AD3C3F6AEF23C906F87DA4B98DF5BAA85C89",
+        "ManagedUs": 3663.8333333333335,
+        "ReferenceUs": 2913.2846153846153,
+        "DecodeUs": 9152.67,
+        "Ratio": 1.257629726249603,
         "Status": "Gap",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,

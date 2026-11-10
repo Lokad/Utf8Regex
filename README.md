@@ -193,9 +193,9 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.089 us | 0.170 us | 0.185 us | 0.52x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 115.272 us | 265.931 us | 578.312 us | 0.43x |
 | `common/ip-match` | `IsMatch` | 0.074 us | 0.174 us | 0.195 us | 0.42x |
-| `industry/leipzig-name-family-count` | `Count` | 4,040.858 us | 9,817.712 us | 17,078.167 us | 0.41x |
 | `common/uri-match` | `IsMatch` | 0.094 us | 0.232 us | 0.267 us | 0.41x |
 | `common/ip-miss` | `IsMatch` | 0.074 us | 0.186 us | 0.207 us | 0.40x |
+| `industry/leipzig-name-family-count` | `Count` | 3,660.557 us | 9,450.570 us | 16,223.690 us | 0.39x |
 | `common/replace-words` | `Replace` | 29.331 us | 78.158 us | 79.215 us | 0.38x |
 | `common/email-match` | `IsMatch` | 0.098 us | 0.274 us | 0.299 us | 0.36x |
 | `common/matches-word` | `Count` | 1.356 us | 4.289 us | 5.999 us | 0.32x |
@@ -279,8 +279,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-match` | `IsMatch` | 0.074 us | 0.048 us | 0.069 us | 1.52x |
 | `industry/leipzig-symbol-count` | `Count` | 1,840.222 us | 1,227.068 us | 7,461.560 us | 1.50x |
 | `industry/leipzig-river-window-count` | `Count` | 2,166.800 us | 1,528.632 us | 8,343.095 us | 1.42x |
-| `industry/leipzig-name-family-count` | `Count` | 4,048.463 us | 3,050.556 us | 8,104.400 us | 1.33x |
 | `industry/mariomka-uri-count` | `Count` | 1,466.902 us | 1,107.203 us | 8,452.025 us | 1.32x |
+| `industry/leipzig-name-family-count` | `Count` | 3,663.833 us | 2,913.285 us | 9,152.670 us | 1.26x |
 | `common/email-match` | `IsMatch` | 0.098 us | 0.081 us | 0.108 us | 1.20x |
 | `common/email-miss` | `IsMatch` | 0.100 us | 0.090 us | 0.115 us | 1.12x |
 | `common/uri-match` | `IsMatch` | 0.095 us | 0.089 us | 0.121 us | 1.07x |
