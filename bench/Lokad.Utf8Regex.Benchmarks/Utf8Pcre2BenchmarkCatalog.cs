@@ -299,6 +299,8 @@ internal static class Utf8Pcre2BenchmarkCatalog
 
     private static bool CanUseDotNetPerformanceManagedCompatibleCase(string pattern, RegexOptions options)
     {
+        // Construction refusals and unexpected engine failures must remain
+        // visible; they are not evidence that a grammar case is unsupported.
         try
         {
             _ = new Utf8Pcre2Regex(pattern, ToPcre2Options(options));
@@ -309,10 +311,6 @@ internal static class Utf8Pcre2BenchmarkCatalog
             return false;
         }
         catch (NotSupportedException)
-        {
-            return false;
-        }
-        catch (InvalidOperationException)
         {
             return false;
         }
