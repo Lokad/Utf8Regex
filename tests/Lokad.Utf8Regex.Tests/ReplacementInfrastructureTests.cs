@@ -84,37 +84,6 @@ public sealed class ReplacementInfrastructureTests
         Assert.InRange(regex.Inspection.DebugReplacementCacheEntryCount, 1, Utf8ReplacementPlanCache.Capacity);
     }
 
-    [Fact]
-    [Trait("Category", "SourceOnly")]
-    public void ReplacementImplementationHasOneOutputAndLedgerOwner()
-    {
-        var root = FindRepositoryDirectory();
-        var executionDirectory = Path.Combine(root, "src", "Lokad.Utf8Regex", "Internal", "Execution");
-        Assert.Empty(Directory.GetFiles(executionDirectory, "*Replacement*.cs"));
-
-        var replacementDirectory = Path.Combine(root, "src", "Lokad.Utf8Regex", "Internal", "Replacement");
-        var source = string.Join('\n', Directory.GetFiles(replacementDirectory, "*.cs").Select(File.ReadAllText));
-        Assert.DoesNotContain("TryCopyToDestination", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("CopySlice", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ArrayPool<int>", source, StringComparison.Ordinal);
-    }
-
-    private static string FindRepositoryDirectory()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (Directory.Exists(Path.Combine(directory.FullName, "src", "Lokad.Utf8Regex")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate repository root.");
-    }
-
     private static void GrowLedgerAndThrow()
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,

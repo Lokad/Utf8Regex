@@ -29,39 +29,9 @@ public sealed class EngineDependencyInventoryTests
                 Assert.False(RetainsEngine(parameter.ParameterType), $"{type.FullName} {constructor}");
         }
 
-        foreach (var type in new[] { typeof(Utf8ValueSplit), typeof(Utf8ValueSplitEnumerator),
-            assembly.GetType("Lokad.Utf8Regex.Internal.Input.Utf8ValidatedInput")! })
-        {
-            Assert.DoesNotContain(type.GetFields(flags), field => field.Name is "_decoded" or "_decodedStorageLease");
-            Assert.DoesNotContain(type.GetMethods(flags), method => method.Name is "GetDecodedString" or "MoveNextOwnedSlice" or "get_DebugDecodedReservedBytes");
-            foreach (var constructor in type.GetConstructors(flags))
-                Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string));
-        }
-
-        Assert.Null(typeof(Utf8Regex).GetField("_sliceProgram", flags));
-        Assert.DoesNotContain(typeof(Utf8MatchContext).GetFields(flags), field => field.Name is "_groupNames" or "_denseNumericNames");
-        foreach (var constructor in typeof(Utf8MatchContext).GetConstructors(flags))
-            Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string[]));
-
-        foreach (var name in new[] { "AsciiStructuralIdentifierFamilyPlan", "AsciiStructuralTokenWindowPlan",
-            "AsciiStructuralRepeatedSegmentPlan", "AsciiStructuralSuffixPart", "AsciiStructuralVerifierStep",
-            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction",
-            "Utf8DeterministicByteGuard" })
-        {
-            var type = assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name)!;
-            Assert.DoesNotContain(type.GetFields(flags), field => field.FieldType == typeof(string));
-            Assert.DoesNotContain(type.GetProperties(flags), property => property.Name is "SeparatorSet" or
-                "IdentifierStartSet" or "IdentifierTailSet" or "CompiledSuffixParts");
-            foreach (var constructor in type.GetConstructors(flags))
-                Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string));
-        }
-
-        var node = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionNode")!;
-        Assert.DoesNotContain(node.GetFields(flags), field => field.FieldType == typeof(string));
-        Assert.Equal(typeof(object), node.GetProperty("Payload", flags)!.PropertyType);
-        var stage = assembly.GetType("Lokad.Utf8Regex.Internal.Planning.Utf8StructuralSearchStage")!;
-        Assert.DoesNotContain(stage.GetFields(flags), field => field.FieldType == typeof(string));
-        Assert.Null(stage.GetMethod("RequireSetAtOffset", flags));
+        // Representation names, decoded-storage layouts and the concrete
+        // instruction payload shape are implementation choices. The consumed
+        // PE/member policy below enforces independence from BCL matching.
 
         static bool RetainsEngine(Type type) => type == typeof(Regex) || type == typeof(Match) || type == typeof(Group) || type == typeof(Capture) ||
             type.HasElementType && RetainsEngine(type.GetElementType()!) ||

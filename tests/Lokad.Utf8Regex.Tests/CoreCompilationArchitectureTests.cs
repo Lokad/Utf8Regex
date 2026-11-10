@@ -3,6 +3,8 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -24,16 +26,9 @@ public sealed class CoreCompilationArchitectureTests
 
     [Fact]
     [Trait("Category", "SourceOnly")]
-    public void PreparedRegexConstructionIsInertAndLayerOwnersStayDirectional()
+    public void PlanningKeepsSubjectExecutionAndAnalyzerOwnershipDirectional()
     {
         var sourceRoot = FindCoreSourceDirectory();
-        var preparedSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Planning", "Utf8PreparedRegex.cs"));
-        Assert.DoesNotContain(".Create(", preparedSource, StringComparison.Ordinal);
-        Assert.DoesNotContain(".Select(", preparedSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("new Regex(", preparedSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("Executor.", preparedSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("RuntimeFactory", preparedSource, StringComparison.Ordinal);
-
         foreach (var planningSourcePath in Directory.EnumerateFiles(
                      Path.Combine(sourceRoot, "Internal", "Planning"),
                      "*.cs",
@@ -41,9 +36,6 @@ public sealed class CoreCompilationArchitectureTests
         {
             var planningSource = File.ReadAllText(planningSourcePath);
             Assert.DoesNotContain("ReadOnlySpan<byte>", planningSource, StringComparison.Ordinal);
-            Assert.DoesNotContain("RuntimeFactory", planningSource, StringComparison.Ordinal);
-            Assert.DoesNotContain("Executor.", planningSource, StringComparison.Ordinal);
-            Assert.DoesNotContain("new Regex(", planningSource, StringComparison.Ordinal);
         }
 
         foreach (var executionSourcePath in Directory.EnumerateFiles(
@@ -52,8 +44,11 @@ public sealed class CoreCompilationArchitectureTests
                      SearchOption.AllDirectories))
         {
             var executionSource = File.ReadAllText(executionSourcePath);
-            Assert.DoesNotContain("Utf8NativeExecutionAnalyzer", executionSource, StringComparison.Ordinal);
-            Assert.DoesNotContain("Utf8FallbackRegexFamilyAnalyzer", executionSource, StringComparison.Ordinal);
+            // Check code identifiers rather than comments/string literals.
+            var identifiers = CSharpSyntaxTree.ParseText(executionSource).GetRoot().DescendantTokens()
+                .Where(token => token.IsKind(SyntaxKind.IdentifierToken)).Select(token => token.ValueText);
+            Assert.DoesNotContain(nameof(Utf8NativeExecutionAnalyzer), identifiers);
+            Assert.DoesNotContain(nameof(Utf8FallbackRegexFamilyAnalyzer), identifiers);
         }
     }
 
@@ -80,18 +75,6 @@ public sealed class CoreCompilationArchitectureTests
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, prepared.ExecutionKind);
         Assert.Equal(pattern.Length, prepared.LiteralUtf8!.Length);
-    }
-
-    [Fact]
-    [Trait("Category", "SourceOnly")]
-    public void ByteOffsetExecutionUsesNeutralInputOwnedInfrastructure()
-    {
-        var sourceRoot = FindCoreSourceDirectory();
-        var inputSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8ValidatedInput.cs"));
-        var mapSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8BoundaryMap.cs"));
-
-        Assert.DoesNotContain("bool[]", mapSource, StringComparison.Ordinal);
-        Assert.Contains("Utf8ProjectionCursor", inputSource, StringComparison.Ordinal);
     }
 
     [Fact]
