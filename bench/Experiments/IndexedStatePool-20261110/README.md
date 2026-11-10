@@ -1,6 +1,7 @@
 # Indexed shared-state retention
 
-Accepted: replace hot 64-entry scans, identity searches, per-type summation and
+**Rejected and reverted after extended PCRE2 workspace validation.** The trial
+replaced hot 64-entry scans, identity searches, per-type summation and
 clock eviction in `Utf8ExactStatePool` with one indexed slot per exact array type
 and capacity. Keep the same shared owner, fixed table and nonblocking lock.
 No additional cache, ownership layer or execution mode.
@@ -11,7 +12,8 @@ most floor(16 KiB / 5) modeled bytes. This proves the existing per-type ceiling;
 and larger leaves are dropped, so some workloads may allocate more. Full active
 buffer admission, exact array typing, reference clearing before publication,
 exclusive loans and finite calls' no-new-retained-root rule are preserved.
-Core SPEC documents the retention change; public limits/semantics are unchanged.
+The experimental SPEC change is reverted with the implementation; existing
+public limits/semantics and original multi-leaf pool remain unchanged.
 
 One **145.074-second** quiet Linux .NET 11 RC3 separate-process ABBA comparison
 per input policy: 13 public lanes, five samples/process, **520 samples >=40.809ms**.
@@ -38,17 +40,27 @@ Python gain. Complete process medians/ranges and allocations are in summary.json
 Measured allocations remain effectively unchanged (occasional fractional traffic
 below 0.04 B/call); destination replacement/literal stay zero. Retained pool bytes
 peak at 13,600 versus 15,648; parent peak 801 bytes/refund to zero stays unchanged.
-These bounded workloads do not promise collision-free reuse in other processes.
-Accept the useful per-call savings and simpler invariants; no confirmation/tuning.
+These bounded workloads missed a real reuse requirement. Existing public PCRE2
+workspace tests fail: `WarmPublicVmMatchingReusesWorkspaceWithoutPerCallAllocation`
+allocates 45,056/61,440 B per 256 calls on .NET10/11 instead of zero;
+`WarmedOneShotBacktrackingDoesNotAllocate` also fails on .NET10 (22,528 B).
+The backtracking workspace can own several int arrays of the same capacity at
+once. One retained leaf/type/capacity cannot refill these loans; indexed collisions
+can add variation. Restore the complete previous pool and retention tests,
+SPEC and ordinary SKU summary/README. The same 94 workspace/backtracking checks
+then pass both targets, including both unchanged zero-allocation guards.
+Reject this design rather than weaken guards or tune another indexed cache.
+Useful speed results remain experimental evidence, not an accepted producer.
 
 Windows Release: full Core 42,205, Python 5,045 and POSIX 239 checks per .NET10/11;
 affected PCRE2 resource/cursor/frame checks 102/target. Linux pool/ownership/
 concurrency/resource/native-fast-path checks 350 and full POSIX 239 per target.
-One selective ordinary SKU refresh on the accepted graph qualifies nine paired
+One selective ordinary SKU refresh on the experimental graph qualifies nine paired
 samples >=72.397ms: managed 0.662/native 0.163 µs per call, ratio **4.04651x**
 (95% 4.01672–4.07766), previously 4.88x. Finite/live 0.906, funded/live 1.037,
 deadline/live 1.133 µs per call; allocation stays 96/856/904 B as applicable.
-Only SKU's raw case and four summary rows change; other historical rows stay.
+Only SKU's raw case and four summary rows changed; other historical rows stayed.
+The ordinary raw/summary/README are now restored; candidate evidence is archived.
 Generated Markdown verifies. Whole-catalog identity verification rejects the
 unchanged historical ambiguous row, as expected after a selective refresh; this
 is not a claim that all POSIX rows were remeasured on the current producer.
@@ -56,6 +68,7 @@ Selected input/result preflight, clean source/PDB checks, durations, lane orders
 raw-to-summary identity and unchanged-neighbor checks pass. No retimed refresh.
 Raw snapshots, graph/PDBs and all logs: `refresh-evidence.tar.gz`, SHA256
 `A280F7730CCD31D2046A0DEEB357408DFCB32C6A8BCE81F1C154409E5C5AC005`.
+Initial promotion9c66e298 and selective metadata b7760afa were withdrawn.
 No complete refresh/package repeat; immutable dev.66 artifacts remain unchanged.
 
 Baseline source `0c76549905739cc0ac06fef4f91c2717b86d572b`; frozen before library
