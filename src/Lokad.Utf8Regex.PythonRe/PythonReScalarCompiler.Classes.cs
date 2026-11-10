@@ -53,6 +53,7 @@ internal static partial class PythonReScalarCompiler
     private static Utf8SliceNode? ConvertBracket(PythonReCharacterClassNode characterClass,
         RegexOptions options, Utf8ConstructionArena arena)
     {
+        if (ConvertAsciiBracket(characterClass, arena) is { } ascii) return ascii;
         var firstPredefined = 0;
         for (; firstPredefined < characterClass.Items.Count; firstPredefined++)
         {
@@ -60,8 +61,8 @@ internal static partial class PythonReScalarCompiler
             if (characterClass.Items[firstPredefined] is PythonReCharacterClassPredefinedItem item
                 && PythonReParser.IsUnicodePredefinedFragment(item.RegexClassFragment)) break;
         }
-        // Ordinary literal/ASCII classes retain their original leaf preparation;
-        // do not acquire staging arrays merely to discover no profile predicate.
+        // Other ordinary classes retain their original leaf preparation; do not
+        // acquire staging arrays merely to discover no profile predicate.
         if (firstPredefined == characterClass.Items.Count) return null;
         using var literals = new Utf8ConstructionBuffer<PythonReCharacterClassItem>(arena.Budget);
         using var branches = new Utf8ConstructionBuffer<Utf8SliceNode>(arena.Budget);
@@ -97,6 +98,35 @@ internal static partial class PythonReScalarCompiler
             ? PythonReScalarNodeFactory.Concat(Pair(PythonReScalarNodeFactory.Lookahead(positive, false),
                 PythonReScalarNodeFactory.Dot(), arena))
             : positive;
+    }
+
+    private static Utf8SliceNode? ConvertAsciiBracket(PythonReCharacterClassNode characterClass,
+        Utf8ConstructionArena arena)
+    {
+        // Parsing has resolved lexical folding. Only literal/range operands in
+        // ASCII fit this mask; Unicode and predefined operands keep their own
+        // existing lowering. In particular, do not refold a negated class.
+        for (var index = 0; index < characterClass.Items.Count; index++)
+        {
+            arena.Budget.ChargeWork(1);
+            var item = characterClass.Items[index];
+            if (item is not PythonReCharacterClassLiteralItem { Scalar: >= 0 and < 128 } and
+                not PythonReCharacterClassRangeItem { StartScalar: >= 0, EndScalar: < 128 }) return null;
+        }
+        var mask = arena.Allocate<byte>(16, true);
+        for (var index = 0; index < characterClass.Items.Count; index++)
+        {
+            var item = characterClass.Items[index];
+            var low = item is PythonReCharacterClassLiteralItem literal ? literal.Scalar
+                : ((PythonReCharacterClassRangeItem)item).StartScalar;
+            var high = item is PythonReCharacterClassRangeItem range ? range.EndScalar : low;
+            arena.Budget.ChargeWork((ulong)(high - low + 1));
+            for (var value = low; value <= high; value++)
+            {
+                mask[value >> 3] |= (byte)(1 << (value & 7));
+            }
+        }
+        return PythonReScalarNodeFactory.AsciiClass(mask, characterClass.IsNegated);
     }
 
     private static Utf8SliceNode? TryCombineClassUnion(ReadOnlySpan<Utf8SliceNode> branches,

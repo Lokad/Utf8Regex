@@ -85,6 +85,9 @@ internal static class PythonReScalarNodeFactory
         Create((ascii, negated, members),
             static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, Array.Empty<Utf8SliceShorthand>(), state.members, false));
 
+    internal static Utf8SliceNode.SetNode AsciiClass(byte[] mask, bool negated) =>
+        Create((mask, negated), static state => new Utf8SliceNode.SetNode(state.mask, state.negated, [], false));
+
     private static TNode Create<TState, TNode>(TState state, Func<TState, TNode> factory) where TNode : class =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(state, factory);
 }
