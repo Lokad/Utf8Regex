@@ -44,6 +44,18 @@ Accept the useful per-call savings and simpler invariants; no confirmation/tunin
 Windows Release: full Core 42,205, Python 5,045 and POSIX 239 checks per .NET10/11;
 affected PCRE2 resource/cursor/frame checks 102/target. Linux pool/ownership/
 concurrency/resource/native-fast-path checks 350 and full POSIX 239 per target.
+One selective ordinary SKU refresh on the accepted graph qualifies nine paired
+samples >=72.397ms: managed 0.662/native 0.163 µs per call, ratio **4.04651x**
+(95% 4.01672–4.07766), previously 4.88x. Finite/live 0.906, funded/live 1.037,
+deadline/live 1.133 µs per call; allocation stays 96/856/904 B as applicable.
+Only SKU's raw case and four summary rows change; other historical rows stay.
+Generated Markdown verifies. Whole-catalog identity verification rejects the
+unchanged historical ambiguous row, as expected after a selective refresh; this
+is not a claim that all POSIX rows were remeasured on the current producer.
+Selected input/result preflight, clean source/PDB checks, durations, lane orders,
+raw-to-summary identity and unchanged-neighbor checks pass. No retimed refresh.
+Raw snapshots, graph/PDBs and all logs: `refresh-evidence.tar.gz`, SHA256
+`A280F7730CCD31D2046A0DEEB357408DFCB32C6A8BCE81F1C154409E5C5AC005`.
 No complete refresh/package repeat; immutable dev.66 artifacts remain unchanged.
 
 Baseline source `0c76549905739cc0ac06fef4f91c2717b86d572b`; frozen before library

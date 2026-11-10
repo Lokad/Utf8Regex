@@ -96,17 +96,17 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.79 | 0.16 | 96 | 4.88 |
+| `capture/sku007` | 0.66 | 0.16 | 96 | 4.05 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
+| `capture/sku007` | 3711.08 µs | 4248.07 µs | 4642.34 µs | 1.57 |
 | `cursor/ambiguous` | 1.31 µs | 1.43 µs | 1.75 µs | 1.53 |
 | `capture/empty` | 0.78 µs | 0.90 µs | 1.01 µs | 1.46 |
-| `capture/sku007` | 4127.01 µs | 4601.27 µs | 5119.69 µs | 1.42 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `2A860DBA323F2D7DB8F236884F85C09B5C069BF3DC4451EF49D09ADAA8C4F66A`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `432612B714C6D9B25A2D0AF22FBA22D677414537F6B999CBF46FD9527E44CEE5`.
 <!-- END GENERATED POSIX BENCHMARKS -->
