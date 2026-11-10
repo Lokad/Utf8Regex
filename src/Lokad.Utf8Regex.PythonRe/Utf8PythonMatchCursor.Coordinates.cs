@@ -66,7 +66,7 @@ public sealed partial class Utf8PythonMatchCursor
             var input = _input.Span;
             _discovery.Checkpoint(input);
             if (!_discovery.TryGetCaptureByteRange(groupNumber, out var byteStart, out var byteEnd)) return false;
-            if (_discovery.IsAscii) { start = byteStart; end = byteEnd; }
+            if (_discovery.IsAscii(input)) { start = byteStart; end = byteEnd; }
             else
             {
                 EnsureScalarPrefixes(input);

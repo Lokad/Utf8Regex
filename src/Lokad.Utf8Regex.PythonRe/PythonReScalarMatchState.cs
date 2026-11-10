@@ -27,7 +27,7 @@ internal struct PythonReScalarMatchState
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
-    private Utf8ValidationResult _validation;
+    private Utf8ValidationResult? _validation;
     private Utf8BoundaryMap _map;
     private ulong _mapReservation;
     private bool _hasMap;
@@ -51,7 +51,12 @@ internal struct PythonReScalarMatchState
         _invocation = invocation;
         try
         {
-            _validation = Utf8Validation.Subject(input, ref _invocation);
+            // Strict input is validated once before any early exit. Trusted
+            // byte discovery needs no whole-subject coordinate description.
+            if (_invocation.InputValidation == Utf8InputValidation.Validate)
+                _validation = Utf8Validation.Subject(input, ref _invocation);
+            else
+                Utf8Validation.CheckSubject(input, ref _invocation);
             // An unconditional Fail or an absent necessary literal can finish
             // before scalar scratch. Strict validation and final publication
             // still use this invocation; other programs retain their verifier.
@@ -68,7 +73,9 @@ internal struct PythonReScalarMatchState
             if (prepareSearch)
             {
                 if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
-                if (_candidateRegex is null && TryGetLeadingAsciiRange(program, _validation.IsAscii, out var low, out var high))
+                if (_candidateRegex is null &&
+                    (TryGetLeadingAsciiRange(program, _validation?.IsAscii == true, out var low, out var high) ||
+                     _validation is null && TryGetLeadingAsciiRange(program, true, out low, out high) && DescribeInput(input).IsAscii))
                 {
                     _leadingAsciiLow = low;
                     _leadingAsciiHigh = high;
@@ -107,7 +114,7 @@ internal struct PythonReScalarMatchState
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
     internal readonly bool HasCoordinateMap => _hasMap;
-    internal readonly bool IsAscii => _validation.IsAscii;
+    internal bool IsAscii(ReadOnlySpan<byte> input) => (_validation ?? DescribeInput(input)).IsAscii;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
     internal T[] AllocateResultArray<T>(ReadOnlySpan<byte> input, int count)
@@ -566,11 +573,14 @@ internal struct PythonReScalarMatchState
             var end = EndOffsetInBytes;
             // Collections that publish coordinates reuse their single map. A
             // one-shot fixed value still needs no whole-subject map allocation.
-            // Entry validation already supplies coordinates at both subject ends.
-            var startUtf16 = _validation.IsAscii || start == 0 ? start : start == input.Length ? _validation.Utf16Length
+            // Strict validation supplies the subject ends. Without a description,
+            // count only the prefix/range actually requested by this value.
+            var ascii = _validation?.IsAscii == true;
+            var length = _validation?.Utf16Length;
+            var startUtf16 = ascii || start == 0 ? start : start == input.Length && length.HasValue ? length.Value
                 : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
                 : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
-            var endUtf16 = _validation.IsAscii ? end : end == input.Length ? _validation.Utf16Length
+            var endUtf16 = ascii ? end : end == input.Length && length.HasValue ? length.Value
                 : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
                 : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
             var value = new PythonReGroupData
@@ -642,7 +652,7 @@ internal struct PythonReScalarMatchState
         {
             try
             {
-                _map = Utf8BoundaryMap.Create(input, _validation, ref _invocation, out _mapReservation);
+                _map = Utf8BoundaryMap.Create(input, DescribeInput(input), ref _invocation, out _mapReservation);
                 _hasMap = true;
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -741,10 +751,13 @@ internal struct PythonReScalarMatchState
             // String-only results need the selected scalar range's char count,
             // not a coordinate map for the complete subject. Detailed results
             // already project coordinates and can supply their character count.
-            // Original whole-subject validation proves these scalar ranges.
+            // Validation or the caller's trusted-input contract proves these ranges.
             // Unknown lengths need bounded character counting, not validation.
-            var count = characterCount ?? (_validation.IsAscii ? end - start
-                : start == 0 && end == input.Length ? _validation.Utf16Length : _hasMap
+            // Cache a real description when string projection first needs it;
+            // dense output reuses the same ASCII/whole-subject facts thereafter.
+            var validation = characterCount.HasValue ? default : _validation ?? DescribeInput(input);
+            var count = characterCount ?? (validation.IsAscii ? end - start
+                : start == 0 && end == input.Length ? validation.Utf16Length : _hasMap
                 ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
                 : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
             var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
@@ -757,6 +770,14 @@ internal struct PythonReScalarMatchState
         {
             throw TimeoutFailure(input);
         }
+    }
+
+    private Utf8ValidationResult DescribeInput(ReadOnlySpan<byte> input)
+    {
+        try { return _validation ??= Utf8Validation.Subject(input, ref _invocation); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw ResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)

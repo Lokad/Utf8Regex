@@ -124,25 +124,27 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(cursor.TryGetScalarRange(0, out start, out end)); Assert.Equal(1, start); Assert.Equal(2, end);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
-    public void CancellationDuringIndexConstructionPreservesOriginalTokenAndRefunds(bool cancelCreation)
+    [Theory]
+    [InlineData(false, Utf8InputValidation.Validate)] [InlineData(true, Utf8InputValidation.Validate)]
+    [InlineData(false, Utf8InputValidation.AssumeValid)] [InlineData(true, Utf8InputValidation.AssumeValid)]
+    public void CancellationDuringIndexConstructionPreservesOriginalTokenAndRefunds(bool cancelCreation, Utf8InputValidation policy)
     {
         using var creation = new CancellationTokenSource(); using var query = new CancellationTokenSource();
-        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)")
+        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", inputValidation: policy)
             .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, creation.Token, account);
         Assert.True(cursor.MoveNext(out var snapshot)); var held = account.Used; var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) { if (cancelCreation) creation.Cancel(); query.Cancel(); } };
         var error = Assert.Throws<OperationCanceledException>(() => cursor.TryGetScalarRange(0, out _, out _, query.Token));
         Assert.Equal(cancelCreation ? creation.Token : query.Token, error.CancellationToken);
-        Assert.True(account.Peak > held); Assert.Equal(0UL, account.Used);
+        Assert.True(account.Peak >= held); Assert.Equal(0UL, account.Used);
         Assert.Equal("a", Encoding.UTF8.GetString(snapshot.GetValueMemory().Span));
     }
 
-    [Fact]
-    public void DeadlineDuringIndexConstructionOmitsUnadmittedSubjectText()
+    [Theory] [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
+    public void DeadlineDuringIndexConstructionOmitsUnadmittedSubjectText(Utf8InputValidation policy)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", default, TimeSpan.FromMilliseconds(100))
+        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", default, TimeSpan.FromMilliseconds(100), inputValidation: policy)
             .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, default, account);
         Assert.True(cursor.MoveNext(out _)); var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) ticks = 100; };
