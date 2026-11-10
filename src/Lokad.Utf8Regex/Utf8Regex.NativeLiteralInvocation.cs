@@ -112,10 +112,12 @@ public sealed partial class Utf8Regex
     // Unlimited operations keep the established specialized kernels. Semantic
     // exclusions match native token enumeration; other profiles retain their VM.
     private bool TryStartNativeLiteralInvocation(ReadOnlySpan<byte> input, CancellationToken token,
-        out Utf8SliceInvocation invocation)
+        out Utf8SliceInvocation invocation, bool forCount = false)
     {
         invocation = default;
-        if (InputValidation == Utf8InputValidation.Validate &&
+        // Unmetered Count already owns specialized counters. Trusting input
+        // removes their separate validity pass, not their matching algorithm.
+        if ((InputValidation == Utf8InputValidation.Validate || forCount) &&
             MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;

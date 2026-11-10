@@ -1160,7 +1160,7 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return count;
         }
-        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation, forCount: true))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
                 input, UsesRightToLeft(), ref invocation, out var count);

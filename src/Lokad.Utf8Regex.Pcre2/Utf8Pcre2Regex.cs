@@ -322,6 +322,9 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
+            if (Pcre2Runner.TryIsMatchWithoutCoordinates(_program, input, startOffsetInBytes, matchOptions,
+                ref invocation, out var coordinateFreeResult))
+                return coordinateFreeResult;
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))

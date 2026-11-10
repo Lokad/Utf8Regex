@@ -1830,6 +1830,25 @@ internal static class Pcre2SingleTokenRepeatRunner
 
 internal static partial class Pcre2Runner
 {
+    // The existing lone-grapheme Boolean proof needs no coordinate metadata.
+    // Apply subject policy and scalar-floor admission before its candidate charge.
+    internal static bool TryIsMatchWithoutCoordinates(Pcre2CompiledProgram program, ReadOnlySpan<byte> input,
+        int startOffsetInBytes, Pcre2MatchOptions options, scoped ref Utf8SliceInvocation invocation, out bool result)
+    {
+        result = false;
+        if (!invocation.IsUnmetered || invocation.CheckpointHook is not null || options != Pcre2MatchOptions.None ||
+            program.Operations.IsMatch is not Pcre2CharacterDirectProgram character ||
+            character.Program.Request.Options != Pcre2CompileOptions.None ||
+            character.Program.Tokens is not [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster, Options: Pcre2CharacterOptions.None }])
+            return false;
+        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryCheckSubject(input, ref invocation));
+        var start = Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
+        var budget = new Pcre2ResourceBudget(program.Request.DefaultLimits, invocation, false);
+        budget.ChargeCandidate();
+        result = start.Value < input.Length;
+        return true;
+    }
+
     internal static bool TryIsMatch(
         Pcre2CompiledProgram compiledProgram,
         ref Utf8ValidatedInput input,
@@ -1868,18 +1887,6 @@ internal static partial class Pcre2Runner
 
         if (program is Pcre2CharacterDirectProgram characterProgram)
         {
-            if (invocation.IsUnmetered && invocation.CheckpointHook is null &&
-                matchOptions == Pcre2MatchOptions.None &&
-                characterProgram.Program.Request.Options == Pcre2CompileOptions.None &&
-                characterProgram.Program.Tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster, Options: Pcre2CharacterOptions.None }])
-            {
-                // Strict validation and scalar-floor admission already ran. A
-                // lone \X consumes any remaining scalar; Boolean existence
-                // needs no cluster endpoint. Retain the basic candidate charge.
-                budget.ChargeCandidate();
-                result = start.Value < input.Bytes.Length;
-                return true;
-            }
             result = Pcre2CharacterRunner.Match(
                 characterProgram.Program,
                 ref input,

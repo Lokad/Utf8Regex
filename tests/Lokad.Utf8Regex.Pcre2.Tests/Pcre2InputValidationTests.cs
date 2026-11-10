@@ -51,6 +51,24 @@ public sealed class Pcre2InputValidationTests
         }
     }
 
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void GraphemeBooleanPreservesScalarFloorAndWholeInputPolicy(Utf8InputValidation policy)
+    {
+        var regex = new Utf8Pcre2Regex(@"\X", inputValidation: policy);
+        var input = Encoding.UTF8.GetBytes("é😀");
+        Assert.True(Observe(regex, () => regex.IsMatch(input)));
+        Assert.True(Observe(regex, () => regex.IsMatch(input, 2)));
+        Assert.False(Observe(regex, () => regex.IsMatch(input, input.Length)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, input.Length + 1));
+        if (policy == Utf8InputValidation.Validate)
+            Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { (byte)'x', 0xff }));
+    }
+
     [Fact]
     public void DefaultsAndTemplatePatternValidationStayStrict()
     {

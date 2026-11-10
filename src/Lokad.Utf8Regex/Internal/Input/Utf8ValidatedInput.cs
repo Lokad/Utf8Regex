@@ -72,9 +72,14 @@ internal ref struct Utf8ValidatedInput
     }
 
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
+        => GetBytePosition(_bytes, value, parameterName);
+
+    // Scalar-floor admission needs only bytes, including Boolean operations
+    // whose established input contract requires no UTF-16 metadata.
+    internal static Utf8BytePosition GetBytePosition(ReadOnlySpan<byte> input, int value, string parameterName)
     {
-        var position = Utf8BytePosition.CreateChecked(_validation, value, parameterName);
-        if (!IsScalarBoundary(position))
+        var position = Utf8BytePosition.CreateChecked(input.Length, value, parameterName);
+        if (value != input.Length && value != 0 && (input[value] & 0xc0) == 0x80)
         {
             throw new ArgumentOutOfRangeException(
                 parameterName,
