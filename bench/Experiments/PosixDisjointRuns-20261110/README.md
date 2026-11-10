@@ -62,4 +62,5 @@ Common Core `772F0B099ACB0D56045E693DFDAB6622CEBA971D831AB95E81D57744FADB6D0E`.
 Raw protocol, patch, graphs, preflights, checks and samples are verified off VM at
 `artifacts/experiments/posix-disjoint-runs-20261110/evidence.tar.gz`, SHA-256
 `9F96D2CA310EFE2F06AEE4CFFC11124F479701AB6AC6C03BA5D0342173AA1958`.
-Final204-check logs/fixture are alongside it. Source CI pending.
+Final204-check logs/fixture are alongside it. Source CI42734417139 passes
+Windows/Linux for0f0a513d597c244c9f0fc883b8e64d49b2afa045.
