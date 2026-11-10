@@ -697,11 +697,12 @@ public sealed partial class Utf8Regex
             }
         }
         if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(cancellationToken, false, out var structuralInvocation))
         {
+            var structuralIsAscii = Utf8Validation.SubjectIsAscii(input, ref structuralInvocation);
             // Mixed subjects and overlapping prefixes use shared scalar
             // verification under the same invocation.
-            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
+            if (!structuralIsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
@@ -1142,9 +1143,14 @@ public sealed partial class Utf8Regex
         var scalarWindowCount = !_hasCaptures && !_ownedSliceProgram.HasUnicodePatternAtoms &&
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
             _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.SupportsValidatedUtf8Input;
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, scalarWindowCount, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(cancellationToken, scalarWindowCount, out var structuralInvocation))
         {
-            if (!structuralValidation.IsAscii && !scalarWindowCount || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
+            // Scalar-aware Count needs validity authority, without coordinate
+            // totals or whole-input ASCII eligibility. Other kernels need ASCII.
+            var structuralSubjectEligible = scalarWindowCount;
+            if (scalarWindowCount) Utf8Validation.CheckSubject(input, ref structuralInvocation);
+            else structuralSubjectEligible = Utf8Validation.SubjectIsAscii(input, ref structuralInvocation);
+            if (!structuralSubjectEligible || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram,
@@ -1719,8 +1725,9 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(cancellationToken, false, out var structuralInvocation))
         {
+            var structuralValidation = Utf8Validation.Subject(input, ref structuralInvocation);
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)

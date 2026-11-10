@@ -17,7 +17,9 @@ public sealed partial class Utf8Regex
         {
             // The unlimited family cursor replaces BCL global discovery as well.
             // Values retain their existing cheap unmetered kernels.
-            if (!TryStartNativeStructuralInvocation(input, token, family, out var invocation, out var validation)) return false;
+            if (!TryStartNativeStructuralInvocation(token, family, out var invocation)) return false;
+            // Mapped fallback consumes the complete coordinate description.
+            var validation = Utf8Validation.Subject(input, ref invocation);
             // Mixed subjects require scalar gap widths and Unicode separator
             // semantics. Preserve the same invocation through the scalar VM.
             var native = validation.IsAscii && (!family ||
