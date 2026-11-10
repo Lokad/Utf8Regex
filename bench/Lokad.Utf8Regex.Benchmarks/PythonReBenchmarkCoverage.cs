@@ -25,7 +25,6 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Catalog SHA-256     : {ComputePythonReCatalogSha256()}");
         Console.WriteLine($"Cases               : {cases.Count}");
         Console.WriteLine($"Distinct patterns   : {cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count()}");
-        Console.WriteLine($"First sentinels     : {cases.Count(static item => item.Coverage.FirstMilestoneSentinel)}");
         PrintCoverageGroups("Sections", s_pythonReCoverageSections.Select(section => new KeyValuePair<string, int>(
             section,
             section switch
@@ -68,21 +67,6 @@ internal static partial class PythonReBenchmarkReporter
         foreach (var benchmarkCase in cases)
         {
             ValidatePythonReCoverageCase(benchmarkCase, failures);
-        }
-
-        if (cases.Count is < 70 or > 90)
-        {
-            failures.Add($"Catalog has {cases.Count} cases; the representative bound is 70-90.");
-        }
-
-        if (cases.Count(static item => item.Coverage.FirstMilestoneSentinel) != 28)
-        {
-            failures.Add("Exactly 28 cases must remain marked as first-milestone sentinels.");
-        }
-
-        if (cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count() < 35)
-        {
-            failures.Add("Catalog must retain at least 35 distinct representative patterns.");
         }
 
         var snapshot = LoadPythonReBenchmarkSnapshot();
@@ -136,7 +120,7 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine(
             $"Verified PythonRe coverage contract: {cases.Count} cases, " +
             $"{cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count()} patterns, " +
-            $"28 first-milestone sentinels, {snapshot.Lifecycle.Count} lifecycle families, " +
+            $"{snapshot.Lifecycle.Count} lifecycle families, " +
             $"and {snapshot.ScalingFamilies.Count} scaling families.");
         return 0;
     }

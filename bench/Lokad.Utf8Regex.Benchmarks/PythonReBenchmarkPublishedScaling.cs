@@ -848,8 +848,7 @@ internal static partial class PythonReBenchmarkReporter
             "OperationExcluded",
             "Measured",
             "Generated bounded scaling subject",
-            "Scaling",
-            FirstMilestoneSentinel: false);
+            "Scaling");
         return new PythonReScalingPointDefinition(
             label,
             scale,

@@ -1279,8 +1279,7 @@ internal static partial class PythonReBenchmarkReporter
                 "OperationExcluded",
                 "ManagedFallback",
                 "Semantic diagnostic fixture",
-                "Composed",
-                FirstMilestoneSentinel: false));
+                "Composed"));
         var cases = PythonReBenchmarkCatalog.Cases.Append(supplementaryCase).ToArray();
         using var worker = new CpythonStreamWorker();
         foreach (var benchmarkCase in cases)
@@ -2047,8 +2046,7 @@ internal static partial class PythonReBenchmarkReporter
                 coverage.ByteControlExpectation,
                 coverage.IntendedManagedRouteClass,
                 coverage.CorpusProvenance,
-                coverage.ClaimClass,
-                coverage.FirstMilestoneSentinel.ToString()));
+                coverage.ClaimClass));
 
     private static string ComputePythonReQualificationId(
         string caseDefinitionSha256,
