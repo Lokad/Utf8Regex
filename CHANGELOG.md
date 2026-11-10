@@ -2,6 +2,12 @@
 
 ## Unreleased — 0.5.0
 
+- Add immutable `inputValidation` across Core and all adapters. `Validate` remains
+  the default whole-subject UTF-8 check; `AssumeValid` skips that pass when the
+  caller guarantees valid UTF-8 and unchanged borrowed input. Read-only
+  `InputValidation` reports the choice. Operations and cursors inherit it;
+  pattern/replacement checks, managed bounds, scalar semantics, cancellation and
+  resource limits remain active.
 - Target .NET 10 and .NET 11 in Core and the three adapters. Benchmarks default to .NET 11;
   the pinned SDK/runtime is currently RC3. Historical results keep their runtime
   labels. Adapters require the exact matching Core package version.
@@ -73,7 +79,7 @@ Resource limits cover modeled major capacity and growth overlap, not total heap/
 or arbitrary caller retention; execution defaults remain unlimited. Numerical work,
 depth and working/result requirements depend on the execution route and can change
 between versions. Recheck finite policies when upgrading. Admission still precedes
-covered acquisition, temporary loans refund synchronously, and strict whole-subject
+covered acquisition, temporary loans refund synchronously, and default whole-subject
 UTF-8 validation, scalar matching, captures and interruption contracts remain.
 
 See the [migration guide](docs/MIGRATION.md) and the

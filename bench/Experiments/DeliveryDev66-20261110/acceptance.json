@@ -1,0 +1,94 @@
+{
+  "Source": "b478f853f722b7c34de83bdcd14693ee594ca053",
+  "Version": "0.5.0-dev.66",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 275.9989088,
+  "WindowsFixtures": 10,
+  "ChecksPerPlatform": 111196.0,
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "33B7F85C990275E8FF566938E4AF88800DA98C7054FCB9CADAB4731CB4B098CA",
+  "OlderStagedAssetsUnchanged": 754,
+  "TotalStagedAssets": 770,
+  "SourceCI": {
+    "Run": 42815704840,
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Conclusion": "success"
+  },
+  "AcceptedChanges": [
+    "Immutable subject inputValidation across four profiles",
+    "Window searcher descriptor bindings",
+    "POSIX shared capture coordinate origin",
+    "Metadata-only PCRE2 catalog and explicit failures",
+    "Shipped diagnostics/orphans and duplicated test mechanics removed",
+    "Historical guards/quotas/guides simplified",
+    "Self-contained common NuGet README",
+    "Direct resolved Python dot/anchor nodes"
+  ],
+  "Pending": [
+    "Final metadata CI"
+  ],
+  "Complete": false,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "LinuxFixtures": 10,
+  "LinuxVerifiedTrx": 14,
+  "LinuxRawSha256": "125AA865E31C5BD71184154F04F1E6158C8200DB9875727DB2736652B13CAA55",
+  "LinuxRebuilt": false,
+  "LinuxRepacked": false,
+  "Full": {
+    "Source": "b478f853f722b7c34de83bdcd14693ee594ca053",
+    "ArchiveSha256": "8A634F96E3C0256C3668F58B97DB7C71F044B6E23FCC11178E3637A57855B4DE",
+    "Seconds": 2803.0485433,
+    "Complete": true,
+    "Steps": 85
+  },
+  "SnapshotChecksPerFramework": 9,
+  "SnapshotLogHashes": [
+    {
+      "Sha256": "693FA0556D0C3B7276776EC35C3C404498E82C32113D1898CE3427CE00E28D25",
+      "File": "snapshot-Core.txt"
+    },
+    {
+      "Sha256": "A8F548D483C117C692B0F3F26F73DB3A1760C1C5493E8C04B20D56FE52F2C0A9",
+      "File": "snapshot-Pcre2.txt"
+    },
+    {
+      "Sha256": "81DE58BBD053D829234EAF3F35C304AFFAF2A8E0AF49C40F6949C6A4FA4A4D42",
+      "File": "snapshot-Posix.txt"
+    },
+    {
+      "Sha256": "16CD81D551EBD6EAB3B7B551EC0488DB392AF7B208856016DE42A308D761C291",
+      "File": "snapshot-PythonRe.txt"
+    }
+  ],
+  "Scope": "Immutable common four-profile candidate with inputValidation and bounded simplifications; exact Windows packages accepted on Linux and original consumers. Performance is source-qualified separately; no publication, adoption, full flavor equivalence or total-heap guarantee.",
+  "RemainingWork": "Further qualified-gap optimization and broader profile completion are deferred independent scope. This finite delivery awaits final metadata CI.",
+  "InputContract": "Validate default; AssumeValid trusts valid unchanged borrowed UTF-8; ordinary catalogs Validate, closed policy receipt labels both.",
+  "PackageReadmeSha256": "8728E427C7D8971F609B5C4CD223F6AF7A6DB84E53B806992C109AEE98369E8D",
+  "ValidationArchiveSha256": "71556D6490ABB87320DC42AFC98D5F6F487D01D011C2F79D290D230733585AE9",
+  "DocumentationValidation": {
+    "GeneratedBlocksUnchanged": 7,
+    "Readmes": 4,
+    "SummariesExact": 4,
+    "SummaryRawHashesMatch": true,
+    "RelativeLinksAndAnchorsChecked": 61,
+    "Passed": true
+  }
+}
