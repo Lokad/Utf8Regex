@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -62,6 +63,7 @@ public sealed class Utf8PairCandidateInvocationTests
             var input = storage.AsSpan(3, bytes.Length);
             foreach (var start in new[] { 0, padding, Math.Min(input.Length, padding + 1), input.Length })
             foreach (var trim in new[] { 0, 1, Math.Min(input.Length - start, literals[0].Length) })
+            foreach (var prepared in new[] { false, true })
             {
                 var end = Math.Max(start, input.Length - trim);
                 var expected = -1;
@@ -74,8 +76,12 @@ public sealed class Utf8PairCandidateInvocationTests
                 }
                 var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
                 Assert.True(invocation.Ledger.TryReserve(7));
-                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
-                    literals, false, input, start, end, false, ref invocation, out var match, out var found));
+                var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, false));
+                var breach = prepared ? finder.TryFindMatch(input, start, end, false,
+                    ref invocation, out var match, out var found)
+                    : Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
+                        ref invocation, out match, out found);
+                Assert.Equal(Utf8ExecutionLimitKind.None, breach);
                 Assert.Equal(expected >= 0, found);
                 if (found)
                 {
@@ -85,6 +91,43 @@ public sealed class Utf8PairCandidateInvocationTests
                 }
                 else Assert.Equal(default, match);
                 Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+            }
+        }
+    }
+
+    [Theory] [InlineData(1024)] [InlineData(1025)] [InlineData(2047)] [InlineData(2048)]
+    public void PreparedPairLookaheadKeepsEarlierLongerStart(int padding)
+    {
+        var longer = Encoding.ASCII.GetBytes("zabc" + new string('q', 1019) + "!");
+        var input = new byte[padding + longer.Length];
+        input.AsSpan(0, padding).Fill((byte)'x');
+        longer.CopyTo(input, padding);
+        var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["abc"u8.ToArray(), longer], false));
+        var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
+            ref invocation, out var match, out var found));
+        Assert.True(found);
+        Assert.Equal((padding, longer.Length, 1), (match.Index, match.Length, match.LiteralId));
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void PreparedPairWorkCutoffsKeepCallerLoanAndStickyDenial(bool hit)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', 5000) + (hit ? "needle" : "needlx"));
+        var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["needle"u8.ToArray(), "target"u8.ToArray()], false));
+        var reference = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
+            ref reference, out _, out var expected));
+        Assert.Equal(hit, expected);
+        for (ulong cap = 1; cap < reference.Budget.Steps; cap++)
+        {
+            var limited = new Utf8SliceInvocation(new(cap, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.True(limited.Ledger.TryReserve(7));
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, finder.TryFindMatch(input, 0, input.Length, false,
+                    ref limited, out var match, out var found));
+                Assert.False(found); Assert.Equal(default, match); Assert.Equal(7UL, limited.Ledger.ReservedBytes);
             }
         }
     }
@@ -133,11 +176,11 @@ public sealed class Utf8PairCandidateInvocationTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void ScanAndFullComparisonKeepOriginalInterruption(bool compare, bool expire)
+    [InlineData(false, false, false)] [InlineData(false, true, false)]
+    [InlineData(true, false, false)] [InlineData(true, true, false)]
+    [InlineData(false, false, true)] [InlineData(false, true, true)]
+    [InlineData(true, false, true)] [InlineData(true, true, true)]
+    public void ScanAndFullComparisonKeepOriginalInterruption(bool compare, bool expire, bool prepared)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -159,8 +202,10 @@ public sealed class Utf8PairCandidateInvocationTests
         var found = false;
         try
         {
-            _ = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, false, input, 0, input.Length,
-                false, ref invocation, out match, out found);
+            var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, false));
+            _ = prepared ? finder.TryFindMatch(input, 0, input.Length, false, ref invocation, out match, out found)
+                : Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, false, input, 0, input.Length,
+                    false, ref invocation, out match, out found);
         }
         catch (Exception error) { observed = error; }
         Assert.True(entered);
