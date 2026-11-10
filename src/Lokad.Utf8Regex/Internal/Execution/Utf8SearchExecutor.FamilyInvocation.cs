@@ -1,6 +1,9 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -229,9 +232,12 @@ internal static partial class Utf8SearchExecutor
                         var pairBlock = input.Slice(blockStart, Math.Min(count + longest - 1, end - blockStart));
                         breach = invocation.TryChargeInputStep();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        var relative = pairBlock.IndexOf(literals[0]);
+                        var shared = Vector512.IsHardwareAccelerated && count >= Vector512<byte>.Count &&
+                            longest <= 16 && Math.Min(literals[0].Length, literals[1].Length) >= 3;
+                        var relative = shared ? IndexOfShortExactPair(pairBlock, count, literals[0], literals[1])
+                            : pairBlock.IndexOf(literals[0]);
                         if (relative >= count) relative = -1;
-                        if (relative != 0)
+                        if (!shared && relative != 0)
                         {
                             breach = invocation.TryChargeInputStep();
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -320,5 +326,47 @@ internal static partial class Utf8SearchExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         return Utf8ExecutionLimitKind.None;
+    }
+
+    private static int IndexOfShortExactPair(ReadOnlySpan<byte> input, int starts,
+        ReadOnlySpan<byte> first, ReadOnlySpan<byte> second)
+    {
+        // Dense early matches keep their short comparisons. Long scans share
+        // input loads while retaining each literal's own correlated anchors.
+        if (input.StartsWith(first) || input.StartsWith(second)) return 0;
+        var anchor = Math.Min(first.Length, second.Length) - 1;
+        var head0 = Vector512.Create(first[0]);
+        var head1 = Vector512.Create(second[0]);
+        var tail0 = Vector512.Create(first[anchor]);
+        var tail1 = Vector512.Create(second[anchor]);
+        var limit = Math.Min(starts, input.Length - anchor) - Vector512<byte>.Count;
+        var position = 0;
+        while (position <= limit)
+        {
+            var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
+            var tails = MemoryMarshal.Read<Vector512<byte>>(input[(position + anchor)..]);
+            var candidates0 = (Vector512.Equals(heads, head0) & Vector512.Equals(tails, tail0)).ExtractMostSignificantBits();
+            var candidates1 = (Vector512.Equals(heads, head1) & Vector512.Equals(tails, tail1)).ExtractMostSignificantBits();
+            var candidates = candidates0 | candidates1;
+            while (candidates != 0)
+            {
+                var lane = BitOperations.TrailingZeroCount(candidates);
+                var candidate = position + lane;
+                var bit = 1UL << lane;
+                // Both needles are <=16 bytes; verification stays inside this
+                // already admitted primitive, with no false-candidate replay.
+                if ((candidates0 & bit) != 0 && first.Length <= input.Length - candidate &&
+                    input.Slice(candidate, first.Length).SequenceEqual(first) ||
+                    (candidates1 & bit) != 0 && second.Length <= input.Length - candidate &&
+                    input.Slice(candidate, second.Length).SequenceEqual(second)) return candidate;
+                candidates &= candidates - 1;
+            }
+            position += Vector512<byte>.Count;
+        }
+        var remaining = input[position..];
+        var a = remaining.IndexOf(first);
+        var b = remaining.IndexOf(second);
+        var found = a < 0 ? b : b < 0 ? a : Math.Min(a, b);
+        return found < 0 || found >= starts - position ? -1 : position + found;
     }
 }

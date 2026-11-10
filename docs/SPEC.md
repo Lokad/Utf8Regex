@@ -389,6 +389,12 @@ confirmation is required. Needles above1024 bytes keep the existing generic path
 The same invocation charges eligibility, each branch/window and publication;
 avoiding false-candidate replay can reduce work, while dense hits can cost more.
 Caller validation, enclosing regex verification and original interruption remain.
+Raw forward exact pairs can combine both short-needle scans into one checked
+primitive of at most2048 bytes. Complete verification stays inside that bound;
+ordered branch confirmation and final publication still use the original
+invocation. Combining scans can reduce numerical work charges, without changing
+depth, working/result admission or retained-result lifetimes. Longer, folded,
+reverse and unsupported-hardware paths keep their existing bounded scans.
 Finite-policy and caller-funded `Count` also admit four-to-eight complete literal
 alternatives to this existing bounded search. Avoiding VM scratch can lower work,
 depth and working requirements. Explicit UTF-16 offsets still require admission
