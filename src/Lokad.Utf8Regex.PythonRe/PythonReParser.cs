@@ -8,12 +8,12 @@ internal sealed partial class PythonReParser
 {
     private const string PatternBadEscapeLetters = "ceghijklmopqyCEFGHIJKLMNOPQRTVXYz";
     private const string CharacterClassBadEscapeLetters = "ceghijklmopqyzABCEFGHIJKLMOPQRTVXYZ";
-    private const string AsciiWordClass = "[A-Za-z0-9_]";
-    private const string AsciiNonWordClass = "(?:(?![A-Za-z0-9_])" + UnicodeScalarPattern + ")";
-    private const string AsciiDigitClass = "[0-9]";
-    private const string AsciiNonDigitClass = "(?:(?![0-9])" + UnicodeScalarPattern + ")";
-    private const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
-    private const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
+    internal const string AsciiWordClass = "[A-Za-z0-9_]";
+    internal const string AsciiNonWordClass = "(?:(?![A-Za-z0-9_])" + UnicodeScalarPattern + ")";
+    internal const string AsciiDigitClass = "[0-9]";
+    internal const string AsciiNonDigitClass = "(?:(?![0-9])" + UnicodeScalarPattern + ")";
+    internal const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
+    internal const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
     internal const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     // `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
     internal const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";

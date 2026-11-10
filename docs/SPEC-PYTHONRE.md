@@ -306,6 +306,13 @@ construction policy/timeout/token. One owner covers decoding, parsing, semantic
 validation, lowering, metadata and eager FullMatch preparation. It does not
 consult static caches or retain construction authority.
 
+Resolved ASCII `\w/\W/\d/\D/\s/\S` escapes lower directly to the existing
+admitted 16-byte mask and scalar-complement Set instruction. They skip rendered
+Core leaf parsing; ASCII whitespace excludes U+001C–U+001F, and complements
+still consume one complete Unicode scalar. Construction and execution work/depth
+totals can decrease with this simpler program; admission, interruption and the
+documented route-dependent nature of those totals remain unchanged.
+
 The `Compile` overloads ending in `programMemoryAllowance` admit covered
 construction storage through the caller's `IUtf8MemoryAllowance`, then retain a
 conservative completed-program charge. This is neither construction peak nor

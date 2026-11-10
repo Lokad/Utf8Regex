@@ -13,6 +13,25 @@ internal static partial class PythonReScalarCompiler
     {
         switch (text)
         {
+            case PythonReParser.AsciiWordClass:
+            case PythonReParser.AsciiNonWordClass:
+            case PythonReParser.AsciiDigitClass:
+            case PythonReParser.AsciiNonDigitClass:
+            case PythonReParser.AsciiSpaceClass:
+            case PythonReParser.AsciiNonSpaceClass:
+                var word = text is PythonReParser.AsciiWordClass or PythonReParser.AsciiNonWordClass;
+                var digit = text is PythonReParser.AsciiDigitClass or PythonReParser.AsciiNonDigitClass;
+                var source = word ? PythonReScalarClassData.WordAscii
+                    : digit ? PythonReScalarClassData.DigitAscii : PythonReScalarClassData.SpaceAscii;
+                var mask = arena.Allocate<byte>(16, true);
+                arena.Budget.ChargeWork(16);
+                source.AsSpan().CopyTo(mask);
+                // Python ASCII whitespace excludes U+001C..U+001F, which are
+                // members of the Unicode predicate's ASCII projection.
+                if (!word && !digit) mask[3] &= 0x0F;
+                return PythonReScalarNodeFactory.AsciiClass(mask,
+                    text is PythonReParser.AsciiNonWordClass or PythonReParser.AsciiNonDigitClass
+                        or PythonReParser.AsciiNonSpaceClass);
             case PythonReParser.AsciiWordBoundary:
                 return PythonReScalarNodeFactory.AsciiBoundary(true);
             case PythonReParser.AsciiNonWordBoundary:

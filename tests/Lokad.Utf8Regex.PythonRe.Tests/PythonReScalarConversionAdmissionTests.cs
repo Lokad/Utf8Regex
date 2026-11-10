@@ -77,6 +77,8 @@ public sealed class PythonReScalarConversionAdmissionTests
     [InlineData("(?P<x>😀)(?(x)é|x)", false)]
     [InlineData("(?P<x>😀)(?(x)é|x)", true)]
     [InlineData("(a)(?P<x>.)(?<=\\1)(?(x)(?:é|b)+|x)", true)]
+    [InlineData(@"(?a:(\w)(\W)(\d)(\D)(\s)(\S))", false)]
+    [InlineData(@"(?a:(\w)(\W)(\d)(\D)(\s)(\S))", true)]
     public void ConversionByteBoundariesPreserveParentAndAdmitAtTheMeasuredPeak(string pattern, bool full)
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
