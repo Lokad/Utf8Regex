@@ -330,6 +330,10 @@ can fall; no scratch storage is added.
 An unbounded Dot without Singleline uses the same bounded scan with LF as its
 only stop when its minimum is zero or one and the existing endpoint proof allows
 commitment. Capture instructions and final interruption checks still execute.
+A complete greedy Singleline Dot/end tail can commit EOF when no assertion
+requires another endpoint. For unbounded minimum0/1 runs, the same checkpoints
+advance bounded byte blocks without rewind storage; lazy and consuming tails
+retain their choices. Numerical work, depth and working requirements can fall.
 Direct candidate windows for unbounded minimum-one repeats excluding an ASCII
 pair can also rewind in checked blocks of at most 2048 bytes. Delimiter discovery
 and full VM verification remain; scalar floors and original interruption are

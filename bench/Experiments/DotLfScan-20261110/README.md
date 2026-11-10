@@ -69,4 +69,5 @@ after `A244CC778683660166D54D44B84EF1EA490EA4ED4CE7A6352E55D7BDA7742DB0`.
 Raw protocol, patch, graphs, preflights, Linux checks and samples verified offVM:
 `artifacts/experiments/dot-lf-scan-20261110/evidence.tar.gz`, SHA-256
 `A4B52CCA2F536BDBDBC7ACA58A79545E0CDA824C554CDBB199973CCC116F400F`.
-Windows checks/preparation logs are alongside it. Source CI pending.
+Windows checks/preparation logs are alongside it. Source CI42746872703 passes
+Windows/Linux for78cea4c98f8360880bfd9ef4db7722829e103751.

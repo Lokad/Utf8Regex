@@ -170,6 +170,23 @@ internal static partial class Utf8SliceRunner
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
+        if (requiredEnd is null && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue &&
+            atom.Kind == Utf8SliceInstructionKind.Dot && atom.A != 0 &&
+            suffix.Kind == Utf8SliceInstructionKind.Anchor &&
+            suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)
+        {
+            var afterEnd = tail + 1;
+            for (var skipped = 0; skipped < 32 && afterEnd < instructions.Length &&
+                instructions[afterEnd].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) afterEnd++;
+            if (afterEnd == instructions.Length - 1 && instructions[afterEnd].Kind == Utf8SliceInstructionKind.Accept)
+            {
+                // Greedy DotAll reaches EOF, where this complete end tail always
+                // succeeds. Required assertion endpoints and consuming tails stay opaque.
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+                return true;
+            }
+        }
         if (suffix.Kind == Utf8SliceInstructionKind.Boundary && suffix.A == 1 &&
             repeat.RepeatMinimum >= 1 && repeat.RepeatMaximum <= 8)
         {
@@ -447,10 +464,10 @@ internal static partial class Utf8SliceRunner
         var maximum = repeat.RepeatMaximum;
         var position = start;
         var count = 0;
-        var stopAtLf = atom is { Kind: Utf8SliceInstructionKind.Dot, A: 0 };
+        var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
         byte first = (byte)'\n', second = (byte)'\n';
         if (minimum <= 1 && maximum == long.MaxValue &&
-            (stopAtLf || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
+            (dot || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
                 TryGetAsciiMaskPair(program.SetMasks[atom.A], out first, out second)))
         {
             // Whole-subject validity is established by the caller. ASCII
@@ -461,7 +478,7 @@ internal static partial class Utf8SliceRunner
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                var stop = stopAtLf ? block.IndexOf((byte)'\n') : block.IndexOfAny(first, second);
+                var stop = dot ? atom.A == 0 ? block.IndexOf((byte)'\n') : -1 : block.IndexOfAny(first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }

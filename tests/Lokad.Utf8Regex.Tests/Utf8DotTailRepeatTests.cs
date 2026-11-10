@@ -14,6 +14,32 @@ public sealed class Utf8DotTailRepeatTests
     };
 
     [Theory]
+    [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
+    public void CompleteGreedySinglelineEndNeedsNoRewindDepth(RegexOptions mode)
+    {
+        var text = new string('a', 4096) + "😀\né\0\r\n";
+        var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Regex("(?s:^(?<body>.+)$)", mode, Timeout.InfiniteTimeSpan, Policy(1));
+        var retained = regex.MatchDetailed(input);
+        Assert.True(retained.Success);
+        Assert.Equal(input.Length, retained.LengthInBytes);
+        Assert.Equal(text, retained.GetGroup(1).GetValueString());
+        using var token = new CancellationTokenSource();
+        Assert.Equal(1, regex.Count(input, token.Token));
+        Assert.Equal(text, retained.GetGroup(1).GetValueString());
+    }
+
+    [Fact]
+    public void SinglelineLazyAndConsumingTailsKeepTheirEarlierEndpointChoices()
+    {
+        var tail = new Utf8Regex("(?sm:^(?<body>.*)$\\nX)");
+        Assert.Equal("a", tail.MatchDetailed("a\nX"u8).GetGroup(1).GetValueString());
+        var lazy = new Utf8Regex("(?sm:^(?<body>.*?)$)");
+        Assert.Equal("a", lazy.MatchDetailed("a\nb"u8).GetGroup(1).GetValueString());
+        Assert.Equal(2, lazy.Count("a\nb"u8));
+    }
+
+    [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
     public void LongLineScanKeepsScalarCapturesAcrossBlocksAndOffsetStorage(int prefixLength)
     {
@@ -142,10 +168,11 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void DotScanObservesOriginalInterruptionAndReleasesScratch(bool timeout)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void DotScanObservesOriginalInterruptionAndReleasesScratch(bool timeout, bool singleline)
     {
-        var program = new Utf8Regex("(?m:^(.+)$)").Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(singleline ? "(?sm:^(.+)$)" : "(?m:^(.+)$)").Inspection.AvailableOwnedSliceProgram!;
         // Reach the diagnostic interruption quantum even with bounded byte scans.
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 65536)));
         using var token = new CancellationTokenSource();
