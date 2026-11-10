@@ -281,14 +281,16 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CursorKeepsOriginalInterruptionAcrossAdvancesAndClosesOnFailure(bool deadline)
+    [InlineData(false, "(a)")]
+    [InlineData(true, "(a)")]
+    [InlineData(false, "(a?){2,4}")]
+    [InlineData(true, "(a?){2,4}")]
+    public void CursorKeepsOriginalInterruptionAcrossAdvancesAndClosesOnFailure(bool deadline, string pattern)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource(); var account = new Account();
-        var regex = new Utf8PosixRegex("(a)", default, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, default);
+        var regex = new Utf8PosixRegex(pattern, default, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, default);
         using var cursor = regex.CreateMatchCursor("aa"u8.ToArray(), cancellationToken: token.Token, workingMemoryAllowance: account);
         Assert.True(cursor.MoveNext(out var retained));
         if (deadline) now = 101; else token.Cancel();
@@ -453,10 +455,12 @@ public sealed class PosixPublicContractTests
         }
     }
 
-    [Fact]
-    public void RefusalAtEveryWorkingAcquisitionRefundsAndClearsOutput()
+    [Theory]
+    [InlineData("(a|aa)*")]
+    [InlineData("(a?){2,4}")]
+    public void RefusalAtEveryWorkingAcquisitionRefundsAndClearsOutput(string pattern)
     {
-        var regex = new Utf8PosixRegex("(a|aa)*"); var granted = new Account();
+        var regex = new Utf8PosixRegex(pattern); var granted = new Account();
         var output = new Utf8ValueMatch[2];
         Assert.True(regex.Match("aaaaaa"u8, output, workingMemoryAllowance: granted).Success);
         Assert.True(granted.Attempts > 2); Assert.Equal(0UL, granted.Used);

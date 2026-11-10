@@ -10,7 +10,7 @@ public sealed class PosixWorkspaceTests
         Assert.True(PosixProgram.Compile("(a*)(a*)", default).FirstAcceptanceIsLongest);
         Assert.True(PosixProgram.Compile("((😀{0,2})(😀{1,2}))", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("a?(ab*)?", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
+        Assert.True(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("(a*)(b*)", default).FirstAcceptanceIsLongest);
     }
@@ -27,12 +27,15 @@ public sealed class PosixWorkspaceTests
     }
 
     [Theory]
-    [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
-    [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]
-    [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes)]
-    public void ExecutionRefusalReleasesCoveredStorage(Utf8ResourceLimitKind kind)
+    [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps, "(a|aa)*")]
+    [InlineData(Utf8ResourceLimitKind.ExecutionDepth, "(a|aa)*")]
+    [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes, "(a|aa)*")]
+    [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps, "(a?){2,4}")]
+    [InlineData(Utf8ResourceLimitKind.ExecutionDepth, "(a?){2,4}")]
+    [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes, "(a?){2,4}")]
+    public void ExecutionRefusalReleasesCoveredStorage(Utf8ResourceLimitKind kind, string pattern)
     {
-        var program = PosixProgram.Compile("(a|aa)*", default);
+        var program = PosixProgram.Compile(pattern, default);
         var limits = new Utf8ExecutionLimits(kind == Utf8ResourceLimitKind.ExecutionWorkSteps ? 30UL : 1_000_000,
             kind == Utf8ResourceLimitKind.ExecutionDepth ? 1U : 100,
             kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1UL : 1 << 20, 1);

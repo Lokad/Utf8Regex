@@ -109,7 +109,8 @@ internal sealed class PosixProgram
         }
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
-        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget) || CanSelectDisjointAsciiRuns(scalar, budget);
+        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget) || CanSelectDisjointAsciiRuns(scalar, budget) ||
+            CanSelectRepeatedLiteralCapture(scalar, budget);
         var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest),
             static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest));
         construction.Complete();
@@ -152,6 +153,37 @@ internal sealed class PosixProgram
             literal = instruction.A;
         }
         return false;
+    }
+
+    private static bool CanSelectRepeatedLiteralCapture(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        var code = program.Instructions;
+        if (code.Length != 12) return false;
+        budget.ChargeWork(12);
+        if (code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
+            code[1] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 9 } outer ||
+            code[2] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 1 } ||
+            code[3] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 6 } inner ||
+            code[4] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ||
+            code[5] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 3 } ||
+            code[6] is not { Kind: Utf8SliceInstructionKind.RepeatExit } innerExit || innerExit.A != inner.B ||
+            code[7] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 1 } ||
+            code[8] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 1 } ||
+            code[9] is not { Kind: Utf8SliceInstructionKind.RepeatExit } outerExit || outerExit.A != outer.B ||
+            code[10] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } ||
+            code[11].Kind != Utf8SliceInstructionKind.Accept || outer.B == inner.B)
+            return false;
+        // A single repeated capture, containing only a uniform literal run.
+        // Minimum zero/one makes feasible total lengths contiguous: greedy
+        // success consumes the longest prefix, then maximizes each occurrence
+        // left to right while reserving mandatory minima. Minimum two or more
+        // can require a different partition to reach the longest endpoint
+        // (e.g. (a{3,4})+ on six a's), so still needs general ranking.
+        // Existing empty-repeat pruning keeps mandatory empty tails and removes
+        // redundant optional ones, except for the saturated minimum-zero
+        // unbounded outer counter. Leave that case to history comparison too.
+        return inner.RepeatMinimum <= 1 &&
+            (outer.RepeatMaximum != long.MaxValue || outer.RepeatMinimum > 0);
     }
 
     private static bool CanSelectDisjointAsciiRuns(Utf8SliceProgram program, Utf8ConstructionBudget budget)

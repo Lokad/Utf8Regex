@@ -132,13 +132,20 @@ reserved, the total endpoint is maximal, and nested tags retain preorder priorit
 A flat two-way alternative of capture-wrapped literal words can reuse this proof
 when both have the same positive scalar length and no consuming suffix: tied
 endpoints prefer the earlier branch's participating whole-span tag. Empty/unequal
-branches, nested forks, repeated tags and assertions retain general competition.
+branches, nested forks and assertions retain general competition.
 The proof uses accounted program metadata, without a second executor.
 A flat chain of positive-minimum greedy ASCII class runs can also stop at its
 first acceptance when all classes are mutually disjoint and tags stay outside
 repeated bodies. Each transition then has one possible boundary; the last run's
 greedy endpoint is longest, with no competing capture history. Overlapping,
 nullable, negated or non-ASCII classes keep general competition.
+A root repetition of one capture containing only a greedy uniform literal run
+can use the same first-acceptance proof when the inner minimum is zero or one
+and the outer repeat is bounded or has a positive minimum. Feasible total lengths
+are contiguous; greedy success maximizes the endpoint, then occurrence lengths
+in order, retaining necessary empty tails. Larger inner minima, minimum-zero
+unbounded outer repeats, nested captures and consuming suffixes keep general
+history ranking. This changes neither capture policy nor the execution machinery.
 When a repeat counter proves earlier occurrences and the minimum is satisfied,
 a redundant optional empty iteration can be discarded in favor of its saved exit
 at the same position. First and required empty occurrences remain eligible.
