@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Tests;
 
 // Owned preparation retains useful native facts and scalar candidate coverage.
-// Obsolete BCL verifier modes are retired; public diagnostics report Scalar.
+// Scalar coverage and native preparation facts remain observable through inspection.
 public sealed class Utf8SliceLegacyFootprintTests
 {
     public static IEnumerable<object?[]> SliceFootprintShapes()
@@ -39,7 +39,6 @@ public sealed class Utf8SliceLegacyFootprintTests
         Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
         var prepared = regex.Inspection.PreparedRegex;
         Assert.Equal(expectedFamily == "None", prepared.ExecutionTree is null);
-        Assert.Equal("Scalar", regex.CollectIsMatchDiagnostics([]).FallbackVerifierMode);
         Assert.Equal(expectedFamily, regex.Inspection.DebugFallbackDirectFamilyKind);
         Assert.Null(prepared.LiteralUtf8);
         Assert.NotNull(prepared.SemanticRegex.CaptureCatalog);

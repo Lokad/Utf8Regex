@@ -12,7 +12,6 @@ internal static class Utf8RegexDiagnosticsReporter
         Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
         Console.WriteLine($"ExecutionKind     : {diagnostics.ExecutionKind}");
         Console.WriteLine($"SearchKind        : {diagnostics.SearchKind}");
-        Console.WriteLine($"VerifierMode      : {diagnostics.FallbackVerifierMode}");
         Console.WriteLine($"VerifierNeedsEnd  : {diagnostics.RequiresCandidateEndCoverage}");
         Console.WriteLine($"Result            : {diagnostics.Result}");
         Console.WriteLine($"SearchCandidates  : {diagnostics.SearchCandidates}");

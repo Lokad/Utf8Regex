@@ -16053,7 +16053,6 @@ public sealed class AsciiSimplePatternTests
         var isMatchDiagnostics = isMatchProbe.CollectIsMatchDiagnostics(subject.Input);
         Assert.Equal(oracle.IsMatch(subject.Projected), isMatchDiagnostics.Result);
         // The diagnostic mode retains its legacy name until selector cleanup.
-        Assert.Equal("Scalar", isMatchDiagnostics.FallbackVerifierMode);
         Assert.Equal(0, isMatchDiagnostics.VerifierInvocations);
         Assert.Equal(0, isMatchDiagnostics.SearchCandidates);
         Utf8AsciiScalarOperationAssertions.Owned(isMatchProbe);

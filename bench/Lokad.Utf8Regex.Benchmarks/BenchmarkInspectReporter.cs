@@ -5788,7 +5788,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"{label}Route      : {diagnostics.ExecutionRoute}");
         Console.WriteLine($"{label}ExecKind   : {diagnostics.ExecutionKind}");
         Console.WriteLine($"{label}SearchKind : {diagnostics.SearchKind}");
-        Console.WriteLine($"{label}Fallback   : {diagnostics.FallbackVerifierMode}");
         Console.WriteLine($"{label}Candidates : {diagnostics.SearchCandidates}");
         Console.WriteLine($"{label}FixedReject: {diagnostics.FixedCheckRejects}");
         Console.WriteLine($"{label}VerifierInv: {diagnostics.VerifierInvocations}");
@@ -5806,7 +5805,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"{label}Result     : {diagnostics.Result}");
         Console.WriteLine($"{label}ExecKind   : {diagnostics.ExecutionKind}");
         Console.WriteLine($"{label}SearchKind : {diagnostics.SearchKind}");
-        Console.WriteLine($"{label}Fallback   : {diagnostics.FallbackVerifierMode}");
         Console.WriteLine($"{label}Candidates : {diagnostics.SearchCandidates}");
         Console.WriteLine($"{label}VerifierInv: {diagnostics.VerifierInvocations}");
         Console.WriteLine($"{label}VerifierHit: {diagnostics.VerifierMatches}");

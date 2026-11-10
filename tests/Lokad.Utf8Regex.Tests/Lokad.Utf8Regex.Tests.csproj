@@ -30,6 +30,8 @@
              Link="BenchmarkTooling\Utf8SubstringPreferredCompareReplay.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8MatchInspection.cs"
              Link="BenchmarkTooling\Utf8MatchInspection.cs" />
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8SearchDiagnosticReports.cs"
+             Link="BenchmarkTooling\Utf8SearchDiagnosticReports.cs" />
   </ItemGroup>
 
   <ItemGroup>

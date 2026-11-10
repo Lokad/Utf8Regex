@@ -3372,67 +3372,6 @@ public sealed partial class Utf8Regex
         }
     }
 
-    internal Utf8IsMatchDiagnostics CollectIsMatchDiagnostics(ReadOnlySpan<byte> input)
-    {
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            var result = IsMatch(input);
-            return new Utf8IsMatchDiagnostics(
-                result,
-                _preparedRegex.ExecutionKind.ToString(),
-                _preparedRegex.SearchPlan.Kind.ToString(),
-                "Scalar",
-                _preparedRegex.StructuralSearchPlan.RequiresCandidateEndCoverage,
-                _preparedRegex.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window,
-                session.SearchCandidates,
-                session.FixedCheckRejects,
-                session.VerifierInvocations,
-                session.VerifierMatches,
-                session.PrefilterWindows,
-                session.PrefilterSkippedWindows,
-                session.PrefilterPromotedWindows,
-                session.PrefilterSkippedBytes,
-                session.PrefilterPromotedBytes,
-                session.EngineDemotions);
-        }
-        finally
-        {
-            session.Complete();
-        }
-    }
-
-    internal Utf8CountDiagnostics CollectCountDiagnostics(ReadOnlySpan<byte> input)
-    {
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            var result = Count(input);
-            return new Utf8CountDiagnostics(
-                result,
-                _preparedRegex.ExecutionKind.ToString(),
-                _preparedRegex.SearchPlan.Kind.ToString(),
-                "Scalar",
-                _preparedRegex.StructuralSearchPlan.RequiresCandidateEndCoverage,
-                _preparedRegex.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window,
-                session.ExecutionRoute.Format(),
-                session.SearchCandidates,
-                session.FixedCheckRejects,
-                session.VerifierInvocations,
-                session.VerifierMatches,
-                session.PrefilterWindows,
-                session.PrefilterSkippedWindows,
-                session.PrefilterPromotedWindows,
-                session.PrefilterSkippedBytes,
-                session.PrefilterPromotedBytes,
-                session.EngineDemotions);
-        }
-        finally
-        {
-            session.Complete();
-        }
-    }
-
     private Utf8ExecutionDeadline CreateExecutionBudget()
     {
         return Utf8ExecutionDeadline.Start(MatchTimeout);
