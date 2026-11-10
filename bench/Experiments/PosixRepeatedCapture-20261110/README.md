@@ -77,3 +77,4 @@ Baseline/Windows checks and untimed inspection are alongside the archive.
 An initial compile attempted to pass an int length to ulong ChargeWork; it was
 corrected to the fixed admitted twelve-unit charge before accepted checks.
 Immutable dev64 packages and published artifacts are unchanged.
+Source CI42764857963 passes Windows/Linux for `fb2ac920e150b1047b33537aa86f159be8720b24`.

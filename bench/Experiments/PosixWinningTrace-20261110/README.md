@@ -69,3 +69,4 @@ off VM at `artifacts/experiments/posix-winning-trace-20261110/evidence.tar.gz`,
 SHA-256 `4108F6083D64FDE983B2CA1BA55E5FA9FBC68D4BFD0DF46EE6052D281B452C53`.
 Windows checks are alongside the archive. Immutable dev64 packages and historical
 published/staged bytes remain unchanged.
+Source CI42765476499 passes Windows/Linux for `d64af63c0110379630d1b8244c168107f442826c`.
