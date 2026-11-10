@@ -47,8 +47,17 @@ Raw archives and snapshot logs are verified off VM:
 - `artifacts/experiments/delivery-dev63-20261110/linux-evidence.tar.gz`,
   SHA-256 `144E87047F4992BC09205D1832935FE9BBAC5E79B42E5F9C81F70E9F6CC5BDC2`.
 
-Frozen-source CI42734917670 is green on Windows/Linux. Final imported-metadata
-CI remains pending. [Acceptance](acceptance.json) records the exact scope.
+Frozen-source CI42734917670 and final metadata CI42741674242 (`302bdab5`) are green
+on Windows/Linux. [Acceptance](acceptance.json) records the completed scope.
 Publication, performance and downstream adoption remain separate. Remaining parity
 work continues in the ignored root PLAN.md; this is no full flavor-equivalence or
 total-heap guarantee.
+
+During metadata CI, one existing Chinese-literal diagnostic on the frozen binaries
+observed public compiled Count83.144µs, well-formed validation56.384µs and prepared
+search22.560µs. This is one-sample attribution, not a new qualified status or
+producer speedup. The much slower full UTF-16-counting validation lane is not
+the public Count route. No producer change followed. A distinct imports diagnostic
+also leaves production unchanged; benchmark-only replay costs are not public-route
+attribution. Hash-verified captures/identities remain under
+`artifacts/experiments/core-{zh,imports}-attribution-20261110/`.
