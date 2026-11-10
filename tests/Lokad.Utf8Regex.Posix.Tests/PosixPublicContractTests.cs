@@ -140,6 +140,34 @@ public sealed class PosixPublicContractTests
     }
 
     [Fact]
+    public void ProvenCaptureCursorReusesHistoriesAcrossAliasesAndOutputSizes()
+    {
+        var regex = new Utf8PosixRegex("(a?){2,4}"); var account = new Account();
+        using var cursor = regex.CreateMatchCursor("aa!a"u8.ToArray(), workingMemoryAllowance: account);
+        var alias = cursor; var groups = new Utf8ValueMatch[2];
+        Assert.True(cursor.MoveNext(groups, out var first));
+        Assert.Equal(new Utf8ValueMatch(true, true, 0, 2, 0, 2), first);
+        var retained = groups[1];
+        Assert.Equal(new Utf8ValueMatch(true, true, 1, 1, 1, 1), retained);
+        var whole = new Utf8ValueMatch[1];
+        Assert.True(alias.MoveNext(whole, out var empty));
+        Assert.Equal(new Utf8ValueMatch(true, true, 2, 0, 2, 0), empty);
+        Assert.Equal(empty, whole[0]);
+        Assert.True(cursor.MoveNext(groups, out var third));
+        Assert.Equal(new Utf8ValueMatch(true, true, 3, 1, 3, 1), third);
+        Assert.Equal(new Utf8ValueMatch(true, true, 4, 0, 4, 0), groups[1]);
+        Assert.True(alias.MoveNext(groups, out var last));
+        Assert.Equal(new Utf8ValueMatch(true, true, 4, 0, 4, 0), last);
+        Assert.Equal(last, groups[1]);
+        Assert.False(cursor.MoveNext(groups, out _));
+        Assert.All(groups, value => Assert.False(value.Success));
+        Assert.Equal(new Utf8ValueMatch(true, true, 1, 1, 1, 1), retained);
+        Assert.Equal(4, regex.Count("aa!a"u8));
+        alias.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+    }
+
+    [Fact]
     public void FlatWholeOperationsDoNotRequestAbsentTagBuffers()
     {
         var regex = new Utf8PosixRegex("(a)", default, Timeout.InfiniteTimeSpan,

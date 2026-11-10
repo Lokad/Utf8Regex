@@ -31,10 +31,10 @@ same frozen Core bytes. No confirmation, native retiming, package or Full repeat
 | Nullable capture, funded |1.535|1.135|−26.1%|
 | Nullable capture, deadline |1.653|1.204|−27.1%|
 | Repeated star capture |3.370|0.753|−77.7%|
-| Minimum-three counterexample |1.277|1.264|−1.0%|
-| Unbounded-zero counterexample |0.936|0.958|+2.3%|
-| Empty capture, finite control |0.996|0.998|+0.3%|
-| Nullable construction |3.810|3.798|−0.3%|
+| Minimum-three counterexample |1.278|1.265|−1.0%|
+| Unbounded-zero counterexample |0.938|0.959|+2.3%|
+| Empty capture, finite control |1.003|1.005|+0.3%|
+| Nullable construction |3.812|3.800|−0.3%|
 | Unchanged Core Count |0.840|0.841|+0.1%|
 
 The unlimited nullable baseline is bimodal: process medians2.110/1.015µs,

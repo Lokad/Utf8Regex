@@ -171,6 +171,15 @@ internal struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Accept:
                     if (existenceOnly) { end = at; return true; }
+                    if (_program.FirstAcceptanceIsLongest)
+                    {
+                        end = at;
+                        // No competing acceptance remains. Transfer the admitted
+                        // winning trace instead of allocating/copying a second
+                        // history; both owners still reset and release normally.
+                        if (captureHistory) (_best, _trace) = (_trace, _best);
+                        return true;
+                    }
                     if (at > end || at == end && captureHistory && BetterHistory(ref invocation))
                     {
                         end = at;
@@ -184,7 +193,6 @@ internal struct PosixWorkspace
                             }
                         }
                     }
-                    if (_program.FirstAcceptanceIsLongest) return true;
                     failed = true;
                     break;
                 default: throw new InvalidOperationException($"Unsupported POSIX instruction {instruction.Kind}.");

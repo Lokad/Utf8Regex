@@ -146,6 +146,10 @@ are contiguous; greedy success maximizes the endpoint, then occurrence lengths
 in order, retaining necessary empty tails. Larger inner minima, minimum-zero
 unbounded outer repeats, nested captures and consuming suffixes keep general
 history ranking. This changes neither capture policy nor the execution machinery.
+At a proven first acceptance, the workspace transfers its admitted capture trace
+to the selected-history buffer instead of allocating and copying a second trace.
+General competition still keeps a separate best history. Both buffers retain
+their normal reset/release lifetimes; a reused cursor can retain capacity in both.
 When a repeat counter proves earlier occurrences and the minimum is satisfied,
 a redundant optional empty iteration can be discarded in favor of its saved exit
 at the same position. First and required empty occurrences remain eligible.
