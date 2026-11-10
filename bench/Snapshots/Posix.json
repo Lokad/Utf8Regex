@@ -3,7 +3,7 @@
   "Profile": "Posix",
   "Evidence": {
     "Snapshot": "Posix.Benchmarks.json",
-    "SnapshotSha256": "2A860DBA323F2D7DB8F236884F85C09B5C069BF3DC4451EF49D09ADAA8C4F66A"
+    "SnapshotSha256": "8D8477721671750152A47754ED97676C15FBEC8957DB1076FED8E0F9D6E81268"
   },
   "CatalogSha256": "9E229776B09CBCEAFB9D78B5A1F94F6A7AEE1DFA57E3AE65B38064F493E23BB3",
   "Comparator": {
@@ -13,6 +13,24 @@
     "License": "BSD-3-Clause"
   },
   "Sources": {
+    "14B1C78B13A3906B13674FBE6ACA600A7E4C1A9D836B61175A42B80BC3014AE8": {
+      "Environment": {
+        "BenchmarkAssembly": "1.0.0\u002B0165e5cbd122a0839d73702da6f7fb0f82dcf675 sha256=8331B97A3ED9FE5278A40F81F2340B4981B37FF583DCAAC6516155AB6B2B1B08",
+        "CoreAssembly": "0.5.0-dev.66\u002B0165e5cbd122a0839d73702da6f7fb0f82dcf675 sha256=726DFE5F15BE2D579F1C306A1A1279183F6143E06888FE0D432D901FB72E4CD8",
+        "Pcre2Assembly": "0.5.0-dev.66\u002B0165e5cbd122a0839d73702da6f7fb0f82dcf675 sha256=22367B6C63D051199B23D49AFC83686FCDB6457B232DFD5DE9481BF3358869F7",
+        "PythonReAssembly": "0.5.0-dev.66\u002B0165e5cbd122a0839d73702da6f7fb0f82dcf675 sha256=FEDC30E51757669C44A1DFA7029F75E1C2D1F4D84889150F41789CA87CB33B14",
+        "SourceCommit": "0165e5cbd122",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 11.0.0-rc.3.26522.148",
+        "OperatingSystem": "Ubuntu 24.04.4 LTS",
+        "Processor": "X64",
+        "TieredPgo": "runtime-default"
+      },
+      "PosixAssembly": "0.5.0-dev.66\u002B0165e5cbd122a0839d73702da6f7fb0f82dcf675 sha256=32A703B30151049DBAE6F688ACC7EB6A713E13CB6E566546EF37B7D7FC7CB875",
+      "NativeAssembly": "1.5.0\u002Be5e5deaa30d50dd3a7ac68ec7fd9e9556551a84f sha256=43D101170346B3F0070D3DC0C3F5223F5117B2F39ACD52113C553955977716B3",
+      "NativeBuild": "64226A8AB2D3AC9BE986279368957F1D3364E89B35FDDD9EFB10FA02EB91654B"
+    },
     "C030119EE38F1EF25685FE06A9AFA886F5C978B3A05171ADFE1E5C901274973D": {
       "Environment": {
         "BenchmarkAssembly": "1.0.0\u002Bb478f853f722b7c34de83bdcd14693ee594ca053 sha256=F04EAE52057AD25081D1AE06C66F80A3B0BD4B135ACAFFFE164F8438A039120B",
@@ -36,16 +54,16 @@
     "AdapterControl": {
       "capture/sku007": {
         "Operation": "Captures \u00D7 4096",
-        "Source": "C030119EE38F1EF25685FE06A9AFA886F5C978B3A05171ADFE1E5C901274973D",
+        "Source": "14B1C78B13A3906B13674FBE6ACA600A7E4C1A9D836B61175A42B80BC3014AE8",
         "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
         "ResultContract": "{\u0022Count\u0022:4096,\u0022Whole\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:6,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:6},\u0022Group1\u0022:{\u0022IndexInBytes\u0022:0,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:0,\u0022LengthInUtf16\u0022:3},\u0022Group2\u0022:{\u0022IndexInBytes\u0022:3,\u0022LengthInBytes\u0022:3,\u0022IndexInUtf16\u0022:3,\u0022LengthInUtf16\u0022:3},\u0022Group3\u0022:null,\u0022Group4\u0022:null}",
-        "ManagedUs": 3251.531818181818,
-        "ReferenceUs": 664.5833333333334,
-        "Ratio": 4.88396330789732,
-        "Lower95": 4.826373140153138,
-        "Upper95": 4.929527500712453,
+        "ManagedUs": 2718.2444444444445,
+        "ReferenceUs": 658.530701754386,
+        "Ratio": 4.107158579373292,
+        "Lower95": 4.077972922471241,
+        "Upper95": 4.1616159180017815,
         "Status": "NativeFaster",
-        "ManagedBytes": 393245.45454545453,
+        "ManagedBytes": 393240,
         "ReferenceBytes": 0,
         "PeakWorkingBytes": 784
       }
@@ -61,9 +79,9 @@
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "C030119EE38F1EF25685FE06A9AFA886F5C978B3A05171ADFE1E5C901274973D",
-        "ManagedUs": 5119.6866666666665,
-        "Ratio": 1.5745460764180612,
+        "Source": "14B1C78B13A3906B13674FBE6ACA600A7E4C1A9D836B61175A42B80BC3014AE8",
+        "ManagedUs": 4634.217647058824,
+        "Ratio": 1.7048568448397827,
         "Status": "Measured",
         "ManagedBytes": 3702784
       },
@@ -87,11 +105,11 @@
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "C030119EE38F1EF25685FE06A9AFA886F5C978B3A05171ADFE1E5C901274973D",
-        "ManagedUs": 4127.010526315789,
-        "Ratio": 1.2692511582505501,
+        "Source": "14B1C78B13A3906B13674FBE6ACA600A7E4C1A9D836B61175A42B80BC3014AE8",
+        "ManagedUs": 3673.3333333333335,
+        "Ratio": 1.3513623989339525,
         "Status": "Measured",
-        "ManagedBytes": 3506141.8947368423
+        "ManagedBytes": 3506145.1428571427
       },
       "cursor/ambiguous": {
         "Operation": "Cursor",
@@ -114,9 +132,9 @@
       },
       "capture/sku007": {
         "Operation": "Captures",
-        "Source": "C030119EE38F1EF25685FE06A9AFA886F5C978B3A05171ADFE1E5C901274973D",
-        "ManagedUs": 4601.270588235295,
-        "Ratio": 1.4151085843620068,
+        "Source": "14B1C78B13A3906B13674FBE6ACA600A7E4C1A9D836B61175A42B80BC3014AE8",
+        "ManagedUs": 4183.011111111111,
+        "Ratio": 1.5388649536874288,
         "Status": "Measured",
         "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans.",
         "ManagedBytes": 3506176

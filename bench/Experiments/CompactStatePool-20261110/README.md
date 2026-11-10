@@ -1,5 +1,7 @@
 # Compact the shared state pool's live entries
 
+Accepted source0165e5cbd122a0839d73702da6f7fb0f82dcf675.
+
 Keep the original multi-leaf pool, exact typing, reference clearing, duplicate
 protection and modeled 16 KiB/type / 256 KiB/global limits. A live-entry count
 and swap-removal maintain one dense prefix of the same fixed 64-entry table.
@@ -63,4 +65,13 @@ failure logs, every sample and completed comparison are verified offVM:
 `182DDAB07C8E23D7B13304F37112014F46D47249B43C28264F0DDE189AB8576E`.
 Initial complete baseline/archive SHA256
 `C3F9EF5283D58013F2B8CF0100822BF0AB3445ACF13E6CA414460DB7CF8302CA`.
+One selected ordinary SKU refresh on the accepted source gives managed0.664 /
+native0.161µs/call, paired ratio **4.10716x** (95%4.07797–4.16162), formerly4.88x.
+Nine samples>=72.508ms. Finite/live0.897, funded/live1.021, deadline/live1.131µs.
+Only SKU's case/four summary rows change; other historical evidence stays.
+Existing result/source/PDB preflight, raw durations/orders, neighbor preservation
+and generated Markdown pass; this is selective evidence, not a full current-
+producer catalog qualification. Refresh graphs/raw snapshots/logs verified offVM:
+`refresh-evidence.tar.gz`, SHA256
+`3F837E222803574EB51E62A5C48ADE39C776EAB2DBEEA2F88DD48F88839072EC`.
 Immutable published/staged packages stay unchanged; no Full/package repeat.
