@@ -80,7 +80,7 @@ public sealed class Utf8PosixRegex
     /// <summary>Gets the number of capturing parentheses, excluding whole-match slot zero.</summary>
     public int GroupCount => _program.CaptureTags.Length - 1;
 
-    /// <summary>Tests existence after whole-input strict validation, with original interruption and optional working admission.</summary>
+    /// <summary>Tests existence under the instance's subject validation policy, with original interruption and optional working admission.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
@@ -184,19 +184,23 @@ public sealed class Utf8PosixRegex
         {
             PosixWorkspace.Charge(ref invocation);
             if (workspace.GetCapture(slot, ref invocation, out var from, out var to))
-                output[slot] = ProjectRange(input, from, to, ref invocation);
+                // ERE captures are inside the selected whole match. Share its
+                // prefix coordinates; identical nested ranges need no rescan.
+                output[slot] = from == start && to == end ? whole
+                    : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
         }
         PosixWorkspace.Finish(ref invocation);
         return whole;
     }
 
-    private static Utf8ValueMatch ProjectRange(ReadOnlySpan<byte> input, int from, int to, ref Utf8SliceInvocation invocation)
+    private static Utf8ValueMatch ProjectRange(ReadOnlySpan<byte> input, int from, int to,
+        ref Utf8SliceInvocation invocation, int originByte = 0, int originUtf16 = 0)
     {
         // Invocation entry validated the whole subject; the scalar interpreter
         // produced complete ranges. Count coordinates without validating again.
         try
         {
-            var prefix = Utf8SliceBufferWork.CountUtf16(input[..from], ref invocation);
+            var prefix = originUtf16 + Utf8SliceBufferWork.CountUtf16(input[originByte..from], ref invocation);
             var content = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
             return new(true, true, prefix, content, from, to - from);
         }

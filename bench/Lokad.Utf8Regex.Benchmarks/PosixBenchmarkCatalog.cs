@@ -9,6 +9,7 @@ internal sealed record PosixBenchmarkCase(string Id, string Pattern, string Inpu
 
 internal static class PosixBenchmarkCatalog
 {
+    private static readonly string s_projectionPrefix = string.Concat(Enumerable.Repeat("é😀", 16384));
     internal static readonly PosixBenchmarkCase[] Cases =
     [
         // Historical consumer/adapter control, not a POSIX selection headline.
@@ -19,6 +20,12 @@ internal static class PosixBenchmarkCatalog
         new("capture/nested", "(((a)|(aa))*)", "aaaa", PosixBenchmarkOperation.Captures),
         new("capture/nullable", "(a?){2,4}", "a", PosixBenchmarkOperation.Captures),
         new("capture/unicode-longest", "(é|é😀)(.*)", "😀é😀x", PosixBenchmarkOperation.Captures, StartOffsetInBytes: 4),
+        // Capture coordinate scaling, not Core's generic search/validation lane.
+        // Short controls distinguish tag costs from rescanning a shared prefix.
+        new("projection/short-1", "(a)", "a", PosixBenchmarkOperation.Captures),
+        new("projection/short-4", "((((a))))", "a", PosixBenchmarkOperation.Captures),
+        new("projection/unicode-prefix-1", "(a)", s_projectionPrefix + "a", PosixBenchmarkOperation.Captures, StartOffsetInBytes: 98304),
+        new("projection/unicode-prefix-4", "((((a))))", s_projectionPrefix + "a", PosixBenchmarkOperation.Captures, StartOffsetInBytes: 98304),
         // Bounded ambiguity growth: longest-first history, not ordered captures.
         new("history/length-4", "(a|aa)*", new('a', 4), PosixBenchmarkOperation.Captures),
         new("history/length-8", "(a|aa)*", new('a', 8), PosixBenchmarkOperation.Captures),
@@ -43,6 +50,10 @@ internal static class PosixBenchmarkCatalog
             "capture/nested" => new(1, A(0, 4), A(0, 4), A(2, 2), default, A(2, 2)),
             "capture/nullable" => new(1, A(0, 1), A(1, 0), default),
             "capture/unicode-longest" => new(1, U(4, 7, 2, 4), U(4, 6, 2, 3), U(10, 1, 5, 1)),
+            "projection/short-1" => new(1, A(0, 1), A(0, 1), default),
+            "projection/short-4" => new(1, A(0, 1), A(0, 1), A(0, 1), A(0, 1), A(0, 1)),
+            "projection/unicode-prefix-1" => new(1, U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), default),
+            "projection/unicode-prefix-4" => new(1, U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1)),
             "history/length-4" => new(1, A(0, 4), A(2, 2), default),
             "history/length-8" => new(1, A(0, 8), A(6, 2), default),
             "history/length-12" => new(1, A(0, 12), A(10, 2), default),

@@ -35,6 +35,9 @@ Use `tools/bench.ps1 -CommandArgs '--inspect-posix-cases'` for result preflight,
 or `tools/refresh-benchmarks.ps1 -Phase Posix` for the bounded .NET 11 catalog.
 Raw measurements stay under `artifacts/benchmark-refresh/current/`; Markdown
 regenerates offline from `bench/Snapshots/Posix.json`.
+The `projection/short-*` and `projection/unicode-prefix-*` cases isolate capture
+coordinate scaling with one/four captures. Their native comparisons await the
+next refresh; the frozen tables below retain their original measured scope.
 
 ## Subject validation policy
 

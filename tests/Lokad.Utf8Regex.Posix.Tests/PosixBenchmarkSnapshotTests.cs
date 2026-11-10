@@ -23,8 +23,9 @@ public sealed class PosixBenchmarkSnapshotTests
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
         var sections = root.GetProperty("Sections");
-        Assert.Equal(PosixBenchmarkCatalog.Cases.Length, new[] { "Operations", "HistoryScaling", "AdapterControl" }
-            .Sum(section => sections.GetProperty(section).EnumerateObject().Count()));
+        // Frozen rows retain their original identities. New catalog cases are
+        // pending measurements until the next refresh, not fabricated evidence.
+        Assert.Equal(PosixBenchmarkCatalog.Cases.Length, PosixBenchmarkCatalog.Cases.Select(row => row.Id).Distinct().Count());
         var previous = -1;
         foreach (var section in new[] { "Operations", "HistoryScaling", "AdapterControl" })
         foreach (var item in sections.GetProperty(section).EnumerateObject()
@@ -60,6 +61,24 @@ public sealed class PosixBenchmarkSnapshotTests
                 if (measured) Assert.True(policy.GetProperty("ManagedUs").GetDouble() > 0);
             }
         }
+    }
+
+    [Theory]
+    [InlineData("projection/short-1")]
+    [InlineData("projection/short-4")]
+    [InlineData("projection/unicode-prefix-1")]
+    [InlineData("projection/unicode-prefix-4")]
+    public void ProjectionScalingCasesHaveIndependentExpectedCoordinates(string id)
+    {
+        var definition = PosixBenchmarkCatalog.Get(id);
+        var expected = PosixBenchmarkCatalog.Expected(id);
+        var regex = new Utf8PosixRegex(definition.Pattern);
+        var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+        var whole = regex.Match(Encoding.UTF8.GetBytes(definition.Input), groups, definition.StartOffsetInBytes);
+        Assert.Equal(expected.Whole, whole);
+        Assert.Equal(expected.Group1, groups[1]);
+        if (groups.Length > 2)
+            Assert.Equal(new[] { expected.Group2, expected.Group3, expected.Group4 }, groups[2..]);
     }
 
     private static double? DisplayRatio(JsonElement row) => row.GetProperty("Status").GetString() is "Excluded" or "Unqualified"
