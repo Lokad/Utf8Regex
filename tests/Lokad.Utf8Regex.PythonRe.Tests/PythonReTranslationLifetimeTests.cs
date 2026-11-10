@@ -6,6 +6,49 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTranslationLifetimeTests
 {
     [Theory]
+    [InlineData("([a-z]+)?", 4)]
+    [InlineData("(?:ab|cd)?", 4)]
+    [InlineData("(a)?(b)?", 4)]
+    [InlineData("(?s:.*)", 2)]
+    public void NullableNonliteralsUseScalarProgressionWithoutUnusedCorePreparation(string pattern, int count)
+    {
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            using var regex = new Utf8PythonRegex(pattern, inputValidation: policy);
+            var input = "ab😀!"u8.ToArray();
+            Assert.False(regex.DebugUsesUtf8RegexBackend);
+            Assert.True(regex.IsMatch(input));
+            Assert.True(regex.Match(input).Success);
+            Assert.Equal(count, regex.Count(input));
+            var matches = regex.FindIterDetailed(input);
+            Assert.Equal(count, matches.Length);
+            Assert.Equal(count == 2 ? new[] { 0, 7 } : new[] { 0, 2, 6, 7 },
+                matches.Select(match => match.Value.StartOffsetInBytes));
+            Assert.Equal(7, matches[^1].Value.EndOffsetInBytes);
+            Assert.Equal(count == 2 ? "XX" : "XX😀X!X", regex.ReplaceToString(input, "X"));
+            Assert.Equal(count == 2, regex.FullMatch(input).Success);
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+                regex.Count(input, 0, cancellation.Token)).CancellationToken);
+            if (policy == Utf8InputValidation.Validate)
+                Assert.Throws<ArgumentException>(() => regex.Search(input.Append((byte)0xFF).ToArray()));
+        }
+    }
+
+    [Fact]
+    public void ExactEmptyLiteralRetainsItsLiveCoreValueRoute()
+    {
+        using var regex = new Utf8PythonRegex("");
+        Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
+        Assert.Equal(3, regex.Count("😀!"u8));
+        Assert.Equal(0, regex.Search("😀!"u8).EndOffsetInBytes);
+        Assert.True(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
+        Assert.False(regex.FullMatch("😀!"u8).Success);
+    }
+
+    [Theory]
     [InlineData("distinct_native_literal_abc123")]
     [InlineData("(?P<nomé>é😀)+")]
     [InlineData("(?#owned source only)alpha|omega")]

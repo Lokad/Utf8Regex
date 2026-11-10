@@ -245,7 +245,9 @@ public sealed partial class Utf8PythonRegex
         _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
         _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-        var prepareCore = !_canMatchEmpty || _canUseUtf8IterationFastPath;
+        // Nullable iteration always uses the Python scalar program. Only the
+        // exact empty literal has a separate Core value-operation consumer.
+        var prepareCore = !_canMatchEmpty || isExactLiteral;
         var translation = PythonReTranslator.Translate(parseResult, prepareCore);
         _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
         // Failed preparation is retryable: a caller's cancellation must not
@@ -265,9 +267,9 @@ public sealed partial class Utf8PythonRegex
         // lookup without retaining the rest of the parse tree.
         _namedGroups = parseResult.NamedGroups;
 
-        // Nullable programs do not use Core start hints or nonempty literal
-        // result lanes. If iteration eligibility also declines Core, every
-        // operation already uses the owned Python program or independent kernels.
+        // Other nullable programs use neither Core start hints nor its result
+        // lanes. Their operations use Python scalar execution or independent
+        // kernels, so avoid rendering/constructing an unused Core program.
         if (prepareCore)
         {
             try

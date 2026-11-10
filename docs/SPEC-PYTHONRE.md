@@ -313,6 +313,12 @@ still consume one complete Unicode scalar. Construction and execution work/depth
 totals can decrease with this simpler program; admission, interruption and the
 documented route-dependent nature of those totals remain unchanged.
 
+Nullable nonliteral programs skip optional Core pattern rendering/compilation:
+their iteration uses Python scalar progression, and Core candidate/result proofs
+require nonempty matches. Exact empty literals retain their Core value fast path;
+independent dotall FullMatch kernels also remain. Construction admission covers
+the work actually performed, so these patterns can require less work/storage.
+
 The `Compile` overloads ending in `programMemoryAllowance` admit covered
 construction storage through the caller's `IUtf8MemoryAllowance`, then retain a
 conservative completed-program charge. This is neither construction peak nor
