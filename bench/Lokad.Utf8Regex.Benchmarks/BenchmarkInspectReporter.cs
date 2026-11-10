@@ -5649,7 +5649,15 @@ internal static partial class BenchmarkInspectReporter
         => JsonSerializer.Serialize(row);
 
     private static ReadmeCaseMeasurement ParseReadmeCaseRow(string text)
-        => JsonSerializer.Deserialize<ReadmeCaseMeasurement>(text);
+    {
+        // Policy/environment labels precede the single-line machine result.
+        // Consume its final line, while retaining support for plain JSON output.
+        var output = text.AsSpan().TrimEnd();
+        var row = JsonSerializer.Deserialize<ReadmeCaseMeasurement>(output[(output.LastIndexOf('\n') + 1)..]);
+        if (row.EffectiveIterations <= 0 || row.Samples <= 0)
+            throw new InvalidOperationException("README child did not emit a measurement row.");
+        return row;
+    }
 
     private static readonly JsonSerializerOptions ReadmeBenchmarkSnapshotJsonOptions = new()
     {
