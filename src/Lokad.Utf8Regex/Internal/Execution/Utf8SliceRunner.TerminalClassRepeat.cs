@@ -465,20 +465,26 @@ internal static partial class Utf8SliceRunner
         var position = start;
         var count = 0;
         var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
+        var unbounded = minimum <= 1 && maximum == long.MaxValue;
+        byte asciiLast = 0;
+        var asciiFirst = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }
+            ? GetUnfoldedAsciiRange(program, atom, out asciiLast) : -1;
         byte first = (byte)'\n', second = (byte)'\n';
-        if (minimum <= 1 && maximum == long.MaxValue &&
-            (dot || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
+        if (unbounded &&
+            (dot || asciiFirst >= 0 || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
                 TryGetAsciiMaskPair(program.SetMasks[atom.A], out first, out second)))
         {
-            // Whole-subject validity is established by the caller. ASCII
-            // stops cannot occur inside wider scalars; intermediate blocks
-            // may split a scalar, but the selected endpoint never does.
+            // The caller establishes validity. An ASCII interval stops before
+            // a wider scalar. Other fused atoms may cross a block boundary
+            // inside one, but their ASCII stops keep the endpoint aligned.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                var stop = dot ? atom.A == 0 ? block.IndexOf((byte)'\n') : -1 : block.IndexOfAny(first, second);
+                var stop = dot ? atom.A == 0 ? block.IndexOf((byte)'\n') : -1
+                    : asciiFirst >= 0 ? block.IndexOfAnyExceptInRange((byte)asciiFirst, asciiLast)
+                    : block.IndexOfAny(first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }

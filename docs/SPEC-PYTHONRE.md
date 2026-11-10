@@ -52,6 +52,11 @@ impossible starting byte before mandatory-literal screening or VM scratch. This
 never establishes success; possible starts retain screening and verification.
 Validate still checks the whole subject first.
 
+Shared scalar execution can scan no-rewind, unbounded positive ASCII interval
+repeats in blocks of at most 2048 bytes. Basic work and original interruption are
+checked before each block and at completion, even without finite limits. Scalar
+endpoints, captures and admission remain; route-dependent work totals can decrease.
+
 A prepared prefix trie can search a whole remaining suffix of at most 256 bytes
 between charged entry/completion checkpoints. It returns only a necessary start;
 the scalar verifier retains ordered matching and captures. Reusing shared prefixes

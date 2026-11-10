@@ -379,18 +379,18 @@ the original token and deadline. Candidates without boundary or trailing-literal
 requirements omit an empty confirmation step; their terminal publication remains
 charged. These shortcuts can lower finite work requirements.
 Controlled exact single-literal searches through32 bytes can search complete
-needles within admitted spans of at most2048 bytes, including lookahead. They
+needles within admitted spans of at most 2048 bytes, including lookahead. They
 retain pre-scan and terminal token/deadline checks, without separately charging
 every first-byte candidate. Numerical work requirements can therefore fall;
 larger and folded needles retain separately admitted comparisons.
 Pure LTR exact families of three to eight needles can reuse complete-needle search
-in admitted spans of at most2048 bytes when no boundary or trailing-literal
+in admitted spans of at most 2048 bytes when no boundary or trailing-literal
 confirmation is required. Needles above1024 bytes keep the existing generic path.
 The same invocation charges eligibility, each branch/window and publication;
 avoiding false-candidate replay can reduce work, while dense hits can cost more.
 Caller validation, enclosing regex verification and original interruption remain.
 Raw forward exact pairs can combine both short-needle scans into one checked
-primitive of at most2048 bytes. Complete verification stays inside that bound;
+primitive of at most 2048 bytes. Complete verification stays inside that bound;
 ordered branch confirmation and final publication still use the original
 invocation. Combining scans can reduce numerical work charges, without changing
 depth, working/result admission or retained-result lifetimes. Longer, folded,
@@ -427,6 +427,12 @@ Greedy pure-atom repeats before an atomic commit can omit shorter choices that
 the commit would discard. Capture endings, the atomic marker and commit still
 execute; examined scalars remain metered. Working, depth and work requirements
 can decrease. Lazy atomic repeats retain their distinct endpoint order.
+Positive unfolded contiguous ASCII sets in these no-rewind, unbounded repeats
+(minimum zero or one) use checked range searches over blocks of at most 2048 bytes.
+Each block and final publication spend basic work/check the original interruption
+authority, including unlimited calls. Endpoints remain scalar boundaries. No
+local buffer is introduced; numerical work thresholds can be lower than the
+per-scalar loop. Other set shapes, bounded repeats and paths needing rewinds keep their rules.
 Complete capture-free greedy atom repeats, including nullable ones, can also omit
 unused counter vectors. Empty-match advancement and nonempty retries retain their
 profile rules; required work/working capacity can be lower than earlier builds.
