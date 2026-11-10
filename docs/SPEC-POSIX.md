@@ -176,7 +176,7 @@ on both target frameworks. Fixture data alone is not implementation qualificatio
 The [profile README](../src/Lokad.Utf8Regex.Posix/README.md#benchmarks) records warm
 public-operation and finite-policy costs. Four-package delivery also checks both
 target frameworks, Windows/Linux and isolated package consumers; the
-[0.5.0-dev.61 receipt](../bench/Experiments/DeliveryDev61-20261109/README.md)
+[0.5.0-dev.62 receipt](../bench/Experiments/DeliveryDev62-20261110/README.md)
 records the accepted boundary. Subsequent changes need a fresh candidate at the
 next delivery boundary. No complete POSIX equivalence or general native throughput
 parity is claimed.

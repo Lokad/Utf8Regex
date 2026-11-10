@@ -60,4 +60,5 @@ Final corpus/Windows+Linux checks and the disposable comparison are in the adjac
 `post-checks.tar.gz`, SHA-256
 `A7CB606046BFE9F2AD6A6CD42760C9B743E322DE3F82704605CCAC9C997D92C7`;
 [identities](semantic-summary.json) pin its producer graphs.
-Dev61 packages/snapshots remain immutable. Source CI follows the scoped commit.
+Dev61 packages/snapshots remain immutable. Source CI42716409925 passes
+Windows/Linux for1cc1444e.
