@@ -57,4 +57,5 @@ factory return, readonly projection and durable cursor field.
 Raw patch, protocol, before/after graphs, Linux checks and samples are verified
 off VM at `artifacts/experiments/posix-workspace-value-20261110/evidence.tar.gz`,
 SHA-256 `58A524D813B924ADE068A3EC220E4012C182ECF42EA7D75F6917CC0300CB4F61`.
-Windows checks are alongside it. Source CI follows the scoped commit.
+Windows checks are alongside it. Source CI42727745399 passes Windows/Linux for
+98fc3c48.
