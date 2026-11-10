@@ -1,0 +1,30 @@
+[
+  {
+    "Side": "before",
+    "Method": "TryMatchAt",
+    "Tier": "Tier1",
+    "StackBytes": 712,
+    "CodeBytes": 5808
+  },
+  {
+    "Side": "before",
+    "Method": "TryFindNext",
+    "Tier": "Tier1",
+    "StackBytes": 664,
+    "CodeBytes": 5179
+  },
+  {
+    "Side": "after",
+    "Method": "TryMatchAt",
+    "Tier": "Tier1",
+    "StackBytes": 312,
+    "CodeBytes": 5510
+  },
+  {
+    "Side": "after",
+    "Method": "TryFindNext",
+    "Tier": "Tier1",
+    "StackBytes": 648,
+    "CodeBytes": 5198
+  }
+]

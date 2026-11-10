@@ -14,10 +14,13 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (!plan.HasValue || (uint)start > (uint)input.Length) return Utf8ExecutionLimitKind.None;
+        // Copy the immutable descriptor once per scan, rather than materializing its
+        // reference-bearing value again for each candidate.
+        var searcher = search.PreparedSearcher;
         var next = start;
         while (next <= input.Length)
         {
-            breach = search.PreparedSearcher.TryFindMatch(input, next, input.Length, false,
+            breach = searcher.TryFindMatch(input, next, input.Length, false,
                 ref invocation, out var candidate, out var exists);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (!exists) break;
@@ -89,7 +92,7 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var separator = plan.BranchSeparators.Length > 0 ? plan.BranchSeparators[branch] : plan.Separator;
-        var trailing = plan.TrailingSearchers[plan.HasPairedTrailingLiterals ? branch : 0];
+        ref readonly var trailing = ref plan.TrailingSearchers[plan.HasPairedTrailingLiterals ? branch : 0];
         var trailingLiteral = plan.HasPairedTrailingLiterals ? plan.TrailingLiteralsUtf8[branch] : plan.TrailingLiteralUtf8;
         var trailingLength = trailingLiteral.Length;
         var prefixEnd = start + leadingLength;
