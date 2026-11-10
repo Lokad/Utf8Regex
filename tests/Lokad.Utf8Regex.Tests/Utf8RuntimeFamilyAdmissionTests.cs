@@ -32,16 +32,15 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
         from depth in Enumerable.Range(0, 5) select new object[] { kind, depth };
     private static object? Field(object value, string name) => value.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value);
 
-    private static (int Primary, int Secondary)? Pair(byte[][] values)
+    // Eligibility and unique pairs are semantic; a frequency heuristic is not.
+    private static (int Primary, int Secondary)[] Pairs(byte[][] values)
     {
-        if (values.Length is < 2 or > 4 || values.Any(v => v.Length is < 3 or > 8 || v.Any(b => b >= 128))) return null;
+        if (values.Length is < 2 or > 4 || values.Any(v => v.Length is < 3 or > 8 || v.Any(b => b >= 128))) return [];
         var length = values.Min(v => v.Length);
-        int Score(int offset) { var bytes = values.Select(v => v[offset]).Distinct().ToArray(); return bytes.Sum(b => PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(b)) * 8 + bytes.Length; }
-        var choices = (from first in Enumerable.Range(0, length) from second in Enumerable.Range(0, length)
+        return (from first in Enumerable.Range(0, length) from second in Enumerable.Range(0, length)
             where first != second && values.Select(v => v[first]).Distinct().Count() > 1 && values.Select(v => v[second]).Distinct().Count() > 1
                 && values.Select(v => (v[first], v[second])).Distinct().Count() == values.Length
-            orderby Score(first) * 4 + Score(second), first, second select (first, second)).ToArray();
-        return choices.Length == 0 ? null : choices[0];
+            select (first, second)).ToArray();
     }
     private static byte[][] Scalars(byte[][] values, int offset) => values.Select(v => v.Skip(offset).Take(3).ToArray())
         .GroupBy(Convert.ToHexString).Select(g => g.First()).ToArray();
@@ -49,23 +48,23 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
 
     [Theory]
     [MemberData(nameof(Families))]
-    public void OrderedScalarGuardsAndBestPairsUseOnlyFundedFinalPayloads(int family, int kind)
+    public void OrderedScalarGuardsAndUniquePairsUseOnlyFundedFinalPayloads(int family, int kind)
     {
         var values = Family(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         if (kind == 0)
         {
-            var pair = Pair(values); var accepted = PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter);
-            Assert.Equal(pair.HasValue, accepted);
-            var count = accepted ? values.Select(v => v[pair!.Value.Primary]).Distinct().Count() : 0;
+            var pairs = Pairs(values); var accepted = PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter);
+            Assert.Equal(pairs.Length > 0, accepted);
+            var primary = accepted ? Assert.IsType<int>(Field(counter, "_primaryOffset")) : -1;
+            var count = accepted ? values.Select(v => v[primary]).Distinct().Count() : 0;
             Assert.Equal(128 + (accepted ? Utf8ConstructionBudget.ArrayBytes<byte>(count) + (count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0) : 0), owner.Budget.ReservedBytes);
             if (accepted)
             {
-                Assert.Equal(pair!.Value.Primary, Assert.IsType<int>(Field(counter, "_primaryOffset")));
-                Assert.Equal(pair.Value.Secondary, Assert.IsType<int>(Field(counter, "_secondaryOffset")));
+                Assert.Contains((primary, Assert.IsType<int>(Field(counter, "_secondaryOffset"))), pairs);
                 var search = Assert.IsType<PreparedByteSearch>(Field(counter, "_primarySearch"));
-                Assert.Equal(values.Select(v => v[pair.Value.Primary]).Distinct().ToArray(), search.Values.ToArray());
+                Assert.Equal(values.Select(v => v[primary]).Distinct().ToArray(), search.Values.ToArray());
                 for (var i = 0; i < values.Length; i++) Assert.Same(values[i], Field(counter, "_literal" + i));
             }
         }
@@ -168,11 +167,11 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
         var random = new Random(923848);
         for (var sample = 0; sample < 250; sample++)
         {
-            var values = Enumerable.Range(0, random.Next(2, 5)).Select(_ => Enumerable.Range(0, random.Next(3, 9))
-                .Select(_ => (byte)random.Next(97, 102)).ToArray()).ToArray();
-            var pair = Pair(values); Assert.Equal(pair.HasValue, PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter));
-            if (!pair.HasValue) continue;
-            Assert.Equal(pair.Value.Primary, Assert.IsType<int>(Field(counter, "_primaryOffset"))); Assert.Equal(pair.Value.Secondary, Assert.IsType<int>(Field(counter, "_secondaryOffset")));
+            var values = Enumerable.Range(0, random.Next(2, 5)).Select(_ => Enumerable.Range(0, random.Next(3, 18))
+                .Select(_ => (byte)(random.Next(97, 102) ^ (random.Next(2) == 0 ? 0 : 32))).ToArray()).ToArray();
+            var pairs = Pairs(values); Assert.Equal(pairs.Length > 0, PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter));
+            if (pairs.Length == 0) continue;
+            Assert.Contains((Assert.IsType<int>(Field(counter, "_primaryOffset")), Assert.IsType<int>(Field(counter, "_secondaryOffset"))), pairs);
             var input = values.SelectMany(v => new byte[] { 124 }.Concat(v)).Concat("|miss"u8.ToArray()).ToArray();
             var expected = 0;
             for (var start = 0; start < input.Length; start++)
