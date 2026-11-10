@@ -71,4 +71,5 @@ Raw protocol, graphs, preflights, checks and samples are verified off VM:
 SHA-256 `BC76DF7307A0895946FCE37B78B7D08B900078F4022ACE54328FD5C5868F96E3`.
 The invalid attempt is preserved separately as `evidence.tar.gz`,
 SHA-256 `F743502B6BC92C8321D8B55E8386985A7CA5D4056E91B2BC93CD0CF17973827E`.
-Windows checks/preparation failures are alongside the archives. Source CI pending.
+Windows checks/preparation failures are alongside the archives. Source CI42732742433
+passes Windows/Linux for1df925f7055f37bc4992818a0aa7daa4f71435e1.
