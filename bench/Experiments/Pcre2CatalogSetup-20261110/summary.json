@@ -1,0 +1,230 @@
+{
+  "BeforeSource": "582c229e7aadd1d5e47e494d25b0ecd7280e8f67",
+  "AfterSource": "de6ecc95",
+  "Scope": "Local Windows cold CLI setup observation; not warm matching or VM parity evidence",
+  "CompleteCaseIdentitySha256": "72D49B243EF6DA5FEA1B31C3CA97D9CA0708EE730F9160CD56BF440FB54614BD",
+  "CaseIds": [
+    "literal/early",
+    "literal/late",
+    "literal/missing",
+    "literal/absolute-anchored",
+    "literal/empty-unicode",
+    "literal/partial-probe",
+    "simple/foo-dense",
+    "simple/foo-optional-bar",
+    "simple/ab-plus",
+    "simple/httpclient-caseless",
+    "character/unicode-class-dense",
+    "backtracking/alternation-repeat",
+    "backtracking/capture-backreference",
+    "backtracking/assertion-capture",
+    "simple/loglevel-multiline",
+    "pcre2/branch-reset-basic",
+    "pcre2/branch-reset-backref",
+    "pcre2/branch-reset-nested",
+    "pcre2/branch-reset-followup",
+    "pcre2/duplicate-names",
+    "pcre2/kreset-global",
+    "pcre2/kreset-bar-or-baz",
+    "pcre2/kreset-repeat",
+    "pcre2/kreset-captured-repeat",
+    "pcre2/kreset-atomic-alt",
+    "pcre2/grapheme-cluster",
+    "pcre2/same-start-global",
+    "pcre2/conditional-lookahead",
+    "pcre2/conditional-negative-lookahead",
+    "pcre2/conditional-accept-negative-lookahead",
+    "pcre2/subroutine-prefix-digits",
+    "pcre2/backslash-c-literal",
+    "pcre2/recursive-palindrome",
+    "pcre2/recursive-optional",
+    "common/email-match",
+    "common/email-miss",
+    "common/date-match",
+    "common/date-miss",
+    "common/ip-match",
+    "common/ip-miss",
+    "common/uri-match",
+    "common/uri-miss",
+    "common/matches-set",
+    "common/matches-boundary",
+    "common/matches-word",
+    "common/matches-words",
+    "common/replace-words",
+    "common/backtracking",
+    "common/one-node-backtracking",
+    "industry/mariomka-email-count",
+    "industry/mariomka-uri-count",
+    "industry/mariomka-ip-count",
+    "industry/rust-sherlock-letter-count",
+    "industry/rust-sherlock-holmes-window-count",
+    "industry/rust-sherlock-ing-count",
+    "industry/rust-sherlock-word-holmes-count",
+    "industry/rust-sherlock-nonnewline-count",
+    "industry/leipzig-twain-count",
+    "industry/leipzig-name-family-count",
+    "industry/leipzig-river-window-count",
+    "industry/leipzig-symbol-count",
+    "industry/boostdocs-ftp-line-match",
+    "industry/boostdocs-credit-card-match",
+    "industry/boostdocs-postcode-match",
+    "industry/boostdocs-date-match",
+    "industry/boostdocs-float-match"
+  ],
+  "ImportedCases": 32,
+  "PriorCompilationExclusions": 0,
+  "MetadataNeedsNoConstruction": true,
+  "ExplicitOperationExclusion": true,
+  "EngineFailuresVisible": true,
+  "ConstructionRefusalsVisible": true,
+  "InitialBefore": [
+    {
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 251.0108,
+      "Source": "582c229e7aadd1d5e47e494d25b0ecd7280e8f67"
+    },
+    {
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 541.0098,
+      "Source": "582c229e7aadd1d5e47e494d25b0ecd7280e8f67"
+    }
+  ],
+  "InitialAfter": [
+    {
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 878.1545,
+      "BaseSource": "582c229e7aadd1d5e47e494d25b0ecd7280e8f67",
+      "TrackedDirty": true
+    },
+    {
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 126.6943,
+      "BaseSource": "582c229e7aadd1d5e47e494d25b0ecd7280e8f67",
+      "TrackedDirty": true
+    }
+  ],
+  "Confirmation": [
+    {
+      "Stage": "before",
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 310.9904,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "before",
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 427.0598,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "after",
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 130.0707,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "after",
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 136.3931,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "after",
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 128.7313,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "after",
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 135.1607,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "before",
+      "Command": "--inspect-pattern",
+      "Case": "needle",
+      "Milliseconds": 128.2976,
+      "ExitCode": 0
+    },
+    {
+      "Stage": "before",
+      "Command": "--inspect-pcre2-case",
+      "Case": "literal/early",
+      "Milliseconds": 413.2573,
+      "ExitCode": 0
+    }
+  ],
+  "Identities": [
+    {
+      "Label": "Before",
+      "Files": [
+        {
+          "File": "Lokad.Utf8Regex.Benchmarks.dll",
+          "Sha256": "90FC281FFA8B27809CE86DDB24F89814F4F8BE708BAFFCA7558962BE610A5768"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+          "Sha256": "D88A05AF6519D4600E1B7472B350A173833EC377A7E6D2DA0534911989201C99"
+        },
+        {
+          "File": "Lokad.Utf8Regex.dll",
+          "Sha256": "3FD59DF3C5C1B4A0510E484F6818FF0CAF1035CFBF1C45A9BB0A8CC69F4228D4"
+        },
+        {
+          "File": "Lokad.Utf8Regex.pdb",
+          "Sha256": "885B0E26C730D513EDED627D801108DCBC437FFF0A89506BF4DC58131310F591"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Pcre2.dll",
+          "Sha256": "CB4A1AE92E5926732668339D230EE5473D63A859F1B6D7385C1EAEE96AB27165"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Pcre2.pdb",
+          "Sha256": "70CC2D6415D335DEFD70677160A7BFCE998B7C2A55F0F88C3361E20F376040AE"
+        }
+      ]
+    },
+    {
+      "Label": "After",
+      "Files": [
+        {
+          "File": "Lokad.Utf8Regex.Benchmarks.dll",
+          "Sha256": "E2F020523A1C6C6F0F2A4D0433FD52A3055F5FAC89C3E7F414E249DDDFB88F8B"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+          "Sha256": "F32239D6733ECE39ED58B02ABF5D710E5F438136206851FB88AA2DDFE4BCB93F"
+        },
+        {
+          "File": "Lokad.Utf8Regex.dll",
+          "Sha256": "3FD59DF3C5C1B4A0510E484F6818FF0CAF1035CFBF1C45A9BB0A8CC69F4228D4"
+        },
+        {
+          "File": "Lokad.Utf8Regex.pdb",
+          "Sha256": "885B0E26C730D513EDED627D801108DCBC437FFF0A89506BF4DC58131310F591"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Pcre2.dll",
+          "Sha256": "CB4A1AE92E5926732668339D230EE5473D63A859F1B6D7385C1EAEE96AB27165"
+        },
+        {
+          "File": "Lokad.Utf8Regex.Pcre2.pdb",
+          "Sha256": "70CC2D6415D335DEFD70677160A7BFCE998B7C2A55F0F88C3361E20F376040AE"
+        }
+      ]
+    }
+  ],
+  "RawArchive": "artifacts/experiments/pcre-catalog-20261110/evidence.tar.gz",
+  "RawSha256": "BC2A791F108277D2FDD8BF0FB9936955909788804E69CC323C723876BDB995CF"
+}
