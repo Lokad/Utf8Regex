@@ -1,0 +1,80 @@
+{
+  "Source": "9af7141f0ee7195553c17b70ad50064038be9897",
+  "Version": "0.5.0-dev.64",
+  "Published": false,
+  "Packages": [
+    "Lokad.Utf8Regex",
+    "Lokad.Utf8Regex.PythonRe",
+    "Lokad.Utf8Regex.Pcre2",
+    "Lokad.Utf8Regex.Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "WindowsSeconds": 395.1977504,
+  "WindowsFixtures": 10,
+  "ChecksPerPlatform": 111020.0,
+  "RestoreAudits": {
+    "Windows": 12,
+    "Linux": 28
+  },
+  "CompilerInputs": 477,
+  "CompilerInputsArchiveSha256": "A93BF50E51B87F94D301AA3FECBA1432EFBF5B59E75960C344F7C09BDA05CCA4",
+  "OlderStagedAssetsUnchanged": 364,
+  "TotalStagedAssets": 372,
+  "SourceCI": {
+    "Conclusion": "success",
+    "Run": 42755373448,
+    "WindowsRetries": 1,
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "InitialFailure": "10s test coordination under parallel solution hosts; fixture passes isolated, failed Windows job passes once retried"
+  },
+  "AcceptedChanges": [
+    "Committed LF dot scanning",
+    "Complete Singleline EOF repeat proof",
+    "Controlled PCRE2 class-run Count"
+  ],
+  "Pending": [
+    "Final metadata CI"
+  ],
+  "Complete": false,
+  "OriginalConsumers": "Awk19/Lython118 perTFM/OS; public hosting probes/root loans0",
+  "LinuxFixtures": 10,
+  "LinuxVerifiedTrx": 14,
+  "LinuxRawSha256": "852BD528BE620D19A3540530CFBA41CDA219094780B43A68CC81E86983963117",
+  "LinuxRebuilt": false,
+  "LinuxRepacked": false,
+  "Full": {
+    "Source": "9af7141f0ee7195553c17b70ad50064038be9897",
+    "ArchiveSha256": "FDBC2901D7A74929C5D36899B0B3BD0F73373E9D1CD4F5F41ED30F155C89E539",
+    "Steps": 85,
+    "Complete": true,
+    "Seconds": 2811.8498128
+  },
+  "SnapshotChecksPerFramework": 5,
+  "SnapshotLogHashes": [
+    {
+      "Sha256": "E58D35912C381012865FE86D0D51D10AACBFF7703FEC43B3784E491875B09126",
+      "File": "snapshot-Core.txt"
+    },
+    {
+      "Sha256": "8E2F0998230E585C5E6E4E56DBEBCB4BCDFFE64AB6B86F4128C726AD8BFE8151",
+      "File": "snapshot-Pcre2.txt"
+    },
+    {
+      "Sha256": "D777B0CCEB88BC78C1329EED7A913809B0D63AE0862BA5971E98BC64FAA939D4",
+      "File": "snapshot-Posix.txt"
+    },
+    {
+      "Sha256": "62FF6181B334D212840DAFD52BAD83E69FABFCAAE42D12386DEC4ECEBB092328",
+      "File": "snapshot-PythonRe.txt"
+    }
+  ],
+  "Scope": "Immutable common four-package candidate; bounded managed parity improvements. No publication, adoption, full flavor equivalence or exact total-heap guarantee.",
+  "RemainingWork": "Active qualified parity queue continues separately; accepted package bytes are immutable."
+}
