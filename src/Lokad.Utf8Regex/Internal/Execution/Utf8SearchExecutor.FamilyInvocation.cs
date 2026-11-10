@@ -345,19 +345,17 @@ internal static partial class Utf8SearchExecutor
         {
             var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
             var tails = MemoryMarshal.Read<Vector512<byte>>(input[(position + anchor)..]);
-            var candidates0 = (Vector512.Equals(heads, head0) & Vector512.Equals(tails, tail0)).ExtractMostSignificantBits();
-            var candidates1 = (Vector512.Equals(heads, head1) & Vector512.Equals(tails, tail1)).ExtractMostSignificantBits();
-            var candidates = candidates0 | candidates1;
+            var candidates = ((Vector512.Equals(heads, head0) & Vector512.Equals(tails, tail0)) |
+                (Vector512.Equals(heads, head1) & Vector512.Equals(tails, tail1))).ExtractMostSignificantBits();
             while (candidates != 0)
             {
                 var lane = BitOperations.TrailingZeroCount(candidates);
                 var candidate = position + lane;
-                var bit = 1UL << lane;
                 // Both needles are <=16 bytes; verification stays inside this
                 // already admitted primitive, with no false-candidate replay.
-                if ((candidates0 & bit) != 0 && first.Length <= input.Length - candidate &&
+                if (first.Length <= input.Length - candidate &&
                     input.Slice(candidate, first.Length).SequenceEqual(first) ||
-                    (candidates1 & bit) != 0 && second.Length <= input.Length - candidate &&
+                    second.Length <= input.Length - candidate &&
                     input.Slice(candidate, second.Length).SequenceEqual(second)) return candidate;
                 candidates &= candidates - 1;
             }

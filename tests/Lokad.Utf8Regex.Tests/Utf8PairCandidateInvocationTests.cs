@@ -50,7 +50,8 @@ public sealed class Utf8PairCandidateInvocationTests
     public void RawPairsKeepOffsetsTailsEarliestStartsAndBranchOrder(int padding)
     {
         foreach (var pair in new[] { new[] { "target", "needle" }, ["target", "targeted"],
-            ["targeted", "target"], ["a", "ab"], ["😀é", "😀"], ["éx", "中"],
+            ["targeted", "target"], ["abcyz", "abc"], ["abc", "abcyz"],
+            ["a", "ab"], ["😀é", "😀"], ["éx", "中"],
             [new string('a', 1023) + "z", new string('b', 1023) + "y"],
             [new string('a', 1024) + "z", "b"],
             [new string('a', 4097) + "z", "b"] })
