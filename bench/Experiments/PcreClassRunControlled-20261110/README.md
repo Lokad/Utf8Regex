@@ -62,4 +62,5 @@ Raw graphs/PDBs, source patches, protocol, preflights, Linux checks and samples
 verified offVM: `artifacts/experiments/pcre-class-run-controlled-20261110/evidence.tar.gz`,
 SHA-256 `3A8B6DA7BCEF6A0F8497229F19DB08FE3C0E9620D24D76D15CADA403A204572D`.
 Windows checks and initial failure logs are alongside it. Immutable dev63 bytes
-and authoritative snapshots remain unchanged. Source CI pending.
+and authoritative snapshots remain unchanged. Source CI42752086742 passes
+Windows/Linux for90d18c2fe1907b4348947003c5308765c0cfccc7.
