@@ -71,3 +71,4 @@ samples verified off VM at
 `A9122B19B53CA90F1FE9EC89214B43B656A75D5B36A1889DC84714CF3A6D313B`.
 Windows checks and [codegen summary](codegen-summary.json) are alongside the
 archive. Immutable staged/published packages, including dev65, remain unchanged.
+Source CI42778531948 passes Windows/Linux for `c004f88c20d4499bdc889493d3f0c66350da50cb`, including both scoped changes.

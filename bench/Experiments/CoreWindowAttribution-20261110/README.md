@@ -41,3 +41,4 @@ Original attribution SHA-256
 `8DB0D771278B6DE5D57D3351406CCCE43E302C66A2B0E1B0A57CFE0123BC3F5E`.
 The subsequent public comparison measures the actual live window implementation;
 phase timings here are neither a public speedup nor a catalog Status.
+Source CI42778531948 passes Windows/Linux for `c004f88c20d4499bdc889493d3f0c66350da50cb`, including both scoped changes.
