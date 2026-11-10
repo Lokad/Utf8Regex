@@ -447,9 +447,11 @@ internal static partial class Utf8SliceRunner
         var maximum = repeat.RepeatMaximum;
         var position = start;
         var count = 0;
+        var stopAtLf = atom is { Kind: Utf8SliceInstructionKind.Dot, A: 0 };
+        byte first = (byte)'\n', second = (byte)'\n';
         if (minimum <= 1 && maximum == long.MaxValue &&
-            atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
-            TryGetAsciiMaskPair(program.SetMasks[atom.A], out var first, out var second))
+            (stopAtLf || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
+                TryGetAsciiMaskPair(program.SetMasks[atom.A], out first, out second)))
         {
             // Whole-subject validity is established by the caller. ASCII
             // stops cannot occur inside wider scalars; intermediate blocks
@@ -459,7 +461,7 @@ internal static partial class Utf8SliceRunner
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                var stop = block.IndexOfAny(first, second);
+                var stop = stopAtLf ? block.IndexOf((byte)'\n') : block.IndexOfAny(first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }

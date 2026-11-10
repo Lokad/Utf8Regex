@@ -14,6 +14,27 @@ public sealed class Utf8DotTailRepeatTests
     };
 
     [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    public void LongLineScanKeepsScalarCapturesAcrossBlocksAndOffsetStorage(int prefixLength)
+    {
+        var line = new string('a', prefixLength) + "😀é\0\r";
+        var storage = Encoding.UTF8.GetBytes("pad" + line + "\nZpad");
+        var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(line) + 2);
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex("(?m:^(?<line>.*)$)", mode, Timeout.InfiniteTimeSpan, Policy());
+            var retained = regex.MatchDetailed(input);
+            Assert.True(retained.Success);
+            Assert.Equal(0, retained.IndexInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(line), retained.LengthInBytes);
+            Assert.Equal(line, retained.GetGroup(1).GetValueString());
+            using var token = new CancellationTokenSource();
+            Assert.Equal(2, regex.Count(input, token.Token));
+            Assert.Equal(line, retained.GetGroup(1).GetValueString());
+        }
+    }
+
+    [Theory]
     [InlineData("(.*)$", "abc\n")]
     [InlineData("(.+)$", "abc\nxyz")]
     [InlineData(@"(.*)\z", "abc\nxyz")]
@@ -125,7 +146,8 @@ public sealed class Utf8DotTailRepeatTests
     public void DotScanObservesOriginalInterruptionAndReleasesScratch(bool timeout)
     {
         var program = new Utf8Regex("(?m:^(.+)$)").Inspection.AvailableOwnedSliceProgram!;
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 2048)));
+        // Reach the diagnostic interruption quantum even with bounded byte scans.
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 65536)));
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
