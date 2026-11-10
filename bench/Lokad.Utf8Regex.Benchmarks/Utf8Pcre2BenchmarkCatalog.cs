@@ -219,16 +219,18 @@ internal static class Utf8Pcre2BenchmarkCatalog
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only)
     ];
 
-    private static readonly Utf8Pcre2BenchmarkCase[] s_cases = CreateCases();
+    private static readonly Lazy<Utf8Pcre2BenchmarkCase[]> s_cases = new(CreateCases);
 
     public static IEnumerable<string> GetIds(Utf8Pcre2BenchmarkOperation operation, Utf8Pcre2BenchmarkBackend backends)
     {
-        return s_cases.Where(c => c.Supports(operation, backends)).Select(static c => c.Id);
+        return s_cases.Value.Where(c => c.Supports(operation, backends)).Select(static c => c.Id);
     }
 
-    public static IEnumerable<Utf8Pcre2BenchmarkCase> GetAllCases() => s_cases;
+    public static IEnumerable<Utf8Pcre2BenchmarkCase> GetAllCases() => s_cases.Value;
 
-    public static Utf8Pcre2BenchmarkCase Get(string id) => s_cases.First(c => c.Id == id);
+    public static Utf8Pcre2BenchmarkCase Get(string id) => s_curatedCases.FirstOrDefault(c => c.Id == id)
+        ?? CreateDotNetPerformanceManagedCompatibleCase(id)
+        ?? throw new NotSupportedException($"PCRE2 benchmark '{id}' has no corresponding public operation.");
 
     public static Pcre2CompileOptions ToPcre2Options(RegexOptions options)
     {
@@ -267,52 +269,26 @@ internal static class Utf8Pcre2BenchmarkCatalog
     {
         foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
         {
-            var definition = LokadPublicBenchmarkContext.GetDefinition(caseId);
-            var supportedOperations = definition.Operation switch
-            {
-                LokadPublicBenchmarkOperation.IsMatch => Utf8Pcre2BenchmarkOperation.IsMatch,
-                LokadPublicBenchmarkOperation.Count => Utf8Pcre2BenchmarkOperation.Count,
-                LokadPublicBenchmarkOperation.Replace => Utf8Pcre2BenchmarkOperation.Replace,
-                _ => Utf8Pcre2BenchmarkOperation.None,
-            };
-
-            if (supportedOperations == Utf8Pcre2BenchmarkOperation.None)
-            {
-                continue;
-            }
-
-            if (!CanUseDotNetPerformanceManagedCompatibleCase(definition.Pattern, definition.Options))
-            {
-                continue;
-            }
-
-            yield return new Utf8Pcre2BenchmarkCase(
-                caseId,
-                definition.Pattern,
-                definition.Input,
-                definition.Options,
-                replacement: definition.Replacement,
-                supportedOperations: supportedOperations,
-                supportedBackends: Utf8Pcre2BenchmarkBackend.AllManagedComparisons);
+            if (CreateDotNetPerformanceManagedCompatibleCase(caseId) is { } definition)
+                yield return definition;
         }
     }
 
-    private static bool CanUseDotNetPerformanceManagedCompatibleCase(string pattern, RegexOptions options)
+    private static Utf8Pcre2BenchmarkCase? CreateDotNetPerformanceManagedCompatibleCase(string caseId)
     {
-        // Construction refusals and unexpected engine failures must remain
-        // visible; they are not evidence that a grammar case is unsupported.
-        try
+        var operation = LokadPublicBenchmarkContext.GetOperation(caseId) switch
         {
-            _ = new Utf8Pcre2Regex(pattern, ToPcre2Options(options));
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-        catch (NotSupportedException)
-        {
-            return false;
-        }
+            LokadPublicBenchmarkOperation.IsMatch => Utf8Pcre2BenchmarkOperation.IsMatch,
+            LokadPublicBenchmarkOperation.Count => Utf8Pcre2BenchmarkOperation.Count,
+            LokadPublicBenchmarkOperation.Replace => Utf8Pcre2BenchmarkOperation.Replace,
+            _ => Utf8Pcre2BenchmarkOperation.None,
+        };
+        if (operation == Utf8Pcre2BenchmarkOperation.None) return null;
+        // Deterministic metadata only. The selected context owns compilation;
+        // failures remain visible instead of silently changing catalog membership.
+        var definition = LokadPublicBenchmarkContext.GetDefinition(caseId);
+        return new(caseId, definition.Pattern, definition.Input, definition.Options,
+            replacement: definition.Replacement, supportedOperations: operation,
+            supportedBackends: Utf8Pcre2BenchmarkBackend.AllManagedComparisons);
     }
 }
