@@ -1,0 +1,270 @@
+{
+  "Sources": {
+    "before": "5de0fe829b9fc526655176135047ef612073454d",
+    "after": "099976cd531790a675f6e29fdee5c054ef5ab89f"
+  },
+  "InputContract": "Validate: valid immutable UTF-8 subjects, default strict policy",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Run": {
+    "Complete": true,
+    "ComparisonSeconds": 33.527095556259155,
+    "Order": [
+      "before",
+      "after",
+      "after",
+      "before"
+    ],
+    "OuterSeconds": 180,
+    "WorkerSeconds": 45
+  },
+  "Producers": {
+    "Before": [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Revision": "0.5.0-dev.65+5de0fe829b9fc526655176135047ef612073454d",
+        "DllSha256": "EDFE53D970A5BD852A8C1567CD351D49119DF30E9B62A85835ADEE71F2C2F66E",
+        "PdbSha256": "B456F814A3F38597235DED8B101186FEC11F78E2740FD96F474BBF8E0FEBFFC4"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Revision": "0.5.0-dev.65+5de0fe829b9fc526655176135047ef612073454d",
+        "DllSha256": "31074B79B8F8504A3BEAFE999404DFE5B83293C4FAB5BDBD4AC3656F215E700C",
+        "PdbSha256": "A5644B722851FA897205B3BADB6358DE4865B40D47EC70FBE6E30C1CD6B343B4"
+      }
+    ],
+    "After": [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Revision": "0.5.0-dev.65+099976cd531790a675f6e29fdee5c054ef5ab89f",
+        "DllSha256": "97C1C78E9D426FB250D352297D8F736C9DA5C13ED1AAF971C0F7457044550600",
+        "PdbSha256": "F154FF679BC89BDF7DFF152E4DB56FE7B37DF8B97E8AA3B511028D4149F85B27"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Revision": "0.5.0-dev.65+099976cd531790a675f6e29fdee5c054ef5ab89f",
+        "DllSha256": "B7BCD5338F99B95D8F4E5E983EA20E7956C49B2F38202FF57A3F238EFE6EE32D",
+        "PdbSha256": "CBFFE9E90DB3BB6A2FC829C493EEA31DFB259DCB71617893BCEC9F590700982F"
+      }
+    ]
+  },
+  "Rows": [
+    {
+      "Id": "anchors-dot/construct",
+      "Pattern": "^.$",
+      "InputBytes": 5,
+      "InputSha256": "D744E0EE836148320D73E0D69631B60CC9EB4EC732CF9D78AFD0D70661FCFF31",
+      "BeforeUs": 219.17258566978194,
+      "AfterUs": 175.19226069246434,
+      "ChangePct": -20.066526496877167,
+      "BeforeOverAfter": 1.2510403416422684,
+      "ProcessMedianUs": [
+        247.51420118343196,
+        186.13941018766755,
+        164.50081466395113,
+        218.9897196261682
+      ],
+      "BeforeRangeUs": [
+        172.71331360946746,
+        250.27869822485206
+      ],
+      "AfterRangeUs": [
+        140.5908350305499,
+        210.93538873994638
+      ],
+      "DisjointRanges": false,
+      "BeforeAllocatedBytes": 60528.0,
+      "AfterAllocatedBytes": 50120.0
+    },
+    {
+      "Id": "anchors-dot/construct-count",
+      "Pattern": "^.$",
+      "InputBytes": 5,
+      "InputSha256": "D744E0EE836148320D73E0D69631B60CC9EB4EC732CF9D78AFD0D70661FCFF31",
+      "BeforeUs": 102.43221271393644,
+      "AfterUs": 92.72518888439822,
+      "ChangePct": -9.476534356088873,
+      "BeforeOverAfter": 1.1046859429064102,
+      "ProcessMedianUs": [
+        93.890097799511,
+        96.32823086574656,
+        87.73149038461537,
+        110.69747899159664
+      ],
+      "BeforeRangeUs": [
+        84.47823960880196,
+        113.67408963585434
+      ],
+      "AfterRangeUs": [
+        80.18064903846154,
+        103.35269761606024
+      ],
+      "DisjointRanges": false,
+      "BeforeAllocatedBytes": 60528.0,
+      "AfterAllocatedBytes": 50120.0
+    },
+    {
+      "Id": "scoped-flags/construct",
+      "Pattern": "(?s:^.(?-s:.)$)",
+      "InputBytes": 5,
+      "InputSha256": "769EFF6B71FD34171F551E5F7D3ED477090C772D9D523DCE23FFB6EC9F74A2CA",
+      "BeforeUs": 91.55191885964912,
+      "AfterUs": 75.65089545454546,
+      "ChangePct": -17.368312541302643,
+      "BeforeOverAfter": 1.2101894935884496,
+      "ProcessMedianUs": [
+        90.28114035087718,
+        77.4496256684492,
+        73.6795,
+        96.30263819095477
+      ],
+      "BeforeRangeUs": [
+        87.70427631578947,
+        98.50062814070351
+      ],
+      "AfterRangeUs": [
+        69.64449197860962,
+        82.0166844919786
+      ],
+      "DisjointRanges": true,
+      "BeforeAllocatedBytes": 85808.0,
+      "AfterAllocatedBytes": 70048.0
+    },
+    {
+      "Id": "scoped-flags/construct-count",
+      "Pattern": "(?s:^.(?-s:.)$)",
+      "InputBytes": 5,
+      "InputSha256": "769EFF6B71FD34171F551E5F7D3ED477090C772D9D523DCE23FFB6EC9F74A2CA",
+      "BeforeUs": 87.6045305676856,
+      "AfterUs": 71.80032183713115,
+      "ChangePct": -18.04040113923525,
+      "BeforeOverAfter": 1.2201133410850729,
+      "ProcessMedianUs": [
+        87.48868120456905,
+        71.8373693379791,
+        71.76327433628319,
+        87.64748908296944
+      ],
+      "BeforeRangeUs": [
+        86.69231568016615,
+        88.33478712357218
+      ],
+      "AfterRangeUs": [
+        71.02325783972125,
+        72.4413763066202
+      ],
+      "DisjointRanges": true,
+      "BeforeAllocatedBytes": 85808.0,
+      "AfterAllocatedBytes": 70048.0
+    },
+    {
+      "Id": "multiline/construct",
+      "Pattern": "(?m)^.$",
+      "InputBytes": 7,
+      "InputSha256": "59E703CA0DD572C45C8FF3D2C68F712E76220BFAF41788D5EB7993107EE0DF36",
+      "BeforeUs": 62.44884414615958,
+      "AfterUs": 54.67534289276808,
+      "ChangePct": -12.447790443003015,
+      "BeforeOverAfter": 1.1421756287589686,
+      "ProcessMedianUs": [
+        62.42550335570469,
+        53.469711876317646,
+        54.844638403990025,
+        62.47684537684538
+      ],
+      "BeforeRangeUs": [
+        59.32369852369852,
+        71.9986013986014
+      ],
+      "AfterRangeUs": [
+        48.639704848910746,
+        57.90548137737175
+      ],
+      "DisjointRanges": true,
+      "BeforeAllocatedBytes": 58976.0,
+      "AfterAllocatedBytes": 48568.0
+    },
+    {
+      "Id": "multiline/construct-count",
+      "Pattern": "(?m)^.$",
+      "InputBytes": 7,
+      "InputSha256": "59E703CA0DD572C45C8FF3D2C68F712E76220BFAF41788D5EB7993107EE0DF36",
+      "BeforeUs": 61.13008373104747,
+      "AfterUs": 50.488526645768026,
+      "ChangePct": -17.408052526312325,
+      "BeforeOverAfter": 1.2107717890035008,
+      "ProcessMedianUs": [
+        61.155248169243286,
+        50.68652618135377,
+        50.20194357366771,
+        61.104919292851655
+      ],
+      "BeforeRangeUs": [
+        60.5559804719284,
+        61.573943120676404
+      ],
+      "AfterRangeUs": [
+        49.760188087774296,
+        51.56800766283525
+      ],
+      "DisjointRanges": true,
+      "BeforeAllocatedBytes": 58976.0,
+      "AfterAllocatedBytes": 48568.0
+    },
+    {
+      "Id": "control-literal/construct",
+      "Pattern": "needle",
+      "InputBytes": 6,
+      "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "BeforeUs": 53.34558716960655,
+      "AfterUs": 53.51788907568822,
+      "ChangePct": 0.32299186347664044,
+      "BeforeOverAfter": 0.9967804801523845,
+      "ProcessMedianUs": [
+        47.42621527777778,
+        48.44539130434782,
+        54.655800118976806,
+        57.82842729970326
+      ],
+      "BeforeRangeUs": [
+        45.17847222222222,
+        69.0686053412463
+      ],
+      "AfterRangeUs": [
+        47.59049275362318,
+        63.803985722784056
+      ],
+      "DisjointRanges": false,
+      "BeforeAllocatedBytes": 50352.0,
+      "AfterAllocatedBytes": 50352.0
+    },
+    {
+      "Id": "control-literal/construct-count",
+      "Pattern": "needle",
+      "InputBytes": 6,
+      "InputSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "BeforeUs": 44.84542807221899,
+      "AfterUs": 44.13319425448309,
+      "ChangePct": -1.5881971660275496,
+      "BeforeOverAfter": 1.0161382793556475,
+      "ProcessMedianUs": [
+        44.64745958429562,
+        44.16550925925926,
+        44.100879249706914,
+        44.85107746068725
+      ],
+      "BeforeRangeUs": [
+        43.81050808314088,
+        46.06853348729792
+      ],
+      "AfterRangeUs": [
+        43.743903868698716,
+        44.64372801875732
+      ],
+      "DisjointRanges": false,
+      "BeforeAllocatedBytes": 50352.0,
+      "AfterAllocatedBytes": 50352.0
+    }
+  ],
+  "Samples": 160,
+  "MinimumSampleMs": 58.3771
+}
