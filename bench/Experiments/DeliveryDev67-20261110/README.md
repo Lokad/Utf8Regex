@@ -48,4 +48,5 @@ evidence was copied offVM/hash verified under artifacts/experiments/delivery-dev
 full archive C14CDC11A381293C3617BEB39D969769CE1C64415E84C2C46A8A8649239230BB;
 Linux archive54CDF3663515CDC5FD5DCDE6906131003DB356C6A7CF939D828D36B6E9B23C8E.
 No new qualification/archive framework or unchanged package rerun is required.
-Final documentation CI is pending; performance work continues after this checkpoint.
+Final documentation CI42918197398 is green on Windows/Linux; this receipt-only
+closure does not require repeating unchanged qualification. Performance work continues.
