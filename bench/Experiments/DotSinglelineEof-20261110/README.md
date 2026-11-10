@@ -61,4 +61,5 @@ after `DBC0B099BD54D0FCE9F4608D4B0C27BDD365FE8D53426C99A3E465E92F0800F8`.
 Raw patch/protocol, graphs, preflights, Linux checks and samples verified offVM:
 `artifacts/experiments/dot-singleline-eof-20261110/evidence.tar.gz`, SHA-256
 `0106E451A61E5883343BEEA011A855E58AEA730816D0D21C6BFC561F35C5EF64`.
-Windows checks/preflight are alongside it. Source CI pending.
+Windows checks/preflight are alongside it. Source CI42749510788 passes
+Windows/Linux for81d1066d89a5f0ecbcbdcab31d2bf406eef25e94.
