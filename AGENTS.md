@@ -81,6 +81,8 @@ old comparisons after source or binaries change.
 - Compare producer versions in separate ordinary processes. Identical Core DLLs
   showed9.8% slot movement in a dual-AssemblyLoadContext driver; retain per-process
   observations and uncertainty, with one producer loaded per process.
+  For change comparisons, explicitly stage each producer's DLL/PDB pair and
+  reject identical producer DLL hashes before timing; verify shared controls too.
 - Track compact presentation summaries in bench/Snapshots/. Full samples and
   provenance live in artifacts/benchmark-refresh/current/ and content-addressed
   local refresh outputs. Regenerate README blocks through existing rewrite/verify

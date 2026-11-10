@@ -1652,6 +1652,41 @@ internal static class Pcre2CandidateSearchAnalyzer
 
 internal static class Pcre2SingleTokenRepeatRunner
 {
+    internal static int CountAsciiClassRuns(PreparedByteSet set, int minimum,
+        ReadOnlySpan<byte> input, ref Pcre2ResourceBudget budget)
+    {
+        var count = 0;
+        var runLength = 0;
+        for (var offset = 0; offset < input.Length;)
+        {
+            budget.ChargeWorkspaceStep();
+            var length = Math.Min(4096, input.Length - offset);
+            var block = input.Slice(offset, length);
+            while (!block.IsEmpty)
+            {
+                if (runLength == 0)
+                {
+                    var start = set.IndexOf(block);
+                    if (start < 0) break;
+                    block = block[start..];
+                    budget.ChargeCandidate();
+                }
+                var stop = set.IndexOfAnyExcept(block);
+                if (stop < 0)
+                {
+                    runLength += block.Length;
+                    break;
+                }
+                runLength += stop;
+                if (runLength >= minimum) count = checked(count + 1);
+                runLength = 0;
+                block = block[(stop + 1)..];
+            }
+            offset += length;
+        }
+        return runLength >= minimum ? checked(count + 1) : count;
+    }
+
     internal static int CountGreedyExcludedAscii(
         Pcre2SingleTokenRepeatProgram program,
         ReadOnlySpan<byte> input,
@@ -2461,6 +2496,24 @@ internal static class Pcre2GlobalOperationDriver
                 singleTokenRepeatProgram.Program,
                 input.Bytes,
                 start);
+            return true;
+        }
+
+        if (program is Pcre2SingleTokenRepeatDirectProgram { Program: var repeat } &&
+            input.Validation.IsAscii && matchOptions == Pcre2MatchOptions.None &&
+            invocation.IsUnmetered && invocation.CheckpointHook is null &&
+            repeat.Minimum > 0 && repeat.Maximum == int.MaxValue && repeat.Preference != Pcre2RepeatPreference.Lazy &&
+            !repeat.Request.SkipsCrLfContinuation &&
+            (repeat.Request.Options & (Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine)) == 0 &&
+            repeat.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+            (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
+            repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet)
+        {
+            // Every scalar is one byte here. A complete greedy root selects
+            // each maximal member run; shorter runs cannot qualify at a suffix.
+            var asciiBudget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
+            result = Pcre2SingleTokenRepeatRunner.CountAsciiClassRuns(asciiSet, repeat.Minimum,
+                input.Bytes[start.Value..], ref asciiBudget);
             return true;
         }
 
