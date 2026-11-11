@@ -201,11 +201,14 @@ internal static partial class Utf8SliceRunner
             return true;
         }
         var tail = repeatIndex + 4;
-        // Capture boundaries do not consume input. Their actual writes and
-        // journals still execute at the selected endpoint; only this proof
-        // looks past them. Keep pathological chains bounded and decline others.
+        // Capture boundaries still execute at the selected endpoint. Opening
+        // another capture exposes new proof work: keep folded/table predicates
+        // on their prior route, and inspect only cheap direct atoms through it.
         for (var skipped = 0; skipped < 32 && tail < instructions.Length &&
-            instructions[tail].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; skipped++) tail++;
+            (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd ||
+             instructions[tail].Kind == Utf8SliceInstructionKind.CaptureStart &&
+             (atom.Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot ||
+              atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })); skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
         // A lazy repeat can skip shorter endpoints only when the following
@@ -291,6 +294,23 @@ internal static partial class Utf8SliceRunner
         if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
             ReadOnlySpan<byte> mask = program.SetMasks[following.A].AsSpan(0, 16);
+            if (atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })
+            {
+                // Exact ASCII intersection also rejects overlap in constant
+                // work, before falling back to the original rewind path.
+                var own = program.SetMasks[atom.A].AsSpan(0, 16);
+                for (var offset = 0; offset < 16; offset += 8)
+                {
+                    var proofBreach = invocation.TryChargeStep();
+                    if (proofBreach != Utf8ExecutionLimitKind.None)
+                    { outcome = new(false, -1, proofBreach, null, null); return true; }
+                    var bits = BinaryPrimitives.ReadUInt64LittleEndian(own[offset..]);
+                    if (atom.B != 0) bits = ~bits;
+                    if ((bits & BinaryPrimitives.ReadUInt64LittleEndian(mask[offset..])) != 0) return false;
+                }
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+                return true;
+            }
             Func<int, bool>? predicate = null;
             ReadOnlySpan<byte> predicateMask = default;
             var predicateNegated = false;

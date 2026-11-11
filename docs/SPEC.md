@@ -372,13 +372,17 @@ Direct candidate windows for unbounded minimum-one repeats excluding an ASCII
 pair can also rewind in checked blocks of at most 2048 bytes. Delimiter discovery
 and full VM verification remain; scalar floors and original interruption are
 preserved. Avoiding per-scalar rewind checks can lower required work steps.
-The bounded no-rewind proof can look through capture openings and endings before
-its mandatory tail. These markers still execute with their original writes,
-journals and completion order at the selected endpoint; no capture is elided.
-An excluded following atom makes shorter endpoints useless independently of the
-intervening capture boundaries. Removing that exploration can lower required
-work/depth and working capacity. The same32-marker cap, required assertion ends,
-scalar matching, original interruption and allocation admission remain.
+The bounded no-rewind proof can look through capture openings for direct literal,
+dot and unfolded Set atoms; folded/table predicates keep their earlier route.
+Capture endings retain their existing eligibility. The markers still execute with
+their original writes, journals and completion order at the selected endpoint;
+no capture is elided. An excluded following atom makes shorter endpoints useless
+independently of those boundaries. Two unfolded ASCII Sets use checked64-bit
+intersections, with one work charge per inspected half, instead of per-member
+class dispatch. Overlap retains rewind behavior. Removed exploration/proof work
+can lower required work/depth and working capacity. The same32-marker cap,
+required assertion ends, scalar matching, original interruption and allocation
+admission remain.
 Literal-search blocks own their work charges; entering the search helper adds
 no separate work unit for a nonempty admitted plan. Empty plans and prior resource
 failures retain their checkpoint, and terminal success/miss checks still observe

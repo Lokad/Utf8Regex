@@ -78,3 +78,8 @@ source step; broad performance acceptance remains unfinished. Investigate the
 demonstrated extra proof cost at newly visible folded/overlapping tails, with a
 fresh bounded design and the fixed original baseline. No further timing of this
 unchanged candidate, new packages/Full or mutation of immutable dev.70 artifacts.
+
+The subsequent [bounded-proof change](../BoundedCaptureProof-20261111/README.md)
+compares against the same original baseline, retaining these historical costs.
+It accepts larger target gains with smaller, explicitly recorded residual control
+costs; it does not establish performance equivalence for every affected workload.
