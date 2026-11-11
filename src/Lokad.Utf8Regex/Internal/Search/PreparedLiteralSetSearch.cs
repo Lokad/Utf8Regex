@@ -213,7 +213,7 @@ internal readonly partial struct PreparedLiteralSetSearch
 
     // The selected strategy proves one literal per first-byte bucket. Position
     // and fused position/length callers share that direct comparison loop.
-    private static bool TryFindFirstMatchSingleLiteralBuckets(ReadOnlySpan<byte> input,
+    internal static bool TryFindFirstMatchSingleLiteralBuckets(ReadOnlySpan<byte> input,
         AsciiExactLiteralSearchData searchData, out int index, out int matchedLength)
     {
         index = -1;

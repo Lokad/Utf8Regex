@@ -88,6 +88,22 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Contains("byte offset 0.", Assert.Throws<ArgumentException>(() => regex.Count(input, 6)).Message);
     }
 
+    [Theory]
+    [InlineData(2037)] [InlineData(2038)] [InlineData(2043)]
+    public void PreparedFamilyCandidatesStillVerifyCapturedTails(int prefixBytes)
+    {
+        const string pattern = "(?:Sawyer|Finn|Tom|Huckleberry)([0-9]+)";
+        var input = Encoding.UTF8.GetBytes("é😀" + new string('x', prefixBytes - 6) +
+            "TomX Huckleberry12 Tom3 Sawyer4 Finn5 Huckleberr");
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            using var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
+                Regex.InfiniteMatchTimeout, Generous, inputValidation: policy);
+            Assert.Equal(4, regex.Count(input));
+            Assert.Equal(new[] { "12", "3", "4", "5" }, regex.FindAllToStrings(input).ScalarValues);
+        }
+    }
+
     [Fact]
     public void BorrowedEightLiteralCountRetainsParentLoanAndDiscoveryEligibility()
     {
@@ -134,7 +150,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     }
 
     [Theory]
-    [InlineData(2)] [InlineData(5)] [InlineData(8)]
+    [InlineData(2)] [InlineData(4)] [InlineData(5)] [InlineData(8)]
     public void WorkDenialIsPublicCumulativeAndFreshOnReuse(int width)
     {
         var pattern = string.Join('|', Literals.Take(width));

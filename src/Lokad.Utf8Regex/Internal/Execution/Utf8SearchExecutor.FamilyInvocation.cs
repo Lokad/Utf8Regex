@@ -24,7 +24,7 @@ internal static partial class Utf8SearchExecutor
         if (!folded && !reverse && !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement &&
             plan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 8 } literals)
             return TryFindSmallExactFamilyCandidate(literals, input, start, end,
-                ref invocation, out match, out found);
+                ref invocation, out match, out found, plan.AlternateLiteralSearch?.SearchData ?? default);
         PreparedByteSearch? firstByteSearch = null;
         if (folded && plan.AlternateIgnoreCaseLiteralSearch is
             { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
@@ -49,8 +49,11 @@ internal static partial class Utf8SearchExecutor
         // Preserve the existing pair and small complete-needle searches.
         if (literals.Length <= 8)
         {
-            var breach = TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
-                ref invocation, out var smallMatch, out var smallFound);
+            var breach = literals.Length >= 3
+                ? TryFindSmallExactFamilyCandidate(literals, input, start, end, ref invocation,
+                    out var smallMatch, out var smallFound, plan.AlternateLiteralSearch?.SearchData ?? default)
+                : TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
+                    ref invocation, out smallMatch, out smallFound);
             if (breach == Utf8ExecutionLimitKind.None && smallFound) candidate = smallMatch.Index;
             return breach;
         }
@@ -133,7 +136,7 @@ internal static partial class Utf8SearchExecutor
     // per-byte false-candidate replay. The caller still verifies the full regex.
     private static Utf8ExecutionLimitKind TryFindSmallExactFamilyCandidate(byte[][] literals,
         ReadOnlySpan<byte> input, int start, int end, ref Utf8SliceInvocation invocation,
-        out PreparedSearchMatch match, out bool found)
+        out PreparedSearchMatch match, out bool found, in AsciiExactLiteralSearchData prepared = default)
     {
         match = default; found = false;
         ArgumentOutOfRangeException.ThrowIfNegative(start);
@@ -150,6 +153,11 @@ internal static partial class Utf8SearchExecutor
                     input, start, end, false, ref invocation, out match, out found);
             longest = Math.Max(longest, literal.Length);
         }
+        // One bucket per original needle proves distinct heads. Borrow only
+        // short prepared families; raw/overlapping/other families keep the
+        // complete per-needle primitive below, without new preparation.
+        var usePrepared = prepared.Buckets is { Length: 3 or 4 } buckets &&
+            buckets.Length == literals.Length && prepared.ShortestLength >= 3 && longest <= 16;
         for (var low = start; low < end;)
         {
             // Complete-needle lookahead fits in 2048 bytes. Later starts belong
@@ -157,7 +165,24 @@ internal static partial class Utf8SearchExecutor
             var starts = Math.Min(2049 - longest, end - low);
             var block = input.Slice(low, Math.Min(starts + longest - 1, end - low));
             var best = -1; var ordinal = -1;
-            for (var id = 0; id < literals.Length; id++)
+            if (usePrepared)
+            {
+                // The same checked search used by ordinary execution runs
+                // wholly inside this admitted window. Charge the combined
+                // primitive once; original authority also gates publication.
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared,
+                    out var relative, out _) && relative < starts)
+                {
+                    // Distinct heads identify the original branch after full
+                    // verification. Bucket sorting cannot change its ordinal.
+                    for (var id = 0; id < literals.Length; id++)
+                        if (literals[id][0] == block[relative])
+                        { best = relative; ordinal = id; break; }
+                }
+            }
+            else for (var id = 0; id < literals.Length; id++)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;

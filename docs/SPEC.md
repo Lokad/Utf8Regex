@@ -386,9 +386,14 @@ larger and folded needles retain separately admitted comparisons.
 Pure LTR exact families of three to eight needles can reuse complete-needle search
 in admitted spans of at most 2048 bytes when no boundary or trailing-literal
 confirmation is required. Needles above1024 bytes keep the existing generic path.
-The same invocation charges eligibility, each branch/window and publication;
+The same invocation charges eligibility, each bounded scan and publication;
 avoiding false-candidate replay can reduce work, while dense hits can cost more.
 Caller validation, enclosing regex verification and original interruption remain.
+Already-prepared families of three or four distinct heads, with needles of 3–16
+bytes, can share the ordinary checked search inside each admitted window.
+Complete verification precedes recovery of the original branch ordinal. One
+combined scan replaces separate per-needle charges; working/result admission,
+bounded interruption and terminal publication retain the original invocation.
 Raw forward exact pairs can combine both short-needle scans into one checked
 primitive of at most 2048 bytes. Complete verification stays inside that bound;
 ordered branch confirmation and final publication still use the original

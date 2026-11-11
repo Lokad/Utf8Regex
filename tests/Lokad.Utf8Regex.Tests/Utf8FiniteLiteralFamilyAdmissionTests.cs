@@ -136,6 +136,71 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
 
+    [Theory]
+    [InlineData(2037)] [InlineData(2038)] [InlineData(2042)] [InlineData(2043)] [InlineData(4095)]
+    public void PreparedFamiliesKeepBorrowedWindowLookaheadAndTruncatedTails(int prefixBytes)
+    {
+        string[] literals = ["Sawyer", "Finn", "Tom", "Huckleberry"];
+        var input = Encoding.UTF8.GetBytes("é😀" + new string('x', prefixBytes - 6) +
+            "Huckleberry/Tom/Finn/Sawyer/Huckleberr");
+        var backing = new byte[input.Length + 6];
+        input.CopyTo(backing.AsSpan(5));
+        backing[^1] = (byte)'y'; // The last needle's missing byte is outside the borrowed span.
+        using var token = new CancellationTokenSource();
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        foreach (var count in new[] { 3, 4 })
+        {
+            var regex = new Utf8Regex(string.Join('|', literals.Take(count)), RegexOptions.Compiled,
+                Regex.InfiniteMatchTimeout, Small, inputValidation: policy);
+            Assert.Equal(count, regex.Count(backing.AsSpan(5, input.Length), token.Token));
+        }
+    }
+
+    [Theory]
+    [InlineData(3)] [InlineData(4)]
+    public void PreparedFamilyBucketOrderKeepsOriginalBranchIdentity(int count)
+    {
+        string[] literals = ["Sawyer", "Finn", "Tom", "Huckleberry"];
+        var regex = new Utf8Regex(string.Join('|', literals.Take(count)));
+        var input = Encoding.ASCII.GetBytes(new string('x', 2040) + literals[count - 1]);
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, token.Token);
+        var breach = Utf8SearchExecutor.TryFindLiteralFamily(regex.Inspection.SearchPlan, input, 0, input.Length,
+            false, ref invocation, out var match, out var found);
+        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
+        Assert.True(found);
+        Assert.Equal((2040, literals[count - 1].Length, count - 1), (match.Index, match.Length, match.LiteralId));
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void PreparedFamilySearchKeepsOriginalInterruptionAfterTrustedAdmission(bool expire)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        const string pattern = "Sawyer|Finn|Tom|Huckleberry";
+        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Small,
+            inputValidation: Utf8InputValidation.AssumeValid);
+        var input = Encoding.ASCII.GetBytes(new string('x', 262144) + "Tom");
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < 64) return;
+            entered = true;
+            if (expire) ticks = 50; else token.Cancel();
+        });
+        try
+        {
+            if (expire) Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, token.Token)).Pattern);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
+        }
+        finally { session.Complete(); }
+        Assert.True(entered);
+        ticks = 0;
+        Assert.Equal(1, regex.Count("Tom"u8));
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Used;

@@ -126,6 +126,13 @@ own eligibility, and patterns without a compatible native rendering retain Pytho
 scalar execution. This does not change matching order, captured results or limits
 on actual result payloads.
 
+Prepared short three/four-literal families with distinct leading bytes can share
+Core's checked search within the existing windows of at most 2048 bytes. Count and
+necessary-start discovery charge the combined bounded scan instead of each
+needle separately; work requirements can fall. Candidate discovery still needs
+complete Python verification, including captures and tails. Input policy,
+original interruption, storage admission and terminal publication are unchanged.
+
 Necessary ASCII start hints can enter a mandatory atomic body and skip impossible
 starts. The profile VM still verifies the complete body, atomic commit and
 captures. Full-subject validation and the original interruption authority remain;
