@@ -1513,7 +1513,7 @@ public sealed partial class Utf8Regex
                 !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
                 _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                !Utf8SliceRunner.CanRunTerminalClassRepeat(program))
+                !Utf8SliceRunner.CanCountTerminalClassRepeat(program))
             {
                 var isAscii = Utf8Validation.SubjectIsAscii(input, ref invocation);
                 // The family proof resolves proper-start overlap behind word boundaries
@@ -1588,12 +1588,18 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
             return count;
         }
+        // Count publishes no capture values. Reuse the complete scalar-run proof
+        // before expanded branch search or acquiring unused capture slots.
+        if (Utf8SliceRunner.TryCountTerminalClassRepeat(program, input, startByte, ref invocation, out var terminal))
+        {
+            if (terminal.Breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Terminal class count breached the invocation budget.");
+            return terminal.Count;
+        }
         // Every caller has admitted this subject through the same invocation.
         // A positive ASCII-only branch cannot consume wider scalars elsewhere
         // in that valid UTF-8 subject. Reuse the controlled simple counter;
         // Count discards captures and needs no scalar VM workspace.
-        // Complete class repeats keep their scalar-run counter instead of
-        // retrying expanded branches at every rejected starting position.
         if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _preparedRegex.SimplePatternPlan is { IsUtf8ByteSafe: true, Branches.Length: > 0, MinLength: > 0 } simple &&
@@ -1601,8 +1607,7 @@ public sealed partial class Utf8Regex
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
             !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            !Utf8SliceRunner.CanRunTerminalClassRepeat(program))
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var breach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
                 _preparedRegex.SearchPlan, simple, ref invocation, out var count);
@@ -1704,8 +1709,8 @@ public sealed partial class Utf8Regex
         }
     }
 
-    // Boolean/count/value results do not expose captures. Keep Count's original
-    // proof unchanged: dependent, alternate and unknown programs retain storage.
+    // Boolean/count/value results do not expose captures. This general proof
+    // keeps dependent, alternate and unknown programs' storage.
     // Detailed results and cursors continue to request every capture slot.
     private int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
         => ReferenceEquals(program, _ownedSliceProgram) &&

@@ -15,6 +15,8 @@ public sealed class Pcre2AsciiClassRunCountTests
     [InlineData(@"[a-z]*", "ab!", 3)]
     [InlineData(@"[a-z]{2,}?", "abcdef", 3)]
     [InlineData(@"[a-z]{2,3}", "abcdefg", 2)]
+    [InlineData(@"([a-z]{2,3})", "abcdefg", 2)]
+    [InlineData(@"([a-z]){2,3}", "abcdefg", 2)]
     [InlineData(@"(?i)[a-z]{3,}", "ABC xyz", 2)]
     [InlineData(@"\w{3,}", "éabcd😀xyz", 2)]
     public void CompleteClassRunsAndExcludedFormsKeepTheirPublicCounts(string pattern, string text, int expected)
@@ -55,6 +57,31 @@ public sealed class Pcre2AsciiClassRunCountTests
         var crlf = new Utf8Pcre2Regex(@"[a-z]{2,}", default,
             new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
         Assert.Equal(2, crlf.Count("\r\nabc def\r\n"u8));
+    }
+
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void CapturedCountNeedsNoScratchWhileCapturesAndMatchOptionsRemain(Utf8InputValidation validation)
+    {
+        const string pattern = "([a-z]){2,3}";
+        var regex = Utf8Pcre2Regex.Create(pattern, default, default,
+            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
+            Timeout.InfiniteTimeSpan, validation);
+        var input = "éabcdefg 😀 ab"u8.ToArray();
+        using var token = new CancellationTokenSource();
+        var allowance = new RejectStorage();
+        Assert.Equal(3, regex.Count(input));
+        Assert.Equal(2, regex.Count(input, 5, default, token.Token, allowance));
+        Assert.Equal(0, allowance.Attempts);
+        var values = new Utf8Pcre2Regex(pattern, inputValidation: validation);
+        var retained = values.MatchDetailed(input);
+        Assert.Equal("c", retained.GetGroup(1).GetValueString());
+        Assert.Equal(3, values.Count(input));
+        Assert.Equal("c", retained.GetGroup(1).GetValueString());
+        Assert.Equal(0, values.Count(input, 0, Pcre2MatchOptions.Anchored, token.Token));
+        if (validation == Utf8InputValidation.Validate)
+            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
     }
 
     [Theory]

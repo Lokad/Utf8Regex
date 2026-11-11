@@ -126,6 +126,14 @@ own eligibility, and patterns without a compatible native rendering retain Pytho
 scalar execution. This does not change matching order, captured results or limits
 on actual result payloads.
 
+A complete positive greedy scalar repeat can also Count with Core's constant-space
+run counter when a bounded proof of at most 64 instructions finds only plain
+capture markers around or inside that repeat. Count has no capture observer;
+matching, findall and other capture-returning operations keep their original
+capture handling. Scalar membership, byte floors, selected subject policy,
+original interruption and admission remain. Numerical work/depth/working costs
+can decrease; nullable, lazy, trailing and capture-dependent programs keep their routes.
+
 Prepared short three/four-literal families with distinct leading bytes can share
 Core's checked search within the existing windows of at most 2048 bytes. Count and
 necessary-start discovery charge the combined bounded scan instead of each

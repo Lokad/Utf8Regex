@@ -36,10 +36,12 @@ public sealed class Utf8TerminalClassCountTests
         }
     }
 
-    [Fact]
-    public void AsciiRangeSeekingKeepsEveryWorkCutoffAndBorrowedLoan()
+    [Theory]
+    [InlineData("[0-9]{2,4}")]
+    [InlineData("([0-9]){2,4}")]
+    public void AsciiRangeSeekingKeepsEveryWorkCutoffAndBorrowedLoan(string pattern)
     {
-        var program = new Utf8Regex("[0-9]{2,4}").Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "123456789😀12");
         var baseline = new Utf8SliceInvocation(new(100_000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
@@ -93,6 +95,10 @@ public sealed class Utf8TerminalClassCountTests
             yield return [@"\p{L}+", " café 中 😀x ", 3, compiled, finite];
             yield return [@"\p{L}{2,4}", "a ab abc abcd abcde abcdefgh abcdefghi", 8, compiled, finite];
             yield return [@"\p{L}{3}", "a ab abc abcd abcdefg", 4, compiled, finite];
+            yield return ["([A-Za-z]{2,3})", "ab abcdefg 😀é fg", 4, compiled, finite];
+            yield return ["([A-Za-z]){2,3}", "ab abcdefg 😀é fg", 4, compiled, finite];
+            yield return ["(([A-Za-z]{2,3}))", "ab abcdefg 😀é fg", 4, compiled, finite];
+            yield return [@"(\p{So}{2,3})", "😀 😀😀 😀😀😀😀 😀😀😀😀😀😀😀", 4, compiled, finite];
             yield return [@"[\p{L}-[AEIOU]]+", " ABCDE é 😀x A fgh ", 4, compiled, finite];
             yield return [@"[\p{L}-[AEIOU]]{2,3}", " A BBBB A éé A xxxxxx A ", 4, compiled, finite];
             yield return [@"(?i:[Ā-ſЀ-ӿ一-鿿])+", "āѐ中文 x Ā", 2, compiled, finite];
@@ -136,6 +142,23 @@ public sealed class Utf8TerminalClassCountTests
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, floor, [], [], ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
         Assert.Equal(expected, outcome.Count);
+    }
+
+    [Theory]
+    [InlineData(29)]
+    [InlineData(30)]
+    public void ManyCaptureMarkersKeepCountsAndRetainedValuesAcrossTheBoundedProof(int groups)
+    {
+        var pattern = new string('(', groups) + "[a-z]{2,3}" + new string(')', groups);
+        var input = "éabcdefg 😀 ab"u8.ToArray();
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8Regex(pattern, resourcePolicy: Funded, inputValidation: validation);
+            var retained = regex.MatchDetailed(input);
+            Assert.Equal("abc", retained.GetGroup(groups).GetValueString());
+            Assert.Equal(3, regex.Count(input));
+            Assert.Equal("abc", retained.GetGroup(groups).GetValueString());
+        }
     }
 
     [Fact]

@@ -282,6 +282,14 @@ preparation holds its additional peak reservation through output; its checkpoint
 also spend invocation work. Warm plans use their bounded cache. See
 [construction contract](SPEC.md#construction-preparation-and-caches).
 
+Under the existing shared-slice compatibility checks, Count alone can reuse the
+constant-space scalar-run counter for a complete positive greedy repeat with
+plain capture markers. Its count-only proof examines at most 64 instructions;
+the original scalar predicates, input policy, cancellation/deadlines and useful
+limits remain. Avoiding unused capture/VM storage can lower numerical work,
+depth and working requirements. Other operations and existing native fast paths
+retain their selection; nondefault match options keep their owned PCRE2 continuation.
+
 Bounded ASCII Boolean plans can include subroutine calls whose authoritative
 lowered body is exactly capture-start, one eligible ASCII token, capture-end and
 return. They reuse the existing 64-alternative/128-token limits and construction

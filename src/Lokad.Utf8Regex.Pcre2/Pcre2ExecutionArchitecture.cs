@@ -829,11 +829,13 @@ internal static class Pcre2CompiledProgramOverlay
         IPcre2BacktrackingNode root, Pcre2BacktrackingProgram fallback,
         Utf8Regex? preparedCore, Pcre2OperationPrograms operations)
     {
-        // Preserve the existing fallback-only slice selection independently of
-        // Core's numeric policy, which also makes native scalar payloads visible.
-        if (preparedCore is null || preparedCore.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
-            return operations;
+        if (preparedCore is null) return operations;
         var sliceProgram = preparedCore.Inspection.AvailableOwnedSliceProgram;
+        // A complete scalar-repeat Count ignores capture markers. Other native
+        // Core shapes retain the existing fallback-only shared-slice selection.
+        var countOnly = preparedCore.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex;
+        if (countOnly && (operations.Count is not Pcre2BacktrackingDirectProgram ||
+            !Utf8SliceRunner.CanCountTerminalClassRepeat(sliceProgram))) return operations;
         if ((request.Options & SliceIncompatibleOptions) != 0 ||
             (request.Settings.Newline is not Pcre2NewlineConvention.Default &&
              request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
@@ -872,6 +874,7 @@ internal static class Pcre2CompiledProgramOverlay
         var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback,
             sliceProgram.GroupCount == 0 && preparedCore.Inspection.PreparedRegex.FallbackDirectFamily.Kind ==
                 Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount);
+        if (countOnly) return operations with { Count = shared };
         return operations with
         {
             IsMatch = operations.IsMatch is Pcre2BacktrackingDirectProgram ? shared : operations.IsMatch,
@@ -1045,11 +1048,17 @@ internal static class Pcre2ProgramInvariant
 
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
-        if (directProgram is Pcre2SliceDirectProgram sliceProgram &&
-            (program.Operations.Match is not Pcre2SliceDirectProgram canonical ||
-             !ReferenceEquals(canonical.SliceProgram, sliceProgram.SliceProgram) ||
-             !ReferenceEquals(canonical.Fallback, sliceProgram.Fallback)))
-            throw new InvalidOperationException("Slice operation slots must share their owned program and PCRE2 fallback.");
+        if (directProgram is Pcre2SliceDirectProgram sliceProgram)
+        {
+            var shared = program.Operations.Match is Pcre2SliceDirectProgram canonical &&
+                ReferenceEquals(canonical.SliceProgram, sliceProgram.SliceProgram) &&
+                ReferenceEquals(canonical.Fallback, sliceProgram.Fallback);
+            var countOnly = ReferenceEquals(directProgram, program.Operations.Count) &&
+                IsOwnedMatchFallback(program, sliceProgram.Fallback) &&
+                Utf8SliceRunner.CanCountTerminalClassRepeat(sliceProgram.SliceProgram);
+            if (!shared && !countOnly)
+                throw new InvalidOperationException("Slice operations must share their payload, or own a proved Count payload and canonical PCRE2 fallback.");
+        }
 
         if (GetCoreRegex(directProgram) is { } core &&
             !ReferenceEquals(program.PrimaryUtf8, core))
@@ -2531,7 +2540,8 @@ internal static class Pcre2GlobalOperationDriver
         }
 
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
-        if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor, budget))
+        if (program is not Pcre2SliceDirectProgram &&
+            TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor, budget))
         {
             if (program is Pcre2BacktrackingDirectProgram)
             {

@@ -587,8 +587,11 @@ A complete greedy set repeat with a positive minimum (for example
 strict validation, one work charge per examined scalar and final publication
 checks remain. Complemented/folded sets retain scalar membership; positive
 unfolded sets can use their existing ASCII mask. Tight working/depth/result
-limits can admit this constant-space route. Captured, lazy, nullable, trailing,
-RTL and NonBacktracking shapes retain their existing paths. Matching semantics
+limits can admit this constant-space route. A bounded proof over at most 64
+instructions can ignore plain capture markers around or inside that repeat for
+Count, which publishes no capture values. Actual capture-returning operations
+retain their original execution and storage. Lazy, nullable, trailing, RTL and
+NonBacktracking shapes retain their existing paths. Matching semantics
 are unchanged; route-dependent workspace/depth and work charges can decrease.
 
 An uncaptured, case-sensitive finite repeat of disjoint classes, such as

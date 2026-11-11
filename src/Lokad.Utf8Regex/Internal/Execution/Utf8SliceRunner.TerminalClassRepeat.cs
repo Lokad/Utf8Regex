@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    internal static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
+    private static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
     {
         if (program.IsNonBacktracking || program.RightToLeft || program.GroupCount != 0 ||
             program.RepeatCount != 1 || program.Instructions.Length != 5)
@@ -18,10 +18,15 @@ internal static partial class Utf8SliceRunner
             repeat.A != 3 || repeat.B != 0 || repeat.RepeatMinimum < 0 || repeat.RepeatMaximum < repeat.RepeatMinimum ||
             instructions[2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[2].A != 0 ||
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
-            instructions[4].Kind != Utf8SliceInstructionKind.Accept ||
-            atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
-                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
+            instructions[4].Kind != Utf8SliceInstructionKind.Accept)
             return false;
+        return CanRepeatScalarAtom(program, atom);
+    }
+
+    private static bool CanRepeatScalarAtom(Utf8SliceProgram program, Utf8SliceInstruction atom)
+    {
+        if (atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+            Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)) return false;
         if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0) return false;
         // Keep each fused base step bounded. A nested class program retains its
         // own metering; a long list of independent members stays on the VM path.
@@ -29,8 +34,55 @@ internal static partial class Utf8SliceRunner
             program.CategorySetMembers[atom.D].Length <= 1;
     }
 
+    internal static bool CanCountTerminalClassRepeat(Utf8SliceProgram program)
+        => TryGetCountTerminalClassRepeat(program, out _, out _);
+
+    private static bool TryGetCountTerminalClassRepeat(Utf8SliceProgram program,
+        out int repeatIndex, out int atomIndex)
+    {
+        repeatIndex = 0;
+        atomIndex = 1;
+        if (CanRunTerminalClassRepeat(program)) return program.Instructions[0].RepeatMinimum > 0;
+        if (program.IsNonBacktracking || program.RightToLeft || program.RepeatCount != 1 ||
+            program.GroupCount == 0 || program.HasBalancing || program.Assertions.Length != 0 ||
+            program.Instructions.Length > 64) return false;
+
+        // Count has no capture observer. A bounded walk ignores only plain
+        // markers, retaining the original repeat's absolute control-flow targets.
+        Span<int> positions = stackalloc int[5];
+        var count = 0;
+        var code = program.Instructions;
+        for (var pc = 0; pc < code.Length; pc++)
+        {
+            if (code[pc].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (count == positions.Length) return false;
+            positions[count++] = pc;
+        }
+        if (count != positions.Length) return false;
+        repeatIndex = positions[0];
+        atomIndex = positions[1];
+        var repeat = code[repeatIndex];
+        return repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy && repeat.A == positions[3] && repeat.B == 0 &&
+            repeat.RepeatMinimum > 0 && repeat.RepeatMaximum >= repeat.RepeatMinimum &&
+            code[positions[2]].Kind == Utf8SliceInstructionKind.RepeatEnd && code[positions[2]].A == repeatIndex &&
+            code[positions[3]].Kind == Utf8SliceInstructionKind.RepeatExit && code[positions[3]].A == repeat.B &&
+            code[positions[4]].Kind == Utf8SliceInstructionKind.Accept && CanRepeatScalarAtom(program, code[atomIndex]);
+    }
+
+    internal static bool TryCountTerminalClassRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
+    {
+        outcome = default;
+        if (!TryGetCountTerminalClassRepeat(program, out var repeatIndex, out var atomIndex)) return false;
+        invocation.Budget.ThrowIfCancellationRequested();
+        if ((uint)start > (uint)input.Length || start < input.Length && (input[start] & 0xc0) == 0x80) return true;
+        invocation.AnchorOriginByte = start;
+        outcome = CountTerminalClassRepeat(program, input, start, repeatIndex, atomIndex, ref invocation);
+        return true;
+    }
+
     private static Utf8SliceCountOutcome CountTerminalClassRepeat(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int start, int repeatIndex, int atomIndex, ref Utf8SliceInvocation invocation)
     {
         // This complete root has no tail to reconsider a greedy boundary.
         // Publish full maxima and discard each final run below the minimum.
@@ -39,8 +91,8 @@ internal static partial class Utf8SliceRunner
         // Observe an enclosing loan without acquiring any local scratch.
         breach = invocation.TryReserveWorking(0);
         if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-        var repeat = program.Instructions[0];
-        var atom = program.Instructions[1];
+        var repeat = program.Instructions[repeatIndex];
+        var atom = program.Instructions[atomIndex];
         ReadOnlySpan<byte> asciiMask = atom.Kind == Utf8SliceInstructionKind.Set && atom.B == 0 && atom.C == 0
             ? program.SetMasks[atom.A] : [];
         var minimum = repeat.RepeatMinimum;

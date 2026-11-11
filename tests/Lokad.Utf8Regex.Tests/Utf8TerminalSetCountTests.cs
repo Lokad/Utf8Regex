@@ -14,6 +14,8 @@ public sealed class Utf8TerminalSetCountTests
     [Theory]
     [InlineData("[A-Za-z]{2,3}", "ab abcd abcdefg 😀é a", 4)]
     [InlineData("[A-Za-z]{2,3}", "ab😀cdeéfg", 3)]
+    [InlineData("([A-Za-z]{2,3})", "ab😀cdeéfg", 3)]
+    [InlineData("([A-Za-z]){2,3}", "ab😀cdeéfg", 3)]
     [InlineData("[^x]{2,3}", "😀éxabc😀xax😀😀😀😀", 3)]
     [InlineData("(?i:[ak]{2,4})", "KaKk K AAkkk 😀 a", 2)]
     public void WholeSetCountsUseScalarRunsWithoutVmCapacity(string pattern, string text, int expected)
@@ -43,6 +45,8 @@ public sealed class Utf8TerminalSetCountTests
 
     [Theory]
     [InlineData("[A-Za-z]{2,3}", "ab😀cdeéfg")]
+    [InlineData("([A-Za-z]{2,3})", "ab😀cdeéfg")]
+    [InlineData("([A-Za-z]){2,3}", "ab😀cdeéfg")]
     [InlineData("(?i:[ak]{2,4})", "KaKk K AAkkk 😀 a")]
     public void MatchingAndCopiedCursorsKeepRangesAndProgression(string pattern, string text)
     {

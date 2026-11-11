@@ -69,22 +69,25 @@ public sealed class Utf8ValidatedSimpleCountTests
     {
         var input = Encoding.UTF8.GetBytes((unicodePrefix ? "é😀" : "") +
             string.Concat(Enumerable.Repeat("aaaaaaa ", 256)) + "abcdefghijklm");
-        var regex = new Utf8Regex("[A-Za-z]{8,13}", options, resourcePolicy: Limits with
-            { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxDepth = 1 }, inputValidation: policy);
         using var token = new CancellationTokenSource();
-        var account = new Account();
-        account.TryReserve(17);
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
+        foreach (var pattern in new[] { "[A-Za-z]{8,13}", "([A-Za-z]{8,13})", "([A-Za-z]){8,13}" })
         {
-            Assert.Equal(1, regex.Count(input));
-            Assert.Equal(1, regex.Count(input, token.Token));
-            Assert.Equal(1, regex.Count(input, token.Token, account));
-            Assert.Equal(policy == Utf8InputValidation.Validate ? 3 : 0, session.SubjectValidations);
-            Assert.Equal(17UL, account.Used);
+            var regex = new Utf8Regex(pattern, options, resourcePolicy: Limits with
+                { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxDepth = 1 }, inputValidation: policy);
+            var account = new Account();
+            account.TryReserve(17);
+            var session = Utf8SearchDiagnosticsSession.Start();
+            try
+            {
+                Assert.Equal(1, regex.Count(input));
+                Assert.Equal(1, regex.Count(input, token.Token));
+                Assert.Equal(1, regex.Count(input, token.Token, account));
+                Assert.Equal(policy == Utf8InputValidation.Validate ? 3 : 0, session.SubjectValidations);
+                Assert.Equal(17UL, account.Used);
+            }
+            finally { session.Complete(); account.Release(17); }
+            Assert.Equal(0UL, account.Used);
         }
-        finally { session.Complete(); account.Release(17); }
-        Assert.Equal(0UL, account.Used);
     }
 
     [Fact]

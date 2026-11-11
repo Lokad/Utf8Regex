@@ -349,6 +349,11 @@ internal static class Pcre2SliceDriver
         Utf8BytePosition start,
         scoped ref Utf8SliceInvocation invocation)
     {
+        if (Utf8SliceRunner.TryCountTerminalClassRepeat(program, input.Bytes, start.Value, ref invocation, out var terminal))
+        {
+            ThrowIfSliceBreached(terminal.Breach);
+            return terminal.Count;
+        }
         var slots = RentProgramSlots(program, ref invocation);
         try
         {
