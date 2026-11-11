@@ -10,20 +10,24 @@ public sealed class PythonReAsciiCaptureStringTests
         MaxWorkingBytes = 16 * 1024 * 1024, MaxResultBytes = 16 * 1024 * 1024,
     };
 
-    private static Utf8PythonRegex Create(string pattern, Utf8ResourcePolicy policy)
-        => new(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+    private static Utf8PythonRegex Create(string pattern, Utf8ResourcePolicy policy,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        => new(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy, inputValidation);
 
     [Theory]
     [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
     public void AsciiCaptureAcrossDecodeBlocksRetainsExactOwnedText(int length)
     {
         var first = new string('a', length);
-        var regex = Create("(a+)(b)", Funded);
-        var result = regex.FindAllToStrings(Encoding.UTF8.GetBytes(first + "b"));
-        var tuple = Assert.Single(result.TupleValues);
-        Assert.Equal(new[] { first, "b" }, tuple);
-        Assert.Equal(new[] { "aa", "b" }, Assert.Single(regex.FindAllToStrings("aab"u8).TupleValues));
-        Assert.Equal(first, tuple[0]);
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            using var regex = Create("(a+)(b)", Funded, policy);
+            var result = regex.FindAllToStrings(Encoding.UTF8.GetBytes(first + "b"));
+            var tuple = Assert.Single(result.TupleValues);
+            Assert.Equal(new[] { first, "b" }, tuple);
+            Assert.Equal(new[] { "aa", "b" }, Assert.Single(regex.FindAllToStrings("aab"u8).TupleValues));
+            Assert.Equal(first, tuple[0]);
+        }
     }
 
     [Theory]
@@ -33,8 +37,12 @@ public sealed class PythonReAsciiCaptureStringTests
     public void WholeSubjectValidationKeepsAsciiAndUnicodeCaptureLengths(
         string pattern, string input, string first, string second)
     {
-        var result = Create(pattern, Funded).FindAllToStrings(Encoding.UTF8.GetBytes(input));
-        Assert.Equal(new[] { first, second }, Assert.Single(result.TupleValues));
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            using var regex = Create(pattern, Funded, policy);
+            var result = regex.FindAllToStrings(Encoding.UTF8.GetBytes(input));
+            Assert.Equal(new[] { first, second }, Assert.Single(result.TupleValues));
+        }
     }
 
     [Fact]
@@ -53,12 +61,16 @@ public sealed class PythonReAsciiCaptureStringTests
         var pattern = unicode ? "(😀+)(é)" : "(a+)(b)";
         var input = Encoding.UTF8.GetBytes(first + second);
         var required = Utf8ConstructionBudget.ArrayBytes<string>(2) + Utf8ConstructionBudget.StringBytes(first.Length);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Create(pattern, Funded with { MaxResultBytes = required - 1 }).FindAllToStrings(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
-        Assert.Equal(required - 1, failure.Limit);
-        Assert.Equal(required, failure.Requested);
-        Assert.Equal(new[] { first, second }, Assert.Single(Create(pattern, Funded).FindAllToStrings(input).TupleValues));
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            using var limited = Create(pattern, Funded with { MaxResultBytes = required - 1 }, policy);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.FindAllToStrings(input));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
+            Assert.Equal(required - 1, failure.Limit);
+            Assert.Equal(required, failure.Requested);
+            using var sufficient = Create(pattern, Funded, policy);
+            Assert.Equal(new[] { first, second }, Assert.Single(sufficient.FindAllToStrings(input).TupleValues));
+        }
     }
 
     [Fact]

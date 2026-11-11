@@ -15,19 +15,21 @@ public sealed class PythonReUnicodeStringSizingTests
         var word = new string('a', prefixLength) + "é中😀";
         var input = Encoding.UTF8.GetBytes("😀" + word + "，" + word + ",尾😀");
         foreach (var funded in new[] { false, true })
+        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
         {
             var policy = funded ? new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 1_000_000, MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
             } : default;
-            var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy, inputValidation);
+            using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy, inputValidation);
             Assert.Equal(new string?[] { word, word, "尾😀" }, plain.SplitToStrings(input, 0, 4));
             Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, captured.SplitToStrings(input, 0, 4));
             Assert.Equal(new string?[] { word, word + ",尾😀" }, plain.SplitToStrings(input, 1, 4));
+            using var findall = new Utf8PythonRegex("([^,，]+)", inputValidation: inputValidation);
             Assert.Equal(new string?[] { word, word, "尾😀" },
-                new Utf8PythonRegex("([^,，]+)").FindAllToStrings(Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀")).ScalarValues);
+                findall.FindAllToStrings(Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀")).ScalarValues);
         }
     }
 
@@ -40,8 +42,11 @@ public sealed class PythonReUnicodeStringSizingTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void InteriorSizingObservesOriginalInterruptionBeforeStringAdmission(bool expire)
+    [InlineData(false, Utf8InputValidation.Validate)]
+    [InlineData(true, Utf8InputValidation.Validate)]
+    [InlineData(false, Utf8InputValidation.AssumeValid)]
+    [InlineData(true, Utf8InputValidation.AssumeValid)]
+    public void InteriorSizingObservesOriginalInterruptionBeforeStringAdmission(bool expire, Utf8InputValidation inputValidation)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -51,7 +56,7 @@ public sealed class PythonReUnicodeStringSizingTests
         var program = core.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes("x" + new string('é', 10_000) + "z");
         var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, null, ".+",
-            new(new(0, 0, 1UL << 20), timeout, token.Token));
+            new(new(0, 0, 1UL << 20), timeout, token.Token) { InputValidation = inputValidation });
         try
         {
             Assert.True(cursor.MoveNext());
