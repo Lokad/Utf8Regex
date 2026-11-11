@@ -1,0 +1,1055 @@
+{
+  "Complete": true,
+  "Seconds": 110.09771107044071,
+  "SampleCount": 480,
+  "MinimumSampleMs": 61.402,
+  "MaximumBatchAllocationMiB": 160.88607788085938,
+  "LoadedProducerHashesVerified": true,
+  "CommonCallerAndControls": true,
+  "PublicAllocationObservations": 14,
+  "BeforeAllocatedBytesRange": [
+    48,
+    96
+  ],
+  "AfterAllocatedBytes": 0,
+  "FinalAccountLoansZero": true,
+  "RawArchiveSha256": "1D277E4C164444CC1F331C81FA822C8582C1A7DB1BA7C96D9FC66BA85FBFCA9E",
+  "SourceBaseline": "Frozen dev71 Full2c5e3416; unchanged C# through metadata01526d23",
+  "Candidate": "01526d23 plus archived scoped-state patch",
+  "Processes": [
+    {
+      "Policy": "Validate",
+      "Side": "before",
+      "InputContract": "Engine validates the complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "5A6375F525A0FF221A5BBF11887DC0F3AB8C95296E9E852A648746C10BCE7E3E",
+          "PdbSha256": "12A67E31D08DAEB8A679A5E838E962CA8E43BCFBC34333C153373387847E2B62"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "before",
+      "InputContract": "Engine validates the complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "5A6375F525A0FF221A5BBF11887DC0F3AB8C95296E9E852A648746C10BCE7E3E",
+          "PdbSha256": "12A67E31D08DAEB8A679A5E838E962CA8E43BCFBC34333C153373387847E2B62"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "after",
+      "InputContract": "Engine validates the complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+01526d230d06917d716bd36dc9e0a4cc5577f307",
+          "DllSha256": "A79424D5D839B7C882DEF88A445345114A19EEBF60B4259D0171DD08763774E7",
+          "PdbSha256": "C4BE8EE3566087D036CD43F4471B4F79EBE69B4659476AD6D9545BF06DFC343C"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "after",
+      "InputContract": "Engine validates the complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+01526d230d06917d716bd36dc9e0a4cc5577f307",
+          "DllSha256": "A79424D5D839B7C882DEF88A445345114A19EEBF60B4259D0171DD08763774E7",
+          "PdbSha256": "C4BE8EE3566087D036CD43F4471B4F79EBE69B4659476AD6D9545BF06DFC343C"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "before",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "5A6375F525A0FF221A5BBF11887DC0F3AB8C95296E9E852A648746C10BCE7E3E",
+          "PdbSha256": "12A67E31D08DAEB8A679A5E838E962CA8E43BCFBC34333C153373387847E2B62"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "before",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "5A6375F525A0FF221A5BBF11887DC0F3AB8C95296E9E852A648746C10BCE7E3E",
+          "PdbSha256": "12A67E31D08DAEB8A679A5E838E962CA8E43BCFBC34333C153373387847E2B62"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "after",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+01526d230d06917d716bd36dc9e0a4cc5577f307",
+          "DllSha256": "A79424D5D839B7C882DEF88A445345114A19EEBF60B4259D0171DD08763774E7",
+          "PdbSha256": "C4BE8EE3566087D036CD43F4471B4F79EBE69B4659476AD6D9545BF06DFC343C"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "after",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "WorkerSha256": "3751D052331DB5C504EE36D6D0411B5A4F0B76A80257F13D64E5C729B324F645",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.71+2c5e341619f878874c45d12002c3f69f76dfb27c",
+          "DllSha256": "347DEFC181E69B344F0D9A1C98A894372A9769842F6AAA7A9651B889D72B3799",
+          "PdbSha256": "3627AC6E1B2409569DEF1C6F3222C1C05302C94F0EBEAA231D6F5E64753CCC8D"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Posix",
+          "Revision": "0.5.0-dev.71+01526d230d06917d716bd36dc9e0a4cc5577f307",
+          "DllSha256": "A79424D5D839B7C882DEF88A445345114A19EEBF60B4259D0171DD08763774E7",
+          "PdbSha256": "C4BE8EE3566087D036CD43F4471B4F79EBE69B4659476AD6D9545BF06DFC343C"
+        }
+      ],
+      "PeakWorkingBytes": 977,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    }
+  ],
+  "Rows": [
+    {
+      "Id": "posix/ambiguous-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.6629264641127257,
+          0.6648956556901494
+        ],
+        "MedianUs": 0.6639110599014375,
+        "MinUs": 0.6355825524358726,
+        "MaxUs": 0.7350296242901598,
+        "AllocatedBytesPerOperation": [
+          56.002818141787756,
+          56.00035162362207
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.6203241132552937,
+          0.6104209476224176
+        ],
+        "MedianUs": 0.6153725304388556,
+        "MinUs": 0.6058346051857474,
+        "MaxUs": 0.6264351731592662,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -7.310998775918531,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "posix/absent-captures",
+      "SubjectBytes": 1,
+      "SubjectSha256": "CA978112CA1BBDCAFAC231B39A23DC4DA786EFF8147C4E72B9807785AFEE48BB",
+      "SingleResultChecksum": 68397980,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.32946995380064475,
+          0.33775933435589267
+        ],
+        "MedianUs": 0.3336146440782687,
+        "MinUs": 0.3107733406454615,
+        "MaxUs": 0.4015376210787301,
+        "AllocatedBytesPerOperation": [
+          48.017947950942265,
+          48.00531170550291
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.3192710662359318,
+          0.3164176801937967
+        ],
+        "MedianUs": 0.31784437321486425,
+        "MinUs": 0.3097648839429784,
+        "MaxUs": 0.41487581546382707,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -4.727091913778403,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/unicode-floor-captures",
+      "SubjectBytes": 11,
+      "SubjectSha256": "F8DD8629C32B971DCAAB3D1ECD04FBF4621BDED5D6967AED7B9D930152AC371D",
+      "SingleResultChecksum": 1069636482,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.7375720053296466,
+          0.753497790501651
+        ],
+        "MedianUs": 0.7455348979156489,
+        "MinUs": 0.7273429161388144,
+        "MaxUs": 0.7616355275364343,
+        "AllocatedBytesPerOperation": [
+          56,
+          56.03295793474249
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.7339722131706017,
+          0.7188833227955838
+        ],
+        "MedianUs": 0.7264277679830927,
+        "MinUs": 0.7096532269831234,
+        "MaxUs": 0.7387297449417898,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -2.562875324277303,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/sku-captures",
+      "SubjectBytes": 6,
+      "SubjectSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "SingleResultChecksum": 1980903853,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.7765689746857034,
+          0.7644376579612467
+        ],
+        "MedianUs": 0.7705033163234751,
+        "MinUs": 0.7252536953358351,
+        "MaxUs": 0.7853712863836575,
+        "AllocatedBytesPerOperation": [
+          96.025364463664,
+          96.00566745806847
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.7191578808147224,
+          0.7186484405082788
+        ],
+        "MedianUs": 0.7189031606615006,
+        "MinUs": 0.7102108201771276,
+        "MaxUs": 0.7289054678475163,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -6.696941410737756,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/finite-live-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.9103304762017048,
+          0.916649022849734
+        ],
+        "MedianUs": 0.9134897495257195,
+        "MinUs": 0.9049011401016306,
+        "MaxUs": 0.9235283021092469,
+        "AllocatedBytesPerOperation": [
+          1032.000377282856,
+          1032.0003806306574
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.9172440755443282,
+          0.8989606969444021
+        ],
+        "MedianUs": 0.9081023862443651,
+        "MinUs": 0.8916150346238404,
+        "MaxUs": 0.9294562733068688,
+        "AllocatedBytesPerOperation": [
+          976.0010585829424,
+          976.0010346003269
+        ]
+      },
+      "ChangePercent": -0.5897562927390743,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/funded-deadline-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          1.29458812509757,
+          1.3241554819592123
+        ],
+        "MedianUs": 1.309371803528391,
+        "MinUs": 1.2795961908726647,
+        "MaxUs": 1.5670812301607953,
+        "AllocatedBytesPerOperation": [
+          1080,
+          1080
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1.3247111079651028,
+          1.2782649444482312
+        ],
+        "MedianUs": 1.301488026206667,
+        "MinUs": 1.269717469838457,
+        "MaxUs": 1.690226335627953,
+        "AllocatedBytesPerOperation": [
+          1024,
+          1024
+        ]
+      },
+      "ChangePercent": -0.6021037951542407,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/history1024",
+      "SubjectBytes": 1024,
+      "SubjectSha256": "2EDC986847E209B4016E141A6DC8716D3207350F416969382D431539BF292E4A",
+      "SingleResultChecksum": 10345250420,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          78.05844700944387,
+          79.84627192982457
+        ],
+        "MedianUs": 78.95235946963422,
+        "MinUs": 77.43976915005247,
+        "MaxUs": 80.6064692982456,
+        "AllocatedBytesPerOperation": [
+          172368,
+          172368
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          79.58885416666666,
+          79.65468085106383
+        ],
+        "MedianUs": 79.62176750886525,
+        "MinUs": 78.91361702127658,
+        "MaxUs": 81.32393617021276,
+        "AllocatedBytesPerOperation": [
+          172320,
+          172320
+        ]
+      },
+      "ChangePercent": 0.8478632478216008,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/complete-cursor",
+      "SubjectBytes": 5,
+      "SubjectSha256": "ED968E840D10D2D313A870BC131A4E2C311D7AD09BDF32B3418147221F51A6E2",
+      "SingleResultChecksum": 957440235716,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.9549694159301388,
+          0.9619321671785286
+        ],
+        "MedianUs": 0.9584507915543337,
+        "MinUs": 0.9428188009079984,
+        "MaxUs": 1.0911456803311526,
+        "AllocatedBytesPerOperation": [
+          336.0023251819851,
+          336
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1.0479107477887966,
+          0.9826696751365349
+        ],
+        "MedianUs": 1.0152902114626658,
+        "MinUs": 0.9266070100766647,
+        "MaxUs": 1.125703564727955,
+        "AllocatedBytesPerOperation": [
+          336.0002144197266,
+          336.0041024589113
+        ]
+      },
+      "ChangePercent": 5.930343050388109,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/large-state-count",
+      "SubjectBytes": 130,
+      "SubjectSha256": "1E3C4F4750C8C29BBFA9CED317788176B156D342E57F7777F62FD7221A44312F",
+      "SingleResultChecksum": 1,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          7.470709198515398,
+          7.436379910492293
+        ],
+        "MedianUs": 7.4535445545038455,
+        "MinUs": 7.403029391112447,
+        "MaxUs": 7.493449694051561,
+        "AllocatedBytesPerOperation": [
+          4664,
+          4664
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          7.274678526539689,
+          7.296326173583438
+        ],
+        "MedianUs": 7.285502350061563,
+        "MinUs": 7.207036641072991,
+        "MaxUs": 7.307386529303139,
+        "AllocatedBytesPerOperation": [
+          4664,
+          4664
+        ]
+      },
+      "ChangePercent": -2.254527402546247,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "posix/existence",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 1,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.30093454974402156,
+          0.3016806858230441
+        ],
+        "MedianUs": 0.3013076177835328,
+        "MinUs": 0.2951151605177556,
+        "MaxUs": 0.3022355379565635,
+        "AllocatedBytesPerOperation": [
+          32,
+          32
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.27929088218824516,
+          0.27542548298068076
+        ],
+        "MedianUs": 0.277358182584463,
+        "MinUs": 0.2741816778941746,
+        "MaxUs": 0.2820414280202985,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -7.948499734339853,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "control/core-count",
+      "SubjectBytes": 2304,
+      "SubjectSha256": "0ACECF9548F3CBDEA9686845C5ACE27A0BB42C964CBC5163EE1A869249445AC9",
+      "SingleResultChecksum": 256,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          54.74085014409222,
+          48.139780077619655
+        ],
+        "MedianUs": 51.440315110855934,
+        "MinUs": 47.911319534282015,
+        "MaxUs": 54.89618155619596,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          50.900340367596996,
+          51.74607118871726
+        ],
+        "MedianUs": 51.32320577815713,
+        "MinUs": 50.73682777399591,
+        "MaxUs": 51.90671591672264,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -0.22766060520125198,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 2304,
+      "SubjectSha256": "0ACECF9548F3CBDEA9686845C5ACE27A0BB42C964CBC5163EE1A869249445AC9",
+      "SingleResultChecksum": 256,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          10.693886634376229,
+          10.544574551131927
+        ],
+        "MedianUs": 10.619230592754079,
+        "MinUs": 10.50055945875618,
+        "MaxUs": 11.05407775886896,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          10.464939930241572,
+          10.528720490413459
+        ],
+        "MedianUs": 10.496830210327516,
+        "MinUs": 10.403345820953366,
+        "MaxUs": 10.864262423372898,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -1.1526294806149195,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/ambiguous-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.6415330411618114,
+          0.6614316434647095
+        ],
+        "MedianUs": 0.6514823423132605,
+        "MinUs": 0.6335179042494842,
+        "MaxUs": 0.7329076013616458,
+        "AllocatedBytesPerOperation": [
+          56.00041247744264,
+          56.03391925893036
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.6053232466663403,
+          0.613789892630833
+        ],
+        "MedianUs": 0.6095565696485866,
+        "MinUs": 0.5981116061956291,
+        "MaxUs": 0.6218940810995657,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -6.435442673059311,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "posix/absent-captures",
+      "SubjectBytes": 1,
+      "SubjectSha256": "CA978112CA1BBDCAFAC231B39A23DC4DA786EFF8147C4E72B9807785AFEE48BB",
+      "SingleResultChecksum": 68397980,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.3188259185281866,
+          0.323792333394899
+        ],
+        "MedianUs": 0.3213091259615428,
+        "MinUs": 0.31135843344606007,
+        "MaxUs": 0.33989833268969216,
+        "AllocatedBytesPerOperation": [
+          48,
+          48.00627969844015
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.31213214067559764,
+          0.30718751669962063
+        ],
+        "MedianUs": 0.3096598286876091,
+        "MinUs": 0.3008866727778714,
+        "MaxUs": 0.31548628136793044,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -3.6255731109635536,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/unicode-floor-captures",
+      "SubjectBytes": 11,
+      "SubjectSha256": "F8DD8629C32B971DCAAB3D1ECD04FBF4621BDED5D6967AED7B9D930152AC371D",
+      "SingleResultChecksum": 1069636482,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.702373416269874,
+          0.689375051072755
+        ],
+        "MedianUs": 0.6958742336713145,
+        "MinUs": 0.660974059580341,
+        "MaxUs": 0.7213763429022285,
+        "AllocatedBytesPerOperation": [
+          56.0081468637327,
+          56.014164177342764
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.6432651585580001,
+          0.6646034885490035
+        ],
+        "MedianUs": 0.6539343235535018,
+        "MinUs": 0.6408910925179905,
+        "MaxUs": 0.667332217618157,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -6.026938215048549,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/sku-captures",
+      "SubjectBytes": 6,
+      "SubjectSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "SingleResultChecksum": 1980903853,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.7806228685155369,
+          0.7639400522956241
+        ],
+        "MedianUs": 0.7722814604055805,
+        "MinUs": 0.7204789279397062,
+        "MaxUs": 0.8192881216933862,
+        "AllocatedBytesPerOperation": [
+          96.01264139055296,
+          96.00053833730678
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.6975233537342965,
+          0.7140459206210468
+        ],
+        "MedianUs": 0.7057846371776717,
+        "MinUs": 0.6861451382817174,
+        "MaxUs": 0.7163128166088664,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -8.610438892704552,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "posix/finite-live-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.8480494798246675,
+          0.9058217928957183
+        ],
+        "MedianUs": 0.8769356363601929,
+        "MinUs": 0.8428982609555407,
+        "MaxUs": 0.9101634290689602,
+        "AllocatedBytesPerOperation": [
+          1032.001054632142,
+          1032.000376510454
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.8436132997678751,
+          0.8546535154274152
+        ],
+        "MedianUs": 0.8491334075976451,
+        "MinUs": 0.830395265962664,
+        "MaxUs": 0.8612390314706077,
+        "AllocatedBytesPerOperation": [
+          976.0009590130884,
+          976.0009676497108
+        ]
+      },
+      "ChangePercent": -3.170384188963249,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/funded-deadline-captures",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 791660251,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          1.2091842851356824,
+          1.2591061433790263
+        ],
+        "MedianUs": 1.2341452142573544,
+        "MinUs": 1.200732280275415,
+        "MaxUs": 1.5397844957602975,
+        "AllocatedBytesPerOperation": [
+          1080,
+          1080
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1.221104286503526,
+          1.2187728730122747
+        ],
+        "MedianUs": 1.2199385797579003,
+        "MinUs": 1.21564271140331,
+        "MaxUs": 1.5865919616543056,
+        "AllocatedBytesPerOperation": [
+          1024,
+          1024
+        ]
+      },
+      "ChangePercent": -1.151131514779069,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/history1024",
+      "SubjectBytes": 1024,
+      "SubjectSha256": "2EDC986847E209B4016E141A6DC8716D3207350F416969382D431539BF292E4A",
+      "SingleResultChecksum": 10345250420,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          78.38982528263104,
+          79.09924160346696
+        ],
+        "MedianUs": 78.744533443049,
+        "MinUs": 78.03586844809865,
+        "MaxUs": 80.38959913326111,
+        "AllocatedBytesPerOperation": [
+          172368,
+          172368
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          78.07315789473684,
+          77.40643513789583
+        ],
+        "MedianUs": 77.73979651631633,
+        "MinUs": 76.30643513789582,
+        "MaxUs": 80.50126315789475,
+        "AllocatedBytesPerOperation": [
+          172320,
+          172320
+        ]
+      },
+      "ChangePercent": -1.2759449866565298,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/complete-cursor",
+      "SubjectBytes": 5,
+      "SubjectSha256": "ED968E840D10D2D313A870BC131A4E2C311D7AD09BDF32B3418147221F51A6E2",
+      "SingleResultChecksum": 957440235716,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.950246364780548,
+          0.949064509842136
+        ],
+        "MedianUs": 0.9496554373113419,
+        "MinUs": 0.9249695478464237,
+        "MaxUs": 1.1453779824866774,
+        "AllocatedBytesPerOperation": [
+          336,
+          336.00350808809196
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.9306719551458615,
+          1.0278943302482695
+        ],
+        "MedianUs": 0.9792831426970655,
+        "MinUs": 0.9221467308139605,
+        "MaxUs": 1.0902252450126482,
+        "AllocatedBytesPerOperation": [
+          336,
+          336.0013329899874
+        ]
+      },
+      "ChangePercent": 3.1198373875060748,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/large-state-count",
+      "SubjectBytes": 130,
+      "SubjectSha256": "1E3C4F4750C8C29BBFA9CED317788176B156D342E57F7777F62FD7221A44312F",
+      "SingleResultChecksum": 1,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          7.329256571204395,
+          7.444842684044393
+        ],
+        "MedianUs": 7.387049627624394,
+        "MinUs": 7.232218517065515,
+        "MaxUs": 7.468862641278892,
+        "AllocatedBytesPerOperation": [
+          4664,
+          4664
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          7.209606692951245,
+          7.252522140931846
+        ],
+        "MedianUs": 7.231064416941545,
+        "MinUs": 7.149062409847101,
+        "MaxUs": 7.270591066615324,
+        "AllocatedBytesPerOperation": [
+          4664,
+          4664
+        ]
+      },
+      "ChangePercent": -2.1116036651430026,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "posix/existence",
+      "SubjectBytes": 3,
+      "SubjectSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "SingleResultChecksum": 1,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.28615081396736436,
+          0.285245827062396
+        ],
+        "MedianUs": 0.2856983205148802,
+        "MinUs": 0.2845467676082234,
+        "MaxUs": 0.2890159636919358,
+        "AllocatedBytesPerOperation": [
+          32,
+          32
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.2720263166428265,
+          0.28348051748332403
+        ],
+        "MedianUs": 0.27775341706307527,
+        "MinUs": 0.2710221479194215,
+        "MaxUs": 0.2850298917744757,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -2.7808715982252763,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/core-count",
+      "SubjectBytes": 2304,
+      "SubjectSha256": "0ACECF9548F3CBDEA9686845C5ACE27A0BB42C964CBC5163EE1A869249445AC9",
+      "SingleResultChecksum": 256,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          51.276088412592095,
+          48.362685603615226
+        ],
+        "MedianUs": 49.81938700810366,
+        "MinUs": 48.29283408650742,
+        "MaxUs": 51.43395847287341,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          53.29730305180979,
+          48.52316677482154
+        ],
+        "MedianUs": 50.91023491331566,
+        "MinUs": 48.431992212848805,
+        "MaxUs": 53.37714691270404,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 2.1896052334697824,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 2304,
+      "SubjectSha256": "0ACECF9548F3CBDEA9686845C5ACE27A0BB42C964CBC5163EE1A869249445AC9",
+      "SingleResultChecksum": 256,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          10.541184933298457,
+          10.536170490093848
+        ],
+        "MedianUs": 10.538677711696153,
+        "MinUs": 10.471305257651059,
+        "MaxUs": 10.911509384775806,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          10.556235385814496,
+          10.763635170603676
+        ],
+        "MedianUs": 10.659935278209087,
+        "MinUs": 10.477409716809563,
+        "MaxUs": 11.041141732283464,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 1.1505956423580432,
+      "RangesOverlap": true
+    }
+  ]
+}

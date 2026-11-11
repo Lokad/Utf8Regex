@@ -229,6 +229,12 @@ later advances can request captures, but collects histories only when needed for
 that advance. Switching output sizes through aliases preserves capture selection
 and retained values; it does not reset cumulative work or interruption authority.
 
+Synchronous calls borrow a checked state span, using at most128 integers of stack
+storage and an exact heap vector for larger programs. Cursors retain their own
+exact heap vector. Both admit the same conservative array-capacity charge before
+use and keep the existing work charge and synchronous refund. This storage choice
+does not lower numerical limits or change traversal, histories or retained values.
+
 ## Qualification boundary
 
 [Independent selection fixtures](../tests/Lokad.Utf8Regex.Posix.Tests/Corpus/selection.json)
@@ -241,7 +247,7 @@ on both target frameworks. Fixture data alone is not implementation qualificatio
 The [profile README](../src/Lokad.Utf8Regex.Posix/README.md#benchmarks) records warm
 public-operation and finite-policy costs. Four-package delivery also checks both
 target frameworks, Windows/Linux and isolated package consumers; the
-[0.5.0-dev.66 receipt](../bench/Experiments/DeliveryDev66-20261110/README.md)
+[0.5.0-dev.71 receipt](../bench/Experiments/DeliveryDev71-20261111/README.md)
 records the accepted boundary. Subsequent changes need a fresh candidate at the
 next delivery boundary. No complete POSIX equivalence or general native throughput
 parity is claimed.

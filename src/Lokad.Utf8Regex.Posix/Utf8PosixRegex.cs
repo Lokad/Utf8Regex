@@ -24,6 +24,9 @@ public sealed class Utf8PosixRegex
         Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         : this(pattern, options, matchTimeout ?? Regex.InfiniteMatchTimeout, resourcePolicy, inputValidation) { }
 
+    // A synchronous vector never escapes its call. Keep its stack footprint
+    // bounded; the workspace admits the same conservative capacity first.
+    private const int StackStateLimit = 128;
     private readonly PosixProgram _program;
     private readonly Utf8ExecutionLimits _limits;
 
@@ -90,7 +93,8 @@ public sealed class Utf8PosixRegex
         {
             ValidateInput(input, 0, ref invocation);
             workspace = CreateWorkspace(ref invocation, captureHistory: false);
-            return workspace.Find(input, 0, true, ref invocation, out _, out _);
+            Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
+            return workspace.Find(input, state, 0, true, ref invocation, out _, out _);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateTimeout(); }
         finally { workspace.Release(ref invocation); }
@@ -114,9 +118,10 @@ public sealed class Utf8PosixRegex
             ValidateInput(input, startOffsetInBytes, ref invocation);
             var captureHistory = output.Length > 1;
             workspace = CreateWorkspace(ref invocation, captureHistory);
-            if (!workspace.Find(input, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
+            Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
+            if (!workspace.Find(input, state, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
-            return Project(input, start, end, in workspace, output, ref invocation);
+            return Project(input, start, end, in workspace, state, output, ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { output.Clear(); throw CreateTimeout(); }
         catch { output.Clear(); throw; }
@@ -133,8 +138,9 @@ public sealed class Utf8PosixRegex
         {
             ValidateInput(input, startOffsetInBytes, ref invocation);
             workspace = CreateWorkspace(ref invocation, captureHistory: false);
+            Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             var count = 0; var position = startOffsetInBytes;
-            while (workspace.Find(input, position, false, ref invocation, out var start, out var end, captureHistory: false))
+            while (workspace.Find(input, state, position, false, ref invocation, out var start, out var end, captureHistory: false))
             {
                 count = checked(count + 1);
                 if (start == end && end == input.Length) break;
@@ -175,7 +181,7 @@ public sealed class Utf8PosixRegex
     internal Span<Utf8ValueMatch> OutputWindow(Span<Utf8ValueMatch> output) => output[..Math.Min(output.Length, GroupCount + 1)];
 
     internal Utf8ValueMatch Project(ReadOnlySpan<byte> input, int start, int end,
-        in PosixWorkspace workspace, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
+        in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
     {
         ClearOutput(output, ref invocation);
         var whole = ProjectRange(input, start, end, ref invocation);
@@ -183,7 +189,7 @@ public sealed class Utf8PosixRegex
         for (var slot = 1; slot < output.Length; slot++)
         {
             PosixWorkspace.Charge(ref invocation);
-            if (workspace.GetCapture(slot, ref invocation, out var from, out var to))
+            if (workspace.GetCapture(state, slot, ref invocation, out var from, out var to))
                 // ERE captures are inside the selected whole match. Share its
                 // prefix coordinates; identical nested ranges need no rescan.
                 output[slot] = from == start && to == end ? whole

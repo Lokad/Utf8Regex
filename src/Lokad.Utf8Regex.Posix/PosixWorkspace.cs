@@ -14,11 +14,12 @@ namespace Lokad.Utf8Regex.Posix;
 // Whole-only output needs no tag history: captures cannot affect ERE acceptance.
 // A cursor reserves tag capacity because later advances can request captures.
 // Own one mutable local or cursor field; pass by reference, never copy live loans.
-// Projection borrows readonly state; Release also accepts the default empty value.
+// State is borrowed from a synchronous stack/heap vector or the cursor's array;
+// no span escapes a call. Projection reads it before publication. This owner
+// reserves the same conservative capacity and Release accepts the default value.
 internal struct PosixWorkspace
 {
     private readonly PosixProgram _program;
-    private int[] _state = [];
     private ulong _stateBytes;
     private readonly int _openOffset;
     private readonly int _lastOffset;
@@ -30,6 +31,8 @@ internal struct PosixWorkspace
     private readonly record struct Frame(int Pc, int Position, int TraceCount, int UndoCount);
     private readonly record struct Mutation(int Index, int OldValue);
     private readonly record struct TagEvent(int Tag, int Position, int Opening);
+
+    internal readonly int StateLength => _lastOffset + (_lastOffset - _openOffset);
 
     internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
@@ -44,21 +47,20 @@ internal struct PosixWorkspace
         try
         {
             Charge(ref invocation);
-            _state = new int[count];
             _stateBytes = bytes;
         }
         catch { invocation.Ledger.Release(bytes); throw; }
     }
 
-    internal bool Find(ReadOnlySpan<byte> input, int fromByte, bool existenceOnly,
+    internal bool Find(ReadOnlySpan<byte> input, scoped Span<int> state, int fromByte, bool existenceOnly,
         ref Utf8SliceInvocation invocation, out int start, out int end, bool captureHistory = true)
     {
         captureHistory &= !existenceOnly;
         for (var candidate = fromByte; candidate <= input.Length;)
         {
             Charge(ref invocation);
-            Reset(ref invocation);
-            if (MatchAt(input, candidate, existenceOnly, captureHistory, ref invocation, out end))
+            Reset(state, ref invocation);
+            if (MatchAt(input, state, candidate, existenceOnly, captureHistory, ref invocation, out end))
             {
                 start = candidate;
                 if (captureHistory)
@@ -67,7 +69,7 @@ internal struct PosixWorkspace
                     for (var index = 0; index < trace.Length; index++)
                     {
                         if ((index & 63) == 0) Charge(ref invocation);
-                        if (trace[index].Opening >= 0) _state[_lastOffset + trace[index].Tag] = index;
+                        if (trace[index].Opening >= 0) state[_lastOffset + trace[index].Tag] = index;
                     }
                 }
                 Finish(ref invocation);
@@ -81,7 +83,7 @@ internal struct PosixWorkspace
         return false;
     }
 
-    private bool MatchAt(ReadOnlySpan<byte> input, int start, bool existenceOnly, bool captureHistory,
+    private bool MatchAt(ReadOnlySpan<byte> input, scoped Span<int> state, int start, bool existenceOnly, bool captureHistory,
         ref Utf8SliceInvocation invocation, out int end)
     {
         var code = _program.Scalar.Instructions;
@@ -129,44 +131,44 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
                     var slot = instruction.B * 2;
-                    var count = _state[slot];
-                    if (count < 0) { count = 0; SetState(slot, 0, ref invocation); }
+                    var count = state[slot];
+                    if (count < 0) { count = 0; SetState(state, slot, 0, ref invocation); }
                     var minimum = instruction.RepeatMinimum;
                     var maximum = instruction.RepeatMaximum;
                     if (count < minimum)
                     {
-                        SetState(slot, count + 1, ref invocation);
-                        SetState(slot + 1, at, ref invocation);
+                        SetState(state, slot, count + 1, ref invocation);
+                        SetState(state, slot + 1, at, ref invocation);
                         pc++;
                     }
-                    else if (count >= maximum || count > 0 && _state[slot + 1] == at)
+                    else if (count >= maximum || count > 0 && state[slot + 1] == at)
                     {
                         // The saved optional exit has the same endpoint and
                         // earlier occurrences. A redundant empty body loses to
                         // its shorter history before descendants can break ties.
                         // Keep first/mandatory empties; saturated min0 counts
                         // cannot establish a prior occurrence and remain1.
-                        if (count > 1 && count > minimum && _state[slot + 1] == at) failed = true;
+                        if (count > 1 && count > minimum && state[slot + 1] == at) failed = true;
                         else pc = instruction.A;
                     }
                     else
                     {
                         PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
-                        SetState(slot, maximum == long.MaxValue ? (int)minimum + 1 : count + 1, ref invocation);
-                        SetState(slot + 1, at, ref invocation);
+                        SetState(state, slot, maximum == long.MaxValue ? (int)minimum + 1 : count + 1, ref invocation);
+                        SetState(state, slot + 1, at, ref invocation);
                         pc++;
                     }
                     break;
                 case Utf8SliceInstructionKind.RepeatEnd: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatExit:
-                    SetState(instruction.A * 2, -1, ref invocation);
-                    SetState(instruction.A * 2 + 1, -1, ref invocation);
+                    SetState(state, instruction.A * 2, -1, ref invocation);
+                    SetState(state, instruction.A * 2 + 1, -1, ref invocation);
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        SetState(_openOffset + instruction.A, _trace.Count, ref invocation);
+                        SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
                         Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
                     }
                     pc++;
@@ -174,7 +176,7 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
                     {
-                        Check(_trace.TryPush(new(instruction.A, at, _state[_openOffset + instruction.A]), ref invocation), ref invocation);
+                        Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
                         // A ceiling fixes the whole endpoint. The selected tag
                         // follows only parents proved fixed at that endpoint;
                         // later occurrences cannot repair its losing prefix.
@@ -224,7 +226,7 @@ internal struct PosixWorkspace
             }
             if (failed)
             {
-                if (!Backtrack(ref pc, ref at, ref invocation)) return end >= 0;
+                if (!Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
                 sharedPrefix = Math.Min(sharedPrefix, _trace.Count);
             }
         }
@@ -365,21 +367,21 @@ internal struct PosixWorkspace
         Check(_frames.TryPush(frame, ref invocation), ref invocation);
     }
 
-    private void SetState(int index, int value, ref Utf8SliceInvocation invocation)
+    private void SetState(scoped Span<int> state, int index, int value, ref Utf8SliceInvocation invocation)
     {
-        if (_state[index] == value) return;
-        if (_frames.Count != 0) Check(_undo.TryPush(new(index, _state[index]), ref invocation), ref invocation);
-        _state[index] = value;
+        if (state[index] == value) return;
+        if (_frames.Count != 0) Check(_undo.TryPush(new(index, state[index]), ref invocation), ref invocation);
+        state[index] = value;
     }
 
-    private bool Backtrack(ref int pc, ref int at, ref Utf8SliceInvocation invocation)
+    private bool Backtrack(scoped Span<int> state, ref int pc, ref int at, ref Utf8SliceInvocation invocation)
     {
         if (_frames.Count == 0) return false;
         var frame = _frames[_frames.Count - 1]; _frames.Pop();
         for (var iteration = 0; _undo.Count > frame.UndoCount; iteration++)
         {
             if ((iteration & 63) == 0) Charge(ref invocation);
-            var mutation = _undo[_undo.Count - 1]; _undo.Pop(); _state[mutation.Index] = mutation.OldValue;
+            var mutation = _undo[_undo.Count - 1]; _undo.Pop(); state[mutation.Index] = mutation.OldValue;
         }
         while (_trace.Count > frame.TraceCount)
         {
@@ -481,10 +483,10 @@ internal struct PosixWorkspace
         return -1;
     }
 
-    internal readonly bool GetCapture(int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
+    internal readonly bool GetCapture(scoped ReadOnlySpan<int> state, int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
     {
         var tag = _program.CaptureTags[slot];
-        var close = _state[_lastOffset + tag];
+        var close = state[_lastOffset + tag];
         start = end = -1;
         if (close < 0) return false;
         var open = _best[close].Opening;
@@ -494,22 +496,22 @@ internal struct PosixWorkspace
         for (var parent = _program.Parents[tag]; parent > 0; parent = _program.Parents[parent])
         {
             Charge(ref invocation);
-            var parentClose = _state[_lastOffset + parent];
+            var parentClose = state[_lastOffset + parent];
             if (parentClose < 0 || _best[parentClose].Opening > open || parentClose < close) return false;
         }
         start = _best[open].Position; end = _best[close].Position;
         return true;
     }
 
-    private void Reset(ref Utf8SliceInvocation invocation)
+    private void Reset(scoped Span<int> state, ref Utf8SliceInvocation invocation)
     {
         Clear(ref _frames, ref invocation); Clear(ref _undo, ref invocation);
         Clear(ref _trace, ref invocation); Clear(ref _best, ref invocation);
-        for (var offset = 0; offset < _state.Length;)
+        for (var offset = 0; offset < state.Length;)
         {
             Charge(ref invocation);
-            var count = Math.Min(2048, _state.Length - offset);
-            _state.AsSpan(offset, count).Fill(-1); offset += count;
+            var count = Math.Min(2048, state.Length - offset);
+            state.Slice(offset, count).Fill(-1); offset += count;
         }
     }
 

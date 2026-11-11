@@ -17,16 +17,18 @@ public sealed class PosixWorkspaceTests
         {
             first = new(program, ref invocation);
             second = new(program, ref invocation);
-            Assert.True(first.Find("sku007"u8, 0, false, ref invocation, out _, out _));
-            Assert.True(second.Find("xyz42"u8, 0, false, ref invocation, out _, out _));
+            var firstState = new int[first.StateLength];
+            var secondState = new int[second.StateLength];
+            Assert.True(first.Find("sku007"u8, firstState, 0, false, ref invocation, out _, out _));
+            Assert.True(second.Find("xyz42"u8, secondState, 0, false, ref invocation, out _, out _));
             second.Release(ref invocation);
             reused = new(program, ref invocation);
-            Assert.False(reused.Find("1"u8, 0, false, ref invocation, out _, out _));
-            Assert.False(reused.GetCapture(2, ref invocation, out _, out _));
-            Assert.True(reused.Find("q4"u8, 0, false, ref invocation, out _, out _));
-            Assert.True(reused.GetCapture(2, ref invocation, out var start, out var end));
+            Assert.False(reused.Find("1"u8, secondState, 0, false, ref invocation, out _, out _));
+            Assert.False(reused.GetCapture(secondState, 2, ref invocation, out _, out _));
+            Assert.True(reused.Find("q4"u8, secondState, 0, false, ref invocation, out _, out _));
+            Assert.True(reused.GetCapture(secondState, 2, ref invocation, out var start, out var end));
             Assert.Equal((1, 2), (start, end));
-            Assert.True(first.GetCapture(2, ref invocation, out start, out end));
+            Assert.True(first.GetCapture(firstState, 2, ref invocation, out start, out end));
             Assert.Equal((3, 6), (start, end));
         }
         finally
@@ -81,7 +83,7 @@ public sealed class PosixWorkspaceTests
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
                 workspace = new PosixWorkspace(program, ref invocation);
-                workspace.Find("aaaa"u8, 0, false, ref invocation, out _, out _);
+                workspace.Find("aaaa"u8, new int[workspace.StateLength], 0, false, ref invocation, out _, out _);
             });
             Assert.Equal(kind, error.ResourceKind);
         }
@@ -103,6 +105,37 @@ public sealed class PosixWorkspaceTests
         var error = Assert.Throws<OperationCanceledException>(() => new PosixWorkspace(program, ref invocation));
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(63, Utf8InputValidation.Validate)] [InlineData(64, Utf8InputValidation.Validate)]
+    [InlineData(65, Utf8InputValidation.Validate)]
+    [InlineData(63, Utf8InputValidation.AssumeValid)] [InlineData(64, Utf8InputValidation.AssumeValid)]
+    [InlineData(65, Utf8InputValidation.AssumeValid)]
+    public void StateStorageBoundariesKeepCapturesAndCursorOwnership(int groups, Utf8InputValidation validation)
+    {
+        var pattern = new string('(', groups) + "é😀" + new string(')', groups);
+        var regex = new Utf8PosixRegex(pattern, inputValidation: validation);
+        var program = PosixProgram.Compile(pattern, default);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        var workspace = new PosixWorkspace(program, ref invocation);
+        try { Assert.Equal(2 * groups, workspace.StateLength); }
+        finally { workspace.Release(ref invocation); }
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        var input = "πé😀!"u8.ToArray();
+        var output = new Utf8ValueMatch[groups + 1];
+        var match = regex.Match(input, output);
+        Assert.Equal((2, 6, 1, 3), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+        Assert.All(output, group => Assert.Equal(match, group));
+        Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        var alias = cursor;
+        Assert.True(alias.MoveNext(output, out var fromCursor));
+        Assert.Equal(match, fromCursor);
+        var retained = output[^1];
+        alias.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        Assert.Equal(match, retained);
     }
 
     private sealed class Account(ulong limit) : IUtf8MemoryAllowance

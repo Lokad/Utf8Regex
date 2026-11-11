@@ -225,7 +225,7 @@ public sealed class PosixPublicContractTests
         var workspace = baseline.CreateWorkspace(ref invocation, captureHistory: false);
         try
         {
-            Assert.True(workspace.Find(input, 8192, false, ref invocation, out _, out _, captureHistory: false));
+            Assert.True(workspace.Find(input, new int[workspace.StateLength], 8192, false, ref invocation, out _, out _, captureHistory: false));
             beforeProjection = invocation.Budget.Steps;
         }
         finally { workspace.Release(ref invocation); }
