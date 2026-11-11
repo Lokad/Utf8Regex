@@ -44,8 +44,10 @@ public sealed class PythonReFiniteWorkingPolicyTests
     [MemberData(nameof(Operations))]
     public void EveryPublicOperationHasFiniteWorkingSuccessAndExactCutoff(int operation, bool bytePattern)
     {
-        const string pattern = "(?P<x>😀+)(?P<y>ab)";
-        var input = "😀😀ab"u8.ToArray();
+        // Count discards independent captures; a compound repeated body still
+        // needs real VM working storage and retains a meaningful denial cutoff.
+        var pattern = operation == 4 ? "(?P<x>(?:😀a)+)(?P<y>ab)" : "(?P<x>😀+)(?P<y>ab)";
+        var input = operation == 4 ? "😀a😀aab"u8.ToArray() : "😀😀ab"u8.ToArray();
         var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, ulong.MaxValue, bytePattern), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>

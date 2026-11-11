@@ -219,6 +219,8 @@ public sealed class PythonReCountPublicationTests
             ("(?!x)a+", "aaa", 0, 1),
             ("(?!x)a+", "xx", 0, 0),
             ("(?=😀)", "é😀", 2, 1),
+            ("([a-z]+)-([0-9]+)", "é😀item-12 other-345", 6, 2),
+            ("([a-z]+)([0-9]+)", "é😀item12 other345", 13, 1),
         })
         foreach (var finite in new[] { false, true })
         foreach (var expire in new[] { false, true })

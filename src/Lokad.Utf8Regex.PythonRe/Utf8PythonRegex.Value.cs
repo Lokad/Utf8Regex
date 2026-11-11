@@ -175,9 +175,12 @@ public sealed partial class Utf8PythonRegex
     private int CountOwnedSlicePythonStyle(ReadOnlySpan<byte> input, int startOffsetInBytes,
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
-        // A proved complete repeat needs no observed capture values for Count.
-        // Other captured roots retain their profile candidate hints/progression.
-        if (!program.CanMatchEmpty && (program.GroupCount == 0 || Utf8SliceRunner.CanCountTerminalClassRepeat(program)))
+        // Count observes no captures. Reuse the retained Core's dependency proof
+        // for iteration-compatible roots, but execute this profile's program:
+        // lexical folding/classes remain authoritative. Unknown/dependent roots
+        // and nullable progression retain their capture cursor.
+        if (!program.CanMatchEmpty && (program.GroupCount == 0 || Utf8SliceRunner.CanCountTerminalClassRepeat(program) ||
+            _canUseUtf8IterationFastPath && _utf8Regex is { CanOmitValueCaptureSlots: true }))
             return CountNonEmptyScalar(input, startOffsetInBytes, program, cancellationToken);
         var cursor = new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, this,

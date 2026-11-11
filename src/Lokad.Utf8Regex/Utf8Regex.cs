@@ -1712,6 +1712,8 @@ public sealed partial class Utf8Regex
     // Boolean/count/value results do not expose captures. This general proof
     // keeps dependent, alternate and unknown programs' storage.
     // Detailed results and cursors continue to request every capture slot.
+    internal bool CanOmitValueCaptureSlots => GetValueOperationCaptureSlotCount(_ownedSliceProgram) == 0;
+
     private int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
         => ReferenceEquals(program, _ownedSliceProgram) &&
             _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&

@@ -134,6 +134,14 @@ capture handling. Scalar membership, byte floors, selected subject policy,
 original interruption and admission remain. Numerical work/depth/working costs
 can decrease; nullable, lazy, trailing and capture-dependent programs keep their routes.
 
+Other nonnullable iteration-compatible captured roots can use the existing scalar
+counter when retained Core preparation proves that captures have no dependent
+readers. Count then omits capture slots/journals and the capture-producing cursor;
+Python's own scalar program still defines lexical folding, classes and matching.
+References, conditions, assertions and unknown preparation retain their previous
+routes. This can lower numerical work/depth/working requirements; subject policy,
+original interruption, major-buffer admission and capture-returning APIs remain.
+
 Prepared short three/four-literal families with distinct leading bytes can share
 Core's checked search within the existing windows of at most 2048 bytes. Count and
 necessary-start discovery charge the combined bounded scan instead of each
