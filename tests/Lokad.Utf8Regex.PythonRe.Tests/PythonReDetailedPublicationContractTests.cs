@@ -114,10 +114,12 @@ public sealed class PythonReDetailedPublicationContractTests
                 Assert.Equal(extent, cursor.WorkingInvocation.Budget.ResultBytes);
                 Assert.Equal("😀é", snapshot.Value.ValueText);
             }
-            catch (Utf8ResourceLimitExceededException error)
+            catch (InvalidOperationException error)
             {
                 Assert.True(cap < work);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+                if (error is Utf8ResourceLimitExceededException resource)
+                    Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, resource.ResourceKind);
+                else Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.WorkingInvocation.Budget.LimitBreach);
             }
             finally
             {
@@ -163,8 +165,8 @@ public sealed class PythonReDetailedPublicationContractTests
             Assert.True(entered);
             if (expire)
             {
-                var error = Assert.IsType<RegexMatchTimeoutException>(failure);
-                Assert.Equal("(.+)", error.Pattern); Assert.Equal(timeout, error.MatchTimeout);
+                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+
             }
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }

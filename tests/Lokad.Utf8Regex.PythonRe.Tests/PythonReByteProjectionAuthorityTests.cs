@@ -47,7 +47,7 @@ public sealed class PythonReByteProjectionAuthorityTests
             Exception? failure = null;
             try { _ = cursor.GetBytes(0, 2); }
             catch (Exception error) { failure = error; }
-            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(baseline, cursor.ReservedBytes);
             Assert.Equal(0UL, cursor.ResultReservation);
@@ -83,7 +83,7 @@ public sealed class PythonReByteProjectionAuthorityTests
         finally { cursor.Dispose(); }
         Assert.True(entered);
         Assert.Null(result);
-        if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(13UL, observer.Ledger.ReservedBytes);
         observer.Ledger.Release(13);

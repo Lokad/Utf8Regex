@@ -216,8 +216,7 @@ public sealed class PythonReOneShotTextTests
             Assert.True(entered); Assert.Null(result); Assert.False(HasMap(ref cursor));
             if (expire)
             {
-                var expired = Assert.IsType<RegexMatchTimeoutException>(failure);
-                Assert.Equal("(.+)", expired.Pattern); Assert.Equal(timeout, expired.MatchTimeout);
+                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             }
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(baseline, cursor.ReservedBytes); Assert.Equal(0UL, cursor.ResultReservation);

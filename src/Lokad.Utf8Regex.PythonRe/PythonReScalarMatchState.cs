@@ -70,7 +70,7 @@ internal struct PythonReScalarMatchState
                 !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
                 required.RejectMissingExactRequiredLiteral(input, ref _invocation))
             {
-                Checkpoint(input);
+                Checkpoint();
                 _finished = true;
                 return;
             }
@@ -124,12 +124,9 @@ internal struct PythonReScalarMatchState
     internal bool IsAscii(ReadOnlySpan<byte> input) => (_validation ?? DescribeInput(input)).IsAscii;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
-    internal T[] AllocateResultArray<T>(ReadOnlySpan<byte> input, int count)
+    internal T[] AllocateResultArray<T>(int count)
     {
-        try { return _results.AllocateArray<T>(count, ref _invocation); }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        return _results.AllocateArray<T>(count, ref _invocation);
     }
 
     internal void ReleaseResultsSince(ulong marker)
@@ -138,57 +135,39 @@ internal struct PythonReScalarMatchState
     internal ulong TransferResultsSince(ulong marker)
         => _results.TransferSince(marker, ref _invocation);
 
-    internal Utf8PythonRetainedRangeMatch RetainRanges(ReadOnlySpan<byte> input, Utf8PythonRangeMatch match)
+    internal Utf8PythonRetainedRangeMatch RetainRanges(Utf8PythonRangeMatch match)
     {
-        try
+        var index = 0;
+        foreach (var entry in match.NameEntries)
         {
-            var index = 0;
-            foreach (var entry in match.NameEntries)
-            {
-                if ((index++ & 255) == 0) Checkpoint(input);
-                _results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(entry.Name.Length), ref _invocation);
-            }
-            return _results.AllocateObject((Match: match, Allowance: _invocation.Ledger.MemoryAllowance!),
-                static state => new Utf8PythonRetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
+            if ((index++ & 255) == 0) Checkpoint();
+            _results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(entry.Name.Length), ref _invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        return _results.AllocateObject((Match: match, Allowance: _invocation.Ledger.MemoryAllowance!),
+            static state => new Utf8PythonRetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
     }
 
-    internal Utf8PythonRetainedSubnResult RetainSubstitution(ReadOnlySpan<byte> input, Utf8PythonSubnUtf8Result result)
+    internal Utf8PythonRetainedSubnResult RetainSubstitution(Utf8PythonSubnUtf8Result result)
     {
-        try
-        {
-            return _results.AllocateObject((Result: result, Allowance: _invocation.Ledger.MemoryAllowance!),
-                static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref _invocation);
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        return _results.AllocateObject((Result: result, Allowance: _invocation.Ledger.MemoryAllowance!),
+            static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref _invocation);
     }
 
-    internal void AddResult<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer, T value)
+    internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value)
     {
-        try { buffer.Add(value, ref _invocation); }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        buffer.Add(value, ref _invocation);
     }
 
-    internal T[] CompleteResults<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer)
+    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
     {
-        try { return buffer.ToArray(ref _results, ref _invocation); }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        return buffer.ToArray(ref _results, ref _invocation);
     }
 
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
         => buffer.Release(ref _invocation);
 
-    // Map neutral helper failures only after actual resource denial, without using
-    // exception text. Internal kernels and PCRE2 keep their failure vocabulary.
+    // Construction owns its failure boundary. After construction, logical operations
+    // map neutral helper failures before releasing this invocation or cursor state.
     private readonly Utf8ResourceLimitExceededException ResourceFailure()
         => _invocation.Budget.CreateResourceFailure();
 
@@ -197,20 +176,11 @@ internal struct PythonReScalarMatchState
             _timeoutSource is Utf8PythonRegex regex ? regex.Pattern : (string)_timeoutSource,
             _timeout, _invocation.Budget.Limits);
 
-    internal void Checkpoint(ReadOnlySpan<byte> input)
+    internal void Checkpoint()
     {
-        try
-        {
-            if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
-            _invocation.Budget.ThrowIfCancellationRequested();
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw TimeoutFailure(input);
-        }
+        if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+            throw ResourceFailure();
+        _invocation.Budget.ThrowIfCancellationRequested();
     }
 
     internal bool MoveNext(ReadOnlySpan<byte> input) => MoveNextCore(input, true);
@@ -378,123 +348,114 @@ internal struct PythonReScalarMatchState
         {
             while (!_finished)
             {
-                Checkpoint(input);
+                Checkpoint();
                 Utf8SliceMatchOutcome outcome;
-                try
+                // A complete native literal match needs no capture/VM state.
+                // Match and the derived FullMatch program use search=false;
+                // their additional position/end constraints keep the VM.
+                if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
+                    candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
+                        out var found, out var start, out var end))
                 {
-                    // A complete native literal match needs no capture/VM state.
-                    // Match and the derived FullMatch program use search=false;
-                    // their additional position/end constraints keep the VM.
-                    if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
-                        candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
-                            out var found, out var start, out var end))
-                    {
-                        if (!found) { _finished = true; return false; }
-                        _position = start;
-                        _invocation.AnchorOriginByte = start;
-                        outcome = new Utf8SliceMatchOutcome(true, end, Utf8ExecutionLimitKind.None, null, null);
-                    }
-                    else
-                    {
-                        // A necessary range already identifies a possible start.
-                        // Verify it once before seeking/rewinding its delimiter;
-                        // a failure resumes the original window-guided search.
-                        var bypassWindow = false;
-                        if (verifyFirstCandidate)
-                        {
-                            verifyFirstCandidate = false;
-                            if (((uint)_position >= (uint)input.Length ||
-                                (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow)) &&
-                                !SeekCandidate(input)) { _finished = true; return false; }
-                            // The excluded delimiter bounds this first class run.
-                            // Long/no-delimiter prefixes keep window discovery.
-                            var prefix = input.Slice(_position, Math.Min(64, input.Length - _position));
-                            bypassWindow = prefix.IndexOf((byte)delimiter) >= 0;
-                        }
-                        if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
-                        {
-                            var floor = _position;
-                            windowEnd = floor;
-                            var breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref windowEnd,
-                                (byte)delimiter, (byte)delimiter, ref _invocation);
-                            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-                            if (windowEnd < 0) { Checkpoint(input); _finished = true; return false; }
-                            _position = windowEnd;
-                            breach = Utf8SliceRunner.TryRewindClassWhitespace(_program, input, floor,
-                                leadingClass, 0, ref _position, ref _invocation);
-                            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-                        }
-                        // A necessary start hint still requires profile verification.
-                        // Avoid its search helper when the current byte meets the hint.
-                        if (search && (_candidateRegex is not null ||
-                            _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
-                                (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
-                            !SeekCandidate(input)) { _finished = true; return false; }
-                        // The range hint may have jumped past this delimiter.
-                        // Discover the next window before entering the verifier.
-                        if (delimiter >= 0 && _position > windowEnd && !bypassWindow) continue;
-                        _invocation.AnchorOriginByte = _position;
-                        // Once scratch is admitted, a positive leading boundary
-                        // cannot match between two ASCII word scalars. Borrow the
-                        // exact profile predicate and keep failure's advancement.
-                        // A complete boundary-only root has no consuming hint,
-                        // but admits the same proof without changing its retries.
-                        if (search && _workspace.Initialized &&
-                            _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary &&
-                            (_leadingAsciiLow >= 0 || _program.GroupCount == 0 && !_program.IsNonBacktracking &&
-                                _program.Instructions is { Length: 2 } boundaryCode &&
-                                boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept) &&
-                            _position > 0 && _position < input.Length &&
-                            input[_position - 1] < 128 && input[_position] < 128 &&
-                            Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&
-                            Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position]), _program, boundary))
-                        {
-                            // These predicates share the exact ASCII word set.
-                            // Bound each skip by the next loop's interruption poll;
-                            // non-ASCII context and EOF still reach the verifier.
-                            if (boundary.C == 0 || _program.CategorySetMembers[boundary.C - 1][0].Table.ScalarPredicate == PythonReScalarClassData.IsWord)
-                            {
-                                var block = input.Slice(_position, Math.Min(2048, input.Length - _position));
-                                var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
-                                _position += stop < 0 ? block.Length : stop;
-                                continue;
-                            }
-                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
-                        }
-                        // A complete boundary-only root cannot satisfy a nonempty
-                        // retry. Reuse failure's scalar advance/EOF checks; actual
-                        // candidates still run the VM with its admitted workspace.
-                        else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
-                            _program.Instructions is { Length: 2 } code &&
-                            code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
-                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
-                        // A complete greedy scalar repeat returned empty only
-                        // because it could not consume here. Its nonempty retry
-                        // cannot succeed. Lazy repeats and tails can choose an
-                        // empty endpoint despite a consuming alternative.
-                        else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
-                            !_program.RightToLeft && _program.Instructions is { Length: 5 } repeatCode &&
-                            repeatCode[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 3, RepeatMinimum: 0 } repeat &&
-                            repeatCode[1].Kind is (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
-                                Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
-                                Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet) &&
-                            repeatCode[2] is { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } &&
-                            repeatCode[3].Kind == Utf8SliceInstructionKind.RepeatExit && repeatCode[3].A == repeat.B &&
-                            repeatCode[4].Kind == Utf8SliceInstructionKind.Accept)
-                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
-                        else
-                            outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                                _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
-                    }
+                    if (!found) { _finished = true; return false; }
+                    _position = start;
+                    _invocation.AnchorOriginByte = start;
+                    outcome = new Utf8SliceMatchOutcome(true, end, Utf8ExecutionLimitKind.None, null, null);
                 }
-                catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-                { throw ResourceFailure(); }
-                catch (Utf8ExecutionDeadlineExpiredException)
+                else
                 {
-                    throw TimeoutFailure(input);
+                    // A necessary range already identifies a possible start.
+                    // Verify it once before seeking/rewinding its delimiter;
+                    // a failure resumes the original window-guided search.
+                    var bypassWindow = false;
+                    if (verifyFirstCandidate)
+                    {
+                        verifyFirstCandidate = false;
+                        if (((uint)_position >= (uint)input.Length ||
+                            (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow)) &&
+                            !SeekCandidate(input)) { _finished = true; return false; }
+                        // The excluded delimiter bounds this first class run.
+                        // Long/no-delimiter prefixes keep window discovery.
+                        var prefix = input.Slice(_position, Math.Min(64, input.Length - _position));
+                        bypassWindow = prefix.IndexOf((byte)delimiter) >= 0;
+                    }
+                    if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
+                    {
+                        var floor = _position;
+                        windowEnd = floor;
+                        var breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref windowEnd,
+                            (byte)delimiter, (byte)delimiter, ref _invocation);
+                        if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                        if (windowEnd < 0) { Checkpoint(); _finished = true; return false; }
+                        _position = windowEnd;
+                        breach = Utf8SliceRunner.TryRewindClassWhitespace(_program, input, floor,
+                            leadingClass, 0, ref _position, ref _invocation);
+                        if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                    }
+                    // A necessary start hint still requires profile verification.
+                    // Avoid its search helper when the current byte meets the hint.
+                    if (search && (_candidateRegex is not null ||
+                        _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
+                            (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
+                        !SeekCandidate(input)) { _finished = true; return false; }
+                    // The range hint may have jumped past this delimiter.
+                    // Discover the next window before entering the verifier.
+                    if (delimiter >= 0 && _position > windowEnd && !bypassWindow) continue;
+                    _invocation.AnchorOriginByte = _position;
+                    // Once scratch is admitted, a positive leading boundary
+                    // cannot match between two ASCII word scalars. Borrow the
+                    // exact profile predicate and keep failure's advancement.
+                    // A complete boundary-only root has no consuming hint,
+                    // but admits the same proof without changing its retries.
+                    if (search && _workspace.Initialized &&
+                        _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary &&
+                        (_leadingAsciiLow >= 0 || _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                            _program.Instructions is { Length: 2 } boundaryCode &&
+                            boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept) &&
+                        _position > 0 && _position < input.Length &&
+                        input[_position - 1] < 128 && input[_position] < 128 &&
+                        Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&
+                        Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position]), _program, boundary))
+                    {
+                        // These predicates share the exact ASCII word set.
+                        // Bound each skip by the next loop's interruption poll;
+                        // non-ASCII context and EOF still reach the verifier.
+                        if (boundary.C == 0 || _program.CategorySetMembers[boundary.C - 1][0].Table.ScalarPredicate == PythonReScalarClassData.IsWord)
+                        {
+                            var block = input.Slice(_position, Math.Min(2048, input.Length - _position));
+                            var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
+                            _position += stop < 0 ? block.Length : stop;
+                            continue;
+                        }
+                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                    }
+                    // A complete boundary-only root cannot satisfy a nonempty
+                    // retry. Reuse failure's scalar advance/EOF checks; actual
+                    // candidates still run the VM with its admitted workspace.
+                    else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                        _program.Instructions is { Length: 2 } code &&
+                        code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
+                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                    // A complete greedy scalar repeat returned empty only
+                    // because it could not consume here. Its nonempty retry
+                    // cannot succeed. Lazy repeats and tails can choose an
+                    // empty endpoint despite a consuming alternative.
+                    else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                        !_program.RightToLeft && _program.Instructions is { Length: 5 } repeatCode &&
+                        repeatCode[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 3, RepeatMinimum: 0 } repeat &&
+                        repeatCode[1].Kind is (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
+                            Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                            Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet) &&
+                        repeatCode[2] is { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } &&
+                        repeatCode[3].Kind == Utf8SliceInstructionKind.RepeatExit && repeatCode[3].A == repeat.B &&
+                        repeatCode[4].Kind == Utf8SliceInstructionKind.Accept)
+                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                    else
+                        outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
+                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
                 }
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                    throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
+                    throw ResourceFailure();
                 if (outcome.IsMatch)
                 {
                     StartOffsetInBytes = _position;
@@ -511,7 +472,7 @@ internal struct PythonReScalarMatchState
                     // The VM can fail on its last instruction after the entry
                     // poll. Keep EOF and pure Count publication under the
                     // original authority, just like candidate-search declines.
-                    Checkpoint(input);
+                    Checkpoint();
                     _finished = true;
                     return false;
                 }
@@ -521,8 +482,7 @@ internal struct PythonReScalarMatchState
             }
             return false;
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
+
         finally { if (!keepWorkspace) _workspace.Release(ref _invocation); }
     }
 
@@ -530,100 +490,87 @@ internal struct PythonReScalarMatchState
     {
         // Native rendering expands lexical folding before planning. Prefixes
         // prove starts only; the profile VM still verifies captures/assertions.
-        try
+        Utf8ExecutionLimitKind breach;
+        if (_candidateRegex is not { } candidateRegex)
         {
-            Utf8ExecutionLimitKind breach;
-            if (_candidateRegex is not { } candidateRegex)
+            if (_leadingAsciiLow < 0) return true;
+            while (_position < input.Length)
             {
-                if (_leadingAsciiLow < 0) return true;
-                while (_position < input.Length)
-                {
-                    if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-                    var length = Math.Min(2048, input.Length - _position);
-                    var block = input.Slice(_position, length);
-                    var offset = _leadingAsciiLow == _leadingAsciiHigh
-                        ? block.IndexOf((byte)_leadingAsciiLow)
-                        : block.IndexOfAnyInRange((byte)_leadingAsciiLow, (byte)_leadingAsciiHigh);
-                    if (offset >= 0) { _position += offset; return true; }
-                    _position += length;
-                }
-                Checkpoint(input);
-                return false;
+                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                var length = Math.Min(2048, input.Length - _position);
+                var block = input.Slice(_position, length);
+                var offset = _leadingAsciiLow == _leadingAsciiHigh
+                    ? block.IndexOf((byte)_leadingAsciiLow)
+                    : block.IndexOfAnyInRange((byte)_leadingAsciiLow, (byte)_leadingAsciiHigh);
+                if (offset >= 0) { _position += offset; return true; }
+                _position += length;
             }
-            ref readonly var plan = ref candidateRegex.Inspection.PreparedRegex.SearchPlan;
-            if (plan.LiteralSearch is { } literal)
-            {
-                if (_position < input.Length && input[_position] == literal.Needle[0]) return true;
-                breach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, _position,
-                    input.Length - literal.Length, false, ref _invocation, out _position);
-            }
-            else if (plan.AlternateLiteralsUtf8 is not null)
-            {
-                breach = Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(plan,
-                    input, _position, input.Length, ref _invocation, out _position);
-            }
-            else return true;
-            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-            if (_position >= 0) return true;
-            Checkpoint(input);
+            Checkpoint();
             return false;
         }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        ref readonly var plan = ref candidateRegex.Inspection.PreparedRegex.SearchPlan;
+        if (plan.LiteralSearch is { } literal)
+        {
+            if (_position < input.Length && input[_position] == literal.Needle[0]) return true;
+            breach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, _position,
+                input.Length - literal.Length, false, ref _invocation, out _position);
+        }
+        else if (plan.AlternateLiteralsUtf8 is not null)
+        {
+            breach = Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(plan,
+                input, _position, input.Length, ref _invocation, out _position);
+        }
+        else return true;
+        if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+        if (_position >= 0) return true;
+        Checkpoint();
+        return false;
     }
 
     internal PythonReGroupData SnapshotValueData(ReadOnlySpan<byte> input)
     {
-        Checkpoint(input);
-        try
+        Checkpoint();
+        var start = StartOffsetInBytes;
+        var end = EndOffsetInBytes;
+        // Collections that publish coordinates reuse their single map. A
+        // one-shot fixed value still needs no whole-subject map allocation.
+        // Strict validation supplies the subject ends. Without a description,
+        // count only the prefix/range actually requested by this value.
+        var ascii = _validation?.IsAscii == true;
+        var length = _validation?.Utf16Length;
+        var startUtf16 = ascii || start == 0 ? start : start == input.Length && length.HasValue ? length.Value
+            : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
+            : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
+        var endUtf16 = ascii ? end : end == input.Length && length.HasValue ? length.Value
+            : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
+            : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
+        var value = new PythonReGroupData
         {
-            var start = StartOffsetInBytes;
-            var end = EndOffsetInBytes;
-            // Collections that publish coordinates reuse their single map. A
-            // one-shot fixed value still needs no whole-subject map allocation.
-            // Strict validation supplies the subject ends. Without a description,
-            // count only the prefix/range actually requested by this value.
-            var ascii = _validation?.IsAscii == true;
-            var length = _validation?.Utf16Length;
-            var startUtf16 = ascii || start == 0 ? start : start == input.Length && length.HasValue ? length.Value
-                : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
-                : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
-            var endUtf16 = ascii ? end : end == input.Length && length.HasValue ? length.Value
-                : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
-                : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
-            var value = new PythonReGroupData
-            {
-                Number = 0, Success = true,
-                StartOffsetInBytes = start, EndOffsetInBytes = end,
-                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
-            };
-            Checkpoint(input);
-            return value;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+            Number = 0, Success = true,
+            StartOffsetInBytes = start, EndOffsetInBytes = end,
+            StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
+        };
+        Checkpoint();
+        return value;
     }
 
-    internal PythonReNameEntry[] SnapshotNameEntries(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
+    internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names)
     {
-        Checkpoint(input);
-        var copied = AllocateResultArray<PythonReNameEntry>(input, names.Length);
-        try { Utf8InvocationResultLedger.Copy<PythonReNameEntry>(names, copied, ref _invocation); }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
-        Checkpoint(input);
+        Checkpoint();
+        var copied = AllocateResultArray<PythonReNameEntry>(names.Length);
+        Utf8InvocationResultLedger.Copy<PythonReNameEntry>(names, copied, ref _invocation);
+        Checkpoint();
         return copied;
     }
 
     internal PythonReGroupData[] SnapshotGroups(ReadOnlySpan<byte> input)
     {
-        Checkpoint(input);
+        Checkpoint();
         EnsureMap(input);
-        var groups = AllocateResultArray<PythonReGroupData>(input, _program.GroupCount + 1);
+        var groups = AllocateResultArray<PythonReGroupData>(_program.GroupCount + 1);
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            if ((pythonGroup & 255) == 0) Checkpoint(input);
+            if ((pythonGroup & 255) == 0) Checkpoint();
             groups[pythonGroup] = !TryGetCaptureByteRange(pythonGroup, out var start, out var end)
                 ? new PythonReGroupData { Number = pythonGroup, Success = false }
                 : new PythonReGroupData
@@ -634,7 +581,7 @@ internal struct PythonReScalarMatchState
                     EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
                 };
         }
-        Checkpoint(input);
+        Checkpoint();
         return groups;
     }
 
@@ -657,73 +604,60 @@ internal struct PythonReScalarMatchState
     {
         if (!_hasMap)
         {
-            try
-            {
-                _map = Utf8BoundaryMap.Create(input, DescribeInput(input), ref _invocation, out _mapReservation);
-                _hasMap = true;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            { throw ResourceFailure(); }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw TimeoutFailure(input);
-            }
+            _map = Utf8BoundaryMap.Create(input, DescribeInput(input), ref _invocation, out _mapReservation);
+            _hasMap = true;
         }
     }
 
-    internal int? GetLastIndex(ReadOnlySpan<byte> input)
+    internal int? GetLastIndex()
     {
         if (_program.GroupCount == 0) return null;
-        try
+        // One participating group is necessarily the last to close. Its
+        // completed slot survives even when no rollback trail was needed.
+        if (_program.GroupCount == 1)
         {
-            // One participating group is necessarily the last to close. Its
-            // completed slot survives even when no rollback trail was needed.
-            if (_program.GroupCount == 1)
-            {
-                if (!_workspace.Initialized || !TryGetCaptureByteRange(1, out _, out _)) return null;
-                Checkpoint(input);
-                return 1;
-            }
-            // The successful workspace keeps its capture journal until the next
-            // advance. Only detailed/context results observe completion order;
-            // value/string/UTF8 discovery needs no extra scan or metadata state.
-            var breach = _workspace.Stacks.FindLastClosedSlot(ref _invocation, out var slot);
-            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-            if (slot < 0) return null;
-            Checkpoint(input);
-            return slot + 1;
+            if (!_workspace.Initialized || !TryGetCaptureByteRange(1, out _, out _)) return null;
+            Checkpoint();
+            return 1;
         }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        // The successful workspace keeps its capture journal until the next
+        // advance. Only detailed/context results observe completion order;
+        // value/string/UTF8 discovery needs no extra scan or metadata state.
+        var breach = _workspace.Stacks.FindLastClosedSlot(ref _invocation, out var slot);
+        if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+        if (slot < 0) return null;
+        Checkpoint();
+        return slot + 1;
     }
 
     internal Utf8PythonRangeMatch SnapshotRanges(ReadOnlyMemory<byte> input, PythonReNameEntry[] names)
     {
         var bytes = input.Span;
-        var lastIndex = GetLastIndex(bytes);
-        var groups = AllocateResultArray<Utf8PythonCaptureRange>(bytes, _program.GroupCount + 1);
+        var lastIndex = GetLastIndex();
+        var groups = AllocateResultArray<Utf8PythonCaptureRange>(_program.GroupCount + 1);
         for (var number = 0; number < groups.Length; number++)
         {
-            if ((number & 255) == 0) Checkpoint(bytes);
+            if ((number & 255) == 0) Checkpoint();
             groups[number] = TryGetCaptureByteRange(number, out var start, out var end)
                 ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
                 : new Utf8PythonCaptureRange { Number = number };
         }
-        var copiedNames = SnapshotNameEntries(bytes, names);
-        Checkpoint(bytes);
+        var copiedNames = SnapshotNameEntries(names);
+        Checkpoint();
         return new Utf8PythonRangeMatch(input, groups, copiedNames, lastIndex);
     }
 
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
-        var lastIndex = GetLastIndex(input);
-        Checkpoint(input);
+        var lastIndex = GetLastIndex();
+        Checkpoint();
         EnsureMap(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
         // still use SnapshotGroups; no temporary range array is needed here.
-        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(input, _program.GroupCount + 1);
+        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(_program.GroupCount + 1);
         for (var i = 0; i < projected.Length; i++)
         {
-            Checkpoint(input);
+            Checkpoint();
             if (!TryGetCaptureByteRange(i, out var start, out var end))
             {
                 projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
@@ -744,145 +678,94 @@ internal struct PythonReScalarMatchState
                     ? projected[0].ValueText : GetText(input, start, end, endInUtf16 - startInUtf16),
             };
         }
-        var copiedNames = SnapshotNameEntries(input, names);
+        var copiedNames = SnapshotNameEntries(names);
         var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames, LastIndex = lastIndex };
-        Checkpoint(input);
+        Checkpoint();
         return result;
     }
 
     internal string GetText(ReadOnlySpan<byte> input, int start, int end, int? characterCount)
     {
-        Checkpoint(input);
-        try
-        {
-            // String-only results need the selected scalar range's char count,
-            // not a coordinate map for the complete subject. Detailed results
-            // already project coordinates and can supply their character count.
-            // Validation or the caller's trusted-input contract proves these ranges.
-            // Unknown lengths need bounded character counting, not validation.
-            // Cache a real description when string projection first needs it;
-            // dense output reuses the same ASCII/whole-subject facts thereafter.
-            var validation = characterCount.HasValue ? default : _validation ?? DescribeInput(input);
-            var count = characterCount ?? (validation.IsAscii ? end - start
-                : start == 0 && end == input.Length ? validation.Utf16Length : _hasMap
-                ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
-                : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
-            var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
-            Checkpoint(input);
-            return text;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw TimeoutFailure(input);
-        }
+        Checkpoint();
+        // String-only results need the selected scalar range's char count,
+        // not a coordinate map for the complete subject. Detailed results
+        // already project coordinates and can supply their character count.
+        // Validation or the caller's trusted-input contract proves these ranges.
+        // Unknown lengths need bounded character counting, not validation.
+        // Cache a real description when string projection first needs it;
+        // dense output reuses the same ASCII/whole-subject facts thereafter.
+        var validation = characterCount.HasValue ? default : _validation ?? DescribeInput(input);
+        var count = characterCount ?? (validation.IsAscii ? end - start
+            : start == 0 && end == input.Length ? validation.Utf16Length : _hasMap
+            ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
+            : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
+        var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
+        Checkpoint();
+        return text;
     }
 
     private Utf8ValidationResult DescribeInput(ReadOnlySpan<byte> input)
     {
-        try { return _validation ??= Utf8Validation.Subject(input, ref _invocation); }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        return _validation ??= Utf8Validation.Subject(input, ref _invocation);
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)
     {
-        Checkpoint(input);
-        var bytes = AllocateResultArray<byte>(input, end - start);
-        CopyBytes(input, input[start..end], bytes);
+        Checkpoint();
+        var bytes = AllocateResultArray<byte>(end - start);
+        CopyBytes(input[start..end], bytes);
         return bytes;
     }
 
-    internal Utf8SliceOutputWriter CreateOutputWriter(ReadOnlySpan<byte> input)
+    internal Utf8SliceOutputWriter CreateOutputWriter()
     {
-        try
-        {
-            if (!Utf8SliceOutputWriter.Rent(256, ref _invocation, out var writer))
-                throw new InvalidOperationException("Python output exceeded the working storage budget.");
-            return writer;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        if (!Utf8SliceOutputWriter.Rent(256, ref _invocation, out var writer))
+            throw new InvalidOperationException("Python output exceeded the working storage budget.");
+        return writer;
     }
 
-    internal void AppendBytes(ReadOnlySpan<byte> input, scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes)
+    internal void AppendBytes(scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes)
     {
-        try
-        {
-            Checkpoint(input);
-            if (!writer.Append(bytes, ref _invocation))
-                throw new InvalidOperationException("Python output exceeded the working storage budget.");
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        Checkpoint();
+        if (!writer.Append(bytes, ref _invocation))
+            throw new InvalidOperationException("Python output exceeded the working storage budget.");
     }
 
-    internal void AppendText(ReadOnlySpan<byte> input, scoped ref Utf8SliceOutputWriter writer, string text)
+    internal void AppendText(scoped ref Utf8SliceOutputWriter writer, string text)
     {
-        try
-        {
-            // Observe a callback's token/deadline before scanning its return.
-            Checkpoint(input);
-            if (!writer.AppendUtf16(text.AsSpan(0, text.Length), ref _invocation))
-                throw new InvalidOperationException("Python output exceeded the working storage budget.");
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        // Observe a callback's token/deadline before scanning its return.
+        Checkpoint();
+        if (!writer.AppendUtf16(text.AsSpan(0, text.Length), ref _invocation))
+            throw new InvalidOperationException("Python output exceeded the working storage budget.");
     }
 
-    internal byte[] CompleteOutputBytes(ReadOnlySpan<byte> input, scoped ref Utf8SliceOutputWriter writer, bool validateOutput)
+    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput)
     {
-        try
-        {
-            Checkpoint(input);
-            if (validateOutput) _ = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
-            var result = AllocateResultArray<byte>(input, writer.Length);
-            CopyBytes(input, writer.WrittenBytes, result);
-            writer.Release(ref _invocation);
-            return result;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        Checkpoint();
+        if (validateOutput) _ = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
+        var result = AllocateResultArray<byte>(writer.Length);
+        CopyBytes(writer.WrittenBytes, result);
+        writer.Release(ref _invocation);
+        return result;
     }
 
-    internal string CompleteOutputText(ReadOnlySpan<byte> input, scoped ref Utf8SliceOutputWriter writer)
+    internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer)
     {
-        try
-        {
-            Checkpoint(input);
-            var validation = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
-            var result = _results.DecodeUtf8(writer.WrittenBytes, validation.Utf16Length, ref _invocation);
-            Checkpoint(input);
-            writer.Release(ref _invocation);
-            return result;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+        Checkpoint();
+        var validation = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
+        var result = _results.DecodeUtf8(writer.WrittenBytes, validation.Utf16Length, ref _invocation);
+        Checkpoint();
+        writer.Release(ref _invocation);
+        return result;
     }
 
     internal void ReleaseOutput(scoped ref Utf8SliceOutputWriter writer)
         => writer.Release(ref _invocation);
 
-    internal void CopyBytes(ReadOnlySpan<byte> input, ReadOnlySpan<byte> source, Span<byte> destination)
+    internal void CopyBytes(ReadOnlySpan<byte> source, Span<byte> destination)
     {
-        try
-        {
-            Utf8SliceBufferWork.Copy(source, destination, ref _invocation);
-            Checkpoint(input);
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw ResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw TimeoutFailure(input);
-        }
+        Utf8SliceBufferWork.Copy(source, destination, ref _invocation);
+        Checkpoint();
     }
 
     internal void Dispose()

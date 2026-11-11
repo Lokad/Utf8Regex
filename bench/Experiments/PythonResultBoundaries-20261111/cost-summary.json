@@ -1,0 +1,1083 @@
+{
+  "Accepted": true,
+  "SourceBaseline": "frozen GA f662 Python source unchanged through a1, with the identical accepted category-count Core pair",
+  "Candidate": "a1 plus archived Python-only error-boundary patch",
+  "PublicContractChanged": false,
+  "Protocols": [
+    {
+      "Name": "Initial",
+      "Seconds": 133.32457601558417,
+      "SampleCount": 560,
+      "MinimumSampleMs": 53.7184,
+      "MaximumBatchAllocationMiB": 47.47944641113281,
+      "LoadedProducerHashesVerified": true,
+      "CommonCoreCallerAndNetControl": true,
+      "FinalAccountLoansZero": true,
+      "Rows": [
+        {
+          "Policy": "Validate",
+          "Id": "python/many-strings",
+          "BeforeUs": 690.9055425752856,
+          "AfterUs": 586.9465760555233,
+          "ChangePercent": -15.046769798989445,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            692.5971962616821,
+            689.213888888889
+          ],
+          "AfterProcessMediansUs": [
+            592.4300751879699,
+            581.4630769230769
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/one-strings",
+          "BeforeUs": 233.0231695158074,
+          "AfterUs": 207.23650920001222,
+          "ChangePercent": -11.066135770694652,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            225.68996960486322,
+            240.35636942675163
+          ],
+          "AfterProcessMediansUs": [
+            205.25504087193457,
+            209.2179775280899
+          ],
+          "BeforeAllocatedBytes": [
+            45168,
+            45168
+          ],
+          "AfterAllocatedBytes": [
+            45168,
+            45168
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/many-utf8",
+          "BeforeUs": 716.5703351104341,
+          "AfterUs": 628.8113505747126,
+          "ChangePercent": -12.247085908488886,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            718.009900990099,
+            715.1307692307691
+          ],
+          "AfterProcessMediansUs": [
+            614.9666666666667,
+            642.6560344827586
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/split-strings",
+          "BeforeUs": 749.0717821782177,
+          "AfterUs": 715.056426962677,
+          "ChangePercent": -4.5410007458334345,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            718.0742574257425,
+            780.0693069306931
+          ],
+          "AfterProcessMediansUs": [
+            665.0396396396397,
+            765.0732142857142
+          ],
+          "BeforeAllocatedBytes": [
+            356776,
+            356776
+          ],
+          "AfterAllocatedBytes": [
+            356776,
+            356776
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/replace-text",
+          "BeforeUs": 582.008984375,
+          "AfterUs": 532.4780575539569,
+          "ChangePercent": -8.510337151278291,
+          "RangesOverlap": false,
+          "BeforeProcessMediansUs": [
+            588.2609375,
+            575.75703125
+          ],
+          "AfterProcessMediansUs": [
+            524.8597122302158,
+            540.0964028776979
+          ],
+          "BeforeAllocatedBytes": [
+            102632,
+            102632
+          ],
+          "AfterAllocatedBytes": [
+            102632,
+            102632
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/detailed",
+          "BeforeUs": 993.717296802132,
+          "AfterUs": 1051.4194162784324,
+          "ChangePercent": 5.806693680586106,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1015.6569620253166,
+            971.7776315789473
+          ],
+          "AfterProcessMediansUs": [
+            975.6365853658536,
+            1127.2022471910113
+          ],
+          "BeforeAllocatedBytes": [
+            545112,
+            545112
+          ],
+          "AfterAllocatedBytes": [
+            545112,
+            545112
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/cursor-detailed",
+          "BeforeUs": 1107.5441125541124,
+          "AfterUs": 1173.5315243902442,
+          "ChangePercent": 5.957994005670608,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1033.7415584415585,
+            1181.3466666666666
+          ],
+          "AfterProcessMediansUs": [
+            1175.9350000000002,
+            1171.128048780488
+          ],
+          "BeforeAllocatedBytes": [
+            607144,
+            607144
+          ],
+          "AfterAllocatedBytes": [
+            607144,
+            607144
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/finite-many-strings",
+          "BeforeUs": 984.1679276315789,
+          "AfterUs": 855.0875280898877,
+          "ChangePercent": -13.115688483399978,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            950.26875,
+            1018.0671052631578
+          ],
+          "AfterProcessMediansUs": [
+            862.52,
+            847.6550561797753
+          ],
+          "BeforeAllocatedBytes": [
+            246208,
+            246208
+          ],
+          "AfterAllocatedBytes": [
+            246208,
+            246208
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/funded-deadline-many",
+          "BeforeUs": 1615.4389849290778,
+          "AfterUs": 1550.1168750000002,
+          "ChangePercent": -4.043613565011583,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1621.6354166666667,
+            1609.2425531914892
+          ],
+          "AfterProcessMediansUs": [
+            1529.29,
+            1570.9437500000001
+          ],
+          "BeforeAllocatedBytes": [
+            246280,
+            246280
+          ],
+          "AfterAllocatedBytes": [
+            246280,
+            246280
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/short-search-text",
+          "BeforeUs": 0.5431317764943875,
+          "AfterUs": 0.528005165687641,
+          "ChangePercent": -2.7850719588495276,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.5057349210246337,
+            0.5805286319641413
+          ],
+          "AfterProcessMediansUs": [
+            0.5854600646991106,
+            0.4705502666761715
+          ],
+          "BeforeAllocatedBytes": [
+            312,
+            312
+          ],
+          "AfterAllocatedBytes": [
+            312,
+            312
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/unicode-strings",
+          "BeforeUs": 258.88400719267656,
+          "AfterUs": 233.99637356646355,
+          "ChangePercent": -9.613430314252746,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            257.51317567567565,
+            260.2548387096774
+          ],
+          "AfterProcessMediansUs": [
+            237.0548589341693,
+            230.93788819875778
+          ],
+          "BeforeAllocatedBytes": [
+            55592,
+            55592
+          ],
+          "AfterAllocatedBytes": [
+            55592,
+            55592
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/nullable-count",
+          "BeforeUs": 35.688816266293266,
+          "AfterUs": 35.21770455054296,
+          "ChangePercent": -1.3200541935464827,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            35.90941512125535,
+            35.46821741133118
+          ],
+          "AfterProcessMediansUs": [
+            35.42717543043276,
+            35.00823367065317
+          ],
+          "BeforeAllocatedBytes": [
+            64,
+            64
+          ],
+          "AfterAllocatedBytes": [
+            64,
+            64
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "control/core-literal",
+          "BeforeUs": 0.11385931985078813,
+          "AfterUs": 0.10558240305467828,
+          "ChangePercent": -7.269424063797936,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.12718934851308644,
+            0.10052929118848983
+          ],
+          "AfterProcessMediansUs": [
+            0.10783286765125165,
+            0.10333193845810491
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "control/net-predecoded-count",
+          "BeforeUs": 77.82746238796938,
+          "AfterUs": 77.52307917449428,
+          "ChangePercent": -0.39110001037646613,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            78.07286012526096,
+            77.5820646506778
+          ],
+          "AfterProcessMediansUs": [
+            77.43116883116885,
+            77.61498951781972
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/many-strings",
+          "BeforeUs": 647.5048990683231,
+          "AfterUs": 594.8849399038461,
+          "ChangePercent": -8.126573133298354,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            638.4008695652175,
+            656.6089285714286
+          ],
+          "AfterProcessMediansUs": [
+            596.6276923076923,
+            593.1421875
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/one-strings",
+          "BeforeUs": 221.47650050775644,
+          "AfterUs": 209.70719957404447,
+          "ChangePercent": -5.31401792367574,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            226.65329341317369,
+            216.29970760233917
+          ],
+          "AfterProcessMediansUs": [
+            209.27658402203855,
+            210.1378151260504
+          ],
+          "BeforeAllocatedBytes": [
+            45168,
+            45168
+          ],
+          "AfterAllocatedBytes": [
+            45168,
+            45168
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/many-utf8",
+          "BeforeUs": 663.4108847402597,
+          "AfterUs": 619.5512336134454,
+          "ChangePercent": -6.611234777069763,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            653.2026785714286,
+            673.6190909090909
+          ],
+          "AfterProcessMediansUs": [
+            638.4680672268908,
+            600.6344
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/split-strings",
+          "BeforeUs": 717.9617561683599,
+          "AfterUs": 708.4020474137931,
+          "ChangePercent": -1.3315066815794419,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            723.1461538461538,
+            712.777358490566
+          ],
+          "AfterProcessMediansUs": [
+            758.59375,
+            658.2103448275863
+          ],
+          "BeforeAllocatedBytes": [
+            356776,
+            356776
+          ],
+          "AfterAllocatedBytes": [
+            356776,
+            356776
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/replace-text",
+          "BeforeUs": 562.7458948261237,
+          "AfterUs": 645.4678433060698,
+          "ChangePercent": 14.699698254663463,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            559.1688888888888,
+            566.3229007633588
+          ],
+          "AfterProcessMediansUs": [
+            753.7574257425742,
+            537.1782608695653
+          ],
+          "BeforeAllocatedBytes": [
+            102632,
+            102632
+          ],
+          "AfterAllocatedBytes": [
+            102632,
+            102632
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/detailed",
+          "BeforeUs": 979.0835848750405,
+          "AfterUs": 1222.328070819865,
+          "ChangePercent": 24.844098062972787,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1004.6607594936709,
+            953.5064102564103
+          ],
+          "AfterProcessMediansUs": [
+            1243.1963855421686,
+            1201.459756097561
+          ],
+          "BeforeAllocatedBytes": [
+            545112,
+            545112
+          ],
+          "AfterAllocatedBytes": [
+            545112,
+            545112
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/cursor-detailed",
+          "BeforeUs": 1053.2793419913419,
+          "AfterUs": 1190.5451676829266,
+          "ChangePercent": 13.032233731278575,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1053.7493506493506,
+            1052.8093333333334
+          ],
+          "AfterProcessMediansUs": [
+            1172.5365853658536,
+            1208.5537499999998
+          ],
+          "BeforeAllocatedBytes": [
+            607144,
+            607144
+          ],
+          "AfterAllocatedBytes": [
+            607144,
+            607144
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/finite-many-strings",
+          "BeforeUs": 904.1127177700348,
+          "AfterUs": 853.0244318181817,
+          "ChangePercent": -5.650654497799867,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            907.6682926829267,
+            900.5571428571429
+          ],
+          "AfterProcessMediansUs": [
+            846.7113636363636,
+            859.3375
+          ],
+          "BeforeAllocatedBytes": [
+            246208,
+            246208
+          ],
+          "AfterAllocatedBytes": [
+            246208,
+            246208
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/funded-deadline-many",
+          "BeforeUs": 1584.5797471162377,
+          "AfterUs": 1526.4974285714284,
+          "ChangePercent": -3.665471469675974,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1599.4717391304348,
+            1569.6877551020407
+          ],
+          "AfterProcessMediansUs": [
+            1539.3428571428572,
+            1513.6519999999998
+          ],
+          "BeforeAllocatedBytes": [
+            246280,
+            246280
+          ],
+          "AfterAllocatedBytes": [
+            246280,
+            246280
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/short-search-text",
+          "BeforeUs": 0.5926788742065234,
+          "AfterUs": 0.4873156788609092,
+          "ChangePercent": -17.77745081376051,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.5973853978882308,
+            0.5879723505248161
+          ],
+          "AfterProcessMediansUs": [
+            0.48447716921946155,
+            0.4901541885023569
+          ],
+          "BeforeAllocatedBytes": [
+            312,
+            312
+          ],
+          "AfterAllocatedBytes": [
+            312,
+            312
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/unicode-strings",
+          "BeforeUs": 244.16307324993858,
+          "AfterUs": 234.63550184968847,
+          "ChangePercent": -3.902134451959971,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            241.37299035369776,
+            246.9531561461794
+          ],
+          "AfterProcessMediansUs": [
+            233.8921875,
+            235.37881619937696
+          ],
+          "BeforeAllocatedBytes": [
+            55592,
+            55592
+          ],
+          "AfterAllocatedBytes": [
+            55592,
+            55592
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/nullable-count",
+          "BeforeUs": 34.72104359706014,
+          "AfterUs": 34.98941871921183,
+          "ChangePercent": 0.7729465890086606,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            34.957082551594745,
+            34.48500464252553
+          ],
+          "AfterProcessMediansUs": [
+            34.894285714285715,
+            35.08455172413793
+          ],
+          "BeforeAllocatedBytes": [
+            64,
+            64
+          ],
+          "AfterAllocatedBytes": [
+            64,
+            64
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "control/core-literal",
+          "BeforeUs": 0.10265513460145909,
+          "AfterUs": 0.10246906822839755,
+          "ChangePercent": -0.18125383964855413,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.10161269834405853,
+            0.10369757085885963
+          ],
+          "AfterProcessMediansUs": [
+            0.103777865782222,
+            0.10116027067457309
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "control/net-predecoded-count",
+          "BeforeUs": 77.3972686566332,
+          "AfterUs": 76.92419711370772,
+          "ChangePercent": -0.6112251131551227,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            77.89005347593584,
+            76.90448383733056
+          ],
+          "AfterProcessMediansUs": [
+            77.23702127659575,
+            76.61137295081967
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "SoleConfirmation",
+      "Seconds": 74.50582059659064,
+      "SampleCount": 280,
+      "MinimumSampleMs": 68.1605,
+      "MaximumBatchAllocationMiB": 48.637481689453125,
+      "LoadedProducerHashesVerified": true,
+      "CommonCoreCallerAndNetControl": true,
+      "FinalAccountLoansZero": true,
+      "Rows": [
+        {
+          "Policy": "Validate",
+          "Id": "python/many-strings",
+          "BeforeUs": 651.0327913774206,
+          "AfterUs": 611.856940196525,
+          "ChangePercent": -6.0174927745205276,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            665.7260869565217,
+            636.3394957983194
+          ],
+          "AfterProcessMediansUs": [
+            631.6438016528925,
+            592.0700787401574
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/one-strings",
+          "BeforeUs": 231.4934326583832,
+          "AfterUs": 223.40231432070686,
+          "ChangePercent": -3.4951826687958265,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            238.26918238993707,
+            224.7176829268293
+          ],
+          "AfterProcessMediansUs": [
+            231.41645962732917,
+            215.38816901408453
+          ],
+          "BeforeAllocatedBytes": [
+            45168,
+            45168
+          ],
+          "AfterAllocatedBytes": [
+            45168,
+            45168
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/replace-text",
+          "BeforeUs": 550.4946124303565,
+          "AfterUs": 570.8790740740741,
+          "ChangePercent": 3.7029357206100677,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            561.6503759398496,
+            539.3388489208634
+          ],
+          "AfterProcessMediansUs": [
+            586.71,
+            555.0481481481481
+          ],
+          "BeforeAllocatedBytes": [
+            102632,
+            102632
+          ],
+          "AfterAllocatedBytes": [
+            102632,
+            102632
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/detailed",
+          "BeforeUs": 1103.9263173742847,
+          "AfterUs": 1063.0941897953462,
+          "ChangePercent": -3.6988091448040383,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1213.1365853658535,
+            994.716049382716
+          ],
+          "AfterProcessMediansUs": [
+            990.4378048780488,
+            1135.7505747126438
+          ],
+          "BeforeAllocatedBytes": [
+            545112,
+            545112
+          ],
+          "AfterAllocatedBytes": [
+            545112,
+            545112
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "python/cursor-detailed",
+          "BeforeUs": 1226.8322916666666,
+          "AfterUs": 1181.2560975609758,
+          "ChangePercent": -3.7149490126132,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1255.2333333333333,
+            1198.43125
+          ],
+          "AfterProcessMediansUs": [
+            1185.3000000000002,
+            1177.2121951219513
+          ],
+          "BeforeAllocatedBytes": [
+            607144,
+            607144
+          ],
+          "AfterAllocatedBytes": [
+            607144,
+            607144
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "control/core-literal",
+          "BeforeUs": 0.10235814733050125,
+          "AfterUs": 0.10335242671719612,
+          "ChangePercent": 0.9713729806817062,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.10068702015719905,
+            0.10402927450380345
+          ],
+          "AfterProcessMediansUs": [
+            0.10368593470515107,
+            0.10301891872924117
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "Validate",
+          "Id": "control/net-predecoded-count",
+          "BeforeUs": 77.53361134228268,
+          "AfterUs": 77.07267217373982,
+          "ChangePercent": -0.5945023849179276,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            76.95802728226653,
+            78.10919540229885
+          ],
+          "AfterProcessMediansUs": [
+            77.52614107883818,
+            76.61920326864147
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/many-strings",
+          "BeforeUs": 671.6509838786155,
+          "AfterUs": 579.792601291838,
+          "ChangePercent": -13.676505326668098,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            650.6938596491228,
+            692.6081081081081
+          ],
+          "AfterProcessMediansUs": [
+            575.4236641221374,
+            584.1615384615385
+          ],
+          "BeforeAllocatedBytes": [
+            242008,
+            242008
+          ],
+          "AfterAllocatedBytes": [
+            242008,
+            242008
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/one-strings",
+          "BeforeUs": 236.2986528822055,
+          "AfterUs": 210.20388684379003,
+          "ChangePercent": -11.043129412770568,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            223.00059523809523,
+            249.59671052631577
+          ],
+          "AfterProcessMediansUs": [
+            206.78788732394366,
+            213.61988636363637
+          ],
+          "BeforeAllocatedBytes": [
+            45168,
+            45168
+          ],
+          "AfterAllocatedBytes": [
+            45168,
+            45168
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/replace-text",
+          "BeforeUs": 560.7408542849419,
+          "AfterUs": 530.5135264735266,
+          "ChangePercent": -5.390605585526897,
+          "RangesOverlap": false,
+          "BeforeProcessMediansUs": [
+            559.5846715328468,
+            561.897037037037
+          ],
+          "AfterProcessMediansUs": [
+            530.3228571428572,
+            530.7041958041958
+          ],
+          "BeforeAllocatedBytes": [
+            102632,
+            102632
+          ],
+          "AfterAllocatedBytes": [
+            102632,
+            102632
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/detailed",
+          "BeforeUs": 1009.7174953492306,
+          "AfterUs": 1067.7014501470194,
+          "ChangePercent": 5.742591869989733,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1001.4917808219179,
+            1017.9432098765433
+          ],
+          "AfterProcessMediansUs": [
+            1161.9505747126436,
+            973.4523255813953
+          ],
+          "BeforeAllocatedBytes": [
+            545112,
+            545112
+          ],
+          "AfterAllocatedBytes": [
+            545112,
+            545112
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "python/cursor-detailed",
+          "BeforeUs": 1219.8946756756757,
+          "AfterUs": 1138.6774749373435,
+          "ChangePercent": -6.657722372084917,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            1100.3013513513513,
+            1339.488
+          ],
+          "AfterProcessMediansUs": [
+            1147.6904761904761,
+            1129.6644736842106
+          ],
+          "BeforeAllocatedBytes": [
+            607144,
+            607144
+          ],
+          "AfterAllocatedBytes": [
+            607144,
+            607144
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "control/core-literal",
+          "BeforeUs": 0.10190511762338642,
+          "AfterUs": 0.10231434317200888,
+          "ChangePercent": 0.401575071170468,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            0.10147517370404914,
+            0.10233506154272369
+          ],
+          "AfterProcessMediansUs": [
+            0.10277145352457329,
+            0.10185723281944448
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        },
+        {
+          "Policy": "AssumeValid",
+          "Id": "control/net-predecoded-count",
+          "BeforeUs": 77.45785958113034,
+          "AfterUs": 77.03917829949239,
+          "ChangePercent": -0.5405278223566401,
+          "RangesOverlap": true,
+          "BeforeProcessMediansUs": [
+            77.20764462809917,
+            77.7080745341615
+          ],
+          "AfterProcessMediansUs": [
+            76.99125000000001,
+            77.08710659898478
+          ],
+          "BeforeAllocatedBytes": [
+            0,
+            0
+          ],
+          "AfterAllocatedBytes": [
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ],
+  "SourceDocuments": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "GeneratedInputDocuments": 6,
+    "CompiledDocumentCounts": [
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex.PythonRe",
+        "Count": 49
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex.PythonRe",
+        "Count": 49
+      }
+    ],
+    "ChangedCompiledDocuments": [
+      "src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchCursor.cs",
+      "src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchState.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonMatchCursor.Coordinates.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonMatchCursor.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.OneShotText.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.ScalarOperations.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Utf8.cs",
+      "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Value.cs"
+    ],
+    "Before": "frozen GA Python sources at f662, unchanged through a1; generated AssemblyInfo reconstructed with its exact recorded Git revision",
+    "After": "frozen patched a1 Python sources, all source and generated hashes checked",
+    "SharedCore": "exact common accepted category-count pair; identity carried from prior receipt, no Core rebuild for this comparison"
+  },
+  "WindowsTestsPerTarget": 5153,
+  "LinuxTestsPerTarget": {
+    "Existing": 5145,
+    "NewBoundaryFixture": 8,
+    "SoftwarePaths": 99
+  },
+  "RawArchives": {
+    "confirmation-complete.tar.gz": "F91D0DCA081389E5C9C062784D59EB6267A078D02B9C94C2D17FF4B20F4693BB",
+    "evidence.tar.gz": "DE0FC90F861E686ED0D7F7BB5027DB691117467401B8378D9B4B47189666672F",
+    "qualification-complete.tar.gz": "9191149D1427E77C939440BC2DE1CB76EDFE425EAD8CF79BF77B8E12F313E64E",
+    "qualification-preflight-failed.tar.gz": "9B5883A3AB3BD0A8D0EC3280BD718A5672FAB7DE808F55A1891014BD19576FBB",
+    "windows-checks.zip": "15A87668D88FB1BB8D702A1EE23F1CB5057BD235AA8F12D8127A884D4FEA9A07"
+  }
+}

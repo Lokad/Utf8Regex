@@ -64,7 +64,7 @@ public sealed partial class Utf8PythonMatchCursor
         try
         {
             var input = _input.Span;
-            _discovery.Checkpoint(input);
+            _discovery.Checkpoint();
             if (!_discovery.TryGetCaptureByteRange(groupNumber, out var byteStart, out var byteEnd)) return false;
             if (_discovery.IsAscii(input)) { start = byteStart; end = byteEnd; }
             else
@@ -73,8 +73,15 @@ public sealed partial class Utf8PythonMatchCursor
                 start = ScalarOffset(input, byteStart);
                 end = ScalarOffset(input, byteEnd);
             }
-            _discovery.Checkpoint(input);
+            _discovery.Checkpoint();
             return true;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            _discovery.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            var failure = _discovery.WorkingInvocation.Budget.CreateResourceFailure();
+            Close(Status.Faulted);
+            throw failure;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -96,11 +103,11 @@ public sealed partial class Utf8PythonMatchCursor
             throw invocation.Budget.CreateResourceFailure();
         try
         {
-            _discovery.Checkpoint(input);
+            _discovery.Checkpoint();
             var prefixes = new int[count];
             for (var block = 1; block < prefixes.Length; block++)
                 prefixes[block] = prefixes[block - 1] + CountScalarStarts(input.Slice((block - 1) * ScalarPrefixBlockBytes, ScalarPrefixBlockBytes));
-            _discovery.Checkpoint(input);
+            _discovery.Checkpoint();
             _scalarPrefixes = prefixes;
             _scalarPrefixReservation = bytes;
         }
@@ -124,7 +131,7 @@ public sealed partial class Utf8PythonMatchCursor
         {
             // Admit one bounded 32-byte unit before scanning it, with the
             // invocation's original work, cancellation and deadline authority.
-            _discovery.Checkpoint(_input.Span);
+            _discovery.Checkpoint();
             var block = bytes.Slice(offset, Math.Min(32, bytes.Length - offset));
             foreach (var value in block) if ((value & 0xc0) != 0x80) count++;
             offset += block.Length;

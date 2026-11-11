@@ -190,7 +190,7 @@ public sealed class PythonReOneShotProjectionTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void NameCopyFailureAfterAdmissionIsUnpublishedAndPreservesProfileIdentity(bool expire)
+    public void NameCopyFailureAfterAdmissionIsUnpublishedAndPreservesNeutralFailure(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -229,8 +229,8 @@ public sealed class PythonReOneShotProjectionTests
             Assert.True(entered); Assert.Null(result);
             if (expire)
             {
-                var expired = Assert.IsType<RegexMatchTimeoutException>(failure);
-                Assert.Equal("(.)", expired.Pattern); Assert.Equal(timeout, expired.MatchTimeout);
+                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+
             }
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(baseline + extent, cursor.ReservedBytes);

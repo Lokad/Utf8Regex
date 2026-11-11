@@ -183,7 +183,7 @@ public sealed class PythonReSubstitutionOutputTests
             try { result = cursor.CompleteOutputText(ref writer); }
             catch (Exception error) { failure = error; }
             Assert.True(entered); Assert.Null(result);
-            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(10000, writer.Length);
             Assert.Equal(baseline, cursor.ReservedBytes);

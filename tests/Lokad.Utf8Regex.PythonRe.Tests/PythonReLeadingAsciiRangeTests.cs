@@ -414,8 +414,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.True(entered);
         if (expire)
         {
-            var failure = Assert.IsType<RegexMatchTimeoutException>(error);
-            Assert.Equal(pattern, failure.Pattern); Assert.Equal(timeout, failure.MatchTimeout);
+            var failure = Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
         }
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         Assert.Equal(13UL, cursor.ReservedBytes);

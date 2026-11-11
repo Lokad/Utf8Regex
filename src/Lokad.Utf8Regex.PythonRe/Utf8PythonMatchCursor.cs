@@ -36,7 +36,20 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
         _names = names;
         _discovery = new PythonReScalarMatchState(input.Span, program,
             startOffsetInBytes, timeout, pattern, invocation, candidateRegex);
-        try { _discovery.Checkpoint(input.Span); }
+        try { _discovery.Checkpoint(); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            _discovery.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            var failure = _discovery.WorkingInvocation.Budget.CreateResourceFailure();
+            Close(Status.Faulted);
+            throw failure;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            var failure = _discovery.TimeoutFailure(_input.Span);
+            Close(Status.Faulted);
+            throw failure;
+        }
         catch { Close(Status.Faulted); throw; }
     }
 
@@ -166,7 +179,7 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
             if (text)
             {
                 var completed = _discovery.SnapshotDetailed(input, _names);
-                _discovery.Checkpoint(input);
+                _discovery.Checkpoint();
                 _discovery.ReleaseResultsSince(marker);
                 _current = completed;
                 _status = Status.Positioned;
@@ -174,8 +187,8 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
             else
             {
                 var completed = _discovery.SnapshotRanges(_input, _names);
-                var receipt = retain ? _discovery.RetainRanges(input, completed) : null;
-                _discovery.Checkpoint(input);
+                var receipt = retain ? _discovery.RetainRanges(completed) : null;
+                _discovery.Checkpoint();
                 if (receipt is not null)
                 {
                     receipt.SetTransferredBytes(_discovery.TransferResultsSince(marker));
@@ -189,6 +202,19 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
                 _status = Status.RangePositioned;
             }
             return true;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            _discovery.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            var failure = _discovery.WorkingInvocation.Budget.CreateResourceFailure();
+            Close(Status.Faulted);
+            throw failure;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            var failure = _discovery.TimeoutFailure(_input.Span);
+            Close(Status.Faulted);
+            throw failure;
         }
         catch { Close(Status.Faulted); throw; }
     }

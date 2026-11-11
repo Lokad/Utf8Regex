@@ -72,7 +72,7 @@ public sealed class PythonReUnicodeStringSizingTests
             catch (Exception error) { failure = error; }
             Assert.True(entered);
             Assert.Null(result);
-            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(baseline, cursor.ReservedBytes);
             Assert.Equal(0UL, cursor.ResultReservation);

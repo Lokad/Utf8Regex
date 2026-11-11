@@ -142,6 +142,11 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             return found;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.Dispose(); }
     }
 
@@ -156,6 +161,11 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             return result;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.Dispose(); }
     }
 
@@ -176,6 +186,11 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             return result;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.Dispose(); }
     }
 
@@ -190,6 +205,11 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             return result;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.Dispose(); }
     }
 
@@ -211,6 +231,11 @@ public sealed partial class Utf8PythonRegex
             matches = completed;
             return;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
@@ -240,6 +265,11 @@ public sealed partial class Utf8PythonRegex
             matches = completed;
             return;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
@@ -287,6 +317,11 @@ public sealed partial class Utf8PythonRegex
             result = completed;
             return;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
     }
 
@@ -329,6 +364,11 @@ public sealed partial class Utf8PythonRegex
             result = completed;
             return;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
     }
 
@@ -361,6 +401,11 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             return completed;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
@@ -409,6 +454,11 @@ public sealed partial class Utf8PythonRegex
             values = completedValues;
             return;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseResults(ref stringParts); cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
@@ -463,6 +513,11 @@ public sealed partial class Utf8PythonRegex
                 retained = receipt;
             }
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
     }
 }

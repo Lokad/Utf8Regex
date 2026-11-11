@@ -43,6 +43,11 @@ public sealed partial class Utf8PythonRegex
                 cursor.Checkpoint();
                 return result;
             }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            { throw cursor.TimeoutFailure(); }
             finally { cursor.Dispose(); }
         }
         try

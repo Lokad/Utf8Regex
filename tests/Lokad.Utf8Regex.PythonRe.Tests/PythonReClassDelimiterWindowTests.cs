@@ -197,7 +197,7 @@ public sealed class PythonReClassDelimiterWindowTests
             try
             {
                 Assert.True(state.MoveNext(input));
-                state.Checkpoint(input);
+                state.Checkpoint();
                 return state.WorkingInvocation.Budget.Steps;
             }
             finally { state.Dispose(); Assert.Equal(13UL, state.ReservedBytes); }
@@ -228,7 +228,7 @@ public sealed class PythonReClassDelimiterWindowTests
         {
             var error = Record.Exception(() => state.MoveNext(input));
             Assert.True(reached);
-            if (timeout) Assert.IsType<RegexMatchTimeoutException>(error);
+            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         }
         finally { state.Dispose(); Assert.Equal(13UL, state.ReservedBytes); }

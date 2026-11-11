@@ -191,6 +191,11 @@ public sealed partial class Utf8PythonRegex
             while (cursor.MoveNext()) count++;
             return count;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw cursor.TimeoutFailure(); }
         finally { cursor.Dispose(); }
     }
 

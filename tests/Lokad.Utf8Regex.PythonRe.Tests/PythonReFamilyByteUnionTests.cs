@@ -117,7 +117,7 @@ public sealed class PythonReFamilyByteUnionTests
         catch (Exception error) { failure = error; }
         finally { cursor.Dispose(); }
         Assert.True(entered);
-        if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
