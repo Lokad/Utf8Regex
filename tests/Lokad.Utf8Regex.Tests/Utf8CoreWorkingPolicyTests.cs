@@ -45,8 +45,8 @@ public sealed class Utf8CoreWorkingPolicyTests
     [MemberData(nameof(Modes))]
     public void AllPublicOperationsHaveFiniteWorkingSuccessAndExactCutoff(string operation, bool compiled, bool live)
     {
-        const string pattern = "(?<x>😀+)(?<y>ab)";
-        var input = "😀😀ab"u8.ToArray();
+        const string pattern = "(?<x>😀+)(?<y>😀ab)";
+        var input = "😀😀😀ab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
@@ -99,8 +99,8 @@ public sealed class Utf8CoreWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed("😀😀ab"u8));
+        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed("😀😀😀ab"u8));
         Assert.Equal(kind, error.ResourceKind); Assert.Equal(1UL, error.Limit); Assert.True(error.Requested > 1);
     }
 

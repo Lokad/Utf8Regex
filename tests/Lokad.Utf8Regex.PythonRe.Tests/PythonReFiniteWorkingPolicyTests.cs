@@ -94,8 +94,8 @@ public sealed class PythonReFiniteWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailedData("😀😀ab"u8));
+        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailedData("😀😀😀ab"u8));
         Assert.Equal(kind, error.ResourceKind); Assert.Equal(1UL, error.Limit); Assert.True(error.Requested > 1);
     }
 

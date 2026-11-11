@@ -27,8 +27,8 @@ public sealed class Utf8CoreDepthPolicyTests
     [MemberData(nameof(Modes))]
     public void AllPublicOperationsHaveExactDepthSuccessAndOneUnderDenial(string operation, bool compiled, bool live)
     {
-        const string pattern = "(?<x>😀+)(?<y>ab)";
-        var input = "😀😀ab"u8.ToArray();
+        const string pattern = "(?<x>😀+)(?<y>😀ab)";
+        var input = "😀😀😀ab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource(); var token = live ? source.Token : default;
         var baseline = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, token, 0);
@@ -160,8 +160,8 @@ public sealed class Utf8CoreDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue,
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed("😀😀ab"u8));
+        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed("😀😀😀ab"u8));
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(1UL, error.Limit);
         Assert.True(error.Requested > 1);

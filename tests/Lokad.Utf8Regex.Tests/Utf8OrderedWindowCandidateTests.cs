@@ -81,14 +81,19 @@ public sealed class Utf8OrderedWindowCandidateTests
             Funded with { MaxWorkSteps = 4096 });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
-        // A complete terminal tail no longer needs rewind state. A capture
-        // starting in the tail keeps the VM path and its workspace admission.
+        // Complete terminal tails need no rewind state, including an
+        // unobserved capture opening. A later backreference still needs slots.
         Assert.Equal(1, new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkingBytes = 1 }).Count(input));
         const string capturedTail = @"Tom.{10,25}(?<tail>river)|river.{10,25}Tom";
+        Assert.Equal(1, new Utf8Regex(capturedTail, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        const string observedTail = @"Tom.{10,25}(?<tail>river)\k<tail>|river.{10,25}Tom";
+        byte[] observedInput = [.. input, .. "river"u8];
+        Assert.Equal(1, new Utf8Regex(observedTail).Count(observedInput));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(capturedTail,
-                RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(observedTail,
+                RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(observedInput)).ResourceKind);
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         token.Cancel();

@@ -7,6 +7,24 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DisjointClassRepeatTests
 {
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void AdjacentCaptureBoundariesKeepFiniteLongRuns(Utf8InputValidation validation)
+    {
+        var first = new string('a', 8192); var second = new string('1', 8192);
+        var regex = new Utf8Regex("([a-z]+)([0-9]+)", resourcePolicy: new()
+            { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
+            inputValidation: validation);
+        var input = Encoding.UTF8.GetBytes("é😀!" + first + second + "!");
+        var match = regex.MatchDetailed(input);
+        Assert.True(match.Success);
+        Assert.Equal(7, match.IndexInBytes);
+        Assert.Equal(16384, match.LengthInBytes);
+        Assert.Equal(first, match.GetGroup(1).GetValueString());
+        Assert.Equal(second, match.GetGroup(2).GetValueString());
+    }
+
     [Fact]
     public void ComplementedMaskFollowersCoverBothHalvesAndKeepScalarCaptures()
     {
@@ -113,6 +131,12 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"([\x00-\x3f]+)([\x40-\x7f]+)", "\0?@~")]
     [InlineData(@"([\x40-\x7f]+)([\x00-\x3f]+)", "@~\0?")]
     [InlineData(@"(?=([a-z]+)[0-9]+$)\1[0-9]+", "abc123")]
+    [InlineData("([a-z]+)()", "abc def")]
+    [InlineData("([a-z]+)(([0-9]+))", "abc12 def345")]
+    [InlineData(@"([a-z]+)([0-9]+)\2", "abc1212 def3434")]
+    [InlineData(@"(?=(?<same>[a-z]+)(?<same>[0-9]+)$)\k<same>", "abc123")]
+    [InlineData(@"(?<same>[a-z]+)(?<same>[0-9]+)\k<same>", "abc1212")]
+    [InlineData(@"(?<pop>[a-z]+)(?<-pop>[0-9]+)(?(pop)X|Y)", "abc123Y")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -284,11 +308,9 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
-        // The original literal fork has a workspace-free public Count route;
-        // adjacent captured classes retain their real scratch admission.
-        if (pattern == @"(?<run>a+)(?:(?<tail>b)|c)") Assert.Equal(2, limited.Count(input));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
+        // Count discards captures. Disjoint tails need no rewind vectors even
+        // when capture boundaries lie between the repeat and its required atom.
+        Assert.Equal(2, limited.Count(input));
     }
 
     [Theory]
@@ -441,10 +463,11 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void AsciiRangeBlocksObserveOriginalInterruption(bool deadline)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void AsciiRangeBlocksObserveOriginalInterruption(bool deadline, bool captureTail)
     {
-        var regex = new Utf8Regex("([a-z]+)");
+        var regex = new Utf8Regex(captureTail ? "([a-z]+)([0-9])" : "([a-z]+)");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.ASCII.GetBytes(new string('a', 1 << 20));
         var starts = new int[program.GroupCount];

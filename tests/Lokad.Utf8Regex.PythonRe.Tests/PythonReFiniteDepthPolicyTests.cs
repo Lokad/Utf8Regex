@@ -25,7 +25,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     [MemberData(nameof(Operations))]
     public void EveryPublicOperationHasFiniteDepthAndExactCutoff(int operation, bool bytes)
     {
-        const string pattern = "(?P<x>😀+)(?P<y>ab)"; var input = "😀😀ab"u8.ToArray();
+        const string pattern = "(?P<x>😀+)(?P<y>😀ab)"; var input = "😀😀😀ab"u8.ToArray();
         var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, uint.MaxValue, bytes), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytes), input, operation)), 1);
@@ -74,8 +74,8 @@ public sealed class PythonReFiniteDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue,
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailedData("😀😀ab"u8));
+        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailedData("😀😀😀ab"u8));
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(1UL, error.Limit);
         Assert.True(error.Requested > 1);
