@@ -8,9 +8,9 @@
   `InputValidation` reports the choice. Operations and cursors inherit it;
   pattern/replacement checks, managed bounds, scalar semantics, cancellation and
   resource limits remain active.
-- Target .NET 10 and .NET 11 in Core and the three adapters. Benchmarks default to .NET 11;
-  the pinned SDK/runtime is currently RC3. Historical results keep their runtime
-  labels. Adapters require the exact matching Core package version.
+- Target .NET 10 and .NET 11 in Core and the three adapters. Use the stable .NET 11
+  SDK; benchmarks default to .NET 11. Historical results keep their runtime labels.
+  Adapters require the exact matching Core package version.
 - Add the optional Lokad.Utf8Regex.Posix package: a case-sensitive scalar ERE
   subset with leftmost-longest matching and hierarchical capture priority.
   Match into caller-owned capture spans, count, or iterate with a disposable
@@ -52,8 +52,9 @@
   their admitted history instead of allocating and copying a second trace;
   general capture competition remains. Proved scalar alphabet endpoints also
   bound history competition before separators, without truncating the subject.
-  Synchronous POSIX operations own workspace state inline,
-  avoiding a separate helper allocation while preserving cursor aliases.
+  Synchronous POSIX operations use bounded stack state or an exact-size heap
+  buffer; cursors retain their owned state. Conservative working admission stays
+  unchanged while small synchronous calls avoid the state-array allocation.
   PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding
   unused rewind workspace while retaining cancellation and working admission.
