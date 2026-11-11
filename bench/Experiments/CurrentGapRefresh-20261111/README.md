@@ -61,3 +61,10 @@ complete the remaining strict-validation, warm-capture and POSIX history work.
 Measured implementation6f46f988 CI42963239174 is green on Windows and Linux.
 Generated metadata is committed separately as2628498e; its CI is independent of
 the accepted implementation comparison and immutable package qualification.
+
+Metadata CI42964536221 passed Linux and failed one Windows .NET10 route-selection
+test when its real one-second timeout expired during a scheduling pause. That
+test now uses the existing controlled clock and checks that the deadline is read;
+finite-timeout dispatch and exact Count remain asserted. Separate deterministic
+deadline-expiration and original-token tests retain expiration coverage. No
+production deadline or benchmark result changes, and no unchanged CI rerun.

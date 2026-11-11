@@ -129,6 +129,8 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
     [Fact]
     public void FiniteTimeoutRetainsTheBudgetedCountRoute()
     {
+        // This checks route selection, independently of host scheduling pauses.
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(
             Pattern,
             RegexOptions.CultureInvariant | RegexOptions.Compiled,
@@ -137,6 +139,7 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
 
         Assert.False(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
         Assert.Equal(2, regex.Count(input));
+        Assert.True(clock.Reads > 0);
     }
 
     [Theory]
