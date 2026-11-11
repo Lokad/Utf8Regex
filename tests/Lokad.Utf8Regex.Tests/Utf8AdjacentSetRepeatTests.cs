@@ -83,8 +83,11 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(false)] [InlineData(true)]
     public void TheBoundedDisjointnessProofObservesOriginalInterruption(bool expire)
     {
-        const string pattern = @"[^\x00-\x7F]+[\x00-\x7F]+";
-        var input = "éabc"u8.ToArray();
+        // A wider class retains the per-member proof and reaches its bounded
+        // diagnostic checkpoint. Two plain masks now need only two charges;
+        // their completed proof cannot reach the hook's 64-step cadence.
+        const string pattern = @"[^\x00-\x7Fé]+[\x00-\x7F]+";
+        var input = "😀abc"u8.ToArray();
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

@@ -72,3 +72,10 @@ Generated summary labels distinguish the original comparator from51a85d8e+patch;
 raw observations/pairs are unchanged. Both workers terminated successfully. No
 package/catalog/Full repeat or change to immutable dev.70. Broader warm-output,
 validation-sensitive Core and general POSIX-history gaps remain active.
+
+Subsequent CI found two obsolete interruption witnesses on both platforms and
+targets: their plain-mask proof now completes below the diagnostic hook's
+64-step cadence. The fixture now uses a wider class to exercise the retained
+per-member proof, preserving original-token/deadline and post-failure reuse
+assertions. Focused adjacent/disjoint/predicate Release tests pass197 per target
+on Windows/Linux. Runtime and frozen measured pairs are unchanged; no retiming.
