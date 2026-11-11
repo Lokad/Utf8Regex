@@ -5,6 +5,37 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixRepeatedCaptureSelectionTests
 {
     [Theory]
+    [InlineData(Utf8InputValidation.Validate, "a")]
+    [InlineData(Utf8InputValidation.AssumeValid, "a")]
+    [InlineData(Utf8InputValidation.Validate, "😀")]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀")]
+    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition(Utf8InputValidation validation, string scalar)
+    {
+        var pair = scalar + scalar;
+        var regex = new Utf8PosixRegex($"({scalar}|{pair})*", resourcePolicy: new()
+        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        const string prefix = "é😀!";
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, 32)));
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var width = Encoding.UTF8.GetByteCount(scalar);
+        var groups = new Utf8ValueMatch[2];
+        using var token = new CancellationTokenSource();
+        var whole = regex.Match(input, groups, floor, token.Token);
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length, 32 * scalar.Length, floor, 32 * width), whole);
+        var retained = groups[1];
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + 30 * scalar.Length, pair.Length,
+            floor + 30 * width, 2 * width), retained);
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(groups, out var current));
+        Assert.Equal(whole, current); Assert.Equal(retained, groups[1]);
+        Assert.True(cursor.MoveNext(groups, out var empty));
+        Assert.Equal(input.Length, empty.IndexInBytes); Assert.Equal(0, empty.LengthInBytes);
+        Assert.False(cursor.MoveNext(groups, out _));
+        Assert.All(groups, group => Assert.False(group.Success));
+        Assert.Equal(2 * width, retained.LengthInBytes);
+    }
+
+    [Theory]
     [InlineData("a", false)] [InlineData("a", true)]
     [InlineData("😀", false)] [InlineData("😀", true)]
     public void AmbiguousAlternativesKeepOccurrencePriorityAcrossNestingAndOutputSizes(string scalar, bool nullable)
@@ -23,12 +54,13 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         for (var count = 0; count <= 8; count++)
+        foreach (var suffix in new[] { "", "!" })
         {
             // Reuse the independent scalar-extent oracle. Distinct literal
             // alternatives have exactly the 0/1/2 extents modeled here; their
             // branch order and instruction/tag layout do not select the winner.
             var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
-            var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + "!");
+            var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + suffix);
             var whole = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length, floor, count * width);
             var last = extents.Length == 0 ? default : new Utf8ValueMatch(true, true,
                 prefix.Length + (count - extents[^1]) * scalar.Length, extents[^1] * scalar.Length,

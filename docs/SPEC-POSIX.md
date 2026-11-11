@@ -166,6 +166,14 @@ When a repeat counter proves earlier occurrences and the minimum is satisfied,
 a redundant optional empty iteration can be discarded in favor of its saved exit
 at the same position. First and required empty occurrences remain eligible.
 
+General search may visit longer literal alternatives first, preserving original
+semantic tag priority. Once a saved whole match reaches input end, a completed
+losing occurrence prefix of the first root child can be discarded: forward
+continuation cannot repair its earlier boundaries. Unclosed occurrences and
+descendants of unresolved higher-priority parents remain inconclusive. This uses
+the same admitted histories and rollback; other ambiguous histories can still
+require exponential exploration. It is not a general linear-time guarantee.
+
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,
 history comparison/copy and scalar/coordinate scans at bounded interruption

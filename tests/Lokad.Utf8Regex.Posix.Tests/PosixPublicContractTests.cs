@@ -274,33 +274,39 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
         var account = new Account();
-        var regex = new Utf8PosixRegex("((a|aa)*)", default,
+        // A class-bearing alternative keeps this on general history competition,
+        // independently of literal-alternative search-order heuristics.
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" : "((a|a[[:alpha:]])*)", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
-        var output = new[] { retained, retained, retained }; var triggered = false;
+        var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray(); var triggered = false;
+        var phase = pruning ? "WorseClosedPrefix" : "BetterHistory";
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             // Test-only phase observation through the existing checkpoint hook:
             // do not cancel at an arbitrary step or add a production phase switch.
             if (triggered || !new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod() is { Name: "BetterHistory", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
+                frame.GetMethod() is { DeclaringType: { } type } method && method.Name == phase && type == typeof(PosixWorkspace))) return;
             triggered = true;
             if (deadline) now = 101; else token.Cancel();
         });
         try
         {
-            if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("aaaaaaaaaaaa"u8, output, 0, token.Token, account));
+            var input = Encoding.ASCII.GetBytes(new string('a', pruning ? 128 : 12));
+            if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-                regex.Match("aaaaaaaaaaaa"u8, output, 0, token.Token, account)).CancellationToken);
+                regex.Match(input, output, 0, token.Token, account)).CancellationToken);
             Assert.True(triggered, "The injection must reach history comparison, after a competing acceptance.");
             Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
             Assert.True(retained.Success);

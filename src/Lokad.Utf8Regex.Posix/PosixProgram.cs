@@ -111,10 +111,45 @@ internal sealed class PosixProgram
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget) || CanSelectDisjointAsciiRuns(scalar, budget) ||
             CanSelectRepeatedLiteralCapture(scalar, budget);
+        if (!firstAcceptanceIsLongest) PreferLongerLiteralAlternatives(scalar.Instructions, budget);
         var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest),
             static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest));
         construction.Complete();
         return result;
+    }
+
+    private static void PreferLongerLiteralAlternatives(Utf8SliceInstruction[] code, Utf8ConstructionBudget budget)
+    {
+        // Search order is only a heuristic: semantic tags retain their original
+        // preorder. Leave proven first-acceptance programs entirely unchanged.
+        // Fork.C is private to this POSIX-owned stream; Core never executes it.
+        for (var pc = 0; pc < code.Length; pc++)
+        {
+            budget.ChargeWork(1);
+            var fork = code[pc];
+            if (fork.Kind != Utf8SliceInstructionKind.Fork || fork.B != 0 ||
+                fork.A <= pc + 1 || fork.A >= code.Length ||
+                code[fork.A - 1] is not { Kind: Utf8SliceInstructionKind.Jump } jump ||
+                jump.A <= fork.A || jump.A > code.Length) continue;
+            var left = LiteralBranchLength(code.AsSpan(pc + 1, fork.A - pc - 2), budget);
+            var right = LiteralBranchLength(code.AsSpan(fork.A, jump.A - fork.A), budget);
+            if (left >= 0 && right > left)
+                code[pc] = new(fork.Kind, fork.A, fork.B, 1, fork.D);
+        }
+    }
+
+    private static int LiteralBranchLength(ReadOnlySpan<Utf8SliceInstruction> branch, Utf8ConstructionBudget budget)
+    {
+        if (branch.Length > 64) return -1;
+        var length = 0;
+        foreach (var instruction in branch)
+        {
+            budget.ChargeWork(1);
+            if (instruction.Kind == Utf8SliceInstructionKind.Literal) length++;
+            else if (instruction.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
+                return -1;
+        }
+        return length;
     }
 
     private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget)

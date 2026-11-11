@@ -116,8 +116,8 @@ internal struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Fork:
                     if (instruction.B != 0) throw new InvalidOperationException("Unsupported POSIX fork.");
-                    PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
-                    pc++;
+                    PushFrame(new(instruction.C == 0 ? instruction.A : pc + 1, at, _trace.Count, _undo.Count), ref invocation);
+                    pc = instruction.C == 0 ? pc + 1 : instruction.A;
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
@@ -166,7 +166,15 @@ internal struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
+                    {
                         Check(_trace.TryPush(new(instruction.A, at, _state[_openOffset + instruction.A]), ref invocation), ref invocation);
+                        // EOF fixes the highest-priority whole endpoint. Tag1 is
+                        // the first child of root0: a completed losing occurrence
+                        // cannot be repaired by appending more events. Never use
+                        // this argument for a descendant with an unresolved parent.
+                        if (instruction.A == 1 && end == input.Length)
+                            failed = WorseClosedPrefix(ref invocation);
+                    }
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
@@ -280,6 +288,25 @@ internal struct PosixWorkspace
             }
         }
         return false;
+    }
+
+    private bool WorseClosedPrefix(ref Utf8SliceInvocation invocation)
+    {
+        var current = _trace.WrittenItems; var best = _best.WrittenItems;
+        var a = 0; var b = 0; var first = true;
+        while (true)
+        {
+            var ac = NextClose(current, 1, a, current.Length, ref invocation);
+            if (ac < 0) return false; // A continuation can still add occurrences.
+            var bc = NextClose(best, 1, b, best.Length - 1, ref invocation);
+            if (bc < 0) return !first; // Participation wins; an extra equal-prefix tail loses.
+            var aStart = current[current[ac].Opening].Position;
+            var bStart = best[best[bc].Opening].Position;
+            if (aStart != bStart) return aStart > bStart;
+            if (current[ac].Position != best[bc].Position)
+                return current[ac].Position < best[bc].Position;
+            a = ac + 1; b = bc + 1; first = false;
+        }
     }
 
     private static int CompareOccurrences(ReadOnlySpan<TagEvent> current, ReadOnlySpan<TagEvent> best,
