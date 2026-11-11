@@ -284,8 +284,8 @@ public sealed class PosixPublicContractTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
         var account = new Account();
-        // A class-bearing alternative keeps this on general history competition,
-        // independently of literal-alternative search-order heuristics.
+        // The non-pruning case ends below EOF, keeping general competition
+        // independently of fixed-width branch-order heuristics.
         var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" : "((a|a[[:alpha:]])*)", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
@@ -303,7 +303,7 @@ public sealed class PosixPublicContractTests
         });
         try
         {
-            var input = Encoding.ASCII.GetBytes(new string('a', pruning ? 128 : 12));
+            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) : new string('a', 12) + "!");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);

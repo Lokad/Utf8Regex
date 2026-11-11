@@ -65,3 +65,5 @@ Hash-verified offVM evidence, `artifacts/experiments/native-result-discovery-202
 Specs record consumer-owned projection and variable numeric work requirements.
 Immutable packages and generated catalog histories stay unchanged; no Full/package
 matrix here. Warm captured output and mandatory strict-validity costs remain.
+
+Sourceef0b60a4 CI42983204389 is green on Windows and Linux.

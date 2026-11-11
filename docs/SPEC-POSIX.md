@@ -168,7 +168,8 @@ When a repeat counter proves earlier occurrences and the minimum is satisfied,
 a redundant optional empty iteration can be discarded in favor of its saved exit
 at the same position. First and required empty occurrences remain eligible.
 
-General search may visit longer literal alternatives first, preserving original
+General search may visit longer fixed-width scalar alternatives first (literals,
+dots and bracket atoms), preserving original
 semantic tag priority. Once a saved whole match reaches input end, a completed
 losing occurrence prefix of the first root child can be discarded: forward
 continuation cannot repair its earlier boundaries. Unclosed occurrences and

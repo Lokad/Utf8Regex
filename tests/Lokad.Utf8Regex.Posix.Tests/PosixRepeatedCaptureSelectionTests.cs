@@ -5,14 +5,22 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixRepeatedCaptureSelectionTests
 {
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "a")]
-    [InlineData(Utf8InputValidation.Validate, "😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀")]
-    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition(Utf8InputValidation validation, string scalar)
+    [InlineData(Utf8InputValidation.Validate, "a", "aa")]
+    [InlineData(Utf8InputValidation.AssumeValid, "a", "aa")]
+    [InlineData(Utf8InputValidation.Validate, "😀", "😀😀")]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀", "😀😀")]
+    [InlineData(Utf8InputValidation.Validate, "a", "a[^!]")]
+    [InlineData(Utf8InputValidation.AssumeValid, "a", "a[^!]")]
+    [InlineData(Utf8InputValidation.Validate, "😀", "😀[^!]")]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀", "😀[^!]")]
+    [InlineData(Utf8InputValidation.Validate, "a", ".a")]
+    [InlineData(Utf8InputValidation.AssumeValid, "a", ".a")]
+    [InlineData(Utf8InputValidation.Validate, "😀", ".😀")]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀", ".😀")]
+    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition(Utf8InputValidation validation, string scalar, string longer)
     {
         var pair = scalar + scalar;
-        var regex = new Utf8PosixRegex($"({scalar}|{pair})*", resourcePolicy: new()
+        var regex = new Utf8PosixRegex($"({scalar}|{longer})*", resourcePolicy: new()
         { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
         const string prefix = "é😀!";
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, 32)));
@@ -51,24 +59,26 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("😀", false)] [InlineData("😀", true)]
     public void AmbiguousAlternativesKeepOccurrencePriorityAcrossNestingAndOutputSizes(string scalar, bool nullable)
     {
-        var pair = scalar + scalar;
         var empty = nullable ? "|" : "";
-        var alternatives = scalar + "|" + pair + empty;
-        var regexes = new[]
+        var regexes = new List<Utf8PosixRegex>();
+        foreach (var pair in new[] { scalar + scalar, scalar + "[^!]", "." + scalar })
         {
-            new Utf8PosixRegex($"({alternatives})*"),
-            new Utf8PosixRegex($"({pair}|{scalar}{empty})*"),
-            new Utf8PosixRegex($"(({alternatives})*)"),
-            new Utf8PosixRegex($"({scalar}|({pair}){empty})*"),
-        };
+            var alternatives = scalar + "|" + pair + empty;
+            regexes.AddRange([
+                new Utf8PosixRegex($"({alternatives})*"),
+                new Utf8PosixRegex($"({pair}|{scalar}{empty})*"),
+                new Utf8PosixRegex($"(({alternatives})*)"),
+                new Utf8PosixRegex($"({scalar}|({pair}){empty})*"),
+            ]);
+        }
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         for (var count = 0; count <= 8; count++)
         foreach (var suffix in new[] { "", "!" })
         {
-            // Reuse the independent scalar-extent oracle. Distinct literal
-            // alternatives have exactly the 0/1/2 extents modeled here; their
+            // Reuse the independent scalar-extent oracle. These alternatives
+            // have exactly the 0/1/2 extents on this uniform scalar input; their
             // branch order and instruction/tag layout do not select the winner.
             var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + suffix);
@@ -76,18 +86,20 @@ public sealed class PosixRepeatedCaptureSelectionTests
             var last = extents.Length == 0 ? default : new Utf8ValueMatch(true, true,
                 prefix.Length + (count - extents[^1]) * scalar.Length, extents[^1] * scalar.Length,
                 floor + (count - extents[^1]) * width, extents[^1] * width);
-            for (var shape = 0; shape < regexes.Length; shape++)
+            for (var index = 0; index < regexes.Count; index++)
             {
+                var shape = index % 4;
+                var regex = regexes[index];
                 var captures = new Utf8ValueMatch[shape < 2 ? 2 : 3];
-                Assert.Equal(whole, regexes[shape].Match(input, captures, floor));
+                Assert.Equal(whole, regex.Match(input, captures, floor));
                 Assert.Equal(whole, captures[0]);
                 Assert.Equal(shape == 2 ? whole : last, captures[1]);
                 if (shape >= 2)
                     Assert.Equal(shape == 2 || extents.Length > 0 && extents[^1] == 2 ? last : default, captures[2]);
                 var shortOutput = new Utf8ValueMatch[1];
-                Assert.Equal(whole, regexes[shape].Match(input, shortOutput, floor));
+                Assert.Equal(whole, regex.Match(input, shortOutput, floor));
                 Assert.Equal(whole, shortOutput[0]);
-                Assert.Equal(whole, regexes[shape].Match(input, floor));
+                Assert.Equal(whole, regex.Match(input, floor));
             }
         }
     }
