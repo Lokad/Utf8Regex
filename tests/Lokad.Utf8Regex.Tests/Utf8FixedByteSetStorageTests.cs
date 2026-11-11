@@ -82,11 +82,11 @@ public sealed class Utf8FixedByteSetStorageTests
             {
                 Span<byte> input = stackalloc byte[1]; input[0] = (byte)value;
                 Assert.Equal(Rune.GetUnicodeCategory(new Rune(value)) == category ? 1 : 0,
-                    Utf8UnicodeCategoryExecutor.CountCategory(input, false, category));
+                    Utf8UnicodeCategoryExecutor.CountCategory(input, category));
             }
             const string text = "+×<😀𝛼|~ä>=é";
             var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == category);
-            Assert.Equal(expected, Utf8UnicodeCategoryExecutor.CountCategory(Encoding.UTF8.GetBytes(text), true, category));
+            Assert.Equal(expected, Utf8UnicodeCategoryExecutor.CountCategory(Encoding.UTF8.GetBytes(text), category));
         }
     }
 

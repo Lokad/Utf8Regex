@@ -51,7 +51,7 @@ public sealed class Utf8CategoryVectorBoundaryTests
             data.CopyTo(storage.AsSpan(offset));
             var input = storage.AsSpan(offset, data.Length);
             var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
-            Assert.Equal(expected, Utf8UnicodeCategoryExecutor.CountCategory(input, true, UnicodeCategory.MathSymbol));
+            Assert.Equal(expected, Utf8UnicodeCategoryExecutor.CountCategory(input, UnicodeCategory.MathSymbol));
             Assert.Equal(expected, ordinary.Count(input));
             Assert.Equal(expected, compiled.Count(input));
             Assert.Equal(expected, finite.Count(input));

@@ -2491,7 +2491,6 @@ internal static class Pcre2GlobalOperationDriver
             {
                 result = Utf8UnicodeCategoryExecutor.CountCategory(
                     input.Bytes[start.Value..],
-                    input.Validation.ContainsSupplementaryScalars,
                     category);
             }
             else

@@ -1095,9 +1095,11 @@ public sealed partial class Utf8Regex
             var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var categoryValidation = Utf8Validation.Subject(input, ref categoryInvocation);
+                // Classification handles every encountered scalar directly;
+                // Count needs no whole-subject coordinate or width description.
+                Utf8Validation.CheckSubject(input, ref categoryInvocation);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
-                    categoryValidation.ContainsSupplementaryScalars, _fallbackDirectFamily,
+                    _fallbackDirectFamily,
                     ref categoryInvocation, out var categoryCount);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref categoryInvocation);
                 return categoryCount;

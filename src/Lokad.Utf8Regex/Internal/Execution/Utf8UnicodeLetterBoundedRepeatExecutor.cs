@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8UnicodeLetterBoundedRepeatExecutor
 {
-    public static int CountLetters(ReadOnlySpan<byte> input, bool containsSupplementaryScalars)
+    public static int CountLetters(ReadOnlySpan<byte> input)
     {
         var count = 0;
         var index = 0;
@@ -45,12 +45,6 @@ internal static class Utf8UnicodeLetterBoundedRepeatExecutor
                 }
 
                 index += 3;
-                continue;
-            }
-
-            if (!containsSupplementaryScalars)
-            {
-                index += 4;
                 continue;
             }
 

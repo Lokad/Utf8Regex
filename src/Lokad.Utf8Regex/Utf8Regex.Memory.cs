@@ -91,8 +91,8 @@ public sealed partial class Utf8Regex
             if (!UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
             {
-                var validation = Utf8Validation.Subject(input, ref invocation);
-                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input, validation.ContainsSupplementaryScalars,
+                Utf8Validation.CheckSubject(input, ref invocation);
+                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
                     _fallbackDirectFamily, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             }

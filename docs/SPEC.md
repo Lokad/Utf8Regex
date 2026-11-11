@@ -582,8 +582,12 @@ therefore admit a constant-space count that formerly required VM scratch; this
 changes route-dependent resource costs, not matching semantics.
 
 A complete case-sensitive single-category expression or proven Unicode-letter
-expression (`\p{L}`) can Count using the existing category/letter kernels after
-full strict validation, including caller-funded Count. One work unit admits at
+expression (`\p{L}`) can Count using the existing category/letter kernels,
+including caller-funded Count. Validate checks the whole UTF-8 subject first;
+AssumeValid relies on the caller's validity contract. These counters classify
+every encountered scalar directly and need no UTF-16 or supplementary-width
+description. Trusted Count therefore omits the description pass and its work
+charges. Native counting and admission remain unchanged. One work unit admits at
 most 4096 bytes ending on a scalar boundary; publication has its own checkpoint.
 The original token/deadline cover validation and counting, including supplementary
 scalars. This constant-space route needs no capture workspace or nesting records;

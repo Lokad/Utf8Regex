@@ -31,7 +31,7 @@ internal static class Utf8UnicodeCategoryExecutor
     // admitted primitive sees at most 4096 bytes, ending on a validated scalar
     // boundary. Keep the existing SIMD algorithm and charge even unlimited calls.
     internal static Utf8ExecutionLimitKind TryCountValidated(ReadOnlySpan<byte> input,
-        bool containsSupplementaryScalars, in Utf8FallbackDirectFamilyPlan family,
+        in Utf8FallbackDirectFamilyPlan family,
         ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
@@ -45,8 +45,8 @@ internal static class Utf8UnicodeCategoryExecutor
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
             count += letters
-                ? Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input.Slice(offset, length), containsSupplementaryScalars)
-                : CountCategory(input.Slice(offset, length), containsSupplementaryScalars, family.UnicodeCategory);
+                ? Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input.Slice(offset, length))
+                : CountCategory(input.Slice(offset, length), family.UnicodeCategory);
             offset += length;
         }
         var publication = invocation.TryChargeInputStep();
@@ -56,12 +56,11 @@ internal static class Utf8UnicodeCategoryExecutor
 
     public static int CountCategory(
         ReadOnlySpan<byte> input,
-        bool containsSupplementaryScalars,
         UnicodeCategory category)
     {
         if (category == UnicodeCategory.MathSymbol)
         {
-            return CountMathSymbols(input, containsSupplementaryScalars);
+            return CountMathSymbols(input);
         }
 
         var count = 0;
@@ -107,12 +106,6 @@ internal static class Utf8UnicodeCategoryExecutor
                 continue;
             }
 
-            if (!containsSupplementaryScalars)
-            {
-                index += 4;
-                continue;
-            }
-
             var scalar = ((first & 0x07) << 18) |
                          ((input[index + 1] & 0x3F) << 12) |
                          ((input[index + 2] & 0x3F) << 6) |
@@ -128,7 +121,7 @@ internal static class Utf8UnicodeCategoryExecutor
         return count;
     }
 
-    private static int CountMathSymbols(ReadOnlySpan<byte> input, bool containsSupplementaryScalars)
+    private static int CountMathSymbols(ReadOnlySpan<byte> input)
     {
         var count = 0;
         var index = 0;
@@ -168,16 +161,13 @@ internal static class Utf8UnicodeCategoryExecutor
             }
             else
             {
-                if (containsSupplementaryScalars)
+                var scalar = ((first & 0x07) << 18) |
+                             ((input[index + 1] & 0x3F) << 12) |
+                             ((input[index + 2] & 0x3F) << 6) |
+                             (input[index + 3] & 0x3F);
+                if (Rune.GetUnicodeCategory(new Rune(scalar)) == UnicodeCategory.MathSymbol)
                 {
-                    var scalar = ((first & 0x07) << 18) |
-                                 ((input[index + 1] & 0x3F) << 12) |
-                                 ((input[index + 2] & 0x3F) << 6) |
-                                 (input[index + 3] & 0x3F);
-                    if (Rune.GetUnicodeCategory(new Rune(scalar)) == UnicodeCategory.MathSymbol)
-                    {
-                        count++;
-                    }
+                    count++;
                 }
 
                 index += 4;

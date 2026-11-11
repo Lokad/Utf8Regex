@@ -77,8 +77,9 @@ public sealed class Utf8SingleCategoryCountTests
         var subject = text.ToString(); var input = Encoding.UTF8.GetBytes(subject);
         var expected = subject.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == category);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(@"\p{" + name + "}", options);
+            var regex = new Utf8Regex(@"\p{" + name + "}", options, inputValidation: inputValidation);
             var diagnostic = regex.CollectCountDiagnostics(input);
             Assert.Equal(expected, diagnostic.Result); Assert.Equal(NativeRoute, diagnostic.ExecutionRoute);
             Assert.Equal(expected, regex.Count(input)); Assert.Equal(expected, regex.Count(input, CancellationToken.None));
@@ -146,6 +147,46 @@ public sealed class Utf8SingleCategoryCountTests
             new Utf8ResourcePolicy { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(new byte[8192])).ResourceKind);
+    }
+
+    [Theory]
+    [InlineData(@"\p{Sm}")] [InlineData(@"\p{L}")] [InlineData(@"\p{Lu}")]
+    public void TrustedScalarCountSpendsWorkOnCountingWithoutAWidthDescription(string pattern)
+    {
+        var text = string.Concat(Enumerable.Repeat("∑𐐀😀A", 65536));
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = text.EnumerateRunes().Count(rune => pattern == @"\p{L}" ? Rune.IsLetter(rune)
+            : Rune.GetUnicodeCategory(rune) == (pattern == @"\p{Sm}" ? UnicodeCategory.MathSymbol : UnicodeCategory.UppercaseLetter));
+        var limits = new Utf8ResourcePolicy { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var trusted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, limits,
+            inputValidation: Utf8InputValidation.AssumeValid);
+        using var live = new CancellationTokenSource();
+        Assert.Equal(expected, trusted.Count(input, live.Token));
+        Assert.Equal(expected, trusted.Count(input, live.Token, new NoStorage()));
+        // The same budget still cannot cover strict whole-input validation.
+        var strict = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, limits);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.Count(input, live.Token)).ResourceKind);
+    }
+
+    [Theory]
+    [InlineData(@"\p{Sm}")] [InlineData(@"\p{L}")] [InlineData(@"\p{Lu}")]
+    public void NativeCountUsesTheSelectedValidationAuthorityOnce(string pattern)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', 4095) + "∑𐐀😀A");
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8Regex(pattern, inputValidation: policy);
+            var session = Utf8SearchDiagnosticsSession.Start();
+            try
+            {
+                regex.Count(input);
+                Assert.Equal(policy == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
+                Assert.Equal(pattern == @"\p{L}" ? Utf8ExecutionRoute.FallbackDirectUnicodeLetter
+                    : Utf8ExecutionRoute.FallbackDirectUnicodeCategory, session.ExecutionRoute);
+            }
+            finally { session.Complete(); }
+        }
     }
 
     [Theory]

@@ -38,6 +38,9 @@
   Class/delimiter Count can reject impossible windows before VM admission.
   Complete greedy scalar repeats can Count without unobserved capture storage
   across Core, PythonRe and PCRE2, including finite policies.
+  Single-category and letter Count omit unused whole-input width metadata,
+  retaining strict validation and bounded scalar counting; AssumeValid can skip
+  that preparation entirely.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
