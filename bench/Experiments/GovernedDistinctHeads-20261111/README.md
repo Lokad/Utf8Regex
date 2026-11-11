@@ -60,3 +60,6 @@ Linux185E6A5DA5F24F1D9772D433FA3F120AA627C91BE1FAB12517A9E8A46A9E3F47.
 The local summary retains all process medians, ranges, allocations and identities.
 No catalog refresh, Full/package repeat or immutable artifact change. Broader
 warm Python captures, strict validation costs and POSIX history remain active.
+
+Source d74ecffe CI42953787810 is green on Windows/Linux. Receipt-only closure
+follows the existing workflow exclusion; unchanged qualification is not repeated.
