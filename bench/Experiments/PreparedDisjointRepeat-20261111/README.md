@@ -65,3 +65,5 @@ All workers are terminal. Source contracts/work accounting are unchanged after
 restoration; published/staged bytes and selected current-comparator tables stay
 unchanged. Close this proof-annotation design rather than adding more flags.
 Warm capture VM/progression work remains an active architectural source priority.
+
+Retained guards/receipt54566419 CI42968509668 is green on Windows and Linux.
