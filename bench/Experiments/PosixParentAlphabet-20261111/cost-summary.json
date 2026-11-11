@@ -1,0 +1,84 @@
+{
+  "Decision": "Accept; retain disjoint overlapping-variable-tail costs; no confirmation or tuning",
+  "BaseCommit": "04ebd06f905cde2b93ec37b3312aa4d4ae4a6942",
+  "FrozenPosixSource": "eae880c88f7a54ed4331715c2fd8f4b0fc6e6d63",
+  "Runtime": ".NET 11.0.0",
+  "Seconds": 114.64565194956958,
+  "SampleCount": 560,
+  "MinimumSampleMs": 63.6721,
+  "MaximumBatchAllocationMiB": 60.20972442626953,
+  "CommonCoreCallerAndNetControl": true,
+  "LoadedProducerAndPdbSourcesVerified": true,
+  "ProducerDocumentsEach": 10,
+  "GeneratedDocuments": 6,
+  "RootLoansFinal": 0,
+  "RootPeakBefore": 2689,
+  "RootPeakAfter": 1985,
+  "TestsPerFrameworkWindowsLinuxSoftware": 344,
+  "WorkRefusalsRemoved": 14,
+  "EmittedProgramsUnchanged": 8,
+  "RawSha256": "47F754DA758239F062AE4EA6DA05375929F6565F2CAE80C4408328B5BB798CEB",
+  "WindowsSha256": "644DD11257849C4207362446C2A12454B6E9FAA1CAD5EF8318B63960B932CD50",
+  "BaselineZipSha256": "6ACC66F4D7CC4AABDACDE1166296B68FE14A27E536C28BFEF3F43D75A317DA2C",
+  "PatchSha256": "39BCE9312BA572EA2A465C2F03708311B4459976E7668093C952C103C68412DF",
+  "ProducerBefore": [
+    {
+      "Role": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.73+eae880c88f7a54ed4331715c2fd8f4b0fc6e6d63",
+      "DllSha256": "3BBC349F017DA36CA2D2FA149D4347C725C0B965446AFB1D719A6CF2537E03DE",
+      "PdbSha256": "195EE5B703D3F2DB509FD5080F1A4CD939F75D511738BDAA6AAD195DA576B11B"
+    },
+    {
+      "Role": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.73+eae880c88f7a54ed4331715c2fd8f4b0fc6e6d63",
+      "DllSha256": "7EF07BA570E413C02DB22620F3DC3510F2A5712BA71ACBE7C51B4673C1641501",
+      "PdbSha256": "261C6F8ED23142F6F9ED4C6636DB5CB8A5CDDFD183CCB691D6F4F541C854FB6F"
+    }
+  ],
+  "ProducerAfter": [
+    {
+      "Role": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.73+eae880c88f7a54ed4331715c2fd8f4b0fc6e6d63",
+      "DllSha256": "3BBC349F017DA36CA2D2FA149D4347C725C0B965446AFB1D719A6CF2537E03DE",
+      "PdbSha256": "195EE5B703D3F2DB509FD5080F1A4CD939F75D511738BDAA6AAD195DA576B11B"
+    },
+    {
+      "Role": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.73+04ebd06f905cde2b93ec37b3312aa4d4ae4a6942",
+      "DllSha256": "7DAD048E44D85AE80760AC9D4E6FB55BB825AA6779C1E2770F7F6FB16523AF50",
+      "PdbSha256": "B5FDAA9294B26C26809C36CDEB799A62D12BB3CCE28F5913D375C5A57106AC60"
+    }
+  ],
+  "WorkerSha256": "EB9243FB6BDB76695F0AFC995995581FE071E449A16081441E156207082757CD",
+  "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+  "Rows": [
+    {"Policy":"Validate","Id":"posix/optional-tail-16","BeforeUs":837.1434469696969,"AfterUs":2.576771906664689,"ChangePercent":-99.69219469900982,"RangesOverlap":false,"BeforeProcessesUs":[835.0766666666666,839.2102272727273],"AfterProcessesUs":[2.651711736634622,2.501832076694756],"BeforeRangeUs":[824.0433333333333,854.6590909090909],"AfterRangeUs":[2.4740029340520624,2.770312608064182],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/repeated-tail-12","BeforeUs":170.86466945752662,"AfterUs":2.548570856436698,"ChangePercent":-98.50842724565115,"RangesOverlap":false,"BeforeProcessesUs":[169.57582417582418,172.15351473922905],"AfterProcessesUs":[2.5944201740365833,2.5027215388368123],"BeforeRangeUs":[169.33538461538464,174.72494331065764],"AfterRangeUs":[2.4908631564275012,2.8603587284674123],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/branched-tail-12","BeforeUs":104.95045091762185,"AfterUs":1.8358459259374418,"ChangePercent":-98.25074984443998,"RangesOverlap":false,"BeforeProcessesUs":[104.35966620305979,105.5412356321839],"AfterProcessesUs":[1.8742025727488447,1.797489279126039],"BeforeRangeUs":[103.30055632823367,106.34589707927677],"AfterRangeUs":[1.77180949186651,1.995039340576995],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/astral-optional-tail-12","BeforeUs":118.67533844582844,"AfterUs":2.349778865036197,"ChangePercent":-98.0199939635236,"RangesOverlap":false,"BeforeProcessesUs":[117.85463258785943,119.49604430379746],"AfterProcessesUs":[2.317722647991543,2.3818350820808516],"BeforeRangeUs":[116.14281150159744,121.19145569620254],"AfterRangeUs":[2.288038451374207,2.500384409364464],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/separate-parent-ceilings-12","BeforeUs":194.24836377782287,"AfterUs":2.282268035724921,"ChangePercent":-98.82507734359332,"RangesOverlap":false,"BeforeProcessesUs":[193.05820512820512,195.43852242744066],"AfterProcessesUs":[2.2844274998450187,2.2801085716048237],"BeforeRangeUs":[191.75282051282053,199.23589743589744],"AfterRangeUs":[2.2432924183249643,2.538397951944727],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/finite-live-16","BeforeUs":1031.9936233841404,"AfterUs":3.1631198478379057,"ChangePercent":-99.69349424490964,"RangesOverlap":false,"BeforeProcessesUs":[1013.8027397260273,1050.1845070422537],"AfterProcessesUs":[3.129288791283047,3.196950904392765],"BeforeRangeUs":[994.7287671232876,1081.3535211267606],"AfterRangeUs":[3.101144522341414,3.268954303572937],"BeforeBytes":[3936,3936],"AfterBytes":[2608,2608]},
+    {"Policy":"Validate","Id":"posix/funded-deadline-live-16","BeforeUs":1125.4016188289324,"AfterUs":3.9905274227597234,"ChangePercent":-99.64541303691102,"RangesOverlap":false,"BeforeProcessesUs":[1092.044776119403,1158.7584615384617],"AfterProcessesUs":[3.9805554034069126,4.000499442112535],"BeforeRangeUs":[1087.334328358209,1169.58],"AfterRangeUs":[3.9469244673276003,5.115725475160213],"BeforeBytes":[3984,3984],"AfterBytes":[2656,2656]},
+    {"Policy":"Validate","Id":"posix/cursor-16","BeforeUs":1022.9841028528529,"AfterUs":4.181735495228493,"ChangePercent":-99.59122184953152,"RangesOverlap":false,"BeforeProcessesUs":[1001.1445945945945,1044.8236111111112],"AfterProcessesUs":[4.190716482515093,4.1727545079418915],"BeforeRangeUs":[994.1675675675675,1066.9152777777776],"AfterRangeUs":[4.1527782488270875,4.3651008987620825],"BeforeBytes":[4312,4312],"AfterBytes":[2984,2984]},
+    {"Policy":"Validate","Id":"control/literal-tail-16","BeforeUs":2.034846121104974,"AfterUs":2.052494113232338,"ChangePercent":0.8672887814131558,"RangesOverlap":true,"BeforeProcessesUs":[2.034209228052865,2.0354830141570823],"AfterProcessesUs":[2.010504555963552,2.094483670501124],"BeforeRangeUs":[1.8828032093059486,2.1086957650663414],"AfterRangeUs":[1.992000528890652,2.4580140156022745],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/overlapping-variable-tail-12","BeforeUs":157.2438533412182,"AfterUs":171.5833240334589,"ChangePercent":9.11925673884635,"RangesOverlap":false,"BeforeProcessesUs":[155.6656842105263,158.8220224719101],"AfterProcessesUs":[170.42438478747204,172.74226327944572],"BeforeRangeUs":[154.05073684210524,160.2932584269663],"AfterRangeUs":[169.64116331096199,176.3288683602771],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/sku","BeforeUs":0.7263121821094313,"AfterUs":0.7016243703736759,"ChangePercent":-3.3990634253241447,"RangesOverlap":true,"BeforeProcessesUs":[0.6705080685063497,0.7821162957125128],"AfterProcessesUs":[0.7055405339450438,0.6977082068023079],"BeforeRangeUs":[0.6547616774159947,0.8551648232192842],"AfterRangeUs":[0.6801387412693592,0.8189672507198985],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/whole-only-16","BeforeUs":0.650299674281023,"AfterUs":0.6596700777254008,"ChangePercent":1.4409362044872198,"RangesOverlap":true,"BeforeProcessesUs":[0.6414624102554921,0.6591369383065538],"AfterProcessesUs":[0.6575747634505145,0.6617653920002871],"BeforeRangeUs":[0.6310019157431114,0.7575143680733353],"AfterRangeUs":[0.6389546930036605,0.7860289039298294],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/core-count","BeforeUs":3.5234566663706746,"AfterUs":3.5915952818932144,"ChangePercent":1.9338570606780348,"RangesOverlap":true,"BeforeProcessesUs":[3.6350571927103528,3.411856140030997],"AfterProcessesUs":[3.4939601728348673,3.689230390951561],"BeforeRangeUs":[3.3972012033913757,3.6605079488173713],"AfterRangeUs":[3.4440916776253987,3.7165084829112365],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/net-predecoded-count","BeforeUs":0.20141778350456568,"AfterUs":0.20387579047969911,"ChangePercent":1.220352509279654,"RangesOverlap":true,"BeforeProcessesUs":[0.20052721255076156,0.20230835445836984],"AfterProcessesUs":[0.2003101544739303,0.20744142648546796],"BeforeRangeUs":[0.19749553149538934,0.21807165953555216],"AfterRangeUs":[0.19538580090331462,0.2204093161518907],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/optional-tail-16","BeforeUs":848.2099762156449,"AfterUs":2.493263141307043,"ChangePercent":-99.70605590464393,"RangesOverlap":false,"BeforeProcessesUs":[829.6420454545455,866.7779069767442],"AfterProcessesUs":[2.4916638055345737,2.494862477079513],"BeforeRangeUs":[823.1693181818183,1179.7732558139535],"AfterRangeUs":[2.468347867884365,2.649988331388565],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/repeated-tail-12","BeforeUs":172.13321678321677,"AfterUs":2.473108924895344,"ChangePercent":-98.5632587532423,"RangesOverlap":false,"BeforeProcessesUs":[173.1997668997669,171.06666666666663],"AfterProcessesUs":[2.482951704171602,2.463266145619087],"BeforeRangeUs":[169.37086247086248,174.76223776223776],"AfterRangeUs":[2.454773654428214,2.630428345834978],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/branched-tail-12","BeforeUs":105.24924889586238,"AfterUs":1.7915326950277128,"ChangePercent":-98.29781902120716,"RangesOverlap":false,"BeforeProcessesUs":[105.27280334728032,105.22569444444444],"AfterProcessesUs":[1.783624422976253,1.7994409670791724],"BeforeRangeUs":[103.21868898186891,106.19023709902372],"AfterRangeUs":[1.7606196164279257,1.82086578431841],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/astral-optional-tail-12","BeforeUs":117.50584433038838,"AfterUs":2.310810024859026,"ChangePercent":-98.03345098447889,"RangesOverlap":false,"BeforeProcessesUs":[115.83580441640378,119.17588424437298],"AfterProcessesUs":[2.33528624535316,2.2863338043648924],"BeforeRangeUs":[115.67413249211357,119.96639871382638],"AfterRangeUs":[2.214159208666981,2.5393368029739776],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/separate-parent-ceilings-12","BeforeUs":192.70858984511926,"AfterUs":2.2675452879913744,"ChangePercent":-98.82332941680814,"RangesOverlap":false,"BeforeProcessesUs":[191.65626598465474,193.76091370558376],"AfterProcessesUs":[2.27727868852459,2.2578118874581588],"BeforeRangeUs":[188.72941176470587,205.06776649746192],"AfterRangeUs":[2.2394167847772986,2.5643888905642167],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/finite-live-16","BeforeUs":1012.7419452347084,"AfterUs":3.1667526527249725,"ChangePercent":-99.68730902599367,"RangesOverlap":false,"BeforeProcessesUs":[998.296052631579,1027.1878378378378],"AfterProcessesUs":[3.1788954064771975,3.154609898972748],"BeforeRangeUs":[987.6631578947367,1037.6851351351354],"AfterRangeUs":[3.0642032430596826,3.2939935478393756],"BeforeBytes":[3936,3936],"AfterBytes":[2608,2608]},
+    {"Policy":"AssumeValid","Id":"posix/funded-deadline-live-16","BeforeUs":1116.9616930171278,"AfterUs":3.975709236691282,"ChangePercent":-99.64406037722277,"RangesOverlap":false,"BeforeProcessesUs":[1096.3521739130435,1137.571212121212],"AfterProcessesUs":[3.989394337343069,3.962024136039495],"BeforeRangeUs":[1091.3492753623188,1276.2348484848485],"AfterRangeUs":[3.9348875479978056,5.0107515085024685],"BeforeBytes":[3984,3984],"AfterBytes":[2656,2656]},
+    {"Policy":"AssumeValid","Id":"posix/cursor-16","BeforeUs":1011.0070136986301,"AfterUs":4.145090659242285,"ChangePercent":-99.59000376821541,"RangesOverlap":false,"BeforeProcessesUs":[1000.488,1021.5260273972602],"AfterProcessesUs":[4.177121350364963,4.1130599681196065],"BeforeRangeUs":[987.7813333333335,1023.9260273972603],"AfterRangeUs":[4.0389765294343976,5.273346259124088],"BeforeBytes":[4312,4312],"AfterBytes":[2984,2984]},
+    {"Policy":"AssumeValid","Id":"control/literal-tail-16","BeforeUs":2.0375243818002406,"AfterUs":2.054319410216934,"ChangePercent":0.8242860093705673,"RangesOverlap":true,"BeforeProcessesUs":[2.0215158231110193,2.0535329404894624],"AfterProcessesUs":[1.9943448129926467,2.114294007441222],"BeforeRangeUs":[1.8771389547469333,2.1177522960131654],"AfterRangeUs":[1.9593344971697615,2.2013172512299635],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/overlapping-variable-tail-12","BeforeUs":155.40078668900696,"AfterUs":176.29227351211352,"ChangePercent":13.443617158074805,"RangesOverlap":false,"BeforeProcessesUs":[154.63590814196243,156.1656652360515],"AfterProcessesUs":[177.5447795823666,175.03976744186048],"BeforeRangeUs":[152.43611691022966,157.55448851774528],"AfterRangeUs":[171.82441860465116,183.14733178654294],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/sku","BeforeUs":0.6718119609806169,"AfterUs":0.7305731828860583,"ChangePercent":8.746676945088927,"RangesOverlap":true,"BeforeProcessesUs":[0.6655040582957724,0.6781198636654614],"AfterProcessesUs":[0.6901594476550132,0.7709869181171034],"BeforeRangeUs":[0.6554369452758698,0.8140097579542899],"AfterRangeUs":[0.679951362230256,0.8400786403786665],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/whole-only-16","BeforeUs":0.6578914989750662,"AfterUs":0.7074463171882807,"ChangePercent":7.532369439400921,"RangesOverlap":true,"BeforeProcessesUs":[0.6442507495411397,0.6715322484089925],"AfterProcessesUs":[0.6583433701492283,0.756549264227333],"BeforeRangeUs":[0.618709045155182,0.7886672376794776],"AfterRangeUs":[0.6366990389735527,0.7964973671087219],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/core-count","BeforeUs":3.647343741198335,"AfterUs":3.55454022224437,"ChangePercent":-2.544413840289006,"RangesOverlap":false,"BeforeProcessesUs":[3.6252345728044486,3.6694529095922213],"AfterProcessesUs":[3.56686570134846,3.542214743140279],"BeforeRangeUs":[3.6166360522265806,3.67774875441397],"AfterRangeUs":[3.5250969943439445,3.6031596755734685],"BeforeBytes":[0,0],"AfterBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/net-predecoded-count","BeforeUs":0.19977697796101998,"AfterUs":0.19915811644750112,"ChangePercent":-0.30977619134854306,"RangesOverlap":true,"BeforeProcessesUs":[0.20067572810712322,0.19887822781491674],"AfterProcessesUs":[0.19984986270868013,0.1984663701863221],"BeforeRangeUs":[0.19763448603381434,0.2125452877179185],"AfterRangeUs":[0.19755845491080154,0.21793003227550323],"BeforeBytes":[0,0],"AfterBytes":[0,0]}
+  ]
+}

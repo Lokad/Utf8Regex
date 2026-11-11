@@ -188,8 +188,8 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.Accept:
                     if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
                     {
-                        if (at < input.Length) maximumEnd = FindAlphabetCeiling(input, at, ref invocation);
-                        if (captureHistory) prefixTag = FindPrefixComparisonTag(ref invocation);
+                        if (at < input.Length) maximumEnd = FindAlphabetCeiling(input, at, code, ref invocation);
+                        if (captureHistory) prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                     }
                     // Without requested captures, the ceiling proves the longest whole
                     // match regardless of the histories on other pending paths.
@@ -232,7 +232,7 @@ internal struct PosixWorkspace
         }
     }
 
-    private int FindPrefixComparisonTag(ref Utf8SliceInvocation invocation)
+    private int FindPrefixComparisonTag(ReadOnlySpan<byte> input, bool maximalAcceptance, ref Utf8SliceInvocation invocation)
     {
         var code = _program.Scalar.Instructions;
         var parents = _program.Parents;
@@ -275,6 +275,7 @@ internal struct PosixWorkspace
         // participates exactly once. Their
         // first child's occurrences are therefore the first unfixed priority.
         var enclosing = tag - 1;
+        var fixedSuffix = true;
         for (var pc = close; pc < code.Length; pc++)
         {
             if (((pc - close) & 31) == 0) Charge(ref invocation);
@@ -287,16 +288,61 @@ internal struct PosixWorkspace
             }
             else if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart && instruction.A >= tag) continue;
             else if (instruction.Kind == Utf8SliceInstructionKind.Accept && pc == code.Length - 1 && enclosing == -1)
-                return tag;
+                return fixedSuffix ? tag : maximalAcceptance
+                    ? FindAlphabetBoundedParentTag(input, tag, close, ref invocation) : 1;
+            else if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
+                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd or
+                Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor) fixedSuffix = false;
             else return 1;
         }
         return 1;
     }
 
-    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
+    private int FindAlphabetBoundedParentTag(ReadOnlySpan<byte> input, int tag, int close,
+        ref Utf8SliceInvocation invocation)
+    {
+        var code = _program.Scalar.Instructions;
+        var upper = code.Length - 1;
+        var firstTarget = int.MaxValue; var lastTarget = -1;
+        var traceIndex = _trace.Count - 1;
+        // The preceding scan proves unique, reverse-ordered parent closings.
+        // Each suffix segment may vary, but cannot skip or repeat those closes.
+        for (var pc = code.Length - 2; pc >= close; pc--)
+        {
+            if (((code.Length - 2 - pc) & 31) == 0) Charge(ref invocation);
+            var instruction = code[pc];
+            if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
+                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
+            {
+                firstTarget = Math.Min(firstTarget, instruction.A);
+                lastTarget = Math.Max(lastTarget, instruction.A);
+            }
+            if (instruction.Kind != Utf8SliceInstructionKind.CaptureEnd || instruction.A >= tag) continue;
+            if (firstTarget < pc + 1 || lastTarget > upper) return 1;
+            firstTarget = int.MaxValue; lastTarget = -1; upper = pc;
+
+            // Read the first maximal acceptance, not a hypothetical suffix
+            // width. Its leading parents have the same fixed opening position.
+            while (traceIndex >= 0)
+            {
+                if ((traceIndex & 63) == 0) Charge(ref invocation);
+                var item = _trace[traceIndex--];
+                if (item.Tag != instruction.A || item.Opening < 0) continue;
+                if (instruction.A != 0 && FindAlphabetCeiling(input, item.Position,
+                    code.AsSpan(instruction.A + 1, pc - instruction.A - 1), ref invocation) != item.Position) return 1;
+                break;
+            }
+            if (traceIndex < 0) return 1;
+        }
+        // Each earlier parent is already at its independent upper bound. A
+        // shorter continuation loses there; an equal one exposes this child.
+        return tag;
+    }
+
+    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd,
+        ReadOnlySpan<Utf8SliceInstruction> code, ref Utf8SliceInvocation invocation)
     {
         var program = _program.Scalar;
-        var code = program.Instructions;
         if (code.Length > 64) return input.Length;
         Charge(ref invocation);
         var first = int.MaxValue; var last = -1;

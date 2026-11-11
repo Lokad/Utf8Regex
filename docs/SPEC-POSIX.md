@@ -189,8 +189,14 @@ of single-scalar atoms (literals, dot or brackets) and capture markers. A fixed
 scalar count determines a unique boundary in valid UTF-8 despite varying byte
 widths. At a maximal whole endpoint those earlier tags
 have fixed starts and ends, so the same losing-prefix rule can compare their first
-unfixed child. Variable/branched tails and unproved scopes retain the root-child
-comparison. This uses one local tag choice, no retained program metadata/storage;
+unfixed child. If the first acceptance already reaches the whole ceiling,
+variable or branched suffixes can use the same comparison when every preceding
+parent's accepted end equals its independent alphabet or physical-input ceiling.
+Suffix edges must stay between successive parent closes, so those parents
+participate once and cannot be skipped or reopened. A shorter parent loses at its
+own priority; equal parent boundaries expose the child. An initially shorter
+acceptance or an unproved parent bound/scope retains general competition.
+This uses one local tag choice, no retained program metadata/storage;
 it can remove losing descendant exploration and lower numerical work requirements.
 
 Physical input end is always a valid ceiling. After the first general acceptance,

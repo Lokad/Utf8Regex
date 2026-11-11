@@ -274,13 +274,15 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, true, true)]
-    [InlineData(true, true, true)]
-    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning, bool suffix)
+    [InlineData(false, false, null)]
+    [InlineData(true, false, null)]
+    [InlineData(false, true, null)]
+    [InlineData(true, true, null)]
+    [InlineData(false, true, "b")]
+    [InlineData(true, true, "b")]
+    [InlineData(false, true, "([bc])*")]
+    [InlineData(true, true, "([bc])*")]
+    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning, string? suffix)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
@@ -288,7 +290,7 @@ public sealed class PosixPublicContractTests
         var account = new Account();
         // The non-pruning case ends below EOF and admits wider scalars, so the
         // ASCII alphabet ceiling cannot replace general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + (suffix ? "b" : "") : "((a|a[^!])*)", default,
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|a[^!])*)", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
@@ -296,7 +298,7 @@ public sealed class PosixPublicContractTests
         // Equal-prefix pruning can finish between two 64-step hook polls.
         // Observe actual captured-history rollback on that optimized route;
         // the general route retains its full history-comparison witness.
-        var phase = pruning ? "Backtrack" : "BetterHistory";
+        var phase = suffix == "([bc])*" ? "FindAlphabetBoundedParentTag" : pruning ? "Backtrack" : "BetterHistory";
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             // Test-only phase observation through the existing checkpoint hook:
@@ -308,7 +310,10 @@ public sealed class PosixPublicContractTests
         });
         try
         {
-            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) + (suffix ? "b" : "") : new string('a', 12) + "!");
+            // A long captured suffix guarantees bounded hook polls while the
+            // parent proof walks its accepted trace, before saving the winner.
+            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) +
+                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "!");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);
