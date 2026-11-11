@@ -45,19 +45,23 @@ public sealed class Utf8SimplePrefixCountTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void AnAbsentExactPrefixNeedsNoVmWorkspaceButHitsStillRequireAdmission(bool compiled)
+    public void SafePrefixesAvoidVmStorageAndDependentCapturesRemainAdmitted(bool compiled)
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1,
             MaxWorkingBytes = 256, MaxResultBytes = 1 };
         var regex = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout, policy);
-        // The non-ASCII scalar selects the owned scalar route. A prefix miss
-        // can finish with only bounded capture slots, without acquiring VM
-        // frames; a surviving candidate still requires those major buffers.
+        // A positive ASCII-only acceptance proof applies to this valid mixed
+        // subject. Both misses and complete hits can avoid VM storage.
         var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(input, token.Token));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("😀ASIAABCDEFGHIJKLMNOP"u8, token.Token));
+        Assert.Equal(1, regex.Count("😀ASIAABCDEFGHIJKLMNOP"u8, token.Token));
+        // A backreference still depends on captured values and retains admission
+        // for its real scalar workspace under the same small allowance.
+        var dependent = new Utf8Regex(pattern + @"\1", Options(compiled), Regex.InfiniteMatchTimeout, policy);
+        Assert.Equal(1, new Utf8Regex(pattern + @"\1", Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8, token.Token));
 
         byte[] malformed = [.. input, 0xF0, 0x80];
         Assert.Throws<ArgumentException>(() => regex.Count(malformed, token.Token));

@@ -1587,6 +1587,25 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
             return count;
         }
+        // Every caller has admitted this subject through the same invocation.
+        // A positive ASCII-only branch cannot consume wider scalars elsewhere
+        // in that valid UTF-8 subject. Reuse the controlled simple counter;
+        // Count discards captures and needs no scalar VM workspace.
+        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.SimplePatternPlan is { IsUtf8ByteSafe: true, Branches.Length: > 0, MinLength: > 0 } simple &&
+            !program.HasUnicodePatternAtoms && !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
+            !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+            !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
+            !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+        {
+            var breach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
+                _preparedRegex.SearchPlan, simple, ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Validated simple count breached the invocation budget.");
+            return count;
+        }
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.

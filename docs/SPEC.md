@@ -405,6 +405,15 @@ alternatives to this existing bounded search. Avoiding VM scratch can lower work
 depth and working requirements. Explicit UTF-16 offsets still require admission
 for their coordinate map; result-producing operations retain their existing
 native eligibility.
+Count can also reuse a proved positive ASCII simple-pattern plan on a valid
+UTF-8 subject containing unrelated wider scalars. The existing proof must
+guarantee that accepted spans contain only ASCII; opaque Unicode constraints,
+folding, RTL/NonBacktracking, nullable/stateful cases and boundary/lookaround
+requirements retain their existing routes. The counter borrows the original
+validated invocation, including live/funded limits and interruption, without
+revalidating or allocating unneeded VM capture/continuation storage. Numeric
+work, depth and working requirements can decrease; real allocations remain
+admitted before acquisition. This changes no returned capture or result lifetime.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
