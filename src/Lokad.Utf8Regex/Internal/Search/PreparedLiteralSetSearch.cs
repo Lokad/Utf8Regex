@@ -38,7 +38,8 @@ internal readonly partial struct PreparedLiteralSetSearch
         return Strategy switch
         {
             PreparedLiteralSetStrategy.UniqueAnchorByte when UniqueAnchor.HasValue => IndexOfUniqueAnchorByte(input, UniqueAnchor.Value),
-            PreparedLiteralSetStrategy.SingleLiteralBuckets => IndexOfSingleLiteralBuckets(input, SearchData),
+            PreparedLiteralSetStrategy.SingleLiteralBuckets =>
+                TryFindFirstMatchSingleLiteralBuckets(input, SearchData, out var index, out _) ? index : -1,
             PreparedLiteralSetStrategy.SingleBucketPrefix => IndexOfSingleBucketPrefix(input, SearchData),
             PreparedLiteralSetStrategy.MultiLiteralTrie => MultiLiteral.IndexOf(input),
             _ => IndexOfBucketed(input, SearchData),
@@ -123,9 +124,13 @@ internal readonly partial struct PreparedLiteralSetSearch
             return TryFindFirstMatchSingleBucketPrefix(input, SearchData, out index, out matchedLength);
         }
 
+        if (Strategy == PreparedLiteralSetStrategy.SingleLiteralBuckets)
+        {
+            return TryFindFirstMatchSingleLiteralBuckets(input, SearchData, out index, out matchedLength);
+        }
+
         if (Strategy is PreparedLiteralSetStrategy.Bucketed
-            or PreparedLiteralSetStrategy.UniqueAnchorByte
-            or PreparedLiteralSetStrategy.SingleLiteralBuckets)
+            or PreparedLiteralSetStrategy.UniqueAnchorByte)
         {
             return TryFindFirstMatchBucketed(input, SearchData, out index, out matchedLength);
         }
@@ -206,28 +211,39 @@ internal readonly partial struct PreparedLiteralSetSearch
         return false;
     }
 
-    private static int IndexOfSingleLiteralBuckets(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
+    // The selected strategy proves one literal per first-byte bucket. Position
+    // and fused position/length callers share that direct comparison loop.
+    private static bool TryFindFirstMatchSingleLiteralBuckets(ReadOnlySpan<byte> input,
+        AsciiExactLiteralSearchData searchData, out int index, out int matchedLength)
     {
-        var index = 0;
-        while (index <= input.Length - searchData.ShortestLength)
+        index = -1;
+        matchedLength = 0;
+        var offset = 0;
+        while (offset <= input.Length - searchData.ShortestLength)
         {
-            var relative = searchData.FirstByteSearch.IndexOf(input[index..]);
+            var relative = searchData.FirstByteSearch.IndexOf(input[offset..]);
             if (relative < 0)
             {
-                return -1;
+                return false;
             }
 
-            index += relative;
-            var bucketIndex = searchData.BucketIndexMap[input[index]];
-            if (bucketIndex >= 0 && LiteralMatchesAt(input, index, searchData.Buckets[bucketIndex].Literals[0]))
+            offset += relative;
+            var bucketIndex = searchData.BucketIndexMap[input[offset]];
+            if (bucketIndex >= 0)
             {
-                return index;
+                var literal = searchData.Buckets[bucketIndex].Literals[0];
+                if (LiteralMatchesAt(input, offset, literal))
+                {
+                    index = offset;
+                    matchedLength = literal.Length;
+                    return true;
+                }
             }
 
-            index++;
+            offset++;
         }
 
-        return -1;
+        return false;
     }
 
     private static int IndexOfUniqueAnchorByte(ReadOnlySpan<byte> input, PreparedLiteralSetUniqueAnchor anchor)

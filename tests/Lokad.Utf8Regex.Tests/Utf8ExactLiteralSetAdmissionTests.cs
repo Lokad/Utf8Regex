@@ -248,6 +248,35 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     }
 
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void DistinctHeadsPreserveLengthsAfterRejectedPrefixesAndAtTails(RegexOptions options)
+    {
+        const string pattern = "Tom|Sawyer|Huckleberry|Finn";
+        var reference = new Regex(pattern, options);
+        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            foreach (var text in new[] { "", "To", "Huckleberr", "ToxSawyeXHuckleberrXFixx/TomSawyerHuckleberryFinn/Huckleberr", "é😀FinnToméSawyer汉Huckleberry" })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                var expected = reference.Matches(text).ToArray();
+                Assert.Equal(expected.Length, regex.Count(input));
+                Assert.Equal(expected.Length != 0, regex.IsMatch(input));
+                var first = regex.Match(input);
+                Assert.Equal(expected.Length != 0, first.Success);
+                var ranges = new List<(int, int)>();
+                foreach (var match in regex.EnumerateMatches(input))
+                    ranges.Add((match.IndexInBytes, match.LengthInBytes));
+                Assert.Equal(expected.Select(match => (Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
+                    Encoding.UTF8.GetByteCount(match.Value))), ranges);
+                if (first.Success)
+                    Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(RegexOptions.CultureInvariant)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.RightToLeft)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft)]
     public void PublicSupplementaryPrefixFamilyKeepsCompleteScalarRanges(RegexOptions options)
