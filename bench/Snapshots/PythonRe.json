@@ -3,7 +3,7 @@
   "Profile": "PythonRe",
   "Evidence": {
     "Snapshot": "PythonRe.Benchmarks.json",
-    "SnapshotSha256": "8AF25C2D0E3E6D89F3E670F6F8564BC9C2B65C92208A0BBB277360D4E09F7F56"
+    "SnapshotSha256": "DA22DED7FBAFD381E95F404EA6D7F1DBF9820117A3CA94D1A502B46665B8BBBA"
   },
   "CatalogSha256": "1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450",
   "Sources": {
@@ -91,6 +91,49 @@
         }
       },
       "ProductSha256": "333912C3BBC3C2BA64C862CE3EDC141305FA85925FE4BD38B1665945AF7D8281"
+    },
+    "9F668A26745F67B9DD29495BD17E115C50DCA36B703C8A89466E11C802619D57": {
+      "Managed": {
+        "BenchmarkAssembly": "1.0.0\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=80CD7E6304368B39C6041E3C850ADC2CE0229E2C08AD98AFC262C678C8364623",
+        "CoreAssembly": "0.5.0-dev.68\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=C7D8301670557C9237C9D558CE26848A9DCA78833C2D43811FDD29B94AC2EDB4",
+        "PythonReAssembly": "0.5.0-dev.68\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=9160DF57EFBF67A5AD7C0BB10B23A98C75F883077079ADC34951E12C5B8A60F7",
+        "SourceCommit": "6f46f988899b",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 11.0.0-rc.3.26522.148",
+        "OperatingSystem": "Ubuntu 24.04.4 LTS",
+        "Processor": "X64"
+      },
+      "CPython": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (main, Feb 12 2025, 14:51:17) [Clang 19.1.6 ]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "",
+          ""
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "Clang 19.1.6 ",
+        "SoAbi": "cpython-313-x86_64-linux-gnu",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "/home/vermorel/tmp/utf8regex-net11-memory/python/bin/python3.13",
+        "ExecutableSha256": "843FCB9DA2A5D799DD48E1F518E343ECB8486D4F785F38F795C3493F3D61AADC",
+        "RuntimeLibrary": null,
+        "RuntimeLibrarySha256": null,
+        "Platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "Architecture": "x86_64",
+        "RunnerSha256": "9F8547F319ABAE7FAC0DD46492E942FFFD869B0D7FA5519CDF5087605D08E757",
+        "Timer": {
+          "Implementation": "clock_gettime(CLOCK_MONOTONIC)",
+          "ResolutionSeconds": 1E-09,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ProductSha256": "7EFCDF5B2D1E8AF16001C1B3D82C4B4DC95281C7E2812B54FDBF1020AA5F732F"
     }
   },
   "Sections": {
@@ -237,14 +280,14 @@
       },
       "findall/many-capture-strings": {
         "Operation": "FindAllStrings",
-        "Source": "4BDA0863609E7A668E76442DA32ABFEFB2C2A532DAAEA2C95658E5830D11D98F",
+        "Source": "9F668A26745F67B9DD29495BD17E115C50DCA36B703C8A89466E11C802619D57",
         "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
         "ResultContract": "EagerMaterializedResult",
-        "ManagedUs": 821.1741935483872,
-        "ReferenceUs": 350.19344755244754,
-        "Ratio": 2.348144461545559,
-        "Lower95": 2.336901925650448,
-        "Upper95": 2.437064056047521,
+        "ManagedUs": 649.661038961039,
+        "ReferenceUs": 343.7966912751678,
+        "Ratio": 1.8888984968091258,
+        "Lower95": 1.8781852880046237,
+        "Upper95": 1.9166999559677926,
         "Status": "CpythonFaster",
         "Reason": "Qualified paired evidence.",
         "ManagedBytes": 242008
@@ -279,14 +322,14 @@
       },
       "findall/one-capture-strings": {
         "Operation": "FindAllStrings",
-        "Source": "4BDA0863609E7A668E76442DA32ABFEFB2C2A532DAAEA2C95658E5830D11D98F",
+        "Source": "9F668A26745F67B9DD29495BD17E115C50DCA36B703C8A89466E11C802619D57",
         "InputSha256": "332DF9A8E15D370BEA5C971A99487AB004C70A24DF73ECE9FF954619B5E8C3C1",
         "ResultContract": "EagerMaterializedResult",
-        "ManagedUs": 502.63300000000004,
-        "ReferenceUs": 214.5256085106383,
-        "Ratio": 2.3470095225480465,
-        "Lower95": 2.335786237949005,
-        "Upper95": 2.363344859541711,
+        "ManagedUs": 428.96324786324783,
+        "ReferenceUs": 217.0612198275862,
+        "Ratio": 1.9789496189582023,
+        "Lower95": 1.975604909729119,
+        "Upper95": 1.9880271474357993,
         "Status": "CpythonFaster",
         "Reason": "Qualified paired evidence.",
         "ManagedBytes": 94344

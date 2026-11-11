@@ -3,7 +3,7 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "CCB8F120D0876579FAF762639D6ED6FDDFD5A02E33543CD1BE3B44BA4C074C21"
+    "SnapshotSha256": "D197F4822ACFB31EEAD0BD5C72F9A01C2E3376DFB89C6AAF123BEE098E0ED013"
   },
   "Sources": {
     "DCDB596A18EACA7DA2FE8645EE36B18AAB8ACDBE91CA2F0605845F185BB04F72": {
@@ -12,6 +12,19 @@
       "Pcre2Assembly": "0.5.0-dev.68\u002Ba7e985ed2c1bb4ac7d63a09c74e3ba0a74ccb9b9 sha256=E315CFB7BB3F1F05359DDA9D90B5F276FA14B5173F6D3D685EBFAD75DAA6A75B",
       "PythonReAssembly": "0.5.0-dev.68\u002Ba7e985ed2c1bb4ac7d63a09c74e3ba0a74ccb9b9 sha256=BA1905A4BDB33155529BDD725E3834372391C31A9341EA4657D304743D7ACF27",
       "SourceCommit": "a7e985ed2c1b",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
+    "FAF5AEF132E3C8AD6DC6502080EAA0730347A66760DCA50711B0CDE62F01697E": {
+      "BenchmarkAssembly": "1.0.0\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=80CD7E6304368B39C6041E3C850ADC2CE0229E2C08AD98AFC262C678C8364623",
+      "CoreAssembly": "0.5.0-dev.68\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=C7D8301670557C9237C9D558CE26848A9DCA78833C2D43811FDD29B94AC2EDB4",
+      "Pcre2Assembly": "0.5.0-dev.68\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=61C714CDC01CE664268C591E4EFE690BD47B2273626407D3772390B9CA2A97AC",
+      "PythonReAssembly": "0.5.0-dev.68\u002B6f46f988899bcead7a1afb35e1d0117cf5b50a09 sha256=9160DF57EFBF67A5AD7C0BB10B23A98C75F883077079ADC34951E12C5B8A60F7",
+      "SourceCommit": "6f46f988899b",
       "TrackedDirty": false,
       "HasUntrackedFiles": false,
       "Runtime": ".NET 11.0.0-rc.3.26522.148",
@@ -36,13 +49,13 @@
       },
       "aws-keys/quick": {
         "Operation": "Count",
-        "Source": "DCDB596A18EACA7DA2FE8645EE36B18AAB8ACDBE91CA2F0605845F185BB04F72",
-        "ManagedUs": 6600.392857142857,
-        "ReferenceUs": 9755.9625,
-        "DecodeUs": 45250,
-        "Ratio": 0.6765496338411363,
+        "Source": "FAF5AEF132E3C8AD6DC6502080EAA0730347A66760DCA50711B0CDE62F01697E",
+        "ManagedUs": 3778.7650000000003,
+        "ReferenceUs": 9550.86,
+        "DecodeUs": 24043.515,
+        "Ratio": 0.39564657004709525,
         "Status": "Win",
-        "ManagedBytes": 528,
+        "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 65019784
       },
@@ -698,13 +711,13 @@
       },
       "aws-keys/quick": {
         "Operation": "Count",
-        "Source": "DCDB596A18EACA7DA2FE8645EE36B18AAB8ACDBE91CA2F0605845F185BB04F72",
-        "ManagedUs": 6614.75,
-        "ReferenceUs": 3647.3809523809523,
-        "DecodeUs": 37381.8,
-        "Ratio": 1.8135615901821267,
+        "Source": "FAF5AEF132E3C8AD6DC6502080EAA0730347A66760DCA50711B0CDE62F01697E",
+        "ManagedUs": 3805.2949999999996,
+        "ReferenceUs": 3654.590476190476,
+        "DecodeUs": 18077.41,
+        "Ratio": 1.0412370482524262,
         "Status": "Gap",
-        "ManagedBytes": 528,
+        "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 65019784
       },

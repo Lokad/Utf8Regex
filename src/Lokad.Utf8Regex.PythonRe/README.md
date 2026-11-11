@@ -198,10 +198,11 @@ Public PythonRe operations over strict UTF-8, compared with official CPython `re
 
 Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.
 
-Snapshot SHA-256: `8AF25C2D0E3E6D89F3E670F6F8564BC9C2B65C92208A0BBB277360D4E09F7F56`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
+Snapshot SHA-256: `DA22DED7FBAFD381E95F404EA6D7F1DBF9820117A3CA94D1A502B46665B8BBBA`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
 
 Public Status: `43` managed faster, `2` equivalent, `34` CPython faster, `6` inconclusive, `5` unqualified.
 
+Measured source `6f46f988899b`: .NET 11.0.0-rc.3.26522.148; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
 Measured source `a7e985ed2c1b`: .NET 11.0.0-rc.3.26522.148; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
 
 ### Direct matching
@@ -257,8 +258,8 @@ Measured source `a7e985ed2c1b`: .NET 11.0.0-rc.3.26522.148; CPython 3.13.2. Sele
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `findall/many-capture-strings` | `FindAllStrings` | 821.174 us | 350.193 us | CPython faster | 2.35x |
-| `findall/one-capture-strings` | `FindAllStrings` | 502.633 us | 214.526 us | CPython faster | 2.35x |
+| `findall/one-capture-strings` | `FindAllStrings` | 428.963 us | 217.061 us | CPython faster | 1.98x |
+| `findall/many-capture-strings` | `FindAllStrings` | 649.661 us | 343.797 us | CPython faster | 1.89x |
 | `findall/named-capture-strings` | `FindAllStrings` | 160.909 us | 95.819 us | CPython faster | 1.68x |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | 97.068 us | 62.480 us | CPython faster | 1.55x |
 | `findall/empty-progression-strings` | `FindAllStrings` | 64.951 us | 43.507 us | CPython faster | 1.49x |
