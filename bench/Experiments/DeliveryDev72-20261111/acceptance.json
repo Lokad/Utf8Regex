@@ -1,0 +1,350 @@
+{
+  "Source": "f66205321f29c9bec01118b5257283af8b699f10",
+  "Version": "0.5.0-dev.72",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "Sdk": "11.0.100",
+  "BenchmarkRuntime": ".NET 11.0.0",
+  "ExactCorePins": true,
+  "PackageCandidate": "artifacts/package-candidates/0.5.0-dev.72/candidate.json",
+  "Feed": "artifacts/nuget",
+  "Windows": {
+    "Source": "f66205321f29c9bec01118b5257283af8b699f10",
+    "Version": "0.5.0-dev.72",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 111972.0,
+    "Seconds": 287.9291637,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "f66205321f29c9bec01118b5257283af8b699f10",
+    "Version": "0.5.0-dev.72",
+    "Sha256": "31B42EFD2013FE6C4F9AC478D3EF88DB46BFD0C6A02511765D545EDBEEE16CAF",
+    "Bytes": 46520597,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 111972.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "Full": {
+    "Source": "f66205321f29c9bec01118b5257283af8b699f10",
+    "Version": "0.5.0-dev.72",
+    "RawSha256": "4395FCC707ABCE9A1A91AE5999A83D4766B54D959C0C5BDBA44EF6E5FCEA6083",
+    "Bytes": 34386441,
+    "Seconds": 2860.0571049,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "SourceCI": {
+    "Source": "f66205321f29c9bec01118b5257283af8b699f10",
+    "Run": 43078894599,
+    "Status": "completed",
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "ObservedAtUtc": "2026-11-11T18:44:57Z"
+  },
+  "SnapshotChecksPerFrameworkPerPlatform": 9,
+  "SnapshotLogs": [
+    {
+      "Platform": "Windows",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "7ECEBA7E8EECE8816F1322C7A11C85799986E211C21B0B7A2CA6F9814062C980"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "01F838AA5C7B6780F4038CD179551EB09B283BCDADA90FADAE6798CF81F27914"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "D3F0FE445F09D4901100194FD74B3C302BEC52999E0952643B5A0443029F64A0"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "7CA7BAD7F44F58B903216C51A7FD962A444980088E589EE892E34061F5D6026B"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "E58D35912C381012865FE86D0D51D10AACBFF7703FEC43B3784E491875B09126"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "56C38E161A560A84E564E17212489002204F1173E14EF31A7E77B9A0AA40F692"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "8F135CC2E42F3F988CFD4114DF4452054A8F4D1BACD006B086D4798D181BFE2A"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "08B859D73C94D60C7EA96EA4D4E7BA090C6EE440CB63C390197EF2F794321D25"
+    }
+  ],
+  "OriginalConsumers": {
+    "Scope": "Unchanged copied handoffs, not downstream adoption or POSIX consumer acceptance",
+    "AwkPerFramework": 19,
+    "LythonPerFramework": 118,
+    "PublicApiProbesPassed": true,
+    "FinalRootLoans": 0,
+    "OriginalSourceFilesVerified": 1565,
+    "ChangedExactVersionPins": 3
+  },
+  "PreservedCanonicalFiles": 428,
+  "CompilerInputsSha256": "A2FCCB48D1BE2592B18B4EC9202E17BC512EBA05148CB1D8E2B9D3B55D434435",
+  "CurrentGaBaseline": {
+    "Producer": "f66205321f29c9bec01118b5257283af8b699f10",
+    "InputValidation": "Validate",
+    "Scope": "New stable-runtime baseline for subsequent source experiments; historical RC3 observations remain immutable."
+  },
+  "PreviousCheckpoint": {
+    "Version": "0.5.0-dev.71",
+    "ImportedSummaryCommit": "01526d230d06917d716bd36dc9e0a4cc5577f307",
+    "Runtime": ".NET 11.0.0-rc.3.26522.148"
+  },
+  "CatalogInterpretation": "Separate Full observations with SDK/runtime and POSIX source changes; not a causal A/B attribution of runtime or producer gains.",
+  "StatusCounts": {
+    "Core": {
+      "Win": 122,
+      "Gap": 54,
+      "TieCandidate": 2
+    },
+    "PythonRe": {
+      "ManagedFaster": 45,
+      "CpythonFaster": 29,
+      "Equivalent": 1,
+      "Inconclusive": 8,
+      "Unqualified": 7
+    },
+    "Pcre2": {
+      "ManagedFaster": 78,
+      "Inconclusive": 14,
+      "NativeFaster": 9,
+      "Excluded": 25
+    },
+    "Posix": {
+      "NativeFaster": 6,
+      "Measured": 9,
+      "Excluded": 8,
+      "Equivalent": 1,
+      "ManagedFaster": 1
+    }
+  },
+  "SelectedComparisons": [
+    {
+      "Profile": "Core",
+      "Id": "bounded-repeat/letters-en",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 1124.123880597015,
+      "CurrentGaUs": 1115.9426470588237,
+      "PreviousRc3Ratio": 0.6064065268550122,
+      "CurrentGaRatio": 0.6017920599956829,
+      "CurrentStatus": "Win",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-name-family-count",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 1626.7829787234043,
+      "CurrentGaUs": 1597.6170212765958,
+      "PreviousRc3Ratio": 0.5388625663228586,
+      "CurrentGaRatio": 0.5305236972014193,
+      "CurrentStatus": "Win",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-river-window-count",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 2219.958823529412,
+      "CurrentGaUs": 2258.4088235294116,
+      "PreviousRc3Ratio": 1.405052051306076,
+      "CurrentGaRatio": 1.4435207426043575,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-symbol-count",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 1871.4853658536583,
+      "CurrentGaUs": 1900.9625,
+      "PreviousRc3Ratio": 1.5217642951580206,
+      "CurrentGaRatio": 1.524817515608645,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/mariomka-email-count",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 1178.503125,
+      "CurrentGaUs": 1182.234375,
+      "PreviousRc3Ratio": 2.5836420722659645,
+      "CurrentGaRatio": 2.5963922717169847,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "literal/sherlock-zh",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 83.06345514950166,
+      "CurrentGaUs": 84.00055617352614,
+      "PreviousRc3Ratio": 3.4453959847534708,
+      "CurrentGaRatio": 3.4548440125173676,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "aws-keys/quick",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 3803.53,
+      "CurrentGaUs": 3826.03,
+      "PreviousRc3Ratio": 1.0375621732211866,
+      "CurrentGaRatio": 1.059474552424103,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-strings",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 800.5079365079365,
+      "CurrentGaUs": 783.7953846153846,
+      "PreviousRc3Ratio": 2.274788722041536,
+      "CurrentGaRatio": 2.2729612140162363,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/one-capture-strings",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 525.8715789473684,
+      "CurrentGaUs": 539.6377551020408,
+      "PreviousRc3Ratio": 2.452001705514379,
+      "CurrentGaRatio": 2.5342300041497405,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 94344
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-utf8",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 829.9622950819671,
+      "CurrentGaUs": 851.705,
+      "PreviousRc3Ratio": 0.6617402595418863,
+      "CurrentGaRatio": 0.6890751010098123,
+      "CurrentStatus": "ManagedFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/named-capture-strings",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 162.41129032258064,
+      "CurrentGaUs": 157.5909090909091,
+      "PreviousRc3Ratio": 1.708320625432704,
+      "CurrentGaRatio": 1.6696881228628722,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 43144
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "split/captures",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 426.22711864406784,
+      "CurrentGaUs": 416.31311475409836,
+      "PreviousRc3Ratio": 1.6667804117912988,
+      "CurrentGaRatio": 1.6323053158189256,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 274648
+    },
+    {
+      "Profile": "Posix",
+      "Id": "capture/sku007",
+      "InputValidation": "Validate",
+      "PreviousRc3Us": 2791.630769230769,
+      "CurrentGaUs": 2720.9724137931034,
+      "PreviousRc3Ratio": 4.063939042520227,
+      "CurrentGaRatio": 3.8868979682329967,
+      "CurrentStatus": "NativeFaster",
+      "CurrentBytes": 22.344827586206897
+    }
+  ],
+  "UnqualifiedPythonRows": [
+    {
+      "Id": "alternation/search-miss",
+      "Reason": "Removable harness floors are 0.20 %/14.56 % of the lanes."
+    },
+    {
+      "Id": "ignorecase/search-hit",
+      "Reason": "Removable harness floors are 0.16 %/9.61 % of the lanes."
+    },
+    {
+      "Id": "lookahead/search-miss",
+      "Reason": "Removable harness floors are 0.20 %/17.75 % of the lanes."
+    },
+    {
+      "Id": "lookbehind/search-hit",
+      "Reason": "Removable harness floors are 0.13 %/10.25 % of the lanes."
+    },
+    {
+      "Id": "search-offset/literal-hit",
+      "Reason": "Removable harness floors are 0.20 %/14.45 % of the lanes."
+    },
+    {
+      "Id": "unicode-category/search-miss",
+      "Reason": "Removable harness floors are 0.23 %/16.12 % of the lanes."
+    },
+    {
+      "Id": "unicode-option/search-hit",
+      "Reason": "Removable harness floors are 0.14 %/11.31 % of the lanes."
+    }
+  ],
+  "HistoricalCausalEvidence": [
+    "../PosixScopedState-20261111/README.md",
+    "../DeliveryDev71-20261111/README.md"
+  ],
+  "PerformanceComplete": false,
+  "NextAction": "Bounded category/letter Count input-fact removal from current GA baseline; keep strict validation, existing counters, metering and all admission. Warm Python output and general POSIX history remain open; no repeat Full/package qualification for a small source step."
+}
