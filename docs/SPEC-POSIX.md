@@ -179,10 +179,12 @@ require exponential exploration. It is not a general linear-time guarantee.
 
 Physical input end is always a valid ceiling. After the first general acceptance,
 a proof over at most 64 instructions can establish that every consuming atom is
-an unfolded ASCII literal or positive ASCII-only bracket. A conservative interval
-containing those atoms cannot cross its first excluded byte. A checked search of
-at most 2048 following bytes can therefore prove an earlier ceiling; a proof or
-search miss keeps physical input end. Whole-only selection can stop at that
+an unfolded scalar literal or positive ASCII-only bracket. A conservative scalar
+interval containing those atoms cannot cross its first excluded scalar. A checked
+search of at most 2048 following bytes can therefore prove an earlier ceiling.
+ASCII alphabets keep their span search; wider literal alphabets decode complete
+scalars with a work checkpoint every 64 scalars. A probe cut inside a scalar,
+or another proof/search miss, keeps physical input end. Whole-only selection can stop at that
 ceiling; captured selection keeps the same hierarchical history rules. Actual
 input, anchors, strict validation and scalar/coordinate output remain unchanged.
 Proof/search use bounded work checkpoints and no additional retained storage.

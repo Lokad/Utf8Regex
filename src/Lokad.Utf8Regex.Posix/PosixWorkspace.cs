@@ -222,10 +222,10 @@ internal struct PosixWorkspace
         var code = program.Instructions;
         if (code.Length > 64) return input.Length;
         Charge(ref invocation);
-        var first = 128; var last = -1;
+        var first = int.MaxValue; var last = -1;
         foreach (var instruction in code)
         {
-            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
             {
                 first = Math.Min(first, instruction.A); last = Math.Max(last, instruction.A);
             }
@@ -248,14 +248,28 @@ internal struct PosixWorkspace
                 Utf8SliceInstructionKind.Accept)) return input.Length;
         }
         if (last < first) return input.Length;
-        // Every consuming atom stays in this conservative ASCII interval. No
-        // accepting path can cross its first excluded byte, which is a scalar
-        // boundary. Keep the actual subject for anchors, validation and output.
+        // Every consuming atom stays in this conservative scalar interval. No
+        // accepting path can cross its first excluded scalar. Keep the actual
+        // subject for anchors, validation and output.
         // A bounded miss retains physical EOF as the original safe upper bound.
-        Charge(ref invocation);
         var tail = input.Slice(acceptedEnd, Math.Min(2048, input.Length - acceptedEnd));
-        var stop = tail.IndexOfAnyExceptInRange((byte)first, (byte)last);
-        return stop < 0 ? input.Length : acceptedEnd + stop;
+        if (last < 128)
+        {
+            Charge(ref invocation);
+            var stop = tail.IndexOfAnyExceptInRange((byte)first, (byte)last);
+            return stop < 0 ? input.Length : acceptedEnd + stop;
+        }
+        for (int offset = 0, scalars = 0; offset < tail.Length; scalars++)
+        {
+            if ((scalars & 63) == 0) Charge(ref invocation);
+            // A probe ending inside a scalar supplies no endpoint proof. Keep
+            // the original bound; subject validation belongs to the caller.
+            if (Rune.DecodeFromUtf8(tail[offset..], out var scalar, out var width) != OperationStatus.Done)
+                return input.Length;
+            if (scalar.Value < first || scalar.Value > last) return acceptedEnd + offset;
+            offset += width;
+        }
+        return input.Length;
     }
 
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)
