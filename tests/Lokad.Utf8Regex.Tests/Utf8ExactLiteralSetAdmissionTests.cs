@@ -248,6 +248,36 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     }
 
     [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(7)] [InlineData(8)]
+    [InlineData(63)] [InlineData(64)] [InlineData(65)] [InlineData(71)]
+    [InlineData(72)] [InlineData(127)] [InlineData(128)] [InlineData(129)]
+    public void DistinctHeadSearchKeepsBorrowedVectorOffsetsAndPartialTails(int prefixLength)
+    {
+        var values = Bytes("Tom", "Sawyer", "Huckleberry", "Finn");
+        foreach (var count in new[] { 3, 4 })
+        {
+            var literals = values.Take(count).ToArray();
+            var search = new PreparedLiteralSetSearch(literals);
+            foreach (var literal in literals)
+            foreach (var partial in new[] { false, true })
+            foreach (var paddedLength in new[] { 0, 256 })
+            {
+                var copied = literal.Length - (partial ? 1 : 0);
+                var length = Math.Max(prefixLength + copied, paddedLength);
+                var backing = Enumerable.Repeat((byte)'T', length + 13).ToArray();
+                var subject = backing.AsSpan(5, length);
+                literal.AsSpan(0, copied).CopyTo(subject[prefixLength..]);
+                // A missing last byte exists just outside the borrowed range.
+                if (partial && length == prefixLength + copied) backing[5 + length] = literal[^1];
+                Assert.Equal(!partial, search.TryFindFirstMatchWithLength(subject, out var index, out var matched));
+                Assert.Equal(partial ? -1 : prefixLength, index);
+                Assert.Equal(partial ? 0 : literal.Length, matched);
+                Assert.Equal(index, search.IndexOf(subject));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     public void DistinctHeadsPreserveLengthsAfterRejectedPrefixesAndAtTails(RegexOptions options)

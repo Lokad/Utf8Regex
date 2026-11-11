@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
@@ -7,6 +8,12 @@ internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3);
 
 internal static partial class AsciiSearch
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector512<byte> CorrelateExactPairs(Vector512<byte> heads, Vector512<byte> tails,
+        Vector512<byte> head0, Vector512<byte> tail0, Vector512<byte> head1, Vector512<byte> tail1)
+        => (Vector512.Equals(heads, head0) & Vector512.Equals(tails, tail0)) |
+           (Vector512.Equals(heads, head1) & Vector512.Equals(tails, tail1));
+
     public static bool TryGetDotNetLikeAsciiAnchorSelection(ReadOnlySpan<byte> literal, bool ignoreCase, out AsciiAnchorSelection selection)
     {
         selection = default;

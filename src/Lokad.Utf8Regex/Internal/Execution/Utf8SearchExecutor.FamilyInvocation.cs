@@ -345,8 +345,8 @@ internal static partial class Utf8SearchExecutor
         {
             var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
             var tails = MemoryMarshal.Read<Vector512<byte>>(input[(position + anchor)..]);
-            var candidates = ((Vector512.Equals(heads, head0) & Vector512.Equals(tails, tail0)) |
-                (Vector512.Equals(heads, head1) & Vector512.Equals(tails, tail1))).ExtractMostSignificantBits();
+            var candidates = AsciiSearch.CorrelateExactPairs(heads, tails, head0, tail0, head1, tail1)
+                .ExtractMostSignificantBits();
             while (candidates != 0)
             {
                 var lane = BitOperations.TrailingZeroCount(candidates);

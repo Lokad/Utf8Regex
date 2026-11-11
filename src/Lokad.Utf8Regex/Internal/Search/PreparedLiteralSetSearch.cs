@@ -219,6 +219,13 @@ internal readonly partial struct PreparedLiteralSetSearch
         index = -1;
         matchedLength = 0;
         var offset = 0;
+        if (System.Runtime.Intrinsics.Vector512.IsHardwareAccelerated && input.Length >= 128 &&
+            searchData.ShortestLength >= 3 && searchData.Buckets.Length is 3 or 4 &&
+            TryFindShortDistinctHeads(input, searchData, ref offset, out matchedLength))
+        {
+            index = offset;
+            return true;
+        }
         while (offset <= input.Length - searchData.ShortestLength)
         {
             var relative = searchData.FirstByteSearch.IndexOf(input[offset..]);
