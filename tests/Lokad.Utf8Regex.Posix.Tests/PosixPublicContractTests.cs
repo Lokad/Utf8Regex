@@ -274,11 +274,13 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, true, true)]
+    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning, bool suffix)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
@@ -286,7 +288,7 @@ public sealed class PosixPublicContractTests
         var account = new Account();
         // The non-pruning case ends below EOF and admits wider scalars, so the
         // ASCII alphabet ceiling cannot replace general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" : "((a|a[^!])*)", default,
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + (suffix ? "b" : "") : "((a|a[^!])*)", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
@@ -306,7 +308,7 @@ public sealed class PosixPublicContractTests
         });
         try
         {
-            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) : new string('a', 12) + "!");
+            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) + (suffix ? "b" : "") : new string('a', 12) + "!");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);
@@ -495,17 +497,19 @@ public sealed class PosixPublicContractTests
 
     [Theory]
     [InlineData("(a|aa)*")]
+    [InlineData("(a|aa)*b")]
     [InlineData("(a?){2,4}")]
     public void RefusalAtEveryWorkingAcquisitionRefundsAndClearsOutput(string pattern)
     {
         var regex = new Utf8PosixRegex(pattern); var granted = new Account();
         var output = new Utf8ValueMatch[2];
-        Assert.True(regex.Match("aaaaaa"u8, output, workingMemoryAllowance: granted).Success);
+        var input = Encoding.ASCII.GetBytes("aaaaaa" + (pattern.EndsWith('b') ? "b" : ""));
+        Assert.True(regex.Match(input, output, workingMemoryAllowance: granted).Success);
         Assert.True(granted.Attempts > 2); Assert.Equal(0UL, granted.Used);
         for (var admitted = 0; admitted < granted.Attempts; admitted++)
         {
             var account = new Account { AllowedAttempts = admitted };
-            Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Match("aaaaaa"u8, output, workingMemoryAllowance: account));
+            Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Match(input, output, workingMemoryAllowance: account));
             Assert.Equal(admitted + 1, account.Attempts); Assert.Equal(0UL, account.Used);
             Assert.All(output, match => Assert.False(match.Success));
         }

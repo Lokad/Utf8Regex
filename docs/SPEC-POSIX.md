@@ -183,6 +183,14 @@ Skipped occurrences still count as prior participation when ranking an extra emp
 tail. This retains the same pruning rule, traversal and admitted storage; work
 requirements can decrease by removing repeated comparisons of unchanged events.
 
+A bounded proof can also pass over a leading chain of once-entered enclosures
+when all body edges stay inside the innermost scope and its suffix consists only
+of fixed literals/capture markers. At a maximal whole endpoint those earlier tags
+have fixed starts and ends, so the same losing-prefix rule can compare their first
+unfixed child. Variable/branched tails and unproved scopes retain the root-child
+comparison. This uses one local tag choice, no retained program metadata/storage;
+it can remove losing descendant exploration and lower numerical work requirements.
+
 Physical input end is always a valid ceiling. After the first general acceptance,
 a proof over at most 64 instructions can establish that every consuming atom is
 an unfolded scalar literal or positive ASCII-only bracket. A conservative scalar
