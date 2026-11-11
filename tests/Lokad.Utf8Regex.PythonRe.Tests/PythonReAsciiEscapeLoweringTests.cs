@@ -5,6 +5,43 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReAsciiEscapeLoweringTests
 {
     [Theory]
+    [InlineData('w')] [InlineData('d')] [InlineData('s')] [InlineData('u')]
+    public void AsciiBracketUnionsKeepResolvedOperandsAndScalarComplements(char kind)
+    {
+        var body = kind switch { 'w' => @"\w.-", 'd' => @"\dA-F", 's' => @"\s\x1c-", _ => @"\w\d\s-" };
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        foreach (var negate in new[] { false, true })
+        foreach (var bytes in new[] { false, true })
+        {
+            var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
+            using var regex = bytes
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), inputValidation: policy)
+                : new Utf8PythonRegex(pattern, inputValidation: policy);
+            foreach (var scalar in Enumerable.Range(0, 128).Concat(new[] { 0xE9, 0x660, 0xA0, 0x212A, 0x10400, 0x1F600 }))
+            {
+                var word = scalar is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+                var digit = scalar is >= '0' and <= '9';
+                var space = scalar is >= 9 and <= 13 or 32;
+                var positive = kind switch
+                {
+                    'w' => word || scalar is '.' or '-',
+                    'd' => digit || scalar is >= 'A' and <= 'F' or >= 'a' and <= 'f',
+                    's' => space || scalar is 0x1C or '-',
+                    _ => word || digit || space || scalar == '-',
+                };
+                var text = char.ConvertFromUtf32(scalar);
+                var input = Encoding.UTF8.GetBytes(text);
+                var actual = regex.FullMatchDetailedData(input);
+                Assert.Equal(negate ? !positive : positive, actual.Success);
+                if (!actual.Success) continue;
+                Assert.Equal(text, actual.Groups[1].ValueText);
+                Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
+                Assert.Equal((0, text.Length), (actual.Groups[1].StartOffsetInUtf16, actual.Groups[1].EndOffsetInUtf16));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData('w')] [InlineData('W')] [InlineData('d')]
     [InlineData('D')] [InlineData('s')] [InlineData('S')]
     public void AsciiEscapesKeepTheirScalarComplementAndCaptureCoordinates(char escape)
@@ -42,10 +79,12 @@ public sealed class PythonReAsciiEscapeLoweringTests
     }
 
     [Theory]
-    [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
-    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults(Utf8InputValidation policy)
+    [InlineData(Utf8InputValidation.Validate, false)] [InlineData(Utf8InputValidation.AssumeValid, false)]
+    [InlineData(Utf8InputValidation.Validate, true)] [InlineData(Utf8InputValidation.AssumeValid, true)]
+    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults(Utf8InputValidation policy, bool union)
     {
-        using var regex = new Utf8PythonRegex(@"(?ai:(\w))(?u:(\w))(?a:(\W))", inputValidation: policy);
+        using var regex = new Utf8PythonRegex(union ? @"(?ai:([\w-]))(?u:([\w-]))(?a:([^\w-]))"
+            : @"(?ai:(\w))(?u:(\w))(?a:(\W))", inputValidation: policy);
         var input = "aé😀 bé😀"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
         var actual = regex.FindAllToStrings(input).TupleValues;

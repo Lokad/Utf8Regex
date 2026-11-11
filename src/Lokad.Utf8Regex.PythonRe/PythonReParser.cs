@@ -8,11 +8,14 @@ internal sealed partial class PythonReParser
 {
     private const string PatternBadEscapeLetters = "ceghijklmopqyCEFGHIJKLMNOPQRTVXYz";
     private const string CharacterClassBadEscapeLetters = "ceghijklmopqyzABCEFGHIJKLMOPQRTVXYZ";
-    internal const string AsciiWordClass = "[A-Za-z0-9_]";
+    internal const string AsciiWordClassFragment = "A-Za-z0-9_";
+    internal const string AsciiDigitClassFragment = "0-9";
+    internal const string AsciiSpaceClassFragment = @"\t\n\r\f\v ";
+    internal const string AsciiWordClass = "[" + AsciiWordClassFragment + "]";
     internal const string AsciiNonWordClass = "(?:(?![A-Za-z0-9_])" + UnicodeScalarPattern + ")";
-    internal const string AsciiDigitClass = "[0-9]";
+    internal const string AsciiDigitClass = "[" + AsciiDigitClassFragment + "]";
     internal const string AsciiNonDigitClass = "(?:(?![0-9])" + UnicodeScalarPattern + ")";
-    internal const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
+    internal const string AsciiSpaceClass = "[" + AsciiSpaceClassFragment + "]";
     internal const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
     internal const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     // `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
@@ -1003,22 +1006,22 @@ internal sealed partial class PythonReParser
         switch (escaped)
         {
             case 'w':
-                fragment = "A-Za-z0-9_";
+                fragment = AsciiWordClassFragment;
                 return true;
             case 'W':
-                fragment = "^A-Za-z0-9_";
+                fragment = "^" + AsciiWordClassFragment;
                 return true;
             case 'd':
-                fragment = "0-9";
+                fragment = AsciiDigitClassFragment;
                 return true;
             case 'D':
-                fragment = "^0-9";
+                fragment = "^" + AsciiDigitClassFragment;
                 return true;
             case 's':
-                fragment = @"\t\n\r\f\v ";
+                fragment = AsciiSpaceClassFragment;
                 return true;
             case 'S':
-                fragment = @"^\t\n\r\f\v ";
+                fragment = "^" + AsciiSpaceClassFragment;
                 return true;
             default:
                 fragment = string.Empty;

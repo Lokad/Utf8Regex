@@ -342,6 +342,13 @@ still consume one complete Unicode scalar. Construction and execution work/depth
 totals can decrease with this simpler program; admission, interruption and the
 documented route-dependent nature of those totals remain unchanged.
 
+Positive ASCII `\w/\d/\s` operands inside resolved ASCII bracket unions use
+that same mask directly, including an outer scalar complement. Explicit literal
+U+001C–U+001F membership is retained independently of ASCII whitespace. Unicode
+and complemented predefined operands retain their existing lowering. This removes
+intermediate rendered/Core-parsed leaves; construction work/storage requirements
+can decrease while major allocation admission and interruption remain in force.
+
 Nullable nonliteral programs skip optional Core pattern rendering/compilation:
 their iteration uses Python scalar progression, and Core candidate/result proofs
 require nonempty matches. Exact empty literals retain their Core value fast path;

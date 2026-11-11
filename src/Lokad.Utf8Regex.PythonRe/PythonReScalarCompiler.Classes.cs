@@ -123,19 +123,41 @@ internal static partial class PythonReScalarCompiler
         Utf8ConstructionArena arena)
     {
         // Parsing has resolved lexical folding. Only literal/range operands in
-        // ASCII fit this mask; Unicode and predefined operands keep their own
-        // existing lowering. In particular, do not refold a negated class.
+        // ASCII fit this mask together with positive parser-owned ASCII classes.
+        // Unicode and complemented operands keep their existing lowering.
+        // In particular, do not refold a negated class.
         for (var index = 0; index < characterClass.Items.Count; index++)
         {
             arena.Budget.ChargeWork(1);
             var item = characterClass.Items[index];
             if (item is not PythonReCharacterClassLiteralItem { Scalar: >= 0 and < 128 } and
-                not PythonReCharacterClassRangeItem { StartScalar: >= 0, EndScalar: < 128 }) return null;
+                not PythonReCharacterClassRangeItem { StartScalar: >= 0, EndScalar: < 128 } and
+                not PythonReCharacterClassPredefinedItem { IsStandaloneAtom: false, RegexClassFragment:
+                    PythonReParser.AsciiWordClassFragment or PythonReParser.AsciiDigitClassFragment or PythonReParser.AsciiSpaceClassFragment }) return null;
         }
         var mask = arena.Allocate<byte>(16, true);
         for (var index = 0; index < characterClass.Items.Count; index++)
         {
             var item = characterClass.Items[index];
+            if (item is PythonReCharacterClassPredefinedItem predefined)
+            {
+                var source = predefined.RegexClassFragment switch
+                {
+                    PythonReParser.AsciiWordClassFragment => PythonReScalarClassData.WordAscii,
+                    PythonReParser.AsciiDigitClassFragment => PythonReScalarClassData.DigitAscii,
+                    _ => PythonReScalarClassData.SpaceAscii,
+                };
+                arena.Budget.ChargeWork(16);
+                for (var offset = 0; offset < mask.Length; offset++)
+                {
+                    var bits = source[offset];
+                    // Crop the operand before unioning: a literal U+001C..001F
+                    // elsewhere in the class must keep its own membership.
+                    if (offset == 3 && predefined.RegexClassFragment == PythonReParser.AsciiSpaceClassFragment) bits &= 0x0F;
+                    mask[offset] |= bits;
+                }
+                continue;
+            }
             var low = item is PythonReCharacterClassLiteralItem literal ? literal.Scalar
                 : ((PythonReCharacterClassRangeItem)item).StartScalar;
             var high = item is PythonReCharacterClassRangeItem range ? range.EndScalar : low;
