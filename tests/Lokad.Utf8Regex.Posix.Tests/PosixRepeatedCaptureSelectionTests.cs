@@ -5,6 +5,43 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixRepeatedCaptureSelectionTests
 {
     [Theory]
+    [InlineData(Utf8InputValidation.Validate, "a", false)]
+    [InlineData(Utf8InputValidation.AssumeValid, "a", false)]
+    [InlineData(Utf8InputValidation.Validate, "a", true)]
+    [InlineData(Utf8InputValidation.AssumeValid, "a", true)]
+    [InlineData(Utf8InputValidation.Validate, "😀", false)]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀", false)]
+    [InlineData(Utf8InputValidation.Validate, "😀", true)]
+    [InlineData(Utf8InputValidation.AssumeValid, "😀", true)]
+    public void LongAmbiguousCaptureFitsFiniteWorkWithoutRescanningEqualOccurrences(
+        Utf8InputValidation validation, string scalar, bool nonEof)
+    {
+        const int count = 1024;
+        const string prefix = "é😀!";
+        var width = Encoding.UTF8.GetByteCount(scalar);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + (nonEof ? "!" : ""));
+        var regex = new Utf8PosixRegex($"({scalar}|{scalar}{scalar})*", resourcePolicy: new()
+        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        using var token = new CancellationTokenSource();
+        var groups = new Utf8ValueMatch[2];
+        var expected = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length, floor, count * width);
+        Assert.Equal(expected, regex.Match(input, groups, floor, token.Token));
+        var retained = groups[1];
+        Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + (count - 2) * scalar.Length,
+            2 * scalar.Length, floor + (count - 2) * width, 2 * width), retained);
+        Assert.Equal(expected, regex.Match(input, groups.AsSpan(0, 1), floor));
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        var alias = cursor;
+        Assert.True(cursor.MoveNext(groups, out var whole)); Assert.Equal(expected, whole);
+        Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + count * width, empty.IndexInBytes);
+        if (nonEof) { Assert.True(cursor.MoveNext(out empty)); Assert.Equal(input.Length, empty.IndexInBytes); }
+        Assert.False(alias.MoveNext(groups, out _));
+        Assert.All(groups, group => Assert.False(group.Success));
+        Assert.Equal(2 * width, retained.LengthInBytes);
+    }
+
+    [Theory]
     [InlineData(Utf8InputValidation.Validate, "a", "aa")]
     [InlineData(Utf8InputValidation.AssumeValid, "a", "aa")]
     [InlineData(Utf8InputValidation.Validate, "😀", "😀😀")]
@@ -165,6 +202,9 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [Theory]
     [InlineData("(aa|a)(aab)*", "aaab", "a", "aab", null)]
     [InlineData("((aab|aa|ba)*)([ab]*)", "aaba", "aaba", "ba", "")]
+    [InlineData("(a|aa)*()", "aaaa", "aa", "", null)]
+    [InlineData("(a|aa|)*()", "aaaa", "aa", "", null)]
+    [InlineData("((a|aa)*)()", "aaaa", "aaaa", "aa", "")]
     public void LongerWholeOrParentCanOutrankAnEarlierClosedChild(string pattern, string text,
         string first, string second, string? third)
     {

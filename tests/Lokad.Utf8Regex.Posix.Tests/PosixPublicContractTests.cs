@@ -291,7 +291,10 @@ public sealed class PosixPublicContractTests
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
         var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray(); var triggered = false;
-        var phase = pruning ? "WorseClosedPrefix" : "BetterHistory";
+        // Equal-prefix pruning can finish between two 64-step hook polls.
+        // Observe actual captured-history rollback on that optimized route;
+        // the general route retains its full history-comparison witness.
+        var phase = pruning ? "Backtrack" : "BetterHistory";
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             // Test-only phase observation through the existing checkpoint hook:
@@ -307,7 +310,8 @@ public sealed class PosixPublicContractTests
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);
-            Assert.True(triggered, "The injection must reach history comparison, after a competing acceptance.");
+            Assert.True(triggered, "The injection must reach execution over captured histories.");
+            Assert.True(account.Peak > 0);
             Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
             Assert.True(retained.Success);
         }

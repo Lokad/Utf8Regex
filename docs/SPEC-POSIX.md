@@ -177,6 +177,12 @@ descendants of unresolved higher-priority parents remain inconclusive. This uses
 the same admitted histories and rollback; other ambiguous histories can still
 require exponential exploration. It is not a general linear-time guarantee.
 
+History comparison can skip an exact event prefix shared with the saved best:
+saving proves the prefix, appending preserves it, and rollback shortens the bound.
+Skipped occurrences still count as prior participation when ranking an extra empty
+tail. This retains the same pruning rule, traversal and admitted storage; work
+requirements can decrease by removing repeated comparisons of unchanged events.
+
 Physical input end is always a valid ceiling. After the first general acceptance,
 a proof over at most 64 instructions can establish that every consuming atom is
 an unfolded scalar literal or positive ASCII-only bracket. A conservative scalar

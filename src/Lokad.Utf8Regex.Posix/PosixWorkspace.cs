@@ -87,6 +87,10 @@ internal struct PosixWorkspace
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
+        // Saving the best copies the current trace exactly. Appending preserves
+        // that shared prefix; rollback can only shorten it. No trace mutation or
+        // speculative extension is needed to skip already equal occurrences.
+        var sharedPrefix = 0; var firstBestClose = -1;
         while (true)
         {
             Charge(ref invocation);
@@ -176,7 +180,7 @@ internal struct PosixWorkspace
                         // cannot be repaired by appending more events. Never use
                         // this argument for a descendant with an unresolved parent.
                         if (instruction.A == 1 && end == maximumEnd)
-                            failed = WorseClosedPrefix(ref invocation);
+                            failed = WorseClosedPrefix(sharedPrefix, firstBestClose, ref invocation);
                     }
                     pc++;
                     break;
@@ -201,18 +205,26 @@ internal struct PosixWorkspace
                         if (captureHistory)
                         {
                             Clear(ref _best, ref invocation);
+                            firstBestClose = -1;
                             for (var index = 0; index < _trace.Count; index++)
                             {
                                 if ((index & 63) == 0) Charge(ref invocation);
-                                Check(_best.TryPush(_trace[index], ref invocation), ref invocation);
+                                var item = _trace[index];
+                                if (firstBestClose < 0 && item.Tag == 1 && item.Opening >= 0) firstBestClose = index;
+                                Check(_best.TryPush(item, ref invocation), ref invocation);
                             }
+                            sharedPrefix = _trace.Count;
                         }
                     }
                     failed = true;
                     break;
                 default: throw new InvalidOperationException($"Unsupported POSIX instruction {instruction.Kind}.");
             }
-            if (failed && !Backtrack(ref pc, ref at, ref invocation)) return end >= 0;
+            if (failed)
+            {
+                if (!Backtrack(ref pc, ref at, ref invocation)) return end >= 0;
+                sharedPrefix = Math.Min(sharedPrefix, _trace.Count);
+            }
         }
     }
 
@@ -353,10 +365,13 @@ internal struct PosixWorkspace
         return false;
     }
 
-    private bool WorseClosedPrefix(ref Utf8SliceInvocation invocation)
+    private bool WorseClosedPrefix(int sharedPrefix, int firstBestClose, ref Utf8SliceInvocation invocation)
     {
         var current = _trace.WrittenItems; var best = _best.WrittenItems;
-        var a = 0; var b = 0; var first = true;
+        var a = sharedPrefix; var b = sharedPrefix;
+        // Skipped equal occurrences still establish prior participation. A new
+        // equal-prefix tail loses only after an earlier occurrence, including empty.
+        var first = firstBestClose < 0 || firstBestClose >= sharedPrefix;
         while (true)
         {
             var ac = NextClose(current, 1, a, current.Length, ref invocation);
