@@ -1512,7 +1512,8 @@ public sealed partial class Utf8Regex
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-                _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
+                _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                !Utf8SliceRunner.CanRunTerminalClassRepeat(program))
             {
                 var isAscii = Utf8Validation.SubjectIsAscii(input, ref invocation);
                 // The family proof resolves proper-start overlap behind word boundaries
@@ -1591,6 +1592,8 @@ public sealed partial class Utf8Regex
         // A positive ASCII-only branch cannot consume wider scalars elsewhere
         // in that valid UTF-8 subject. Reuse the controlled simple counter;
         // Count discards captures and needs no scalar VM workspace.
+        // Complete class repeats keep their scalar-run counter instead of
+        // retrying expanded branches at every rejected starting position.
         if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _preparedRegex.SimplePatternPlan is { IsUtf8ByteSafe: true, Branches.Length: > 0, MinLength: > 0 } simple &&
@@ -1598,7 +1601,8 @@ public sealed partial class Utf8Regex
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
             !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
+            !Utf8SliceRunner.CanRunTerminalClassRepeat(program))
         {
             var breach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
                 _preparedRegex.SearchPlan, simple, ref invocation, out var count);

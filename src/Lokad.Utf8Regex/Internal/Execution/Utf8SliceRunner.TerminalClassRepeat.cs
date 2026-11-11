@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    private static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
+    internal static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
     {
         if (program.IsNonBacktracking || program.RightToLeft || program.GroupCount != 0 ||
             program.RepeatCount != 1 || program.Instructions.Length != 5)
