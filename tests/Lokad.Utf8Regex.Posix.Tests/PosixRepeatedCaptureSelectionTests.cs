@@ -55,6 +55,56 @@ public sealed class PosixRepeatedCaptureSelectionTests
     }
 
     [Theory]
+    [InlineData(Utf8InputValidation.Validate, "(a|aa)*")]
+    [InlineData(Utf8InputValidation.AssumeValid, "(a|aa)*")]
+    [InlineData(Utf8InputValidation.Validate, "(a|a[ab])*")]
+    [InlineData(Utf8InputValidation.AssumeValid, "(a|a[ab])*")]
+    public void AlphabetCeilingKeepsNonEofHistoryAndWholeOnlyCountsWithinFiniteWork(Utf8InputValidation validation, string pattern)
+    {
+        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        const string prefix = "é😀!";
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        foreach (var suffix in new[] { "!", "😀", "\0" })
+        {
+            var input = Encoding.UTF8.GetBytes(prefix + new string('a', 32) + suffix);
+            var groups = new Utf8ValueMatch[2];
+            var whole = regex.Match(input, groups, floor);
+            Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length, 32, floor, 32), whole);
+            Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + 30, 2, floor + 30, 2), groups[1]);
+            var retained = groups[1];
+            Assert.Equal(whole, regex.Match(input, floor));
+            Assert.Equal(3, regex.Count(input, floor));
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + 32, empty.IndexInBytes);
+            Assert.True(cursor.MoveNext(groups, out empty)); Assert.Equal(input.Length, empty.IndexInBytes);
+            Assert.False(alias.MoveNext(out _));
+            Assert.Equal(2, retained.LengthInBytes);
+        }
+        if (validation == Utf8InputValidation.Validate)
+            Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(prefix + new string('a', 32)), 0xff], floor));
+    }
+
+    [Theory]
+    [InlineData(2048)] [InlineData(2049)] [InlineData(2050)]
+    public void AShortFirstAcceptanceCannotDiscardLongerEndpointsAcrossTheBoundedProbe(int length)
+    {
+        var input = Encoding.ASCII.GetBytes(new string('a', length) + "!");
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            // ERE interval numbers stay <=255, including this long fixed branch.
+            var regex = new Utf8PosixRegex($"(a|(a{{128}}){{16}}a{{{length - 2048}}})", inputValidation: validation);
+            var captures = new Utf8ValueMatch[2];
+            Assert.Equal(length, regex.Match(input, captures).LengthInBytes);
+            Assert.Equal(length, captures[1].LengthInBytes);
+            Assert.Equal(length, regex.Match(input).LengthInBytes);
+            Assert.Equal(1, regex.Count(input));
+        }
+    }
+
+    [Theory]
     [InlineData("a", false)] [InlineData("a", true)]
     [InlineData("😀", false)] [InlineData("😀", true)]
     public void AmbiguousAlternativesKeepOccurrencePriorityAcrossNestingAndOutputSizes(string scalar, bool nullable)

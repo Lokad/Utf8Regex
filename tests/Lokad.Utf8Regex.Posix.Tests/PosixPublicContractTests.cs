@@ -284,9 +284,9 @@ public sealed class PosixPublicContractTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
         var account = new Account();
-        // The non-pruning case ends below EOF, keeping general competition
-        // independently of fixed-width branch-order heuristics.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" : "((a|a[[:alpha:]])*)", default,
+        // The non-pruning case ends below EOF and admits wider scalars, so the
+        // ASCII alphabet ceiling cannot replace general history competition.
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" : "((a|a[^!])*)", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);

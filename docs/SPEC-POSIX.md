@@ -170,12 +170,22 @@ at the same position. First and required empty occurrences remain eligible.
 
 General search may visit longer fixed-width scalar alternatives first (literals,
 dots and bracket atoms), preserving original
-semantic tag priority. Once a saved whole match reaches input end, a completed
+semantic tag priority. Once a saved whole match reaches a proved endpoint ceiling, a completed
 losing occurrence prefix of the first root child can be discarded: forward
 continuation cannot repair its earlier boundaries. Unclosed occurrences and
 descendants of unresolved higher-priority parents remain inconclusive. This uses
 the same admitted histories and rollback; other ambiguous histories can still
 require exponential exploration. It is not a general linear-time guarantee.
+
+Physical input end is always a valid ceiling. After the first general acceptance,
+a proof over at most 64 instructions can establish that every consuming atom is
+an unfolded ASCII literal or positive ASCII-only bracket. A conservative interval
+containing those atoms cannot cross its first excluded byte. A checked search of
+at most 2048 following bytes can therefore prove an earlier ceiling; a proof or
+search miss keeps physical input end. Whole-only selection can stop at that
+ceiling; captured selection keeps the same hierarchical history rules. Actual
+input, anchors, strict validation and scalar/coordinate output remain unchanged.
+Proof/search use bounded work checkpoints and no additional retained storage.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,

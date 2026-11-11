@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Numerics;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -84,6 +86,7 @@ internal struct PosixWorkspace
     {
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
+        var maximumEnd = input.Length;
         while (true)
         {
             Charge(ref invocation);
@@ -168,19 +171,21 @@ internal struct PosixWorkspace
                     if (captureHistory)
                     {
                         Check(_trace.TryPush(new(instruction.A, at, _state[_openOffset + instruction.A]), ref invocation), ref invocation);
-                        // EOF fixes the highest-priority whole endpoint. Tag1 is
+                        // A proved ceiling fixes the highest-priority whole endpoint. Tag1 is
                         // the first child of root0: a completed losing occurrence
                         // cannot be repaired by appending more events. Never use
                         // this argument for a descendant with an unresolved parent.
-                        if (instruction.A == 1 && end == input.Length)
+                        if (instruction.A == 1 && end == maximumEnd)
                             failed = WorseClosedPrefix(ref invocation);
                     }
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
-                    // Without requested captures, EOF proves the longest whole
+                    if (end < 0 && at < input.Length && !existenceOnly && !_program.FirstAcceptanceIsLongest)
+                        maximumEnd = FindAlphabetCeiling(input, at, ref invocation);
+                    // Without requested captures, the ceiling proves the longest whole
                     // match regardless of the histories on other pending paths.
-                    if (existenceOnly || !captureHistory && at == input.Length) { end = at; return true; }
+                    if (existenceOnly || !captureHistory && at == maximumEnd) { end = at; return true; }
                     if (_program.FirstAcceptanceIsLongest)
                     {
                         end = at;
@@ -209,6 +214,48 @@ internal struct PosixWorkspace
             }
             if (failed && !Backtrack(ref pc, ref at, ref invocation)) return end >= 0;
         }
+    }
+
+    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
+    {
+        var program = _program.Scalar;
+        var code = program.Instructions;
+        if (code.Length > 64) return input.Length;
+        Charge(ref invocation);
+        var first = 128; var last = -1;
+        foreach (var instruction in code)
+        {
+            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+            {
+                first = Math.Min(first, instruction.A); last = Math.Max(last, instruction.A);
+            }
+            else if (instruction is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+                program.CategorySetMembers[instruction.D].Length == 0)
+            {
+                var mask = program.SetMasks[instruction.A];
+                if (mask.Length != 16) return input.Length;
+                var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+                var high = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
+                if ((low | high) == 0) continue;
+                first = Math.Min(first, low != 0 ? BitOperations.TrailingZeroCount(low) :
+                    64 + BitOperations.TrailingZeroCount(high));
+                last = Math.Max(last, high != 0 ? 127 - BitOperations.LeadingZeroCount(high) :
+                    63 - BitOperations.LeadingZeroCount(low));
+            }
+            else if (instruction.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+                Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
+                Utf8SliceInstructionKind.RepeatEnd or Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor or
+                Utf8SliceInstructionKind.Accept)) return input.Length;
+        }
+        if (last < first) return input.Length;
+        // Every consuming atom stays in this conservative ASCII interval. No
+        // accepting path can cross its first excluded byte, which is a scalar
+        // boundary. Keep the actual subject for anchors, validation and output.
+        // A bounded miss retains physical EOF as the original safe upper bound.
+        Charge(ref invocation);
+        var tail = input.Slice(acceptedEnd, Math.Min(2048, input.Length - acceptedEnd));
+        var stop = tail.IndexOfAnyExceptInRange((byte)first, (byte)last);
+        return stop < 0 ? input.Length : acceptedEnd + stop;
     }
 
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)
