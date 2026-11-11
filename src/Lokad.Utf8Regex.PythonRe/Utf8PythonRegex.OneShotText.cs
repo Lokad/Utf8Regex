@@ -33,8 +33,13 @@ public sealed partial class Utf8PythonRegex
                 cursor.Checkpoint();
                 // This operation returns one string. Size its actual range;
                 // batch output keeps its useful shared subject facts.
-                completed = MaterializeMatchText(input, cursor.StartOffsetInBytes, cursor.EndOffsetInBytes,
-                    null, ref cursor.WorkingInvocation, ref scalarResults);
+                var start = cursor.StartOffsetInBytes;
+                var end = cursor.EndOffsetInBytes;
+                var description = cursor.InputDescription;
+                int? count = description is { IsAscii: true } ? end - start
+                    : start == 0 && end == input.Length ? description?.Utf16Length : null;
+                completed = MaterializeMatchText(input, start, end,
+                    count, ref cursor.WorkingInvocation, ref scalarResults);
             }
             cursor.Checkpoint();
             return completed;

@@ -222,8 +222,9 @@ redundant substring validation and can lower work charges; complete-subject
 validation, result/working admission before string allocation and output lifetimes
 retain their contracts.
 
-One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` count
-only their returned scalar range instead of describing an unrelated suffix.
+One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
+available ASCII/whole-subject character counts; otherwise they count only their
+returned scalar range instead of describing an unrelated suffix.
 Native one-shot paths reuse their known character counts; batch output retains
 its shared subject facts. Counting/decoding use bounded blocks and the original
 invocation, with string capacity admitted before allocation and held through

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -23,6 +24,7 @@ internal ref struct PythonReScalarMatchCursor
     internal int? GetLastIndex() => _state.GetLastIndex(_input);
     internal readonly ulong ReservedBytes => _state.ReservedBytes;
     internal readonly ulong ResultReservation => _state.ResultReservation;
+    internal readonly Utf8ValidationResult? InputDescription => _state.InputDescription;
     internal readonly bool HasCoordinateMap => _state.HasCoordinateMap;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
     internal T[] AllocateResultArray<T>(int count) => _state.AllocateResultArray<T>(_input, count);

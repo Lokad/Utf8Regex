@@ -1,5 +1,8 @@
 # One-shot Python string sizing
 
+The [known-count follow-up](../OneShotKnownCount-20261111/README.md) closes the
+strict large-output recount cost. Results below describe the initial producer.
+
 Accepted with the strict large-astral cost below. Scalar SearchToString,
 MatchToString and FullMatchToString size their returned range through the existing
 facade decoder/result ledger. Native one-shot output shares the final decoder and

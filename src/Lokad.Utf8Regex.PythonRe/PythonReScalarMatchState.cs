@@ -119,6 +119,7 @@ internal struct PythonReScalarMatchState
     internal int EndOffsetInBytes { get; private set; }
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
+    internal readonly Utf8ValidationResult? InputDescription => _validation;
     internal readonly bool HasCoordinateMap => _hasMap;
     internal bool IsAscii(ReadOnlySpan<byte> input) => (_validation ?? DescribeInput(input)).IsAscii;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;

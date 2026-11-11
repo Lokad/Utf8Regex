@@ -61,6 +61,7 @@ public sealed class PythonReSubjectFactsTests
         Assert.Equal(expected, retained);
         Assert.Equal(expected, regex.SearchToString(input, 6));
         Assert.Equal(expected, regex.FullMatchToString(input, 6));
+        Assert.Equal(expected, regex.FullMatchToString(Encoding.UTF8.GetBytes(expected)));
         Assert.Equal(expected, retained);
     }
 
