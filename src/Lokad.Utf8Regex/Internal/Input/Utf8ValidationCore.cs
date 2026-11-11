@@ -284,9 +284,9 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector512.LessThanOrEqual(Vector512.Subtract(current, twoByteLeadFirst512), twoByteLeadMaxDelta512).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512).ExtractMostSignificantBits();
-                            var surrogateLead = Vector512.Equals(current, ed512).ExtractMostSignificantBits();
-                            safeThreeByteLeadBits = inRange & ~surrogateLead;
+                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512);
+                            var surrogateLead = Vector512.Equals(current, ed512);
+                            safeThreeByteLeadBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
                         }
                     }
                 }
@@ -300,9 +300,9 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector256.LessThanOrEqual(Vector256.Subtract(current, twoByteLeadFirst), twoByteLeadMaxDelta).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta).ExtractMostSignificantBits();
-                            var surrogateLead = Vector256.Equals(current, ed).ExtractMostSignificantBits();
-                            safeThreeByteLeadBits = inRange & ~surrogateLead;
+                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta);
+                            var surrogateLead = Vector256.Equals(current, ed);
+                            safeThreeByteLeadBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
                         }
                     }
                 }
@@ -373,16 +373,16 @@ internal static class Utf8ValidationCore
                         if (use512)
                         {
                             var current = MemoryMarshal.Read<Vector512<byte>>(input[offset..]);
-                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512).ExtractMostSignificantBits();
-                            var surrogateLead = Vector512.Equals(current, ed512).ExtractMostSignificantBits();
-                            safeThreeByteBits = inRange & ~surrogateLead;
+                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512);
+                            var surrogateLead = Vector512.Equals(current, ed512);
+                            safeThreeByteBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
                         }
                         else
                         {
                             var current = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
-                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta).ExtractMostSignificantBits();
-                            var surrogateLead = Vector256.Equals(current, ed).ExtractMostSignificantBits();
-                            safeThreeByteBits = inRange & ~surrogateLead;
+                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta);
+                            var surrogateLead = Vector256.Equals(current, ed);
+                            safeThreeByteBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
                         }
                         if (BitOperations.PopCount(safeThreeByteBits) >= DenseThreeByteLeadThreshold)
                         {

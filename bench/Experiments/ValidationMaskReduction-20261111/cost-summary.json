@@ -1,0 +1,151 @@
+{
+  "Accepted": true,
+  "SourceBaseline": "exact accepted category Count Core pair, C# sources equal a1 through120ad, metadata f662",
+  "Candidate": "120ad plus four validator SIMD predicate reductions",
+  "Seconds": 110.85984255839139,
+  "SampleCount": 480,
+  "MinimumSampleMs": 71.5274,
+  "MaximumBatchAllocationMiB": 0.41290283203125,
+  "LoadedProducerHashesVerified": true,
+  "CommonCallerAndNetControl": true,
+  "FinalAccountLoansZero": true,
+  "CodeGeneration": {
+    "before": {
+      "KmovqCount": 7,
+      "KandnqCount": 0,
+      "CodeBytes": 1275
+    },
+    "after": {
+      "KmovqCount": 5,
+      "KandnqCount": 0,
+      "CodeBytes": 1266
+    },
+    "Engaged": true
+  },
+  "SourceDocuments": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "GeneratedInputDocuments": 6,
+    "CompiledDocumentCounts": [
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex",
+        "Count": 342
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex",
+        "Count": 342
+      }
+    ],
+    "ChangedCompiledDocuments": [
+      "src/Lokad.Utf8Regex/Internal/Input/Utf8ValidationCore.cs"
+    ],
+    "Before": "accepted category-count Core C# sources at a1, unchanged through120ad; original f662 generated revision reconstructed exactly",
+    "After": "frozen patched120ad Core sources, all source and generated hashes checked",
+    "SharedCaller": "exact same frozen public caller and .NET reference in both graphs"
+  },
+  "Checks": {
+    "core": {
+      "Windows": [
+        1468,
+        1468
+      ],
+      "Linux": [
+        1468,
+        1468
+      ]
+    },
+    "PythonRe": {
+      "Windows": [
+        298,
+        298
+      ],
+      "Linux": [
+        298,
+        298
+      ]
+    },
+    "Pcre2": {
+      "Windows": [
+        108,
+        108
+      ],
+      "Linux": [
+        108,
+        108
+      ]
+    },
+    "Posix": {
+      "Windows": [
+        7,
+        7
+      ],
+      "Linux": [
+        7,
+        7
+      ]
+    }
+  },
+  "SoftwarePathChecksPerTarget": 70,
+  "HardwareWitnesses": {
+    "net10.0": {
+      "TimedComparison": false,
+      "Runtime": ".NET 10.0.12",
+      "StartupProcessors": 8,
+      "Vector512": false,
+      "Vector256": true,
+      "Calls": 7591,
+      "SubjectBytes": 813478,
+      "SubjectSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "CoreDllSha256": "5D9CE030E506F6DADCAE8250A875A348DDAC2B668AD2E36BE1B3FC2B444B7DAB",
+      "CorePdbSha256": "8010084B961968C1786E61458A9A3F885FD5AF89E5F72DAFCE2FF8176CFFA4B1",
+      "Revision": "0.5.0-dev.72+120ad378e8d8aeba60392631eb1d13489098f78f"
+    },
+    "net11.0": {
+      "TimedComparison": false,
+      "Runtime": ".NET 11.0.0",
+      "StartupProcessors": 8,
+      "Vector512": false,
+      "Vector256": true,
+      "Calls": 7978,
+      "SubjectBytes": 813478,
+      "SubjectSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "CoreDllSha256": "FF71A81975588EB1BB64000E3340098488DD3FDB8DC467704F8F3FFC1FC383DE",
+      "CorePdbSha256": "FAB794588A5A6CAE093C0AFACC784446084290416E5AE336DCE39FDD16A3DE19",
+      "Revision": "0.5.0-dev.72+120ad378e8d8aeba60392631eb1d13489098f78f"
+    }
+  },
+  "RawArchives": {
+    "complete-evidence.tar.gz": "F90D03118921DDD80ECF612CEC56A8939C9BC283F09260BCA735966FFD8525E5",
+    "preflight-evidence.tar.gz": "C3E88854F6A054F8D2552D938E0F9C65CDC81F877BE8FE60DAE95F2C1AEFE619",
+    "source-verification.tar.gz": "8F79341DE980BB87F123AFBE32A10F62EC59B9EB0C03B2519E9F7096A94E921D",
+    "windows-checks.zip": "006DF36BA8263EB4A77E0CD5AE6D928A49B43C8B649C6DD7591424F56A409F1D"
+  },
+  "Rows": [
+    {"Policy": "Validate", "Id": "core/chinese-literal", "BeforeUs": 79.41201332769529, "AfterUs": 78.43417922279346, "ChangePercent": -1.2313427955374712, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "core/chinese-alternation", "BeforeUs": 100.83693765600512, "AfterUs": 98.61027115392457, "ChangePercent": -2.2081853672278218, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "core/russian-literal", "BeforeUs": 164.99792543099892, "AfterUs": 163.22622053971946, "ChangePercent": -1.073774040886577, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "core/email-count", "BeforeUs": 1160.9882692307692, "AfterUs": 1147.7505361305361, "ChangePercent": -1.1402124768240762, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "core/symbol-count", "BeforeUs": 1714.474696969697, "AfterUs": 1714.1053282828284, "ChangePercent": -0.021544131711104253, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "core/chinese-finite-live", "BeforeUs": 113.50349159797084, "AfterUs": 111.0556823760432, "ChangePercent": -2.1565937641793265, "RangesOverlap": false, "BeforeAllocatedBytes": [112, 112], "AfterAllocatedBytes": [112, 112]},
+    {"Policy": "Validate", "Id": "core/chinese-funded-live", "BeforeUs": 113.0858023230453, "AfterUs": 111.68679525222554, "ChangePercent": -1.2371199939169242, "RangesOverlap": true, "BeforeAllocatedBytes": [112, 112], "AfterAllocatedBytes": [112, 112]},
+    {"Policy": "Validate", "Id": "core/chinese-deadline-live", "BeforeUs": 121.0361354374404, "AfterUs": 118.28994309262166, "ChangePercent": -2.268902865159761, "RangesOverlap": true, "BeforeAllocatedBytes": [160, 160], "AfterAllocatedBytes": [160, 160]},
+    {"Policy": "Validate", "Id": "core/mixed-width-literal", "BeforeUs": 14.254091568340232, "AfterUs": 14.300849001276866, "ChangePercent": 0.32802815046093503, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/ascii-literal", "BeforeUs": 12.134349756218723, "AfterUs": 12.268973677592145, "ChangePercent": 1.1094448740809337, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/short-literal", "BeforeUs": 0.3217804464201751, "AfterUs": 0.3306580140810178, "ChangePercent": 2.7588897211145325, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/net-predecoded-chinese", "BeforeUs": 23.19755483501102, "AfterUs": 23.260348120821433, "ChangePercent": 0.2706892440044628, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/chinese-literal", "BeforeUs": 22.188931931840074, "AfterUs": 22.26523154488804, "ChangePercent": 0.34386338775720393, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/chinese-alternation", "BeforeUs": 44.48391697108653, "AfterUs": 43.2948402201344, "ChangePercent": -2.673048669983369, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/russian-literal", "BeforeUs": 66.54186773905272, "AfterUs": 68.43585007974482, "ChangePercent": 2.8463017421143766, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/email-count", "BeforeUs": 277.4112077480246, "AfterUs": 275.75648133182483, "ChangePercent": -0.5964886673586633, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/symbol-count", "BeforeUs": 1242.6023655913978, "AfterUs": 1242.7356689582234, "ChangePercent": 0.010727757367678947, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "core/chinese-finite-live", "BeforeUs": 25.170904315799657, "AfterUs": 25.314934965262527, "ChangePercent": 0.5722108655923819, "RangesOverlap": true, "BeforeAllocatedBytes": [112, 112], "AfterAllocatedBytes": [112, 112]},
+    {"Policy": "AssumeValid", "Id": "core/chinese-funded-live", "BeforeUs": 25.284809602649005, "AfterUs": 25.45086535357984, "ChangePercent": 0.6567411562135694, "RangesOverlap": true, "BeforeAllocatedBytes": [112, 112], "AfterAllocatedBytes": [112, 112]},
+    {"Policy": "AssumeValid", "Id": "core/chinese-deadline-live", "BeforeUs": 27.852401050809895, "AfterUs": 27.99859446076573, "ChangePercent": 0.5248862016927758, "RangesOverlap": true, "BeforeAllocatedBytes": [160, 160], "AfterAllocatedBytes": [160, 160]},
+    {"Policy": "AssumeValid", "Id": "core/mixed-width-literal", "BeforeUs": 3.282018082048257, "AfterUs": 3.309953226436903, "ChangePercent": 0.8511575405828475, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/ascii-literal", "BeforeUs": 12.1737541946407, "AfterUs": 12.203143129723731, "ChangePercent": 0.2414122596295698, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/short-literal", "BeforeUs": 0.19018136923082213, "AfterUs": 0.18978941905947844, "ChangePercent": -0.20609283282001511, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/net-predecoded-chinese", "BeforeUs": 23.097227859170843, "AfterUs": 23.233937414191715, "ChangePercent": 0.5918872855843249, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]}
+  ]
+}
