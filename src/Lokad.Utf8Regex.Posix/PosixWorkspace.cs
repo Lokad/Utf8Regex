@@ -178,7 +178,9 @@ internal struct PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
-                    if (existenceOnly) { end = at; return true; }
+                    // Without requested captures, EOF proves the longest whole
+                    // match regardless of the histories on other pending paths.
+                    if (existenceOnly || !captureHistory && at == input.Length) { end = at; return true; }
                     if (_program.FirstAcceptanceIsLongest)
                     {
                         end = at;

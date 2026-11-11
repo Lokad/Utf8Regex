@@ -25,6 +25,17 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var retained = groups[1];
         Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + 30 * scalar.Length, pair.Length,
             floor + 30 * width, 2 * width), retained);
+        Assert.Equal(whole, regex.Match(input, floor, token.Token));
+        Assert.Equal(2, regex.Count(input, floor, token.Token));
+        using (var wholeCursor = regex.CreateMatchCursor(input, floor, token.Token))
+        {
+            var alias = wholeCursor;
+            Assert.True(wholeCursor.MoveNext(out var first)); Assert.Equal(whole, first);
+            Assert.True(alias.MoveNext(groups, out var terminal));
+            Assert.Equal(input.Length, terminal.IndexInBytes); Assert.Equal(0, terminal.LengthInBytes);
+            Assert.False(wholeCursor.MoveNext(out _));
+            Assert.Equal(2 * width, retained.LengthInBytes);
+        }
         using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
         Assert.True(cursor.MoveNext(groups, out var current));
         Assert.Equal(whole, current); Assert.Equal(retained, groups[1]);
