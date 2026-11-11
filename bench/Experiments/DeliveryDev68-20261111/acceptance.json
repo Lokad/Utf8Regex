@@ -1,0 +1,287 @@
+{
+  "Source": "a7e985ed2c1bb4ac7d63a09c74e3ba0a74ccb9b9",
+  "Version": "0.5.0-dev.68",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "PackageCandidate": "artifacts/package-candidates/0.5.0-dev.68/candidate.json",
+  "Feed": "artifacts/nuget",
+  "Windows": {
+    "Fixtures": 10,
+    "Checks": 111500,
+    "Seconds": 298.7257216
+  },
+  "Linux": {
+    "Fixtures": 10,
+    "Checks": 111500,
+    "SameWindowsPackageBytes": true,
+    "Rebuilt": false,
+    "Repacked": false,
+    "RestoreAudits": 28,
+    "CheckedTrxFiles": 14
+  },
+  "OriginalConsumers": {
+    "Scope": "Unchanged copied handoffs, not downstream adoption",
+    "AwkPerFramework": 19,
+    "LythonPerFramework": 118,
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "PublicApiProbesPassed": true,
+    "FinalRootLoans": 0,
+    "OriginalSourceFilesVerified": 1565,
+    "ChangedExactVersionPins": 3
+  },
+  "SourceCI": {
+    "Run": 42943161706,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "Full": {
+    "Seconds": 2805.3025926,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "RawSha256": "DCE79134577C1E8BC79958555DD6DF493CA3184FFBEDBFE60DA0BC4CC4254960"
+  },
+  "LinuxRawSha256": "06F553E21DB1D37CB43809AA6620746056F995A753608FCCDC97C031835D2D53",
+  "CompilerInputsSha256": "C3B805DDD436C827B3F89F91F5EB173A5AA7D1F4A96179F491D99898CDFD42B9",
+  "PreservedDev67CanonicalAssets": 8,
+  "SnapshotChecksPerFramework": 9,
+  "SnapshotLogs": [
+    {
+      "File": "snapshot-Core.txt",
+      "Sha256": "AA32584256955B836C8CA3BA0959CED1FCDD398CAD783D598C1EDCDA31ABE949",
+      "PerFramework": 2
+    },
+    {
+      "File": "snapshot-PythonRe.txt",
+      "Sha256": "6B0725C98E1B8F27A0F46B23E6B6C2B34866FE700E3309C8C6190AB3AD7AF006",
+      "PerFramework": 1
+    },
+    {
+      "File": "snapshot-Pcre2.txt",
+      "Sha256": "85D428935F9B165EA455F7C5D969665E01522E451FC36C033DCF7A0454C8ADEA",
+      "PerFramework": 1
+    },
+    {
+      "File": "snapshot-Posix.txt",
+      "Sha256": "4E196E2E5BE2A00C1C9F063829F30CD65A4B1B6CC09FE737355F52A94D936A31",
+      "PerFramework": 5
+    }
+  ],
+  "Baseline": {
+    "Producer": "b478f853f722b7c34de83bdcd14693ee594ca053",
+    "ImportedSummaryCommit": "7b0cc1c35e080a9142be8585a9ab361eb3c0c171",
+    "InputValidation": "Validate"
+  },
+  "PreviousCheckpoint": {
+    "Version": "0.5.0-dev.67",
+    "ImportedSummaryCommit": "2626a377d08b114addc3cb718a36e6b218d544d4"
+  },
+  "CatalogInterpretation": "Separate Full observations, not causal A/B attribution; preserve comparator movement and uncertainty.",
+  "SelectedComparisons": [
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-name-family-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 4048.463157894737,
+      "Dev67Us": 3807.157142857143,
+      "Dev68Us": 1683.5488888888888,
+      "Dev66Ratio": 1.327123041797868,
+      "Dev67Ratio": 1.2468096170784746,
+      "Dev68Ratio": 0.5533257374905964,
+      "CurrentStatus": "Win",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-river-window-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 3263.0304347826086,
+      "Dev67Us": 2098.8444444444444,
+      "Dev68Us": 2235.526470588235,
+      "Dev66Ratio": 2.126309529530158,
+      "Dev67Ratio": 1.384507697776605,
+      "Dev68Ratio": 1.407553595096173,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/mariomka-email-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 1161.7384615384615,
+      "Dev67Us": 1183.5063492063491,
+      "Dev68Us": 1188.947619047619,
+      "Dev66Ratio": 2.5566630776614097,
+      "Dev67Ratio": 2.518141609607579,
+      "Dev68Ratio": 2.586153101180947,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "literal/sherlock-zh",
+      "InputValidation": "Validate",
+      "Dev66Us": 83.00243362831858,
+      "Dev67Us": 80.79157782515992,
+      "Dev68Us": 89.1793349168646,
+      "Dev66Ratio": 3.4391867127301263,
+      "Dev67Ratio": 3.4289541950725897,
+      "Dev68Ratio": 3.6914936841328805,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "aws-keys/quick",
+      "InputValidation": "Validate",
+      "Dev66Us": 5063.72,
+      "Dev67Us": 5841.6625,
+      "Dev68Us": 6614.75,
+      "Dev66Ratio": 1.371174145031888,
+      "Dev67Ratio": 1.6023410784772165,
+      "Dev68Ratio": 1.8135615901821267,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 528
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 778.5846153846154,
+      "Dev67Us": 801.3184615384615,
+      "Dev68Us": 821.1741935483872,
+      "Dev66Ratio": 2.2252364982738566,
+      "Dev67Ratio": 2.3278109427969427,
+      "Dev68Ratio": 2.348144461545559,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/one-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 474.2990566037736,
+      "Dev67Us": 499.31176470588235,
+      "Dev68Us": 502.63300000000004,
+      "Dev66Ratio": 2.217538281199975,
+      "Dev67Ratio": 2.3944227900304003,
+      "Dev68Ratio": 2.3470095225480465,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 94344
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-utf8",
+      "InputValidation": "Validate",
+      "Dev66Us": 863.6118644067797,
+      "Dev67Us": 821.7645161290322,
+      "Dev68Us": 839.89,
+      "Dev66Ratio": 0.6905323710440462,
+      "Dev67Ratio": 0.6814402545609469,
+      "Dev68Ratio": 0.6728715952060748,
+      "CurrentStatus": "ManagedFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/named-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 169.9949152542373,
+      "Dev67Us": 160.60128205128206,
+      "Dev68Us": 160.90897435897435,
+      "Dev66Ratio": 1.771135720457702,
+      "Dev67Ratio": 1.763421826504702,
+      "Dev68Ratio": 1.6815757630808141,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 43144
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "split/captures",
+      "InputValidation": "Validate",
+      "Dev66Us": 440.25913043478266,
+      "Dev67Us": 430.8305084745763,
+      "Dev68Us": 428.3135593220339,
+      "Dev66Ratio": 1.7247665203987455,
+      "Dev67Ratio": 1.7414500897431886,
+      "Dev68Ratio": 1.6516577620001467,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 274648
+    },
+    {
+      "Profile": "Posix",
+      "Id": "capture/sku007",
+      "InputValidation": "Validate",
+      "Dev66Us": 3251.531818181818,
+      "Dev67Us": 2719.1333333333337,
+      "Dev68Us": 2639.542857142857,
+      "Dev66Ratio": 4.88396330789732,
+      "Dev67Ratio": 3.9968575353477895,
+      "Dev68Ratio": 3.9080819636055675,
+      "CurrentStatus": "Inconclusive",
+      "CurrentBytes": 393239.14285714284
+    }
+  ],
+  "StatusCounts": {
+    "Core": {
+      "Win": 124,
+      "Gap": 52,
+      "TieCandidate": 2
+    },
+    "PythonRe": {
+      "ManagedFaster": 43,
+      "CpythonFaster": 34,
+      "Equivalent": 2,
+      "Unqualified": 5,
+      "Inconclusive": 6
+    },
+    "Pcre2": {
+      "ManagedFaster": 84,
+      "Inconclusive": 8,
+      "NativeFaster": 8,
+      "Excluded": 25,
+      "Equivalent": 1
+    },
+    "Posix": {
+      "Inconclusive": 1,
+      "Measured": 9,
+      "Excluded": 8,
+      "NativeFaster": 5,
+      "Equivalent": 1,
+      "ManagedFaster": 1
+    }
+  },
+  "KnownCosts": [
+    "Warm Python captured strings remain CPython-faster; many-capture strings821.174us/2.348x and one-capture502.633us/2.347x.",
+    "Lifecycle observations remain mixed: Unicode construction53.213->91.363us since dev67, with unchanged48329B allocation. Do not attribute separate Full movements causally.",
+    "Core default compiled river1.408x, email2.586x, Chinese literal3.691x and AWSquick1.814x remain gaps; input-policy/validation attribution is separate.",
+    "POSIX SKU median3.908x is Inconclusive under current order qualification; hierarchical ambiguous-history architecture remains open.",
+    "Five tiny Python comparisons remain unqualified; exclusions, rejected scaling fits and earlier accepted local costs remain visible."
+  ],
+  "RemainingWork": "Performance remains active. Next bounded pilot shares accepted prepared distinct-head search with governed windows and Python candidate discovery; no repeat Full/package matrix for that pilot.",
+  "DocumentationCI": {
+    "Source": "f394237df05ff28ea57a11d9ba5d3ed3e52b04b8",
+    "Run": 42949895612,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  }
+}
