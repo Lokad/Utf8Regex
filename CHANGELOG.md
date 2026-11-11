@@ -36,6 +36,8 @@
   journals and copies. PythonRe Count, Search, Split and FullMatch share these
   improvements while retaining ordered scalar verification and interruption.
   Class/delimiter Count can reject impossible windows before VM admission.
+  Complete greedy scalar repeats can Count without unobserved capture storage
+  across Core, PythonRe and PCRE2, including finite policies.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
@@ -48,7 +50,9 @@
   mutually disjoint. A restricted repeated single-literal capture can select its
   first acceptance while retaining required empty tails. Proven winners transfer
   their admitted history instead of allocating and copying a second trace;
-  general capture competition remains. Synchronous POSIX operations own workspace state inline,
+  general capture competition remains. Proved scalar alphabet endpoints also
+  bound history competition before separators, without truncating the subject.
+  Synchronous POSIX operations own workspace state inline,
   avoiding a separate helper allocation while preserving cursor aliases.
   PCRE2 commits word-only repeats
   before required boundaries when shorter endpoints cannot succeed, avoiding
