@@ -185,7 +185,9 @@ requirements can decrease by removing repeated comparisons of unchanged events.
 
 A bounded proof can also pass over a leading chain of once-entered enclosures
 when all body edges stay inside the innermost scope and its suffix consists only
-of fixed literals/capture markers. At a maximal whole endpoint those earlier tags
+of single-scalar atoms (literals, dot or brackets) and capture markers. A fixed
+scalar count determines a unique boundary in valid UTF-8 despite varying byte
+widths. At a maximal whole endpoint those earlier tags
 have fixed starts and ends, so the same losing-prefix rule can compare their first
 unfixed child. Variable/branched tails and unproved scopes retain the root-child
 comparison. This uses one local tag choice, no retained program metadata/storage;

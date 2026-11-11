@@ -270,8 +270,9 @@ internal struct PosixWorkspace
             else if (instruction.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.RepeatExit)) return 1;
         }
-        // A fixed literal suffix fixes every earlier closing boundary at a
-        // maximal whole end. Each enclosure participates exactly once. Their
+        // A fixed scalar suffix fixes every earlier closing boundary at a
+        // maximal whole end, even when UTF-8 widths differ. Each enclosure
+        // participates exactly once. Their
         // first child's occurrences are therefore the first unfixed priority.
         var enclosing = tag - 1;
         for (var pc = close; pc < code.Length; pc++)
@@ -279,6 +280,7 @@ internal struct PosixWorkspace
             if (((pc - close) & 31) == 0) Charge(ref invocation);
             var instruction = code[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0) continue;
+            if (instruction.Kind is Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.CategorySet) continue;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureEnd)
             {
                 if (instruction.A < tag && instruction.A != enclosing--) return 1;

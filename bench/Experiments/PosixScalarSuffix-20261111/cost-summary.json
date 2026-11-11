@@ -1,0 +1,81 @@
+{
+  "Accepted": true,
+  "SourceBaseline": "frozen GA f662 Posix source unchanged through 8e, with the identical accepted category-count Core pair",
+  "Candidate": "8e plus archived Posix fixed-scalar-suffix proof patch",
+  "Seconds": 114.41274502687156,
+  "SampleCount": 560,
+  "MinimumSampleMs": 63.7792,
+  "MaximumBatchAllocationMiB": 74.78257751464844,
+  "LoadedProducerHashesVerified": true,
+  "CommonCoreCallerAndNetControl": true,
+  "FinalAccountLoansZero": true,
+  "SourceDocuments": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "GeneratedInputDocuments": 6,
+    "CompiledDocumentCounts": [
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex.Posix",
+        "Count": 10
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex.Posix",
+        "Count": 10
+      }
+    ],
+    "ChangedCompiledDocuments": [
+      "src/Lokad.Utf8Regex.Posix/PosixWorkspace.cs"
+    ],
+    "Before": "frozen GA Posix sources at f662, unchanged through 8e; generated AssemblyInfo reconstructed with its exact recorded Git revision",
+    "After": "frozen patched 8e Posix sources, all source and generated hashes checked",
+    "SharedCore": "exact common accepted category-count pair; identity carried from prior receipt, no Core rebuild for this comparison"
+  },
+  "TestsPerTarget": {
+    "Windows": 331,
+    "Linux": 331,
+    "LinuxNoHardwareIntrinsics": 331
+  },
+  "BeforeAccountPeaks": [
+    2689
+  ],
+  "AfterAccountPeaks": [
+    1985
+  ],
+  "RawArchives": {
+    "evidence.tar.gz": "1417B97627C107E5C7521838A91FDAF4ED67F72C30ACFEE5C782F373EE2189A8",
+    "source-verification.tar.gz": "88FC1707F28AD3570028A4742311B9AB2A24D0D45EE475D4D811A8C9D80BD779",
+    "windows-checks.zip": "45C553E87AF150937DC4D6A71036ED79C9E9EC558800C191E4B249929229B637"
+  },
+  "Rows": [
+    {"Policy": "Validate", "Id": "posix/bracket-tail-16", "BeforeUs": 771.5830921052632, "AfterUs": 2.0280449396766005, "ChangePercent": -99.73715793406733, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "posix/dot-tail-12", "BeforeUs": 103.03192179951691, "AfterUs": 1.7705218748288343, "ChangePercent": -98.28157929707069, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "posix/negated-tail-12", "BeforeUs": 105.34535249648383, "AfterUs": 1.651090878241562, "ChangePercent": -98.43268749962493, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "posix/astral-tail-12", "BeforeUs": 104.99504881450488, "AfterUs": 1.7945369169813292, "ChangePercent": -98.29083662778066, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "posix/distinct-parent-ends-12", "BeforeUs": 155.133052594172, "AfterUs": 2.041744463252256, "ChangePercent": -98.6838752740891, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "posix/finite-live-16", "BeforeUs": 958.1184355728659, "AfterUs": 2.6825676321312217, "ChangePercent": -99.72001711557431, "RangesOverlap": false, "BeforeAllocatedBytes": [3936, 3936], "AfterAllocatedBytes": [2608.005685048323, 2608.017241998635]},
+    {"Policy": "Validate", "Id": "posix/funded-deadline-live-16", "BeforeUs": 1016.8670122176973, "AfterUs": 3.470263165663023, "ChangePercent": -99.6587298905395, "RangesOverlap": false, "BeforeAllocatedBytes": [3984, 3984], "AfterAllocatedBytes": [2656, 2656]},
+    {"Policy": "Validate", "Id": "posix/cursor-16", "BeforeUs": 959.0917072379098, "AfterUs": 3.4041448068421647, "ChangePercent": -99.64506576574979, "RangesOverlap": false, "BeforeAllocatedBytes": [4304, 4304], "AfterAllocatedBytes": [2976, 2976]},
+    {"Policy": "Validate", "Id": "control/literal-tail-16", "BeforeUs": 1.982676180625888, "AfterUs": 1.9965439610937858, "ChangePercent": 0.6994475751214368, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/optional-tail-12", "BeforeUs": 114.1033719021151, "AfterUs": 130.12636645022673, "ChangePercent": 14.04252502008192, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/sku", "BeforeUs": 0.6948245765596223, "AfterUs": 0.7044300823792788, "ChangePercent": 1.3824361059906032, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/whole-only-16", "BeforeUs": 0.638938157294505, "AfterUs": 0.6705847714512935, "ChangePercent": 4.953001130937573, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/core-count", "BeforeUs": 3.5620568759247604, "AfterUs": 3.7270286154587637, "ChangePercent": 4.631361746327367, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "Validate", "Id": "control/net-predecoded-count", "BeforeUs": 0.21896451465541494, "AfterUs": 0.21061003484892293, "ChangePercent": -3.81544919259611, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/bracket-tail-16", "BeforeUs": 761.0307910793183, "AfterUs": 2.0070455156283487, "ChangePercent": -99.73627275805991, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/dot-tail-12", "BeforeUs": 101.73713575393154, "AfterUs": 1.768573696905897, "ChangePercent": -98.26162424978871, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/negated-tail-12", "BeforeUs": 104.38619265790688, "AfterUs": 1.650491467970783, "ChangePercent": -98.41886036271123, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/astral-tail-12", "BeforeUs": 103.74684864358781, "AfterUs": 1.7433627861867786, "ChangePercent": -98.31959928520246, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/distinct-parent-ends-12", "BeforeUs": 155.95775681341718, "AfterUs": 1.98615280395622, "ChangePercent": -98.72648026969739, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "posix/finite-live-16", "BeforeUs": 948.1092948717949, "AfterUs": 2.5722570830063356, "ChangePercent": -99.72869614326963, "RangesOverlap": false, "BeforeAllocatedBytes": [3936, 3936], "AfterAllocatedBytes": [2608, 2608]},
+    {"Policy": "AssumeValid", "Id": "posix/funded-deadline-live-16", "BeforeUs": 999.7392584892584, "AfterUs": 3.3806487383269426, "ChangePercent": -99.66184695563165, "RangesOverlap": false, "BeforeAllocatedBytes": [3984, 3984], "AfterAllocatedBytes": [2656.004353544057, 2656]},
+    {"Policy": "AssumeValid", "Id": "posix/cursor-16", "BeforeUs": 946.2967642405063, "AfterUs": 3.3757107077623827, "ChangePercent": -99.64327145190317, "RangesOverlap": false, "BeforeAllocatedBytes": [4304, 4304], "AfterAllocatedBytes": [2976.0003575418996, 2976]},
+    {"Policy": "AssumeValid", "Id": "control/literal-tail-16", "BeforeUs": 1.9784860295143112, "AfterUs": 1.9878556963109655, "ChangePercent": 0.4735776071643327, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/optional-tail-12", "BeforeUs": 114.38534959758553, "AfterUs": 126.83495418515439, "ChangePercent": 10.88391531902233, "RangesOverlap": false, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/sku", "BeforeUs": 0.6735931632879485, "AfterUs": 0.7045215019621118, "ChangePercent": 4.591545811301834, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/whole-only-16", "BeforeUs": 0.6563324698367897, "AfterUs": 0.6332437861930827, "ChangePercent": -3.517833522612168, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/core-count", "BeforeUs": 3.68974187228644, "AfterUs": 3.66507258545743, "ChangePercent": -0.6685911286721913, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]},
+    {"Policy": "AssumeValid", "Id": "control/net-predecoded-count", "BeforeUs": 0.21222088903366645, "AfterUs": 0.20826407172990968, "ChangePercent": -1.8644805993292546, "RangesOverlap": true, "BeforeAllocatedBytes": [0, 0], "AfterAllocatedBytes": [0, 0]}
+  ]
+}

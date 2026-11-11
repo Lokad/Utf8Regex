@@ -5,14 +5,53 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixRepeatedCaptureSelectionTests
 {
     [Theory]
-    [InlineData("a")] [InlineData("中")]
-    public void FixedSuffixCanDetermineDifferentEndsForNestedParents(string scalar)
+    [InlineData("a", false)] [InlineData("a", true)]
+    [InlineData("😀", false)] [InlineData("😀", true)]
+    public void FixedScalarTailsKeepIndependentOccurrencePriority(string scalar, bool nullable)
+    {
+        const string prefix = "é😀!";
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var width = Encoding.UTF8.GetByteCount(scalar);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        foreach (var (tailPattern, tail) in new[] { ("[bc]", "b"), (".", "é"), ("[^a]", "中"), ("[é中]", "é") })
+        foreach (var capturedTail in new[] { false, true })
+        foreach (var longerFirst in new[] { false, true })
+        {
+            var pair = scalar + scalar;
+            var alternatives = (longerFirst ? pair + "|" + scalar : scalar + "|" + pair) + (nullable ? "|" : "");
+            var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern),
+                inputValidation: validation);
+            for (var count = 0; count <= 8; count++)
+            foreach (var rest in new[] { "", "!" })
+            {
+                var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
+                var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + rest);
+                var whole = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length + tail.Length,
+                    floor, count * width + Encoding.UTF8.GetByteCount(tail));
+                var groups = new Utf8ValueMatch[capturedTail ? 4 : 3];
+                Assert.Equal(whole, regex.Match(input, groups, floor));
+                Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length, floor, count * width), groups[1]);
+                Assert.Equal(extents.Length == 0 ? default : new Utf8ValueMatch(true, true,
+                    prefix.Length + (count - extents[^1]) * scalar.Length, extents[^1] * scalar.Length,
+                    floor + (count - extents[^1]) * width, extents[^1] * width), groups[2]);
+                if (capturedTail) Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + count * scalar.Length,
+                    tail.Length, floor + count * width, Encoding.UTF8.GetByteCount(tail)), groups[3]);
+                Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+                Assert.Equal(whole, regex.Match(input, floor));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("a", "é", "😀")] [InlineData("中", "é", "😀")]
+    [InlineData("a", ".", "[😀]")] [InlineData("中", "[^a]", ".")]
+    public void FixedSuffixCanDetermineDifferentEndsForNestedParents(string scalar, string innerTail, string outerTail)
     {
         const int count = 32;
         var width = Encoding.UTF8.GetByteCount(scalar);
         foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex($"(({scalar}|{scalar}{scalar})*é)😀",
+            var regex = new Utf8PosixRegex($"(({scalar}|{scalar}{scalar})*{innerTail}){outerTail}",
                 resourcePolicy: new() { MaxWorkSteps = 100_000 }, inputValidation: validation);
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, count)) + "é😀");
             var groups = new Utf8ValueMatch[3];
@@ -34,6 +73,14 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData(Utf8InputValidation.AssumeValid, "(a|a[ab])*b", "a")]
     [InlineData(Utf8InputValidation.Validate, "(😀|😀😀)*b", "😀")]
     [InlineData(Utf8InputValidation.AssumeValid, "(😀|😀😀)*b", "😀")]
+    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[bc]", "a")]
+    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[bc]", "a")]
+    [InlineData(Utf8InputValidation.Validate, "((a|aa)*).", "a")]
+    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*).", "a")]
+    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[^a]", "a")]
+    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[^a]", "a")]
+    [InlineData(Utf8InputValidation.Validate, "((😀|😀😀)*)[ab]", "😀")]
+    [InlineData(Utf8InputValidation.AssumeValid, "((😀|😀😀)*)[ab]", "😀")]
     public void FixedSuffixAllowsFiniteDescendantHistoryCompetition(
         Utf8InputValidation validation, string pattern, string scalar)
     {
@@ -48,6 +95,15 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + "b" + (nonEof ? "!" : ""));
             var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+            if (nonEof && pattern is "((a|aa)*)." or "((a|aa)*)[^a]")
+            {
+                // Opaque alphabet proofs cannot establish the shorter maximal
+                // whole endpoint. The fixed-parent proof alone cannot prune it.
+                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, groups, floor, token.Token));
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+                Assert.All(groups, group => Assert.False(group.Success));
+                continue;
+            }
             var expected = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length + 1, floor, count * width + 1);
             Assert.Equal(expected, regex.Match(input, groups, floor, token.Token));
             for (var group = 1; group < groups.Length - 1; group++)
