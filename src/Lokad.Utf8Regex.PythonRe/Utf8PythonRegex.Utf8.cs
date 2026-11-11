@@ -386,9 +386,7 @@ public sealed partial class Utf8PythonRegex
             var count = validation.IsAscii ? bytes.Length
                 : start == 0 && end == input.Length ? validation.Utf16Length
                 : Utf8SliceBufferWork.CountUtf16(bytes, ref invocation);
-            var completed = results.DecodeUtf8(bytes, count, ref invocation);
-            Utf8InvocationOutput.Checkpoint(control);
-            return completed;
+            return MaterializeMatchText(input, start, end, count, ref invocation, ref results);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

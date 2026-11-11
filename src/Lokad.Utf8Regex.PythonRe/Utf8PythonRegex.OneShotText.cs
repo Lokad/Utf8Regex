@@ -24,14 +24,43 @@ public sealed partial class Utf8PythonRegex
         }
 
         var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        Utf8InvocationResultLedger scalarResults = default;
         try
         {
             string? completed = null;
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
-                completed = cursor.GetText(cursor.StartOffsetInBytes, cursor.EndOffsetInBytes);
+            {
+                cursor.Checkpoint();
+                // This operation returns one string. Size its actual range;
+                // batch output keeps its useful shared subject facts.
+                completed = MaterializeMatchText(input, cursor.StartOffsetInBytes, cursor.EndOffsetInBytes,
+                    null, ref cursor.WorkingInvocation, ref scalarResults);
+            }
             cursor.Checkpoint();
             return completed;
         }
-        finally { cursor.Dispose(); }
+        finally { scalarResults.Release(ref cursor.WorkingInvocation); cursor.Dispose(); }
+    }
+
+    private string MaterializeMatchText(ReadOnlySpan<byte> input, int start, int end,
+        int? characterCount, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results)
+    {
+        try
+        {
+            var bytes = input[start..end];
+            var count = characterCount ?? Utf8SliceBufferWork.CountUtf16(bytes, ref invocation);
+            var completed = results.DecodeUtf8(bytes, count, ref invocation);
+            Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+            return completed;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            throw invocation.Budget.CreateResourceFailure();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input, Pattern);
+        }
     }
 }
