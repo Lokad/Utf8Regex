@@ -24,6 +24,7 @@ public sealed class PythonReInputValidationTests
     [InlineData("café|😀", "z😀 café!")]
     [InlineData("(a+)(b*)", "é😀 aabb aa")]
     [InlineData("", "é😀x")]
+    [InlineData("needle", "é😀needle中needle")]
     public void PoliciesPropagateToPublicOperationsAndCursors(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -32,6 +33,7 @@ public sealed class PythonReInputValidationTests
         Assert.Equal(Utf8InputValidation.Validate, strict.InputValidation);
         Assert.Equal(Utf8InputValidation.AssumeValid, assumed.InputValidation);
         Assert.Equal(Observe(strict, () => strict.IsMatch(input)), Observe(assumed, () => assumed.IsMatch(input)));
+        Assert.Equal(Observe(strict, () => strict.Count(input)), Observe(assumed, () => assumed.Count(input)));
         Assert.Equal(Observe(strict, () => Range(strict.Search(input))), Observe(assumed, () => Range(assumed.Search(input))));
         Assert.Equal(Observe(strict, () => Range(strict.Match(input))), Observe(assumed, () => Range(assumed.Match(input))));
         Assert.Equal(Observe(strict, () => Range(strict.FullMatch(input))), Observe(assumed, () => Range(assumed.FullMatch(input))));

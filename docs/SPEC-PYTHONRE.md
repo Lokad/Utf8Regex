@@ -221,6 +221,9 @@ admitted as result/working capacity rather than borrowed from a prepared string.
 This can change covered capacity/work compared with earlier development builds.
 No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
+Borrowed literal Count requests whole-subject validity without deriving discarded
+UTF-16 totals. Canonical text output sizes its returned value separately; APIs
+exposing coordinates retain their required projections.
 
 String sizing reuses whole-subject validity. Unknown Unicode substring lengths
 use the existing checked character counter in scalar-aligned blocks of at most

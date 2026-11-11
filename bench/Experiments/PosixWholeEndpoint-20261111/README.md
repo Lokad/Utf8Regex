@@ -37,3 +37,5 @@ Hash-verified offVM evidence under `artifacts/experiments/posix-eof-whole-202611
 
 Other endpoints still require longest-match competition. Immutable packages and
 generated catalog tables remain unchanged; no full/package qualification here.
+
+Source5cdae5c1 CI42976116132 is green on Windows and Linux.

@@ -41,11 +41,9 @@ public sealed partial class Utf8Regex
     internal int CountForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
         ref Utf8SliceInvocation invocation)
     {
-        // No coordinate metadata escapes Count. Keep unmetered validation's
-        // established strategy; controlled calls only need strict validity.
-        if (invocation.IsUnmetered && invocation.InputValidation == Utf8InputValidation.Validate)
-            _ = Utf8Validation.Subject(input, ref invocation);
-        else Utf8Validation.CheckSubject(input, ref invocation);
+        // Count exposes no coordinates. Its callers retain this validity
+        // authority, without deriving and discarding a subject description.
+        Utf8Validation.CheckSubject(input, ref invocation);
         if (!CanCountNativeLiteralForResult)
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,

@@ -26,6 +26,8 @@ public sealed class PythonReCountOwnershipTests
         yield return new object?[] { "needle|needle-long", none, "needle-long needle", 6, 1 };
         yield return new object?[] { "cat|horse", none, "no match", 0, 0 };
         yield return new object?[] { "cat|horse", none, "", 0, 0 };
+        yield return new object?[] { "(needle)", none, "é😀needle 中needle", 6, 2 };
+        yield return new object?[] { "café|😀", none, "é😀café😀café", 6, 3 };
     }
 
     [Theory]

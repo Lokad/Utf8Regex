@@ -979,6 +979,11 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(["item", "item"], result.ScalarValues);
         Assert.Same(result.ScalarValues[0], result.ScalarValues[1]);
 
+        var malformedPrefix = input.ToArray();
+        malformedPrefix[0] = 0xFF;
+        Assert.Contains("byte offset 0.", Assert.Throws<ArgumentException>(() =>
+            regex.FindAllToStrings(malformedPrefix, "item skip "u8.Length)).Message);
+
         var malformedTail = new byte[]
         {
             (byte)'s', (byte)'k', (byte)'i', (byte)'p', (byte)' ',
