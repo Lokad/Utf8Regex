@@ -1,0 +1,49 @@
+using Lokad.Utf8Regex.Internal.Execution;
+
+namespace Lokad.Utf8Regex.Tests;
+
+public sealed class Utf8DisjointRepeatBoundaryTests
+{
+    [Theory]
+    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)] [InlineData(true, false)]
+    public void RequiredAssertionEndCannotInventAnEarlierLiteralBoundary(bool lazy, bool success)
+    {
+        var mask = new byte[16];
+        for (var scalar = 'a'; scalar <= 'z'; scalar++) mask[scalar >> 3] |= (byte)(1 << (scalar & 7));
+        var body = new Utf8SliceNode.ConcatNode([
+            new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.RepeatNode(
+                new Utf8SliceNode.SetNode(mask, false, [], false), 1, long.MaxValue, lazy)),
+            new Utf8SliceNode.LiteralNode('-', false)]);
+        var behind = new Utf8SliceNode.LookbehindNode(body, true) { ForwardScalarCount = 3 };
+        var root = new Utf8SliceNode.ConcatNode([behind, new Utf8SliceNode.LiteralNode(success ? 'x' : '-', false)]);
+        var program = Utf8SliceLowerer.Lower(root, null, false, false, false)!;
+        var invocation = new Utf8SliceInvocation(new(10000, 32, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var starts = new int[program.GroupCount];
+        var ends = new int[program.GroupCount];
+        var outcome = Utf8SliceRunner.TryMatchAt(program, success ? "ab-x"u8 : "abc-x"u8,
+            3, starts, ends, true, ref invocation);
+        Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
+        Assert.Equal(success, outcome.IsMatch);
+        if (success) Assert.Equal((0, 2), (starts[0], ends[0]));
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
+    [InlineData(32)] [InlineData(33)]
+    public void CaptureMarkerProofBoundKeepsEveryCapture(int groups)
+    {
+        var pattern = new string('(', groups) + "[a-z]+" + new string(')', groups) + "-";
+        var regex = new Utf8Regex(pattern);
+        var match = regex.MatchDetailed("é😀abc-"u8);
+        Assert.True(match.Success);
+        Assert.Equal("abc-", match.GetValueString());
+        for (var group = 1; group <= groups; group++)
+        {
+            Assert.Equal("abc", match.GetGroup(group).GetValueString());
+            Assert.Equal(1, match.GetGroup(group).CaptureCount);
+        }
+    }
+}

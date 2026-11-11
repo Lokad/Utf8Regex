@@ -68,3 +68,9 @@ test now uses the existing controlled clock and checks that the deadline is read
 finite-timeout dispatch and exact Count remain asserted. Separate deterministic
 deadline-expiration and original-token tests retain expiration coverage. No
 production deadline or benchmark result changes, and no unchanged CI rerun.
+
+Clock fix a9be0980 CI42966248818 is green on Windows and Linux. Focused local
+route/deadline tests passed341 per target and final family checks8 per target;
+logs and the original failure are retained in
+`artifacts/experiments/ci-finite-family-clock-20261111/evidence.zip`, SHA256
+5AEB7FE1DDDB10C75F652D337CA027593B423F7CC3ED643AACEF7D5013326F0B.
