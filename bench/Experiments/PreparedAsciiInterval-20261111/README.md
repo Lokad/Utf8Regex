@@ -89,3 +89,6 @@ contains the private helper's unused-argument call-site cleanup in a third file.
 Both declarations, every sample/process identity, caller/source patch and explicit
 DLL/PDB pairs remain available. Published/staged bytes and accepted catalog
 identities are untouched. No Full/package matrix is repeated for this step.
+
+Source6f46f988 CI42963239174 is green on Windows and Linux. The subsequent
+selective refresh is recorded in [CurrentGapRefresh](../CurrentGapRefresh-20261111/README.md).

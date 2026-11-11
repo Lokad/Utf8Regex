@@ -57,3 +57,7 @@ Hash-verified off-VM evidence is retained under
 Published/staged package bytes and the frozen dev.68 full qualification remain
 immutable. This selective source refresh does not qualify new package bytes or
 complete the remaining strict-validation, warm-capture and POSIX history work.
+
+Measured implementation6f46f988 CI42963239174 is green on Windows and Linux.
+Generated metadata is committed separately as2628498e; its CI is independent of
+the accepted implementation comparison and immutable package qualification.
