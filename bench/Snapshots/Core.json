@@ -3,9 +3,22 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "8AE39EAFC7D11E983AC920B7C609BF48A8BDFBBC6E143854C2125D5FD6BDBF3E"
+    "SnapshotSha256": "9E44AF763D4965A31A202A57756C0EF889E964BBF88A146DBA74CA391008F37E"
   },
   "Sources": {
+    "3410E968BFF91920468011ABBDCB4DC67E0606EC541208ADA776C91176E26880": {
+      "BenchmarkAssembly": "1.0.0\u002Bd70cb7056bbb2ba142876e7893fe878daa305fcf sha256=2CDD29D98347FE1CD6BA767D271C7C313625675DD2F14FAE6C87B0F542FFE5D5",
+      "CoreAssembly": "0.5.0-dev.69\u002Bd70cb7056bbb2ba142876e7893fe878daa305fcf sha256=DB5AF0230FFD18D1E7D86397446F5310704EA9EF68D430F536A79EF67CE4E921",
+      "Pcre2Assembly": "0.5.0-dev.69\u002Bd70cb7056bbb2ba142876e7893fe878daa305fcf sha256=EB0D9410FDC98A49806823DEB5CE6C214D73B1F5D55F9E9567021F819208F73A",
+      "PythonReAssembly": "0.5.0-dev.69\u002Bd70cb7056bbb2ba142876e7893fe878daa305fcf sha256=0AA4A3B78222FF5A3895DCEE7B02242229DA8713D09A6A78FE8DE2DC2CA6FF7E",
+      "SourceCommit": "d70cb7056bbb",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0-rc.3.26522.148",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
     "C93F033BC1FD58B03DEF856F5073711181165EEF328EDF91A7BB2F05C3AE9DE7": {
       "BenchmarkAssembly": "1.0.0\u002Bbd1a9e968011f4d0a3ef10b301f1e44f663212e4 sha256=43FEC94AD73257A29DB69F54116BE3AE38DF956D20296494C7429408798E6052",
       "CoreAssembly": "0.5.0-dev.69\u002Bbd1a9e968011f4d0a3ef10b301f1e44f663212e4 sha256=516FAC216463CB86782B1F045752B58D30986DC7EBFD0FC36A7994E1695DD94F",
@@ -72,12 +85,12 @@
       },
       "bounded-repeat/letters-en": {
         "Operation": "Count",
-        "Source": "C93F033BC1FD58B03DEF856F5073711181165EEF328EDF91A7BB2F05C3AE9DE7",
-        "ManagedUs": 7399.327272727273,
-        "ReferenceUs": 2892.4961538461534,
-        "DecodeUs": 3010.5240000000003,
-        "Ratio": 2.5581113609739408,
-        "Status": "Gap",
+        "Source": "3410E968BFF91920468011ABBDCB4DC67E0606EC541208ADA776C91176E26880",
+        "ManagedUs": 1127.431343283582,
+        "ReferenceUs": 2857.44,
+        "DecodeUs": 2968.5153846153844,
+        "Ratio": 0.3945599359159184,
+        "Status": "Win",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 302784
@@ -734,12 +747,12 @@
       },
       "bounded-repeat/letters-en": {
         "Operation": "Count",
-        "Source": "C93F033BC1FD58B03DEF856F5073711181165EEF328EDF91A7BB2F05C3AE9DE7",
-        "ManagedUs": 7409.009090909091,
-        "ReferenceUs": 1837.2439024390244,
-        "DecodeUs": 1940.6358974358975,
-        "Ratio": 4.03267583638367,
-        "Status": "Gap",
+        "Source": "3410E968BFF91920468011ABBDCB4DC67E0606EC541208ADA776C91176E26880",
+        "ManagedUs": 1130.8590909090908,
+        "ReferenceUs": 1853.8219512195121,
+        "DecodeUs": 1941.5641025641025,
+        "Ratio": 0.6100149424626082,
+        "Status": "Win",
         "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 302784

@@ -41,7 +41,7 @@ The captured-class Count path's repeated branch work is a concrete follow-up;
 any extension must reuse the counter with a count-only semantic proof, preserving
 real capture consumers and avoiding a second program/executor or policy switch.
 
-Windows/Linux focused Release pass per.NET10/11: Core611, PythonRe101, Pcre252;
+Windows/Linux focused Release pass per.NET10/11: Core 611, PythonRe 101, PCRE2 52;
 Linux hardware-disabled15/target pass. Four public work-budget cases cover both
 policies/options and ASCII/mixed input, plain/live/funded calls, single validation
 and refunds. All four fail on the explicit frozen Windows69 pair and pass on the
@@ -60,3 +60,12 @@ guarded. No failed timing or repeated measurement preceded this completed run.
 Frozen dev.69 packages remain immutable and exclude this correction. Refresh
 only the two affected catalog rows after the scoped source commit; general Python
 capture, strict-validity and non-EOF POSIX history work remains active.
+
+The selective catalog refresh is complete on clean `d70cb705`: default Validate,
+nine samples in each of six equal-result lanes, minimum71.194ms,1833 matches.
+Ordinary1127.431us/.3946x and compiled1130.859us/.6100x replace the two regressed
+English rows;0B remains0B, decode lanes302784B. Matching source/PDB, parity report
+and two Core snapshot checks per target pass. Other case payloads and historical
+identities stay unchanged; these comparator ratios are separate from causal A/B
+gains. Raw readme-refresh.tar.gz is verified offVM alongside the primary evidence:
+EDF03F934BB7E8F45C7E45BC51E9DE310985ABE49C98633568944E5C7677032A.
