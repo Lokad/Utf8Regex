@@ -61,3 +61,6 @@ LinuxAB85B394DA9D80D309A41B346DD615452E56ED10816A2264646D0AA0937EEEE4.
 One preparation attempt failed before timing because the VM had not fetched the
 baseline commit; terminal failure was corrected before the single comparison.
 No Full, package or catalog qualification repeated; immutable packages remain.
+
+Source c9a2de9c CI42959402252 is green on Windows/Linux. Receipt-only closure
+follows the existing workflow exclusion; unchanged qualification is not repeated.

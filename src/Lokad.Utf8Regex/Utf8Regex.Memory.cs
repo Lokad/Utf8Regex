@@ -85,33 +85,41 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
             int result;
             // Borrow the same complete family proofs/counters as ordinary Count.
             // They need no capture scratch but still meter every bounded block.
             if (!UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
             {
+                var validation = Utf8Validation.Subject(input, ref invocation);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input, validation.ContainsSupplementaryScalars,
                     _fallbackDirectFamily, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             }
-            else if (validation.IsAscii && !UsesRightToLeft() &&
-                (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
-                _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, MinCount: > 0 })
+            else
             {
-                var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,
-                    _fallbackDirectFamily.MinCount, ref invocation, out result);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+                // Only word eligibility consumes ASCII facts. Other byte
+                // counters need subject authority, without UTF-16 metadata.
+                var wordCandidate = !UsesRightToLeft() &&
+                    (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
+                    _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, MinCount: > 0 };
+                var asciiWord = wordCandidate && Utf8Validation.SubjectIsAscii(input, ref invocation);
+                if (!wordCandidate) Utf8Validation.CheckSubject(input, ref invocation);
+                if (asciiWord)
+                {
+                    var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,
+                        _fallbackDirectFamily.MinCount, ref invocation, out result);
+                    if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+                }
+                else if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
+                {
+                    var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
+                        input, false, ref invocation, out result);
+                    if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+                }
+                else result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
+                    _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
             }
-            else if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
-            {
-                var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
-                    input, false, ref invocation, out result);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            }
-            else result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
             FinishFundedInvocation(ref invocation);
             return result;
         }
