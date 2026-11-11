@@ -55,6 +55,8 @@
   their admitted history instead of allocating and copying a second trace;
   general capture competition remains. Proved scalar alphabet endpoints also
   bound history competition before separators, without truncating the subject.
+  Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
+  existing losing-history rule to prune descendant alternatives safely.
   Synchronous POSIX operations use bounded stack state or an exact-size heap
   buffer; cursors retain their owned state. Conservative working admission stays
   unchanged while small synchronous calls avoid the state-array allocation.
