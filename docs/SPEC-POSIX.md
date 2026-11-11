@@ -191,7 +191,10 @@ widths. At a maximal whole endpoint those earlier tags
 have fixed starts and ends, so the same losing-prefix rule can compare their first
 unfixed child. If the first acceptance already reaches the whole ceiling,
 variable or branched suffixes can use the same comparison when every preceding
-parent's accepted end equals its independent alphabet or physical-input ceiling.
+parent's accepted end equals its independent boundary or physical-input ceiling.
+Away from input end, every consuming body atom must reject the same next complete
+scalar, using its normal literal/dot/class predicate. This requires no general
+alphabet construction or longer input search for that parent.
 Suffix edges must stay between successive parent closes, so those parents
 participate once and cannot be skipped or reopened. A shorter parent loses at its
 own priority; equal parent boundaries expose the child. An initially shorter

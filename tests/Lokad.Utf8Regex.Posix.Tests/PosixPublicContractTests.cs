@@ -298,7 +298,7 @@ public sealed class PosixPublicContractTests
         // Equal-prefix pruning can finish between two 64-step hook polls.
         // Observe actual captured-history rollback on that optimized route;
         // the general route retains its full history-comparison witness.
-        var phase = suffix == "([bc])*" ? "FindAlphabetBoundedParentTag" : pruning ? "Backtrack" : "BetterHistory";
+        var phase = suffix == "([bc])*" ? "FindBoundaryBoundedParentTag" : pruning ? "Backtrack" : "BetterHistory";
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             // Test-only phase observation through the existing checkpoint hook:

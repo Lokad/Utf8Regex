@@ -188,7 +188,7 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.Accept:
                     if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
                     {
-                        if (at < input.Length) maximumEnd = FindAlphabetCeiling(input, at, code, ref invocation);
+                        if (at < input.Length) maximumEnd = FindAlphabetCeiling(input, at, ref invocation);
                         if (captureHistory) prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                     }
                     // Without requested captures, the ceiling proves the longest whole
@@ -289,7 +289,7 @@ internal struct PosixWorkspace
             else if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart && instruction.A >= tag) continue;
             else if (instruction.Kind == Utf8SliceInstructionKind.Accept && pc == code.Length - 1 && enclosing == -1)
                 return fixedSuffix ? tag : maximalAcceptance
-                    ? FindAlphabetBoundedParentTag(input, tag, close, ref invocation) : 1;
+                    ? FindBoundaryBoundedParentTag(input, tag, close, ref invocation) : 1;
             else if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd or
                 Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor) fixedSuffix = false;
@@ -298,7 +298,7 @@ internal struct PosixWorkspace
         return 1;
     }
 
-    private int FindAlphabetBoundedParentTag(ReadOnlySpan<byte> input, int tag, int close,
+    private int FindBoundaryBoundedParentTag(ReadOnlySpan<byte> input, int tag, int close,
         ref Utf8SliceInvocation invocation)
     {
         var code = _program.Scalar.Instructions;
@@ -328,8 +328,21 @@ internal struct PosixWorkspace
                 if ((traceIndex & 63) == 0) Charge(ref invocation);
                 var item = _trace[traceIndex--];
                 if (item.Tag != instruction.A || item.Opening < 0) continue;
-                if (instruction.A != 0 && FindAlphabetCeiling(input, item.Position,
-                    code.AsSpan(instruction.A + 1, pc - instruction.A - 1), ref invocation) != item.Position) return 1;
+                if (instruction.A != 0 && item.Position < input.Length)
+                {
+                    // Only the next scalar matters: no body path can cross it
+                    // if every consuming atom rejects it. Borrow the actual
+                    // class predicate, including Unicode unions and negation.
+                    if (Rune.DecodeFromUtf8(input[item.Position..], out var boundary, out _) != OperationStatus.Done) return 1;
+                    for (var body = instruction.A + 1; body < pc; body++)
+                    {
+                        if (((body - instruction.A - 1) & 31) == 0) Charge(ref invocation);
+                        var atom = code[body];
+                        if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.A == boundary.Value ||
+                            atom.Kind == Utf8SliceInstructionKind.Dot && (atom.A != 0 || boundary.Value != '\n') ||
+                            atom.Kind == Utf8SliceInstructionKind.CategorySet && MatchesClass(boundary, atom, ref invocation)) return 1;
+                    }
+                }
                 break;
             }
             if (traceIndex < 0) return 1;
@@ -339,10 +352,10 @@ internal struct PosixWorkspace
         return tag;
     }
 
-    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd,
-        ReadOnlySpan<Utf8SliceInstruction> code, ref Utf8SliceInvocation invocation)
+    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
     {
         var program = _program.Scalar;
+        var code = program.Instructions;
         if (code.Length > 64) return input.Length;
         Charge(ref invocation);
         var first = int.MaxValue; var last = -1;
