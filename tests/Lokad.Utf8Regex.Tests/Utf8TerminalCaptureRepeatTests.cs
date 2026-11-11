@@ -149,9 +149,11 @@ public sealed class Utf8TerminalCaptureRepeatTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void OriginalInterruptionInsideTerminalRunReleasesScratch(bool timeout, bool ascii)
+    [InlineData(false, false, false)] [InlineData(true, false, false)]
+    [InlineData(false, true, false)] [InlineData(true, true, false)]
+    [InlineData(false, false, true)] [InlineData(true, false, true)]
+    [InlineData(false, true, true)] [InlineData(true, true, true)]
+    public void OriginalInterruptionDuringCountAndMatchingPreservesParentLoan(bool timeout, bool ascii, bool count)
     {
         var program = new Utf8Regex(ascii ? "([a-z]+)" : @"(\p{L}+)").Inspection.AvailableOwnedSliceProgram!;
         // ASCII ranges charge bounded 2 KiB blocks; keep enough input to reach
@@ -163,8 +165,9 @@ public sealed class Utf8TerminalCaptureRepeatTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || !new System.Diagnostics.StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod()?.Name == "RunClassRepeat")) return;
+            // Direct runner calls start at execution, so the first hook is live
+            // matching work regardless of which eligible counter/repeat runs.
+            if (entered) return;
             entered = true;
             if (timeout) ticks = 25; else token.Cancel();
         });
@@ -174,7 +177,11 @@ public sealed class Utf8TerminalCaptureRepeatTests
         {
             var starts = new int[program.GroupCount];
             var ends = new int[program.GroupCount];
-            var failure = Record.Exception(() => Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation));
+            var failure = Record.Exception(() =>
+            {
+                if (count) Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
+                else Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref invocation);
+            });
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.True(entered);

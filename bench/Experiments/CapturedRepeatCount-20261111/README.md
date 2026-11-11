@@ -76,3 +76,22 @@ argument after successful completion/archiving; the independent stage exit is ze
 and no work was repeated. Existing catalog summaries and immutable dev.69 packages
 are unchanged. Warm Python capture-output, strict Core and POSIX history gaps
 remain active; this closes only the shared Count change.
+
+CI on `f2b83253` subsequently exposed stale fixtures outside the focused selection:
+four Core interruption cases gated their hook on the private `RunClassRepeat`
+stack-frame name, and four Python cases required captured Count to acquire
+scratch/depth or trigger cancellation through an allocation callback. The new
+counter legitimately does none of those. Production source remains unchanged.
+Interruption now tests both Count and matching through the original invocation
+hook without StackTrace inspection. Resource, concurrent-refund and cancellation
+fixtures exercise actual capture/output allocations while explicitly requiring
+storage-free Count to succeed without ghost loans. The full Python profile and
+focused Core checks qualify this test-only follow-up on Windows/Linux and both
+supported runtimes: Python 5111 and Core 184 per target. Canonical raw follow-up
+evidence is under `artifacts/experiments/captured-class-count-ci-20261111/`:
+
+- `linux-evidence.tar.gz`: 80E52037B71FFB4C6D97D12A45A83D74F383FD256B778D903B9C12A192023DDA.
+- `windows-evidence.tar.gz`: EE3FDA2A5049C92989B2880DDC8DFE61BF414AF2A6CA5E863EA2D4B70610CC06.
+
+No producer implementation, measured source patch, package or catalog changed;
+the original timing campaign stays closed.

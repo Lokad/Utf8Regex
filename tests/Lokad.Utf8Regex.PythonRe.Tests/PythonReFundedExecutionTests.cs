@@ -32,14 +32,21 @@ public sealed class PythonReFundedExecutionTests
     }
 
     [Fact]
-    public void ScalarFamiliesCannotBypassARefusedWorkingAccount()
+    public void ScalarFamiliesAdmitTheirActualWorkingStorage()
     {
         var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account);
         var input = "aaa"u8.ToArray(); regex.SubnToString(input, @"x\g<0>y");
         var held = account.Used; account.Maximum = held;
         foreach (var (name, operation) in Operations(regex, input))
         {
-            Assert.IsType<Utf8MemoryAdmissionException>(Record.Exception(operation));
+            if (name == "Count")
+            {
+                // The complete repeat publishes no captures and needs no scratch.
+                var reservations = account.Reservations;
+                Assert.Equal(1, regex.Count(input));
+                Assert.Equal(reservations, account.Reservations);
+            }
+            else Assert.IsType<Utf8MemoryAdmissionException>(Record.Exception(operation));
             Assert.True(account.Used == held, name + " did not restore its refused account.");
         }
     }
@@ -147,7 +154,8 @@ public sealed class PythonReFundedExecutionTests
         var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         var held = account.Used; var reservations = account.Reservations;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("aaa"u8));
+        Assert.Equal(1, regex.Count("aaa"u8));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FindAll("aaa"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
     }
@@ -157,11 +165,16 @@ public sealed class PythonReFundedExecutionTests
     {
         var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account); var held = account.Used;
         using var canceled = new CancellationTokenSource(); account.AfterGrant = canceled.Cancel;
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.FindAll("aaa"u8, 0, canceled.Token)).CancellationToken);
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("aaa"u8, 0, canceled.Token)).CancellationToken);
         account.AfterGrant = null; Assert.Equal(held, account.Used);
         await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
         {
-            for (var i = 0; i < 32; i++) Assert.Equal(2, regex.Count("aaa aaa"u8));
+            for (var i = 0; i < 32; i++)
+            {
+                Assert.Equal(2, regex.Count("aaa aaa"u8));
+                Assert.Equal(2, regex.FindAll("aaa aaa"u8).Length);
+            }
         })));
         Assert.Equal(held, account.Used);
     }
