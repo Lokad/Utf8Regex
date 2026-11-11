@@ -49,3 +49,5 @@ Hash-verified offVM evidence, `artifacts/experiments/borrowed-count-validity-202
 Strict validity, Unicode/byte results, borrowed-input contracts, original authority
 and meaningful admission stay. Specifications clarify fact selection. Immutable
 packages and generated catalog identities stay unchanged; no package/Full repeat.
+
+Source2a4f6755 CI42978874520 is green on Windows and Linux.

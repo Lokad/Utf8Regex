@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
-using CoreRegex = Lokad.Utf8Regex.Utf8Regex;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -71,16 +70,17 @@ public sealed class PythonReNativeLiteralValidationTests
     }
 
     [Fact]
-    public void BorrowedInvocationPreservesCompleteHitMetadataAndParentLoan()
+    public void BorrowedValueProjectionPreservesHitCoordinatesAndParentLoan()
     {
-        var regex = new CoreRegex("é😀");
+        var regex = new Utf8PythonRegex("é😀");
         var input = Encoding.UTF8.GetBytes("中é😀尾");
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        Assert.True(regex.FindLiteralForResult(input, 0, ref invocation, out var start, out var end, out var validation));
-        Assert.Equal((3, 9), (start, end));
-        Assert.Equal((input.Length, 5, false, true),
-            (validation.ByteLength, validation.Utf16Length, validation.IsAscii, validation.ContainsSupplementaryScalars));
+        var value = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation);
+        Assert.True(value.Success);
+        Assert.Equal((3, 9, 1, 4),
+            (value.StartOffsetInBytes, value.EndOffsetInBytes, value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+        Assert.Equal("é😀", value.GetValueString());
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
     }
@@ -88,13 +88,14 @@ public sealed class PythonReNativeLiteralValidationTests
     [Fact]
     public void ControlledWorkDenialStillPrecedesMalformedInputAndReleasesNoParentLoan()
     {
-        var regex = new CoreRegex("Шерлок");
+        var regex = new Utf8PythonRegex("Шерлок");
         var invocation = new Utf8SliceInvocation(new(1, 1, 7, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         Exception? failure = null;
-        try { _ = regex.FindLiteralForResult([0xff], 0, ref invocation, out _, out _, out _); }
+        try { _ = regex.MaterializeNativeMatchValue([0xff], 0, 0, ref invocation); }
         catch (Exception error) { failure = error; }
-        Assert.IsType<InvalidOperationException>(failure);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
         Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
@@ -132,7 +133,7 @@ public sealed class PythonReNativeLiteralValidationTests
     [Fact]
     public void DiagnosticHooksKeepValidationAheadOfDiscovery()
     {
-        var regex = new CoreRegex("Шерлок");
+        var regex = new Utf8PythonRegex("Шерлок");
         var input = new byte[] { 0xff }.Concat(Enumerable.Repeat((byte)'x', 200000))
             .Concat(Encoding.UTF8.GetBytes("Шерлок")).ToArray();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
@@ -140,7 +141,7 @@ public sealed class PythonReNativeLiteralValidationTests
         var entered = false;
         invocation.CheckpointHook = _ => { entered = true; throw new ApplicationException("Discovery ran before validation."); };
         Exception? failure = null;
-        try { _ = regex.FindLiteralForResult(input, 0, ref invocation, out _, out _, out _); }
+        try { _ = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation); }
         catch (Exception error) { failure = error; }
         Assert.Contains("byte offset 0.", Assert.IsType<ArgumentException>(failure).Message);
         Assert.False(entered);

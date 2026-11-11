@@ -377,16 +377,12 @@ public sealed partial class Utf8PythonRegex
             var control = new Utf8InvocationBufferControl(ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
             if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
-                out var start, out var end, out var validation))
+                out var start, out var end))
             {
                 Utf8InvocationOutput.Checkpoint(control);
                 return null;
             }
-            var bytes = input[start..end];
-            var count = validation.IsAscii ? bytes.Length
-                : start == 0 && end == input.Length ? validation.Utf16Length
-                : Utf8SliceBufferWork.CountUtf16(bytes, ref invocation);
-            return MaterializeMatchText(input, start, end, count, ref invocation, ref results);
+            return MaterializeMatchText(input, start, end, null, ref invocation, ref results);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -405,41 +401,17 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var control = new Utf8InvocationBufferControl(ref invocation);
-            int start, end, startUtf16, endUtf16;
-            if (kind == 0 && _canUseZeroOffsetUtf8SearchValueFastPath &&
-                _utf8Regex is { CanFindNativeLiteralForResult: true } literal)
+            if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
+                out var start, out var end))
             {
-                ValidateScalarStartOffset(input, startOffsetInBytes);
-                // A miss has no interoperability coordinates. Validate the whole
-                // subject before discovery, then project only an actual range.
-                Utf8Validation.CheckSubject(input, ref invocation);
-                if (!literal.TryFindNativeLiteralForResult(input, startOffsetInBytes,
-                    ref invocation, out var found, out start, out end))
-                    throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
-                if (!found)
-                {
-                    Utf8InvocationOutput.Checkpoint(control);
-                    return default;
-                }
-                // Whole-subject validation and complete native literals prove
-                // these scalar ranges; derive coordinates without validating again.
-                startUtf16 = start == 0 ? 0
-                    : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
-                endUtf16 = startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
+                Utf8InvocationOutput.Checkpoint(control);
+                return default;
             }
-            else
-            {
-                if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
-                    out start, out end, out var validation))
-                {
-                    Utf8InvocationOutput.Checkpoint(control);
-                    return default;
-                }
-                startUtf16 = validation.IsAscii || start == 0 ? start
-                    : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
-                endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
-                    : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
-            }
+            // Discovery proves scalar endpoints; only successful value consumers
+            // need interoperability coordinates, counted over their actual ranges.
+            var startUtf16 = start == 0 ? 0
+                : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
+            var endUtf16 = startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
@@ -460,23 +432,22 @@ public sealed partial class Utf8PythonRegex
     }
 
     private bool TryDiscoverNativeMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, int kind,
-        ref Utf8SliceInvocation invocation, out int start, out int end, out Utf8ValidationResult validation)
+        ref Utf8SliceInvocation invocation, out int start, out int end)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var control = new Utf8InvocationBufferControl(ref invocation);
-        // Each route enters full validation before its metered comparison/search.
+        // Strict whole-subject validity precedes every search and early rejection.
+        // Consumers derive text sizing or coordinates only for a selected range.
+        Utf8Validation.CheckSubject(input, ref invocation);
         start = end = -1;
-        validation = default;
         if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
         {
-            validation = Utf8Validation.Subject(input, ref invocation);
             start = 0;
             end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, prefix, ref invocation);
             return end != 0;
         }
         if (kind == 2 && _asciiDotAllFullMatchPrefix is { } head && _asciiDotAllFullMatchSuffix is { } tail)
         {
-            validation = Utf8Validation.Subject(input, ref invocation);
             var subject = input[startOffsetInBytes..];
             if (subject.Length < head.Length || subject.Length - head.Length < tail.Length ||
                 !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject, head, ref invocation) ||
@@ -487,6 +458,11 @@ public sealed partial class Utf8PythonRegex
             return true;
         }
         if (_utf8Regex is null) throw new InvalidOperationException("Native result discovery requires its prepared core.");
+        if (_utf8Regex.Inspection.PreparedRegex.LiteralUtf8 is { Length: 0 })
+        {
+            start = end = startOffsetInBytes;
+            return kind != 2 || end == input.Length;
+        }
         if (kind != 0 && _utf8Regex.Inspection.ExecutionKind is
             NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal)
         {
@@ -497,7 +473,6 @@ public sealed partial class Utf8PythonRegex
                 // A required start permits one bounded comparison of the complete
                 // literal, within the profile's existing 256-byte comparison
                 // block. Validate the whole subject before any rejection.
-                validation = Utf8Validation.Subject(input, ref invocation);
                 var remaining = input.Length - startOffsetInBytes;
                 if (remaining < literal.Length || kind == 2 && remaining != literal.Length) return false;
                 Utf8InvocationOutput.Checkpoint(control);
@@ -507,7 +482,9 @@ public sealed partial class Utf8PythonRegex
                 return true;
             }
         }
-        return _utf8Regex.FindLiteralForResult(input, startOffsetInBytes, ref invocation, out start, out end, out validation) &&
-            (kind == 0 || start == startOffsetInBytes && (kind != 2 || end == input.Length));
+        if (!_utf8Regex.TryFindNativeLiteralForResult(input, startOffsetInBytes, ref invocation,
+            out var found, out start, out end))
+            throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
+        return found && (kind == 0 || start == startOffsetInBytes && (kind != 2 || end == input.Length));
     }
 }
