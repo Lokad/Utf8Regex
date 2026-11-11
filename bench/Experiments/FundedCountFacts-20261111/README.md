@@ -62,3 +62,6 @@ Raw evidence is copied off the VM and hash-verified under
 Published/staged package bytes, accepted catalogs and their historical identities
 remain unchanged. This is focused source acceptance, not fresh package or parity
 qualification. Warm Python captures and POSIX history remain separate work.
+
+Source b39f3cca CI42961598987 is green on Windows and Linux. Receipt-only closure
+uses the existing workflow exclusion; no unchanged qualification is repeated.

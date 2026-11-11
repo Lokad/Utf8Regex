@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using System.Numerics;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -28,7 +26,7 @@ internal static partial class Utf8SliceRunner
             else break;
         }
         if (index >= code.Length || index >= 64) return -1;
-        var first = GetUnfoldedAsciiRange(program, code[index], out last);
+        var first = GetUnfoldedAsciiRange(code[index], out last);
         if (first < 0) return first;
         // Only straight-line mandatory entries can precede the next scalar.
         // Repeat-end/exit, optional entries and forks stay opaque: the next
@@ -43,11 +41,11 @@ internal static partial class Utf8SliceRunner
             else break;
         }
         if (index < code.Length && index < 64)
-            second = GetUnfoldedAsciiRange(program, code[index], out secondLast);
+            second = GetUnfoldedAsciiRange(code[index], out secondLast);
         return first;
     }
 
-    private static int GetUnfoldedAsciiRange(Utf8SliceProgram program, Utf8SliceInstruction instruction, out byte last)
+    private static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)
     {
         last = 0;
         if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
@@ -56,17 +54,10 @@ internal static partial class Utf8SliceRunner
             return literal.A;
         }
         if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
-        var mask = program.SetMasks[set.A].AsSpan();
-        if (mask.Length != 16) return -1;
-        var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
-        var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
-        if ((low | high) == 0) return -1;
-        var first = low != 0 ? BitOperations.TrailingZeroCount(low)
-            : 64 + BitOperations.TrailingZeroCount(high);
-        last = (byte)(high != 0 ? 127 - BitOperations.LeadingZeroCount(high)
-            : 63 - BitOperations.LeadingZeroCount(low));
-        // Equal population and width prove there are no holes in the interval.
-        return BitOperations.PopCount(low) + BitOperations.PopCount(high) == last - first + 1 ? first : -1;
+        // Common lowering proves the immutable mask once. The existing operand
+        // stores this fact without growing instructions or per-cursor state.
+        last = (byte)(set.D >> 8);
+        return (set.D & 255) - 1;
     }
 
     internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,

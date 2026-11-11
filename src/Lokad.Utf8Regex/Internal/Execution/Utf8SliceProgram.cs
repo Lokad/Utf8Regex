@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Numerics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -231,6 +233,8 @@ internal readonly struct Utf8SliceInstruction
     internal int A { get; }
     internal int B { get; }
     internal int C { get; }
+    // For a positive unfolded Set, packed ASCII interval endpoints:
+    // low byte is first+1, high byte is last; zero means no exact interval.
     internal int D { get; }
 
     // Only repeat instructions interpret C/D as unsigned bounds. Keep the
@@ -1018,6 +1022,20 @@ internal static class Utf8SliceLowerer
             NonBacktrackingScopes?.Dispose();
         }
 
+        private static int GetAsciiRange(ReadOnlySpan<byte> mask)
+        {
+            var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+            var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
+            if ((low | high) == 0) return 0;
+            var first = low != 0 ? BitOperations.TrailingZeroCount(low)
+                : 64 + BitOperations.TrailingZeroCount(high);
+            var last = high != 0 ? 127 - BitOperations.LeadingZeroCount(high)
+                : 63 - BitOperations.LeadingZeroCount(low);
+            // Equal population and width prove there are no holes.
+            return BitOperations.PopCount(low) + BitOperations.PopCount(high) == last - first + 1
+                ? (last << 8) | (first + 1) : 0;
+        }
+
         internal void Emit(Utf8SliceInstruction instruction)
         {
             Instructions.Add(instruction);
@@ -1055,7 +1073,8 @@ internal static class Utf8SliceLowerer
                     SetMasks.Add(set.Mask16);
                     if (set.Members.Length == 0)
                     {
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, set.FoldCase ? 1 : 0, 0));
+                        var range = !set.Negated && !set.FoldCase ? GetAsciiRange(set.Mask16) : 0;
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, set.FoldCase ? 1 : 0, range));
                     }
                     else
                     {

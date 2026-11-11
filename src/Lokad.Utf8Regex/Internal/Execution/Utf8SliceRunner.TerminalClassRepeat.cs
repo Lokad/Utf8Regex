@@ -47,7 +47,7 @@ internal static partial class Utf8SliceRunner
         var maximum = repeat.RepeatMaximum;
         byte asciiLast = 0;
         var asciiFirst = input.Length - start >= 256
-            ? GetUnfoldedAsciiRange(program, atom, out asciiLast) : -1;
+            ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
         var position = start;
         var run = 0;
         var count = 0;
@@ -468,7 +468,7 @@ internal static partial class Utf8SliceRunner
         var unbounded = minimum <= 1 && maximum == long.MaxValue;
         byte asciiLast = 0;
         var asciiFirst = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }
-            ? GetUnfoldedAsciiRange(program, atom, out asciiLast) : -1;
+            ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
         byte first = (byte)'\n', second = (byte)'\n';
         if (unbounded &&
             (dot || asciiFirst >= 0 || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
