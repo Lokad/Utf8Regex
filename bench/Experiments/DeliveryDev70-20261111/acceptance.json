@@ -1,0 +1,324 @@
+{
+  "Source": "c69edb3e83321860945827f90a72f8e92c5bfba2",
+  "Version": "0.5.0-dev.70",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "PackageCandidate": "artifacts/package-candidates/0.5.0-dev.70/candidate.json",
+  "Feed": "artifacts/nuget",
+  "Windows": {
+    "Fixtures": 10,
+    "Checks": 111768.0,
+    "Seconds": 318.5367316
+  },
+  "Linux": {
+    "Fixtures": 10,
+    "Checks": 111768.0,
+    "SameWindowsPackageBytes": true,
+    "Rebuilt": false,
+    "Repacked": false,
+    "RestoreAudits": 28,
+    "CheckedTrxFiles": 14
+  },
+  "OriginalConsumers": {
+    "Scope": "Unchanged copied handoffs, not downstream adoption or POSIX consumer acceptance",
+    "AwkPerFramework": 19,
+    "LythonPerFramework": 118,
+    "PublicApiProbesPassed": true,
+    "FinalRootLoans": 0,
+    "OriginalSourceFilesVerified": 1565,
+    "ChangedExactVersionPins": 3
+  },
+  "SourceCI": {
+    "Source": "c69edb3e83321860945827f90a72f8e92c5bfba2",
+    "Run": 43015263562,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ]
+  },
+  "Full": {
+    "Seconds": 2825.2046212,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "RawSha256": "4732785DF7D2CA66F1547267DF6ABC18970C5F7E73BF285D1C86768DF6197F54"
+  },
+  "LinuxRawSha256": "A0D26D377A08D13DF3C585B30CA83F2816F0C75A5E3FFB124B7B3814493142EC",
+  "CompilerInputsSha256": "F75AA25FFC0CA20483E52F7B0D3C07B5C055092C39901EE9B6BCA7746CDEE41D",
+  "PreservedCanonicalFiles": 412,
+  "SnapshotChecksPerFrameworkPerPlatform": 9,
+  "SnapshotLogs": [
+    {
+      "Platform": "Windows",
+      "Profile": "Core",
+      "File": "windows-snapshot-Core.txt",
+      "Sha256": "AABB675D19EE92D90B222E9B461194EF97882C57C73DA92ED6D90350E05A20D5",
+      "PerFramework": 2
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "PythonRe",
+      "File": "windows-snapshot-PythonRe.txt",
+      "Sha256": "E7B10B5A4628EAF033BDF0527507AAD4509C85C61448B668C420E800B2B200E6",
+      "PerFramework": 1
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Pcre2",
+      "File": "windows-snapshot-Pcre2.txt",
+      "Sha256": "CAF618041F5E473D911BE7BF5BD21EEBF4F1DEE1D3D8DEB8097F2A699C42A0BA",
+      "PerFramework": 1
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Posix",
+      "File": "windows-snapshot-Posix.txt",
+      "Sha256": "45B903B1A6584B311EC0A89262263C106CFB79DC70325A258F367DB350E2FEDC",
+      "PerFramework": 5
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Core",
+      "File": "linux-snapshot-Core.txt",
+      "Sha256": "13697D1169894F8FF44BA4BC53CC35835A46F821DD03E41C74CE4544F96FF936",
+      "PerFramework": 2
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "PythonRe",
+      "File": "linux-snapshot-PythonRe.txt",
+      "Sha256": "C0BE8E57A69A6076923B9D07C6A18997FA956394E9178723A0CBDA354A574F90",
+      "PerFramework": 1
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Pcre2",
+      "File": "linux-snapshot-Pcre2.txt",
+      "Sha256": "09D71877E3BF278A56C0C85B24A152180BD5718D1F4E0E47376D5953B24C2244",
+      "PerFramework": 1
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Posix",
+      "File": "linux-snapshot-Posix.txt",
+      "Sha256": "60FF4FB669810D177CC6BA4F842D5570075DC14A7573F6BB28B0016768613823",
+      "PerFramework": 5
+    }
+  ],
+  "Baseline": {
+    "Producer": "b478f853f722b7c34de83bdcd14693ee594ca053",
+    "ImportedSummaryCommit": "7b0cc1c35e080a9142be8585a9ab361eb3c0c171",
+    "InputValidation": "Validate"
+  },
+  "PreviousCheckpoint": {
+    "Version": "0.5.0-dev.69",
+    "ImportedSummaryCommit": "99086ef61d06c5d38617c264617941b1e9e0d3df"
+  },
+  "CatalogInterpretation": "Separate Full observations, not causal A/B attribution; preserve comparator movement and uncertainty.",
+  "SelectedComparisons": [
+    {
+      "Profile": "Core",
+      "Id": "bounded-repeat/letters-en",
+      "InputValidation": "Validate",
+      "Dev66Us": 1125.945588235294,
+      "Dev69Us": 7409.009090909091,
+      "Dev70Us": 1110.3117647058823,
+      "Dev66Ratio": 0.6091758075294509,
+      "Dev69Ratio": 4.03267583638367,
+      "Dev70Ratio": 0.6015147688023395,
+      "CurrentStatus": "Win",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-name-family-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 4048.463157894737,
+      "Dev69Us": 1672.0586956521738,
+      "Dev70Us": 1694.1955555555555,
+      "Dev66Ratio": 1.327123041797868,
+      "Dev69Ratio": 0.5523982544735995,
+      "Dev70Ratio": 0.5587458216162695,
+      "CurrentStatus": "Win",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/leipzig-river-window-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 3263.0304347826086,
+      "Dev69Us": 2175.9416666666666,
+      "Dev70Us": 2218.9323529411763,
+      "Dev66Ratio": 2.126309529530158,
+      "Dev69Ratio": 1.4262278713546426,
+      "Dev70Ratio": 1.4156052585929269,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "industry/mariomka-email-count",
+      "InputValidation": "Validate",
+      "Dev66Us": 1161.7384615384615,
+      "Dev69Us": 1214.9403225806452,
+      "Dev70Us": 1198.175,
+      "Dev66Ratio": 2.5566630776614097,
+      "Dev69Ratio": 2.5679866438503756,
+      "Dev70Ratio": 2.533789052690568,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "literal/sherlock-zh",
+      "InputValidation": "Validate",
+      "Dev66Us": 83.00243362831858,
+      "Dev69Us": 82.94596685082874,
+      "Dev70Us": 82.98849557522125,
+      "Dev66Ratio": 3.4391867127301263,
+      "Dev69Ratio": 3.433658137324131,
+      "Dev70Ratio": 3.4455589795032378,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "Core",
+      "Id": "aws-keys/quick",
+      "InputValidation": "Validate",
+      "Dev66Us": 5063.72,
+      "Dev69Us": 3766.457142857143,
+      "Dev70Us": 3839.8599999999997,
+      "Dev66Ratio": 1.371174145031888,
+      "Dev69Ratio": 1.0220086494392853,
+      "Dev70Ratio": 1.0397858973896088,
+      "CurrentStatus": "Gap",
+      "CurrentBytes": 0
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 778.5846153846154,
+      "Dev69Us": 817.0935483870968,
+      "Dev70Us": 786.9875,
+      "Dev66Ratio": 2.2252364982738566,
+      "Dev69Ratio": 2.287704927748336,
+      "Dev70Ratio": 2.242139649788624,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/one-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 474.2990566037736,
+      "Dev69Us": 526.7989583333333,
+      "Dev70Us": 534.4574468085107,
+      "Dev66Ratio": 2.217538281199975,
+      "Dev69Ratio": 2.457544528714107,
+      "Dev70Ratio": 2.498548555606228,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 94344
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/many-capture-utf8",
+      "InputValidation": "Validate",
+      "Dev66Us": 863.6118644067797,
+      "Dev69Us": 847.0083333333333,
+      "Dev70Us": 810.4725806451613,
+      "Dev66Ratio": 0.6905323710440462,
+      "Dev69Ratio": 0.6763157587805335,
+      "Dev70Ratio": 0.6433648887500772,
+      "CurrentStatus": "ManagedFaster",
+      "CurrentBytes": 242008
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "findall/named-capture-strings",
+      "InputValidation": "Validate",
+      "Dev66Us": 169.9949152542373,
+      "Dev69Us": 164.22709677419354,
+      "Dev70Us": 159.47682539682538,
+      "Dev66Ratio": 1.771135720457702,
+      "Dev69Ratio": 1.729838140042468,
+      "Dev70Ratio": 1.680330214337135,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 43144
+    },
+    {
+      "Profile": "PythonRe",
+      "Id": "split/captures",
+      "InputValidation": "Validate",
+      "Dev66Us": 440.25913043478266,
+      "Dev69Us": 444.25,
+      "Dev70Us": 415.27768595041323,
+      "Dev66Ratio": 1.7247665203987455,
+      "Dev69Ratio": 1.749412748428779,
+      "Dev70Ratio": 1.6364152238373155,
+      "CurrentStatus": "CpythonFaster",
+      "CurrentBytes": 274648
+    },
+    {
+      "Profile": "Posix",
+      "Id": "capture/sku007",
+      "InputValidation": "Validate",
+      "Dev66Us": 3251.531818181818,
+      "Dev69Us": 2754.053846153846,
+      "Dev70Us": 2754.996296296296,
+      "Dev66Ratio": 4.88396330789732,
+      "Dev69Ratio": 4.001244004037323,
+      "Dev70Ratio": 4.021453917940339,
+      "CurrentStatus": "NativeFaster",
+      "CurrentBytes": 393240
+    }
+  ],
+  "StatusCounts": {
+    "Core": {
+      "Win": 121,
+      "Gap": 54,
+      "TieCandidate": 3
+    },
+    "PythonRe": {
+      "ManagedFaster": 47,
+      "CpythonFaster": 30,
+      "Equivalent": 2,
+      "Unqualified": 5,
+      "Inconclusive": 6
+    },
+    "Pcre2": {
+      "ManagedFaster": 77,
+      "Inconclusive": 17,
+      "NativeFaster": 7,
+      "Excluded": 25
+    },
+    "Posix": {
+      "NativeFaster": 6,
+      "Measured": 9,
+      "Excluded": 8,
+      "Equivalent": 1,
+      "ManagedFaster": 1
+    }
+  },
+  "KnownCosts": [
+    "Warm Python many-/one-capture strings remain2.242x/2.499x; this Full does not reproduce earlier selective6f46 string timings. Separate-run movements are not causal improvements or regressions.",
+    "Core strict email2.534x, Chinese literal3.446x and river1.416x remain material gaps. AssumeValid has a different input contract and must stay separately labeled.",
+    "POSIX SKU4.021x remains NativeFaster. EOF and proved non-EOF alphabet ceilings do not solve unresolved-parent histories or opaque complemented/dot/wide consumers.",
+    "Retain terminal-class precedence category-control+30.93/+44.20% and captured-class+18.83/+20.21% disjoint historical costs. Captured Count follow-up has separate causal evidence, not a composed cancellation of prior observations.",
+    "Retain captured-repeat strict native PCRE control+1.97%/79.092us and ASCII ceiling wide-control+5.17/+4.52% disjoint costs; the later scalar extension controls overlap.",
+    "Five tiny Python rows are unqualified; PCRE2 has17 inconclusive and25 excluded rows. Preserve all exclusions, lifecycle uncertainty and rejected scaling fits."
+  ],
+  "PerformanceComplete": false,
+  "NextAction": "Resume supported shared P3 capture/progression and strict-input costs, plus P4 unresolved-parent/general-history architecture. Require a distinct removable cause before another pilot; no repeat of closed trials, Full or packages for a small change."
+}
