@@ -7,6 +7,25 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DisjointClassRepeatTests
 {
+    [Fact]
+    public void ComplementedMaskFollowersCoverBothHalvesAndKeepScalarCaptures()
+    {
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        for (var excluded = 1; excluded < 128; excluded++)
+        {
+            var regex = new Utf8Regex($"([^\\x00\\x{excluded:x2}]+)[\\x00\\x{excluded:x2}]",
+                inputValidation: validation);
+            const string captured = "é😀";
+            var input = Encoding.UTF8.GetBytes(captured + (char)excluded);
+            var actual = regex.MatchDetailed(input);
+            Assert.True(actual.Success);
+            Assert.Equal(captured, actual.GetGroup(1).GetValueString());
+            Assert.Equal(6, actual.GetGroup(1).LengthInBytes);
+            Assert.Equal(7, actual.LengthInBytes);
+            Assert.Equal(1, regex.Count(input));
+        }
+    }
+
     [Theory]
     [InlineData("([a-z]+)-([0-9]+)", "abc-12 other-345")]
     [InlineData(@"([\x3f-\x40]{2,4})-", "???@- ??-?")]
@@ -86,6 +105,14 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"(?<pop>a+)(?<-pop>b|c)(?(pop)d|e)", "aaabe abe")]
     [InlineData(@"(?<run>a+)(?<end>b)?c", "aaabc aaac")]
     [InlineData("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", "import shared \"module.nvn\";")]
+    [InlineData("([a-z]+)([0-9]+)", "abc12 def345")]
+    [InlineData("([a-z]+?)([0-9]+)", "abc12 def345")]
+    [InlineData("([^0-9]+)([0-9]+)", "é😀12 中345")]
+    [InlineData("([a-z]+)([a-z0-9]+)", "abc12 def345")]
+    [InlineData("(?i:([a-z]+))([A-Z]+)", "aBC")]
+    [InlineData(@"([\x00-\x3f]+)([\x40-\x7f]+)", "\0?@~")]
+    [InlineData(@"([\x40-\x7f]+)([\x00-\x3f]+)", "@~\0?")]
+    [InlineData(@"(?=([a-z]+)[0-9]+$)\1[0-9]+", "abc123")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -228,12 +255,15 @@ public sealed class Utf8DisjointClassRepeatTests
             Assert.Equal(expected.Groups[number].Value, actual.GetGroup(number).GetValueString());
     }
 
-    [Fact]
-    public void ForkTailProofKeepsEveryWorkCutoffAndParentLoan()
+    [Theory]
+    [InlineData(@"(?<run>a+)(?:(?<tail>b)|c)", "aaab aac")]
+    [InlineData(@"([a-z]+)([0-9]+)", "abc12 def34")]
+    [InlineData(@"([^0-9]+)([0-9]+)", "é😀12 中34")]
+    public void TailProofKeepsEveryWorkCutoffAndParentLoan(string pattern, string text)
     {
-        var regex = new Utf8Regex(@"(?<run>a+)(?:(?<tail>b)|c)");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var input = "aaab aac"u8.ToArray();
+        var input = Encoding.UTF8.GetBytes(text);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
@@ -254,7 +284,11 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
-        Assert.Equal(2, limited.Count(input));
+        // The original literal fork has a workspace-free public Count route;
+        // adjacent captured classes retain their real scratch admission.
+        if (pattern == @"(?<run>a+)(?:(?<tail>b)|c)") Assert.Equal(2, limited.Count(input));
+        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
     }
 
     [Theory]
