@@ -10,6 +10,44 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8OrderedWindowInvocationTests
 {
+    [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    [InlineData(4095)] [InlineData(4096)]
+    public void LongPrefixBoundariesKeepScalarGapsAndBorrowedLimits(int length)
+    {
+        var head = string.Concat(Enumerable.Range(0, length).Select(index => (char)('a' + index % 23)));
+        var text = "é!" + head + "😀z";
+        var bytes = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8Regex(head + ".{1,2}z", inputValidation: validation);
+            var prepared = Prepared(regex);
+            Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
+            var storage = new byte[bytes.Length + 2]; bytes.CopyTo(storage, 1);
+            var borrowed = storage.AsSpan(1, bytes.Length);
+            Assert.Equal(1, regex.Count(borrowed, token.Token));
+            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1),
+                Regex.InfiniteMatchTimeout, token.Token);
+            Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryFindNext(
+                borrowed, prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan,
+                0, ref invocation, out var match, out var found));
+            Assert.True(found);
+            Assert.Equal(3, match.Index);
+            Assert.Equal(length + 5, match.Length);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+            for (var cap = 1UL; cap < invocation.Budget.Steps; cap++)
+            {
+                var denied = new Utf8SliceInvocation(new(cap, 0, 1), Regex.InfiniteMatchTimeout, token.Token);
+                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, AsciiOrderedLiteralWindowExecutor.TryFindNext(
+                    borrowed, prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan,
+                    0, ref denied, out _, out var published));
+                Assert.False(published);
+                Assert.Equal(0UL, denied.Ledger.ReservedBytes);
+            }
+        }
+    }
+
     private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
         (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 

@@ -35,9 +35,17 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var leading = plan.IsLiteralFamily ? plan.LeadingLiteralsUtf8[id] : plan.LeadingLiteralUtf8;
                 if (candidate.Index > input.Length - leading.Length) continue;
-                breach = Utf8SearchExecutor.TryCompareLiteral(input[candidate.Index..], leading, false,
-                    ref invocation, out var equal);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                bool equal;
+                // The branch checkpoint already admits one bounded comparison.
+                // Long prefixes retain separately admitted chunks.
+                if (leading.Length <= 2048)
+                    equal = input.Slice(candidate.Index, leading.Length).SequenceEqual(leading);
+                else
+                {
+                    breach = Utf8SearchExecutor.TryCompareLiteral(input[candidate.Index..], leading, false,
+                        ref invocation, out equal);
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
                 if (!equal || !Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingLiteralLeadingBoundary, input, candidate.Index) ||
                     !Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingLiteralTrailingBoundary, input, candidate.Index + leading.Length)) continue;
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();

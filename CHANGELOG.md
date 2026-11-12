@@ -47,6 +47,8 @@
   requirements can change.
   Prepare eligible ASCII category membership once for captured-field matching,
   with bounded construction work and admitted replacement masks.
+  Ordered windows reuse branch admission for bounded short-prefix comparisons;
+  long prefixes retain chunked checks and numerical work requirements can fall.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.

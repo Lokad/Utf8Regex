@@ -209,6 +209,12 @@ coordinates. The original invocation observes cancellation/deadlines throughout;
 finite public numeric policies retain their owned counter. Working capacities
 and work charges can differ from general VM execution.
 
+Ordered-window branch admission covers one exact prefix comparison of at most
+2048 bytes; longer prefixes retain separately admitted comparison chunks.
+Branch order, boundary predicates, scalar gaps and publication checks keep the
+original interruption authority. Removing duplicate short-prefix admission can
+reduce numerical work requirements; basic metering remains active.
+
 ### Native pattern metadata
 
 `CaptureGroupCount` counts defined capture slots excluding group zero. Sparse
