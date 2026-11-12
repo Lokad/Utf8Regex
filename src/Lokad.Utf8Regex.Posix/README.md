@@ -65,18 +65,18 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/empty` | Captures | 0.47 | 0.17 | 0 | Native faster | 2.80 |
-| `capture/nullable` | Captures | 0.44 | 0.20 | 0 | Native faster | 2.22 |
-| `capture/absent` | Captures | 0.31 | 0.16 | 0 | Native faster | 1.93 |
-| `projection/short-1` | Captures | 0.16 | 0.12 | 0 | Native faster | 1.39 |
-| `projection/short-4` | Captures | 0.24 | 0.22 | 0 | Native faster | 1.07 |
-| `projection/unicode-prefix-1` | Captures | 268.52 | 269.40 | 0 | Equivalent | 0.99 |
-| `projection/unicode-prefix-4` | Captures | 269.87 | 675.86 | 0 | Managed faster | 0.40 |
+| `capture/empty` | Captures | 0.48 | 0.17 | 0 | Native faster | 2.76 |
+| `capture/nullable` | Captures | 0.45 | 0.20 | 0 | Native faster | 2.26 |
+| `capture/absent` | Captures | 0.31 | 0.15 | 0 | Native faster | 2.08 |
+| `projection/short-1` | Captures | 0.17 | 0.12 | 0 | Native faster | 1.41 |
+| `projection/short-4` | Captures | 0.25 | 0.23 | 0 | Native faster | 1.07 |
+| `projection/unicode-prefix-1` | Captures | 270.16 | 270.47 | 0 | Equivalent | 1.00 |
+| `projection/unicode-prefix-4` | Captures | 269.77 | 675.24 | 0 | Managed faster | 0.40 |
 | `capture/ambiguous` | Captures | 0.64 | — | 0 | Excluded | — |
 | `capture/nested` | Captures | 0.92 | — | 0 | Excluded | — |
-| `capture/unicode-longest` | Captures | 0.74 | — | 0 | Excluded | — |
-| `count/ambiguous` | Count | 0.30 | — | 0 | Excluded | — |
-| `cursor/ambiguous` | Cursor | 0.82 | — | 336 | Excluded | — |
+| `capture/unicode-longest` | Captures | 0.73 | — | 0 | Excluded | — |
+| `count/ambiguous` | Count | 0.37 | — | 0 | Excluded | — |
+| `cursor/ambiguous` | Cursor | 0.96 | — | 336 | Excluded | — |
 
 The ratio is the median paired managed/native time; raw samples retain 95% bootstrap intervals and lane-order observations. Excluded rows have different native ranges/captures and no ratio. All rows retain ordinary costs, even when no equivalent native result exists.
 
@@ -87,8 +87,8 @@ The same `(a|aa)*` capture operation at three lengths exposes ambiguity cost. Ea
 | Case | Input bytes | Utf8Regex (µs) | Managed B/op | Peak working B |
 |---|---:|---:|---:|---:|
 | `history/length-4` | 4 | 0.72 | 0 | 960 |
-| `history/length-8` | 8 | 0.99 | 0 | 960 |
-| `history/length-12` | 12 | 1.29 | 0 | 960 |
+| `history/length-8` | 8 | 1.00 | 0 | 960 |
+| `history/length-12` | 12 | 1.30 | 0 | 960 |
 
 ### Historical adapter control
 
@@ -96,17 +96,17 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.64 | 0.17 | 0 | 3.81 |
+| `capture/sku007` | 0.66 | 0.17 | 0 | 3.89 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/empty` | 0.71 µs | 0.81 µs | 0.92 µs | 1.75 |
-| `cursor/ambiguous` | 1.23 µs | 1.34 µs | 1.74 µs | 1.63 |
-| `capture/sku007` | 3768.97 µs | 4229.49 µs | 4837.89 µs | 1.61 |
+| `capture/empty` | 0.70 µs | 0.79 µs | 0.89 µs | 1.66 |
+| `capture/sku007` | 3628.79 µs | 4157.53 µs | 4692.30 µs | 1.55 |
+| `cursor/ambiguous` | 1.35 µs | 1.46 µs | 1.88 µs | 1.52 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `8F5733236C8491B13FA006CB31285D89F5D4276FB01F1D6979C9B25F92952563`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `B93965EF020893D115EE1B7DE350F8D5FC4351E04F9B47C87E194F59898F7FF0`.
 <!-- END GENERATED POSIX BENCHMARKS -->
