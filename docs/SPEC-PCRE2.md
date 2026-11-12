@@ -230,6 +230,13 @@ it makes no working-allowance loan, and depth/working/result ceilings need not
 reject work that acquires none of that storage. Existing shared denials remain
 authoritative, including for an empty stream. Non-ASCII subjects, lazy/bounded/
 caseless forms, anchoring, match flags and diagnostic hooks retain their runners.
+Eligible standalone positive, case-sensitive `\p{Sm}` Count reuses Core's scalar
+category counter under the original invocation, including finite policies, live
+tokens, deadlines and caller working allowances. It admits at most 4096 bytes
+ending at a scalar boundary per block and checks publication, even for unlimited
+calls. No capture or VM workspace is acquired. Numerical work and working-state
+requirements can decrease; other categories, negation, caseless/anchored forms
+and nondefault match options retain their existing selection.
 Class/delimiter Count windows can reject an unproved prefix using the original
 scalar predicate before VM admission. Classification retains bounded work and
 the original token/deadline; viable starts retain complete verification. Skipped

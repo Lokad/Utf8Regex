@@ -119,6 +119,25 @@ public sealed class Utf8SingleCategoryCountTests
         }
     }
 
+    [Fact]
+    public void FragmentedMathSymbolsRespectEveryAsciiByteAndBorrowedTails()
+    {
+        var text = new StringBuilder();
+        for (var value = 0; value < 128; value++) text.Append((char)value).Append("é∑𝛁😀£");
+        var subject = string.Concat(Enumerable.Repeat(text.ToString(), 4));
+        var bytes = Encoding.UTF8.GetBytes(subject);
+        var expected = subject.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var offset in new[] { 0, 1, 15, 31, 32, 63, 4093, 4095, 4096 })
+        {
+            var storage = Enumerable.Repeat((byte)'+', offset + bytes.Length + 31).ToArray();
+            bytes.CopyTo(storage.AsSpan(offset));
+            var regex = new Utf8Regex(@"\p{Sm}", options, inputValidation: validation);
+            Assert.Equal(expected, regex.Count(storage.AsSpan(offset, bytes.Length)));
+        }
+    }
+
     [Theory]
     [InlineData(@"\p{Sm}+", RegexOptions.None)]
     [InlineData(@"\p{Sm}|a", RegexOptions.None)]

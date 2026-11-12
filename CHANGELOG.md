@@ -41,6 +41,10 @@
   Single-category and letter Count omit unused whole-input width metadata,
   retaining strict validation and bounded scalar counting; AssumeValid can skip
   that preparation entirely.
+  Math-symbol Count avoids repeated ASCII-counter setup across Unicode fragments.
+  Eligible PCRE2 math-symbol Count shares that bounded counter under the original
+  finite limits, token and deadline, without capture/VM scratch; numerical work
+  requirements can change.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.

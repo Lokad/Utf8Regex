@@ -123,19 +123,20 @@ internal static class Utf8UnicodeCategoryExecutor
 
     private static int CountMathSymbols(ReadOnlySpan<byte> input)
     {
-        var count = 0;
+        // UTF-8 lead/continuation bytes are >=128 and cannot equal an ASCII
+        // symbol. Count all such bytes once, instead of resetting the SIMD
+        // counter and tail search for every intervening ASCII fragment.
+        var count = CountAsciiMathSymbols(input);
         var index = 0;
         while (index < input.Length)
         {
             var nextNonAscii = input[index..].IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F);
-            var asciiEnd = nextNonAscii < 0 ? input.Length : index + nextNonAscii;
-            count += CountAsciiMathSymbols(input[index..asciiEnd]);
             if (nextNonAscii < 0)
             {
                 break;
             }
 
-            index = asciiEnd;
+            index += nextNonAscii;
             var first = input[index];
             if ((first & 0xE0) == 0xC0)
             {

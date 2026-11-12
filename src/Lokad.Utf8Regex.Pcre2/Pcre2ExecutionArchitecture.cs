@@ -2484,24 +2484,27 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2CharacterDirectProgram characterProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
             characterProgram.Program.CanCountSingleCharacterClassDirectly)
         {
             if (characterProgram.Program.TryGetDirectCountCategory(out var category))
             {
-                result = Utf8UnicodeCategoryExecutor.CountCategory(
-                    input.Bytes[start.Value..],
-                    category);
+                // Borrow the existing scalar-boundary counter under this same
+                // invocation, including unlimited calls. No VM state or second
+                // budget is needed for a complete single-category language.
+                var family = Utf8FallbackDirectFamilyPlan.ForUnicodeCategory(category);
+                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(
+                    input.Bytes[start.Value..], family, ref invocation, out result);
+                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
+                return true;
             }
-            else
+            if (invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
                 result = Pcre2CharacterRunner.CountSingleCharacterClass(
                     characterProgram.Program,
                     input.Bytes,
                     start);
+                return true;
             }
-
-            return true;
         }
 
         if (program is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram &&
