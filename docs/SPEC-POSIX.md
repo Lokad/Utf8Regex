@@ -204,6 +204,18 @@ the same whole endpoint. An unproved parent bound/scope retains general competit
 This uses one local tag choice, no retained program metadata/storage;
 it can remove losing descendant exploration and lower numerical work requirements.
 
+Confined root alternatives can supply the same enclosure authority. A bounded
+instruction check proves that each branch enters once at the logical start,
+returns directly to the root close, and has no body edge escaping its scope or
+reopening that enclosure. The selected branch's leading parents still require
+the fixed-suffix or independent-bound proofs above. Earlier siblings stay absent
+on paths within that branch. At a proved maximal whole endpoint, an earlier
+participating branch also outranks every later root branch; longer whole matches
+are never discarded by this rule. Unknown structures and unresolved nested
+alternatives retain general competition. Scope inspection uses the same original
+work/interruption authority, with local code/tag offsets and no retained metadata
+or additional storage. Numerical work requirements can change.
+
 Physical input end is always a valid ceiling. After the first general acceptance,
 a proof over at most 64 instructions tests the next complete scalar against every
 consuming atom's normal literal/dot/class predicate. If all reject it, no accepting

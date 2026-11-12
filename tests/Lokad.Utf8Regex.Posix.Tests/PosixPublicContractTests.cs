@@ -288,9 +288,9 @@ public sealed class PosixPublicContractTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
         var account = new Account();
-        // The non-pruning root alternative is outside the leading-parent proof,
+        // An enclosed alternative remains outside the bounded root-branch proof,
         // retaining actual general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "(a|aa)*b|((a|aa)*).", default,
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|aa)*b|((a|aa)*).)#?", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
@@ -323,6 +323,50 @@ public sealed class PosixPublicContractTests
             Assert.True(retained.Success);
         }
         finally { diagnostics.Complete(); }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void InterruptionInsideRootScopeProofClearsOutputAndRefunds(bool deadline)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PosixRegex("(a|aa)*b|((a|aa)*).", default,
+                deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
+            var reached = false;
+            for (var count = 16; count < 80 && !reached; count++)
+            {
+                now = 0;
+                using var token = new CancellationTokenSource();
+                var account = new Account(); Assert.True(account.TryReserve(17));
+                var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+                var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
+                var input = Encoding.ASCII.GetBytes(new string('a', count) + "b#");
+                var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+                {
+                    if (reached || !new StackTrace().GetFrames().Any(frame =>
+                        frame.GetMethod() is { Name: "TryGetRootBranchScope", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
+                    reached = true;
+                    if (deadline) now = 101; else token.Cancel();
+                });
+                Exception? error;
+                try { error = Record.Exception(() => regex.Match(input, output, 0, token.Token, account)); }
+                finally { diagnostics.Complete(); }
+                if (reached)
+                {
+                    if (deadline) Assert.IsType<RegexMatchTimeoutException>(error);
+                    else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+                    Assert.All(output, match => Assert.False(match.Success));
+                }
+                else Assert.Null(error);
+                Assert.Equal(17UL, account.Used); account.Release(17);
+                Assert.True(retained.Success);
+            }
+            Assert.True(reached, "The injection must reach the actual root-branch scope proof.");
+        }
     }
 
     [Theory]
