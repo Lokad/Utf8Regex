@@ -839,6 +839,61 @@ public sealed class PosixRepeatedCaptureSelectionTests
         }
     }
 
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate, "a")] [InlineData(Utf8InputValidation.AssumeValid, "a")]
+    [InlineData(Utf8InputValidation.Validate, "é")] [InlineData(Utf8InputValidation.AssumeValid, "é")]
+    [InlineData(Utf8InputValidation.Validate, "😀")] [InlineData(Utf8InputValidation.AssumeValid, "😀")]
+    public void ConsumingAndRepeatedCaptureContextsFitFiniteWork(Utf8InputValidation validation, string scalar)
+    {
+        const int count = 32;
+        const string prefix = "é😀!";
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var width = Encoding.UTF8.GetByteCount(scalar);
+        var run = string.Concat(Enumerable.Repeat(scalar, count));
+        var body = $"({scalar}|{scalar}{scalar})*";
+        var choice = $"({body}b|{body}b)";
+        foreach (var item in new (string Pattern, string Lead, string Tail, bool OuterIncludesB)[]
+        {
+            ("x" + choice, "x", "", true), (choice + "x", "", "x", true),
+            ("x" + choice + "y", "x", "y", true),
+            ("x" + choice + "|y" + choice, "x", "", true),
+            (choice + "+", "", "", true), (choice + "{1,2}", "", "", true),
+            (scalar + choice + "|" + scalar + choice, scalar, "", true),
+            ($"x(({scalar}|{scalar}{scalar})*)b", "x", "", false),
+        })
+        {
+            var regex = new Utf8PosixRegex(item.Pattern, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            var wholeText = item.Lead + run + "b" + item.Tail;
+            var input = Encoding.UTF8.GetBytes(prefix + wholeText + "#");
+            var storage = new byte[input.Length + 7]; input.CopyTo(storage.AsSpan(3));
+            var whole = new Utf8ValueMatch(true, true, prefix.Length, wholeText.Length, floor, Encoding.UTF8.GetByteCount(wholeText));
+            var outerText = run + (item.OuterIncludesB ? "b" : "");
+            var outer = new Utf8ValueMatch(true, true, prefix.Length + item.Lead.Length, outerText.Length,
+                floor + Encoding.UTF8.GetByteCount(item.Lead), Encoding.UTF8.GetByteCount(outerText));
+            var last = new Utf8ValueMatch(true, true, prefix.Length + item.Lead.Length + (count - 2) * scalar.Length,
+                2 * scalar.Length, floor + Encoding.UTF8.GetByteCount(item.Lead) + (count - 2) * width, 2 * width);
+            var output = new Utf8ValueMatch[regex.GroupCount + 1];
+            using var token = new CancellationTokenSource();
+            Assert.Equal(whole, regex.Match(storage.AsSpan(3, input.Length), output, floor, token.Token));
+            Assert.Equal(whole, output[0]); Assert.Equal(outer, output[1]); Assert.Equal(last, output[2]);
+            Assert.All(output.Skip(3), value => Assert.False(value.Success));
+            var retained = output[2];
+            Assert.Equal(1, regex.Count(input, floor, token.Token));
+            Assert.True(regex.IsMatch(input, token.Token));
+            Assert.Equal(whole, regex.Match(input, output.AsSpan(0, 1), floor, token.Token));
+            using var cursor = regex.CreateMatchCursor(storage.AsMemory(3, input.Length), floor, token.Token);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(output, out var value)); Assert.Equal(whole, value);
+            Assert.Equal(outer, output[1]); Assert.Equal(last, output[2]);
+            Assert.False(alias.MoveNext(output, out _)); Assert.All(output, item => Assert.False(item.Success));
+            cursor.Dispose(); Assert.Equal(last, retained);
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            if (validation == Utf8InputValidation.Validate)
+                Assert.Throws<ArgumentException>(() => regex.Match(input.Append((byte)0xff).ToArray(), output, floor));
+        }
+    }
+
     private static void Check(Utf8PosixRegex regex, int outerMin, int outerMax, int innerMin, int innerMax, int count)
     {
         var expected = Occurrences(outerMin, outerMax, innerMin, innerMax, count);

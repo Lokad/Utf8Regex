@@ -274,98 +274,50 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false, false, null)]
-    [InlineData(true, false, null)]
-    [InlineData(false, true, null)]
-    [InlineData(true, true, null)]
-    [InlineData(false, true, "b")]
-    [InlineData(true, true, "b")]
-    [InlineData(false, true, "([bc])*")]
-    [InlineData(true, true, "([bc])*")]
-    public void InterruptionDuringCaptureHistoryCompetitionClearsOutputAndRefunds(bool deadline, bool pruning, string? suffix)
-    {
-        long now = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
-        using var token = new CancellationTokenSource();
-        var account = new Account();
-        // An enclosed alternative remains outside the bounded root-branch proof,
-        // retaining actual general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|aa)*b|((a|aa)*).)#?", default,
-            deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
-        var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
-        var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray(); var triggered = false;
-        // Equal-prefix pruning can finish between two 64-step hook polls.
-        // Observe actual captured-history rollback on that optimized route;
-        // the general route retains its full history-comparison witness.
-        var phase = suffix == "([bc])*" ? "FindBoundaryBoundedParentTag" : pruning ? "Backtrack" : "BetterHistory";
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
-        {
-            // Test-only phase observation through the existing checkpoint hook:
-            // do not cancel at an arbitrary step or add a production phase switch.
-            if (triggered || !new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod() is { DeclaringType: { } type } method && method.Name == phase && type == typeof(PosixWorkspace))) return;
-            triggered = true;
-            if (deadline) now = 101; else token.Cancel();
-        });
-        try
-        {
-            // A long captured suffix guarantees bounded hook polls while the
-            // parent proof walks its accepted trace, before saving the winner.
-            var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) +
-                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "b#");
-            if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-                regex.Match(input, output, 0, token.Token, account)).CancellationToken);
-            Assert.True(triggered, "The injection must reach execution over captured histories.");
-            Assert.True(account.Peak > 0);
-            Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
-            Assert.True(retained.Success);
-        }
-        finally { diagnostics.Complete(); }
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void InterruptionInsideRootScopeProofClearsOutputAndRefunds(bool deadline)
+    [InlineData(false, false, "a")] [InlineData(true, false, "a")]
+    [InlineData(false, true, "a")] [InlineData(true, true, "a")]
+    [InlineData(false, false, "😀")] [InlineData(true, false, "😀")]
+    [InlineData(false, true, "😀")] [InlineData(true, true, "😀")]
+    public void InterruptionInsideClosedCaptureSelectionClearsOutputAndRefunds(bool deadline, bool projection, string scalar)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex("(a|aa)*b|((a|aa)*).", default,
+            now = 0;
+            using var token = new CancellationTokenSource();
+            var account = new Account(); Assert.True(account.TryReserve(17));
+            var body = $"({scalar}|{scalar}{scalar})*";
+            var regex = new Utf8PosixRegex($"x({body}b|{body}b)", default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                 new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
-            var reached = false;
-            for (var count = 16; count < 80 && !reached; count++)
+            var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+            var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
+            var input = Encoding.UTF8.GetBytes("x" + string.Concat(Enumerable.Repeat(scalar, 128)) + "b#");
+            var triggered = false;
+            var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
             {
-                now = 0;
-                using var token = new CancellationTokenSource();
-                var account = new Account(); Assert.True(account.TryReserve(17));
-                var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
-                var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
-                var input = Encoding.ASCII.GetBytes(new string('a', count) + "b#");
-                var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
-                {
-                    if (reached || !new StackTrace().GetFrames().Any(frame =>
-                        frame.GetMethod() is { Name: "TryGetRootBranchScope", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
-                    reached = true;
-                    if (deadline) now = 101; else token.Cancel();
-                });
-                Exception? error;
-                try { error = Record.Exception(() => regex.Match(input, output, 0, token.Token, account)); }
-                finally { diagnostics.Complete(); }
-                if (reached)
-                {
-                    if (deadline) Assert.IsType<RegexMatchTimeoutException>(error);
-                    else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
-                    Assert.All(output, match => Assert.False(match.Success));
-                }
-                else Assert.Null(error);
+                var frames = new StackTrace().GetFrames();
+                var dependency = frames.Any(frame => frame.GetMethod() is { Name: "ChartMember", DeclaringType: { } type } && type == typeof(PosixWorkspace));
+                var selection = frames.Any(frame => frame.GetMethod() is { Name: "SelectChart", DeclaringType: { } type } && type == typeof(PosixWorkspace));
+                // A SelectChart caller also exists during membership. Require
+                // its absence from dependencies to observe actual projection.
+                if (triggered || (projection ? !selection || dependency : !dependency)) return;
+                triggered = true;
+                if (deadline) now = 101; else token.Cancel();
+            });
+            try
+            {
+                if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
+                else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+                    regex.Match(input, output, 0, token.Token, account)).CancellationToken);
+                Assert.True(triggered, "The injection must reach the actual closed dependency/projection loop.");
+                Assert.True(account.Peak > 17);
+                Assert.All(output, match => Assert.False(match.Success));
                 Assert.Equal(17UL, account.Used); account.Release(17);
                 Assert.True(retained.Success);
             }
-            Assert.True(reached, "The injection must reach the actual root-branch scope proof.");
+            finally { diagnostics.Complete(); }
         }
     }
 
@@ -401,8 +353,7 @@ public sealed class PosixPublicContractTests
                     if (reached || !frames.Any(frame =>
                         frame.GetMethod() is { DeclaringType: { } type } method &&
                         method.Name == (parent ? "FindReachableBoundaryCeiling" : "FindBoundaryCeiling") &&
-                        type == typeof(PosixWorkspace)) || parent && !frames.Any(frame =>
-                        frame.GetMethod() is { Name: "FindBoundaryBoundedParentTag" })) return;
+                        type == typeof(PosixWorkspace))) return;
                     reached = true;
                     if (deadline) now = 101; else token.Cancel();
                 });
@@ -419,7 +370,7 @@ public sealed class PosixPublicContractTests
                 Assert.Equal(17UL, account.Used); account.Release(17);
                 Assert.True(retained.Success);
             }
-            Assert.True(reached, "The injection must reach the actual whole/parent boundary proof.");
+            Assert.True(reached, "The injection must reach the actual global/reachable whole boundary proof.");
         }
     }
 

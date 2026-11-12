@@ -7,6 +7,28 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixWorkspaceTests
 {
     [Theory]
+    [InlineData("()", "")]
+    [InlineData("(.)", "😀")]
+    [InlineData("([é中])", "é")]
+    [InlineData("^(aé.)$", "aé😀")]
+    [InlineData("^([[:alpha:]])$", "a")]
+    public void FixedCaptureSequencesFitSmallWorkingBudget(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Utf8ValueMatch(true, true, 0, text.Length, 0, input.Length);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 10_000, MaxDepth = 64, MaxWorkingBytes = 1024, MaxResultBytes = 1 }, inputValidation: validation);
+            var output = new Utf8ValueMatch[2];
+            var account = new Account(1024); Assert.True(account.TryReserve(17));
+            Assert.Equal(expected, regex.Match(input, output, workingMemoryAllowance: account));
+            Assert.Equal(expected, output[0]); Assert.Equal(expected, output[1]);
+            Assert.Equal(17UL, account.Used); account.Release(17);
+        }
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void ExactStateLoansResetWithoutChangingAnotherActiveWorkspace(bool finite)
     {

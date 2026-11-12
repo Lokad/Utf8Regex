@@ -6,15 +6,21 @@ namespace Lokad.Utf8Regex.Posix;
 
 // Keep semantic subpattern tags, including non-public concatenation/repetition
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
-internal sealed class PosixProgram
+internal sealed partial class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest)
-    { Scalar = scalar; Parents = parents; CaptureTags = captureTags; FirstAcceptanceIsLongest = firstAcceptanceIsLongest; }
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest,
+        ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
+    {
+        Scalar = scalar; Parents = parents; CaptureTags = captureTags;
+        FirstAcceptanceIsLongest = firstAcceptanceIsLongest; Chart = chart; ChartClasses = chartClasses;
+    }
 
     internal Utf8SliceProgram Scalar { get; }
     internal int[] Parents { get; }
     internal int[] CaptureTags { get; }
     internal bool FirstAcceptanceIsLongest { get; }
+    internal ChartNode[] Chart { get; }
+    internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
     internal static PosixProgram Compile(string pattern, PosixCompileOptions options)
     {
@@ -112,8 +118,11 @@ internal sealed class PosixProgram
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget) || CanSelectDisjointAsciiRuns(scalar, budget) ||
             CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest));
+        var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
+            : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
+        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest,
+                chart.Nodes, chart.Classes),
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.Nodes, x.Classes));
         construction.Complete();
         return result;
     }
@@ -155,6 +164,24 @@ internal sealed class PosixProgram
 
     private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
+        // A fixed sequence has only one parse. Empty, dot and bracket captures
+        // must keep that native trace rather than acquire general memo storage.
+        if (program.RepeatCount == 0)
+        {
+            var unique = true;
+            for (var index = 0; index < program.Instructions.Length; index++)
+            {
+                budget.ChargeWork(1);
+                var kind = program.Instructions[index].Kind;
+                if (kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
+                    Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or
+                    Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Accept) ||
+                    kind == Utf8SliceInstructionKind.Accept && index != program.Instructions.Length - 1)
+                { unique = false; break; }
+            }
+            if (unique && program.Instructions.Length != 0 && program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept)
+                return true;
+        }
         // For one scalar R, each piece consumes x_i in [min_i,max_i]. First
         // greedy success reserves remaining minima and consumes the maximum
         // feasible total. Tags outside the loops enclose contiguous pieces:

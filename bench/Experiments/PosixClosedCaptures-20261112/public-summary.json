@@ -1,0 +1,991 @@
+{
+  "Complete": true,
+  "Seconds": 112.09113529045135,
+  "Samples": 600,
+  "MinimumSampleMs": 54.7296,
+  "MaximumTimedAllocationMiB": 61.99334716796875,
+  "Rows": [
+    {
+      "Policy": "Validate",
+      "Id": "captures/prefix-16",
+      "before": {
+        "MedianUs": 2205.9203361344535,
+        "ProcessMediansUs": [
+          2192.717142857143,
+          2219.1235294117646
+        ],
+        "MinUs": 2174.177142857143,
+        "MaxUs": 2229.4235294117643,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.113706624295222,
+        "ProcessMediansUs": [
+          5.153942019326892,
+          5.073471229263553
+        ],
+        "MinUs": 4.938786700909279,
+        "MaxUs": 6.374908030818353,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": -99.76818262470637,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/suffix-16",
+      "before": {
+        "MedianUs": 2113.1069444444447,
+        "ProcessMediansUs": [
+          2098.1916666666666,
+          2128.0222222222224
+        ],
+        "MinUs": 2090.9333333333334,
+        "MaxUs": 2141.5361111111106,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 4.994317025887694,
+        "ProcessMediansUs": [
+          4.9861565147775035,
+          5.002477536997886
+        ],
+        "MinUs": 4.876662886116486,
+        "MaxUs": 6.229353858350952,
+        "Allocations": [
+          1920.0144105677498,
+          1920
+        ]
+      },
+      "Percent": -99.76365053179073,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/both-sides-16",
+      "before": {
+        "MedianUs": 2830.3166666666666,
+        "ProcessMediansUs": [
+          2824.0962962962967,
+          2836.537037037037
+        ],
+        "MinUs": 2820.177777777778,
+        "MaxUs": 2865.4888888888886,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.614713898722647,
+        "ProcessMediansUs": [
+          5.560719851576994,
+          5.6687079458683
+        ],
+        "MinUs": 5.516994434137291,
+        "MaxUs": 5.877931503742345,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.80162241332044,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/root-inner-16",
+      "before": {
+        "MedianUs": 3103.178,
+        "ProcessMediansUs": [
+          3099.3239999999996,
+          3107.0319999999997
+        ],
+        "MinUs": 3072.16,
+        "MaxUs": 3118.8639999999996,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.62722497290329,
+        "ProcessMediansUs": [
+          5.637152567975831,
+          5.6172973778307504
+        ],
+        "MinUs": 5.603851963746224,
+        "MaxUs": 5.824577039274925,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.8186625139485,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/repeated-alternative-16",
+      "before": {
+        "MedianUs": 3107.9229166666664,
+        "ProcessMediansUs": [
+          3096.891666666667,
+          3118.9541666666664
+        ],
+        "MinUs": 3062.9833333333336,
+        "MaxUs": 3171.2666666666664,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.750306486362701,
+        "ProcessMediansUs": [
+          5.700219696969698,
+          5.800393275755706
+        ],
+        "MinUs": 5.544545454545455,
+        "MaxUs": 6.330027760641579,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.81497911497335,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/finite-live-16",
+      "before": {
+        "MedianUs": 2529.131666666666,
+        "ProcessMediansUs": [
+          2479.303333333333,
+          2578.9599999999996
+        ],
+        "MinUs": 2466.733333333333,
+        "MaxUs": 2592.8866666666668,
+        "Allocations": [
+          3936,
+          3936
+        ]
+      },
+      "after": {
+        "MedianUs": 5.650155817974625,
+        "ProcessMediansUs": [
+          5.581398675097862,
+          5.7189129608513865
+        ],
+        "MinUs": 5.5408536585365855,
+        "MaxUs": 6.7008361839604715,
+        "Allocations": [
+          3472,
+          3472
+        ]
+      },
+      "Percent": -99.77659700788053,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/funded-deadline-16",
+      "before": {
+        "MedianUs": 2666.9668103448275,
+        "ProcessMediansUs": [
+          2629.7586206896553,
+          2704.1749999999997
+        ],
+        "MinUs": 2611.055172413793,
+        "MaxUs": 2736.9500000000003,
+        "Allocations": [
+          3984,
+          3984
+        ]
+      },
+      "after": {
+        "MedianUs": 6.349425772444459,
+        "ProcessMediansUs": [
+          6.235808255221181,
+          6.463043289667737
+        ],
+        "MinUs": 6.147483966452886,
+        "MaxUs": 7.848709093899029,
+        "Allocations": [
+          3520,
+          3520
+        ]
+      },
+      "Percent": -99.76192332998612,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/astral-prefix-16",
+      "before": {
+        "MedianUs": 2221.077139037433,
+        "ProcessMediansUs": [
+          2208.608823529412,
+          2233.5454545454545
+        ],
+        "MinUs": 2194.944117647059,
+        "MaxUs": 2281.869696969697,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.3747283069810665,
+        "ProcessMediansUs": [
+          5.378348359177786,
+          5.371108254784347
+        ],
+        "MinUs": 5.293977641543455,
+        "MaxUs": 6.324046159394158,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": -99.75801253308518,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "captures/funded-cursor-16",
+      "before": {
+        "MedianUs": 2670.356280788178,
+        "ProcessMediansUs": [
+          2635.3482758620694,
+          2705.3642857142863
+        ],
+        "MinUs": 2631.4827586206898,
+        "MaxUs": 2713.035714285714,
+        "Allocations": [
+          4416,
+          4416
+        ]
+      },
+      "after": {
+        "MedianUs": 6.6503293982021585,
+        "ProcessMediansUs": [
+          6.6037299711058575,
+          6.69692882529846
+        ],
+        "MinUs": 6.4904736888188435,
+        "MaxUs": 8.618354141984872,
+        "Allocations": [
+          3912,
+          3912
+        ]
+      },
+      "Percent": -99.75095722447045,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/captured-root",
+      "before": {
+        "MedianUs": 5.172584673693676,
+        "ProcessMediansUs": [
+          3.959032627957886,
+          6.386136719429466
+        ],
+        "MinUs": 3.9503023037631606,
+        "MaxUs": 6.916829013741522,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.798327931271747,
+        "ProcessMediansUs": [
+          5.854302646533527,
+          5.742353216009968
+        ],
+        "MinUs": 5.698170066967761,
+        "MaxUs": 7.004050982302322,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": 12.097303322271902,
+      "Disjoint": false
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/native-sku",
+      "before": {
+        "MedianUs": 0.7434638401642906,
+        "ProcessMediansUs": [
+          0.7024600699366789,
+          0.7844676103919023
+        ],
+        "MinUs": 0.6816132690671959,
+        "MaxUs": 1.0059409310357867,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.7538516732021322,
+        "ProcessMediansUs": [
+          0.7390552040377331,
+          0.7686481423665313
+        ],
+        "MinUs": 0.7233932487591946,
+        "MaxUs": 0.9033697575189926,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": 1.3972210182469746,
+      "Disjoint": false
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/fixed-scalar-capture",
+      "before": {
+        "MedianUs": 0.29526812168071115,
+        "ProcessMediansUs": [
+          0.2943299119076423,
+          0.29620633145378006
+        ],
+        "MinUs": 0.2833934057528176,
+        "MaxUs": 0.30066910542585085,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.23819845315990573,
+        "ProcessMediansUs": [
+          0.241587941552367,
+          0.23480896476744448
+        ],
+        "MinUs": 0.23256815157384347,
+        "MaxUs": 0.24537234673307243,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -19.328083301358834,
+      "Disjoint": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/whole-count",
+      "before": {
+        "MedianUs": 0.7719255230961272,
+        "ProcessMediansUs": [
+          0.7730922042741046,
+          0.7707588419181497
+        ],
+        "MinUs": 0.7631804956355974,
+        "MaxUs": 0.7779427088654148,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.7672530061890074,
+        "ProcessMediansUs": [
+          0.756504725784119,
+          0.7780012865938958
+        ],
+        "MinUs": 0.746613689723677,
+        "MaxUs": 0.7813096708974503,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -0.6053066995866052,
+      "Disjoint": false
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/core-literal",
+      "before": {
+        "MedianUs": 0.1049852068788393,
+        "ProcessMediansUs": [
+          0.10745181531370111,
+          0.10251859844397751
+        ],
+        "MinUs": 0.10123346016241695,
+        "MaxUs": 0.11119318141894505,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.1049550264206178,
+        "ProcessMediansUs": [
+          0.10273431347523124,
+          0.10717573936600437
+        ],
+        "MinUs": 0.10018275826485556,
+        "MaxUs": 0.10808087070232021,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -0.028747343667512304,
+      "Disjoint": false
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/net-predecoded-count",
+      "before": {
+        "MedianUs": 0.20037527746958908,
+        "ProcessMediansUs": [
+          0.20372640213977816,
+          0.1970241527994
+        ],
+        "MinUs": 0.19626786509333324,
+        "MaxUs": 0.20504376276165115,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.20178947153387075,
+        "ProcessMediansUs": [
+          0.20119653336275115,
+          0.20238240970499036
+        ],
+        "MinUs": 0.19964321942005667,
+        "MaxUs": 0.2305533498759305,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": 0.7057727291213789,
+      "Disjoint": false
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/prefix-16",
+      "before": {
+        "MedianUs": 2172.3885714285716,
+        "ProcessMediansUs": [
+          2218.054285714286,
+          2126.7228571428573
+        ],
+        "MinUs": 2112.474285714286,
+        "MaxUs": 2232.74,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.056018376364866,
+        "ProcessMediansUs": [
+          4.986972795936101,
+          5.125063956793633
+        ],
+        "MinUs": 4.879339616335805,
+        "MaxUs": 6.512549744172825,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": -99.76725994406056,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/suffix-16",
+      "before": {
+        "MedianUs": 2074.527180451128,
+        "ProcessMediansUs": [
+          2129.688571428572,
+          2019.3657894736841
+        ],
+        "MinUs": 2006.4131578947367,
+        "MaxUs": 2136.3971428571426,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.11420317283346,
+        "ProcessMediansUs": [
+          5.118090748379493,
+          5.1103155972874275
+        ],
+        "MinUs": 5.035048778890853,
+        "MaxUs": 6.225743348982785,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": -99.75347620310662,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/both-sides-16",
+      "before": {
+        "MedianUs": 2776.5242063492065,
+        "ProcessMediansUs": [
+          2868.5555555555557,
+          2684.4928571428572
+        ],
+        "MinUs": 2683.275,
+        "MaxUs": 2887.9592592592594,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.746796331143227,
+        "ProcessMediansUs": [
+          5.708150064683053,
+          5.785442597603401
+        ],
+        "MinUs": 5.670337112852904,
+        "MaxUs": 6.875315036722072,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.7930219258308,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/root-inner-16",
+      "before": {
+        "MedianUs": 3035.0947115384615,
+        "ProcessMediansUs": [
+          3162.8624999999997,
+          2907.326923076923
+        ],
+        "MinUs": 2868.8384615384616,
+        "MaxUs": 3174.8250000000003,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.697919124201665,
+        "ProcessMediansUs": [
+          5.657166578609707,
+          5.7386716697936215
+        ],
+        "MinUs": 5.582783606309911,
+        "MaxUs": 5.9670243902439015,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.8122655249426,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/repeated-alternative-16",
+      "before": {
+        "MedianUs": 3042.954923076923,
+        "ProcessMediansUs": [
+          3102.0559999999996,
+          2983.8538461538465
+        ],
+        "MinUs": 2958.4423076923076,
+        "MaxUs": 3106.212,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.8236214394728805,
+        "ProcessMediansUs": [
+          5.864575363427697,
+          5.782667515518065
+        ],
+        "MinUs": 5.741087060321503,
+        "MaxUs": 6.4546633773675,
+        "Allocations": [
+          4824,
+          4824
+        ]
+      },
+      "Percent": -99.80861952980939,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/finite-live-16",
+      "before": {
+        "MedianUs": 2505.596935483871,
+        "ProcessMediansUs": [
+          2559.9100000000003,
+          2451.283870967742
+        ],
+        "MinUs": 2415.435483870968,
+        "MaxUs": 2572.0566666666664,
+        "Allocations": [
+          3936,
+          3936
+        ]
+      },
+      "after": {
+        "MedianUs": 5.6994460658750965,
+        "ProcessMediansUs": [
+          5.615870384325546,
+          5.783021747424647
+        ],
+        "MinUs": 5.560376789751318,
+        "MaxUs": 7.319137733689431,
+        "Allocations": [
+          3472,
+          3472
+        ]
+      },
+      "Percent": -99.77253140817821,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/funded-deadline-16",
+      "before": {
+        "MedianUs": 2621.461071428572,
+        "ProcessMediansUs": [
+          2702.5321428571433,
+          2540.39
+        ],
+        "MinUs": 2527.6,
+        "MaxUs": 2722.9892857142854,
+        "Allocations": [
+          3984,
+          3984
+        ]
+      },
+      "after": {
+        "MedianUs": 6.360233044004044,
+        "ProcessMediansUs": [
+          6.27682957498533,
+          6.443636513022759
+        ],
+        "MinUs": 6.188305809372118,
+        "MaxUs": 7.870441780534831,
+        "Allocations": [
+          3520,
+          3520
+        ]
+      },
+      "Percent": -99.75737831420331,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/astral-prefix-16",
+      "before": {
+        "MedianUs": 2192.498181818182,
+        "ProcessMediansUs": [
+          2241.5363636363636,
+          2143.46
+        ],
+        "MinUs": 2116.06,
+        "MaxUs": 2270.530303030303,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.4188909519916155,
+        "ProcessMediansUs": [
+          5.344197080291971,
+          5.49358482369126
+        ],
+        "MinUs": 5.306160583941606,
+        "MaxUs": 6.552501629136196,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": -99.75284399335293,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "captures/funded-cursor-16",
+      "before": {
+        "MedianUs": 2632.623953201971,
+        "ProcessMediansUs": [
+          2711.589285714286,
+          2553.6586206896554
+        ],
+        "MinUs": 2546.7551724137934,
+        "MaxUs": 2720.2785714285715,
+        "Allocations": [
+          4416,
+          4416
+        ]
+      },
+      "after": {
+        "MedianUs": 6.61288080278179,
+        "ProcessMediansUs": [
+          6.61365901405944,
+          6.61210259150414
+        ],
+        "MinUs": 6.523838761345434,
+        "MaxUs": 8.436590140594411,
+        "Allocations": [
+          3912,
+          3912
+        ]
+      },
+      "Percent": -99.74881027748992,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/captured-root",
+      "before": {
+        "MedianUs": 4.11348930199074,
+        "ProcessMediansUs": [
+          4.163363821138211,
+          4.06361478284327
+        ],
+        "MinUs": 4.021186943620179,
+        "MaxUs": 4.506176603432701,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 5.849298408409291,
+        "ProcessMediansUs": [
+          5.83408248560839,
+          5.8645143312101915
+        ],
+        "MinUs": 5.768803722103935,
+        "MaxUs": 6.738829617834396,
+        "Allocations": [
+          1920,
+          1920
+        ]
+      },
+      "Percent": 42.19797303419506,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/native-sku",
+      "before": {
+        "MedianUs": 0.6930891752740462,
+        "ProcessMediansUs": [
+          0.6994124238200651,
+          0.6867659267280274
+        ],
+        "MinUs": 0.6802445406966251,
+        "MaxUs": 0.8258915358238585,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.7542159806664542,
+        "ProcessMediansUs": [
+          0.7478700766075989,
+          0.7605618847253096
+        ],
+        "MinUs": 0.7413922850731255,
+        "MaxUs": 0.869335503334392,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": 8.819471948647672,
+      "Disjoint": false
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/fixed-scalar-capture",
+      "before": {
+        "MedianUs": 0.27073886227795063,
+        "ProcessMediansUs": [
+          0.2705704544054115,
+          0.27090727015048977
+        ],
+        "MinUs": 0.25697012850971185,
+        "MaxUs": 0.3247083242374156,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.2097937599825232,
+        "ProcessMediansUs": [
+          0.20525574091720464,
+          0.21433177904784176
+        ],
+        "MinUs": 0.19686883463742635,
+        "MaxUs": 0.21662023299665273,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -22.510659084050854,
+      "Disjoint": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/whole-count",
+      "before": {
+        "MedianUs": 0.7573028855210706,
+        "ProcessMediansUs": [
+          0.7715764290855271,
+          0.7430293419566141
+        ],
+        "MinUs": 0.7420229470476665,
+        "MaxUs": 0.7771964682149481,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.7572928698796184,
+        "ProcessMediansUs": [
+          0.7509301343415654,
+          0.7636556054176715
+        ],
+        "MinUs": 0.743246721904915,
+        "MaxUs": 0.767252800928046,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -0.001322541039217029,
+      "Disjoint": false
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/core-literal",
+      "before": {
+        "MedianUs": 0.10199043269902622,
+        "ProcessMediansUs": [
+          0.10305614552536323,
+          0.10092471987268921
+        ],
+        "MinUs": 0.09925267592431113,
+        "MaxUs": 0.10354499333196915,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.10189138865978559,
+        "ProcessMediansUs": [
+          0.1026724895436695,
+          0.10111028777590166
+        ],
+        "MinUs": 0.10080794828914992,
+        "MaxUs": 0.10465359858224375,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": -0.09711110799275335,
+      "Disjoint": false
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/net-predecoded-count",
+      "before": {
+        "MedianUs": 0.19964121999439643,
+        "ProcessMediansUs": [
+          0.20220723145716826,
+          0.19707520853162463
+        ],
+        "MinUs": 0.1964001722563108,
+        "MaxUs": 0.23524181764247024,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "MedianUs": 0.2000837721928501,
+        "ProcessMediansUs": [
+          0.19798442434105645,
+          0.20218312004464373
+        ],
+        "MinUs": 0.19758768585853267,
+        "MaxUs": 0.24188044614365206,
+        "Allocations": [
+          0,
+          0
+        ]
+      },
+      "Percent": 0.22167375979071924,
+      "Disjoint": false
+    }
+  ],
+  "Peaks": {
+    "before": {
+      "Validate": [
+        2753,
+        2753
+      ],
+      "AssumeValid": [
+        2753,
+        2753
+      ]
+    },
+    "after": {
+      "Validate": [
+        5953,
+        5953
+      ],
+      "AssumeValid": [
+        5953,
+        5953
+      ]
+    }
+  }
+}

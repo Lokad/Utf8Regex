@@ -6,17 +6,12 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Posix;
 
-// One exclusive synchronous call/cursor owns this workspace. Enumerate accepting
-// paths at the earliest start; keep the longest, then compare hierarchical tag
-// histories. Empty-repeat progress guards bound epsilon traversal. All growing
-// storage uses the existing admitted invocation buffers, without a second ledger.
-// Whole-only output needs no tag history: captures cannot affect ERE acceptance.
-// A cursor reserves tag capacity because later advances can request captures.
-// Own one mutable local or cursor field; pass by reference, never copy live loans.
-// State is borrowed from a synchronous stack/heap vector or the cursor's array;
-// no span escapes a call. Projection reads it before publication. This owner
-// reserves the same conservative capacity and Release accepts the default value.
-internal struct PosixWorkspace
+// One exclusive call/cursor owns these admitted buffers. Scalar execution finds
+// the earliest longest whole extent; proven first-acceptance programs also keep
+// their native capture trace. General captures select closed syntax intervals.
+// State belongs to the synchronous stack/heap vector or the cursor's array.
+// Pass this owner by reference; no borrowed span or result aliases its buffers.
+internal partial struct PosixWorkspace
 {
     private readonly PosixProgram _program;
     private ulong _stateBytes;
@@ -25,7 +20,11 @@ internal struct PosixWorkspace
     private Utf8InvocationStateBuffer<Frame> _frames;
     private Utf8InvocationStateBuffer<Mutation> _undo;
     private Utf8InvocationStateBuffer<TagEvent> _trace;
-    private Utf8InvocationStateBuffer<TagEvent> _best;
+    private Dictionary<ChartKey, int>? _chartMemo;
+    private int _chartCapacity;
+    private ulong _chartBytes;
+    private Utf8InvocationStateBuffer<ChartFrame> _chartFrames;
+    private bool _chartResult;
 
     private readonly record struct Frame(int Pc, int Position, int TraceCount, int UndoCount);
     private readonly record struct Mutation(int Index, int OldValue);
@@ -37,7 +36,7 @@ internal struct PosixWorkspace
     {
         _program = program;
         _openOffset = checked(program.Scalar.RepeatCount * 2);
-        var tags = captureHistory ? program.Parents.Length : 0;
+        var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
         _lastOffset = checked(_openOffset + tags);
         var count = checked(_lastOffset + tags);
         if (count == 0) return;
@@ -54,17 +53,25 @@ internal struct PosixWorkspace
     internal bool Find(ReadOnlySpan<byte> input, scoped Span<int> state, int fromByte, bool existenceOnly,
         ref Utf8SliceInvocation invocation, out int start, out int end, bool captureHistory = true)
     {
-        captureHistory &= !existenceOnly;
+        captureHistory &= !existenceOnly && _program.CaptureTags.Length > 1;
+        var generalCaptures = captureHistory && !_program.FirstAcceptanceIsLongest;
         for (var candidate = fromByte; candidate <= input.Length;)
         {
             Charge(ref invocation);
             Reset(state, ref invocation);
-            if (MatchAt(input, state, candidate, existenceOnly, captureHistory, ref invocation, out end))
+            if (MatchAt(input, state, candidate, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
             {
                 start = candidate;
-                if (captureHistory)
+                if (generalCaptures)
                 {
-                    var trace = _best.WrittenItems;
+                    // The closed whole winner needs no pending scalar choice or
+                    // undo state. Refund those capacities before chart growth.
+                    _frames.Release(ref invocation); _undo.Release(ref invocation);
+                    SelectChart(input, state, candidate, end, ref invocation);
+                }
+                else if (captureHistory)
+                {
+                    var trace = _trace.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
                     {
                         if ((index & 63) == 0) Charge(ref invocation);
@@ -88,11 +95,6 @@ internal struct PosixWorkspace
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
-        // Saving the best copies the current trace exactly. Appending preserves
-        // that shared prefix; rollback can only shorten it. No trace mutation or
-        // speculative extension is needed to skip already equal occurrences.
-        var sharedPrefix = 0; var firstBestClose = -1; var prefixTag = 1;
-        var preferredRootBranch = -1;
         while (true)
         {
             Charge(ref invocation);
@@ -168,12 +170,6 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        // Preorder tags keep each subtree contiguous. A later tag
-                        // with a parent before the selected branch is a later
-                        // sibling of one of its proved alternation ancestors.
-                        if (preferredRootBranch >= 0 && instruction.A > preferredRootBranch &&
-                            _program.Parents[instruction.A] < preferredRootBranch)
-                        { failed = true; break; }
                         SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
                         Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
                     }
@@ -183,11 +179,6 @@ internal struct PosixWorkspace
                     if (captureHistory)
                     {
                         Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
-                        // A ceiling fixes the whole endpoint. The selected tag
-                        // follows only parents proved fixed at that endpoint;
-                        // later occurrences cannot repair its losing prefix.
-                        if (instruction.A == prefixTag && end == maximumEnd)
-                            failed = WorseClosedPrefix(prefixTag, sharedPrefix, firstBestClose, ref invocation);
                     }
                     pc++;
                     break;
@@ -199,37 +190,9 @@ internal struct PosixWorkspace
                     }
                     // Without requested captures, the ceiling proves the longest whole
                     // match regardless of the histories on other pending paths.
-                    if (existenceOnly || !captureHistory && at == maximumEnd) { end = at; return true; }
-                    if (_program.FirstAcceptanceIsLongest)
-                    {
-                        end = at;
-                        // No competing acceptance remains. Transfer the admitted
-                        // winning trace instead of allocating/copying a second
-                        // history; both owners still reset and release normally.
-                        if (captureHistory) (_best, _trace) = (_trace, _best);
-                        return true;
-                    }
-                    if (at > end || at == end && captureHistory && BetterHistory(ref invocation))
-                    {
-                        end = at;
-                        if (captureHistory)
-                        {
-                            // A better history can move a leading parent's end
-                            // without moving the whole end. Derive its authority
-                            // from this winner, before saving its closing prefix.
-                            prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation, out preferredRootBranch);
-                            Clear(ref _best, ref invocation);
-                            firstBestClose = -1;
-                            for (var index = 0; index < _trace.Count; index++)
-                            {
-                                if ((index & 63) == 0) Charge(ref invocation);
-                                var item = _trace[index];
-                                if (firstBestClose < 0 && item.Tag == prefixTag && item.Opening >= 0) firstBestClose = index;
-                                Check(_best.TryPush(item, ref invocation), ref invocation);
-                            }
-                            sharedPrefix = _trace.Count;
-                        }
-                    }
+                    if (existenceOnly || !captureHistory && at == maximumEnd || _program.FirstAcceptanceIsLongest)
+                    { end = at; return true; }
+                    end = Math.Max(end, at);
                     failed = true;
                     break;
                 default: throw new InvalidOperationException($"Unsupported POSIX instruction {instruction.Kind}.");
@@ -237,215 +200,8 @@ internal struct PosixWorkspace
             if (failed)
             {
                 if (!Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
-                sharedPrefix = Math.Min(sharedPrefix, _trace.Count);
             }
         }
-    }
-
-    private int FindPrefixComparisonTag(ReadOnlySpan<byte> input, bool maximalAcceptance,
-        ref Utf8SliceInvocation invocation, out int preferredRootBranch)
-    {
-        preferredRootBranch = -1;
-        var code = _program.Scalar.Instructions;
-        var parents = _program.Parents;
-        if (code.Length > 64 || code.Length < 3 || parents.Length < 3 ||
-            code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 }) return 1;
-        var rootTag = 0; var rootPc = 0; var scopeEnd = code.Length - 1;
-        if (code[1] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 1 })
-        {
-            if (!maximalAcceptance || !TryGetRootBranchScope(ref invocation, out rootTag, out rootPc, out scopeEnd)) return 1;
-            preferredRootBranch = rootTag;
-        }
-        Charge(ref invocation);
-        var shift = rootPc - rootTag;
-        var tag = rootTag + 1;
-        // All earlier priorities open at the same start, before any body work.
-        while (tag < parents.Length && tag + shift < scopeEnd && parents[tag] == tag - 1 &&
-            code[tag + shift] is { Kind: Utf8SliceInstructionKind.CaptureStart } open && open.A == tag) tag++;
-        if (tag >= parents.Length || parents[tag] != tag - 1) return 1;
-        var close = -1;
-        for (var pc = tag + shift; pc < scopeEnd; pc++)
-        {
-            if (((pc - tag - shift) & 31) == 0) Charge(ref invocation);
-            if (code[pc] is { Kind: Utf8SliceInstructionKind.CaptureEnd } end && end.A == tag - 1)
-            { close = pc; break; }
-        }
-        if (close < 0) return 1;
-        // No body edge can re-enter an earlier opening or escape its enclosure.
-        for (var pc = tag + shift; pc < close; pc++)
-        {
-            if (((pc - tag - shift) & 31) == 0) Charge(ref invocation);
-            var instruction = code[pc];
-            if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
-                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
-            {
-                if (instruction.A < tag + shift || instruction.A > close) return 1;
-            }
-            else if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-            {
-                if (instruction.A < tag) return 1;
-            }
-            else if (instruction.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
-                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.RepeatExit)) return 1;
-        }
-        // A fixed scalar suffix fixes every earlier closing boundary at a
-        // maximal whole end, even when UTF-8 widths differ. Each enclosure
-        // participates exactly once. Their
-        // first child's occurrences are therefore the first unfixed priority.
-        var enclosing = tag - 1;
-        var fixedSuffix = true;
-        for (var pc = close; pc <= scopeEnd; pc++)
-        {
-            if (((pc - close) & 31) == 0) Charge(ref invocation);
-            if (pc == scopeEnd)
-            {
-                if (enclosing != rootTag - 1) return 1;
-                if (fixedSuffix) return tag;
-                return maximalAcceptance ? FindBoundaryBoundedParentTag(input, tag, close, scopeEnd, shift, ref invocation) : 1;
-            }
-            var instruction = code[pc];
-            if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0) continue;
-            if (instruction.Kind is Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.CategorySet) continue;
-            if (instruction.Kind == Utf8SliceInstructionKind.CaptureEnd)
-            {
-                if (instruction.A < tag && instruction.A != enclosing--) return 1;
-            }
-            else if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart && instruction.A >= tag) continue;
-            else if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
-                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd or
-                Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor) fixedSuffix = false;
-            else return 1;
-        }
-        return 1;
-    }
-
-    private bool TryGetRootBranchScope(ref Utf8SliceInvocation invocation, out int tag, out int opening, out int scopeEnd)
-    {
-        tag = opening = scopeEnd = -1;
-        var code = _program.Scalar.Instructions;
-        var rootTag = 0; var rootOpening = 0;
-        var rootClose = code.Length - 2;
-        if (code[1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 } ||
-            code[rootClose] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } ||
-            code[^1].Kind != Utf8SliceInstructionKind.Accept || _trace.Count < 2) return false;
-        var traceIndex = 1;
-        // Each successful descent removes an immediate alternation ancestor:
-        // entry and join consume nothing, so all these scopes share the proved
-        // whole endpoint. The 64-instruction cap also bounds this traversal.
-        while (code[rootOpening + 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
-        {
-            if (traceIndex >= _trace.Count || _trace[traceIndex].Opening >= 0) return tag >= 0;
-            var selected = _trace[traceIndex].Tag;
-            var selectedOpening = -1; var selectedClose = -1;
-            var previousTag = rootTag;
-            for (var pc = rootOpening + 1; pc < rootClose;)
-            {
-                Charge(ref invocation);
-                var fork = code[pc];
-                var hasFork = fork.Kind == Utf8SliceInstructionKind.Fork && fork.B == 0;
-                var next = hasFork ? fork.A : rootClose;
-                var first = hasFork ? pc + 1 : pc;
-                if (next <= first || next > rootClose ||
-                    code[first].Kind != Utf8SliceInstructionKind.CaptureStart) return tag >= 0;
-                var branch = code[first].A;
-                if (branch <= previousTag || branch >= _program.Parents.Length || _program.Parents[branch] != rootTag) return tag >= 0;
-                var close = first + 1;
-                for (; close < next; close++)
-                {
-                    if (((close - first) & 31) == 0) Charge(ref invocation);
-                    if (code[close] is { Kind: Utf8SliceInstructionKind.CaptureEnd } end && end.A == branch) break;
-                }
-                if (close == next || (hasFork
-                    ? close + 2 != next || code[close + 1] is not { Kind: Utf8SliceInstructionKind.Jump } jump || jump.A != rootClose
-                    : close + 1 != rootClose)) return tag >= 0;
-                for (var body = first + 1; body < close; body++)
-                {
-                    if (((body - first) & 31) == 0) Charge(ref invocation);
-                    var item = code[body];
-                    if (item.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
-                        Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
-                    {
-                        if (item.A <= first || item.A > close) return tag >= 0;
-                    }
-                    else if (item.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-                    {
-                        if (item.A <= branch) return tag >= 0;
-                    }
-                    else if (item.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
-                        Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.RepeatExit)) return tag >= 0;
-                }
-                if (branch == selected) { selectedOpening = first; selectedClose = close; }
-                previousTag = branch;
-                pc = next;
-            }
-            if (selectedOpening < 0) return tag >= 0;
-            tag = rootTag = selected; opening = rootOpening = selectedOpening;
-            rootClose = selectedClose; scopeEnd = selectedClose + 1;
-            traceIndex++;
-        }
-        return tag >= 0;
-    }
-
-    private int FindBoundaryBoundedParentTag(ReadOnlySpan<byte> input, int tag, int close, int scopeEnd, int shift,
-        ref Utf8SliceInvocation invocation)
-    {
-        var code = _program.Scalar.Instructions;
-        var upper = scopeEnd;
-        var firstTarget = int.MaxValue; var lastTarget = -1;
-        var traceIndex = _trace.Count - 1;
-        // The preceding scan proves unique, reverse-ordered parent closings.
-        // Each suffix segment may vary, but cannot skip or repeat those closes.
-        for (var pc = scopeEnd - 1; pc >= close; pc--)
-        {
-            if (((scopeEnd - 1 - pc) & 31) == 0) Charge(ref invocation);
-            var instruction = code[pc];
-            if (instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
-                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
-            {
-                firstTarget = Math.Min(firstTarget, instruction.A);
-                lastTarget = Math.Max(lastTarget, instruction.A);
-            }
-            if (instruction.Kind != Utf8SliceInstructionKind.CaptureEnd || instruction.A >= tag) continue;
-            if (firstTarget < pc + 1 || lastTarget > upper) return 1;
-            firstTarget = int.MaxValue; lastTarget = -1; upper = pc;
-
-            // Read the current maximal acceptance, not a hypothetical suffix
-            // width. Its leading parents have the same fixed opening position.
-            while (traceIndex >= 0)
-            {
-                if ((traceIndex & 63) == 0) Charge(ref invocation);
-                var item = _trace[traceIndex--];
-                if (item.Tag != instruction.A || item.Opening < 0) continue;
-                if (instruction.A != 0 && item.Position < input.Length)
-                {
-                    // Only the next scalar matters: no body path can cross it
-                    // if every consuming atom rejects it. Borrow the actual
-                    // class predicate, including Unicode unions and negation.
-                    if (Rune.DecodeFromUtf8(input[item.Position..], out var boundary, out _) != OperationStatus.Done) return 1;
-                    for (var body = instruction.A + shift + 1; body < pc; body++)
-                    {
-                        if (((body - instruction.A - shift - 1) & 31) == 0) Charge(ref invocation);
-                        var atom = code[body];
-                        if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.A == boundary.Value ||
-                            atom.Kind == Utf8SliceInstructionKind.Dot && (atom.A != 0 || boundary.Value != '\n') ||
-                            atom.Kind == Utf8SliceInstructionKind.CategorySet && MatchesClass(boundary, atom, ref invocation))
-                        {
-                            // An accepting atom may be unreachable here. The
-                            // leading opening and confined enclosure identify
-                            // the same parent on every competing history.
-                            if (FindReachableBoundaryCeiling(input, _trace[item.Opening].Position,
-                                item.Position, boundary, instruction.A + shift + 1, pc, ref invocation) != item.Position) return 1;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            if (traceIndex < 0) return 1;
-        }
-        // Each earlier parent is already at its independent upper bound. A
-        // shorter continuation loses there; an equal one exposes this child.
-        return tag;
     }
 
     private int FindBoundaryCeiling(ReadOnlySpan<byte> input, int start, int acceptedEnd, ref Utf8SliceInvocation invocation)
@@ -622,104 +378,18 @@ internal struct PosixWorkspace
         return true;
     }
 
-    private bool BetterHistory(ref Utf8SliceInvocation invocation)
-    {
-        var current = _trace.WrittenItems; var best = _best.WrittenItems;
-        for (var tag = 1; tag < _program.Parents.Length; tag++)
-        {
-            Charge(ref invocation);
-            var parent = _program.Parents[tag];
-            if (parent == 0)
-            {
-                // Compilation wraps the whole expression in tag0, outside all
-                // alternatives/repeats. Every acceptance has its single opening
-                // at0 and closing last; do not search both traces for it again.
-                var order = CompareOccurrences(current, best, tag, 0, current.Length - 1,
-                    0, best.Length - 1, ref invocation);
-                if (order != 0) return order < 0;
-                continue;
-            }
-            var a = 0; var b = 0;
-            while (true)
-            {
-                var ae = NextClose(current, parent, a, current.Length, ref invocation);
-                var be = NextClose(best, parent, b, best.Length, ref invocation);
-                if (ae < 0 || be < 0)
-                {
-                    // Any differing higher-priority parent was already decisive.
-                    if (ae != be) throw new InvalidOperationException("POSIX parent histories disagree after their priority passed.");
-                    break;
-                }
-                var order = CompareOccurrences(current, best, tag, current[ae].Opening, ae, best[be].Opening, be, ref invocation);
-                if (order != 0) return order < 0;
-                a = ae + 1; b = be + 1;
-            }
-        }
-        return false;
-    }
-
-    private bool WorseClosedPrefix(int tag, int sharedPrefix, int firstBestClose, ref Utf8SliceInvocation invocation)
-    {
-        var current = _trace.WrittenItems; var best = _best.WrittenItems;
-        var a = sharedPrefix; var b = sharedPrefix;
-        // Skipped equal occurrences still establish prior participation. A new
-        // equal-prefix tail loses only after an earlier occurrence, including empty.
-        var first = firstBestClose < 0 || firstBestClose >= sharedPrefix;
-        while (true)
-        {
-            var ac = NextClose(current, tag, a, current.Length, ref invocation);
-            if (ac < 0) return false; // A continuation can still add occurrences.
-            var bc = NextClose(best, tag, b, best.Length - 1, ref invocation);
-            if (bc < 0) return !first; // Participation wins; an extra equal-prefix tail loses.
-            var aStart = current[current[ac].Opening].Position;
-            var bStart = best[best[bc].Opening].Position;
-            if (aStart != bStart) return aStart > bStart;
-            if (current[ac].Position != best[bc].Position)
-                return current[ac].Position < best[bc].Position;
-            a = ac + 1; b = bc + 1; first = false;
-        }
-    }
-
-    private static int CompareOccurrences(ReadOnlySpan<TagEvent> current, ReadOnlySpan<TagEvent> best,
-        int tag, int a, int aEnd, int b, int bEnd, ref Utf8SliceInvocation invocation)
-    {
-        var first = true;
-        while (true)
-        {
-            var ac = NextClose(current, tag, a + 1, aEnd, ref invocation);
-            var bc = NextClose(best, tag, b + 1, bEnd, ref invocation);
-            if (ac < 0 || bc < 0)
-            {
-                if (ac == bc) return 0;
-                // A participating (even empty) subpattern beats absence. Once
-                // equal occurrences exist, prefer no redundant empty tail.
-                return first ? ac < 0 ? 1 : -1 : ac < 0 ? -1 : 1;
-            }
-            var aStart = current[current[ac].Opening].Position;
-            var bStart = best[best[bc].Opening].Position;
-            if (aStart != bStart) return aStart < bStart ? -1 : 1;
-            if (current[ac].Position != best[bc].Position) return current[ac].Position > best[bc].Position ? -1 : 1;
-            a = ac; b = bc; first = false;
-        }
-    }
-
-    private static int NextClose(ReadOnlySpan<TagEvent> trace, int tag, int from, int end, ref Utf8SliceInvocation invocation)
-    {
-        for (var index = from; index < end; index++)
-        {
-            if (((index - from) & 63) == 0) Charge(ref invocation);
-            if (trace[index].Tag == tag && trace[index].Opening >= 0) return index;
-        }
-        return -1;
-    }
-
     internal readonly bool GetCapture(scoped ReadOnlySpan<int> state, int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
     {
+        if (!_program.FirstAcceptanceIsLongest)
+        {
+            start = state[_openOffset + slot - 1]; end = state[_lastOffset + slot - 1];
+            return start >= 0;
+        }
         var tag = _program.CaptureTags[slot];
         var close = state[_lastOffset + tag];
         start = end = -1;
         if (close < 0) return false;
-        var open = _best[close].Opening;
+        var open = _trace[close].Opening;
         // Tag zero encloses the entire winning trace, including when it is a
         // public root capture. Only repeated inner parents can make a group's
         // last occurrence absent from its parent's final occurrence.
@@ -727,16 +397,17 @@ internal struct PosixWorkspace
         {
             Charge(ref invocation);
             var parentClose = state[_lastOffset + parent];
-            if (parentClose < 0 || _best[parentClose].Opening > open || parentClose < close) return false;
+            if (parentClose < 0 || _trace[parentClose].Opening > open || parentClose < close) return false;
         }
-        start = _best[open].Position; end = _best[close].Position;
+        start = _trace[open].Position; end = _trace[close].Position;
         return true;
     }
 
     private void Reset(scoped Span<int> state, ref Utf8SliceInvocation invocation)
     {
         Clear(ref _frames, ref invocation); Clear(ref _undo, ref invocation);
-        Clear(ref _trace, ref invocation); Clear(ref _best, ref invocation);
+        Clear(ref _trace, ref invocation);
+        ResetChart(ref invocation);
         for (var offset = 0; offset < state.Length;)
         {
             Charge(ref invocation);
@@ -757,7 +428,8 @@ internal struct PosixWorkspace
     internal void Release(ref Utf8SliceInvocation invocation)
     {
         _frames.Release(ref invocation); _undo.Release(ref invocation);
-        _trace.Release(ref invocation); _best.Release(ref invocation);
+        _trace.Release(ref invocation);
+        ReleaseChart(ref invocation);
         invocation.Ledger.Release(_stateBytes);
         this = default;
     }

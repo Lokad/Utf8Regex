@@ -136,137 +136,63 @@ answer after refusal. Boolean existence can stop on a proved hit. Selected whole
 matches and Count finish longest-match competition; operations returning captures
 also resolve hierarchical capture priority. Whole-only output can omit unobservable
 tag histories because this ERE subset has no capture-dependent acceptance.
-Without requested captures, an acceptance at input end proves the longest whole
-match and can stop competition immediately; other endpoints retain competition.
-An internal body tag with exactly its enclosing capture's occurrences and
-boundaries can be omitted; descendant priority and public captures remain intact.
-For greedy pieces of one scalar literal, with every tag outside repeated bodies,
-a bounded construction proof can select the first acceptance: suffix minima are
-reserved, the total endpoint is maximal, and nested tags retain preorder priority.
-A flat two-way alternative of capture-wrapped literal words can reuse this proof
-when both have the same positive scalar length and no consuming suffix: tied
-endpoints prefer the earlier branch's participating whole-span tag. Empty/unequal
-branches, nested forks and assertions retain general competition.
-The proof uses accounted program metadata, without a second executor.
-A flat chain of positive-minimum greedy ASCII class runs can also stop at its
-first acceptance when all classes are mutually disjoint and tags stay outside
-repeated bodies. Each transition then has one possible boundary; the last run's
-greedy endpoint is longest, with no competing capture history. Overlapping,
-nullable, negated or non-ASCII classes keep general competition.
-A root repetition of one capture containing only a greedy uniform literal run
-can use the same first-acceptance proof when the inner minimum is zero or one
-and the outer repeat is bounded or has a positive minimum. Feasible total lengths
-are contiguous; greedy success maximizes the endpoint, then occurrence lengths
-in order, retaining necessary empty tails. Larger inner minima, minimum-zero
-unbounded outer repeats, nested captures and consuming suffixes keep general
-history ranking. This changes neither capture policy nor the execution machinery.
-At a proven first acceptance, the workspace transfers its admitted capture trace
-to the selected-history buffer instead of allocating and copying a second trace.
-General competition still keeps a separate best history. Both buffers retain
-their normal reset/release lifetimes; a reused cursor can retain capacity in both.
-When a repeat counter proves earlier occurrences and the minimum is satisfied,
-a redundant optional empty iteration can be discarded in favor of its saved exit
-at the same position. First and required empty occurrences remain eligible.
+Scalar execution retains earliest-start/longest-whole selection and Boolean
+existence. An acceptance at physical input end is already maximal. Other general
+acceptances can use the normal consuming predicates to exclude the next scalar:
+the global walk has no instruction-count cap and polls at most32 instructions
+apart. If a predicate accepts it, the existing at-most64-instruction/2048-byte
+reachability refinement may still exclude it from the accepted prefix. Unknown
+operations, decoding failure or a cutoff keep input end as the conservative
+ceiling. A longer acceptance can refresh an unresolved ceiling. These proofs use
+the original work/interruption authority; they neither select captures nor
+allocate a second execution state.
 
-General search may visit longer fixed-width scalar alternatives first (literals,
-dots and bracket atoms), preserving original
-semantic tag priority. Once a saved whole match reaches a proved endpoint ceiling, a completed
-losing occurrence prefix of the first root child can be discarded: forward
-continuation cannot repair its earlier boundaries. Unclosed occurrences and
-descendants of unresolved higher-priority parents remain inconclusive. This uses
-the same admitted histories and rollback; other ambiguous histories can still
-require exponential exploration. It is not a general linear-time guarantee.
+Fixed sequences without choices or repetitions have one parse. Existing proofs
+also retain first acceptance for homogeneous greedy literal runs, suitable equal
+literal alternatives, disjoint positive ASCII runs and eligible repeated literal
+captures. Those routes keep one native trace and project it directly. First and
+mandatory empty participation remain; redundant optional empty tails lose.
+No separate saved-best trace or competing-history copy/comparison remains.
 
-History comparison can skip an exact event prefix shared with the saved best:
-saving proves the prefix, appending preserves it, and rollback shortens the bound.
-Skipped occurrences still count as prior participation when ranking an extra empty
-tail. This retains the same pruning rule, traversal and admitted storage; work
-requirements can decrease by removing repeated comparisons of unchanged events.
+Other requested captures select completed syntax intervals after the scalar
+executor fixes the whole winner. Immutable syntax records carry conservative
+maximum byte consumption; impossible extents and split endpoints are excluded
+before exploration. Keys contain syntax, valid byte start/end and a bounded or
+saturated repetition count. A memo decision selects failure, a branch or a split;
+it does not retain an unfinished history or an input coordinate map. An explicit
+admitted dependency stack avoids CLR recursion. The closed-subexpression order
+retains earlier-branch participation, concatenation priority, full repeated
+occurrence ordering and required empty iterations. Projection streams the selected
+children into final group ranges, clearing descendants when a new enclosing
+capture occurs. It never compares only the last returned slots.
 
-A bounded proof can also pass over a leading chain of once-entered enclosures
-when all body edges stay inside the innermost scope and its suffix consists only
-of single-scalar atoms (literals, dot or brackets) and capture markers. A fixed
-scalar count determines a unique boundary in valid UTF-8 despite varying byte
-widths. At a maximal whole endpoint those earlier tags
-have fixed starts and ends, so the same losing-prefix rule can compare their first
-unfixed child. If the current saved best reaches the whole ceiling,
-variable or branched suffixes can use the same comparison when every preceding
-parent's accepted end equals its independent boundary or physical-input ceiling.
-Away from input end, every consuming body atom must reject the same next complete
-scalar, using its normal literal/dot/class predicate, or the bounded reachability
-proof below must exclude it from that parent scope. This requires no general
-alphabet construction or longer input search for that parent.
-Suffix edges must stay between successive parent closes, so those parents
-participate once and cannot be skipped or reopened. A shorter parent loses at its
-own priority; equal parent boundaries expose the child. Selection is refreshed
-from each newly saved best history: an improved parent can reach its ceiling at
-the same whole endpoint. An unproved parent bound/scope retains general competition.
-This uses one local tag choice, no retained program metadata/storage;
-it can remove losing descendant exploration and lower numerical work requirements.
+Retained interval state depends on syntax, subject boundaries and repeat counts,
+not the number of explored histories. It can be quadratic in the number of subject
+boundaries; this is not a linear-memory or linear-time promise. Scalar whole/
+existence discovery can still require expensive search. Short capture destinations
+and cursor aliases retain the same selection and original cumulative authority.
 
-Confined root alternatives can supply the same enclosure authority. A bounded
-instruction check proves that each branch enters once at the logical start,
-returns directly to the root close, and has no body edge escaping its scope or
-reopening that enclosure. The selected branch's leading parents still require
-the fixed-suffix or independent-bound proofs above. Earlier siblings stay absent
-on paths within that branch. At a proved maximal whole endpoint, an earlier
-participating branch also outranks every later root branch; longer whole matches
-are never discarded by this rule. The same check can descend through immediate
-alternation ancestors whose joins consume nothing, preserving the common start
-and whole endpoint. Preorder tags identify later siblings under those proved
-ancestors without storing a separate ancestry set. Unknown structures and other
-unresolved nested alternatives retain general competition. Scope inspection uses
-the same original work/interruption authority, with local code/tag offsets and no retained metadata
-or additional storage. Numerical work requirements can change.
+Construction keeps scalar-instruction, traversal, byte and depth bounds and admits
+major immutable selector arrays before allocation. Runtime charges dependency,
+split and projection work under the same invocation, including capacity growth.
+Depth limits bound pending scalar alternatives or live dependency/projection
+frames in their respective phases. These depths and numerical work requirements
+can differ from the former DFS-history requirements. General scalar-choice buffers
+are refunded before closed capture selection, and all remaining loans refund
+synchronously on completion, refusal, cancellation or disposal.
 
-Physical input end is always a valid ceiling. After the first general acceptance,
-a metered walk of the original instructions tests the next complete scalar against
-consuming atoms' normal literal/dot/class predicates. The global exclusion needs
-no bitset or instruction-count cap; its checkpoints cover at most32 instructions
-between polls, with class lookups retaining their own metering. If all reject it, no accepting
-path can cross that boundary, so the accepted endpoint is already maximal. Unicode
-tables, negated brackets and newline-dot behavior retain their normal meaning.
-An accepted boundary scalar needs the reachability refinement below; an unknown
-instruction or decoding failure retains physical input end as the safe upper
-bound. Larger programs can spend more proof work when no bound is established;
-avoided competition can reduce work and working requirements. This replaces coarse alphabet
-construction and scanning farther ahead: an initially shorter acceptance can lose
-that earlier future-boundary proof and require more work. Whole-only selection can
-stop at a proved ceiling; captured selection keeps hierarchical history priority.
-If the ceiling is still physical input end, a strictly longer winner retries the
-same bounded proof. Earlier empty/short acceptances therefore do not permanently
-prevent a later provable bound. Each retry retains the original work/interruption
-authority; numerical work requirements can change.
-Actual input, anchors, validation policy and scalar/coordinate output remain intact.
-Proof inspection and class lookup use bounded original work/interruption, with no
-additional retained storage; numerical work requirements can change.
+Dictionary growth uses a conservative capacity charge: four typed key/value-array
+and index-array extents, with actual element strides and old/new growth overlap.
+It is major-buffer admission, not per-object or hash-probe accounting. Native
+trace/state buffers retain their existing admission. Ordinary general captures
+can allocate dictionary storage where warmed history traversal previously did
+not; first-acceptance routes retain their existing allocation strategy. Recheck
+finite policies when upgrading rather than relying on exact prior step/byte totals.
 
-When an atom accepts that boundary, a bounded reachability refinement may still
-prove it cannot occur there. It scans at most 2048 bytes of the accepted prefix
-over the same at-most-64-instruction stream, using fixed-size bit sets. Captures
-are ignored and every repeat permits both body and exit, relaxing finite bounds
-and empty-progress guards. This contains every concrete path: if no reachable
-consumer accepts the next scalar, no longer whole match is possible. Anchors and
-class predicates retain their actual input context. An admitted consumer, unknown
-instruction, decoding failure or scan cutoff retains physical input end as the
-safe ceiling. This is an endpoint proof, with no capture selection, retained
-metadata or storage allocation. The same proof may cover a confined leading
-parent, starting at its actual opening byte and stopping at its closing instruction;
-its following suffix is outside that scope. Escaping edges decline the proof.
-Every visited instruction and class lookup is
-metered under the original invocation. It adds bounded proof work and can reduce
-history exploration; hierarchical ranking and its general complexity remain.
-
-Bound construction traversal/instructions and admit major arrays before acquiring
-them, including growth overlap. Charge matching transitions, candidate discovery,
-history comparison/copy and scalar/coordinate scans at bounded interruption
-checkpoints. Bound pending alternatives/history workspace and recursion depth;
-do not promise worst-case linear matching merely because ERE is regular.
-Coordinate projection counts already-validated scalar ranges through the shared
-bounded UTF-16 sizing helper; it does not validate those ranges a second time.
-Numerical work/depth/working requirements depend on the execution route and can
-change between versions, including when redundant internal histories are omitted.
-Recheck finite policies when upgrading; these limits do not measure exact heap size.
+Scalar/coordinate scans retain bounded original interruption checks. Coordinate
+projection sizes already-validated ranges through the shared UTF-16 helper; it
+does not validate them a second time. Neither scalar units nor byte offsets,
+subject validation policy, captures or original-token/deadline behavior changes.
 
 Working limits cover modeled matching/history/projection capacity, not borrowed
 input, the compiled program, fixed owner metadata, all GC traffic or process RAM.
@@ -274,20 +200,21 @@ Caller-owned capture destinations and fixed value coordinates need no producer
 result payload; admit any producer-owned result staging before allocation.
 These APIs currently create no producer-owned result payload or result staging;
 any positive `MaxResultBytes` therefore admits their value/caller-destination output.
-Matching histories remain working storage. This limit does not cap arrays/text
+Matching traces, interval cells and projection dependencies remain working storage. This limit does not cap arrays/text
 that callers create afterward. Timeout exceptions omit subject text.
 Shared allowance loans release on completion, refusal, cancellation or disposal.
 Whole-only calls admit only their required repeat/alternative state; flat patterns
-can need no covered buffer. A cursor reserves tag capacity at construction because
-later advances can request captures, but collects histories only when needed for
-that advance. Switching output sizes through aliases preserves capture selection
+can need no covered buffer. A cursor reserves native tag or final-group capacity at construction because
+later advances can request captures, and acquires trace/interval storage only
+when needed for that advance. Switching output sizes through aliases preserves capture selection
 and retained values; it does not reset cumulative work or interruption authority.
 
 Synchronous calls borrow a checked state span, using at most128 integers of stack
 storage and an exact heap vector for larger programs. Cursors retain their own
 exact heap vector. Both admit the same conservative array-capacity charge before
 use and keep the existing work charge and synchronous refund. This storage choice
-does not lower numerical limits or change traversal, histories or retained values.
+does not change scalar selection or retained values; route-dependent numeric
+requirements remain subject to the admission rules above.
 
 ## Qualification boundary
 
