@@ -1,3 +1,5 @@
+using System.Text;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
@@ -136,6 +138,39 @@ public sealed class PosixWorkspaceTests
         alias.Dispose();
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         Assert.Equal(match, retained);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void AmbiguousWholeBoundaryRetainsOriginalInterruptionAndParentLoans(bool timeout)
+    {
+        var program = PosixProgram.Compile("((a|aa)*).", default);
+        var input = Encoding.ASCII.GetBytes(new string('a', 32) + "b!");
+        using var source = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var fired = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps => {
+            if (steps < 512) return;
+            fired = true;
+            if (timeout) ticks = 25; else source.Cancel();
+        });
+        var account = new Account(1 << 20);
+        Assert.True(account.TryReserve(17));
+        var invocation = new Utf8SliceInvocation(new(100_000, 4096, 1 << 20), TimeSpan.FromMilliseconds(20), source.Token, account);
+        PosixWorkspace workspace = default;
+        try
+        {
+            workspace = new PosixWorkspace(program, ref invocation);
+            var state = new int[workspace.StateLength];
+            var error = Record.Exception(() => { workspace.Find(input, state, 0, false, ref invocation, out _, out _); });
+            Assert.True(fired);
+            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
+            else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        }
+        finally { workspace.Release(ref invocation); session.Complete(); }
+        Assert.Equal(17UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        account.Release(17);
     }
 
     private sealed class Account(ulong limit) : IUtf8MemoryAllowance

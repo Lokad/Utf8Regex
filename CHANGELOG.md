@@ -57,6 +57,9 @@
   history competition before separators, without truncating the subject. The
   whole-endpoint proof uses normal atom predicates on the next scalar, replacing
   coarse alphabet construction and scanning ahead; proof work totals can change.
+  A bounded reachability refinement can exclude atoms that cannot occur at that
+  boundary, enabling more finite-work captures and counts without allocating
+  another state store. General hierarchical history competition remains.
   Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
   existing losing-history rule to prune descendant alternatives safely.
   Synchronous POSIX operations use bounded stack state or an exact-size heap

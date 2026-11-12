@@ -207,14 +207,28 @@ a proof over at most 64 instructions tests the next complete scalar against ever
 consuming atom's normal literal/dot/class predicate. If all reject it, no accepting
 path can cross that boundary, so the accepted endpoint is already maximal. Unicode
 tables, negated brackets and newline-dot behavior retain their normal meaning.
-An accepted boundary scalar, unknown instruction, decoding failure or longer program
-retains physical input end as the safe upper bound. This replaces coarse alphabet
+An accepted boundary scalar needs the reachability refinement below; an unknown
+instruction, decoding failure or longer program retains physical input end as the
+safe upper bound. This replaces coarse alphabet
 construction and scanning farther ahead: an initially shorter acceptance can lose
 that earlier future-boundary proof and require more work. Whole-only selection can
 stop at a proved ceiling; captured selection keeps hierarchical history priority.
 Actual input, anchors, validation policy and scalar/coordinate output remain intact.
 Proof inspection and class lookup use bounded original work/interruption, with no
 additional retained storage; numerical work requirements can change.
+
+When an atom accepts that boundary, a bounded reachability refinement may still
+prove it cannot occur there. It scans at most 2048 bytes of the accepted prefix
+over the same at-most-64-instruction stream, using fixed-size bit sets. Captures
+are ignored and every repeat permits both body and exit, relaxing finite bounds
+and empty-progress guards. This contains every concrete path: if no reachable
+consumer accepts the next scalar, no longer whole match is possible. Anchors and
+class predicates retain their actual input context. An admitted consumer, unknown
+instruction, decoding failure or scan cutoff retains physical input end as the
+safe ceiling. This is an endpoint proof, with no capture selection, retained
+metadata or storage allocation. Every visited instruction and class lookup is
+metered under the original invocation. It adds bounded proof work and can reduce
+history exploration; hierarchical ranking and its general complexity remain.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,

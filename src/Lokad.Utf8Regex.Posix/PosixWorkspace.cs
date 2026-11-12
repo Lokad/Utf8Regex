@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Numerics;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -186,7 +187,7 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.Accept:
                     if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
                     {
-                        if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, at, ref invocation);
+                        if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, start, at, ref invocation);
                         if (captureHistory) prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                     }
                     // Without requested captures, the ceiling proves the longest whole
@@ -350,7 +351,7 @@ internal struct PosixWorkspace
         return tag;
     }
 
-    private int FindBoundaryCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
+    private int FindBoundaryCeiling(ReadOnlySpan<byte> input, int start, int acceptedEnd, ref Utf8SliceInvocation invocation)
     {
         var code = _program.Scalar.Instructions;
         if (code.Length > 64) return input.Length;
@@ -367,13 +368,16 @@ internal struct PosixWorkspace
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    if (instruction.A == boundary.Value) return input.Length;
+                    if (instruction.A == boundary.Value)
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.Dot:
-                    if (instruction.A != 0 || boundary.Value != '\n') return input.Length;
+                    if (instruction.A != 0 || boundary.Value != '\n')
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.CategorySet:
-                    if (MatchesClass(boundary, instruction, ref invocation)) return input.Length;
+                    if (MatchesClass(boundary, instruction, ref invocation))
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
                     Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
@@ -384,6 +388,93 @@ internal struct PosixWorkspace
             }
         }
         return acceptedEnd;
+    }
+
+    private int FindReachableBoundaryCeiling(ReadOnlySpan<byte> input, int start, int acceptedEnd,
+        Rune boundary, ref Utf8SliceInvocation invocation)
+    {
+        var code = _program.Scalar.Instructions;
+        if (code.Length is < 1 or > 64 || code[^1].Kind != Utf8SliceInstructionKind.Accept ||
+            (uint)(acceptedEnd - start) > 2048) return input.Length;
+        // Capture events do not affect ERE acceptance. Let every repeat take
+        // either edge, relaxing its counters/progress guards. The reachable
+        // instruction set therefore contains every concrete path at this byte.
+        // No reachable consumer across the boundary proves a whole-end ceiling;
+        // this analysis never selects captures or publishes a match.
+        ulong frontier = 1;
+        var at = start;
+        while (true)
+        {
+            var scalar = boundary;
+            var width = 0;
+            if (at != acceptedEnd &&
+                (Rune.DecodeFromUtf8(input[at..], out scalar, out width) != OperationStatus.Done ||
+                 width > acceptedEnd - at)) return input.Length;
+            ulong pending = frontier, visited = 0, next = 0;
+            while (pending != 0)
+            {
+                var pc = BitOperations.TrailingZeroCount(pending);
+                var bit = 1UL << pc;
+                pending &= ~bit;
+                if ((visited & bit) != 0) continue;
+                visited |= bit;
+                Charge(ref invocation);
+                var instruction = code[pc];
+                var following = bit << 1; // The final instruction is Accept.
+                switch (instruction.Kind)
+                {
+                    case Utf8SliceInstructionKind.Literal:
+                    case Utf8SliceInstructionKind.Dot:
+                    case Utf8SliceInstructionKind.CategorySet:
+                        var hit = instruction.Kind switch
+                        {
+                            Utf8SliceInstructionKind.Literal => scalar.Value == instruction.A,
+                            Utf8SliceInstructionKind.Dot => instruction.A != 0 || scalar.Value != '\n',
+                            _ => MatchesClass(scalar, instruction, ref invocation),
+                        };
+                        if (hit)
+                        {
+                            if (at == acceptedEnd) return input.Length;
+                            next |= following;
+                        }
+                        break;
+                    case Utf8SliceInstructionKind.CaptureStart:
+                    case Utf8SliceInstructionKind.CaptureEnd:
+                    case Utf8SliceInstructionKind.RepeatExit:
+                        pending |= following;
+                        break;
+                    case Utf8SliceInstructionKind.Jump:
+                    case Utf8SliceInstructionKind.RepeatEnd:
+                        if ((uint)instruction.A >= (uint)code.Length) return input.Length;
+                        pending |= 1UL << instruction.A;
+                        break;
+                    case Utf8SliceInstructionKind.Fork:
+                    case Utf8SliceInstructionKind.RepeatGreedy:
+                        if ((uint)instruction.A >= (uint)code.Length ||
+                            instruction.Kind == Utf8SliceInstructionKind.Fork && instruction.B != 0) return input.Length;
+                        pending |= following | (1UL << instruction.A);
+                        break;
+                    case Utf8SliceInstructionKind.Anchor:
+                        var allows = (Utf8SliceAnchorKind)instruction.A switch
+                        {
+                            Utf8SliceAnchorKind.Beginning => at == 0 || instruction.B != 0 && input[at - 1] == '\n',
+                            Utf8SliceAnchorKind.VeryEnd => at == input.Length,
+                            Utf8SliceAnchorKind.End => at == input.Length || instruction.B != 0 && input[at] == '\n',
+                            _ => false,
+                        };
+                        if (instruction.A is < 0 or > (int)Utf8SliceAnchorKind.VeryEnd) return input.Length;
+                        if (allows) pending |= following;
+                        break;
+                    case Utf8SliceInstructionKind.Accept:
+                        break;
+                    default: return input.Length;
+                }
+            }
+            if (at == acceptedEnd) return acceptedEnd;
+            if (next == 0) return input.Length;
+            frontier = next;
+            at += width;
+        }
     }
 
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)
