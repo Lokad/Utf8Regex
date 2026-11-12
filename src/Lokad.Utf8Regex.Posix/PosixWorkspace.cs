@@ -188,7 +188,6 @@ internal struct PosixWorkspace
                     if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
                     {
                         if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, start, at, ref invocation);
-                        if (captureHistory) prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                     }
                     // Without requested captures, the ceiling proves the longest whole
                     // match regardless of the histories on other pending paths.
@@ -207,6 +206,10 @@ internal struct PosixWorkspace
                         end = at;
                         if (captureHistory)
                         {
+                            // A better history can move a leading parent's end
+                            // without moving the whole end. Derive its authority
+                            // from this winner, before saving its closing prefix.
+                            prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                             Clear(ref _best, ref invocation);
                             firstBestClose = -1;
                             for (var index = 0; index < _trace.Count; index++)
@@ -320,7 +323,7 @@ internal struct PosixWorkspace
             if (firstTarget < pc + 1 || lastTarget > upper) return 1;
             firstTarget = int.MaxValue; lastTarget = -1; upper = pc;
 
-            // Read the first maximal acceptance, not a hypothetical suffix
+            // Read the current maximal acceptance, not a hypothetical suffix
             // width. Its leading parents have the same fixed opening position.
             while (traceIndex >= 0)
             {
@@ -339,7 +342,15 @@ internal struct PosixWorkspace
                         var atom = code[body];
                         if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.A == boundary.Value ||
                             atom.Kind == Utf8SliceInstructionKind.Dot && (atom.A != 0 || boundary.Value != '\n') ||
-                            atom.Kind == Utf8SliceInstructionKind.CategorySet && MatchesClass(boundary, atom, ref invocation)) return 1;
+                            atom.Kind == Utf8SliceInstructionKind.CategorySet && MatchesClass(boundary, atom, ref invocation))
+                        {
+                            // An accepting atom may be unreachable here. The
+                            // leading opening and confined enclosure identify
+                            // the same parent on every competing history.
+                            if (FindReachableBoundaryCeiling(input, _trace[item.Opening].Position,
+                                item.Position, boundary, instruction.A + 1, pc, ref invocation) != item.Position) return 1;
+                            break;
+                        }
                     }
                 }
                 break;
@@ -369,15 +380,15 @@ internal struct PosixWorkspace
             {
                 case Utf8SliceInstructionKind.Literal:
                     if (instruction.A == boundary.Value)
-                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.Dot:
                     if (instruction.A != 0 || boundary.Value != '\n')
-                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.CategorySet:
                     if (MatchesClass(boundary, instruction, ref invocation))
-                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, ref invocation);
+                        return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
                     Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
@@ -391,17 +402,20 @@ internal struct PosixWorkspace
     }
 
     private int FindReachableBoundaryCeiling(ReadOnlySpan<byte> input, int start, int acceptedEnd,
-        Rune boundary, ref Utf8SliceInvocation invocation)
+        Rune boundary, int firstPc, int terminalPc, ref Utf8SliceInvocation invocation)
     {
         var code = _program.Scalar.Instructions;
-        if (code.Length is < 1 or > 64 || code[^1].Kind != Utf8SliceInstructionKind.Accept ||
+        if (code.Length is < 1 or > 64 || (uint)terminalPc >= (uint)code.Length ||
+            (uint)firstPc > (uint)terminalPc ||
+            code[terminalPc].Kind is not (Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.CaptureEnd) ||
             (uint)(acceptedEnd - start) > 2048) return input.Length;
         // Capture events do not affect ERE acceptance. Let every repeat take
         // either edge, relaxing its counters/progress guards. The reachable
         // instruction set therefore contains every concrete path at this byte.
-        // No reachable consumer across the boundary proves a whole-end ceiling;
+        // Stop at the proved scope's terminal, never its following suffix. No
+        // reachable consumer across the boundary proves that scope's ceiling;
         // this analysis never selects captures or publishes a match.
-        ulong frontier = 1;
+        ulong frontier = 1UL << firstPc;
         var at = start;
         while (true)
         {
@@ -419,8 +433,9 @@ internal struct PosixWorkspace
                 if ((visited & bit) != 0) continue;
                 visited |= bit;
                 Charge(ref invocation);
+                if (pc == terminalPc) continue;
                 var instruction = code[pc];
-                var following = bit << 1; // The final instruction is Accept.
+                var following = bit << 1; // A non-terminal remains inside the scope.
                 switch (instruction.Kind)
                 {
                     case Utf8SliceInstructionKind.Literal:
@@ -445,12 +460,12 @@ internal struct PosixWorkspace
                         break;
                     case Utf8SliceInstructionKind.Jump:
                     case Utf8SliceInstructionKind.RepeatEnd:
-                        if ((uint)instruction.A >= (uint)code.Length) return input.Length;
+                        if (instruction.A < firstPc || instruction.A > terminalPc) return input.Length;
                         pending |= 1UL << instruction.A;
                         break;
                     case Utf8SliceInstructionKind.Fork:
                     case Utf8SliceInstructionKind.RepeatGreedy:
-                        if ((uint)instruction.A >= (uint)code.Length ||
+                        if (instruction.A < firstPc || instruction.A > terminalPc ||
                             instruction.Kind == Utf8SliceInstructionKind.Fork && instruction.B != 0) return input.Length;
                         pending |= following | (1UL << instruction.A);
                         break;
@@ -464,8 +479,6 @@ internal struct PosixWorkspace
                         };
                         if (instruction.A is < 0 or > (int)Utf8SliceAnchorKind.VeryEnd) return input.Length;
                         if (allows) pending |= following;
-                        break;
-                    case Utf8SliceInstructionKind.Accept:
                         break;
                     default: return input.Length;
                 }

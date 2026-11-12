@@ -288,9 +288,9 @@ public sealed class PosixPublicContractTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
         var account = new Account();
-        // The non-pruning case has an unresolved parent: its body can consume
-        // the suffix's delimiter, retaining actual general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|a.)*)!*", default,
+        // The non-pruning root alternative is outside the leading-parent proof,
+        // retaining actual general history competition.
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "(a|aa)*b|((a|aa)*).", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
@@ -313,7 +313,7 @@ public sealed class PosixPublicContractTests
             // A long captured suffix guarantees bounded hook polls while the
             // parent proof walks its accepted trace, before saving the winner.
             var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) +
-                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "!#");
+                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "b#");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);
@@ -326,14 +326,15 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void InterruptionInsideWholeBoundaryProofClearsOutputAndRefunds(bool deadline)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void InterruptionInsideBoundaryProofClearsOutputAndRefunds(bool deadline, bool parent)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex("((a|a[^!#])*)!*", default,
+            var regex = new Utf8PosixRegex(parent ? "((a|a.)*)!*" : "((a|a[^!#])*)!*", default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                 new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
             var reached = false;
@@ -350,9 +351,12 @@ public sealed class PosixPublicContractTests
                 var input = Encoding.ASCII.GetBytes(new string('a', count) + "!#");
                 var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
                 {
-                    if (reached || !new StackTrace().GetFrames().Any(frame =>
+                    var frames = new StackTrace().GetFrames();
+                    if (reached || !frames.Any(frame =>
                         frame.GetMethod() is { DeclaringType: { } type } method &&
-                        method.Name == "FindBoundaryCeiling" && type == typeof(PosixWorkspace))) return;
+                        method.Name == (parent ? "FindReachableBoundaryCeiling" : "FindBoundaryCeiling") &&
+                        type == typeof(PosixWorkspace)) || parent && !frames.Any(frame =>
+                        frame.GetMethod() is { Name: "FindBoundaryBoundedParentTag" })) return;
                     reached = true;
                     if (deadline) now = 101; else token.Cancel();
                 });
@@ -369,7 +373,7 @@ public sealed class PosixPublicContractTests
                 Assert.Equal(17UL, account.Used); account.Release(17);
                 Assert.True(retained.Success);
             }
-            Assert.True(reached, "The injection must reach the actual whole-boundary proof.");
+            Assert.True(reached, "The injection must reach the actual whole/parent boundary proof.");
         }
     }
 

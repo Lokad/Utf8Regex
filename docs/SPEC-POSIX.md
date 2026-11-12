@@ -189,16 +189,18 @@ of single-scalar atoms (literals, dot or brackets) and capture markers. A fixed
 scalar count determines a unique boundary in valid UTF-8 despite varying byte
 widths. At a maximal whole endpoint those earlier tags
 have fixed starts and ends, so the same losing-prefix rule can compare their first
-unfixed child. If the first acceptance already reaches the whole ceiling,
+unfixed child. If the current saved best reaches the whole ceiling,
 variable or branched suffixes can use the same comparison when every preceding
 parent's accepted end equals its independent boundary or physical-input ceiling.
 Away from input end, every consuming body atom must reject the same next complete
-scalar, using its normal literal/dot/class predicate. This requires no general
+scalar, using its normal literal/dot/class predicate, or the bounded reachability
+proof below must exclude it from that parent scope. This requires no general
 alphabet construction or longer input search for that parent.
 Suffix edges must stay between successive parent closes, so those parents
 participate once and cannot be skipped or reopened. A shorter parent loses at its
-own priority; equal parent boundaries expose the child. An initially shorter
-acceptance or an unproved parent bound/scope retains general competition.
+own priority; equal parent boundaries expose the child. Selection is refreshed
+from each newly saved best history: an improved parent can reach its ceiling at
+the same whole endpoint. An unproved parent bound/scope retains general competition.
 This uses one local tag choice, no retained program metadata/storage;
 it can remove losing descendant exploration and lower numerical work requirements.
 
@@ -226,7 +228,10 @@ consumer accepts the next scalar, no longer whole match is possible. Anchors and
 class predicates retain their actual input context. An admitted consumer, unknown
 instruction, decoding failure or scan cutoff retains physical input end as the
 safe ceiling. This is an endpoint proof, with no capture selection, retained
-metadata or storage allocation. Every visited instruction and class lookup is
+metadata or storage allocation. The same proof may cover a confined leading
+parent, starting at its actual opening byte and stopping at its closing instruction;
+its following suffix is outside that scope. Escaping edges decline the proof.
+Every visited instruction and class lookup is
 metered under the original invocation. It adds bounded proof work and can reduce
 history exploration; hierarchical ranking and its general complexity remain.
 

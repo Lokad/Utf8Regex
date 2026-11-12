@@ -59,7 +59,9 @@
   coarse alphabet construction and scanning ahead; proof work totals can change.
   A bounded reachability refinement can exclude atoms that cannot occur at that
   boundary, enabling more finite-work captures and counts without allocating
-  another state store. General hierarchical history competition remains.
+  another state store. Confined leading parents reuse that proof, refreshed when
+  a better history changes their endpoint. General hierarchical history competition
+  remains.
   Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
   existing losing-history rule to prune descendant alternatives safely.
   Synchronous POSIX operations use bounded stack state or an exact-size heap

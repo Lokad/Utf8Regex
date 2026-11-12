@@ -272,6 +272,54 @@ public sealed class PosixRepeatedCaptureSelectionTests
     }
 
     [Theory]
+    [InlineData("a", false, false)] [InlineData("a", true, false)]
+    [InlineData("a", false, true)] [InlineData("a", true, true)]
+    [InlineData("é", false, false)] [InlineData("é", true, false)]
+    [InlineData("é", false, true)] [InlineData("é", true, true)]
+    [InlineData("😀", false, false)] [InlineData("😀", true, false)]
+    [InlineData("😀", false, true)] [InlineData("😀", true, true)]
+    public void ImprovedParentEndsRefreshReachableHistoryBounds(string scalar, bool nullable, bool enclosed)
+    {
+        const string prefix = "é😀#";
+        const int count = 32;
+        var body = string.Concat(Enumerable.Repeat(scalar, count));
+        var input = Encoding.UTF8.GetBytes(prefix + body + "!#");
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
+        {
+            var pattern = $"(({scalar}|{scalar}.{(nullable ? "|" : "")})*)!*";
+            if (enclosed) pattern = "(" + pattern + ")";
+            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+            var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + 1,
+                floor, Encoding.UTF8.GetByteCount(body) + 1);
+            Assert.Equal(whole, regex.Match(input, groups, floor));
+            if (enclosed) Assert.Equal(whole, groups[1]);
+            // Greedy pairs first leave ! to the suffix. A later history moves
+            // it into the parent at the same whole end and must become best.
+            Assert.Equal(whole, groups[enclosed ? 2 : 1]);
+            var last = new Utf8ValueMatch(true, true, prefix.Length + body.Length - scalar.Length,
+                scalar.Length + 1, floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar),
+                Encoding.UTF8.GetByteCount(scalar) + 1);
+            Assert.Equal(last, groups[^1]);
+            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.True(regex.IsMatch(input.AsSpan(floor))); Assert.Equal(3, regex.Count(input, floor));
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            var retained = groups[^1];
+            Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + whole.LengthInBytes, empty.IndexInBytes);
+            Assert.True(cursor.MoveNext(out empty)); Assert.Equal(input.Length, empty.IndexInBytes);
+            Assert.False(alias.MoveNext(groups, out _));
+            Assert.All(groups, group => Assert.False(group.Success));
+            cursor.Dispose(); Assert.Equal(last, retained);
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+        }
+    }
+
+    [Theory]
     [InlineData(Utf8InputValidation.Validate)]
     [InlineData(Utf8InputValidation.AssumeValid)]
     public void SeparateParentCeilingsAllowVariableCapturedTails(Utf8InputValidation validation)
