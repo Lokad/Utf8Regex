@@ -1,0 +1,113 @@
+{
+  "Accepted": false,
+  "Decision": "Reject and restore the complete prototype: no consistent public gain justifies the added branch/work quantum. No confirmation or threshold variant.",
+  "SourceBaseline": "b460514a03e8d34a17841e3d1aae2fcc0ea36060; exact dev73 Core/Python pairs with identical CSharp bodies through b460",
+  "Candidate": "archived fixed <=8 checked ASCII prefix before existing range SIMD loop",
+  "PublicContractChanged": false,
+  "Protocol": {
+    "Seconds": 133.44094002060592,
+    "SampleCount": 560,
+    "MinimumSampleMs": 64.0365,
+    "MaximumBatchAllocationMiB": 71.36471557617188,
+    "LoadedProducerHashesVerified": true,
+    "CommonPythonCallerAndNetControl": true,
+    "FinalAccountLoansZero": true
+  },
+  "PdbSources": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "GeneratedInputDocuments": 12,
+    "CompiledDocumentCounts": [
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex",
+        "Count": 342
+      },
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex.PythonRe",
+        "Count": 49
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex",
+        "Count": 342
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex.PythonRe",
+        "Count": 49
+      }
+    ],
+    "ChangedCompiledDocuments": [
+      "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.TerminalClassRepeat.cs"
+    ],
+    "Before": "exact dev73 Core/Python pairs, EAE sources unchanged through b460",
+    "After": "frozen b460 Core plus archived checked prefix patch; identical dev73 Python pair",
+    "GeneratedInputs": "AssemblyInfo exact recorded revisions reconstructed; other generated files compared directly"
+  },
+  "CandidateTestsPerTargetPerOS": {
+    "Core": 606,
+    "PythonRe": 774,
+    "Pcre2": 189,
+    "SoftwarePaths": "same selection, matching binaries reused"
+  },
+  "ModeledAccount": {
+    "ProgramAndParentHeld": 45425,
+    "ParentBeforeCompilation": 17,
+    "Peak": 357073,
+    "Final": 0
+  },
+  "RawArchives": {
+    "codegen.tar.gz": "F32BBA5F2CC68260013BD41B0E0144B959B2B73E52488FD0EFC584F1FD284CEA",
+    "evidence.tar.gz": "706F14EAC92E45A909C91971E254641AADDFFBA90670DCC1D266AA5023FAAD9E",
+    "linux-restoration.tar.gz": "1B18BDD3C706B0355A18D0589F9D155524CB3851A1EB0227F7141E6CD5502E2D",
+    "windows-evidence.tar.gz": "E85FFD3A307233AC61A2D15C61406DFA3EBED2172034369A8A7C3BE6B2374C43",
+    "windows-restoration.tar.gz": "0E5F7D7BD8601C05DED352665AC39318F91ADE3281FA5DAADB07CC138A9C15A3"
+  },
+  "Restoration": {
+    "SourceFilesMatchHead": true,
+    "WindowsTestsPerTarget": {
+      "Core": 602,
+      "Python": 772
+    },
+    "LinuxTestsPerTarget": {
+      "Core": 468,
+      "Python": 184
+    },
+    "MatchingBinaries": "all three affected test projects rebuilt both targets; no software/matrix repeat after restoration",
+    "ProducerSourceRevision": "b460514a03e8d34a17841e3d1aae2fcc0ea36060",
+    "TimingOrCheckJobsLive": false,
+    "VmSourceClean": true
+  },
+  "Rows": [
+    {"Policy":"Validate","Id":"python/many-strings","BeforeUs":601.3026955602536,"AfterUs":695.7426041666668,"ChangePercent":15.705884790424962,"RangesOverlap":true,"BeforeProcessMediansUs":[613.6681818181818,588.9372093023255],"AfterProcessMediansUs":[604.7800000000001,786.7052083333334],"BeforeAllocatedBytes":[242008,242008],"AfterAllocatedBytes":[242008,242008]},
+    {"Policy":"Validate","Id":"python/one-strings","BeforeUs":205.76338797814208,"AfterUs":282.6512243977502,"ChangePercent":37.3671123785033,"RangesOverlap":true,"BeforeProcessMediansUs":[207.35983606557377,204.16693989071035],"AfterProcessMediansUs":[220.6922636103152,344.6101851851852],"BeforeAllocatedBytes":[45168,45168],"AfterAllocatedBytes":[45168,45168]},
+    {"Policy":"Validate","Id":"python/many-utf8","BeforeUs":606.0344818897638,"AfterUs":621.865032051282,"ChangePercent":2.612153373213144,"RangesOverlap":true,"BeforeProcessMediansUs":[619.5792,592.4897637795275],"AfterProcessMediansUs":[629.3567307692308,614.3733333333333],"BeforeAllocatedBytes":[242008,242008],"AfterAllocatedBytes":[242008,242008]},
+    {"Policy":"Validate","Id":"control/python/literal-split","BeforeUs":199.54057715215436,"AfterUs":200.9418688866446,"ChangePercent":0.7022590364774484,"RangesOverlap":true,"BeforeProcessMediansUs":[214.13288590604026,184.94826839826843],"AfterProcessMediansUs":[195.5899343544858,206.2938034188034],"BeforeAllocatedBytes":[159896,159896],"AfterAllocatedBytes":[159896,159896]},
+    {"Policy":"Validate","Id":"python/finite-many-strings","BeforeUs":838.0664814362482,"AfterUs":935.8781056814837,"ChangePercent":11.671105623698196,"RangesOverlap":true,"BeforeProcessMediansUs":[838.9775280898876,837.1554347826087],"AfterProcessMediansUs":[908.5941860465117,963.1620253164557],"BeforeAllocatedBytes":[246208,246208],"AfterAllocatedBytes":[246208,246208]},
+    {"Policy":"Validate","Id":"python/funded-deadline-many","BeforeUs":1447.6884615384615,"AfterUs":1572.355018939394,"ChangePercent":8.611421636147409,"RangesOverlap":true,"BeforeProcessMediansUs":[1441.6923076923076,1453.6846153846154],"AfterProcessMediansUs":[1585.1145833333333,1559.595454545455],"BeforeAllocatedBytes":[246280,246280],"AfterAllocatedBytes":[246280,246280]},
+    {"Policy":"Validate","Id":"python/cursor-detailed","BeforeUs":1130.0418029259895,"AfterUs":1154.3240514905149,"ChangePercent":2.148792062528293,"RangesOverlap":true,"BeforeProcessMediansUs":[1084.2607142857141,1175.822891566265],"AfterProcessMediansUs":[1148.6444444444444,1160.0036585365854],"BeforeAllocatedBytes":[607144,607144],"AfterAllocatedBytes":[607144,607144]},
+    {"Policy":"Validate","Id":"python/long-fields","BeforeUs":459.99006027417397,"AfterUs":455.838512050801,"ChangePercent":-0.9025299852997826,"RangesOverlap":true,"BeforeProcessMediansUs":[465.892546583851,454.087573964497],"AfterProcessMediansUs":[460.8634146341463,450.81360946745565],"BeforeAllocatedBytes":[132200,132200],"AfterAllocatedBytes":[132200,132200]},
+    {"Policy":"Validate","Id":"control/python/unicode-strings","BeforeUs":169.54283387539513,"AfterUs":180.15685314685317,"ChangePercent":6.260376229914133,"RangesOverlap":true,"BeforeProcessMediansUs":[169.05972540045764,170.02594235033263],"AfterProcessMediansUs":[192.37897435897438,167.93473193473193],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"Validate","Id":"control/python/holey-strings","BeforeUs":82.7247892494295,"AfterUs":88.34651981393107,"ChangePercent":6.795702491971389,"RangesOverlap":true,"BeforeProcessMediansUs":[81.98862405200434,83.46095444685466],"AfterProcessMediansUs":[87.17702539298669,89.51601423487544],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"Validate","Id":"control/python/folded-strings","BeforeUs":127.8959196808201,"AfterUs":141.63522949687908,"ChangePercent":10.742570873525214,"RangesOverlap":true,"BeforeProcessMediansUs":[127.51065292096222,128.28118644067797],"AfterProcessMediansUs":[154.14730290456433,129.12315608919383],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"Validate","Id":"python/short-search-text","BeforeUs":0.522624128590707,"AfterUs":0.4605493825211426,"ChangePercent":-11.87751247477864,"RangesOverlap":true,"BeforeProcessMediansUs":[0.5843864457137002,0.46086181146771366],"AfterProcessMediansUs":[0.4746604221450188,0.44643834289726636],"BeforeAllocatedBytes":[312,312],"AfterAllocatedBytes":[312,312]},
+    {"Policy":"Validate","Id":"control/core-literal","BeforeUs":0.10009221527836087,"AfterUs":0.1000921895280274,"ChangePercent":-2.572660960931117e-05,"RangesOverlap":true,"BeforeProcessMediansUs":[0.09982955589319552,0.10035487466352624],"AfterProcessMediansUs":[0.10035556385412012,0.09982881520193466],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/net-predecoded-count","BeforeUs":76.25078340700021,"AfterUs":75.56088236088236,"ChangePercent":-0.9047789613326307,"RangesOverlap":true,"BeforeProcessMediansUs":[74.87828746177371,77.62327935222672],"AfterProcessMediansUs":[75.816983016983,75.30478170478172],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"python/many-strings","BeforeUs":603.3518028846154,"AfterUs":606.6179990382881,"ChangePercent":0.5413419066715441,"RangesOverlap":true,"BeforeProcessMediansUs":[602.3692307692307,604.334375],"AfterProcessMediansUs":[601.9320610687022,611.303937007874],"BeforeAllocatedBytes":[242008,242008],"AfterAllocatedBytes":[242008,242008]},
+    {"Policy":"AssumeValid","Id":"python/one-strings","BeforeUs":206.2348079883023,"AfterUs":199.42018086625416,"ChangePercent":-3.304305024220089,"RangesOverlap":true,"BeforeProcessMediansUs":[205.24630136986303,207.22331460674158],"AfterProcessMediansUs":[198.4630890052356,200.37727272727275],"BeforeAllocatedBytes":[45168,45168],"AfterAllocatedBytes":[45168,45168]},
+    {"Policy":"AssumeValid","Id":"python/many-utf8","BeforeUs":705.2709393778721,"AfterUs":627.8215865833513,"ChangePercent":-10.981503486141053,"RangesOverlap":true,"BeforeProcessMediansUs":[800.8532608695652,609.6886178861788],"AfterProcessMediansUs":[620.0243697478991,635.6188034188035],"BeforeAllocatedBytes":[242008,242008],"AfterAllocatedBytes":[242008,242008]},
+    {"Policy":"AssumeValid","Id":"control/python/literal-split","BeforeUs":204.3136044321218,"AfterUs":202.5782455500438,"ChangePercent":-0.8493604167482349,"RangesOverlap":true,"BeforeProcessMediansUs":[202.17709750566894,206.45011135857462],"AfterProcessMediansUs":[202.38065217391306,202.77583892617452],"BeforeAllocatedBytes":[159896,159896],"AfterAllocatedBytes":[159896,159896]},
+    {"Policy":"AssumeValid","Id":"python/finite-many-strings","BeforeUs":867.4210054719563,"AfterUs":863.1942096527068,"ChangePercent":-0.4872830831378905,"RangesOverlap":true,"BeforeProcessMediansUs":[855.1129411764707,879.7290697674418],"AfterProcessMediansUs":[865.8693181818181,860.5191011235956],"BeforeAllocatedBytes":[246208,246208],"AfterAllocatedBytes":[246208,246208]},
+    {"Policy":"AssumeValid","Id":"python/funded-deadline-many","BeforeUs":1500.706862745098,"AfterUs":1519.0464081632654,"ChangePercent":1.2220604751963737,"RangesOverlap":true,"BeforeProcessMediansUs":[1482.1490196078432,1519.264705882353],"AfterProcessMediansUs":[1528.5408163265306,1509.552],"BeforeAllocatedBytes":[246280,246280],"AfterAllocatedBytes":[246280,246280]},
+    {"Policy":"AssumeValid","Id":"python/cursor-detailed","BeforeUs":1188.4714931153185,"AfterUs":1131.3775339366516,"ChangePercent":-4.803982216603908,"RangesOverlap":true,"BeforeProcessMediansUs":[1172.6321428571428,1204.310843373494],"AfterProcessMediansUs":[1206.4115384615384,1056.3435294117646],"BeforeAllocatedBytes":[607144,607144],"AfterAllocatedBytes":[607144,607144]},
+    {"Policy":"AssumeValid","Id":"python/long-fields","BeforeUs":453.4524096385542,"AfterUs":458.5882711580231,"ChangePercent":1.1326131277067608,"RangesOverlap":true,"BeforeProcessMediansUs":[451.6542168674698,455.2506024096386],"AfterProcessMediansUs":[460.4883435582822,456.6881987577639],"BeforeAllocatedBytes":[132200,132200],"AfterAllocatedBytes":[132200,132200]},
+    {"Policy":"AssumeValid","Id":"control/python/unicode-strings","BeforeUs":164.1867118584725,"AfterUs":163.3479882742571,"ChangePercent":-0.5108352403928929,"RangesOverlap":true,"BeforeProcessMediansUs":[163.2703056768559,165.1031180400891],"AfterProcessMediansUs":[164.1843537414966,162.51162280701755],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"AssumeValid","Id":"control/python/holey-strings","BeforeUs":86.98539854000383,"AfterUs":82.1834719520781,"ChangePercent":-5.520382349823194,"RangesOverlap":true,"BeforeProcessMediansUs":[83.61893687707642,90.35186020293123],"AfterProcessMediansUs":[81.25313174946004,83.11381215469613],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"AssumeValid","Id":"control/python/folded-strings","BeforeUs":131.74219121095229,"AfterUs":129.59044590634,"ChangePercent":-1.6333000725385016,"RangesOverlap":true,"BeforeProcessMediansUs":[134.16318584070797,129.3211965811966],"AfterProcessMediansUs":[130.7037542662116,128.47713754646838],"BeforeAllocatedBytes":[28968,28968],"AfterAllocatedBytes":[28968,28968]},
+    {"Policy":"AssumeValid","Id":"python/short-search-text","BeforeUs":0.504301626981165,"AfterUs":0.535510294698315,"ChangePercent":6.188492371910526,"RangesOverlap":true,"BeforeProcessMediansUs":[0.5660532474939849,0.44255000646834514],"AfterProcessMediansUs":[0.47076515586030887,0.6002554335363212],"BeforeAllocatedBytes":[312,312],"AfterAllocatedBytes":[312,312]},
+    {"Policy":"AssumeValid","Id":"control/core-literal","BeforeUs":0.10021131135901475,"AfterUs":0.10084542885555217,"ChangePercent":0.6327803597596438,"RangesOverlap":true,"BeforeProcessMediansUs":[0.10040750487049821,0.10001511784753128],"AfterProcessMediansUs":[0.09984002656560492,0.10185083114549942],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/net-predecoded-count","BeforeUs":74.7174594374579,"AfterUs":75.0978015867924,"ChangePercent":0.5090405270709919,"RangesOverlap":true,"BeforeProcessMediansUs":[74.2678082191781,75.16711065573772],"AfterProcessMediansUs":[74.33566433566433,75.85993883792048],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]}
+  ]
+}
