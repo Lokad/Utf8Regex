@@ -819,6 +819,7 @@ internal static partial class Utf8SliceRunner
         var instructions = program.Instructions;
         var programIndex = cursor.ProgramIndex;
         var inputIndex = cursor.InputIndex;
+        Utf8ExecutionLimitKind failure;
         while (true)
         {
             var failed = resumeFailure;
@@ -830,7 +831,8 @@ internal static partial class Utf8SliceRunner
             var stepBreach = invocation.TryChargeStep();
             if (stepBreach != Utf8ExecutionLimitKind.None)
             {
-                return new Utf8SliceMatchOutcome(false, -1, stepBreach, null, null);
+                failure = stepBreach;
+                goto Failure;
             }
 
             var instruction = instructions[programIndex];
@@ -852,7 +854,7 @@ internal static partial class Utf8SliceRunner
                                 (uint)instruction.A >= 128) break;
                             var literalBreach = invocation.TryChargeStep();
                             if (literalBreach != Utf8ExecutionLimitKind.None)
-                                return new(false, -1, literalBreach, null, null);
+                                { failure = literalBreach; goto Failure; }
                         }
                         break;
                     }
@@ -957,7 +959,8 @@ internal static partial class Utf8SliceRunner
                         },
                         ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                        failure = stacks.Breach;
+                        goto Failure;
                     }
 
                     programIndex++;
@@ -998,13 +1001,14 @@ internal static partial class Utf8SliceRunner
                                 var breach = stacks.TryRentRepeatTables(program.RepeatCount, ref invocation,
                                     out counts, out positions);
                                 if (breach != Utf8ExecutionLimitKind.None)
-                                    return new(false, -1, breach, null, null);
+                                    { failure = breach; goto Failure; }
                                 cursor.Counts = counts;
                                 cursor.Positions = positions;
                             }
                             if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                                failure = stacks.Breach;
+                                goto Failure;
                             }
                         }
 
@@ -1017,7 +1021,8 @@ internal static partial class Utf8SliceRunner
                         {
                             if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                                failure = stacks.Breach;
+                                goto Failure;
                             }
 
                             programIndex++;
@@ -1060,14 +1065,16 @@ internal static partial class Utf8SliceRunner
 
                         if (!stacks.PushFrame(frame, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            failure = stacks.Breach;
+                            goto Failure;
                         }
 
                         if (greedy)
                         {
                             if (!SetRepeat(counts, positions, repeatId, nextCount, inputIndex, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                                failure = stacks.Breach;
+                                goto Failure;
                             }
 
                             programIndex++;
@@ -1086,7 +1093,8 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatExit:
                     if (!SetRepeat(counts, positions, instruction.A, -1, -1, ref stacks, ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                        failure = stacks.Breach;
+                        goto Failure;
                     }
 
                     programIndex++;
@@ -1098,7 +1106,7 @@ internal static partial class Utf8SliceRunner
                     if (program.UsesCaptureOpeningJournal)
                     {
                         if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            { failure = stacks.Breach; goto Failure; }
                         programIndex++;
                         break;
                     }
@@ -1109,7 +1117,8 @@ internal static partial class Utf8SliceRunner
                     if ((preserveCaptureTrail || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
                         !stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                        failure = stacks.Breach;
+                        goto Failure;
                     }
 
                     captureStarts[instruction.A] = inputIndex;
@@ -1122,10 +1131,10 @@ internal static partial class Utf8SliceRunner
                         // An opening capture does not overwrite the last completed one.
                         // This preserves nested aliases and references inside their bodies.
                         if (!stacks.TryFindCaptureOpening(instruction.A, ref invocation, out var opening, out var openingBreach))
-                            return new Utf8SliceMatchOutcome(false, -1, openingBreach, null, null);
+                            { failure = openingBreach; goto Failure; }
                         if (!stacks.PushRestoreTrail(instruction.A, captureStarts[instruction.A], opening, captureEnds[instruction.A], inputIndex, ref invocation) ||
                             !stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, OldValue = opening, NewValue = inputIndex, IsClosing = true }, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            { failure = stacks.Breach; goto Failure; }
                         captureStarts[instruction.A] = opening;
                         captureEnds[instruction.A] = inputIndex;
                     }
@@ -1134,7 +1143,8 @@ internal static partial class Utf8SliceRunner
                         if ((preserveCaptureTrail || captureStarts.Length != 1 || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
                             !stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            failure = stacks.Breach;
+                            goto Failure;
                         }
                         captureEnds[instruction.A] = inputIndex;
                     }
@@ -1146,7 +1156,8 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushBalance(captureStarts[instruction.A], inputIndex, balanceHeads[instruction.A], ref invocation) ||
                             !stacks.PushHeadTrail(instruction.A, balanceHeads[instruction.A], stacks.BalanceCount - 1, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            failure = stacks.Breach;
+                            goto Failure;
                         }
 
                         balanceHeads[instruction.A] = stacks.BalanceCount - 1;
@@ -1311,7 +1322,7 @@ internal static partial class Utf8SliceRunner
                         var classBreach = TryMatchScalarClass(program, instruction, classScalar,
                             ref invocation, out var classHit);
                         if (classBreach != Utf8ExecutionLimitKind.None)
-                            return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
+                            { failure = classBreach; goto Failure; }
 
                         if (classHit)
                         {
@@ -1419,7 +1430,7 @@ internal static partial class Utf8SliceRunner
                         (uint)stacks.FrameCount + 1, ref invocation, out var matched, out var assertionBreach))
                     {
                         if (assertionBreach != Utf8ExecutionLimitKind.None)
-                            return new(false, -1, assertionBreach, null, null);
+                            { failure = assertionBreach; goto Failure; }
                         failed = matched != (instruction.B != 0);
                         if (!failed) programIndex++;
                         break;
@@ -1437,7 +1448,7 @@ internal static partial class Utf8SliceRunner
                     // the body can establish the capture popped at successful close.
                     if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry {
                             Slot = instruction.B, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                        { failure = stacks.Breach; goto Failure; }
                     programIndex++;
                     break;
 
@@ -1466,7 +1477,7 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushRestoreTrail(popSlot, captureStarts[popSlot], previousStart,
                                 captureEnds[popSlot], previousEnd, ref invocation) ||
                             !stacks.PushHeadTrail(popSlot, balanceHeads[popSlot], top.Prev, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            { failure = stacks.Breach; goto Failure; }
                         captureStarts[popSlot] = previousStart;
                         captureEnds[popSlot] = previousEnd;
                         balanceHeads[popSlot] = top.Prev;
@@ -1474,7 +1485,7 @@ internal static partial class Utf8SliceRunner
                         {
                             if (!stacks.TryFindCaptureOpening(captureSlot, ref invocation,
                                     out var opening, out var openingBreach))
-                                return new Utf8SliceMatchOutcome(false, -1, openingBreach, null, null);
+                                { failure = openingBreach; goto Failure; }
                             var sourceStart = Math.Min(top.Start, top.End);
                             var sourceEnd = Math.Max(top.Start, top.End);
                             var gapStart = Math.Min(opening, inputIndex);
@@ -1502,7 +1513,7 @@ internal static partial class Utf8SliceRunner
                                     Slot = captureSlot, OldValue = gapStart, NewValue = gapEnd, IsClosing = true }, ref invocation) ||
                                 !stacks.PushBalance(gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
                                 !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
-                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                                { failure = stacks.Breach; goto Failure; }
                             captureStarts[captureSlot] = gapStart;
                             captureEnds[captureSlot] = gapEnd;
                             balanceHeads[captureSlot] = stacks.BalanceCount - 1;
@@ -1530,7 +1541,8 @@ internal static partial class Utf8SliceRunner
             {
                 if (stacks.FrameCount == frameBase || !stacks.PopFrame(out var popped))
                 {
-                    return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                    failure = Utf8ExecutionLimitKind.None;
+                    goto Failure;
                 }
 
                 stacks.TruncateJournal(popped.JournalCount, counts, positions);
@@ -1546,7 +1558,8 @@ internal static partial class Utf8SliceRunner
                     case Utf8SliceResumeKind.RepeatUnwind:
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            failure = stacks.Breach;
+                            goto Failure;
                         }
 
                         inputIndex = popped.InputIndex;
@@ -1555,7 +1568,8 @@ internal static partial class Utf8SliceRunner
                     default:
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
+                            failure = stacks.Breach;
+                            goto Failure;
                         }
 
                         inputIndex = popped.InputIndex;
@@ -1564,6 +1578,8 @@ internal static partial class Utf8SliceRunner
                 }
             }
         }
+    Failure:
+        return new(false, -1, failure, null, null);
     }
 
     private static bool SetRepeat(
