@@ -65,18 +65,18 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/empty` | Captures | 0.47 | 0.17 | 0 | Native faster | 2.79 |
-| `capture/nullable` | Captures | 0.45 | 0.20 | 0 | Native faster | 2.22 |
-| `capture/absent` | Captures | 0.31 | 0.15 | 0 | Native faster | 2.07 |
-| `projection/short-1` | Captures | 0.16 | 0.12 | 0 | Native faster | 1.40 |
-| `projection/short-4` | Captures | 0.24 | 0.23 | 0 | Native faster | 1.07 |
-| `projection/unicode-prefix-1` | Captures | 270.02 | 270.32 | 0 | Equivalent | 1.00 |
-| `projection/unicode-prefix-4` | Captures | 270.67 | 676.57 | 0 | Managed faster | 0.40 |
-| `capture/ambiguous` | Captures | 0.64 | — | 0 | Excluded | — |
-| `capture/nested` | Captures | 0.93 | — | 0 | Excluded | — |
-| `capture/unicode-longest` | Captures | 0.74 | — | 0 | Excluded | — |
-| `count/ambiguous` | Count | 0.36 | — | 0 | Excluded | — |
-| `cursor/ambiguous` | Cursor | 0.96 | — | 336 | Excluded | — |
+| `capture/empty` | Captures | 0.46 | 0.16 | 0 | Native faster | 2.89 |
+| `capture/nullable` | Captures | 0.43 | 0.20 | 0 | Native faster | 2.17 |
+| `capture/absent` | Captures | 0.30 | 0.15 | 0 | Native faster | 2.03 |
+| `projection/short-1` | Captures | 0.16 | 0.12 | 0 | Native faster | 1.37 |
+| `projection/short-4` | Captures | 0.24 | 0.21 | 0 | Native faster | 1.11 |
+| `projection/unicode-prefix-1` | Captures | 265.29 | 264.40 | 0 | Equivalent | 1.01 |
+| `projection/unicode-prefix-4` | Captures | 264.70 | 663.31 | 0 | Managed faster | 0.40 |
+| `capture/ambiguous` | Captures | 0.62 | — | 0 | Excluded | — |
+| `capture/nested` | Captures | 0.90 | — | 0 | Excluded | — |
+| `capture/unicode-longest` | Captures | 0.71 | — | 0 | Excluded | — |
+| `count/ambiguous` | Count | 0.35 | — | 0 | Excluded | — |
+| `cursor/ambiguous` | Cursor | 0.94 | — | 336 | Excluded | — |
 
 The ratio is the median paired managed/native time; raw samples retain 95% bootstrap intervals and lane-order observations. Excluded rows have different native ranges/captures and no ratio. All rows retain ordinary costs, even when no equivalent native result exists.
 
@@ -86,9 +86,9 @@ The same `(a|aa)*` capture operation at three lengths exposes ambiguity cost. Ea
 
 | Case | Input bytes | Utf8Regex (µs) | Managed B/op | Peak working B |
 |---|---:|---:|---:|---:|
-| `history/length-4` | 4 | 0.72 | 0 | 960 |
-| `history/length-8` | 8 | 1.01 | 0 | 960 |
-| `history/length-12` | 12 | 1.31 | 0 | 960 |
+| `history/length-4` | 4 | 0.71 | 0 | 960 |
+| `history/length-8` | 8 | 0.97 | 0 | 960 |
+| `history/length-12` | 12 | 1.26 | 0 | 960 |
 
 ### Historical adapter control
 
@@ -96,17 +96,17 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.64 | 0.17 | 0 | 3.80 |
+| `capture/sku007` | 0.63 | 0.16 | 0 | 4.03 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/empty` | 0.71 µs | 0.80 µs | 0.90 µs | 1.70 |
-| `capture/sku007` | 3747.71 µs | 4272.54 µs | 4741.05 µs | 1.63 |
-| `cursor/ambiguous` | 1.37 µs | 1.50 µs | 1.91 µs | 1.56 |
+| `capture/empty` | 0.69 µs | 0.78 µs | 0.88 µs | 1.70 |
+| `capture/sku007` | 3627.88 µs | 4049.25 µs | 4591.39 µs | 1.58 |
+| `cursor/ambiguous` | 1.37 µs | 1.48 µs | 1.89 µs | 1.57 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `E7A506EA09EB1CD471EFFB9160CECF28F52DAE55F5A45087ED85C8BEFE724914`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `7D57B2AAED1B01228AE1021FF9768336E03F82A0E57F90593C829783B22ACBA5`.
 <!-- END GENERATED POSIX BENCHMARKS -->
