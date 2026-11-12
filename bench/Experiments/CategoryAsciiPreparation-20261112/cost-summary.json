@@ -1,0 +1,1170 @@
+{
+  "Complete": true,
+  "Seconds": 94.10005557071418,
+  "SampleCount": 560,
+  "MinimumSampleMs": 24.7912,
+  "MaximumBatchAllocationMiB": 77.12413024902344,
+  "LoadedProducerHashesVerified": true,
+  "CommonCallerAndControls": true,
+  "FinalAccountLoansZero": true,
+  "RawArchiveSha256": "C5729FE5FA0AE6683F82B548BF2C095363E817CADDDFC18DF27BB61D7E21DBC9",
+  "SourceBaseline": "e9e43c7449084d0760fd1de8fc34e8707c53705a",
+  "Candidate": "same frozen GA Linux source plus archived patch",
+  "PdbSources": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "BeforeDocuments": 342,
+    "AfterDocuments": 342,
+    "ChangedProductionDocuments": [
+      "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceProgram.cs"
+    ],
+    "GeneratedRevisionOnly": [
+      "src/Lokad.Utf8Regex/obj/Release/net11.0/Lokad.Utf8Regex.AssemblyInfo.cs"
+    ],
+    "Baseline": "Frozen accepted math-symbol source producer; all other documents identical to qualified pairs"
+  },
+  "Processes": [
+    {
+      "Policy": "Validate",
+      "Side": "before",
+      "InputContract": "Engine validates complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+dbcd36e89a7adf7378ee7e858383b0f71ddc9066",
+          "DllSha256": "DD232D625A5B8301F0CE21F8CAF6D550C75EBAAA36450B010B0C3DDB74B33D9A",
+          "PdbSha256": "E25BA5760B509AF766498A4E50279C673E06ACD4E6EB54EDA8F440AD1C45C7BE"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "before",
+      "InputContract": "Engine validates complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+dbcd36e89a7adf7378ee7e858383b0f71ddc9066",
+          "DllSha256": "DD232D625A5B8301F0CE21F8CAF6D550C75EBAAA36450B010B0C3DDB74B33D9A",
+          "PdbSha256": "E25BA5760B509AF766498A4E50279C673E06ACD4E6EB54EDA8F440AD1C45C7BE"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "after",
+      "InputContract": "Engine validates complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+e9e43c7449084d0760fd1de8fc34e8707c53705a",
+          "DllSha256": "9B15FA508CCBCCB961B6DC379E14F6EFB1432A417FC3E704F82866D7CBEA5CAA",
+          "PdbSha256": "2C812D5DF2DBC30556317C522B24A8D302C15A518CB61238D99AAC53470E8321"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "Validate",
+      "Side": "after",
+      "InputContract": "Engine validates complete UTF-8 subject",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+e9e43c7449084d0760fd1de8fc34e8707c53705a",
+          "DllSha256": "9B15FA508CCBCCB961B6DC379E14F6EFB1432A417FC3E704F82866D7CBEA5CAA",
+          "PdbSha256": "2C812D5DF2DBC30556317C522B24A8D302C15A518CB61238D99AAC53470E8321"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "before",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+dbcd36e89a7adf7378ee7e858383b0f71ddc9066",
+          "DllSha256": "DD232D625A5B8301F0CE21F8CAF6D550C75EBAAA36450B010B0C3DDB74B33D9A",
+          "PdbSha256": "E25BA5760B509AF766498A4E50279C673E06ACD4E6EB54EDA8F440AD1C45C7BE"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "before",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+dbcd36e89a7adf7378ee7e858383b0f71ddc9066",
+          "DllSha256": "DD232D625A5B8301F0CE21F8CAF6D550C75EBAAA36450B010B0C3DDB74B33D9A",
+          "PdbSha256": "E25BA5760B509AF766498A4E50279C673E06ACD4E6EB54EDA8F440AD1C45C7BE"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "after",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+e9e43c7449084d0760fd1de8fc34e8707c53705a",
+          "DllSha256": "9B15FA508CCBCCB961B6DC379E14F6EFB1432A417FC3E704F82866D7CBEA5CAA",
+          "PdbSha256": "2C812D5DF2DBC30556317C522B24A8D302C15A518CB61238D99AAC53470E8321"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    },
+    {
+      "Policy": "AssumeValid",
+      "Side": "after",
+      "InputContract": "Caller guarantees valid unchanged UTF-8",
+      "Runtime": ".NET 11.0.0",
+      "WorkerSha256": "54E3FBB4C4F9DBC702D57C5DFC74BE11E6376CBBA0FEE12DBF604C636F4FF195",
+      "Producer": [
+        {
+          "Name": "Lokad.Utf8Regex",
+          "Revision": "0.5.0-dev.75+e9e43c7449084d0760fd1de8fc34e8707c53705a",
+          "DllSha256": "9B15FA508CCBCCB961B6DC379E14F6EFB1432A417FC3E704F82866D7CBEA5CAA",
+          "PdbSha256": "2C812D5DF2DBC30556317C522B24A8D302C15A518CB61238D99AAC53470E8321"
+        }
+      ],
+      "ReferenceAssemblySha256": "48D786496CAB61246035CF738EAA63E17D12F05A52A44C48D72CFD17DC53922A",
+      "PeakWorkingBytes": 17,
+      "ParentHeld": 17,
+      "Outstanding": 0,
+      "processorsBeforeAffinity": 8
+    }
+  ],
+  "Rows": [
+    {
+      "Id": "core/email-corpus",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          1211.4870967741936,
+          1257.5166666666667
+        ],
+        "MedianUs": 1234.50188172043,
+        "MinUs": 1205.5596774193548,
+        "MaxUs": 1263.1316666666667,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1213.7403225806454,
+          1210.283870967742
+        ],
+        "MedianUs": 1212.0120967741937,
+        "MinUs": 1203.1000000000001,
+        "MaxUs": 1227.5387096774193,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -1.8217700012651328,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-finite-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          1514.66,
+          1562.391836734694
+        ],
+        "MedianUs": 1538.525918367347,
+        "MinUs": 1507.2520000000002,
+        "MaxUs": 1573.2979591836736,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1541.0759999999998,
+          1517.938
+        ],
+        "MedianUs": 1529.507,
+        "MinUs": 1510.848,
+        "MaxUs": 1546.088,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "ChangePercent": -0.5862051629859866,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-funded-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          1516.19,
+          1559.7142857142858
+        ],
+        "MedianUs": 1537.952142857143,
+        "MinUs": 1506.838,
+        "MaxUs": 1566.022448979592,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1522.896,
+          1506.7979999999998
+        ],
+        "MedianUs": 1514.8469999999998,
+        "MinUs": 1503.5079999999998,
+        "MaxUs": 1794.2120000000002,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "ChangePercent": -1.5023317184772345,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-deadline-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          1600.036170212766,
+          1668.5934782608697
+        ],
+        "MedianUs": 1634.314824236818,
+        "MinUs": 1597.936170212766,
+        "MaxUs": 1672.321739130435,
+        "AllocatedBytesPerOperation": [
+          160,
+          160
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          1622.5659574468084,
+          1607.8255319148936
+        ],
+        "MedianUs": 1615.195744680851,
+        "MinUs": 1595.812765957447,
+        "MaxUs": 1637.7744680851063,
+        "AllocatedBytesPerOperation": [
+          160,
+          160
+        ]
+      },
+      "ChangePercent": -1.169852911595226,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/category-capture-string",
+      "SubjectBytes": 8201,
+      "SubjectSha256": "EC511054B9AEE70E586E7DF548ED911D9E10F6312F7A786AD98DBE419C4C20B0",
+      "SingleResultChecksum": 1,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          159.69902439024392,
+          162.5514705882353
+        ],
+        "MedianUs": 161.1252474892396,
+        "MinUs": 120.93268292682927,
+        "MaxUs": 370.42745098039217,
+        "AllocatedBytesPerOperation": [
+          42840,
+          42840
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          76.08409563409563,
+          75.68106212424851
+        ],
+        "MedianUs": 75.88257887917207,
+        "MinUs": 56.90841683366734,
+        "MaxUs": 82.68253638253637,
+        "AllocatedBytesPerOperation": [
+          42840,
+          42840
+        ]
+      },
+      "ChangePercent": -52.904600575251415,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "core/category-unicode",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 1024,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          108.81158357771261,
+          107.38769670958513
+        ],
+        "MedianUs": 108.09964014364887,
+        "MinUs": 107.14034334763947,
+        "MaxUs": 109.58196480938416,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          104.14094052558782,
+          103.79726402188783
+        ],
+        "MedianUs": 103.96910227373783,
+        "MinUs": 103.23324213406293,
+        "MaxUs": 104.40179806362379,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -3.821046827188457,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "control/folded-category",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 2048,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          187.01024258760106,
+          148.9954314720812
+        ],
+        "MedianUs": 168.00283702984115,
+        "MinUs": 123.80609137055838,
+        "MaxUs": 207.93984771573602,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          142.1725925925926,
+          118.63906633906633
+        ],
+        "MedianUs": 130.40582946582947,
+        "MinUs": 115.66543209876544,
+        "MaxUs": 201.39135802469136,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -22.378793256529107,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/class-program",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 1024,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          176.74510739856802,
+          174.7301401869159
+        ],
+        "MedianUs": 175.73762379274194,
+        "MinUs": 173.5661214953271,
+        "MaxUs": 178.28496420047736,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          170.4027397260274,
+          171.470938215103
+        ],
+        "MedianUs": 170.9368389705652,
+        "MinUs": 169.31552511415524,
+        "MaxUs": 171.83775743707096,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -2.7317911318970656,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "core/category-short",
+      "SubjectBytes": 3,
+      "SubjectSha256": "76A9AD7E0459360F3B2A785FBF136F2710598C9DDD99DF2525120ABA47BA97AB",
+      "SingleResultChecksum": 2,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.35612814240608226,
+          0.34189568554536337
+        ],
+        "MedianUs": 0.34901191397572284,
+        "MinUs": 0.34113180587930886,
+        "MaxUs": 0.35646743335527986,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.35029728426803797,
+          0.3793205615293916
+        ],
+        "MedianUs": 0.3648089228987148,
+        "MinUs": 0.3499267423504835,
+        "MaxUs": 0.38042306180652835,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 4.5262090749402795,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "construction/email",
+      "SubjectBytes": 28,
+      "SubjectSha256": "F11D95B03697B0FEB684635118424C30A2145E089CE2828863B01F0024D87E2D",
+      "SingleResultChecksum": 28,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          140.09856115107914,
+          137.90176056338026
+        ],
+        "MedianUs": 139.0001608572297,
+        "MinUs": 120.29856115107914,
+        "MaxUs": 168.3742957746479,
+        "AllocatedBytesPerOperation": [
+          52304,
+          52304
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          141.47528517110266,
+          141.0017793594306
+        ],
+        "MedianUs": 141.23853226526663,
+        "MinUs": 126.35779467680611,
+        "MaxUs": 167.8954372623574,
+        "AllocatedBytesPerOperation": [
+          52424,
+          52424
+        ]
+      },
+      "ChangePercent": 1.6103372789158188,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "construction/category",
+      "SubjectBytes": 9,
+      "SubjectSha256": "84760B268BD5E2070E4B5430B85AD2A36B1433E74BCEB473FEA17F1254205AB7",
+      "SingleResultChecksum": 9,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          40.56697307944846,
+          41.89807029634735
+        ],
+        "MedianUs": 41.2325216878979,
+        "MinUs": 31.06119500984898,
+        "MaxUs": 48.11654031702274,
+        "AllocatedBytesPerOperation": [
+          28280,
+          28280
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          39.37148648648648,
+          39.05549169859515
+        ],
+        "MedianUs": 39.21348909254081,
+        "MinUs": 29.37266922094508,
+        "MaxUs": 48.7797972972973,
+        "AllocatedBytesPerOperation": [
+          28320,
+          28320
+        ]
+      },
+      "ChangePercent": -4.896699286645112,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/construction-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "SingleResultChecksum": 6,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          41.267551326990485,
+          39.700326619488294
+        ],
+        "MedianUs": 40.48393897323939,
+        "MinUs": 35.67691888949374,
+        "MaxUs": 47.79194338595536,
+        "AllocatedBytesPerOperation": [
+          40496,
+          40496
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          44.59474812433012,
+          41.781230925737546
+        ],
+        "MedianUs": 43.18798952503383,
+        "MinUs": 30.76505894962487,
+        "MaxUs": 47.8045551982851,
+        "AllocatedBytesPerOperation": [
+          40496,
+          40496
+        ]
+      },
+      "ChangePercent": 6.679316836194871,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/core-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "SingleResultChecksum": 1,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          0.1200169698461379,
+          0.12765307772498477
+        ],
+        "MedianUs": 0.12383502378556133,
+        "MinUs": 0.1182390222259645,
+        "MaxUs": 0.1282971447051983,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.11507179756265198,
+          0.11091253800074702
+        ],
+        "MedianUs": 0.1129921677816995,
+        "MinUs": 0.11056881740256917,
+        "MaxUs": 0.12411466916954275,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -8.75588801326338,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/net-predecoded-email",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "Validate",
+      "before": {
+        "ProcessMediansUs": [
+          470.96265822784807,
+          476.3094339622641
+        ],
+        "MedianUs": 473.6360460950561,
+        "MinUs": 470.0854430379747,
+        "MaxUs": 476.52327044025157,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          472.26645569620246,
+          472.3836477987421
+        ],
+        "MedianUs": 472.3250517474723,
+        "MinUs": 471.6474683544304,
+        "MaxUs": 473.2303797468354,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -0.2767936178828534,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-corpus",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          285.4019011406844,
+          285.76060606060605
+        ],
+        "MedianUs": 285.58125360064525,
+        "MinUs": 283.99087452471485,
+        "MaxUs": 286.9943181818182,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          287.8636015325671,
+          285.72727272727275
+        ],
+        "MedianUs": 286.79543712991995,
+        "MinUs": 284.7969696969697,
+        "MaxUs": 288.0191570881226,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 0.42516219603567773,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-finite-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          308.7028925619835,
+          310.9873983739837
+        ],
+        "MedianUs": 309.84514546798357,
+        "MinUs": 308.0772727272727,
+        "MaxUs": 311.33861788617884,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          309.3188524590164,
+          310.77355371900825
+        ],
+        "MedianUs": 310.04620308901235,
+        "MinUs": 307.21942148760326,
+        "MaxUs": 311.448347107438,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "ChangePercent": 0.06488971151221712,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-funded-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          308.8446280991735,
+          310.2474789915966
+        ],
+        "MedianUs": 309.54605354538506,
+        "MinUs": 306.8342975206612,
+        "MaxUs": 311.4046218487395,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          308.13548387096773,
+          309.4181069958847
+        ],
+        "MedianUs": 308.77679543342623,
+        "MinUs": 306.3790322580645,
+        "MaxUs": 311.9633744855967,
+        "AllocatedBytesPerOperation": [
+          112,
+          112
+        ]
+      },
+      "ChangePercent": -0.24851168449674388,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/email-deadline-live",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          390.33937823834196,
+          386.43367346938777
+        ],
+        "MedianUs": 388.3865258538649,
+        "MinUs": 383.98418367346943,
+        "MaxUs": 391.4072538860104,
+        "AllocatedBytesPerOperation": [
+          160,
+          160
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          385.8738461538462,
+          392.688947368421
+        ],
+        "MedianUs": 389.2813967611336,
+        "MinUs": 384.5030769230769,
+        "MaxUs": 393.6615789473684,
+        "AllocatedBytesPerOperation": [
+          160,
+          160
+        ]
+      },
+      "ChangePercent": 0.23040729986740782,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "core/category-capture-string",
+      "SubjectBytes": 8201,
+      "SubjectSha256": "EC511054B9AEE70E586E7DF548ED911D9E10F6312F7A786AD98DBE419C4C20B0",
+      "SingleResultChecksum": 1,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          371.9487437185929,
+          362.1509523809524
+        ],
+        "MedianUs": 367.04984804977266,
+        "MinUs": 150.55929648241207,
+        "MaxUs": 378.0336683417085,
+        "AllocatedBytesPerOperation": [
+          42840,
+          42840
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          81.86099290780143,
+          86.81172413793104
+        ],
+        "MedianUs": 84.33635852286623,
+        "MinUs": 81.15189125295508,
+        "MaxUs": 103.43655172413793,
+        "AllocatedBytesPerOperation": [
+          42840,
+          42840
+        ]
+      },
+      "ChangePercent": -77.02318664046142,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "core/category-unicode",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 1024,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          90.57626506024096,
+          301.3649880095923
+        ],
+        "MedianUs": 195.97062653491662,
+        "MinUs": 90.41999999999999,
+        "MaxUs": 305.40287769784175,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          86.07849829351535,
+          86.02147727272727
+        ],
+        "MedianUs": 86.04998778312131,
+        "MinUs": 85.5665909090909,
+        "MaxUs": 86.87952218430033,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -56.090364507872025,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "control/folded-category",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 2048,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          168.56636568848756,
+          104.40379403794039
+        ],
+        "MedianUs": 136.48507986321397,
+        "MinUs": 103.02357723577236,
+        "MaxUs": 317.64146341463413,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          163.15032258064517,
+          168.32934537246052
+        ],
+        "MedianUs": 165.73983397655286,
+        "MinUs": 103.0512415349887,
+        "MaxUs": 179.55677419354836,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 21.43439718294349,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/class-program",
+      "SubjectBytes": 13312,
+      "SubjectSha256": "9450B330576AC75EF5C17D58BAD74D767536BC01FE58BC6DA3FFA872324835CD",
+      "SingleResultChecksum": 1024,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          158.13221052631576,
+          157.14021276595747
+        ],
+        "MedianUs": 157.63621164613662,
+        "MinUs": 155.551914893617,
+        "MaxUs": 158.8557894736842,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          153.0299180327869,
+          152.220892494929
+        ],
+        "MedianUs": 152.62540526385794,
+        "MinUs": 151.64381338742396,
+        "MaxUs": 153.54303278688525,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -3.1787153027547865,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "core/category-short",
+      "SubjectBytes": 3,
+      "SubjectSha256": "76A9AD7E0459360F3B2A785FBF136F2710598C9DDD99DF2525120ABA47BA97AB",
+      "SingleResultChecksum": 2,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.35603032655682393,
+          0.3800398701663813
+        ],
+        "MedianUs": 0.36803509836160264,
+        "MinUs": 0.3521110695766359,
+        "MaxUs": 0.3816387660694661,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.37058344141484917,
+          0.34579891317023115
+        ],
+        "MedianUs": 0.35819117729254013,
+        "MinUs": 0.3447615271590829,
+        "MaxUs": 0.37163742254158033,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -2.6747234469986947,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "construction/email",
+      "SubjectBytes": 28,
+      "SubjectSha256": "F11D95B03697B0FEB684635118424C30A2145E089CE2828863B01F0024D87E2D",
+      "SingleResultChecksum": 28,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          137.714598540146,
+          291.8823170731707
+        ],
+        "MedianUs": 214.79845780665835,
+        "MinUs": 124.16423357664233,
+        "MaxUs": 470.8128048780488,
+        "AllocatedBytesPerOperation": [
+          52304,
+          52304
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          150.33129496402879,
+          143.49630996309963
+        ],
+        "MedianUs": 146.9138024635642,
+        "MinUs": 123.42214022140222,
+        "MaxUs": 173.61660516605164,
+        "AllocatedBytesPerOperation": [
+          52424,
+          52424
+        ]
+      },
+      "ChangePercent": -31.603883955348334,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "construction/category",
+      "SubjectBytes": 9,
+      "SubjectSha256": "84760B268BD5E2070E4B5430B85AD2A36B1433E74BCEB473FEA17F1254205AB7",
+      "SingleResultChecksum": 9,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          41.417186463171866,
+          75.95222857142859
+        ],
+        "MedianUs": 58.684707517300225,
+        "MinUs": 32.71453218314532,
+        "MaxUs": 81.93302857142858,
+        "AllocatedBytesPerOperation": [
+          28280,
+          28280
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          38.426510067114094,
+          42.521610738255035
+        ],
+        "MedianUs": 40.474060402684565,
+        "MinUs": 31.326241610738254,
+        "MaxUs": 49.58657718120806,
+        "AllocatedBytesPerOperation": [
+          28320,
+          28320
+        ]
+      },
+      "ChangePercent": -31.03133317866017,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/construction-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "SingleResultChecksum": 6,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          39.226481012658226,
+          64.23425287356322
+        ],
+        "MedianUs": 51.730366943110724,
+        "MinUs": 37.48162025316456,
+        "MaxUs": 78.59436781609196,
+        "AllocatedBytesPerOperation": [
+          40496,
+          40496
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          41.98245430809399,
+          40.57035123966942
+        ],
+        "MedianUs": 41.276402773881706,
+        "MinUs": 38.69581611570248,
+        "MaxUs": 45.45624020887728,
+        "AllocatedBytesPerOperation": [
+          40496,
+          40496
+        ]
+      },
+      "ChangePercent": -20.208563725684613,
+      "RangesOverlap": true
+    },
+    {
+      "Id": "control/core-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "SingleResultChecksum": 1,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          0.11226492134915027,
+          0.11182123641876024
+        ],
+        "MedianUs": 0.11204307888395526,
+        "MinUs": 0.10761743053835572,
+        "MaxUs": 0.11233765943996132,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          0.12022907437154888,
+          0.11484393049433357
+        ],
+        "MedianUs": 0.11753650243294123,
+        "MinUs": 0.11421937706839334,
+        "MaxUs": 0.12147494611408616,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": 4.9029566160669225,
+      "RangesOverlap": false
+    },
+    {
+      "Id": "control/net-predecoded-email",
+      "SubjectBytes": 6839410,
+      "SubjectSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "SingleResultChecksum": 92,
+      "Policy": "AssumeValid",
+      "before": {
+        "ProcessMediansUs": [
+          472.99367088607596,
+          472.9917721518987
+        ],
+        "MedianUs": 472.9927215189873,
+        "MinUs": 470.1556962025316,
+        "MaxUs": 474.2974683544304,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "ProcessMediansUs": [
+          472.05723270440257,
+          473.63899371069175
+        ],
+        "MedianUs": 472.84811320754716,
+        "MinUs": 470.21572327044026,
+        "MaxUs": 475.4572327044025,
+        "AllocatedBytesPerOperation": [
+          0,
+          0
+        ]
+      },
+      "ChangePercent": -0.030573052155169478,
+      "RangesOverlap": true
+    }
+  ]
+}

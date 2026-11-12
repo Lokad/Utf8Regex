@@ -1303,7 +1303,27 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.CategorySetNode categorySet:
                     var categorySetMaskIndex = SetMasks.Count;
-                    SetMasks.Add(categorySet.Mask16);
+                    var categoryMask = categorySet.Mask16;
+                    if (!categorySet.Negated && !categorySet.FoldCase &&
+                        categorySet.Categories is [{ Negated: false, Table: { Mask: not 0,
+                            Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }])
+                    {
+                        // Complete the existing positive ASCII mask once. Runtime
+                        // scalar tables still govern wider characters and misses.
+                        // Keep the immutable source mask available to other lowerings.
+                        Budget.ChargeWork(128);
+                        Span<byte> completed = stackalloc byte[16];
+                        categoryMask.CopyTo(completed);
+                        for (var value = 0; value < 128; value++)
+                            if ((table.Mask & (1u << (int)Rune.GetUnicodeCategory(new Rune(value)))) != 0)
+                                completed[value >> 3] |= (byte)(1 << (value & 7));
+                        if (!completed.SequenceEqual(categoryMask))
+                        {
+                            categoryMask = Budget.AllocateArray<byte>(16, false);
+                            completed.CopyTo(categoryMask);
+                        }
+                    }
+                    SetMasks.Add(categoryMask);
                     var categorySetMemberBits = 0;
                     foreach (var shorthandMember in categorySet.Members)
                     {

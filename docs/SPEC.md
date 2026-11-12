@@ -789,6 +789,14 @@ Failure unwinds unpublished capacity/depth without refunding spent work or
 invalidating borrowed objects. CLR/JIT metadata and complete heap accounting
 are excluded.
 
+Lowering can complete the ASCII membership of an eligible positive, unfolded
+general-category class in its existing program mask. It admits the bounded
+128-value classification as construction work, and any replacement mask before
+allocation, without mutating source masks. Construction work/covered bytes can
+increase while later scalar table lookups decrease; wider scalars retain their
+original predicates. Folded, negated, range, predicate and class-program cases
+retain their existing preparation.
+
 Cold replacement preparation has separate construction backstops under the
 original invocation token/deadline. Finite working bytes additionally cap covered
 cold parser/key capacity; a denial can be `ConstructionBytes` before execution.
