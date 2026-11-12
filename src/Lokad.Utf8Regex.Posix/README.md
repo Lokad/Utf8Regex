@@ -65,16 +65,16 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/empty` | Captures | 0.46 | 0.16 | 0 | Native faster | 2.78 |
-| `capture/nullable` | Captures | 0.44 | 0.19 | 0 | Native faster | 2.26 |
-| `capture/absent` | Captures | 0.30 | 0.15 | 0 | Native faster | 2.05 |
-| `projection/short-1` | Captures | 0.16 | 0.11 | 0 | Native faster | 1.39 |
-| `projection/short-4` | Captures | 0.24 | 0.22 | 0 | Native faster | 1.09 |
-| `projection/unicode-prefix-1` | Captures | 257.39 | 257.30 | 0 | Equivalent | 1.00 |
-| `projection/unicode-prefix-4` | Captures | 261.05 | 655.02 | 0 | Managed faster | 0.40 |
-| `capture/ambiguous` | Captures | 0.61 | — | 0 | Excluded | — |
-| `capture/nested` | Captures | 0.91 | — | 0 | Excluded | — |
-| `capture/unicode-longest` | Captures | 0.70 | — | 0 | Excluded | — |
+| `capture/empty` | Captures | 0.47 | 0.17 | 0 | Native faster | 2.80 |
+| `capture/nullable` | Captures | 0.44 | 0.20 | 0 | Native faster | 2.22 |
+| `capture/absent` | Captures | 0.31 | 0.16 | 0 | Native faster | 1.93 |
+| `projection/short-1` | Captures | 0.16 | 0.12 | 0 | Native faster | 1.39 |
+| `projection/short-4` | Captures | 0.24 | 0.22 | 0 | Native faster | 1.07 |
+| `projection/unicode-prefix-1` | Captures | 268.52 | 269.40 | 0 | Equivalent | 0.99 |
+| `projection/unicode-prefix-4` | Captures | 269.87 | 675.86 | 0 | Managed faster | 0.40 |
+| `capture/ambiguous` | Captures | 0.64 | — | 0 | Excluded | — |
+| `capture/nested` | Captures | 0.92 | — | 0 | Excluded | — |
+| `capture/unicode-longest` | Captures | 0.74 | — | 0 | Excluded | — |
 | `count/ambiguous` | Count | 0.30 | — | 0 | Excluded | — |
 | `cursor/ambiguous` | Cursor | 0.82 | — | 336 | Excluded | — |
 
@@ -86,9 +86,9 @@ The same `(a|aa)*` capture operation at three lengths exposes ambiguity cost. Ea
 
 | Case | Input bytes | Utf8Regex (µs) | Managed B/op | Peak working B |
 |---|---:|---:|---:|---:|
-| `history/length-4` | 4 | 0.73 | 0 | 960 |
-| `history/length-8` | 8 | 0.98 | 0 | 960 |
-| `history/length-12` | 12 | 1.27 | 0 | 960 |
+| `history/length-4` | 4 | 0.72 | 0 | 960 |
+| `history/length-8` | 8 | 0.99 | 0 | 960 |
+| `history/length-12` | 12 | 1.29 | 0 | 960 |
 
 ### Historical adapter control
 
@@ -96,17 +96,17 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.63 | 0.16 | 0 | 3.88 |
+| `capture/sku007` | 0.64 | 0.17 | 0 | 3.81 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/empty` | 0.67 µs | 0.76 µs | 0.88 µs | 1.66 |
-| `cursor/ambiguous` | 1.20 µs | 1.31 µs | 1.71 µs | 1.59 |
-| `capture/sku007` | 3489.24 µs | 3970.97 µs | 4603.44 µs | 1.55 |
+| `capture/empty` | 0.71 µs | 0.81 µs | 0.92 µs | 1.75 |
+| `cursor/ambiguous` | 1.23 µs | 1.34 µs | 1.74 µs | 1.63 |
+| `capture/sku007` | 3768.97 µs | 4229.49 µs | 4837.89 µs | 1.61 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `0501268475B57A5F286E5C2D8F2F17929ADB725303DE19A4FDFCD80B59A35481`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `8F5733236C8491B13FA006CB31285D89F5D4276FB01F1D6979C9B25F92952563`.
 <!-- END GENERATED POSIX BENCHMARKS -->

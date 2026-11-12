@@ -1,0 +1,520 @@
+{
+  "Source": "7e6f00e6810b4bd3b92c4313c2ac81f50ba0ed6c",
+  "Version": "0.5.0-dev.74",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "Sdk": "11.0.100",
+  "BenchmarkRuntime": ".NET 11.0.0",
+  "ExactCorePins": true,
+  "PackageCandidate": "artifacts/package-candidates/0.5.0-dev.74/candidate.json",
+  "Feed": "artifacts/nuget",
+  "Windows": {
+    "Source": "7e6f00e6810b4bd3b92c4313c2ac81f50ba0ed6c",
+    "Version": "0.5.0-dev.74",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112088.0,
+    "Seconds": 301.8719547,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "7e6f00e6810b4bd3b92c4313c2ac81f50ba0ed6c",
+    "Version": "0.5.0-dev.74",
+    "Sha256": "4DB2723A28FAE39701824F34F1D0DD938377B94B70BE540C4054B80E9F5D8713",
+    "Bytes": 46541296,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112088.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "Full": {
+    "Source": "7e6f00e6810b4bd3b92c4313c2ac81f50ba0ed6c",
+    "Version": "0.5.0-dev.74",
+    "RawSha256": "6808886E4045BE4B257C5AA76E4526E856A212E86F23010BCC7AEAB7951429D0",
+    "Bytes": 34380564,
+    "Seconds": 2831.0069522,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "SourceCI": {
+    "Source": "7e6f00e6810b4bd3b92c4313c2ac81f50ba0ed6c",
+    "Run": 43145671739,
+    "Status": "completed",
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "ObservedAtUtc": "2026-11-12T03:18:56.333514+00:00"
+  },
+  "SnapshotChecksPerFrameworkPerPlatform": 9,
+  "SnapshotLogs": [
+    {
+      "Platform": "Windows",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "8ADBB56F1C613D55E142E8F1E5700D391622E9E207BD953EBA93AD73B21E454E"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "5804CF04C00C8812924901C88CBE3131D20DFD7EE3211EAC3FEE15BF7864CCAD"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "310AB607297863513AB186BA4B5061B440F63B757A76D5184461837510F2424B"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "F3809188FB738BB1E336DB14E23355AC7ABFBA4AF47541EE5DBDC8FA8A175B7A"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "DB55A6AE68796C216A76EEEFC901CA98CEAEF08AA63579E690FFE3D84DFCE477"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "F6259E2AD74D824646B2206148481411E3440B9ACB016EF7979F128615454568"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "6EE068192AAAE56174C4C89FB7E57B1BAD2D8C0279B44B33F2387A450A2421D3"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "6B988B613D9B7587E14061A4D212FBC244B771F9D13C31590E61FAEEC1EE2ACF"
+    }
+  ],
+  "OriginalConsumers": {
+    "Scope": "Unchanged copied handoffs; not downstream adoption or POSIX acceptance",
+    "AwkPerFramework": 19,
+    "LythonPerFramework": 118,
+    "PublicApiProbesPassed": true,
+    "FinalRootLoans": 0,
+    "OriginalSourceFilesVerified": 1565,
+    "ChangedExactVersionPins": 3
+  },
+  "PreservedCanonicalFiles": 444,
+  "NewCanonicalFiles": 8,
+  "CompilerInputsSha256": "3C70A2988A0764A6E1FD528182227953BB6312A48F4C07429E9DCCAE3F7680AA",
+  "PreviousCheckpoint": {
+    "Version": "0.5.0-dev.73",
+    "Source": "eae880c88f7a54ed4331715c2fd8f4b0fc6e6d63",
+    "Runtime": ".NET 11.0.0"
+  },
+  "CatalogInterpretation": "Separate Full observations, not a causal A/B or composition of focused gains. Both policies remain separate contracts.",
+  "StatusCounts": {
+    "Core": {
+      "Win": 119,
+      "Gap": 51,
+      "TieCandidate": 8
+    },
+    "PythonRe": {
+      "ManagedFaster": 47,
+      "CpythonFaster": 29,
+      "Inconclusive": 7,
+      "Unqualified": 5,
+      "Equivalent": 2
+    },
+    "Pcre2": {
+      "ManagedFaster": 74,
+      "Inconclusive": 15,
+      "NativeFaster": 12,
+      "Excluded": 25
+    },
+    "Posix": {
+      "NativeFaster": 6,
+      "Measured": 9,
+      "Excluded": 8,
+      "Equivalent": 1,
+      "ManagedFaster": 1
+    }
+  },
+  "SelectedComparisons": [
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-name-family-count",
+      "Ga73": {
+        "ManagedUs": 1615.195744680851,
+        "ReferenceUs": 3065.328,
+        "Ratio": 0.5269242784722715,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 1597.9375,
+        "ReferenceUs": 2985.1923076923076,
+        "Ratio": 0.5352879598015847,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-river-window-count",
+      "Ga73": {
+        "ManagedUs": 2220.325714285714,
+        "ReferenceUs": 1520.858,
+        "Ratio": 1.4599165170487411,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 2158.657142857143,
+        "ReferenceUs": 1527.836,
+        "Ratio": 1.4128853770019445,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-symbol-count",
+      "Ga73": {
+        "ManagedUs": 1875.8926829268294,
+        "ReferenceUs": 1249.811475409836,
+        "Ratio": 1.5009405176982311,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 1866.7292682926827,
+        "ReferenceUs": 1244.8999999999999,
+        "Ratio": 1.49950138026563,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/mariomka-email-count",
+      "Ga73": {
+        "ManagedUs": 1169.2276923076925,
+        "ReferenceUs": 463.8506172839506,
+        "Ratio": 2.520698795560594,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 1170.2492307692307,
+        "ReferenceUs": 462.86012269938647,
+        "Ratio": 2.528299962296108,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/mariomka-uri-count",
+      "Ga73": {
+        "ManagedUs": 1407.9188679245283,
+        "ReferenceUs": 1100.704347826087,
+        "Ratio": 1.2791072104922598,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 1443.3301886792453,
+        "ReferenceUs": 1123.0432835820895,
+        "Ratio": 1.285195512746009,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal/sherlock-zh",
+      "Ga73": {
+        "ManagedUs": 79.75311510031679,
+        "ReferenceUs": 23.577031691245686,
+        "Ratio": 3.38266140304378,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 81.31378205128205,
+        "ReferenceUs": 23.989198606271774,
+        "Ratio": 3.3895997688736146,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/full-strings",
+      "Ga73": {
+        "ManagedUs": 464.3590909090909,
+        "ReferenceUs": 362.8901151079137,
+        "Ratio": 1.2723213920437135,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 184440,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current74": {
+        "ManagedUs": 472.118691588785,
+        "ReferenceUs": 368.4937518248175,
+        "Ratio": 1.284172760559321,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 184440,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/many-capture-strings",
+      "Ga73": {
+        "ManagedUs": 785.66,
+        "ReferenceUs": 351.9183958333333,
+        "Ratio": 2.2289133416117,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 242008,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current74": {
+        "ManagedUs": 774.0938461538461,
+        "ReferenceUs": 349.0069931034483,
+        "Ratio": 2.220273075045789,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 242008,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/named-capture-strings",
+      "Ga73": {
+        "ManagedUs": 144.26914285714284,
+        "ReferenceUs": 94.50415298507463,
+        "Ratio": 1.5270988045051552,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 43144,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current74": {
+        "ManagedUs": 143.64236311239193,
+        "ReferenceUs": 94.30473207547169,
+        "Ratio": 1.520311732918038,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 43144,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/one-capture-strings",
+      "Ga73": {
+        "ManagedUs": 499.5782178217822,
+        "ReferenceUs": 213.8551265822785,
+        "Ratio": 2.3397846372814786,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 94344,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current74": {
+        "ManagedUs": 497.491,
+        "ReferenceUs": 213.3814852320675,
+        "Ratio": 2.332084823286936,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 94344,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Split",
+      "Case": "split/captures",
+      "Ga73": {
+        "ManagedUs": 388.13228346456697,
+        "ReferenceUs": 250.27619,
+        "Ratio": 1.5484971547230333,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 274648,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current74": {
+        "ManagedUs": 391.41550387596897,
+        "ReferenceUs": 254.81069035532994,
+        "Ratio": 1.5361031490874482,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 274648,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "AdapterControl",
+      "Case": "capture/sku007",
+      "Ga73": {
+        "ManagedUs": 2567.1448275862067,
+        "ReferenceUs": 664.2212389380531,
+        "Ratio": 3.8795352993081496,
+        "Status": "Inconclusive",
+        "ManagedBytes": 22.344827586206897,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.26%."
+      },
+      "Current74": {
+        "ManagedUs": 2623.434482758621,
+        "ReferenceUs": 687.2366972477065,
+        "Ratio": 3.8112373311150187,
+        "Status": "NativeFaster",
+        "ManagedBytes": 22.344827586206897,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FiniteDeadlineLive",
+      "Case": "capture/sku007",
+      "Ga73": {
+        "ManagedUs": 4603.435294117647,
+        "ReferenceUs": null,
+        "Ratio": 1.7932121494080606,
+        "Status": "Measured",
+        "ManagedBytes": 3309568,
+        "ReferenceBytes": null,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 4837.8875,
+        "ReferenceUs": null,
+        "Ratio": 1.844104562852591,
+        "Status": "Measured",
+        "ManagedBytes": 3309568,
+        "ReferenceBytes": null,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FiniteLive",
+      "Case": "capture/sku007",
+      "Ga73": {
+        "ManagedUs": 3489.2363636363634,
+        "ReferenceUs": null,
+        "Ratio": 1.3591895268788423,
+        "Status": "Measured",
+        "ManagedBytes": 3112930.5454545454,
+        "ReferenceBytes": null,
+        "Reason": null
+      },
+      "Current74": {
+        "ManagedUs": 3768.9666666666667,
+        "ReferenceUs": null,
+        "Ratio": 1.4366536276916981,
+        "Status": "Measured",
+        "ManagedBytes": 3112929.1428571427,
+        "ReferenceBytes": null,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FundedFiniteLive",
+      "Case": "capture/sku007",
+      "Ga73": {
+        "ManagedUs": 3970.968421052631,
+        "ReferenceUs": null,
+        "Ratio": 1.5468423823935127,
+        "Status": "Measured",
+        "ManagedBytes": 3112960,
+        "ReferenceBytes": null,
+        "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans."
+      },
+      "Current74": {
+        "ManagedUs": 4229.4944444444445,
+        "ReferenceUs": null,
+        "Ratio": 1.6121974732896713,
+        "Status": "Measured",
+        "ManagedBytes": 3112960,
+        "ReferenceBytes": null,
+        "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans."
+      }
+    }
+  ],
+  "HistoricalCausalEvidence": [
+    "../PosixParentAlphabet-20261111/README.md",
+    "../PosixParentBoundary-20261112/README.md",
+    "../PosixWholeBoundary-20261112/README.md",
+    "../ColdBackreference-20261112/README.md"
+  ],
+  "PerformanceComplete": false,
+  "NextAction": "Resume shared warm Python output and unresolved POSIX parent/history analysis; explicitly dispose of material P0 gaps with actual costs and viable next options. No repeat matrix for a small source step; no automatic opcode-outlining or rejected hint/validator replay."
+}
