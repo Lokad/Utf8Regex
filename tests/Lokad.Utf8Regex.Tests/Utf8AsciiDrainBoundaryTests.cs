@@ -8,6 +8,39 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8AsciiDrainBoundaryTests
 {
     [Theory]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)]
+    [InlineData(511)] [InlineData(512)] [InlineData(513)]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    public void LongAsciiIslandsPreserveMetadataAndTheFirstMalformedByte(int length)
+    {
+        var ascii = new string(Enumerable.Range(0, length).Select(index => (char)(index & 127)).ToArray());
+        var text = "中文" + ascii + "éK😀" + ascii + "尾";
+        var encoded = Encoding.UTF8.GetBytes(text);
+        foreach (var offset in new[] { 0, 1, 31 })
+        {
+            byte[] storage = [.. Enumerable.Repeat((byte)0xFF, offset), .. encoded, 0xFF];
+            var input = storage.AsSpan(offset, encoded.Length);
+            var description = Utf8InputAnalyzer.ValidateOnly(input, out var kelvin);
+            Assert.Equal(text.Length, description.Utf16Length);
+            Assert.True(kelvin); Assert.True(description.ContainsSupplementaryScalars);
+            Assert.False(description.IsAscii);
+            Assert.True(Utf8InputAnalyzer.TryValidateOnly(input, out var error));
+            Assert.Equal(-1, error);
+            var invocation = new Utf8SliceInvocation(new(10000, 0, 17), Regex.InfiniteMatchTimeout, default);
+            Assert.True(invocation.Ledger.TryReserve(17));
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref invocation, out var governed));
+            Assert.Equal(description, governed); Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
+
+            var malformedAt = 6 + length / 2;
+            input[malformedAt] = 0xFF;
+            input[^1] = 0xFF;
+            Assert.False(Utf8ValidationCore.TryValidate(input, true, out _, out var scalarError));
+            Assert.False(Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+            Assert.Equal(malformedAt, scalarError); Assert.Equal(malformedAt, vectorError);
+        }
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(15)] [InlineData(16)] [InlineData(17)]
     [InlineData(31)] [InlineData(32)] [InlineData(33)] [InlineData(63)] [InlineData(64)]
     [InlineData(65)] [InlineData(127)] [InlineData(128)] [InlineData(129)]
