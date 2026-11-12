@@ -1,0 +1,91 @@
+{
+  "Accepted": true,
+  "SourceBaseline": "39490bbfa9f91f975e2ceb78928c30c388ca0b28; accepted b460 Posix pair originally compiled57 plus verified direct-parent-boundary patch; identical dev73 Core",
+  "Candidate": "same source plus archived direct whole-boundary proof patch",
+  "PublicApiChanged": false,
+  "AccountingSemantics": "Proof work can change; no new storage. Earlier-shorter acceptances can lose the former farther-ahead bound and require more work.",
+  "Protocol": {
+    "Seconds": 114.32911764644086,
+    "SampleCount": 560,
+    "MinimumSampleMs": 63.638,
+    "MaximumBatchAllocationMiB": 54.04657745361329,
+    "LoadedProducerHashesVerified": true,
+    "CommonCoreCallerAndNetControl": true,
+    "FinalAccountLoansZero": true
+  },
+  "PdbSources": {
+    "Verified": true,
+    "MatchingPePdbIds": true,
+    "GeneratedInputDocuments": 6,
+    "CompiledDocumentCounts": [
+      {
+        "Side": "after",
+        "Producer": "Lokad.Utf8Regex.Posix",
+        "Count": 10
+      },
+      {
+        "Side": "before",
+        "Producer": "Lokad.Utf8Regex.Posix",
+        "Count": 10
+      }
+    ],
+    "ChangedCompiledDocuments": [
+      "src/Lokad.Utf8Regex.Posix/PosixWorkspace.cs"
+    ],
+    "Before": "accepted b460 Posix CSharp, originally compiled57 plus the verified archived direct-parent-boundary patch; generated AssemblyInfo reconstructed with its exact recorded Git revision",
+    "After": "frozen39490 plus direct whole-boundary patch sources, all source and generated hashes checked",
+    "SharedCore": "exact common dev73 Core pair from the qualified Full; no Core CSharp change or rebuild for this comparison"
+  },
+  "FocusedPosixTestsPerTarget": {
+    "Windows": 361,
+    "Linux": 361,
+    "WindowsSoftware": 361,
+    "LinuxSoftware": 361
+  },
+  "PublicWitnesses": {
+    "WorkRefusalsToExactSuccesses": 12,
+    "UnchangedPrograms": 9,
+    "PreservedEofSuccesses": 2,
+    "PreservedUnprovedWholeOrParentRefusals": 4
+  },
+  "ModeledSharedAccount": {
+    "HeldParent": 17,
+    "PeakBefore": 2833,
+    "PeakAfter": 2001,
+    "Final": 0
+  },
+  "RawArchives": {
+    "evidence.tar.gz": "B43E4133E024C17460D011622AA0C3E8CAE5C96660DA182F72C47014447999EF",
+    "windows-evidence.tar.gz": "B64B4446AB4F9CF5C15127FF371CAEDE579656E5B29BE0B41C358F61F9AA14B2"
+  },
+  "Rows": [
+    {"Policy":"Validate","Id":"posix/negated-whole-boundary-16","BeforeUs":1075.8811507936507,"AfterUs":2.923674584863681,"ChangePercent":-99.72825301542768,"RangesOverlap":false,"BeforeProcessMediansUs":[1067.442857142857,1084.3194444444443],"AfterProcessMediansUs":[2.9061023622047246,2.9412468075226377],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/unicode-whole-boundary-12","BeforeUs":156.2875,"AfterUs":2.3962953224392205,"ChangePercent":-98.4667389762846,"RangesOverlap":false,"BeforeProcessMediansUs":[156.33937500000002,156.23562499999997],"AfterProcessMediansUs":[2.4198384399356287,2.372752204942812],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/astral-whole-boundary-12","BeforeUs":157.06378116099995,"AfterUs":2.5581731330585606,"ChangePercent":-98.37125203904503,"RangesOverlap":false,"BeforeProcessMediansUs":[158.9901673640167,155.1373949579832],"AfterProcessMediansUs":[2.5778446635530186,2.5385016025641023],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/newline-dot-fixed-tail-12","BeforeUs":112.11517619149163,"AfterUs":1.6514058368827835,"ChangePercent":-98.52704522886161,"RangesOverlap":false,"BeforeProcessMediansUs":[112.43185840707964,111.79849397590361],"AfterProcessMediansUs":[1.6931184169935218,1.6096932567720452],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"posix/finite-live-16","BeforeUs":1278.785028735632,"AfterUs":3.5465841608426265,"ChangePercent":-99.72265986220144,"RangesOverlap":false,"BeforeProcessMediansUs":[1269.5683333333332,1288.001724137931],"AfterProcessMediansUs":[3.5447215830648866,3.5484467386203664],"BeforeAllocatedBytes":[3936,3936],"AfterAllocatedBytes":[2608,2608]},
+    {"Policy":"Validate","Id":"posix/funded-deadline-live-16","BeforeUs":1390.4527272727273,"AfterUs":4.290826496626103,"ChangePercent":-99.69140795566331,"RangesOverlap":false,"BeforeProcessMediansUs":[1407.54,1373.3654545454547],"AfterProcessMediansUs":[4.2437499999999995,4.3379029932522055],"BeforeAllocatedBytes":[3984,3984],"AfterAllocatedBytes":[2656,2656]},
+    {"Policy":"Validate","Id":"posix/cursor-16","BeforeUs":1285.6706896551725,"AfterUs":4.510288642573207,"ChangePercent":-99.64918787689071,"RangesOverlap":false,"BeforeProcessMediansUs":[1285.0465517241382,1286.2948275862068],"AfterProcessMediansUs":[4.525574300071788,4.495002985074627],"BeforeAllocatedBytes":[4320,4320],"AfterAllocatedBytes":[2992,2992]},
+    {"Policy":"Validate","Id":"posix/whole-only-16","BeforeUs":607.8924,"AfterUs":0.778315598052057,"ChangePercent":-99.87196490726778,"RangesOverlap":false,"BeforeProcessMediansUs":[614.1,601.6848],"AfterProcessMediansUs":[0.8239022361497987,0.7327289599543152],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/old-positive-alphabet-16","BeforeUs":2.6112836168965643,"AfterUs":2.5923445162430454,"ChangePercent":-0.7252793427328874,"RangesOverlap":true,"BeforeProcessMediansUs":[2.6323816495851635,2.5901855842079655],"AfterProcessMediansUs":[2.613652519339327,2.571036513146763],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/earlier-shorter-8","BeforeUs":42.675607628683856,"AfterUs":47.18595379788353,"ChangePercent":10.56890907903114,"RangesOverlap":false,"BeforeProcessMediansUs":[42.41287240022485,42.938342857142864],"AfterProcessMediansUs":[48.199477124183005,46.17243047158404],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/unproved-dot-parent-12","BeforeUs":177.53899791058245,"AfterUs":128.42682668624278,"ChangePercent":-27.66275117147785,"RangesOverlap":false,"BeforeProcessMediansUs":[178.74801980198023,176.32997601918467],"AfterProcessMediansUs":[128.06383701188454,128.789816360601],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/sku","BeforeUs":0.704078301682564,"AfterUs":0.6896413981611976,"ChangePercent":-2.0504684616563185,"RangesOverlap":true,"BeforeProcessMediansUs":[0.7115669505312235,0.6965896528339046],"AfterProcessMediansUs":[0.6929492957490008,0.6863335005733945],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/core-count","BeforeUs":3.5275106605273274,"AfterUs":3.674572314503931,"ChangePercent":4.1689924745576645,"RangesOverlap":true,"BeforeProcessMediansUs":[3.607173601147776,3.447847719906879],"AfterProcessMediansUs":[3.631635507139703,3.7175091218681584],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"Validate","Id":"control/net-predecoded-count","BeforeUs":0.23106342735425894,"AfterUs":0.2272202900545575,"ChangePercent":-1.6632391130463442,"RangesOverlap":true,"BeforeProcessMediansUs":[0.22362593845932308,0.23850091624919478],"AfterProcessMediansUs":[0.23123129060460118,0.2232092895045138],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/negated-whole-boundary-16","BeforeUs":1086.459441602728,"AfterUs":2.8588365551798485,"ChangePercent":-99.73686670245485,"RangesOverlap":false,"BeforeProcessMediansUs":[1082.0159420289854,1090.9029411764704],"AfterProcessMediansUs":[2.8384431940977004,2.8792299162619965],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/unicode-whole-boundary-12","BeforeUs":156.16549568965516,"AfterUs":2.363415804470852,"ChangePercent":-98.48659539417874,"RangesOverlap":false,"BeforeProcessMediansUs":[154.88875,157.44224137931033],"AfterProcessMediansUs":[2.3315751670726375,2.3952564418690665],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/astral-whole-boundary-12","BeforeUs":155.20085431168175,"AfterUs":2.495092596352541,"ChangePercent":-98.39234609408672,"RangesOverlap":false,"BeforeProcessMediansUs":[154.881330472103,155.5203781512605],"AfterProcessMediansUs":[2.4550230048657773,2.535162187839305],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/newline-dot-fixed-tail-12","BeforeUs":110.5125317192136,"AfterUs":1.6791463746683193,"ChangePercent":-98.48058283658307,"RangesOverlap":false,"BeforeProcessMediansUs":[109.90673499267936,111.11832844574782],"AfterProcessMediansUs":[1.7161982152864594,1.6420945340501794],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"posix/finite-live-16","BeforeUs":1287.0519491525424,"AfterUs":3.498990163049983,"ChangePercent":-99.7281391659945,"RangesOverlap":false,"BeforeProcessMediansUs":[1284.7700000000002,1289.3338983050846],"AfterProcessMediansUs":[3.480831042996227,3.517149283103739],"BeforeAllocatedBytes":[3936,3936],"AfterAllocatedBytes":[2608,2608.0048730203357]},
+    {"Policy":"AssumeValid","Id":"posix/funded-deadline-live-16","BeforeUs":1366.549537480064,"AfterUs":4.28284262048386,"ChangePercent":-99.6865944114707,"RangesOverlap":false,"BeforeProcessMediansUs":[1362.9754385964914,1370.1236363636365],"AfterProcessMediansUs":[4.28598272380525,4.279702517162471],"BeforeAllocatedBytes":[3984,3984],"AfterAllocatedBytes":[2656,2656]},
+    {"Policy":"AssumeValid","Id":"posix/cursor-16","BeforeUs":1290.2019725306836,"AfterUs":4.457841626609781,"ChangePercent":-99.65448497820339,"RangesOverlap":false,"BeforeProcessMediansUs":[1289.8327586206897,1290.5711864406778],"AfterProcessMediansUs":[4.462471595874847,4.453211657344716],"BeforeAllocatedBytes":[4320,4320],"AfterAllocatedBytes":[2992,2992]},
+    {"Policy":"AssumeValid","Id":"posix/whole-only-16","BeforeUs":609.5419165667067,"AfterUs":0.742286598794659,"ChangePercent":-99.87822222252152,"RangesOverlap":false,"BeforeProcessMediansUs":[603.0114754098362,616.0723577235772],"AfterProcessMediansUs":[0.743477359961321,0.741095837627997],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/old-positive-alphabet-16","BeforeUs":2.5736355057028923,"AfterUs":2.62720099317786,"ChangePercent":2.0813159966231565,"RangesOverlap":true,"BeforeProcessMediansUs":[2.5375004283609197,2.6097705830448654],"AfterProcessMediansUs":[2.5596908362240263,2.694711150131694],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/earlier-shorter-8","BeforeUs":42.53807652114236,"AfterUs":48.360163895096775,"ChangePercent":13.68676689238808,"RangesOverlap":false,"BeforeProcessMediansUs":[42.88169014084507,42.19446290143964],"AfterProcessMediansUs":[47.48372817955112,49.236599610642436],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/unproved-dot-parent-12","BeforeUs":178.65084006061443,"AfterUs":126.50073405832923,"ChangePercent":-29.191077962236957,"RangesOverlap":false,"BeforeProcessMediansUs":[178.8929742388759,178.40870588235293],"AfterProcessMediansUs":[125.55138408304501,127.45008403361345],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/sku","BeforeUs":0.7145740446429951,"AfterUs":0.6952697208978995,"ChangePercent":-2.7015148240851827,"RangesOverlap":true,"BeforeProcessMediansUs":[0.6928064429330932,0.736341646352897],"AfterProcessMediansUs":[0.6825450812354936,0.7079943605603055],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/core-count","BeforeUs":3.581744333995723,"AfterUs":3.557949461580362,"ChangePercent":-0.664337546080962,"RangesOverlap":true,"BeforeProcessMediansUs":[3.7229228486646884,3.440565819326758],"AfterProcessMediansUs":[3.653250924664201,3.4626479984965233],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]},
+    {"Policy":"AssumeValid","Id":"control/net-predecoded-count","BeforeUs":0.2296600789706249,"AfterUs":0.2285527314138175,"ChangePercent":-0.48216806411054414,"RangesOverlap":true,"BeforeProcessMediansUs":[0.2284541000981097,0.23086605784314013],"AfterProcessMediansUs":[0.22648340551729232,0.2306220573103427],"BeforeAllocatedBytes":[0,0],"AfterAllocatedBytes":[0,0]}
+  ]
+}

@@ -1,6 +1,4 @@
 using System.Buffers;
-using System.Buffers.Binary;
-using System.Numerics;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -188,7 +186,7 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.Accept:
                     if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
                     {
-                        if (at < input.Length) maximumEnd = FindAlphabetCeiling(input, at, ref invocation);
+                        if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, at, ref invocation);
                         if (captureHistory) prefixTag = FindPrefixComparisonTag(input, at == maximumEnd, ref invocation);
                     }
                     // Without requested captures, the ceiling proves the longest whole
@@ -352,60 +350,40 @@ internal struct PosixWorkspace
         return tag;
     }
 
-    private int FindAlphabetCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
+    private int FindBoundaryCeiling(ReadOnlySpan<byte> input, int acceptedEnd, ref Utf8SliceInvocation invocation)
     {
-        var program = _program.Scalar;
-        var code = program.Instructions;
+        var code = _program.Scalar.Instructions;
         if (code.Length > 64) return input.Length;
         Charge(ref invocation);
-        var first = int.MaxValue; var last = -1;
-        foreach (var instruction in code)
+        if (Rune.DecodeFromUtf8(input[acceptedEnd..], out var boundary, out _) != OperationStatus.Done)
+            return input.Length;
+        // Every path beyond this acceptance must cross its next scalar. Use
+        // the normal predicates, including Unicode classes and negation, rather
+        // than constructing a coarse alphabet and searching the remaining input.
+        for (var pc = 0; pc < code.Length; pc++)
         {
-            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
+            if ((pc & 31) == 0) Charge(ref invocation);
+            var instruction = code[pc];
+            switch (instruction.Kind)
             {
-                first = Math.Min(first, instruction.A); last = Math.Max(last, instruction.A);
+                case Utf8SliceInstructionKind.Literal:
+                    if (instruction.A == boundary.Value) return input.Length;
+                    break;
+                case Utf8SliceInstructionKind.Dot:
+                    if (instruction.A != 0 || boundary.Value != '\n') return input.Length;
+                    break;
+                case Utf8SliceInstructionKind.CategorySet:
+                    if (MatchesClass(boundary, instruction, ref invocation)) return input.Length;
+                    break;
+                case Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+                    Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
+                    Utf8SliceInstructionKind.RepeatEnd or Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor or
+                    Utf8SliceInstructionKind.Accept:
+                    break;
+                default: return input.Length;
             }
-            else if (instruction is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-                program.CategorySetMembers[instruction.D].Length == 0)
-            {
-                var mask = program.SetMasks[instruction.A];
-                if (mask.Length != 16) return input.Length;
-                var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
-                var high = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
-                if ((low | high) == 0) continue;
-                first = Math.Min(first, low != 0 ? BitOperations.TrailingZeroCount(low) :
-                    64 + BitOperations.TrailingZeroCount(high));
-                last = Math.Max(last, high != 0 ? 127 - BitOperations.LeadingZeroCount(high) :
-                    63 - BitOperations.LeadingZeroCount(low));
-            }
-            else if (instruction.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
-                Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
-                Utf8SliceInstructionKind.RepeatEnd or Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Anchor or
-                Utf8SliceInstructionKind.Accept)) return input.Length;
         }
-        if (last < first) return input.Length;
-        // Every consuming atom stays in this conservative scalar interval. No
-        // accepting path can cross its first excluded scalar. Keep the actual
-        // subject for anchors, validation and output.
-        // A bounded miss retains physical EOF as the original safe upper bound.
-        var tail = input.Slice(acceptedEnd, Math.Min(2048, input.Length - acceptedEnd));
-        if (last < 128)
-        {
-            Charge(ref invocation);
-            var stop = tail.IndexOfAnyExceptInRange((byte)first, (byte)last);
-            return stop < 0 ? input.Length : acceptedEnd + stop;
-        }
-        for (int offset = 0, scalars = 0; offset < tail.Length; scalars++)
-        {
-            if ((scalars & 63) == 0) Charge(ref invocation);
-            // A probe ending inside a scalar supplies no endpoint proof. Keep
-            // the original bound; subject validation belongs to the caller.
-            if (Rune.DecodeFromUtf8(tail[offset..], out var scalar, out var width) != OperationStatus.Done)
-                return input.Length;
-            if (scalar.Value < first || scalar.Value > last) return acceptedEnd + offset;
-            offset += width;
-        }
-        return input.Length;
+        return acceptedEnd;
     }
 
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)

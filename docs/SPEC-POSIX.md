@@ -203,16 +203,18 @@ This uses one local tag choice, no retained program metadata/storage;
 it can remove losing descendant exploration and lower numerical work requirements.
 
 Physical input end is always a valid ceiling. After the first general acceptance,
-a proof over at most 64 instructions can establish that every consuming atom is
-an unfolded scalar literal or positive ASCII-only bracket. A conservative scalar
-interval containing those atoms cannot cross its first excluded scalar. A checked
-search of at most 2048 following bytes can therefore prove an earlier ceiling.
-ASCII alphabets keep their span search; wider literal alphabets decode complete
-scalars with a work checkpoint every 64 scalars. A probe cut inside a scalar,
-or another proof/search miss, keeps physical input end. Whole-only selection can stop at that
-ceiling; captured selection keeps the same hierarchical history rules. Actual
-input, anchors, strict validation and scalar/coordinate output remain unchanged.
-Proof/search use bounded work checkpoints and no additional retained storage.
+a proof over at most 64 instructions tests the next complete scalar against every
+consuming atom's normal literal/dot/class predicate. If all reject it, no accepting
+path can cross that boundary, so the accepted endpoint is already maximal. Unicode
+tables, negated brackets and newline-dot behavior retain their normal meaning.
+An accepted boundary scalar, unknown instruction, decoding failure or longer program
+retains physical input end as the safe upper bound. This replaces coarse alphabet
+construction and scanning farther ahead: an initially shorter acceptance can lose
+that earlier future-boundary proof and require more work. Whole-only selection can
+stop at a proved ceiling; captured selection keeps hierarchical history priority.
+Actual input, anchors, validation policy and scalar/coordinate output remain intact.
+Proof inspection and class lookup use bounded original work/interruption, with no
+additional retained storage; numerical work requirements can change.
 
 Bound construction traversal/instructions and admit major arrays before acquiring
 them, including growth overlap. Charge matching transitions, candidate discovery,

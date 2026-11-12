@@ -289,8 +289,8 @@ public sealed class PosixPublicContractTests
         using var token = new CancellationTokenSource();
         var account = new Account();
         // The non-pruning case ends below EOF and admits wider scalars, so the
-        // ASCII alphabet ceiling cannot replace general history competition.
-        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|a[^!])*)", default,
+        // Boundary exclusion cannot replace general history competition.
+        var regex = new Utf8PosixRegex(pruning ? "(a|aa)*" + suffix : "((a|a[^!])*)!*", default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
         var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
@@ -313,7 +313,7 @@ public sealed class PosixPublicContractTests
             // A long captured suffix guarantees bounded hook polls while the
             // parent proof walks its accepted trace, before saving the winner.
             var input = Encoding.ASCII.GetBytes(pruning ? new string('a', 128) +
-                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "!");
+                (suffix == "([bc])*" ? new string('b', 4096) : suffix is null ? "" : "b") : new string('a', 12) + "!#");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, output, 0, token.Token, account));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Match(input, output, 0, token.Token, account)).CancellationToken);
@@ -323,6 +323,54 @@ public sealed class PosixPublicContractTests
             Assert.True(retained.Success);
         }
         finally { diagnostics.Complete(); }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void InterruptionInsideWholeBoundaryProofClearsOutputAndRefunds(bool deadline)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PosixRegex("((a|a[^!#])*)!*", default,
+                deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
+            var reached = false;
+            // The normal diagnostic hook polls every64 charged steps. Vary a
+            // bounded set of real run lengths to observe a poll inside this
+            // short proof, rather than adding a production phase callback.
+            for (var count = 16; count < 80 && !reached; count++)
+            {
+                now = 0;
+                using var token = new CancellationTokenSource();
+                var account = new Account(); Assert.True(account.TryReserve(17));
+                var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+                var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
+                var input = Encoding.ASCII.GetBytes(new string('a', count) + "!#");
+                var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+                {
+                    if (reached || !new StackTrace().GetFrames().Any(frame =>
+                        frame.GetMethod() is { DeclaringType: { } type } method &&
+                        method.Name == "FindBoundaryCeiling" && type == typeof(PosixWorkspace))) return;
+                    reached = true;
+                    if (deadline) now = 101; else token.Cancel();
+                });
+                Exception? error;
+                try { error = Record.Exception(() => regex.Match(input, output, 0, token.Token, account)); }
+                finally { diagnostics.Complete(); }
+                if (reached)
+                {
+                    if (deadline) Assert.IsType<RegexMatchTimeoutException>(error);
+                    else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+                    Assert.All(output, match => Assert.False(match.Success));
+                }
+                else Assert.Null(error);
+                Assert.Equal(17UL, account.Used); account.Release(17);
+                Assert.True(retained.Success);
+            }
+            Assert.True(reached, "The injection must reach the actual whole-boundary proof.");
+        }
     }
 
     [Theory]

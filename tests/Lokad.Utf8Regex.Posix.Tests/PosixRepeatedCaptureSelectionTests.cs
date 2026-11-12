@@ -17,7 +17,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             ("[bc]?", "b"), ("[bc]*", "bcc"), ("[bc]{1,3}", "bc"), ("[é中]*", "中é") })
         foreach (var capturedTail in new[] { false, true })
         foreach (var longerFirst in new[] { false, true })
-        foreach (var longer in new[] { scalar + scalar, scalar + "[^bcé中]", scalar + "[" + scalar + "☃]" })
+        foreach (var longer in new[] { scalar + scalar, scalar + "[^bcé中]", scalar + "[^bcé中#]", scalar + "[" + scalar + "☃]" })
         {
             // Each longer alternative consumes exactly two of these input
             // scalars; the independent extent oracle does not inspect bytecode.
@@ -25,7 +25,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern),
                 inputValidation: validation);
             for (var count = 0; count <= 8; count++)
-            foreach (var rest in new[] { "", "!" })
+            foreach (var rest in new[] { "", "!", "#" })
             {
                 var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
                 var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + rest);
@@ -42,6 +42,54 @@ public sealed class PosixRepeatedCaptureSelectionTests
                 Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
                 Assert.Equal(whole, regex.Match(input, floor));
             }
+        }
+    }
+
+    [Theory]
+    [InlineData("((a|a[^!#])*)!*", "a", "!", PosixCompileOptions.None)]
+    [InlineData("((a|a[ab中])*)!*", "a", "!", PosixCompileOptions.None)]
+    [InlineData("((a|a[^!#])*)(!|!!)", "a", "!!", PosixCompileOptions.None)]
+    [InlineData("((😀|😀[^!#])*)!*", "😀", "!", PosixCompileOptions.None)]
+    [InlineData("((a|a[^!#])*)([^a#]*)", "a", "!!", PosixCompileOptions.None)]
+    [InlineData("((a|a.)*)!", "a", "!", PosixCompileOptions.Newline)]
+    public void ExcludedWholeBoundaryKeepsCapturesAndCursorsWithinFiniteWork(
+        string pattern, string scalar, string tail, PosixCompileOptions options)
+    {
+        const string prefix = "é😀!";
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var body = string.Concat(Enumerable.Repeat(scalar, 32));
+        var text = body + tail;
+        var parent = body;
+        var last = scalar + scalar;
+        var sentinel = options == PosixCompileOptions.Newline ? "\n" : "#";
+        var input = Encoding.UTF8.GetBytes(prefix + text + sentinel);
+        var whole = new Utf8ValueMatch(true, true, prefix.Length, text.Length, floor, Encoding.UTF8.GetByteCount(text));
+        var parentMatch = new Utf8ValueMatch(true, true, prefix.Length, parent.Length, floor, Encoding.UTF8.GetByteCount(parent));
+        var lastMatch = new Utf8ValueMatch(true, true, prefix.Length + parent.Length - last.Length, last.Length,
+            floor + Encoding.UTF8.GetByteCount(parent) - Encoding.UTF8.GetByteCount(last), Encoding.UTF8.GetByteCount(last));
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+            Assert.Equal(whole, regex.Match(input, groups, floor));
+            Assert.Equal(parentMatch, groups[1]); Assert.Equal(lastMatch, groups[2]);
+            if (groups.Length > 3) Assert.Equal(new Utf8ValueMatch(true, true,
+                prefix.Length + body.Length, tail.Length, floor + Encoding.UTF8.GetByteCount(body), Encoding.UTF8.GetByteCount(tail)), groups[3]);
+            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.Equal(whole, regex.Match(input, floor));
+            var count = regex.Count(input, floor);
+            Assert.Equal(pattern.Contains("(!|!!)", StringComparison.Ordinal) || options == PosixCompileOptions.Newline ? 1 : 3, count);
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            var retained = groups[2];
+            var observed = 1;
+            while (alias.MoveNext(out _)) observed++;
+            Assert.Equal(count, observed);
+            alias.Dispose();
+            Assert.Equal(lastMatch, retained);
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         }
     }
 
@@ -305,7 +353,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData(Utf8InputValidation.AssumeValid, "(é|éé)*", "é")]
     [InlineData(Utf8InputValidation.Validate, "(😀|😀😀)*", "😀")]
     [InlineData(Utf8InputValidation.AssumeValid, "(😀|😀😀)*", "😀")]
-    public void AlphabetCeilingKeepsNonEofHistoryAndWholeOnlyCountsWithinFiniteWork(Utf8InputValidation validation, string pattern, string scalar)
+    public void ExcludedBoundariesKeepNonEofHistoryAndWholeOnlyCountsWithinFiniteWork(Utf8InputValidation validation, string pattern, string scalar)
     {
         var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
         { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
@@ -338,7 +386,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData(2048, "a")] [InlineData(2049, "a")] [InlineData(2050, "a")]
     [InlineData(683, "中")] [InlineData(684, "中")] [InlineData(685, "中")]
     [InlineData(512, "😀")] [InlineData(513, "😀")]
-    public void AShortFirstAcceptanceCannotDiscardLongerEndpointsAcrossTheBoundedProbe(int length, string scalar)
+    public void AShortFirstAcceptanceCannotDiscardLongerEndpointsAcrossLongScalarBranches(int length, string scalar)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, length)) + "é");
         var bytes = length * Encoding.UTF8.GetByteCount(scalar);

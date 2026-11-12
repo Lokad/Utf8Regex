@@ -53,8 +53,10 @@
   mutually disjoint. A restricted repeated single-literal capture can select its
   first acceptance while retaining required empty tails. Proven winners transfer
   their admitted history instead of allocating and copying a second trace;
-  general capture competition remains. Proved scalar alphabet endpoints also
-  bound history competition before separators, without truncating the subject.
+  general capture competition remains. Proved scalar boundaries also bound
+  history competition before separators, without truncating the subject. The
+  whole-endpoint proof uses normal atom predicates on the next scalar, replacing
+  coarse alphabet construction and scanning ahead; proof work totals can change.
   Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
   existing losing-history rule to prune descendant alternatives safely.
   Synchronous POSIX operations use bounded stack state or an exact-size heap
