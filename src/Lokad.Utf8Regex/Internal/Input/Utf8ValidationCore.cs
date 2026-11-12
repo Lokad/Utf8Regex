@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
@@ -9,7 +10,7 @@ namespace Lokad.Utf8Regex.Internal.Input;
 internal static class Utf8ValidationCore
 {
     private const int DenseThreeByteLeadThreshold = 2;
-    private const int SafeThreeByteIdleBlockLimit = 4;
+    private const int ThreeByteIdleBlockLimit = 4;
 
     public static bool TryValidate(
         ReadOnlySpan<byte> input,
@@ -260,20 +261,14 @@ internal static class Utf8ValidationCore
             var continuationLimit = Vector256.Create((sbyte)-64);
             var twoByteLeadFirst = Vector256.Create((byte)0xC2);
             var twoByteLeadMaxDelta = Vector256.Create((byte)(0xDF - 0xC2));
-            var safeThreeByteLeadFirst = Vector256.Create((byte)0xE1);
-            var safeThreeByteLeadMaxDelta = Vector256.Create((byte)(0xEF - 0xE1));
-            var ed = Vector256.Create((byte)0xED);
             var continuationLimit512 = Vector512.Create((sbyte)-64);
             var twoByteLeadFirst512 = Vector512.Create((byte)0xC2);
             var twoByteLeadMaxDelta512 = Vector512.Create((byte)(0xDF - 0xC2));
-            var safeThreeByteLeadFirst512 = Vector512.Create((byte)0xE1);
-            var safeThreeByteLeadMaxDelta512 = Vector512.Create((byte)(0xEF - 0xE1));
-            var ed512 = Vector512.Create((byte)0xED);
 
             while (offset <= lastVectorStart)
             {
                 ulong nonAsciiBits;
-                ulong continuationBits = 0, twoByteLeadBits = 0, safeThreeByteLeadBits = 0;
+                ulong continuationBits = 0, twoByteLeadBits = 0, threeByteLeadBits = 0;
                 if (use512)
                 {
                     var current = MemoryMarshal.Read<Vector512<byte>>(input[offset..]);
@@ -284,9 +279,7 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector512.LessThanOrEqual(Vector512.Subtract(current, twoByteLeadFirst512), twoByteLeadMaxDelta512).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512);
-                            var surrogateLead = Vector512.Equals(current, ed512);
-                            safeThreeByteLeadBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
+                            threeByteLeadBits = GetThreeByteLeadBits(current);
                         }
                     }
                 }
@@ -300,16 +293,14 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector256.LessThanOrEqual(Vector256.Subtract(current, twoByteLeadFirst), twoByteLeadMaxDelta).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta);
-                            var surrogateLead = Vector256.Equals(current, ed);
-                            safeThreeByteLeadBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
+                            threeByteLeadBits = GetThreeByteLeadBits(current);
                         }
                     }
                 }
                 if (nonAsciiBits == 0 && expectedContinuationCarry == 0)
                 {
                     if (includeSafeThreeByte &&
-                        (safeThreeByteIdleBlocks += blockWeight) >= SafeThreeByteIdleBlockLimit)
+                        (safeThreeByteIdleBlocks += blockWeight) >= ThreeByteIdleBlockLimit)
                     {
                         includeSafeThreeByte = false;
                     }
@@ -318,27 +309,27 @@ internal static class Utf8ValidationCore
                     continue;
                 }
 
-                var leadBits = twoByteLeadBits | safeThreeByteLeadBits;
+                var leadBits = twoByteLeadBits | threeByteLeadBits;
                 var unsupportedBits = nonAsciiBits & ~(continuationBits | leadBits);
                 // A full 64-lane mask leaves no high bits for overflow. Compute
                 // the next block's at-most-two continuation lanes separately.
                 var expectedContinuationBits =
-                    ((leadBits << 1) | (safeThreeByteLeadBits << 2) | expectedContinuationCarry) & laneMask;
+                    ((leadBits << 1) | (threeByteLeadBits << 2) | expectedContinuationCarry) & laneMask;
                 if (unsupportedBits == 0 &&
                     continuationBits == expectedContinuationBits)
                 {
                     if (includeSafeThreeByte)
                     {
-                        safeThreeByteIdleBlocks = safeThreeByteLeadBits == 0
+                        safeThreeByteIdleBlocks = threeByteLeadBits == 0
                             ? safeThreeByteIdleBlocks + blockWeight
                             : 0;
-                        if (safeThreeByteIdleBlocks >= SafeThreeByteIdleBlockLimit)
+                        if (safeThreeByteIdleBlocks >= ThreeByteIdleBlockLimit)
                         {
                             includeSafeThreeByte = false;
                         }
                     }
 
-                    expectedContinuationCarry = (leadBits >> (vectorLength - 1)) | (safeThreeByteLeadBits >> (vectorLength - 2));
+                    expectedContinuationCarry = (leadBits >> (vectorLength - 1)) | (threeByteLeadBits >> (vectorLength - 2));
                     offset += vectorLength;
                     continue;
                 }
@@ -367,24 +358,20 @@ internal static class Utf8ValidationCore
                 if (stop < vectorLength)
                 {
                     if (!includeSafeThreeByte &&
-                        input[offset + stop] is >= 0xE1 and <= 0xEC or >= 0xEE and < 0xF0)
+                        input[offset + stop] is >= 0xE0 and < 0xF0)
                     {
-                        ulong safeThreeByteBits;
+                        ulong threeByteBits;
                         if (use512)
                         {
                             var current = MemoryMarshal.Read<Vector512<byte>>(input[offset..]);
-                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512);
-                            var surrogateLead = Vector512.Equals(current, ed512);
-                            safeThreeByteBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
+                            threeByteBits = GetThreeByteLeadBits(current);
                         }
                         else
                         {
                             var current = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
-                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta);
-                            var surrogateLead = Vector256.Equals(current, ed);
-                            safeThreeByteBits = (inRange & ~surrogateLead).ExtractMostSignificantBits();
+                            threeByteBits = GetThreeByteLeadBits(current);
                         }
-                        if (BitOperations.PopCount(safeThreeByteBits) >= DenseThreeByteLeadThreshold)
+                        if (BitOperations.PopCount(threeByteBits) >= DenseThreeByteLeadThreshold)
                         {
                             includeSafeThreeByte = true;
                             safeThreeByteIdleBlocks = 0;
@@ -480,6 +467,40 @@ internal static class Utf8ValidationCore
         nextOffset = offset;
         errorOffset = -1;
         return true;
+    }
+
+    // E0 needs A0..BF next; ED needs 80..9F next. The existing continuation
+    // adjacency proof checks the 80..BF range, so bit5 supplies the extra bound.
+    // A constrained lead in the last lane stays unsupported: its second byte
+    // belongs to the scalar path, without another cross-block carry state.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetThreeByteLeadBits(Vector512<byte> current)
+    {
+        var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, Vector512.Create((byte)0xE1)), Vector512.Create((byte)0x0E));
+        var surrogate = Vector512.Equals(current, Vector512.Create((byte)0xED));
+        var common = (inRange & ~surrogate).ExtractMostSignificantBits();
+        var lower = Vector512.Equals(current, Vector512.Create((byte)0xE0));
+        var constrained = (lower | surrogate).ExtractMostSignificantBits();
+        if (constrained == 0) return common;
+        var secondHigh = Vector512.ShiftLeft(current.AsUInt16(), 2).AsByte().ExtractMostSignificantBits() >> 1;
+        var lowerBits = lower.ExtractMostSignificantBits();
+        var valid = (lowerBits & secondHigh) | ((constrained ^ lowerBits) & ~secondHigh);
+        return common | (valid & (ulong.MaxValue >> 1));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetThreeByteLeadBits(Vector256<byte> current)
+    {
+        var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, Vector256.Create((byte)0xE1)), Vector256.Create((byte)0x0E));
+        var surrogate = Vector256.Equals(current, Vector256.Create((byte)0xED));
+        var common = (inRange & ~surrogate).ExtractMostSignificantBits();
+        var lower = Vector256.Equals(current, Vector256.Create((byte)0xE0));
+        var constrained = (lower | surrogate).ExtractMostSignificantBits();
+        if (constrained == 0) return common;
+        var secondHigh = Vector256.ShiftLeft(current.AsUInt16(), 2).AsByte().ExtractMostSignificantBits() >> 1;
+        var lowerBits = lower.ExtractMostSignificantBits();
+        var valid = (lowerBits & secondHigh) | ((constrained ^ lowerBits) & ~secondHigh);
+        return common | (valid & (uint.MaxValue >> 1));
     }
 
     private static int FindPreviousScalarLead(ReadOnlySpan<byte> input, int offset)

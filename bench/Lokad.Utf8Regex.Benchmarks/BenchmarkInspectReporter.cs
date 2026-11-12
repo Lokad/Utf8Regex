@@ -2719,13 +2719,7 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"BlockShapeTransitions     : {census.BlockShapeTransitions}");
         Console.WriteLine($"DenseSafeThreeByteBlocks  : {census.DenseSafeThreeByteBlocks}");
-        Console.WriteLine($"ScalarEscapeBlocks        : {census.ScalarEscapeBlocks}");
-        Console.WriteLine($"EstimatedLeanBlocks       : {census.EstimatedLeanBlocks}");
-        Console.WriteLine($"EstimatedWideBlocks       : {census.EstimatedWideBlocks}");
-        Console.WriteLine($"EstimatedWideEntries      : {census.EstimatedWideEntries}");
-        Console.WriteLine($"EstimatedWideExits        : {census.EstimatedWideExits}");
-        Console.WriteLine("CensusScope                : untimed full-corpus shape replay");
-        Console.WriteLine("PolicyEstimateScope        : fixed 32-byte grid; not executed production-branch counters");
+        Console.WriteLine("CensusScope                : untimed scalar and fixed 32-byte input composition; no execution-policy estimates");
         return 0;
     }
 

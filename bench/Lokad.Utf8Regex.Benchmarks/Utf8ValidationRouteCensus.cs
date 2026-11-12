@@ -21,11 +21,11 @@ internal enum Utf8ValidationBlockShape : byte
     FourByte = 4,
 }
 
+// Untimed scalar and fixed-grid input composition, not an execution-policy replay.
 internal sealed class Utf8ValidationRouteCensus
 {
     private const int VectorBlockSize = 32;
     private const int DenseSafeThreeByteLeadThreshold = 2;
-    private const int SafeThreeByteIdleBlockLimit = 4;
 
     private Utf8ValidationRouteCensus()
     {
@@ -51,17 +51,7 @@ internal sealed class Utf8ValidationRouteCensus
 
     public int DenseSafeThreeByteBlocks { get; private set; }
 
-    public int ScalarEscapeBlocks { get; private set; }
-
     public int BlockShapeTransitions { get; private set; }
-
-    public int EstimatedLeanBlocks { get; private set; }
-
-    public int EstimatedWideBlocks { get; private set; }
-
-    public int EstimatedWideEntries { get; private set; }
-
-    public int EstimatedWideExits { get; private set; }
 
     public bool InitialWideMode { get; private set; }
 
@@ -154,8 +144,6 @@ internal sealed class Utf8ValidationRouteCensus
         }
 
         InitialWideMode = initialSafeThreeByteLeads > initialTwoByteLeads;
-        var estimatedWideMode = InitialWideMode;
-        var safeThreeByteIdleBlocks = 0;
         var previousShape = (Utf8ValidationBlockShape?)null;
         var currentShapeRun = 0;
         for (var blockOffset = 0; blockOffset < input.Length; blockOffset += VectorBlockSize)
@@ -185,35 +173,7 @@ internal sealed class Utf8ValidationRouteCensus
                 DenseSafeThreeByteBlocks++;
             }
 
-            if (shape is Utf8ValidationBlockShape.ConstrainedThreeByte or Utf8ValidationBlockShape.FourByte)
-            {
-                ScalarEscapeBlocks++;
-            }
 
-            if (!estimatedWideMode && safeThreeByteLeads >= DenseSafeThreeByteLeadThreshold)
-            {
-                estimatedWideMode = true;
-                safeThreeByteIdleBlocks = 0;
-                EstimatedWideEntries++;
-            }
-
-            if (estimatedWideMode)
-            {
-                EstimatedWideBlocks++;
-                safeThreeByteIdleBlocks = safeThreeByteLeads == 0
-                    ? safeThreeByteIdleBlocks + 1
-                    : 0;
-                if (safeThreeByteIdleBlocks >= SafeThreeByteIdleBlockLimit)
-                {
-                    estimatedWideMode = false;
-                    safeThreeByteIdleBlocks = 0;
-                    EstimatedWideExits++;
-                }
-            }
-            else
-            {
-                EstimatedLeanBlocks++;
-            }
         }
 
         CompleteBlockRun(previousShape, currentShapeRun);
@@ -343,7 +303,7 @@ internal sealed class Utf8ValidationRouteCensus
             throw new InvalidOperationException("The scalar census does not cover the complete input.");
         }
 
-        if (BlockShapeCounts.Sum() != BlockCount || EstimatedLeanBlocks + EstimatedWideBlocks != BlockCount)
+        if (BlockShapeCounts.Sum() != BlockCount)
         {
             throw new InvalidOperationException("The block census does not cover the complete input.");
         }

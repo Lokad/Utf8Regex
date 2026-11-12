@@ -41,6 +41,8 @@
   Single-category and letter Count omit unused whole-input width metadata,
   retaining strict validation and bounded scalar counting; AssumeValid can skip
   that preparation entirely.
+  Strict validity checks vectorize eligible constrained three-byte sequences
+  while preserving exact malformed-input offsets and original interruption.
   Math-symbol Count avoids repeated ASCII-counter setup across Unicode fragments.
   Eligible PCRE2 math-symbol Count shares that bounded counter under the original
   finite limits, token and deadline, without capture/VM scratch; numerical work
