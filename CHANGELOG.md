@@ -49,6 +49,8 @@
   with bounded construction work and admitted replacement masks.
   Ordered windows reuse branch admission for bounded short-prefix comparisons;
   long prefixes retain chunked checks and numerical work requirements can fall.
+  Exact-pair candidates preserve their verified prefix identity through window
+  search, avoiding repeated comparisons while retaining ordered suffix retries.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
   Complete ASCII-prefix/terminal-interval capture roots reuse the admitted repeat

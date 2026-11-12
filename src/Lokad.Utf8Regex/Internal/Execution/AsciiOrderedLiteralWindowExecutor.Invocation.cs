@@ -17,6 +17,9 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
         // Copy the immutable descriptor once per scan, rather than materializing its
         // reference-bearing value again for each candidate.
         var searcher = search.PreparedSearcher;
+        var sameExactFamily = plan.IsLiteralFamily && searcher.Kind == PreparedSearcherKind.MultiLiteral &&
+            search.MultiLiteralSearch.Kind != PreparedMultiLiteralKind.AsciiIgnoreCase &&
+            ReferenceEquals(plan.LeadingLiteralsUtf8, search.MultiLiteralSearch.Literals);
         var next = start;
         while (next <= input.Length)
         {
@@ -38,7 +41,9 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
                 bool equal;
                 // The branch checkpoint already admits one bounded comparison.
                 // Long prefixes retain separately admitted chunks.
-                if (leading.Length <= 2048)
+                if (sameExactFamily && candidate.LiteralId == id && candidate.Length == leading.Length)
+                    equal = true;
+                else if (leading.Length <= 2048)
                     equal = input.Slice(candidate.Index, leading.Length).SequenceEqual(leading);
                 else
                 {

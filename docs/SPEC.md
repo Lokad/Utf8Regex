@@ -211,6 +211,9 @@ and work charges can differ from general VM execution.
 
 Ordered-window branch admission covers one exact prefix comparison of at most
 2048 bytes; longer prefixes retain separately admitted comparison chunks.
+An already verified exact candidate can establish equality when the immutable
+literal family, branch ID and length agree. Boundaries and suffixes still require
+their own verification, including later same-start branches after a suffix fails.
 Branch order, boundary predicates, scalar gaps and publication checks keep the
 original interruption authority. Removing duplicate short-prefix admission can
 reduce numerical work requirements; basic metering remains active.
@@ -425,7 +428,9 @@ combined scan replaces separate per-needle charges; working/result admission,
 bounded interruption and terminal publication retain the original invocation.
 Raw forward exact pairs can combine both short-needle scans into one checked
 primitive of at most 2048 bytes. Complete verification stays inside that bound;
-ordered branch confirmation and final publication still use the original
+the shared short-pair primitive can return its verified branch ID without another
+literal comparison before candidate publication.
+Ordered branch confirmation and final publication still use the original
 invocation. Combining scans can reduce numerical work charges, without changing
 depth, working/result admission or retained-result lifetimes. Longer, folded,
 reverse and unsupported-hardware paths keep their existing bounded scans.

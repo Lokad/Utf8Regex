@@ -34,6 +34,8 @@ public sealed class Utf8OrderedWindowCandidateTests
     [InlineData(@"Holmes.{0,25}Watson|Watson.{0,25}Holmes")]
     [InlineData(@"(?<x>Tom).{0,2}river\k<x>|river.{0,2}Tom")]
     [InlineData(@"Tom.{0,2}river|Tommy.{0,2}river")]
+    [InlineData(@"Tommy.{0,2}river|Tom.{0,2}river")]
+    [InlineData(@"\bTom.{0,2}river\b|\bTommy.{0,2}river\b")]
     [InlineData(@"é😀.{0,2}river|river.{0,2}é😀")]
     public void PublicCountKeepsScalarFloorsCapturesAndSameStartVerification(string pattern)
     {

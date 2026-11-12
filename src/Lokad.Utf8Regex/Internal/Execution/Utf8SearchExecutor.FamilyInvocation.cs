@@ -259,7 +259,8 @@ internal static partial class Utf8SearchExecutor
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         var shared = Vector512.IsHardwareAccelerated && count >= Vector512<byte>.Count &&
                             longest <= 16 && Math.Min(literals[0].Length, literals[1].Length) >= 3;
-                        var relative = shared ? IndexOfShortExactPair(pairBlock, count, literals[0], literals[1])
+                        var provedId = -1;
+                        var relative = shared ? IndexOfShortExactPair(pairBlock, count, literals[0], literals[1], out provedId)
                             : pairBlock.IndexOf(literals[0]);
                         if (relative >= count) relative = -1;
                         if (!shared && relative != 0)
@@ -274,7 +275,22 @@ internal static partial class Utf8SearchExecutor
                             var other = otherBlock.IndexOf(literals[1]);
                             if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
                         }
-                        if (relative >= 0) candidateByte = blockStart + relative;
+                        if (relative >= 0)
+                        {
+                            candidateByte = blockStart + relative;
+                            if (shared)
+                            {
+                                // The bounded primitive already compared complete
+                                // needles in pattern order. Publish that exact
+                                // prefix proof under the original authority.
+                                breach = invocation.TryChargeInputStep();
+                                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                                invocation.Budget.ThrowIfCancellationRequested();
+                                match = new PreparedSearchMatch(candidateByte, literals[provedId].Length, provedId);
+                                found = true;
+                                return Utf8ExecutionLimitKind.None;
+                            }
+                        }
                     }
                     else
                     {
@@ -354,11 +370,13 @@ internal static partial class Utf8SearchExecutor
     }
 
     private static int IndexOfShortExactPair(ReadOnlySpan<byte> input, int starts,
-        ReadOnlySpan<byte> first, ReadOnlySpan<byte> second)
+        ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, out int literalId)
     {
+        literalId = -1;
         // Dense early matches keep their short comparisons. Long scans share
         // input loads while retaining each literal's own correlated anchors.
-        if (input.StartsWith(first) || input.StartsWith(second)) return 0;
+        if (input.StartsWith(first)) { literalId = 0; return 0; }
+        if (input.StartsWith(second)) { literalId = 1; return 0; }
         var anchor = Math.Min(first.Length, second.Length) - 1;
         var head0 = Vector512.Create(first[0]);
         var head1 = Vector512.Create(second[0]);
@@ -379,9 +397,11 @@ internal static partial class Utf8SearchExecutor
                 // Both needles are <=16 bytes; verification stays inside this
                 // already admitted primitive, with no false-candidate replay.
                 if (first.Length <= input.Length - candidate &&
-                    input.Slice(candidate, first.Length).SequenceEqual(first) ||
-                    second.Length <= input.Length - candidate &&
-                    input.Slice(candidate, second.Length).SequenceEqual(second)) return candidate;
+                    input.Slice(candidate, first.Length).SequenceEqual(first))
+                { literalId = 0; return candidate; }
+                if (second.Length <= input.Length - candidate &&
+                    input.Slice(candidate, second.Length).SequenceEqual(second))
+                { literalId = 1; return candidate; }
                 candidates &= candidates - 1;
             }
             position += Vector512<byte>.Count;
@@ -390,6 +410,8 @@ internal static partial class Utf8SearchExecutor
         var a = remaining.IndexOf(first);
         var b = remaining.IndexOf(second);
         var found = a < 0 ? b : b < 0 ? a : Math.Min(a, b);
-        return found < 0 || found >= starts - position ? -1 : position + found;
+        if (found < 0 || found >= starts - position) return -1;
+        literalId = a >= 0 && a == found ? 0 : 1;
+        return position + found;
     }
 }
