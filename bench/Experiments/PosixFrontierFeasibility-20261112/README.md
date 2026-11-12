@@ -26,3 +26,13 @@ Raw local archive: artifacts/experiments/posix-frontier-feasibility-20261112/mod
 SHA256: 2EB4E1A8CFDAD9C3B61146B35CDCD4B82D61443C89B588E54456A9984874B525
 
 Next: compact history/storage feasibility or a distinct larger Core/Python cause, using the refreshed ranking. Preserve all material gaps; this proof does not complete the performance plan.
+
+Follow-up at frozen b1867c72: the root refusals above are historical; confined
+and immediate nested roots now succeed. The [remaining-history audit](../PosixRemainingHistory-20261112/README.md)
+retains72 finite-work refusals in consuming contexts and repeated alternatives.
+The source review closes persistent heads alone: they do not replace repeat/open
+undo or independent frontier state, and an append-only arena needs bounded rooted
+retention while forward materialization restores the comparison/copy problem.
+Keep the admitted DFS until a distinct representation replaces those duties and
+bounds both retention and scoped occurrence-order comparison. No new model replay,
+producer change, managed-byte estimate or public performance claim follows.
