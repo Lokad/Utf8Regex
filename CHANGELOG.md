@@ -51,6 +51,9 @@
   long prefixes retain chunked checks and numerical work requirements can fall.
   PythonRe can verify a bounded first candidate before redundant delimiter
   search/rewind, retaining scalar capture verification and finite controls.
+  Complete ASCII-prefix/terminal-interval capture roots reuse the admitted repeat
+  runner for latest-capture operations, preserving LastIndex and retained results
+  while reducing dispatch and route-dependent work.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
   Prove fixed-length literal-alternative ties, prune redundant optional empty
   iterations and discard history buffers in bounded chunks without changing

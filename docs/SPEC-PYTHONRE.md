@@ -57,6 +57,13 @@ repeats in blocks of at most 2048 bytes. Basic work and original interruption ar
 checked before each block and at completion, even without finite limits. Scalar
 endpoints, captures and admission remain; route-dependent work totals can decrease.
 
+A complete ASCII-prefix root with one capture around a terminal positive interval
+`+` can reuse that runner for latest-capture operations. Its bounded whole-root
+proof retains the existing admitted workspace/slots, LastIndex and retained
+results. Prefix, repeat-block and publication checks keep the original authority;
+removed VM dispatch can lower work totals. FullMatch end constraints and other
+root shapes retain their existing verification. No capture history is discarded.
+
 A prepared prefix trie can search a whole remaining suffix of at most 256 bytes
 between charged entry/completion checkpoints. It returns only a necessary start;
 the scalar verifier retains ordered matching and captures. Reusing shared prefixes

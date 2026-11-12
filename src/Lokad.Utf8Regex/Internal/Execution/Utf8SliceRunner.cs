@@ -366,7 +366,12 @@ internal static partial class Utf8SliceRunner
         try
         {
             Utf8SliceMatchOutcome attempt;
-            if (!collectHistory && program.Assertions.Length == 0 && !CanRunTerminalClassRepeat(program))
+            if (!collectHistory && TryRunTerminalCaptureRoot(program, input, start,
+                captureStarts, captureEnds, ref invocation, out attempt))
+            {
+                // A proved complete root has no continuation or capture rollback.
+            }
+            else if (!collectHistory && program.Assertions.Length == 0 && !CanRunTerminalClassRepeat(program))
             {
                 // This root cannot suspend or publish capture history. Execute
                 // the same VM without the unused assertion-continuation driver.

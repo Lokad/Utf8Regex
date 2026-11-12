@@ -361,6 +361,14 @@ working requirements can change; counter-heavy paths can cost more time.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
+When capture history is unobserved, a complete forward root comprising an ASCII
+literal prefix and one outer capture of a terminal positive ASCII interval `+`
+can reuse the admitted repeat runner. The whole-root proof inspects at most64
+instructions; existing workspace/slots remain initialized and captures publish
+only after success and interruption checks. Basic prefix, repeat-block and
+publication metering remains. Removed dispatch can lower numerical work totals.
+History, assertions/required ends, nested or repeated captures, folding, lazy or
+bounded repeats, RTL/NonBacktracking and opaque roots retain their current paths.
 Proved unbounded scalar repeats excluding exactly two ASCII values can scan in
 checked byte spans of at most 2048 bytes per work/deadline checkpoint. Whole-subject
 UTF-8 validation precedes execution; ASCII stops and final endpoints stay on scalar

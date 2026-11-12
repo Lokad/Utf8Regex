@@ -6,6 +6,52 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
+    private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation,
+        out Utf8SliceMatchOutcome outcome)
+    {
+        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+        var code = program.Instructions;
+        if (program.GroupCount != 1 || program.RepeatCount != 1 || code.Length is < 7 or > 64 ||
+            program.IsNonBacktracking || program.RightToLeft || program.IgnoreCase || program.HasBalancing ||
+            program.UsesCaptureOpeningJournal || program.Assertions.Length != 0) return false;
+        var repeatIndex = code.Length - 6;
+        var prefixLength = repeatIndex - 1;
+        var repeat = code[repeatIndex];
+        if (code[prefixLength] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
+            repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.B != 0 || repeat.A != repeatIndex + 3 ||
+            repeat.RepeatMinimum != 1 || repeat.RepeatMaximum != long.MaxValue ||
+            code[repeatIndex + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom ||
+            GetUnfoldedAsciiRange(atom, out _) < 0 ||
+            code[repeatIndex + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || code[repeatIndex + 2].A != repeatIndex ||
+            code[repeatIndex + 3] is not { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 } ||
+            code[^2] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } ||
+            code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+        for (var index = 0; index < prefixLength; index++)
+            if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal ||
+                (uint)literal.A >= 128) return false;
+
+        // This complete root cannot rewind or publish a second capture. Reuse
+        // its initialized workspace and the existing bounded repeat algorithm.
+        var breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None)
+        { outcome = new(false, -1, breach, null, null); return true; }
+        if (input.Length - start < prefixLength) return true;
+        for (var index = 0; index < prefixLength; index++)
+            if (input[start + index] != code[index].A) return true;
+        var captureStart = start + prefixLength;
+        outcome = RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation);
+        if (!outcome.IsMatch || outcome.Breach != Utf8ExecutionLimitKind.None) return true;
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None)
+        { outcome = new(false, -1, breach, null, null); return true; }
+        if (captureStarts.Length != 0)
+        { captureStarts[0] = captureStart; captureEnds[0] = outcome.EndIndex; }
+        return true;
+    }
+
     private static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
     {
         if (program.IsNonBacktracking || program.RightToLeft || program.GroupCount != 0 ||
