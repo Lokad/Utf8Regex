@@ -1323,211 +1323,18 @@ internal static partial class Utf8SliceRunner
                     }
 
                 case Utf8SliceInstructionKind.Backref:
-                    // ECMAScript permits a defined group that has not completed
-                    // a capture yet to match an empty reference.
-                    if (instruction.C != 0 && (captureStarts[instruction.A] < 0 || captureEnds[instruction.A] < 0))
                     {
-                        programIndex++;
-                        break;
-                    }
-                    // Mirrored backreferences compare the captured span backward: the
-                    // run records right edges at capture starts and left edges at
-                    // capture ends, so an unmatched (or in-progress) group fails on
-                    // the mirrored guard and surviving spans compare from their ends.
-                    // Byte comparison stays encoding-indifferent; the
-                    // case-insensitive walk folds both sides with backward scalar
-                    // widths like the forward arm.
-                    if (program.RightToLeft)
-                    {
-                        if (captureEnds[instruction.A] < 0 ||
-                            captureStarts[instruction.A] < 0)
+                        var referenced = RunBackreference(program, instruction, input,
+                            captureStarts, captureEnds, inputIndex, ref invocation);
+                        if (referenced.Breach != Utf8ExecutionLimitKind.None) return referenced;
+                        if (referenced.IsMatch)
                         {
-                            failed = true;
-                            break;
-                        }
-
-                        var rtlReferStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
-                        var rtlReferEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
-                        var rtlReferLength = rtlReferEnd - rtlReferStart;
-                        if (instruction.B != 0)
-                        {
-                            var rtlCapIndex = rtlReferEnd;
-                            var rtlBackIndex = inputIndex;
-                            var rtlBackFailed = false;
-                            while (rtlCapIndex > rtlReferStart)
-                            {
-                                var rtlBackCharge = invocation.TryChargeStep();
-                                if (rtlBackCharge != Utf8ExecutionLimitKind.None)
-                                {
-                                    return new Utf8SliceMatchOutcome(false, -1, rtlBackCharge, null, null);
-                                }
-
-                                if (rtlBackIndex <= 0)
-                                {
-                                    rtlBackFailed = true;
-                                    break;
-                                }
-
-                                if (!TryReadScalar(input, rtlCapIndex, true, out var rtlCaptureScalar, out var rtlCapWidth) ||
-                                    rtlCapIndex - rtlCapWidth < rtlReferStart ||
-                                    !TryReadScalar(input, rtlBackIndex, true, out var rtlInputScalar, out var rtlInWidth) ||
-                                    !BackreferenceScalarsEqual(program, instruction, rtlCaptureScalar, rtlInputScalar))
-                                {
-                                    rtlBackFailed = true;
-                                    break;
-                                }
-                                rtlCapIndex -= rtlCapWidth;
-                                rtlBackIndex -= rtlInWidth;
-                            }
-
-                            if (rtlBackFailed)
-                            {
-                                failed = true;
-                            }
-                            else
-                            {
-                                inputIndex = rtlBackIndex;
-                                programIndex++;
-                            }
-
-                            break;
-                        }
-
-                        if (rtlReferLength > inputIndex)
-                        {
-                            failed = true;
-                            break;
-                        }
-
-                        var rtlCompared = 0;
-                        while (rtlCompared < rtlReferLength)
-                        {
-                            var rtlCharge = invocation.TryChargeStep();
-                            if (rtlCharge != Utf8ExecutionLimitKind.None)
-                            {
-                                return new Utf8SliceMatchOutcome(false, -1, rtlCharge, null, null);
-                            }
-
-                            if (input[rtlReferEnd - 1 - rtlCompared] != input[inputIndex - 1 - rtlCompared])
-                            {
-                                break;
-                            }
-
-                            rtlCompared++;
-                        }
-
-                        if (rtlCompared < rtlReferLength)
-                        {
-                            failed = true;
-                        }
-                        else
-                        {
-                            inputIndex -= rtlReferLength;
+                            inputIndex = referenced.EndIndex;
                             programIndex++;
                         }
-
+                        else failed = true;
                         break;
                     }
-
-                    // Ordinal backreference: an unmatched (or in-progress)
-                    // group fails, otherwise the captured bytes must repeat
-                    // verbatim at the current position. Scalar-aligned captures
-                    // have a unique strict UTF-8 encoding. Each compared byte
-                    // charges work so long captures stay bounded and
-                    // cancellable like the rest of the engine.
-                    if (captureStarts[instruction.A] < 0 ||
-                        captureEnds[instruction.A] < 0)
-                    {
-                        failed = true;
-                        break;
-                    }
-
-                    {
-                        var referStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
-                        var referEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
-                        var referLength = referEnd - referStart;
-                        if (instruction.B != 0)
-                        {
-                            // Compare complete captured/input scalars using the same
-                            // invariant equivalence as literal atoms. Each side advances
-                            // by its own UTF-8 width (for example k versus Kelvin).
-                            var capIndex = referStart;
-                            var backIndex = inputIndex;
-                            var backFailed = false;
-                            while (capIndex < referEnd)
-                            {
-                                var backCharge = invocation.TryChargeStep();
-                                if (backCharge != Utf8ExecutionLimitKind.None)
-                                {
-                                    return new Utf8SliceMatchOutcome(false, -1, backCharge, null, null);
-                                }
-
-                                if (backIndex >= input.Length)
-                                {
-                                    backFailed = true;
-                                    break;
-                                }
-
-                                if (!TryReadScalar(input, capIndex, false, out var captureScalar, out var capWidth) ||
-                                    capIndex + capWidth > referEnd ||
-                                    !TryReadScalar(input, backIndex, false, out var inputScalar, out var inWidth) ||
-                                    !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
-                                {
-                                    backFailed = true;
-                                    break;
-                                }
-                                capIndex += capWidth;
-                                backIndex += inWidth;
-                            }
-
-                            if (backFailed)
-                            {
-                                failed = true;
-                            }
-                            else
-                            {
-                                inputIndex = backIndex;
-                                programIndex++;
-                            }
-
-                            break;
-                        }
-
-                        if (referLength > input.Length - inputIndex)
-                        {
-                            failed = true;
-                            break;
-                        }
-
-                        var compared = 0;
-                        while (compared < referLength)
-                        {
-                            var charge = invocation.TryChargeStep();
-                            if (charge != Utf8ExecutionLimitKind.None)
-                            {
-                                return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
-                            }
-
-                            if (input[referStart + compared] != input[inputIndex + compared])
-                            {
-                                break;
-                            }
-
-                            compared++;
-                        }
-
-                        if (compared < referLength)
-                        {
-                            failed = true;
-                        }
-                        else
-                        {
-                            inputIndex += referLength;
-                            programIndex++;
-                        }
-                    }
-
-                    break;
                 case Utf8SliceInstructionKind.TestGroup:
                     // One-shot group test (BCL IsMatched: participated, even empty;
                     // in-progress and unset groups test false, group zero never matches):
@@ -2249,6 +2056,87 @@ internal static partial class Utf8SliceRunner
             count++;
             return true;
         }
+    }
+
+    private static Utf8SliceMatchOutcome RunBackreference(Utf8SliceProgram program,
+        in Utf8SliceInstruction instruction, ReadOnlySpan<byte> input,
+        int[] captureStarts, int[] captureEnds, int inputIndex, ref Utf8SliceInvocation invocation)
+    {
+        // ECMAScript permits a defined group that has not completed a capture
+        // yet to match an empty reference. Other unmatched references fail.
+        if (captureStarts[instruction.A] < 0 || captureEnds[instruction.A] < 0)
+            return new(instruction.C != 0, instruction.C != 0 ? inputIndex : -1,
+                Utf8ExecutionLimitKind.None, null, null);
+
+        var referStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
+        var referEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
+        var referLength = referEnd - referStart;
+        if (program.RightToLeft)
+        {
+            // Mirrored captures record their right edge at opening and left
+            // edge at closing. Compare both spans from their own scalar ends.
+            if (instruction.B != 0)
+            {
+                var capIndex = referEnd;
+                var backIndex = inputIndex;
+                while (capIndex > referStart)
+                {
+                    var charge = invocation.TryChargeStep();
+                    if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge, null, null);
+                    if (backIndex <= 0 ||
+                        !TryReadScalar(input, capIndex, true, out var captureScalar, out var capWidth) ||
+                        capIndex - capWidth < referStart ||
+                        !TryReadScalar(input, backIndex, true, out var inputScalar, out var inWidth) ||
+                        !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
+                        return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                    capIndex -= capWidth;
+                    backIndex -= inWidth;
+                }
+                return new(true, backIndex, Utf8ExecutionLimitKind.None, null, null);
+            }
+            if (referLength > inputIndex) return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            for (var compared = 0; compared < referLength; compared++)
+            {
+                var charge = invocation.TryChargeStep();
+                if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge, null, null);
+                if (input[referEnd - 1 - compared] != input[inputIndex - 1 - compared])
+                    return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            }
+            return new(true, inputIndex - referLength, Utf8ExecutionLimitKind.None, null, null);
+        }
+
+        if (instruction.B != 0)
+        {
+            // Each side advances by its own UTF-8 scalar width (for example k
+            // versus Kelvin), using the same existing profile equivalence.
+            var capIndex = referStart;
+            var backIndex = inputIndex;
+            while (capIndex < referEnd)
+            {
+                var charge = invocation.TryChargeStep();
+                if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge, null, null);
+                if (backIndex >= input.Length ||
+                    !TryReadScalar(input, capIndex, false, out var captureScalar, out var capWidth) ||
+                    capIndex + capWidth > referEnd ||
+                    !TryReadScalar(input, backIndex, false, out var inputScalar, out var inWidth) ||
+                    !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
+                    return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                capIndex += capWidth;
+                backIndex += inWidth;
+            }
+            return new(true, backIndex, Utf8ExecutionLimitKind.None, null, null);
+        }
+        // A scalar-aligned capture has one strict UTF-8 encoding. Retain the
+        // original work charge before every ordinal byte comparison.
+        if (referLength > input.Length - inputIndex) return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+        for (var compared = 0; compared < referLength; compared++)
+        {
+            var charge = invocation.TryChargeStep();
+            if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge, null, null);
+            if (input[referStart + compared] != input[inputIndex + compared])
+                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+        }
+        return new(true, inputIndex + referLength, Utf8ExecutionLimitKind.None, null, null);
     }
 
     private static bool BackreferenceScalarsEqual(Utf8SliceProgram program,
