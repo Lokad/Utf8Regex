@@ -370,6 +370,59 @@ public sealed class PosixRepeatedCaptureSelectionTests
     }
 
     [Theory]
+    [InlineData("a", false)] [InlineData("a", true)]
+    [InlineData("é", false)] [InlineData("é", true)]
+    [InlineData("😀", false)] [InlineData("😀", true)]
+    public void ImmediateNestedRootBranchesPreserveAncestorPriority(string scalar, bool nullable)
+    {
+        const string prefix = "é😀!";
+        const int count = 32;
+        var body = string.Concat(Enumerable.Repeat(scalar, count));
+        var input = Encoding.UTF8.GetBytes(prefix + body + "b#");
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var choice = $"({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})";
+        var left = choice + "*b";
+        var right = "(" + choice + "*).";
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
+        foreach (var order in new[] { 0, 1, 2 })
+        {
+            var pattern = order == 0 ? "z|" + left + "|" + right : order == 1 ? left + "|" + right + "|z" : "|" + left + "|" + right;
+            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + 1,
+                floor, Encoding.UTF8.GetByteCount(body) + 1);
+            var last = new Utf8ValueMatch(true, true, prefix.Length + body.Length - scalar.Length * 2, scalar.Length * 2,
+                floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2,
+                Encoding.UTF8.GetByteCount(scalar) * 2);
+            var expected = new[] { whole, last, default(Utf8ValueMatch), default(Utf8ValueMatch) };
+            var groups = new Utf8ValueMatch[4];
+            Assert.Equal(whole, regex.Match(input, groups, floor)); Assert.Equal(expected, groups);
+            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.Equal(order == 2 ? 3 : 2, regex.Count(input, floor));
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current); Assert.Equal(expected, groups);
+            var retained = groups[1];
+            Assert.True(alias.MoveNext(groups, out current)); Assert.Equal(floor + whole.LengthInBytes, current.IndexInBytes);
+            Assert.Equal(1, current.LengthInBytes); Assert.False(groups[1].Success);
+            Assert.True(groups[2].Success); Assert.Equal(0, groups[2].LengthInBytes);
+            if (nullable)
+                Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + body.Length + 1, 0,
+                    floor + Encoding.UTF8.GetByteCount(body) + 1, 0), groups[3]);
+            else Assert.False(groups[3].Success);
+            if (order == 2)
+            {
+                Assert.True(cursor.MoveNext(groups, out current)); Assert.Equal(input.Length, current.IndexInBytes);
+                Assert.Equal(0, current.LengthInBytes); Assert.All(groups.AsSpan(1).ToArray(), value => Assert.False(value.Success));
+            }
+            Assert.False(alias.MoveNext(groups, out _)); Assert.All(groups, value => Assert.False(value.Success));
+            cursor.Dispose(); Assert.Equal(last, retained);
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+        }
+    }
+
+    [Theory]
     [InlineData(Utf8InputValidation.Validate)]
     [InlineData(Utf8InputValidation.AssumeValid)]
     public void SeparateParentCeilingsAllowVariableCapturedTails(Utf8InputValidation validation)

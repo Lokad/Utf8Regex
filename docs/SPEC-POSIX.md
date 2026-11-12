@@ -211,9 +211,12 @@ reopening that enclosure. The selected branch's leading parents still require
 the fixed-suffix or independent-bound proofs above. Earlier siblings stay absent
 on paths within that branch. At a proved maximal whole endpoint, an earlier
 participating branch also outranks every later root branch; longer whole matches
-are never discarded by this rule. Unknown structures and unresolved nested
-alternatives retain general competition. Scope inspection uses the same original
-work/interruption authority, with local code/tag offsets and no retained metadata
+are never discarded by this rule. The same check can descend through immediate
+alternation ancestors whose joins consume nothing, preserving the common start
+and whole endpoint. Preorder tags identify later siblings under those proved
+ancestors without storing a separate ancestry set. Unknown structures and other
+unresolved nested alternatives retain general competition. Scope inspection uses
+the same original work/interruption authority, with local code/tag offsets and no retained metadata
 or additional storage. Numerical work requirements can change.
 
 Physical input end is always a valid ceiling. After the first general acceptance,
@@ -227,6 +230,10 @@ safe upper bound. This replaces coarse alphabet
 construction and scanning farther ahead: an initially shorter acceptance can lose
 that earlier future-boundary proof and require more work. Whole-only selection can
 stop at a proved ceiling; captured selection keeps hierarchical history priority.
+If the ceiling is still physical input end, a strictly longer winner retries the
+same bounded proof. Earlier empty/short acceptances therefore do not permanently
+prevent a later provable bound. Each retry retains the original work/interruption
+authority; numerical work requirements can change.
 Actual input, anchors, validation policy and scalar/coordinate output remain intact.
 Proof inspection and class lookup use bounded original work/interruption, with no
 additional retained storage; numerical work requirements can change.

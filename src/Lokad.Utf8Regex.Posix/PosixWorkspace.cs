@@ -168,11 +168,11 @@ internal struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        // A confined root alternative has its own first semantic
-                        // tag. At a proved whole ceiling, an earlier participating
-                        // branch wins before any later branch's descendants.
+                        // Preorder tags keep each subtree contiguous. A later tag
+                        // with a parent before the selected branch is a later
+                        // sibling of one of its proved alternation ancestors.
                         if (preferredRootBranch >= 0 && instruction.A > preferredRootBranch &&
-                            _program.Parents[instruction.A] == 0)
+                            _program.Parents[instruction.A] < preferredRootBranch)
                         { failed = true; break; }
                         SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
                         Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
@@ -192,7 +192,8 @@ internal struct PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
-                    if (end < 0 && !existenceOnly && !_program.FirstAcceptanceIsLongest)
+                    if (!existenceOnly && !_program.FirstAcceptanceIsLongest &&
+                        (end < 0 || at > end && maximumEnd == input.Length))
                     {
                         if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, start, at, ref invocation);
                     }
@@ -322,51 +323,65 @@ internal struct PosixWorkspace
     {
         tag = opening = scopeEnd = -1;
         var code = _program.Scalar.Instructions;
+        var rootTag = 0; var rootOpening = 0;
         var rootClose = code.Length - 2;
         if (code[1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 } ||
             code[rootClose] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } ||
             code[^1].Kind != Utf8SliceInstructionKind.Accept || _trace.Count < 2) return false;
-        var selected = _trace[1].Tag;
-        var previousTag = 0;
-        for (var pc = 1; pc < rootClose;)
+        var traceIndex = 1;
+        // Each successful descent removes an immediate alternation ancestor:
+        // entry and join consume nothing, so all these scopes share the proved
+        // whole endpoint. The 64-instruction cap also bounds this traversal.
+        while (code[rootOpening + 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
         {
-            Charge(ref invocation);
-            var fork = code[pc];
-            var hasFork = fork.Kind == Utf8SliceInstructionKind.Fork && fork.B == 0;
-            var next = hasFork ? fork.A : rootClose;
-            var first = hasFork ? pc + 1 : pc;
-            if (next <= first || next > rootClose ||
-                code[first].Kind != Utf8SliceInstructionKind.CaptureStart) return false;
-            var branch = code[first].A;
-            if (branch <= previousTag || branch >= _program.Parents.Length || _program.Parents[branch] != 0) return false;
-            var close = first + 1;
-            for (; close < next; close++)
+            if (traceIndex >= _trace.Count || _trace[traceIndex].Opening >= 0) return tag >= 0;
+            var selected = _trace[traceIndex].Tag;
+            var selectedOpening = -1; var selectedClose = -1;
+            var previousTag = rootTag;
+            for (var pc = rootOpening + 1; pc < rootClose;)
             {
-                if (((close - first) & 31) == 0) Charge(ref invocation);
-                if (code[close] is { Kind: Utf8SliceInstructionKind.CaptureEnd } end && end.A == branch) break;
-            }
-            if (close == next || (hasFork
-                ? close + 2 != next || code[close + 1] is not { Kind: Utf8SliceInstructionKind.Jump } jump || jump.A != rootClose
-                : close + 1 != rootClose)) return false;
-            for (var body = first + 1; body < close; body++)
-            {
-                if (((body - first) & 31) == 0) Charge(ref invocation);
-                var item = code[body];
-                if (item.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
-                    Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
+                Charge(ref invocation);
+                var fork = code[pc];
+                var hasFork = fork.Kind == Utf8SliceInstructionKind.Fork && fork.B == 0;
+                var next = hasFork ? fork.A : rootClose;
+                var first = hasFork ? pc + 1 : pc;
+                if (next <= first || next > rootClose ||
+                    code[first].Kind != Utf8SliceInstructionKind.CaptureStart) return tag >= 0;
+                var branch = code[first].A;
+                if (branch <= previousTag || branch >= _program.Parents.Length || _program.Parents[branch] != rootTag) return tag >= 0;
+                var close = first + 1;
+                for (; close < next; close++)
                 {
-                    if (item.A <= first || item.A > close) return false;
+                    if (((close - first) & 31) == 0) Charge(ref invocation);
+                    if (code[close] is { Kind: Utf8SliceInstructionKind.CaptureEnd } end && end.A == branch) break;
                 }
-                else if (item.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                if (close == next || (hasFork
+                    ? close + 2 != next || code[close + 1] is not { Kind: Utf8SliceInstructionKind.Jump } jump || jump.A != rootClose
+                    : close + 1 != rootClose)) return tag >= 0;
+                for (var body = first + 1; body < close; body++)
                 {
-                    if (item.A <= branch) return false;
+                    if (((body - first) & 31) == 0) Charge(ref invocation);
+                    var item = code[body];
+                    if (item.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
+                        Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatEnd)
+                    {
+                        if (item.A <= first || item.A > close) return tag >= 0;
+                    }
+                    else if (item.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                    {
+                        if (item.A <= branch) return tag >= 0;
+                    }
+                    else if (item.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
+                        Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.RepeatExit)) return tag >= 0;
                 }
-                else if (item.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
-                    Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.RepeatExit)) return false;
+                if (branch == selected) { selectedOpening = first; selectedClose = close; }
+                previousTag = branch;
+                pc = next;
             }
-            if (branch == selected) { tag = branch; opening = first; scopeEnd = close + 1; }
-            previousTag = branch;
-            pc = next;
+            if (selectedOpening < 0) return tag >= 0;
+            tag = rootTag = selected; opening = rootOpening = selectedOpening;
+            rootClose = selectedClose; scopeEnd = selectedClose + 1;
+            traceIndex++;
         }
         return tag >= 0;
     }

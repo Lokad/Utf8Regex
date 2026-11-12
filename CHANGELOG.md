@@ -60,9 +60,10 @@
   A bounded reachability refinement can exclude atoms that cannot occur at that
   boundary, enabling more finite-work captures and counts without allocating
   another state store. Confined leading parents reuse that proof, refreshed when
-  a better history changes their endpoint. Confined root alternatives reuse those
-  bounds and participating-branch priority at a maximal whole endpoint. General
-  hierarchical history competition remains.
+  a better history changes their endpoint. Confined root alternatives, including
+  immediate nested alternatives, reuse those bounds and participating-branch
+  priority at a maximal whole endpoint. Longer winners retry an unproved whole
+  bound after earlier empty/short acceptances. General history competition remains.
   Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
   existing losing-history rule to prune descendant alternatives safely.
   Synchronous POSIX operations use bounded stack state or an exact-size heap
