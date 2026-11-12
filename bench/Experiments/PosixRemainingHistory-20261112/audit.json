@@ -1,0 +1,174 @@
+{
+  "Source": "ccf5210173b1766fb9d010c60cf26eaeb64d0f41",
+  "Version": "0.5.0-dev.76",
+  "LoadedPackagePairsVerified": true,
+  "Observations": 480,
+  "Rows": [
+    {
+      "Name": "fixed-root",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "fixed-nested",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "consuming-prefix",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "consuming-suffix",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "both-sides",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "root-inner-prefix",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 6,
+        "count": 6,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "repeated-alternative",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "bounded-root",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "equal-leading-siblings",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 6,
+        "count": 6,
+        "boolean": 0
+      }
+    },
+    {
+      "Name": "later-parent",
+      "8": {
+        "captures": 0,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      },
+      "32": {
+        "captures": 6,
+        "whole": 0,
+        "count": 0,
+        "boolean": 0
+      }
+    }
+  ],
+  "IndependentSmallCaptureOracleChecks": 60,
+  "EquivalentPolicyPairs": 240,
+  "TotalWorkDenials": 72,
+  "DeniedSlotsClear": true,
+  "DenialsAreNotWrongResults": true,
+  "HistoricalMotivatingRootCasesNowSucceed": true,
+  "ThroughputClaim": false,
+  "ProductionChanged": false,
+  "SuccessfulOperationsVerification": {
+    "SuccessfulOperationsChecked": 408,
+    "CountsExpected": true,
+    "WholeByteExtentsExpected": true,
+    "InitialVerifierCorrection": "fixed-root Count is2 because its second alternative matches trailing #; no producer change or repeated public call",
+    "RawArchiveSha256": "90CEE8EFB2D71F0D00F5E2B28C0D3C1617D3523DB4110876E61A748B6AB41870"
+  },
+  "RawArchiveSha256": "90CEE8EFB2D71F0D00F5E2B28C0D3C1617D3523DB4110876E61A748B6AB41870"
+}
