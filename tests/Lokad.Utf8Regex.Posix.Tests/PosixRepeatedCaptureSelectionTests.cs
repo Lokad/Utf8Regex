@@ -777,6 +777,68 @@ public sealed class PosixRepeatedCaptureSelectionTests
         Assert.Throws<ArgumentException>(() => regex.Match(new byte[] { (byte)'a', 255 }, captures));
     }
 
+    [Theory]
+    [InlineData("a", false)] [InlineData("a", true)]
+    [InlineData("é", false)] [InlineData("é", true)]
+    [InlineData("😀", false)] [InlineData("😀", true)]
+    public void LargeGlobalBoundaryKeepsWholeCountAndCursorWithoutHistoryCompetition(string scalar, bool equalLeading)
+    {
+        const string prefix = "é😀!";
+        const int count = 32;
+        var body = $"({scalar}|{scalar}{scalar})*";
+        var pattern = equalLeading ? $"{scalar}({body}b|{body}b)|{scalar}({body}b|{body}b)"
+            : $"x({body}b|{body}b)|y({body}b|{body}b)";
+        Assert.True(PosixProgram.Compile(pattern, default).Scalar.Instructions.Length > 64);
+        var text = (equalLeading ? scalar : "x") + string.Concat(Enumerable.Repeat(scalar, count)) + "b";
+        var storage = Encoding.UTF8.GetBytes("pad" + prefix + text + "#pad");
+        var length = Encoding.UTF8.GetByteCount(prefix + text + "#");
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var expected = new Utf8ValueMatch(true, true, prefix.Length, text.Length, floor, Encoding.UTF8.GetByteCount(text));
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            using var token = new CancellationTokenSource();
+            var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            var input = storage.AsSpan(3, length);
+            Assert.Equal(expected, regex.Match(input, floor, token.Token));
+            var shortOutput = new Utf8ValueMatch[1];
+            Assert.Equal(expected, regex.Match(input, shortOutput, floor, token.Token));
+            Assert.Equal(expected, shortOutput[0]);
+            Assert.Equal(1, regex.Count(input, floor, token.Token));
+            using var cursor = regex.CreateMatchCursor(storage.AsMemory(3, length), floor, token.Token);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(out var first)); Assert.Equal(expected, first);
+            Assert.False(alias.MoveNext(out _)); cursor.Dispose();
+            Assert.Equal(expected, first);
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            if (validation == Utf8InputValidation.Validate)
+            {
+                var invalid = storage.AsSpan(3, length).ToArray().Append((byte)0xff).ToArray();
+                Assert.Throws<ArgumentException>(() => regex.Count(invalid, floor));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("a")] [InlineData("é")] [InlineData("😀")]
+    public void LargeGlobalBoundaryCannotDiscardAConsumingLaterWinner(string scalar)
+    {
+        var body = $"({scalar}|{scalar}{scalar})*";
+        var first = $"x({body}b|{body}b)";
+        var pattern = first + "|" + first + "#x";
+        Assert.True(PosixProgram.Compile(pattern, default).Scalar.Instructions.Length > 64);
+        var text = "x" + string.Concat(Enumerable.Repeat(scalar, 8)) + "b#x";
+        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
+        {
+            var regex = new Utf8PosixRegex(pattern, inputValidation: validation);
+            var input = Encoding.UTF8.GetBytes(text);
+            var whole = regex.Match(input);
+            Assert.Equal(0, whole.IndexInBytes);
+            Assert.Equal(input.Length, whole.LengthInBytes);
+            Assert.Equal(1, regex.Count(input));
+        }
+    }
+
     private static void Check(Utf8PosixRegex regex, int outerMin, int outerMax, int innerMin, int innerMax, int count)
     {
         var expected = Occurrences(outerMin, outerMax, innerMin, innerMax, count);

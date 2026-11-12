@@ -220,13 +220,16 @@ the same original work/interruption authority, with local code/tag offsets and n
 or additional storage. Numerical work requirements can change.
 
 Physical input end is always a valid ceiling. After the first general acceptance,
-a proof over at most 64 instructions tests the next complete scalar against every
-consuming atom's normal literal/dot/class predicate. If all reject it, no accepting
+a metered walk of the original instructions tests the next complete scalar against
+consuming atoms' normal literal/dot/class predicates. The global exclusion needs
+no bitset or instruction-count cap; its checkpoints cover at most32 instructions
+between polls, with class lookups retaining their own metering. If all reject it, no accepting
 path can cross that boundary, so the accepted endpoint is already maximal. Unicode
 tables, negated brackets and newline-dot behavior retain their normal meaning.
 An accepted boundary scalar needs the reachability refinement below; an unknown
-instruction, decoding failure or longer program retains physical input end as the
-safe upper bound. This replaces coarse alphabet
+instruction or decoding failure retains physical input end as the safe upper
+bound. Larger programs can spend more proof work when no bound is established;
+avoided competition can reduce work and working requirements. This replaces coarse alphabet
 construction and scanning farther ahead: an initially shorter acceptance can lose
 that earlier future-boundary proof and require more work. Whole-only selection can
 stop at a proved ceiling; captured selection keeps hierarchical history priority.

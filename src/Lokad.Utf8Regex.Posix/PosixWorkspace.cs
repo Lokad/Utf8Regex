@@ -451,7 +451,8 @@ internal struct PosixWorkspace
     private int FindBoundaryCeiling(ReadOnlySpan<byte> input, int start, int acceptedEnd, ref Utf8SliceInvocation invocation)
     {
         var code = _program.Scalar.Instructions;
-        if (code.Length > 64) return input.Length;
+        // Global exclusion needs no bitset. Keep the 64-instruction cap only in
+        // the reachable-state proof; this walk retains its bounded work polls.
         Charge(ref invocation);
         if (Rune.DecodeFromUtf8(input[acceptedEnd..], out var boundary, out _) != OperationStatus.Done)
             return input.Length;

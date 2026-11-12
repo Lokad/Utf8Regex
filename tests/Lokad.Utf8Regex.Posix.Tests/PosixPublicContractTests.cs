@@ -370,15 +370,17 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void InterruptionInsideBoundaryProofClearsOutputAndRefunds(bool deadline, bool parent)
+    [InlineData(false, false, false)] [InlineData(true, false, false)]
+    [InlineData(false, true, false)] [InlineData(true, true, false)]
+    [InlineData(false, false, true)] [InlineData(true, false, true)]
+    public void InterruptionInsideBoundaryProofClearsOutputAndRefunds(bool deadline, bool parent, bool large)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex(parent ? "((a|a.)*)!*" : "((a|a[^!#])*)!*", default,
+            var regex = new Utf8PosixRegex(large ? "a|" + new string('b', 48) :
+                parent ? "((a|a.)*)!*" : "((a|a[^!#])*)!*", default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                 new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
             var reached = false;
@@ -392,7 +394,7 @@ public sealed class PosixPublicContractTests
                 var account = new Account(); Assert.True(account.TryReserve(17));
                 var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
                 var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
-                var input = Encoding.ASCII.GetBytes(new string('a', count) + "!#");
+                var input = Encoding.ASCII.GetBytes(large ? new string('x', count) + "a#" : new string('a', count) + "!#");
                 var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
                 {
                     var frames = new StackTrace().GetFrames();
