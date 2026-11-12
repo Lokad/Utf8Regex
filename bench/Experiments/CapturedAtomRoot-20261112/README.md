@@ -69,3 +69,5 @@ Linux archives verify offVM before keeper release. All 476 canonical package/sym
 bytes remain unchanged. Current catalogs/packages still describe accepted dev77;
 this source change does not trigger a package or Full refresh. Material
 Core/Python gaps and general POSIX history requirements remain active.
+
+Implementation 20174326 CI43275206203 passed Windows/Linux. VM source is aligned; all13 measured DLL/PDB pairs remain unchanged.
