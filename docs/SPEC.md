@@ -363,16 +363,20 @@ live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
 When capture history is unobserved, a complete forward root comprising an ASCII
 literal prefix and one outer capture of a terminal positive ASCII interval `+`
-can reuse the admitted repeat runner. The whole-root proof inspects at most64
-instructions; existing workspace/slots remain initialized and captures publish
-only after success and interruption checks. Basic prefix, repeat-block and
-publication metering remains. Removed dispatch can lower numerical work totals.
+can reuse the admitted repeat runner. Two nonnested positive ASCII interval `+`
+captures can share that runner when a nonempty exact ASCII literal separates
+them and its first byte is excluded from the first interval. The whole-root proof
+inspects at most64 instructions; existing workspace/slots remain initialized,
+both multi-group closing entries retain their admission and completion order,
+and slots publish only after complete success and interruption checks. Basic
+literal, repeat-block and publication metering remains. Removed dispatch can
+lower numerical work totals.
 History, assertions/required ends, nested or repeated captures, folding, lazy or
 bounded repeats, RTL/NonBacktracking and opaque roots retain their current paths.
 Proved unbounded scalar repeats excluding exactly two ASCII values can scan in
 checked byte spans of at most 2048 bytes per work/deadline checkpoint. Whole-subject
-UTF-8 validation precedes execution; ASCII stops and final endpoints stay on scalar
-boundaries. Minimums above one, finite maxima and folding retain scalar-counted
+UTF-8 validation follows the selected input policy; ASCII stops and final endpoints
+stay on scalar boundaries. Minimums above one, finite maxima and folding retain scalar-counted
 execution; paths requiring rewind retain their existing handling. Work charges
 can fall; no scratch storage is added.
 An unbounded Dot without Singleline uses the same bounded scan with LF as its

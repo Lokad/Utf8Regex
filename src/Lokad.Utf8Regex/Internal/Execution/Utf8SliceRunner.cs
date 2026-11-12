@@ -367,7 +367,7 @@ internal static partial class Utf8SliceRunner
         {
             Utf8SliceMatchOutcome attempt;
             if (!collectHistory && TryRunTerminalCaptureRoot(program, input, start,
-                captureStarts, captureEnds, ref invocation, out attempt))
+                captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt))
             {
                 // A proved complete root has no continuation or capture rollback.
             }

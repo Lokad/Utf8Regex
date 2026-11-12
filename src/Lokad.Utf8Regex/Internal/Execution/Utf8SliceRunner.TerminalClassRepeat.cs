@@ -7,48 +7,87 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static partial class Utf8SliceRunner
 {
     private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation,
+        int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
         out Utf8SliceMatchOutcome outcome)
     {
         outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         var code = program.Instructions;
-        if (program.GroupCount != 1 || program.RepeatCount != 1 || code.Length is < 7 or > 64 ||
+        if (program.GroupCount is not (1 or 2) || program.RepeatCount != program.GroupCount || code.Length is < 7 or > 64 ||
             program.IsNonBacktracking || program.RightToLeft || program.IgnoreCase || program.HasBalancing ||
             program.UsesCaptureOpeningJournal || program.Assertions.Length != 0) return false;
         var repeatIndex = code.Length - 6;
         var prefixLength = repeatIndex - 1;
+        var slot = program.GroupCount - 1;
+        var literalStart = 0;
         var repeat = code[repeatIndex];
-        if (code[prefixLength] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
-            repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.B != 0 || repeat.A != repeatIndex + 3 ||
+        if (code[prefixLength].Kind != Utf8SliceInstructionKind.CaptureStart || code[prefixLength].A != slot ||
+            repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.B != slot || repeat.A != repeatIndex + 3 ||
             repeat.RepeatMinimum != 1 || repeat.RepeatMaximum != long.MaxValue ||
             code[repeatIndex + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom ||
             GetUnfoldedAsciiRange(atom, out _) < 0 ||
             code[repeatIndex + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || code[repeatIndex + 2].A != repeatIndex ||
-            code[repeatIndex + 3] is not { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 } ||
-            code[^2] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } ||
+            code[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit || code[repeatIndex + 3].A != slot ||
+            code[^2].Kind != Utf8SliceInstructionKind.CaptureEnd || code[^2].A != slot ||
             code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
-        for (var index = 0; index < prefixLength; index++)
+        if (slot != 0)
+        {
+            // A required excluded literal fixes the first greedy endpoint.
+            // Keep the original two closing entries: detailed Python results
+            // still observe which group closed last.
+            if (prefixLength <= 6 ||
+                code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
+                code[1] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, B: 0,
+                    RepeatMinimum: 1, RepeatMaximum: long.MaxValue } ||
+                code[2] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } firstAtom ||
+                code[3] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 1 } ||
+                code[4] is not { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 } ||
+                code[5] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 }) return false;
+            var firstLow = GetUnfoldedAsciiRange(firstAtom, out var firstHigh);
+            if (firstLow < 0 || (uint)(code[6].A - firstLow) <= (uint)(firstHigh - firstLow)) return false;
+            literalStart = 6;
+        }
+        for (var index = literalStart; index < prefixLength; index++)
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal ||
                 (uint)literal.A >= 128) return false;
 
-        // This complete root cannot rewind or publish a second capture. Reuse
-        // its initialized workspace and the existing bounded repeat algorithm.
+        // This complete root cannot rewind. Reuse its initialized workspace,
+        // admitted closing journal and the existing bounded repeat algorithm.
         var breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, breach, null, null); return true; }
-        if (input.Length - start < prefixLength) return true;
-        for (var index = 0; index < prefixLength; index++)
-            if (input[start + index] != code[index].A) return true;
-        var captureStart = start + prefixLength;
+        var firstEnd = start;
+        if (slot != 0)
+        {
+            outcome = RunClassRepeat(program, 1, input, start, ref invocation);
+            if (!outcome.IsMatch || outcome.Breach != Utf8ExecutionLimitKind.None) return true;
+            firstEnd = outcome.EndIndex;
+            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach != Utf8ExecutionLimitKind.None)
+            { outcome = new(false, -1, breach, null, null); return true; }
+        }
+        var literalLength = prefixLength - literalStart;
+        if (input.Length - firstEnd < literalLength) return true;
+        for (var index = 0; index < literalLength; index++)
+            if (input[firstEnd + index] != code[literalStart + index].A) return true;
+        var captureStart = firstEnd + literalLength;
         outcome = RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation);
         if (!outcome.IsMatch || outcome.Breach != Utf8ExecutionLimitKind.None) return true;
+        if (slot != 0 && captureStarts.Length != 0 &&
+            (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
+             !stacks.PushTrail(1, captureEnds[1], outcome.EndIndex, false, ref invocation)))
+        { outcome = new(false, -1, stacks.Breach, null, null); return true; }
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, breach, null, null); return true; }
         if (captureStarts.Length != 0)
-        { captureStarts[0] = captureStart; captureEnds[0] = outcome.EndIndex; }
+        {
+            if (slot != 0) { captureStarts[0] = start; captureEnds[0] = firstEnd; }
+            captureStarts[slot] = captureStart; captureEnds[slot] = outcome.EndIndex;
+        }
         return true;
     }
 

@@ -54,6 +54,8 @@
   Complete ASCII-prefix/terminal-interval capture roots reuse the admitted repeat
   runner for latest-capture operations, preserving LastIndex and retained results
   while reducing dispatch and route-dependent work.
+  Two nonnested ASCII interval captures separated by an excluded exact literal
+  share those repeat loops while retaining both closing-journal entries.
 - Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
   Prove fixed-length literal-alternative ties, prune redundant optional empty
   iterations and discard history buffers in bounded chunks without changing

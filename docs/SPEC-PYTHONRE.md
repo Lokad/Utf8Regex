@@ -60,7 +60,11 @@ endpoints, captures and admission remain; route-dependent work totals can decrea
 A complete ASCII-prefix root with one capture around a terminal positive interval
 `+` can reuse that runner for latest-capture operations. Its bounded whole-root
 proof retains the existing admitted workspace/slots, LastIndex and retained
-results. Prefix, repeat-block and publication checks keep the original authority;
+results. Two nonnested positive ASCII interval `+` captures can also reuse it
+when a nonempty exact ASCII literal separates them and its first byte cannot be
+consumed by the first interval. Both existing closing-journal entries remain
+admitted, preserving LastIndex/LastGroup without another completion flag or map.
+Literal, repeat-block and publication checks keep the original authority;
 removed VM dispatch can lower work totals. FullMatch end constraints and other
 root shapes retain their existing verification. No capture history is discarded.
 

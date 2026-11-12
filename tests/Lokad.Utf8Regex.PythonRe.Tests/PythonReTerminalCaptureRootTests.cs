@@ -27,12 +27,35 @@ public sealed class PythonReTerminalCaptureRootTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void LongRootObservesOriginalCancellationAndDeadline(bool expire)
+    [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
+    public void SeparatedRootPreservesTuplesClosingOrderAndRetainedAliases(Utf8InputValidation validation)
+    {
+        using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)-(?P<number>[0-9]+)", inputValidation: validation);
+        var input = Encoding.UTF8.GetBytes("é😀item-12 other-345!");
+        var strings = regex.FindAllToStrings(input).TupleValues;
+        Assert.Equal(new[] { "item", "12" }, strings[0]); Assert.Equal(new[] { "other", "345" }, strings[1]);
+        var bytes = regex.FindAllToUtf8(input).TupleValues;
+        Assert.Equal("item"u8.ToArray(), bytes[0][0]); Assert.Equal("12"u8.ToArray(), bytes[0][1]);
+        var cursor = regex.CreateMatchCursor(input); var alias = cursor;
+        Assert.True(cursor.MoveNext()); var first = alias.Current;
+        Assert.Equal(2, first.LastIndex); Assert.Equal("number", first.LastGroup);
+        Assert.Equal(6, first.Groups[1].StartOffsetInBytes); Assert.Equal(11, first.Groups[2].StartOffsetInBytes);
+        Assert.True(alias.MoveNext()); Assert.Equal("other", cursor.Current.Groups[1].ValueText);
+        Assert.Equal("345", cursor.Current.Groups[2].ValueText); Assert.Equal(2, cursor.Current.LastIndex);
+        alias.Dispose(); cursor.Dispose(); Assert.Equal("12", first.Groups[2].ValueText);
+        Assert.Equal(2, first.LastIndex); Assert.Equal("number", first.LastGroup);
+        if (validation == Utf8InputValidation.Validate)
+            Assert.Throws<ArgumentException>(() => regex.FindAllToUtf8([.. input, 0xff]));
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void LongRootObservesOriginalCancellationAndDeadline(bool expire, bool separated)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex("item-([0-9]+)", PythonReCompileOptions.None,
+        var regex = new Utf8PythonRegex(separated ? "([a-z]+)-([0-9]+)" : "item-([0-9]+)", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(100), new() { MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
             Utf8InputValidation.AssumeValid);
         var bytes = Encoding.ASCII.GetBytes("item-" + new string('1', 1 << 18));
