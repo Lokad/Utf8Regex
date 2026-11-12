@@ -88,10 +88,10 @@ internal static partial class Utf8SliceRunner
         var firstEnd = start;
         if (slot != 0)
         {
-            outcome = RunClassRepeat(program, 1, input, start, ref invocation);
-            if (!outcome.IsMatch || outcome.Breach != Utf8ExecutionLimitKind.None) return true;
-            firstEnd = outcome.EndIndex;
-            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            var first = RunClassRepeat(program, 1, input, start, ref invocation);
+            if (!first.IsMatch || first.Breach != Utf8ExecutionLimitKind.None)
+            { outcome = first; return true; }
+            firstEnd = first.EndIndex;
             breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None)
@@ -102,11 +102,12 @@ internal static partial class Utf8SliceRunner
         for (var index = 0; index < literalLength; index++)
             if (input[firstEnd + index] != code[literalStart + index].A) return true;
         var captureStart = firstEnd + literalLength;
-        outcome = RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation);
-        if (!outcome.IsMatch || outcome.Breach != Utf8ExecutionLimitKind.None) return true;
+        var last = RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation);
+        if (!last.IsMatch || last.Breach != Utf8ExecutionLimitKind.None)
+        { outcome = last; return true; }
         if (slot != 0 && captureStarts.Length != 0 &&
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
-             !stacks.PushTrail(1, captureEnds[1], outcome.EndIndex, false, ref invocation)))
+             !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
         { outcome = new(false, -1, stacks.Breach, null, null); return true; }
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
@@ -115,8 +116,11 @@ internal static partial class Utf8SliceRunner
         if (captureStarts.Length != 0)
         {
             if (slot != 0) { captureStarts[0] = start; captureEnds[0] = firstEnd; }
-            captureStarts[slot] = captureStart; captureEnds[slot] = outcome.EndIndex;
+            captureStarts[slot] = captureStart; captureEnds[slot] = last.EndIndex;
         }
+        // Complete-root repeats have no history payload. Publish once instead
+        // of copying intermediate reference-bearing results through the byref.
+        outcome = new(true, last.EndIndex, Utf8ExecutionLimitKind.None, null, null);
         return true;
     }
 
