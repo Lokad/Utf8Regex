@@ -63,3 +63,5 @@ No source/producer mutation during timing, extra Full campaign or package qualif
 
 Next: a distinct demonstrated Core/Python cause from the current ranking. General POSIX replacement requires a viable bounded design first.
 No tiny trial replay, new framework or unchanged package/Full qualification.
+
+Metadata c3bea6e1 CI43270081506 passed on Windows/Linux. The VM aligned without changing any of its13 frozen DLL/PDB pairs; no rebuild or repack.

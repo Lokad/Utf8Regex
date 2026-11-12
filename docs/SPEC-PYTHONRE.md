@@ -67,6 +67,12 @@ admitted, preserving LastIndex/LastGroup without another completion flag or map.
 Literal, repeat-block and publication checks keep the original authority;
 removed VM dispatch can lower work totals. FullMatch end constraints and other
 root shapes retain their existing verification. No capture history is discarded.
+A complete root consisting of one positive unfolded ASCII set capture can also
+omit VM setup and marker/Accept dispatch, retaining the same scalar decoder and
+predicate. Split strings/ranges and other latest-capture consumers keep their
+workspace/slot admission, LastIndex, result lifetimes and original interruption.
+Entry/publication remain metered; numerical work can decrease. FullMatch end
+constraints, history and other root shapes keep their existing verification.
 
 A prepared prefix trie can search a whole remaining suffix of at most 256 bytes
 between charged entry/completion checkpoints. It returns only a necessary start;

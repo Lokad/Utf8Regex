@@ -374,6 +374,11 @@ both multi-group closing entries retain their admission and completion order,
 and slots publish only after complete success and interruption checks. Basic
 literal, repeat-block and publication metering remains. Removed dispatch can
 lower numerical work totals.
+A complete root containing one capture of a positive, unfolded ASCII set can
+similarly omit VM setup and capture-marker/Accept dispatch. It keeps the existing
+scalar decoder and set predicate, admitted workspace/slots, and charged entry and
+publication checks. It has one consuming endpoint and no competing closing order;
+numerical work can decrease without changing memory admission or returned captures.
 History, assertions/required ends, nested or repeated captures, folding, lazy or
 bounded repeats, RTL/NonBacktracking and opaque roots retain their current paths.
 Proved unbounded scalar repeats excluding exactly two ASCII values can scan in
