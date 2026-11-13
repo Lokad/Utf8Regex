@@ -74,6 +74,9 @@ Pattern, capture-name, replacement-template and assembled-output validation keep
 their separate existing rules. Trusting subject input does not trust those inputs.
 Work requirements can decrease when validation is omitted or redundant validation
 is removed; finite policies remain enforceable and version/route dependent.
+ASCII classification over trusted or already-checked text stops at its first
+non-ASCII block. Avoided classification work spends no further steps; default
+`Validate` still checks the complete subject before using that eligibility fact.
 
 Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
 and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text

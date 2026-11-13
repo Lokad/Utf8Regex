@@ -87,15 +87,14 @@ internal static partial class Utf8Validation
         }
         CheckSubject(input, ref invocation);
         if (invocation.IsUnmetered && invocation.CheckpointHook is null) return Utf8InputAnalyzer.IsAscii(input);
-        var ascii = true;
         for (var offset = 0; offset < input.Length; offset += Math.Min(2048, input.Length - offset))
         {
             var breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"UTF-8 subject processing exceeded the invocation {breach} budget.");
-            ascii &= Utf8InputAnalyzer.IsAscii(input.Slice(offset, Math.Min(2048, input.Length - offset)));
+            if (!Utf8InputAnalyzer.IsAscii(input.Slice(offset, Math.Min(2048, input.Length - offset)))) return false;
         }
-        return ascii;
+        return true;
     }
 
     // Coordinate/eligibility metadata is still needed by some routes. Derive it

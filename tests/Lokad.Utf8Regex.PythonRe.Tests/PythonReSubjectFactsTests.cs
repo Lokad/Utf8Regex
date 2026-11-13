@@ -5,6 +5,22 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReSubjectFactsTests
 {
+    [Fact]
+    public void GovernedUnicodeStartDoesNotClassifyAnUnusedAsciiSuffix()
+    {
+        var input = Encoding.UTF8.GetBytes("é" + new string('x', 1 << 20));
+        using var regex = new Utf8PythonRegex("([a-zé])",
+            resourcePolicy: new() { MaxWorkSteps = 64, MaxWorkingBytes = 32768, MaxResultBytes = 512 });
+        var value = regex.Search(input);
+        Assert.True(value.Success);
+        Assert.Equal((0, 2, 0, 1), (value.StartOffsetInBytes, value.EndOffsetInBytes,
+            value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var error = Assert.Throws<OperationCanceledException>(() => regex.Search(input, 0, cancellation.Token));
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+    }
+
     [Theory]
     [InlineData("x", "needle")]
     [InlineData("é", "é😀")]
