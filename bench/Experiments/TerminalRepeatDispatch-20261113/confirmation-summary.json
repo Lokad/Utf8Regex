@@ -1,0 +1,225 @@
+{
+  "Complete": true,
+  "Seconds": 42.77268370334059,
+  "SampleCount": 120,
+  "MinimumSampleMs": 96.6232,
+  "MaximumTimedAllocationMiB": 60.85990905761719,
+  "Rows": [
+    {
+      "Policy": "Validate",
+      "Id": "python/full-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 413.73672416334955,
+        "MinimumUs": 372.90939849624056,
+        "MaximumUs": 535.1662745098039,
+        "ProcessMediansUs": [
+          397.921568627451,
+          429.5518796992481
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 367.5526627218935,
+        "MinimumUs": 291.3134328358209,
+        "MaximumUs": 430.60443786982245,
+        "ProcessMediansUs": [
+          356.6964179104478,
+          368.28076923076924
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -11.162669094663658,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/full-finite-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 574.9337078651686,
+        "MinimumUs": 545.507182320442,
+        "MaximumUs": 662.2033707865169,
+        "ProcessMediansUs": [
+          553.1441988950277,
+          584.8926966292134
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 501.77240566037744,
+        "MinimumUs": 463.8767123287671,
+        "MaximumUs": 565.5353773584906,
+        "ProcessMediansUs": [
+          532.922641509434,
+          466.2949771689498
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -12.725171824844306,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 89.85554983998216,
+        "MinimumUs": 88.56572470373746,
+        "MaximumUs": 91.01681654676258,
+        "ProcessMediansUs": [
+          89.77491007194244,
+          89.93618960802188
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 89.6677232142857,
+        "MinimumUs": 87.22017857142858,
+        "MaximumUs": 91.15499557913351,
+        "ProcessMediansUs": [
+          88.86392857142857,
+          90.19345711759505
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -0.20903174709959726,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 416.5204280155642,
+        "MinimumUs": 375.3110687022901,
+        "MaximumUs": 552.2904580152672,
+        "ProcessMediansUs": [
+          379.3106870229008,
+          434.60077821011674
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 348.8016343546984,
+        "MinimumUs": 287.58468208092484,
+        "MaximumUs": 425.9502890173411,
+        "ProcessMediansUs": [
+          346.140412979351,
+          359.63988439306354
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -16.258216669828094,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-finite-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 564.0949656679151,
+        "MinimumUs": 548.7127777777778,
+        "MaximumUs": 707.9101123595506,
+        "ProcessMediansUs": [
+          564.693820224719,
+          563.4961111111111
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 444.6192825112107,
+        "MinimumUs": 433.58290598290597,
+        "MaximumUs": 583.7730769230769,
+        "ProcessMediansUs": [
+          438.1559829059829,
+          445.2582959641255
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -21.180065490433776,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 90.35342999419856,
+        "MinimumUs": 89.10740740740742,
+        "MaximumUs": 91.28890876565295,
+        "ProcessMediansUs": [
+          90.6752236135957,
+          89.64281842818428
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "after": {
+        "MedianUs": 89.91867964119496,
+        "MinimumUs": 88.49990850869169,
+        "MaximumUs": 91.70036231884058,
+        "ProcessMediansUs": [
+          88.88279963403477,
+          90.91748188405796
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          17,
+          17
+        ]
+      },
+      "ChangePercent": -0.48116640733121274,
+      "RangesOverlap": true
+    }
+  ]
+}

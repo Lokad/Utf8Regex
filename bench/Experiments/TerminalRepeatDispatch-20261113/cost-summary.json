@@ -1,0 +1,873 @@
+{
+  "Complete": true,
+  "Seconds": 97.26502962782979,
+  "SampleCount": 480,
+  "MinimumSampleMs": 47.096,
+  "MaximumTimedAllocationMiB": 49.24493408203125,
+  "Rows": [
+    {
+      "Policy": "Validate",
+      "Id": "python/full-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 399.50958267922556,
+        "MinimumUs": 368.4265306122449,
+        "MaximumUs": 510.1051282051282,
+        "ProcessMediansUs": [
+          407.95641025641027,
+          391.06275510204085
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 340.85850486941126,
+        "MinimumUs": 285.498406374502,
+        "MaximumUs": 458.6972111553785,
+        "ProcessMediansUs": [
+          375.2864541832669,
+          306.43055555555554
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -14.68076871059848,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/full-utf8",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 386.5072137087194,
+        "MinimumUs": 377.120218579235,
+        "MaximumUs": 520.9592391304348,
+        "ProcessMediansUs": [
+          386.2546448087432,
+          386.7597826086956
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 306.19470523223686,
+        "MinimumUs": 299.1269406392694,
+        "MaximumUs": 391.1382165605096,
+        "ProcessMediansUs": [
+          307.2738853503185,
+          305.1155251141553
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -20.77904515826394,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/full-finite-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 563.5782442748091,
+        "MinimumUs": 547.0151079136691,
+        "MaximumUs": 710.8496402877697,
+        "ProcessMediansUs": [
+          552.6510791366907,
+          563.9717557251909
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 465.6856707317073,
+        "MinimumUs": 457.52865853658534,
+        "MaximumUs": 595.9439024390244,
+        "ProcessMediansUs": [
+          466.2591463414634,
+          462.6073170731707
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -17.369828331302283,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/full-deadline-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 959.2168502383693,
+        "MinimumUs": 938.8822784810126,
+        "MaximumUs": 1150.0077922077924,
+        "ProcessMediansUs": [
+          960.3714285714286,
+          953.0797468354431
+        ],
+        "MedianAllocatedBytes": 188688.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 881.1439705882353,
+        "MinimumUs": 864.35375,
+        "MaximumUs": 1030.1070588235295,
+        "ProcessMediansUs": [
+          892.1905882352943,
+          868.14625
+        ],
+        "MedianAllocatedBytes": 188688.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -8.13923146061628,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/full-funded-cursor",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 1668.703506097561,
+        "MinimumUs": 1598.545,
+        "MaximumUs": 1794.4756097560976,
+        "ProcessMediansUs": [
+          1656.5875,
+          1680.8195121951221
+        ],
+        "MedianAllocatedBytes": 246481.81463414634,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 1537.923,
+        "MinimumUs": 1483.464,
+        "MaximumUs": 1740.0819999999999,
+        "ProcessMediansUs": [
+          1542.5839999999998,
+          1522.332
+        ],
+        "MedianAllocatedBytes": 246408.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -7.837252430984886,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/unicode-terminal-strings",
+      "SubjectBytes": 3584,
+      "SubjectSha256": "E830068ED9CC225581DE513251C8A25B19958CA7BD0FD91B7ABB568931F83291",
+      "before": {
+        "MedianUs": 147.64444444444445,
+        "MinimumUs": 140.15085714285715,
+        "MaximumUs": 210.12896825396825,
+        "ProcessMediansUs": [
+          148.2246031746032,
+          142.1327619047619
+        ],
+        "MedianAllocatedBytes": 20504.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 112.94645061728396,
+        "MinimumUs": 110.38084795321637,
+        "MaximumUs": 153.90584795321638,
+        "ProcessMediansUs": [
+          113.21620370370368,
+          110.92587719298245
+        ],
+        "MedianAllocatedBytes": 20504.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -23.501049401297745,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/nullable-terminal-strings",
+      "SubjectBytes": 1280,
+      "SubjectSha256": "86FA01D90C49B8F6C5D713B3384D4A2FC3450C76E6DE10BC21C3A2BB4A0A73E2",
+      "before": {
+        "MedianUs": 76.91042510121457,
+        "MinimumUs": 75.53663967611335,
+        "MaximumUs": 93.53633603238866,
+        "ProcessMediansUs": [
+          77.06305668016195,
+          76.50819838056681
+        ],
+        "MedianAllocatedBytes": 24656.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 59.677447141738455,
+        "MinimumUs": 58.07077045274026,
+        "MaximumUs": 81.85099285146941,
+        "ProcessMediansUs": [
+          59.43891977760128,
+          59.89624119028974
+        ],
+        "MedianAllocatedBytes": 24656.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -22.406556636239383,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "python/bounded-terminal-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 947.0710484637314,
+        "MinimumUs": 850.8506493506494,
+        "MaximumUs": 984.9402439024391,
+        "ProcessMediansUs": [
+          966.6878048780487,
+          886.512987012987
+        ],
+        "MedianAllocatedBytes": 491779.9512195122,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 901.2104066265059,
+        "MinimumUs": 721.3566265060241,
+        "MaximumUs": 1058.0084337349397,
+        "ProcessMediansUs": [
+          912.0424999999999,
+          890.3783132530119
+        ],
+        "MedianAllocatedBytes": 491779.53493975906,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -4.84236551329672,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/many-capture-strings",
+      "SubjectBytes": 18432,
+      "SubjectSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+      "before": {
+        "MedianUs": 547.7028822528823,
+        "MinimumUs": 497.4777027027027,
+        "MaximumUs": 702.4209790209791,
+        "ProcessMediansUs": [
+          560.4351351351352,
+          534.9706293706294
+        ],
+        "MedianAllocatedBytes": 242008.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 503.13211920529795,
+        "MinimumUs": 488.0834437086092,
+        "MaximumUs": 796.4940397350994,
+        "ProcessMediansUs": [
+          504.47350993377484,
+          497.1205298013246
+        ],
+        "MedianAllocatedBytes": 242008.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -8.137763099629879,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/assertion-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 504.1551020408163,
+        "MinimumUs": 480.15000000000003,
+        "MaximumUs": 644.3590909090909,
+        "ProcessMediansUs": [
+          505.9551020408163,
+          486.7032467532467
+        ],
+        "MedianAllocatedBytes": 184968.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 500.06456953642385,
+        "MinimumUs": 488.4568627450981,
+        "MaximumUs": 667.833774834437,
+        "ProcessMediansUs": [
+          501.9337748344371,
+          495.9196078431372
+        ],
+        "MedianAllocatedBytes": 184968.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -0.8113639012744311,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/core-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "before": {
+        "MedianUs": 0.10317662137362327,
+        "MinimumUs": 0.10150428480623967,
+        "MaximumUs": 0.10537258989803981,
+        "ProcessMediansUs": [
+          0.1037869087749434,
+          0.1031401307010365
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 0.10754944292100654,
+        "MinimumUs": 0.10074776229343532,
+        "MaximumUs": 0.13085784331961814,
+        "ProcessMediansUs": [
+          0.10386213644243718,
+          0.109669237948198
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": 4.238190288813981,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "Validate",
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 90.29451255282723,
+        "MinimumUs": 88.6571946795647,
+        "MaximumUs": 91.21002475247525,
+        "ProcessMediansUs": [
+          90.4561881188119,
+          89.11729141475212
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 90.90770541461569,
+        "MinimumUs": 88.88755980861244,
+        "MaximumUs": 91.278896882494,
+        "ProcessMediansUs": [
+          91.10455635491607,
+          90.4962918660287
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": 0.6791031309125284,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 411.34830250791583,
+        "MinimumUs": 370.44900990099006,
+        "MaximumUs": 541.1700507614213,
+        "ProcessMediansUs": [
+          438.4737623762377,
+          384.222842639594
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 347.55598625107416,
+        "MinimumUs": 287.28901960784316,
+        "MaximumUs": 445.6133333333333,
+        "ProcessMediansUs": [
+          348.97372549019605,
+          346.1382470119522
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -15.508102468859486,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-utf8",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 388.86620879120875,
+        "MinimumUs": 376.1869565217392,
+        "MaximumUs": 532.3653846153846,
+        "ProcessMediansUs": [
+          385.9315217391304,
+          390.5186813186813
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 322.83863636363634,
+        "MinimumUs": 297.84826086956525,
+        "MaximumUs": 459.20826086956527,
+        "ProcessMediansUs": [
+          299.8978260869565,
+          340.01272727272726
+        ],
+        "MedianAllocatedBytes": 184440.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -16.979508873455273,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-finite-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 552.7942446043165,
+        "MinimumUs": 539.1376811594203,
+        "MaximumUs": 707.5311594202899,
+        "ProcessMediansUs": [
+          543.0615942028985,
+          553.6942446043165
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 507.8201558884424,
+        "MinimumUs": 459.2788819875776,
+        "MaximumUs": 600.3483660130719,
+        "ProcessMediansUs": [
+          519.1346405228758,
+          469.4583850931677
+        ],
+        "MedianAllocatedBytes": 188640.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -8.135773690637105,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-deadline-live",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 977.074025974026,
+        "MinimumUs": 957.373076923077,
+        "MaximumUs": 1165.373076923077,
+        "ProcessMediansUs": [
+          966.45,
+          980.3974025974027
+        ],
+        "MedianAllocatedBytes": 188688.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 864.8261904761904,
+        "MinimumUs": 847.7890243902439,
+        "MaximumUs": 972.3951219512196,
+        "ProcessMediansUs": [
+          852.6073170731706,
+          866.922619047619
+        ],
+        "MedianAllocatedBytes": 188688.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -11.488160826498062,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/full-funded-cursor",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 1720.3358695652173,
+        "MinimumUs": 1638.5869565217392,
+        "MaximumUs": 1817.5956521739129,
+        "ProcessMediansUs": [
+          1707.8826086956524,
+          1732.7891304347825
+        ],
+        "MedianAllocatedBytes": 246473.39130434784,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 1550.183,
+        "MinimumUs": 1465.4250000000002,
+        "MaximumUs": 1640.2220000000002,
+        "ProcessMediansUs": [
+          1491.7923076923075,
+          1559.6960000000001
+        ],
+        "MedianAllocatedBytes": 246408.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -9.89067731339115,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/unicode-terminal-strings",
+      "SubjectBytes": 3584,
+      "SubjectSha256": "E830068ED9CC225581DE513251C8A25B19958CA7BD0FD91B7ABB568931F83291",
+      "before": {
+        "MedianUs": 140.99978867774348,
+        "MinimumUs": 138.62673684210526,
+        "MaximumUs": 193.6642105263158,
+        "ProcessMediansUs": [
+          141.34574669187148,
+          139.54863157894738
+        ],
+        "MedianAllocatedBytes": 20504.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 106.34696327683616,
+        "MinimumUs": 101.14602739726028,
+        "MaximumUs": 165.20123287671234,
+        "ProcessMediansUs": [
+          102.28520547945205,
+          106.73305084745763
+        ],
+        "MedianAllocatedBytes": 20504.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -24.57650874931928,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/nullable-terminal-strings",
+      "SubjectBytes": 1280,
+      "SubjectSha256": "86FA01D90C49B8F6C5D713B3384D4A2FC3450C76E6DE10BC21C3A2BB4A0A73E2",
+      "before": {
+        "MedianUs": 77.45678303551134,
+        "MinimumUs": 75.92040609137055,
+        "MaximumUs": 101.98304904051173,
+        "ProcessMediansUs": [
+          77.04507614213198,
+          77.94157782515991
+        ],
+        "MedianAllocatedBytes": 24656.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 59.80563099041533,
+        "MinimumUs": 55.96784615384615,
+        "MaximumUs": 73.50862619808306,
+        "ProcessMediansUs": [
+          57.17076923076923,
+          60.19376996805112
+        ],
+        "MedianAllocatedBytes": 24656.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -22.78838773487861,
+      "RangesOverlap": false
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "python/bounded-terminal-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 896.1442111302352,
+        "MinimumUs": 715.1192771084337,
+        "MaximumUs": 999.3759036144578,
+        "ProcessMediansUs": [
+          879.1380952380953,
+          941.1277108433736
+        ],
+        "MedianAllocatedBytes": 491778.81904761906,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 918.1856164383562,
+        "MinimumUs": 733.1808219178082,
+        "MaximumUs": 1013.6164383561644,
+        "ProcessMediansUs": [
+          939.6890410958905,
+          879.9597402597403
+        ],
+        "MedianAllocatedBytes": 491779.94520547945,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": 2.4595824013996515,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/many-capture-strings",
+      "SubjectBytes": 18432,
+      "SubjectSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+      "before": {
+        "MedianUs": 536.322972972973,
+        "MinimumUs": 502.79863013698633,
+        "MaximumUs": 734.5143835616437,
+        "ProcessMediansUs": [
+          542.8000000000001,
+          529.8459459459459
+        ],
+        "MedianAllocatedBytes": 242008.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 536.0138691322902,
+        "MinimumUs": 491.8302631578947,
+        "MaximumUs": 733.2065789473685,
+        "ProcessMediansUs": [
+          516.1736842105263,
+          555.8540540540541
+        ],
+        "MedianAllocatedBytes": 242008.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -0.05763389902345706,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/assertion-strings",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 485.7245098039216,
+        "MinimumUs": 477.1839743589744,
+        "MaximumUs": 614.4878205128206,
+        "ProcessMediansUs": [
+          479.05,
+          487.1183006535948
+        ],
+        "MedianAllocatedBytes": 184968.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 492.1411184210526,
+        "MinimumUs": 477.6377483443709,
+        "MaximumUs": 650.9258278145695,
+        "ProcessMediansUs": [
+          494.5078947368421,
+          486.0364238410596
+        ],
+        "MedianAllocatedBytes": 184968.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": 1.3210386726667966,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/core-literal",
+      "SubjectBytes": 6,
+      "SubjectSha256": "09881F6ED93360A2F6AD81F435A8CA51CA4575D0F954F197FF8F7D16C6565562",
+      "before": {
+        "MedianUs": 0.10316528261039035,
+        "MinimumUs": 0.1011674108291361,
+        "MaximumUs": 0.10569492465284307,
+        "ProcessMediansUs": [
+          0.10347336165152615,
+          0.10311353476236032
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 0.10265585709986272,
+        "MinimumUs": 0.10047109153539018,
+        "MaximumUs": 0.12179177810351927,
+        "ProcessMediansUs": [
+          0.10079630210009571,
+          0.1032079071294676
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -0.49379548782074734,
+      "RangesOverlap": true
+    },
+    {
+      "Policy": "AssumeValid",
+      "Id": "control/net-predecoded-count",
+      "SubjectBytes": 21504,
+      "SubjectSha256": "3739D18746BF90562C212CCF0D33DD5A3730AC80AB00411329F2B239B4AC4E07",
+      "before": {
+        "MedianUs": 92.41691449814127,
+        "MinimumUs": 89.9688701923077,
+        "MaximumUs": 94.52465923172244,
+        "ProcessMediansUs": [
+          91.23377403846153,
+          93.37596034696406
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "after": {
+        "MedianUs": 90.641037534753,
+        "MinimumUs": 87.68973717146432,
+        "MaximumUs": 91.86192214111922,
+        "ProcessMediansUs": [
+          89.11301627033792,
+          91.22883211678831
+        ],
+        "MedianAllocatedBytes": 0.0,
+        "PeakWorkingBytes": [
+          65,
+          65
+        ]
+      },
+      "ChangePercent": -1.9215930038694262,
+      "RangesOverlap": true
+    }
+  ]
+}
