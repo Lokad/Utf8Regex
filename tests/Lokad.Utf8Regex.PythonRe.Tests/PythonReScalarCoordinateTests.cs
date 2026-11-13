@@ -70,6 +70,93 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Throws<InvalidOperationException>(() => cursor.TryGetScalarRange(0, out _, out _));
         cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => cursor.TryGetScalarRange(0, out _, out _));
     }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("é")]
+    public void EarlyQueriesDoNotPrepareAnUnusedLargeSuffix(string capture)
+    {
+        foreach (var suffix in new[] { "", new string('x', 1 << 20), string.Concat(Enumerable.Repeat("😀", 1 << 18)) })
+        {
+            var account = new Allowance(1 << 20); Assert.True(account.TryReserve(17));
+            var input = Encoding.UTF8.GetBytes(new string('x', 300) + capture + suffix);
+            using var cursor = new Utf8PythonRegex("(" + capture + ")", resourcePolicy: new()
+                { MaxWorkSteps = 2000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 })
+                .CreateMatchCursor(input, 0, default, account);
+            Assert.True(cursor.MoveNext(out var retained));
+            var reservations = account.Reservations;
+            Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
+            Assert.Equal((300, 301), (start, end));
+            if (capture == "a") Assert.Equal(reservations, account.Reservations);
+            cursor.Dispose();
+            Assert.Equal(17UL, account.Used); account.Release(17);
+            Assert.Equal(capture, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+        }
+    }
+
+    [Fact]
+    public void PrefixGrowthAndLaterDetailedOutputKeepDistinctCoordinateFacts()
+    {
+        var text = new string('x', 300) + "a" + new string('x', 700) + "é" +
+            new string('x', 1100) + "😀" + new string('x', 5000) + "é😀";
+        var account = new Allowance(1 << 20);
+        using var cursor = new Utf8PythonRegex("(a)|(é)|(😀)").CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, default, account);
+        foreach (var expected in new[] { (300, 301), (1001, 1002), (2102, 2103) })
+        {
+            Assert.True(cursor.MoveNext(out _));
+            Assert.True(cursor.TryGetScalarRange(0, out var start, out var end));
+            Assert.Equal(expected, (start, end));
+            var reservations = account.Reservations;
+            Assert.True(cursor.TryGetScalarRange(0, out start, out end));
+            Assert.Equal(expected, (start, end)); Assert.Equal(reservations, account.Reservations);
+        }
+        // A proved ASCII prefix must not become a whole-subject description.
+        Assert.True(cursor.MoveNext()); var detailed = cursor.Current;
+        Assert.Equal("é", detailed.Groups[0].ValueText);
+        Assert.Equal((7107, 7109), (detailed.Groups[0].StartOffsetInBytes, detailed.Groups[0].EndOffsetInBytes));
+        Assert.Equal((7104, 7105), (detailed.Groups[0].StartOffsetInUtf16, detailed.Groups[0].EndOffsetInUtf16));
+        Assert.True(cursor.TryGetScalarRange(0, out var finalStart, out var finalEnd));
+        Assert.Equal((7103, 7104), (finalStart, finalEnd));
+        cursor.Dispose(); Assert.Equal(0UL, account.Used); Assert.Equal("é", detailed.Groups[0].ValueText);
+    }
+
+    [Fact]
+    public void BackwardLookbehindQueriesReuseTheInitializedPrefix()
+    {
+        var account = new Allowance(1 << 20);
+        using var cursor = new Utf8PythonRegex("(?<=(é))(😀)")
+            .CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 1000) + "é😀"), 0, default, account);
+        Assert.True(cursor.MoveNext(out _));
+        Assert.True(cursor.TryGetScalarRange(2, out var start, out var end));
+        Assert.Equal((1001, 1002), (start, end)); var reservations = account.Reservations;
+        Assert.True(cursor.TryGetScalarRange(1, out start, out end));
+        Assert.Equal((1000, 1001), (start, end)); Assert.Equal(reservations, account.Reservations);
+        cursor.Dispose(); Assert.Equal(0UL, account.Used);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GrowthRefusalOrCancellationRefundsBothCapacities(bool cancel)
+    {
+        var account = new Allowance(1 << 20); Assert.True(account.TryReserve(17));
+        using var token = new CancellationTokenSource();
+        using var cursor = new Utf8PythonRegex("(é)")
+            .CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 300) + "é" + new string('x', 2000) + "é"), 0, token.Token, account);
+        Assert.True(cursor.MoveNext(out var first)); Assert.True(cursor.TryGetScalarRange(0, out _, out _));
+        Assert.True(cursor.MoveNext(out var second));
+        if (cancel) account.AfterGrant = token.Cancel;
+        else account.Maximum = account.Used;
+        if (cancel)
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.TryGetScalarRange(0, out _, out _)).CancellationToken);
+        else
+            Assert.Throws<Utf8MemoryAdmissionException>(() => cursor.TryGetScalarRange(0, out _, out _));
+        Assert.Equal(17UL, account.Used);
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+        Assert.Equal("é", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+        Assert.Equal("é", Encoding.UTF8.GetString(second.GetGroupMemory(1).Span));
+        cursor.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
+    }
     [Fact]
     public void NoIndexIsAcquiredUntilARealMixedInputCaptureIsQueried()
     {
