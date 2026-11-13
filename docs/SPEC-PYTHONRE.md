@@ -647,12 +647,14 @@ UTF-16 or byte positions. Existing byte and UTF-16 coordinates retain their mean
 The integers remain valid after advance/disposal; querying a cursor without a
 current match fails explicitly.
 
-Byte-only advances do no extra coordinate preparation. The first mixed-input
-query lazily admits one compact working array (one prefix count per 256 UTF-8
-bytes); ASCII and subjects shorter than 256 bytes need no such allocation. It
+Byte-only advances do no extra coordinate preparation. A mixed-input query beyond
+the first 256-byte block lazily admits one compact working array (one prefix count
+per 256 UTF-8 bytes); ASCII and shorter subjects need no such allocation. It
 counts scalar starts over caller-guaranteed valid bytes, including blocks cutting
 through scalars, with bounded scans inside the selected block on later queries.
-No text or full UTF-16 coordinate map is created for this query. The array stays
+No text, unused UTF-16 totals or full UTF-16 coordinate map is created for this
+query. Offsets in the first 256-byte block are counted directly without an index;
+proved ASCII facts and existing scalar indexes are reused. The array stays
 charged until cursor EOF, failure or disposal; repeated queries reuse it. Index
 storage is working memory, not cumulative result traffic. Each bounded 32-byte
 scan unit and query checkpoints consume the original cumulative work budget;

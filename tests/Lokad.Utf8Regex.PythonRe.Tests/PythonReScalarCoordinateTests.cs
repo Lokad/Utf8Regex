@@ -73,7 +73,7 @@ public sealed class PythonReScalarCoordinateTests
     [Fact]
     public void NoIndexIsAcquiredUntilARealMixedInputCaptureIsQueried()
     {
-        var account = new Allowance(1 << 20); var input = Encoding.UTF8.GetBytes("a" + new string('é', 8192));
+        var account = new Allowance(1 << 20); var input = Encoding.UTF8.GetBytes(new string('é', 8192) + "a");
         using var cursor = new Utf8PythonRegex("(a)").CreateMatchCursor(input, 0, default, account);
         Assert.True(cursor.MoveNext(out var snapshot)); var reservations = account.Reservations;
         Assert.False(cursor.TryGetScalarRange(99, out _, out _)); Assert.Equal(reservations, account.Reservations);
@@ -88,10 +88,10 @@ public sealed class PythonReScalarCoordinateTests
         var account = new Allowance(4 << 20); Assert.True(account.TryReserve(17));
         using var regex = Utf8PythonRegex.Compile("(é)", default, Timeout.InfiniteTimeSpan,
             default, default, Timeout.InfiniteTimeSpan, default, account);
-        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("é" + new string('x', 2048)));
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 1024) + "é" + new string('x', 1024)));
         Assert.True(cursor.MoveNextRetained(out var retained)); using var receipt = retained!;
         regex.Dispose(); Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
-        Assert.Equal(0, start); Assert.Equal(1, end); var held = account.Used; var reservations = account.Reservations;
+        Assert.Equal(1024, start); Assert.Equal(1025, end); var held = account.Used; var reservations = account.Reservations;
         for (var i = 0; i < 10000; i++) Assert.True(cursor.TryGetScalarRange(1, out _, out _));
         Assert.Equal(held, account.Used); Assert.Equal(reservations, account.Reservations);
         Assert.False(cursor.MoveNext(out _)); Assert.Equal(17UL + receipt.ChargedBytes, account.Used);
@@ -134,7 +134,7 @@ public sealed class PythonReScalarCoordinateTests
     {
         using var creation = new CancellationTokenSource(); using var query = new CancellationTokenSource();
         var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)")
-            .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, creation.Token, account);
+            .CreateMatchCursor(Encoding.UTF8.GetBytes(new string('é', 32768) + "a"), 0, creation.Token, account);
         Assert.True(cursor.MoveNext(out var snapshot)); var held = account.Used; var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) { if (cancelCreation) creation.Cancel(); query.Cancel(); } };
         var error = Assert.Throws<OperationCanceledException>(() => cursor.TryGetScalarRange(0, out _, out _, query.Token));
@@ -147,7 +147,7 @@ public sealed class PythonReScalarCoordinateTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", default, TimeSpan.FromMilliseconds(100))
-            .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, default, account);
+            .CreateMatchCursor(Encoding.UTF8.GetBytes(new string('é', 32768) + "a"), 0, default, account);
         Assert.True(cursor.MoveNext(out _)); var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) ticks = 100; };
         var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.TryGetScalarRange(0, out _, out _));
@@ -156,7 +156,7 @@ public sealed class PythonReScalarCoordinateTests
     [Fact]
     public void ScalarIndexUsesWorkingAdmissionWithoutSpendingResultTraffic()
     {
-        var input = Encoding.UTF8.GetBytes("a" + new string('é', 4096));
+        var input = Encoding.UTF8.GetBytes(new string('é', 4096) + "a");
         using var cursor = new Utf8PythonRegex("(a)", default, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxResultBytes = 4096 }).CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out _)); var traffic = cursor.WorkingInvocation.Budget.ResultBytes;
@@ -167,7 +167,7 @@ public sealed class PythonReScalarCoordinateTests
     [InlineData(true)]
     public void IndexConstructionPreservesFiniteWorkAndWorkingDenials(bool work)
     {
-        var input = Encoding.UTF8.GetBytes("é" + new string('x', 65536));
+        var input = Encoding.UTF8.GetBytes(new string('x', 65536) + "é");
         var account = new Allowance(1 << 20); ulong steps, peak;
         using (var reference = new Utf8PythonRegex("(é)", default, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }).CreateMatchCursor(input, 0, default, account))
@@ -190,7 +190,7 @@ public sealed class PythonReScalarCoordinateTests
     [Fact]
     public void ReentrantProjectionIsRejectedWithoutCorruptingTheActiveQuery()
     {
-        using var cursor = new Utf8PythonRegex("(a)").CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 8192)));
+        using var cursor = new Utf8PythonRegex("(a)").CreateMatchCursor(Encoding.UTF8.GetBytes(new string('é', 8192) + "a"));
         Assert.True(cursor.MoveNext(out _)); var rejected = false;
         cursor.WorkingInvocation.CheckpointHook = currentStep =>
         {
@@ -198,7 +198,7 @@ public sealed class PythonReScalarCoordinateTests
             rejected = true;
         };
         Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
-        Assert.True(rejected); Assert.Equal(0, start); Assert.Equal(1, end);
+        Assert.True(rejected); Assert.Equal(8192, start); Assert.Equal(8193, end);
     }
     [Fact]
     public async Task SharedHostLifetimesComposeAcrossWaitsAndProgramClosure()

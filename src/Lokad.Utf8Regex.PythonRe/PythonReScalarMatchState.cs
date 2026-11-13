@@ -119,7 +119,15 @@ internal struct PythonReScalarMatchState
     internal readonly ulong ResultReservation => _results.ReservedBytes;
     internal readonly Utf8ValidationResult? InputDescription => _validation;
     internal readonly bool HasCoordinateMap => _hasMap;
-    internal bool IsAscii(ReadOnlySpan<byte> input) => (_validation ?? DescribeInput(input)).IsAscii;
+    internal bool IsAscii(ReadOnlySpan<byte> input)
+    {
+        if (_validation is { } known) return known.IsAscii;
+        if (!Utf8Validation.SubjectIsAscii(input, ref _invocation)) return false;
+        // A proved ASCII subject supplies all these facts. A negative proof
+        // leaves UTF-16 totals for a real coordinate consumer to request.
+        _validation = new(input.Length, input.Length, true, false);
+        return true;
+    }
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
     internal T[] AllocateResultArray<T>(int count)

@@ -10,7 +10,7 @@ public sealed partial class Utf8PythonMatchCursor
 
     /// <summary>Gets the current numbered capture's zero-based Unicode-scalar start/end positions.</summary>
     /// <returns>True for a participating capture, including empty; false with both positions -1 for an absent or unmatched group.</returns>
-    /// <remarks>Works after either detailed or range-only advances. Byte coordinates keep their existing meanings. Mixed UTF-8 input lazily acquires a compact working index; byte-only iteration does not. Returned integers remain valid after advance/disposal. The optional token applies only to this call alongside the creation token and original deadline. Projection failure faults the cursor and releases its scratch synchronously.</remarks>
+    /// <remarks>Works after either detailed or range-only advances. Byte coordinates keep their existing meanings. Distant mixed UTF-8 coordinates lazily acquire a compact working index; first-block queries and byte-only iteration do not. Returned integers remain valid after advance/disposal. The optional token applies only to this call alongside the creation token and original deadline. Projection failure faults the cursor and releases its scratch synchronously.</remarks>
     /// <exception cref="InvalidOperationException">The cursor is not positioned on a match or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor is disposed.</exception>
     /// <exception cref="OperationCanceledException">The creation or current-call token is canceled; the original caller token is preserved.</exception>
@@ -66,7 +66,15 @@ public sealed partial class Utf8PythonMatchCursor
             var input = _input.Span;
             _discovery.Checkpoint();
             if (!_discovery.TryGetCaptureByteRange(groupNumber, out var byteStart, out var byteEnd)) return false;
-            if (_discovery.IsAscii(input)) { start = byteStart; end = byteEnd; }
+            if (_discovery.InputDescription?.IsAscii == true) { start = byteStart; end = byteEnd; }
+            else if (byteEnd <= ScalarPrefixBlockBytes)
+            {
+                // The existing first index block can be counted directly;
+                // no whole-subject fact or index is needed for these offsets.
+                start = CountScalarStarts(input[..byteStart]);
+                end = start + CountScalarStarts(input[byteStart..byteEnd]);
+            }
+            else if (_scalarPrefixes is null && _discovery.IsAscii(input)) { start = byteStart; end = byteEnd; }
             else
             {
                 EnsureScalarPrefixes(input);

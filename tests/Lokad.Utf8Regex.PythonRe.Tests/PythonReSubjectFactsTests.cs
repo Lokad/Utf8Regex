@@ -120,21 +120,34 @@ public sealed class PythonReSubjectFactsTests
         Assert.Equal(new[] { "item", "1234" }, regex.FindAllToStrings(input).TupleValues[0]);
     }
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RangeAliasesCanRequestCoordinatesLaterAndRefund( bool unicode)
+    [InlineData(false, 64)]
+    [InlineData(false, 8192)]
+    [InlineData(true, 64)]
+    [InlineData(true, 8192)]
+    public void RangeAliasesCanRequestCoordinatesLaterAndRefund(bool unicode, int suffixLength)
     {
-        var prefix = unicode ? "é😀 " : "abc ";
-        var input = Encoding.UTF8.GetBytes(prefix + "item-1234 " + new string(unicode ? 'é' : 'x', 8192));
+        var prefix = (unicode ? "é😀 " : "abc ") + new string(unicode ? 'é' : 'a', suffixLength);
+        var input = Encoding.UTF8.GetBytes(prefix + "item-1234 " + new string(unicode ? 'é' : 'x', suffixLength));
         var account = new Allowance(1 << 20);
         var regex = new Utf8PythonRegex("(item)-([0-9]+)");
         using var cursor = regex.CreateMatchCursor(input, 0, default, account);
         var alias = cursor;
         Assert.True(cursor.MoveNext(out var retained));
         Assert.False(cursor.HasCoordinateMap);
+        var beforeProjection = account.Used;
         Assert.True(alias.TryGetScalarRange(1, out var start, out var end));
-        Assert.Equal(unicode ? 3 : 4, start);
+        Assert.Equal((unicode ? 3 : 4) + suffixLength, start);
         Assert.Equal(start + 4, end);
+        var afterProjection = account.Used;
+        if (unicode && Encoding.UTF8.GetByteCount(prefix + "item") > 256) Assert.True(afterProjection > beforeProjection);
+        else Assert.Equal(beforeProjection, afterProjection);
+        for (var repeat = 0; repeat < 8; repeat++)
+        {
+            Assert.True(alias.TryGetScalarRange(2, out var numberStart, out var numberEnd));
+            Assert.Equal((start + 5, start + 9), (numberStart, numberEnd));
+            Assert.Equal(afterProjection, account.Used);
+        }
+        Assert.False(cursor.HasCoordinateMap);
         Assert.False(cursor.MoveNext(out _));
         Assert.Equal(0UL, account.Used);
         Assert.Equal("item-1234", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
