@@ -1900,12 +1900,14 @@ internal sealed class PythonReBenchmarkContext
     private readonly string _dotNetReplacement;
     private readonly int _captureCount;
     private readonly int _startOffsetInUtf16;
+    private readonly MatchEvaluator _constantDotNetEvaluator;
     private int _callbackChecksum;
     private ulong _callbackSemanticDigest;
 
     internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
     {
         _case = benchmarkCase;
+        _constantDotNetEvaluator = _ => _case.Replacement;
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         _decoded = benchmarkCase.Input;
         if ((uint)benchmarkCase.Coverage.StartOffsetInBytes > (uint)InputBytes.Length)
@@ -2645,92 +2647,47 @@ internal sealed class PythonReBenchmarkContext
             case PythonReBenchmarkOperation.SubnEvaluatorString:
             {
                 Utf8PythonSubnResult result = default;
-                var callbackChecksum = 0;
-                var callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                {
-                    _callbackChecksum = 0;
-                    _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-                    result = _pythonRegex.SubnToString(
-                        InputBytes,
-                        this,
-                        static (context, match) =>
-                        {
-                            context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                            context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                                context._callbackSemanticDigest,
-                                match);
-                            return context._case.Replacement;
-                        });
-                    callbackChecksum = _callbackChecksum;
-                    callbackSemanticDigest = _callbackSemanticDigest;
-                }
+                    result = _pythonRegex.SubnToString(InputBytes, this, static (context, _) => context._case.Replacement);
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Combine(Checksum(result), callbackChecksum),
-                    SemanticDigest(_case.Operation, result, callbackSemanticDigest));
+                var completed = Stopwatch.GetTimestamp();
+                var allocated = GC.GetAllocatedBytesForCurrentThread();
+                // One untimed semantic replay retains callback capture evidence.
+                // The timed callback only returns its prepared replacement.
+                _ = ExecutePythonReEvaluatorString();
+                return Complete(completed, allocated,
+                    Combine(Checksum(result), _callbackChecksum),
+                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
             }
             case PythonReBenchmarkOperation.SubnEvaluatorUtf8:
             {
                 Utf8PythonSubnUtf8Result result = default;
-                var callbackChecksum = 0;
-                var callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                {
-                    _callbackChecksum = 0;
-                    _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-                    result = _pythonRegex.Subn(
-                        InputBytes,
-                        this,
-                        static (context, match) =>
-                        {
-                            context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                            context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                                context._callbackSemanticDigest,
-                                match);
-                            return context._replacementBytes;
-                        });
-                    callbackChecksum = _callbackChecksum;
-                    callbackSemanticDigest = _callbackSemanticDigest;
-                }
+                    result = _pythonRegex.Subn(InputBytes, this, static (context, _) => context._replacementBytes);
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Combine(Checksum(result), callbackChecksum),
-                    SemanticDigest(_case.Operation, result, callbackSemanticDigest));
+                var completed = Stopwatch.GetTimestamp();
+                var allocated = GC.GetAllocatedBytesForCurrentThread();
+                // One untimed semantic replay retains callback capture evidence.
+                // The timed callback only returns its prepared replacement.
+                _ = ExecutePythonReEvaluatorUtf8();
+                return Complete(completed, allocated,
+                    Combine(Checksum(result), _callbackChecksum),
+                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
             }
             case PythonReBenchmarkOperation.ReplaceEvaluatorString:
             {
-                var result = string.Empty;
-                var callbackChecksum = 0;
-                var callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
+                string result = string.Empty;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                {
-                    _callbackChecksum = 0;
-                    _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-                    result = _pythonRegex.ReplaceToString(
-                        InputBytes,
-                        this,
-                        static (context, match) =>
-                        {
-                            context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                            context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                                context._callbackSemanticDigest,
-                                match);
-                            return context._case.Replacement;
-                        });
-                    callbackChecksum = _callbackChecksum;
-                    callbackSemanticDigest = _callbackSemanticDigest;
-                }
+                    result = _pythonRegex.ReplaceToString(InputBytes, this, static (context, _) => context._case.Replacement);
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Combine(Checksum(result), callbackChecksum),
-                    SemanticDigest(_case.Operation, result, callbackSemanticDigest));
+                var completed = Stopwatch.GetTimestamp();
+                var allocated = GC.GetAllocatedBytesForCurrentThread();
+                // One untimed semantic replay retains callback capture evidence.
+                // The timed callback only returns its prepared replacement.
+                _ = ExecutePythonReReplaceEvaluatorString();
+                return Complete(completed, allocated,
+                    Combine(Checksum(result), _callbackChecksum),
+                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
             }
             case PythonReBenchmarkOperation.SplitStrings:
             {
@@ -4178,12 +4135,14 @@ internal sealed class PythonReBenchmarkContext
     private int ExecutePythonReEvaluatorString()
     {
         _callbackChecksum = 0;
+        _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
         var result = _pythonRegex.SubnToString(
             InputBytes,
             this,
             static (context, match) =>
             {
                 context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
                 return context._case.Replacement;
             });
         return Combine(Checksum(result), _callbackChecksum);
@@ -4192,12 +4151,14 @@ internal sealed class PythonReBenchmarkContext
     private int ExecutePythonReEvaluatorUtf8()
     {
         _callbackChecksum = 0;
+        _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
         var result = _pythonRegex.Subn(
             InputBytes,
             this,
             static (context, match) =>
             {
                 context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
                 return context._replacementBytes;
             });
         return Combine(Checksum(result), _callbackChecksum);
@@ -4206,12 +4167,14 @@ internal sealed class PythonReBenchmarkContext
     private int ExecutePythonReReplaceEvaluatorString()
     {
         _callbackChecksum = 0;
+        _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
         var result = _pythonRegex.ReplaceToString(
             InputBytes,
             this,
             static (context, match) =>
             {
                 context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
                 return context._case.Replacement;
             });
         return Combine(Checksum(result), _callbackChecksum);
@@ -4288,10 +4251,10 @@ internal sealed class PythonReBenchmarkContext
             input,
             _dotNetReplacement,
             _case.Coverage.ReplacementCount)),
-        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: false)),
-        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true)),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true)),
+        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false)),
+        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),
         PythonReBenchmarkOperation.ReplaceEvaluatorString => ChecksumRegexReplaceEvaluator(input),
         PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializeSplitStrings(input)),
         PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializeSplitStrings(
@@ -4319,11 +4282,11 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.ReplaceString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement), Checksum),
         PythonReBenchmarkOperation.ReplaceUtf8 => MeasureRegexBatch(iterations, decode, input => Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement)), Checksum),
         PythonReBenchmarkOperation.ReplaceStringLimited => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement, _case.Coverage.ReplacementCount), Checksum),
-        PythonReBenchmarkOperation.SubnString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, materializeCallback: false), Checksum),
-        PythonReBenchmarkOperation.SubnUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false), Checksum),
-        PythonReBenchmarkOperation.SubnEvaluatorString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true), Checksum),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true), Checksum),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => MeasureRegexBatch(iterations, decode, input => MaterializeRegexReplaceEvaluator(input), result => Combine(Checksum(result.Text), result.CallbackChecksum)),
+        PythonReBenchmarkOperation.SubnString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false), Checksum),
+        PythonReBenchmarkOperation.SubnUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false), Checksum),
+        PythonReBenchmarkOperation.SubnEvaluatorString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),
+        PythonReBenchmarkOperation.ReplaceEvaluatorString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _constantDotNetEvaluator), result => Combine(Checksum(result), ComputeRegexCallbackChecksum(_decoded))),
         PythonReBenchmarkOperation.SplitStrings => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input), Checksum),
         PythonReBenchmarkOperation.SplitStringsLimited => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input, _case.Coverage.MaxSplit), Checksum),
         PythonReBenchmarkOperation.SplitDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeSplitDetailed(input), Checksum),
@@ -4604,49 +4567,32 @@ internal sealed class PythonReBenchmarkContext
         return parts.ToArray();
     }
 
-    private BclSubnResult ReplaceAndCount(
-        string input,
-        bool encodeUtf8,
-        bool materializeCallback)
+    private BclSubnResult ReplaceAndCount(string input, bool encodeUtf8, bool useEvaluator)
     {
         var count = 0;
-        var callbackChecksum = 0;
-        var utf8Offsets = materializeCallback ? GetUtf8Offsets(input) : null;
         var result = _regex.Replace(input, match =>
         {
             count++;
-            if (materializeCallback)
-            {
-                callbackChecksum = Combine(callbackChecksum, Checksum(MaterializeDetailed(match, input, utf8Offsets)));
-            }
-
-            return materializeCallback ? _case.Replacement : match.Result(_dotNetReplacement);
+            return useEvaluator ? _case.Replacement : match.Result(_dotNetReplacement);
         });
-        return new BclSubnResult(
-            result,
-            encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null,
-            count,
-            materializeCallback ? callbackChecksum : null);
+        return new BclSubnResult(result, encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null, count, null);
     }
 
     private int ChecksumRegexReplaceEvaluator(string input)
     {
-        var result = MaterializeRegexReplaceEvaluator(input);
-        return Combine(Checksum(result.Text), result.CallbackChecksum);
+        var result = _regex.Replace(input, _constantDotNetEvaluator);
+        return Combine(Checksum(result), ComputeRegexCallbackChecksum(input));
     }
 
-    private (string Text, int CallbackChecksum) MaterializeRegexReplaceEvaluator(string input)
+    // Verification consumers call this after timing. The measured callback does
+    // not request these coordinates or compute checksums in either language.
+    private int ComputeRegexCallbackChecksum(string input)
     {
-        var callbackChecksum = 0;
+        var checksum = 0;
         var utf8Offsets = GetUtf8Offsets(input);
-        var result = _regex.Replace(input, match =>
-        {
-            callbackChecksum = Combine(
-                callbackChecksum,
-                Checksum(MaterializeDetailed(match, input, utf8Offsets)));
-            return _case.Replacement;
-        });
-        return (result, callbackChecksum);
+        foreach (Match match in _regex.Matches(input))
+            checksum = Combine(checksum, Checksum(MaterializeDetailed(match, input, utf8Offsets)));
+        return checksum;
     }
 
     private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[]? utf8Offsets)

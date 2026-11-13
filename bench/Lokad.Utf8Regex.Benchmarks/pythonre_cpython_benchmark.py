@@ -291,6 +291,7 @@ class CaseRunner:
         self.callback_checksum = 0
         self.callback_digest = SEMANTIC_DIGEST_OFFSET
         self.evaluator = self.replace_callback
+        self.measured_evaluator = lambda _: self.replacement
 
     def execute_predecoded(self) -> Any:
         return self.execute(self.input_text)
@@ -432,10 +433,7 @@ class CaseRunner:
                 result = pattern.sub(self.replacement, input_text, count=replacement_count)
         elif operation == "ReplaceEvaluatorString":
             for _ in range(iterations):
-                self.callback_checksum = 0
-                self.callback_digest = SEMANTIC_DIGEST_OFFSET
-                result_text = pattern.sub(self.evaluator, input_text)
-                result = result_text, self.callback_checksum, self.callback_digest
+                result = pattern.sub(self.measured_evaluator, input_text)
         elif operation == "SubnString":
             for _ in range(iterations):
                 result = pattern.subn(self.replacement, input_text)
@@ -445,21 +443,11 @@ class CaseRunner:
                 result = result_text.encode("utf-8"), count
         elif operation == "SubnEvaluatorString":
             for _ in range(iterations):
-                self.callback_checksum = 0
-                self.callback_digest = SEMANTIC_DIGEST_OFFSET
-                result_text, count = pattern.subn(self.evaluator, input_text)
-                result = result_text, count, self.callback_checksum, self.callback_digest
+                result = pattern.subn(self.measured_evaluator, input_text)
         elif operation == "SubnEvaluatorUtf8":
             for _ in range(iterations):
-                self.callback_checksum = 0
-                self.callback_digest = SEMANTIC_DIGEST_OFFSET
-                result_text, count = pattern.subn(self.evaluator, input_text)
-                result = (
-                    result_text.encode("utf-8"),
-                    count,
-                    self.callback_checksum,
-                    self.callback_digest,
-                )
+                result_text, count = pattern.subn(self.measured_evaluator, input_text)
+                result = result_text.encode("utf-8"), count
         elif operation == "SplitStrings":
             for _ in range(iterations):
                 result = pattern.split(input_text)
@@ -472,7 +460,20 @@ class CaseRunner:
                 result = self.materialize_split_detailed(input_text)
         else:
             raise ValueError(f"Unsupported PythonRe operation: {operation}")
-        return time.perf_counter_ns() - started, result
+        elapsed = time.perf_counter_ns() - started
+        # Rich callback verification runs once after timing, with the existing
+        # callback/result contract. Verify the actual timed final output too.
+        if operation == "ReplaceEvaluatorString":
+            verified = self.replace_evaluator(input_text)
+            if result != verified[0]:
+                raise ValueError("Timed callback replacement differs from verification.")
+            result = result, verified[1], verified[2]
+        elif operation in {"SubnEvaluatorString", "SubnEvaluatorUtf8"}:
+            verified = self.subn_evaluator(input_text, operation == "SubnEvaluatorUtf8")
+            if result != verified[:2]:
+                raise ValueError("Timed callback substitution differs from verification.")
+            result = result[0], result[1], verified[2], verified[3]
+        return elapsed, result
 
     def execute_predecoded_qualification_batch(self, iterations: int) -> tuple[int, Any, int]:
         operation = self.operation
