@@ -347,6 +347,16 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint();
+                // The mandatory initial anchor already bounds candidate starts.
+                // Reuse Core's original-origin/LF finder instead of retrying the
+                // VM at every scalar, including after an anchored match.
+                if (search && !_program.RightToLeft && !_program.IsNonBacktracking &&
+                    _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning })
+                {
+                    var breach = Utf8SliceRunner.TrySeekBeginning(_program, input, ref _position, ref _invocation);
+                    if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                    if (_position < 0) { _finished = true; return false; }
+                }
                 Utf8SliceMatchOutcome outcome;
                 // A complete native literal match needs no capture/VM state.
                 // Match and the derived FullMatch program use search=false;
@@ -532,7 +542,7 @@ internal struct PythonReScalarMatchState
         var end = EndOffsetInBytes;
         // Collections that publish coordinates reuse their single map. A
         // one-shot fixed value still needs no whole-subject map allocation.
-        // Strict validation supplies the subject ends. Without a description,
+        // A previously requested description supplies subject ends. Otherwise,
         // count only the prefix/range actually requested by this value.
         var ascii = _validation?.IsAscii == true;
         var length = _validation?.Utf16Length;
@@ -690,11 +700,10 @@ internal struct PythonReScalarMatchState
         // already project coordinates and can supply their character count.
         // Validation or the caller's trusted-input contract proves these ranges.
         // Unknown lengths need bounded character counting, not validation.
-        // Cache a real description when string projection first needs it;
-        // dense output reuses the same ASCII/whole-subject facts thereafter.
-        var validation = characterCount.HasValue ? default : _validation ?? DescribeInput(input);
-        var count = characterCount ?? (validation.IsAscii ? end - start
-            : start == 0 && end == input.Length ? validation.Utf16Length : _hasMap
+        // Reuse facts already requested by coordinates or matching. Creating
+        // one string must not describe an unrelated, possibly enormous suffix.
+        var count = characterCount ?? (_validation is { IsAscii: true } ? end - start
+            : start == 0 && end == input.Length && _validation is { } known ? known.Utf16Length : _hasMap
             ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
             : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
         var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);

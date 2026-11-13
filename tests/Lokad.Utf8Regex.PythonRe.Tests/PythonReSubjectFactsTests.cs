@@ -21,12 +21,24 @@ public sealed class PythonReSubjectFactsTests
         Assert.Equal(value, regex.MatchToString(input, 6, cancellation.Token));
         Assert.Equal(value, regex.SearchToString(input, 6, cancellation.Token));
 
-        using var strict = new Utf8PythonRegex($"({value})");
-        input[^1] = 0xff;
-
         cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() => regex.MatchToString(input, 6, cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData("needle", 'x')]
+    [InlineData("é😀", 'é')]
+    public void AnchoredCapturedStringsSizeOnlyTheirPublishedValue(string value, char suffix)
+    {
+        var input = Encoding.UTF8.GetBytes(value + new string(suffix, 1 << 20));
+        using var regex = new Utf8PythonRegex($@"\A({value})",
+            resourcePolicy: new() { MaxWorkSteps = 128, MaxWorkingBytes = 32768, MaxResultBytes = 512 });
+        Assert.Equal(new[] { value }, regex.FindAllToStrings(input).ScalarValues);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var error = Assert.Throws<OperationCanceledException>(() => regex.FindAllToStrings(input, 0, cancellation.Token));
+        Assert.Equal(cancellation.Token, error.CancellationToken);
     }
     [Fact]
 

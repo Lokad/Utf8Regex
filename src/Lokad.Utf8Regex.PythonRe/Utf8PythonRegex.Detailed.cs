@@ -17,7 +17,7 @@ public sealed partial class Utf8PythonRegex
         return MatchContextScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
-    /// <summary>Finds the first capture context at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Finds the first capture context at or after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -41,7 +41,7 @@ public sealed partial class Utf8PythonRegex
         return MatchContextScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
-    /// <summary>Matches at a zero-based UTF-8 byte offset and exposes its capture context, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Matches at a zero-based UTF-8 byte offset and exposes its capture context, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -65,7 +65,7 @@ public sealed partial class Utf8PythonRegex
         return MatchContextScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
-    /// <summary>Matches the complete UTF-8 suffix and exposes its capture context, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Matches the complete UTF-8 suffix and exposes its capture context, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -85,7 +85,7 @@ public sealed partial class Utf8PythonRegex
         return MatchToStringCore(input, startOffsetInBytes, 0, CancellationToken.None);
     }
 
-    /// <summary>Returns the first matched value after a UTF-8 byte offset as a string, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Returns the first matched value after a UTF-8 byte offset as a string, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -105,7 +105,7 @@ public sealed partial class Utf8PythonRegex
         return MatchToStringCore(input, startOffsetInBytes, 1, CancellationToken.None);
     }
 
-    /// <summary>Returns the match at a UTF-8 byte offset as a string, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Returns the match at a UTF-8 byte offset as a string, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -125,7 +125,7 @@ public sealed partial class Utf8PythonRegex
         return MatchToStringCore(input, startOffsetInBytes, 2, CancellationToken.None);
     }
 
-    /// <summary>Returns the complete-suffix match as a string, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Returns the complete-suffix match as a string, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -149,7 +149,7 @@ public sealed partial class Utf8PythonRegex
         return MatchDataScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
-    /// <summary>Finds and materializes capture data after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Finds and materializes capture data after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -173,7 +173,7 @@ public sealed partial class Utf8PythonRegex
         return MatchDataScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
-    /// <summary>Matches at a zero-based UTF-8 byte offset and materializes all capture data, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Matches at a zero-based UTF-8 byte offset and materializes all capture data, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -197,7 +197,7 @@ public sealed partial class Utf8PythonRegex
         return MatchDataScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
-    /// <summary>Matches the complete UTF-8 suffix and materializes all capture data, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Matches the complete UTF-8 suffix and materializes all capture data, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>

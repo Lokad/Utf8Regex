@@ -519,9 +519,9 @@ internal static partial class Utf8SliceRunner
     // Only an initial mandatory anchor proves that other starts cannot match.
     // Callers establish LTR/backtracking eligibility. An immediate exact ASCII
     // literal can also reject a start before capture reset/workspace acquisition.
-    // LF is one byte and cannot occur inside a scalar. Full validation belongs
-    // to the caller; this filter neither restricts a match's end nor its body.
-    private static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
+    // LF is one byte and cannot occur inside a scalar. The caller establishes
+    // valid UTF-8; this filter neither restricts a match's end nor its body.
+    internal static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
     {
         var multiline = program.Instructions[0].B != 0;

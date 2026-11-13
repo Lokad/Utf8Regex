@@ -82,15 +82,14 @@ public sealed partial class Utf8PythonRegex
         if ((uint)startOffsetInBytes > (uint)input.Length ||
             startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
             throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
-        // The cursor validates the whole subject inside the owning invocation.
+        // The cursor borrows the existing valid-text input contract.
     }
 
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
         var ipv4 = _utf8Regex?.CanUseAsciiIpv4Boolean == true;
-        // Keep capture-free unmetered calls on their established cursor:
-        // validation-only was slower for that ASCII route in the public comparison.
+        // Keep capture-free unmetered calls on their established cursor.
         // Captured booleans can discard the VM's otherwise unused capture state.
         if (ipv4 || (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
              MatchTimeout != Timeout.InfiniteTimeSpan || _scalarProgram.GroupCount != 0) &&
@@ -104,7 +103,7 @@ public sealed partial class Utf8PythonRegex
             {
                 // Complete literal eligibility also covers ordinary captures;
                 // a boolean needs neither capture slots nor coordinate metadata.
-                // Keep validation and the existing finder under one authority.
+                // Keep interruption and the existing finder under one authority.
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 if (ipv4)
                 {

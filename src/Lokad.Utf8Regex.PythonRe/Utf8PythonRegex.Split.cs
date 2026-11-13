@@ -35,7 +35,7 @@ public sealed partial class Utf8PythonRegex
         return values;
     }
 
-    /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="maxSplit">The maximum number of splits to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
@@ -64,7 +64,7 @@ public sealed partial class Utf8PythonRegex
         return items;
     }
 
-    /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="maxSplit">The maximum number of splits to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>

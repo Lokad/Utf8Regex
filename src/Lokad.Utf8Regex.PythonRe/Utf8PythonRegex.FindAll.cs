@@ -37,7 +37,7 @@ public sealed partial class Utf8PythonRegex
         return remaining;
     }
 
-    /// <summary>Materializes all matches at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Materializes all matches at or after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -97,7 +97,7 @@ public sealed partial class Utf8PythonRegex
         return remaining;
     }
 
-    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
@@ -150,7 +150,7 @@ public sealed partial class Utf8PythonRegex
         return remaining;
     }
 
-    /// <summary>Returns shaped UTF-8 <c>findall</c> values after a byte offset, observing cancellation during validation, matching and required result processing.</summary>
+    /// <summary>Returns shaped UTF-8 <c>findall</c> values after a byte offset, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
