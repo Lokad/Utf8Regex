@@ -3,7 +3,7 @@
   "Profile": "PythonRe",
   "Evidence": {
     "Snapshot": "PythonRe.Benchmarks.json",
-    "SnapshotSha256": "5BD0B041515C385BF78A002DE371D9741BB1FEA12CB5DC113D2A8BF52A55627B"
+    "SnapshotSha256": "821BFE1E70C7D0F2944EECCF64847896674A90652C3242FEA434D6D4707F3552"
   },
   "CatalogSha256": "1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450",
   "Sources": {
@@ -83,6 +83,49 @@
         "Platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
         "Architecture": "x86_64",
         "RunnerSha256": "9F8547F319ABAE7FAC0DD46492E942FFFD869B0D7FA5519CDF5087605D08E757",
+        "Timer": {
+          "Implementation": "clock_gettime(CLOCK_MONOTONIC)",
+          "ResolutionSeconds": 1E-09,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ProductSha256": "2602F4D13F271C1458746FFCAC378466EED33F135947369C0AA6EA29EE848858"
+    },
+    "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813": {
+      "Managed": {
+        "BenchmarkAssembly": "1.0.0\u002Bb537a1885e3fb102944139931551ef0352d54a49 sha256=A7530E40D7CA61345D04E9715397268AAC05B40DB9618FFA7737EE21E8643088",
+        "CoreAssembly": "0.5.0-dev.82\u002B150d2f5b128c45de2c90bfd9795eff51c578db21 sha256=A49142028835FB4C31593D9C9A75F56CA8EC20107E84F2507996B17D744CF13E",
+        "PythonReAssembly": "0.5.0-dev.82\u002B150d2f5b128c45de2c90bfd9795eff51c578db21 sha256=E398CA7A8E18035EF959F91CB5A4A28AFD37879727E45C3AD33DFB7FB5336220",
+        "SourceCommit": "b537a1885e3f",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 11.0.0",
+        "OperatingSystem": "Ubuntu 24.04.4 LTS",
+        "Processor": "X64"
+      },
+      "CPython": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (main, Feb 12 2025, 14:51:17) [Clang 19.1.6 ]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "",
+          ""
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "Clang 19.1.6 ",
+        "SoAbi": "cpython-313-x86_64-linux-gnu",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "/home/vermorel/tmp/utf8regex-net11-memory/python/bin/python3.13",
+        "ExecutableSha256": "843FCB9DA2A5D799DD48E1F518E343ECB8486D4F785F38F795C3493F3D61AADC",
+        "RuntimeLibrary": null,
+        "RuntimeLibrarySha256": null,
+        "Platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "Architecture": "x86_64",
+        "RunnerSha256": "B17130035B028F138B4A52C8B28A223E18E457FBC34FE183C48ABF8655861314",
         "Timer": {
           "Implementation": "clock_gettime(CLOCK_MONOTONIC)",
           "ResolutionSeconds": 1E-09,
@@ -1071,44 +1114,44 @@
       },
       "replacement/evaluator-replace-string": {
         "Operation": "ReplaceEvaluatorString",
-        "Source": "6E7729788BE235FCEAE4C31724B2DAC3DA36E8EA25A28BA1D5BA13BDE55F56F3",
+        "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
         "InputSha256": "7B44462EA066EE3BCD352794D23A2A30FB4ADB5A270CE5D5EAE41B9BE6546844",
         "ResultContract": "EagerMaterializedResult",
-        "ManagedUs": 137.38418230563005,
-        "ReferenceUs": 4243.460461538462,
-        "Ratio": 0.03241725874690958,
-        "Lower95": 0.03180694390201542,
-        "Upper95": 0.03277355687492359,
-        "Status": "ManagedFaster",
+        "ManagedUs": 103.59855670103093,
+        "ReferenceUs": 69.80845277777779,
+        "Ratio": 1.4839521196985583,
+        "Lower95": 1.4469544019413803,
+        "Upper95": 1.4940729697325572,
+        "Status": "CpythonFaster",
         "Reason": "Qualified paired evidence.",
         "ManagedBytes": 58832
       },
       "replacement/evaluator-string": {
         "Operation": "SubnEvaluatorString",
-        "Source": "6E7729788BE235FCEAE4C31724B2DAC3DA36E8EA25A28BA1D5BA13BDE55F56F3",
+        "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
         "InputSha256": "42D7FC0E1821632CFB888AE78ACB70307669CE33BB2549615BA799D6408E48AC",
         "ResultContract": "EagerMaterializedResult",
-        "ManagedUs": 532.2936842105263,
-        "ReferenceUs": 16688.21,
-        "Ratio": 0.0318408378056485,
-        "Lower95": 0.03162252438704637,
-        "Upper95": 0.03230775256951131,
-        "Status": "ManagedFaster",
+        "ManagedUs": 401.0768,
+        "ReferenceUs": 272.76282258064515,
+        "Ratio": 1.4707610572636791,
+        "Lower95": 1.4592453175862194,
+        "Upper95": 1.490577504258864,
+        "Status": "CpythonFaster",
         "Reason": "Qualified paired evidence.",
         "ManagedBytes": 235520
       },
       "replacement/evaluator-utf8": {
         "Operation": "SubnEvaluatorUtf8",
-        "Source": "6E7729788BE235FCEAE4C31724B2DAC3DA36E8EA25A28BA1D5BA13BDE55F56F3",
+        "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
         "InputSha256": "42D7FC0E1821632CFB888AE78ACB70307669CE33BB2549615BA799D6408E48AC",
         "ResultContract": "EagerMaterializedResult",
-        "ManagedUs": 525.0270833333333,
-        "ReferenceUs": 16972.989,
-        "Ratio": 0.030935971467907906,
-        "Lower95": 0.030806556486523282,
-        "Upper95": 0.031284204469426875,
-        "Status": "ManagedFaster",
-        "Reason": "Qualified paired evidence.",
+        "ManagedUs": 380.19552238805966,
+        "ReferenceUs": 282.72286631016044,
+        "Ratio": 1.3313628336130916,
+        "Lower95": 1.1101744690212003,
+        "Upper95": 1.3890239797425035,
+        "Status": "Inconclusive",
+        "Reason": "Lane interquartile spreads are 1.009/1.161; the maximum is 1.10.",
         "ManagedBytes": 226304
       },
       "replacement/fixed-string": {

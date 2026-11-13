@@ -197,10 +197,11 @@ Use `--measure-pythonre-paired-case findall/many-capture-strings 9` for the
 canonical preexisting-text comparison. The command prints labeled paired evidence
 without changing the recorded tables. There is no validation-policy matrix.
 
-The three callback replacement rows currently include callback checksum and
-semantic-digest verification inside timing in both languages. Their ratios describe
-instrumented callback operations, not bare replacement throughput; a focused
-correction is pending. Other row definitions are unchanged by this finding.
+The recorded callback replacement rows time returning a prepared constant
+replacement, including each API's required argument/output construction. Rich
+callback capture checks and digests run in a separate untimed verification pass.
+See the [timing correction](../../bench/Experiments/PythonCallbackTiming-20261113/README.md);
+earlier instrumented callback ratios are not bare replacement-throughput claims.
 
 <!-- BEGIN GENERATED PYTHONRE BENCHMARKS -->
 ## Benchmarks
@@ -209,11 +210,12 @@ Public PythonRe operations over strict UTF-8, compared with official CPython `re
 
 Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.
 
-Snapshot SHA-256: `5BD0B041515C385BF78A002DE371D9741BB1FEA12CB5DC113D2A8BF52A55627B`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
+Snapshot SHA-256: `821BFE1E70C7D0F2944EECCF64847896674A90652C3242FEA434D6D4707F3552`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
 
-Public Status: `46` managed faster, `1` equivalent, `29` CPython faster, `9` inconclusive, `5` unqualified.
+Public Status: `43` managed faster, `1` equivalent, `31` CPython faster, `10` inconclusive, `5` unqualified.
 
 Measured source `150d2f5b128c`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
+Measured source `b537a1885e3f`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
 
 ### Direct matching
 
@@ -299,6 +301,9 @@ Measured source `150d2f5b128c`: .NET 11.0.0; CPython 3.13.2. Selective refreshes
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
 | `replacement/limited-string` | `ReplaceStringLimited` | 1.074 us | 0.444 us | Inconclusive | 2.43x |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 103.599 us | 69.808 us | CPython faster | 1.48x |
+| `replacement/evaluator-string` | `SubnEvaluatorString` | 401.077 us | 272.763 us | CPython faster | 1.47x |
+| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 380.196 us | 282.723 us | Inconclusive | 1.33x |
 | `replacement/empty-progression-string` | `ReplaceString` | 28.086 us | 23.629 us | CPython faster | 1.19x |
 | `replacement/named-template-string` | `ReplaceString` | 1.106 us | 0.939 us | CPython faster | 1.18x |
 | `replacement/fixed-string` | `ReplaceString` | 180.940 us | 170.367 us | CPython faster | 1.07x |
@@ -307,9 +312,6 @@ Measured source `150d2f5b128c`: .NET 11.0.0; CPython 3.13.2. Selective refreshes
 | `replacement/subn-utf8` | `SubnUtf8` | 86.314 us | 88.031 us | Inconclusive | 0.98x |
 | `replacement/unmatched-template-string` | `ReplaceString` | 42.624 us | 46.913 us | Managed faster | 0.91x |
 | `replacement/no-match-string` | `ReplaceString` | 1.114 us | 2.389 us | Inconclusive | 0.47x |
-| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 137.384 us | 4,243.460 us | Managed faster | 0.03x |
-| `replacement/evaluator-string` | `SubnEvaluatorString` | 532.294 us | 16,688.210 us | Managed faster | 0.03x |
-| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 525.027 us | 16,972.989 us | Managed faster | 0.03x |
 | `replacement/one-template-string` | `ReplaceString` | 1.777 us | 16,449.467 us | Inconclusive | 0.00x |
 
 ### Split

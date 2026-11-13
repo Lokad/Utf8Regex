@@ -1,0 +1,75 @@
+{
+  "Source": "b537a1885e3fb102944139931551ef0352d54a49",
+  "QualifiedCases": [
+    "replacement/evaluator-string",
+    "replacement/evaluator-utf8",
+    "replacement/evaluator-replace-string"
+  ],
+  "UnchangedCases": 87,
+  "LibraryImagesPreserved": true,
+  "LibraryImageCount": 16,
+  "PackagesRepacked": false,
+  "FullRepeated": false,
+  "Scope": "One selected paired refresh; instrumentation correction, not an engine speedup.",
+  "RawSha256": "78F1259AEF747BDB20BAF812F43F010C3FCC0A456228EA93DF7FDB7C0EB1558E",
+  "OffVmVerified": true,
+  "KeeperReleased": true,
+  "Results": {
+    "replacement/evaluator-replace-string": {
+      "Operation": "ReplaceEvaluatorString",
+      "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
+      "InputSha256": "7B44462EA066EE3BCD352794D23A2A30FB4ADB5A270CE5D5EAE41B9BE6546844",
+      "ResultContract": "EagerMaterializedResult",
+      "ManagedUs": 103.59855670103093,
+      "ReferenceUs": 69.80845277777779,
+      "Ratio": 1.4839521196985583,
+      "Lower95": 1.4469544019413803,
+      "Upper95": 1.4940729697325572,
+      "Status": "CpythonFaster",
+      "Reason": "Qualified paired evidence.",
+      "ManagedBytes": 58832
+    },
+    "replacement/evaluator-string": {
+      "Operation": "SubnEvaluatorString",
+      "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
+      "InputSha256": "42D7FC0E1821632CFB888AE78ACB70307669CE33BB2549615BA799D6408E48AC",
+      "ResultContract": "EagerMaterializedResult",
+      "ManagedUs": 401.0768,
+      "ReferenceUs": 272.76282258064515,
+      "Ratio": 1.4707610572636791,
+      "Lower95": 1.4592453175862194,
+      "Upper95": 1.490577504258864,
+      "Status": "CpythonFaster",
+      "Reason": "Qualified paired evidence.",
+      "ManagedBytes": 235520
+    },
+    "replacement/evaluator-utf8": {
+      "Operation": "SubnEvaluatorUtf8",
+      "Source": "99B43CD34462558D1685B11A1716862609E43860D7806B2FAE3CCEBEBC205813",
+      "InputSha256": "42D7FC0E1821632CFB888AE78ACB70307669CE33BB2549615BA799D6408E48AC",
+      "ResultContract": "EagerMaterializedResult",
+      "ManagedUs": 380.19552238805966,
+      "ReferenceUs": 282.72286631016044,
+      "Ratio": 1.3313628336130916,
+      "Lower95": 1.1101744690212003,
+      "Upper95": 1.3890239797425035,
+      "Status": "Inconclusive",
+      "Reason": "Lane interquartile spreads are 1.009/1.161; the maximum is 1.10.",
+      "ManagedBytes": 226304
+    }
+  },
+  "WindowsSnapshotChecks": [
+    {
+      "Framework": "net10.0",
+      "Passed": 1
+    },
+    {
+      "Framework": "net11.0",
+      "Passed": 1
+    }
+  ],
+  "OfflineWriterVerified": true,
+  "FrozenWindowsProducerPairsPreserved": true,
+  "WorkerCorrectnessCases": 18,
+  "ExistingStructuredSemanticCases": 91
+}
