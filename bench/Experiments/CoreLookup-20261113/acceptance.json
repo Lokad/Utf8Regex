@@ -1,0 +1,349 @@
+{
+  "Decision": "Retain checked lookup validity; remove superseded density/adaptive engines. No further timing.",
+  "BaselineProducer": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+  "BaselineCheckout": "40bd096cf1c90d296a74ee1c7420b2f3f7f4e58f",
+  "MeasuredPrototype": "d41b80ad6878bc6f1fa3c7106d515362ba5884b0",
+  "ConsolidatedSource": "117cbeb58eb3ea21b503db4d39136d1fb694bdc7",
+  "MeasuredScope": "One strict public Count A/B, six inputs, unchanged AssumeValid Count controls. Consolidation is correctness/codegen checked, not separately timed or assigned the exact prototype timings.",
+  "Runtime": ".NET11.0.0",
+  "InputGuarantees": "Both lanes receive identical valid unchanged UTF8; primary checks complete subject, control trusts it. Pattern/options/output counts equal before/after. No new comparator parity ratio.",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "FurtherTiming": false,
+  "BeforePlacement": "least-contended allowed processor (0x1; Linux efficiency class unknown)",
+  "AfterPlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+  "Rows": [
+    {
+      "Id": "chinese",
+      "InputBytes": 813478,
+      "ExpectedCount": 30,
+      "PublicStrictCount": {
+        "BeforeUs": 92.65304445274562,
+        "AfterUs": 67.72116630669547,
+        "ObservedPercent": -26.908860138714353,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          91.98632797908105,
+          93.92233843855063
+        ],
+        "AfterRangeUs": [
+          67.44303455723542,
+          68.88458423326134
+        ],
+        "MinimumSampleMs": 246.2474
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 21.52160341151386,
+        "AfterUs": 21.78264933677557,
+        "ObservedPercent": 1.2129483118439754,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          21.393159914712154,
+          21.70545842217484
+        ],
+        "AfterRangeUs": [
+          21.51008635271076,
+          22.107513576070506
+        ],
+        "MinimumSampleMs": 241.6228
+      }
+    },
+    {
+      "Id": "email",
+      "InputBytes": 6839410,
+      "ExpectedCount": 92,
+      "PublicStrictCount": {
+        "BeforeUs": 983.6653543307086,
+        "AfterUs": 933.8231617647059,
+        "ObservedPercent": -5.06698668877239,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          974.3287401574803,
+          996.0208661417322
+        ],
+        "AfterRangeUs": [
+          929.8841911764706,
+          936.5077205882353
+        ],
+        "MinimumSampleMs": 247.4795
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 266.3258474576271,
+        "AfterUs": 277.99057649667407,
+        "ObservedPercent": 4.379871180510508,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          263.26408898305084,
+          267.71302966101695
+        ],
+        "AfterRangeUs": [
+          275.8940133037694,
+          363.6504434589801
+        ],
+        "MinimumSampleMs": 248.5213
+      }
+    },
+    {
+      "Id": "ascii",
+      "InputBytes": 57344,
+      "ExpectedCount": 8192,
+      "PublicStrictCount": {
+        "BeforeUs": 94.84091424253872,
+        "AfterUs": 96.18047583081571,
+        "ObservedPercent": 1.4124300666812362,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          94.19947109935777,
+          95.63785417453721
+        ],
+        "AfterRangeUs": [
+          95.60675981873112,
+          97.06552114803625
+        ],
+        "MinimumSampleMs": 249.346
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 94.62423664122137,
+        "AfterUs": 96.39784946236558,
+        "ObservedPercent": 1.8743747734199179,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          94.27591603053435,
+          95.31229007633588
+        ],
+        "AfterRangeUs": [
+          95.03099078341015,
+          97.26912442396313
+        ],
+        "MinimumSampleMs": 247.0029
+      }
+    },
+    {
+      "Id": "constrained",
+      "InputBytes": 49152,
+      "ExpectedCount": 0,
+      "PublicStrictCount": {
+        "BeforeUs": 12.07307506986605,
+        "AfterUs": 4.352176686608852,
+        "ObservedPercent": -63.95138221684942,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          11.986108701936976,
+          12.187395200925124
+        ],
+        "AfterRangeUs": [
+          4.314989396734539,
+          4.380862398924156
+        ],
+        "MinimumSampleMs": 248.7597
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 1.4603618000511378,
+        "AfterUs": 1.5133074505005966,
+        "ObservedPercent": 3.625515981560512,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          1.4529520466748795,
+          1.4634248390321005
+        ],
+        "AfterRangeUs": [
+          1.5096594247227488,
+          1.5230789264883133
+        ],
+        "MinimumSampleMs": 249.2493
+      }
+    },
+    {
+      "Id": "four-byte",
+      "InputBytes": 32768,
+      "ExpectedCount": 0,
+      "PublicStrictCount": {
+        "BeforeUs": 32.23007615851297,
+        "AfterUs": 2.5634426430852373,
+        "ObservedPercent": -92.04642697560567,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          31.988692397056923,
+          35.010597650703495
+        ],
+        "AfterRangeUs": [
+          2.547442274625399,
+          2.61524093179399
+        ],
+        "MinimumSampleMs": 247.8164
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 0.8328894161681649,
+        "AfterUs": 0.8551893116829169,
+        "ObservedPercent": 2.6774137216613925,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeRangeUs": [
+          0.8261721752498078,
+          0.8380523343247669
+        ],
+        "AfterRangeUs": [
+          0.8475742910310403,
+          0.858526708972337
+        ],
+        "MinimumSampleMs": 247.2155
+      }
+    },
+    {
+      "Id": "chinese-finite-live",
+      "InputBytes": 813478,
+      "ExpectedCount": 30,
+      "PublicStrictCount": {
+        "BeforeUs": 129.00774325012736,
+        "AfterUs": 108.15668380462725,
+        "ObservedPercent": -16.162641807533152,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeRangeUs": [
+          128.1872643912379,
+          129.98604177279674
+        ],
+        "AfterRangeUs": [
+          107.02103684661526,
+          109.71345329905742
+        ],
+        "MinimumSampleMs": 249.7871
+      },
+      "UnchangedTrustedCount": {
+        "BeforeUs": 24.29336236090953,
+        "AfterUs": 24.476539247154946,
+        "ObservedPercent": 0.754020310256287,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeRangeUs": [
+          24.05092404450895,
+          24.38887276245767
+        ],
+        "AfterRangeUs": [
+          24.26684174691178,
+          24.572677755082193
+        ],
+        "MinimumSampleMs": 248.5663
+      }
+    }
+  ],
+  "Windows": [
+    {
+      "Project": "Lokad.Utf8Regex.Tests",
+      "Framework": "net10.0",
+      "Passed": 1164
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Tests",
+      "Framework": "net11.0",
+      "Passed": 1164
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Framework": "net10.0",
+      "Passed": 219
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Framework": "net11.0",
+      "Passed": 219
+    },
+    {
+      "Project": "Lokad.Utf8Regex.PythonRe.Tests",
+      "Framework": "net10.0",
+      "Passed": 135
+    },
+    {
+      "Project": "Lokad.Utf8Regex.PythonRe.Tests",
+      "Framework": "net11.0",
+      "Passed": 135
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Posix.Tests",
+      "Framework": "net10.0",
+      "Passed": 151
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Posix.Tests",
+      "Framework": "net11.0",
+      "Passed": 151
+    },
+    {
+      "Project": "Core no hardware intrinsics",
+      "Framework": "net11.0",
+      "Passed": 52
+    },
+    {
+      "Project": "Kelvin public operations",
+      "Framework": "net10.0",
+      "Passed": 418
+    },
+    {
+      "Project": "Kelvin public operations",
+      "Framework": "net11.0",
+      "Passed": 418
+    },
+    {
+      "Project": "Kelvin public operations",
+      "Framework": "net10.0",
+      "Passed": 12
+    },
+    {
+      "Project": "Kelvin public operations",
+      "Framework": "net11.0",
+      "Passed": 12
+    }
+  ],
+  "Linux": [
+    {
+      "Project": "Lokad.Utf8Regex.Tests",
+      "Framework": "net10.0",
+      "Passed": 1591
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Tests",
+      "Framework": "net11.0",
+      "Passed": 1591
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Framework": "net10.0",
+      "Passed": 219
+    },
+    {
+      "Project": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Framework": "net11.0",
+      "Passed": 219
+    }
+  ],
+  "PublicCodegenWidths": [
+    256,
+    512
+  ],
+  "DirectVectorWidthsTested": [
+    256,
+    512
+  ],
+  "UncheckedReadsAdded": false,
+  "AllowedSizeQueries": [
+    "Unsafe.SizeOf"
+  ],
+  "PublicContractChanged": false,
+  "ImmutableAssetsPreserved": 524,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "RawSha256": "67D56894CF9306CD6BFFFD9F399E8F99703D353E4399D864F15B7E293C18BA98",
+  "FinalVmSha256": "0A77ECF5105DCD2005D2DC1C6E549BFFF5793BB688CD2D04CECD18377A365B0C",
+  "LocalChecksSha256": "EDBEBA3AE5BB133269B0335DA3C87C18D389867310AE421ED23B009417748A75",
+  "OffVmVerified": true,
+  "KeepersReleased": true
+}
