@@ -1,0 +1,134 @@
+{
+  "Decision": "Accept unique ASCII run consumption using the existing POSIX proof; no further timing.",
+  "Source": "c9f3c19c3a6e2515a60c8ba94ed0ffaa4bd05693",
+  "BaselineCheckout": "8dd326e35c9f2c499362bcabbc1728c071a67966",
+  "BaselinePosixProducer": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+  "SharedCoreSource": "117cbeb58eb3ea21b503db4d39136d1fb694bdc7",
+  "InputGuarantees": "Valid unchanged UTF8, equal options, same public Match/caller-owned three capture slots. Fixed-capture control retains its matching algorithm but shares changed workspace setup; not a native parity measurement.",
+  "AccountingRevision": "One step per examined byte; omit impossible alternative exits, repeat-counter undo and unused counter capacity. Work/depth/working requirements can decrease. Pending-choice limits, capture histories, output and original interruption remain governed.",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "FurtherTiming": false,
+  "BeforePlacement": "least-contended allowed processor (0x2; Linux efficiency class unknown)",
+  "AfterPlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+  "Rows": [
+    {
+      "Id": "sku-captures",
+      "InputBytes": 6,
+      "BeforeUs": 0.6166677206304558,
+      "AfterUs": 0.2943651974040022,
+      "ObservedPercent": -52.26518470870256,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        0.6113360129308709,
+        0.6194350079553187
+      ],
+      "AfterRangeUs": [
+        0.2921333517077838,
+        0.29861827599118024
+      ],
+      "MinimumSampleMs": 224.7043
+    },
+    {
+      "Id": "sku-finite-live",
+      "InputBytes": 6,
+      "BeforeUs": 0.805336706059576,
+      "AfterUs": 0.42506269125252827,
+      "ObservedPercent": -47.219257727328326,
+      "BeforeBytes": 760,
+      "AfterBytes": 328,
+      "BeforeRangeUs": [
+        0.8003792650656215,
+        0.8257636958680771
+      ],
+      "AfterRangeUs": [
+        0.4224179540337127,
+        0.430340208459993
+      ],
+      "MinimumSampleMs": 240.157
+    },
+    {
+      "Id": "long-runs",
+      "InputBytes": 512,
+      "BeforeUs": 12.415534529747518,
+      "AfterUs": 1.6651955756201775,
+      "ObservedPercent": -86.587806013262,
+      "BeforeBytes": 20552,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        12.282341749370083,
+        12.594544145626575
+      ],
+      "AfterRangeUs": [
+        1.6526724639196138,
+        1.6785575685511007
+      ],
+      "MinimumSampleMs": 238.8547
+    },
+    {
+      "Id": "miss",
+      "InputBytes": 7,
+      "BeforeUs": 1.1043517051280345,
+      "AfterUs": 0.42046532413392784,
+      "ObservedPercent": -61.92650202091365,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        1.0941116156437674,
+        1.1100279194464049
+      ],
+      "AfterRangeUs": [
+        0.4164647700588375,
+        0.42156605366613015
+      ],
+      "MinimumSampleMs": 246.4935
+    },
+    {
+      "Id": "unchanged-fixed-captures",
+      "InputBytes": 6,
+      "BeforeUs": 0.33399765042635077,
+      "AfterUs": 0.29546964125448,
+      "ObservedPercent": -11.535413235000135,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        0.33342242351457496,
+        0.3349748951456971
+      ],
+      "AfterRangeUs": [
+        0.29331530383841814,
+        0.29754032436359984
+      ],
+      "MinimumSampleMs": 245.4395
+    }
+  ],
+  "Windows": [
+    {
+      "Framework": "net10.0",
+      "Passed": 385
+    },
+    {
+      "Framework": "net11.0",
+      "Passed": 385
+    }
+  ],
+  "Linux": [
+    {
+      "Framework": "net10.0",
+      "Passed": 385
+    },
+    {
+      "Framework": "net11.0",
+      "Passed": 385
+    }
+  ],
+  "CoreAndCallerUnchanged": true,
+  "RawSha256": "3F5A29BF5B25AE0FA48B0BB6146DC5C095A7D04DB7B8990B805BD874701C78D1",
+  "LocalChecksSha256": "76145907762AB3D6C759A3B49DA0F1103749375FF5A4422CB962FE63FE13AAE0",
+  "OffVmVerified": true,
+  "KeeperReleased": true,
+  "ImmutableAssetsPreserved": 524,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false
+}
