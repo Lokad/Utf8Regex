@@ -30,6 +30,7 @@ internal struct PythonReScalarMatchState
     private Utf8ValidationResult? _validation;
     private Utf8BoundaryMap _map;
     private ulong _mapReservation;
+    private readonly bool _leadingAsciiMayMatchUnicode;
     private bool _hasMap;
     private bool _retryNonEmpty;
     private bool _finished;
@@ -76,13 +77,15 @@ internal struct PythonReScalarMatchState
             if (prepareSearch)
             {
                 if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
-                if (_candidateRegex is null &&
-                    (TryGetLeadingAsciiRange(program, false, out var low, out var high) ||
-                     TryGetLeadingAsciiRange(program, true, out low, out high) &&
-                     Utf8Validation.SubjectIsAscii(input, ref _invocation)))
+                if (_candidateRegex is null)
                 {
-                    _leadingAsciiLow = low;
-                    _leadingAsciiHigh = high;
+                    var asciiOnly = TryGetLeadingAsciiRange(program, false, out var low, out var high);
+                    if (asciiOnly || TryGetLeadingAsciiRange(program, true, out low, out high))
+                    {
+                        _leadingAsciiLow = low;
+                        _leadingAsciiHigh = high;
+                        _leadingAsciiMayMatchUnicode = !asciiOnly;
+                    }
                 }
             }
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
@@ -291,7 +294,8 @@ internal struct PythonReScalarMatchState
         {
             // The mask is one term in a category union. Fixed profile predicates
             // have known ASCII projections. A positive single non-ASCII range
-            // adds nothing on this validated ASCII subject (e.g. S/s plus long s).
+            // adds nothing on an ASCII prefix (e.g. S/s plus long s). The seeker
+            // returns non-ASCII candidates to the original Unicode verifier.
             // General tables/subtraction retain the scalar candidate loop.
             var members = program.CategorySetMembers[atom.D];
             if (members.Length != 1 || members[0].Negated) return false;
@@ -515,10 +519,17 @@ internal struct PythonReScalarMatchState
                 if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                 var length = Math.Min(2048, input.Length - _position);
                 var block = input.Slice(_position, length);
+                // Only bytes actually skipped need the projected ASCII proof.
+                // A Unicode candidate remains a scalar start: all bytes before
+                // the first non-ASCII byte were ASCII, even at a block edge.
+                var nonAscii = _leadingAsciiMayMatchUnicode && _validation?.IsAscii != true
+                    ? block.IndexOfAnyInRange((byte)128, byte.MaxValue) : -1;
+                var ascii = nonAscii < 0 ? block : block[..nonAscii];
                 var offset = _leadingAsciiLow == _leadingAsciiHigh
-                    ? block.IndexOf((byte)_leadingAsciiLow)
-                    : block.IndexOfAnyInRange((byte)_leadingAsciiLow, (byte)_leadingAsciiHigh);
+                    ? ascii.IndexOf((byte)_leadingAsciiLow)
+                    : ascii.IndexOfAnyInRange((byte)_leadingAsciiLow, (byte)_leadingAsciiHigh);
                 if (offset >= 0) { _position += offset; return true; }
+                if (nonAscii >= 0) { _position += nonAscii; return true; }
                 _position += length;
             }
             Checkpoint();

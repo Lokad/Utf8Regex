@@ -173,6 +173,13 @@ Necessary ASCII start hints can enter a mandatory atomic body and skip impossibl
 starts. The profile VM still verifies the complete body, atomic commit and
 captures. Caller-guaranteed valid text and the original interruption authority remain;
 skipping failed attempts can reduce work charges.
+Unicode-class ASCII projections do not classify an unrelated subject suffix.
+Candidate search proves the skipped ASCII prefix within its existing2048-byte
+blocks, then returns a non-ASCII candidate to the original Unicode verifier.
+An immediate admitted ASCII start needs no such scan. Existing whole-subject
+ASCII facts can be reused when a coordinate consumer already requested them.
+This can lower numerical work requirements without changing captures, scalar
+boundaries, major allocation admission or synchronous original interruption.
 
 After VM scratch has been admitted, a positive leading word boundary can reject
 an ASCII word-interior start using the profile's exact word predicate. Scalar
