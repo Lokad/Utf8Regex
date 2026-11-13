@@ -1,0 +1,303 @@
+{
+  "Decision": "Accept removal of unrelated whole-subject ASCII classification. Retain observed +19.3%/4.691us sparse-ASCII bulk cost for large early-search, dense-Unicode and Unicode-miss gains. No universal10% veto; no claim of unchanged throughput.",
+  "Checks": {
+    "CorePairsUnchanged": true,
+    "Results": [
+      {
+        "Framework": "net10.0",
+        "Counts": {
+          "total": "5131",
+          "executed": "5131",
+          "passed": "5131",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      {
+        "Framework": "net11.0",
+        "Counts": {
+          "total": "5131",
+          "executed": "5131",
+          "passed": "5131",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    ],
+    "PackagesRepacked": false
+  },
+  "Performance": {
+    "Acceptance": {
+      "BeforeRepository": "f68298303f14924f88bae0e477c56c033461127e",
+      "BeforeProducer": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+      "After": "0742998f3585128f43191f3b78269334e66341db",
+      "BaselineReused": true,
+      "OrdinaryProcesses": 2,
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CorePairsUnchanged": true,
+      "CallerUnchanged": true,
+      "StateBytes": 368,
+      "EqualCompleteOutputs": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "RetainedOutputs": 16,
+      "Scope": "Public Unicode-class search/bulk vs unchanged anchored control; no packages or catalogs refreshed."
+    },
+    "Rows": [
+      {
+        "Id": "early-ascii",
+        "InputBytes": 1048579,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 10.260211282484681,
+          "AfterUs": 0.4213063419972829,
+          "ObservedPercent": -95.89378492900532,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            10.159201352207901,
+            10.390141559264737
+          ],
+          "AfterRangeUs": [
+            0.41921259733780775,
+            0.43274175422969563
+          ],
+          "MinimumSampleMs": 240.4175
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.22318001660654635,
+          "AfterUs": 0.2369182072964574,
+          "ObservedPercent": 6.1556544796439905,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            0.21959718620432628,
+            0.22593763501953415
+          ],
+          "AfterRangeUs": [
+            0.22631236365868038,
+            0.24144999284004665
+          ],
+          "MinimumSampleMs": 240.4038
+        }
+      },
+      {
+        "Id": "early-unicode-suffix",
+        "InputBytes": 1048583,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 10.243378323108384,
+          "AfterUs": 0.41704079566315777,
+          "ObservedPercent": -95.92867916708356,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            10.171783231083845,
+            10.312241308793455
+          ],
+          "AfterRangeUs": [
+            0.41432080814518996,
+            0.427874934021173
+          ],
+          "MinimumSampleMs": 248.7001
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.2264199994748037,
+          "AfterUs": 0.2284515523410293,
+          "ObservedPercent": 0.8972497442531147,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            0.22269173965838698,
+            0.22813404095987772
+          ],
+          "AfterRangeUs": [
+            0.2251122385662664,
+            0.23027394914097837
+          ],
+          "MinimumSampleMs": 240.5286
+        }
+      },
+      {
+        "Id": "early-finite-live",
+        "InputBytes": 1048583,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 14.80160966981132,
+          "AfterUs": 0.5132429993596087,
+          "ObservedPercent": -96.5325190245599,
+          "BeforeBytes": 144,
+          "AfterBytes": 144,
+          "BeforeRangeUs": [
+            14.682476415094339,
+            14.849487028301887
+          ],
+          "AfterRangeUs": [
+            0.5079697519107778,
+            0.515750921082178
+          ],
+          "MinimumSampleMs": 244.3111
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.3400123709534392,
+          "AfterUs": 0.33448281398214436,
+          "ObservedPercent": -1.6262811131810495,
+          "BeforeBytes": 144,
+          "AfterBytes": 144,
+          "BeforeRangeUs": [
+            0.3384572435764098,
+            0.34252706830298985
+          ],
+          "AfterRangeUs": [
+            0.33020955556239373,
+            0.33766742168926156
+          ],
+          "MinimumSampleMs": 246.8115
+        }
+      },
+      {
+        "Id": "sparse-ascii-bulk",
+        "InputBytes": 262528,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 24.30408866995074,
+          "AfterUs": 28.995465700596004,
+          "ObservedPercent": 19.3028304593277,
+          "BeforeBytes": 5144,
+          "AfterBytes": 5144,
+          "BeforeRangeUs": [
+            23.936916256157637,
+            24.51526108374384
+          ],
+          "AfterRangeUs": [
+            28.862556970901014,
+            29.18151221222391
+          ],
+          "MinimumSampleMs": 242.9597
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.2271550114892973,
+          "AfterUs": 0.22952596661305205,
+          "ObservedPercent": 1.0437608698175227,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            0.22317719202491412,
+            0.22871755592145998
+          ],
+          "AfterRangeUs": [
+            0.2274994620302795,
+            0.2299730285689276
+          ],
+          "MinimumSampleMs": 243.2955
+        }
+      },
+      {
+        "Id": "dense-unicode-bulk",
+        "InputBytes": 896,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 42.83686254643701,
+          "AfterUs": 33.23998393144082,
+          "ObservedPercent": -22.403318180907306,
+          "BeforeBytes": 9240,
+          "AfterBytes": 9240,
+          "BeforeRangeUs": [
+            42.13350219520432,
+            43.21840594393786
+          ],
+          "AfterRangeUs": [
+            32.90310658810927,
+            33.390948044991966
+          ],
+          "MinimumSampleMs": 245.7204
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.22632982786718273,
+          "AfterUs": 0.22828781202480744,
+          "ObservedPercent": 0.8651021281974813,
+          "BeforeBytes": 32,
+          "AfterBytes": 32,
+          "BeforeRangeUs": [
+            0.22510048962546925,
+            0.22843610860518582
+          ],
+          "AfterRangeUs": [
+            0.22648556247530038,
+            0.230001582625548
+          ],
+          "MinimumSampleMs": 244.7138
+        }
+      },
+      {
+        "Id": "unicode-miss",
+        "InputBytes": 24576,
+        "PublicSearchOrBulk": {
+          "BeforeUs": 811.9862619808307,
+          "AfterUs": 513.9310838445807,
+          "ObservedPercent": -36.706923761141965,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            806.6038338658147,
+            818.8287539936102
+          ],
+          "AfterRangeUs": [
+            511.19856850715746,
+            518.2400817995909
+          ],
+          "MinimumSampleMs": 249.9761
+        },
+        "UnchangedAnchoredMatch": {
+          "BeforeUs": 0.20115649026620694,
+          "AfterUs": 0.20035914825646572,
+          "ObservedPercent": -0.39637896280951823,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            0.19897454690250183,
+            0.2027564604417666
+          ],
+          "AfterRangeUs": [
+            0.1987357392202334,
+            0.20470255912567162
+          ],
+          "MinimumSampleMs": 242.8666
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x40; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "RawSha256": "DA9B1AEFDF5BF5C6E4D64FA7C0AD56666C8B526D031DC962221B726846C1032C",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherAttemptsAllowed": false
+  },
+  "BeforeRepository": "f68298303f14924f88bae0e477c56c033461127e",
+  "BeforeProducer": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+  "After": "0742998f3585128f43191f3b78269334e66341db",
+  "BaselineBodyEquivalentToQualified83": true,
+  "StateBytesBefore": 368,
+  "StateBytesAfter": 368,
+  "ImmutableAssetsPreserved": 524,
+  "PackagesRepacked": false,
+  "FurtherAttemptsAllowed": false
+}
