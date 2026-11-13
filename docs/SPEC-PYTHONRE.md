@@ -45,7 +45,7 @@ An early result needs no validity scan of the remaining text.
 
 Nonempty scalar programs can reject an absent mandatory exact literal, proved by
 their existing native rendering, before acquiring VM scratch. The search observes
-the same work budget, token and deadline as validation and matching. Presence
+the same work budget, token and deadline as matching and result processing. Presence
 alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
@@ -139,7 +139,7 @@ This can lower numerical work, depth and working requirements.
 
 Count can also borrow Core's complete, case-sensitive nonempty literal proof for
 up to eight alternatives, including captures whose values Count discards. The
-existing bounded search shares validation, work, token and deadline authority.
+existing bounded search shares matching's work, token and deadline authority.
 These calls need no VM workspace or capture storage; numerical working/depth/work
 requirements can decrease. Discovery and result-producing operations retain their
 own eligibility, and patterns without a compatible native rendering retain Python
@@ -150,7 +150,7 @@ A complete positive greedy scalar repeat can also Count with Core's constant-spa
 run counter when a bounded proof of at most 64 instructions finds only plain
 capture markers around or inside that repeat. Count has no capture observer;
 matching, findall and other capture-returning operations keep their original
-capture handling. Scalar membership, byte floors, selected subject policy,
+capture handling. Scalar membership, byte floors, the valid-text contract,
 original interruption and admission remain. Numerical work/depth/working costs
 can decrease; nullable, lazy, trailing and capture-dependent programs keep their routes.
 
@@ -159,19 +159,19 @@ counter when retained Core preparation proves that captures have no dependent
 readers. Count then omits capture slots/journals and the capture-producing cursor;
 Python's own scalar program still defines lexical folding, classes and matching.
 References, conditions, assertions and unknown preparation retain their previous
-routes. This can lower numerical work/depth/working requirements; subject policy,
+routes. This can lower numerical work/depth/working requirements; valid-text input,
 original interruption, major-buffer admission and capture-returning APIs remain.
 
 Prepared short three/four-literal families with distinct leading bytes can share
 Core's checked search within the existing windows of at most 2048 bytes. Count and
 necessary-start discovery charge the combined bounded scan instead of each
 needle separately; work requirements can fall. Candidate discovery still needs
-complete Python verification, including captures and tails. Input policy,
+complete Python verification, including captures and tails. The valid-text contract,
 original interruption, storage admission and terminal publication are unchanged.
 
 Necessary ASCII start hints can enter a mandatory atomic body and skip impossible
 starts. The profile VM still verifies the complete body, atomic commit and
-captures. Full-subject validation and the original interruption authority remain;
+captures. Caller-guaranteed valid text and the original interruption authority remain;
 skipping failed attempts can reduce work charges.
 
 After VM scratch has been admitted, a positive leading word boundary can reject
@@ -193,8 +193,8 @@ and unsupported assertions retain Python verification. Single-literal FullMatch
 also checks both endpoints without preparing a second scalar program. Work and
 depth charges reflect the work and state actually used.
 
-An unconditional failure program also finishes before VM scratch, after full
-validation and an original-invocation publication checkpoint. A sequence of an
+An unconditional failure program also finishes before VM scratch, after an
+original-invocation publication checkpoint. A sequence of an
 atomic greedy unbounded unfolded literal repeat followed immediately by the
 same required literal (for example `a++a`) is provably impossible and lowers to
 the existing failure instruction. Capture catalogs retain all declared groups;
@@ -257,21 +257,22 @@ admitted as result/working capacity rather than borrowed from a prepared string.
 This can change covered capacity/work compared with earlier development builds.
 No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
-Borrowed literal Count requests whole-subject validity without deriving discarded
-UTF-16 totals. Canonical text output sizes its returned value separately; APIs
+Borrowed literal Count trusts the subject's valid-text contract without deriving
+discarded UTF-16 totals. Canonical text output sizes its returned value separately; APIs
 exposing coordinates retain their required projections.
 
-String sizing reuses whole-subject validity. Unknown Unicode substring lengths
-use the existing checked character counter in scalar-aligned blocks of at most
-4096 bytes, sharing decoding's invocation and interruption checks. This removes
-redundant substring validation and can lower work charges; complete-subject
-validation, result/working admission before string allocation and output lifetimes
-retain their contracts.
+String output trusts valid scalar ranges and reuses already-known lengths or
+coordinate facts. Unknown lengths up to 4096 UTF-8 bytes can use conservative
+byte-derived admission and checked decoding without a separate sizing pass.
+Larger ranges use the existing checked character counter in scalar-aligned blocks
+of at most 4096 bytes. Sizing/decoding share the invocation and interruption
+checks; result/working admission precedes string allocation and output lifetimes
+retain their contracts. This is not subject validation.
 
 One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
 available ASCII/whole-subject character counts; otherwise they count only their
 returned scalar range instead of describing an unrelated suffix.
-Native one-shot discovery returns byte endpoints after whole-subject validity.
+Native one-shot discovery returns byte endpoints over caller-guaranteed valid text.
 Text output sizes only its selected range; value output derives prefix/range
 coordinates after a hit. Batch output retains its consumed shared subject facts.
 Counting/decoding use bounded blocks and the original
@@ -417,7 +418,7 @@ growth overlap is admitted before acquisition. Synchronous completion, failure
 and cursor disposal refund exclusive temporary loans; retained program/cache
 charges remain. Exact literal boolean/Count paths need no major workspace and
 keep their storage-free native routes. Numeric limits, original tokens/deadlines
-and strict full-subject validation remain independent requirements. Bound bulk
+and the valid-text input contract remain independent requirements. Bound bulk
 collection remaps nested Core timeouts to the original Python pattern.
 
 The explicit four-argument cursor factory can select a separate working account;
@@ -440,7 +441,7 @@ unmetered preparation those instances cannot execute.
 
 All four invocation limits, cancellation, failures and major-capacity exclusions
 follow the [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). One invocation covers
-full validation, discovery, required coordinate/capture shaping, output and
+discovery, required coordinate/capture shaping, output and
 publication. Work totals saturate; first denial is sticky. Terminal failed
 discovery checks interruption before reporting EOF. Timeout uses
 `RegexMatchTimeoutException`; owned diagnostics identify the original Python
