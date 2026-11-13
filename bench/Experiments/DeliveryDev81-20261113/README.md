@@ -21,7 +21,8 @@ Frozen producer `877dc8367fd7d147e1ba58e98d7de56c34705cd0`; SDK11.0.100/.NET11.0
   Windows/Linux. Later edits correct migration wording, a stale Python cursor
   XML exception and test labels; executable behavior and frozen package bytes
   remain unchanged. Frozen-source CI43455044743 and documentation CI43456923798
-  are green/closed; final metadata/continuation CI is recorded separately.
+  are green/closed. Presentation CI43464836579 and subsequent Count source
+  CI43466179663 are also green/closed; the latter does not change these packages.
 
 ## Current costs and remaining priorities
 

@@ -13,18 +13,26 @@ PCRE.NET reused its prepared match buffer. Compilation/input construction were
 excluded; outputs were consumed after timing. Separate ordinary processes staged
 matching producer DLL/PDB pairs and checked their source documents; caller and
 native control identities stayed unchanged. Nine samples per lane/case exceeded
-107ms, with a120-second cap per process. Retained int samples were bounded to4MiB;
+107 ms, with a 120-second cap per process. Retained int samples were bounded to 4 MiB;
 transient allocation traffic was measured rather than treated as retained data.
 
 | Public Count workload | Before µs | After µs | After/before, lower better | B/op before/after |
 |---|---:|---:|---:|---:|
 | ASCII miss | 37.458 | 37.861 | 1.011 | 0 /0 |
-| Unicode hits | 75.006 | 26.967 | 0.360 | 0 /0 |
+| Unicode repeat-text miss | 75.006 | 26.967 | 0.360 | 0 /0 |
 | Unicode miss | 323.477 | 72.645 | 0.225 | 0 /0 |
 
 Unchanged native controls moved+1.23%,+0.25% and−0.29%, respectively. Different
 allowed CPUs still limit exact causal attribution; these observations support
 removing the unused scan without a confirmation or general parity claim.
+
+All three measured subjects returned zero matches on both sides. The raw case
+named `unicode-hits` is mislabeled: the task generator read its template as
+Windows CP1252, so its Unicode replacement did not apply and its text contained
+no selected alternative. The other Unicode subject was also re-encoded. Both
+remain valid UTF-8; their actual byte counts are 139264 and 393216, retained with
+input hashes and expected Counts in the raw data. Interpret these as two miss
+workloads. No hit-throughput claim follows, and no replacement timing was run.
 
 The existing five-portfolio theory proves the production counter needs no
 description over a borrowed view at a nonzero scalar start. Default/trusted
@@ -37,4 +45,5 @@ Raw samples, caller, identities and checks are in
 `artifacts/experiments/pcre-literal-preparation-20261113/`. The immutable
 [dev81 packages and complete catalogs](../DeliveryDev81-20261113/README.md)
 precede this source change and remain unchanged. No package or full-refresh
-qualification was repeated for this small follow-through.
+qualification was repeated for this small follow-through. Source CI43466179663
+and dev81 presentation CI43464836579 are green/closed.

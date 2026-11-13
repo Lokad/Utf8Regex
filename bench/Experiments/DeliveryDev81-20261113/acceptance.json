@@ -191,5 +191,16 @@
       "LargestObservedSeparateRunIncrease": []
     }
   },
-  "Scope": "Exact pinned four-profile packages; canonical valid-text/native-UTF contracts, original consumer checks and one clean matching-source Full. Later prose/test-name corrections do not change frozen package bytes."
+  "Scope": "Exact pinned four-profile packages; canonical valid-text/native-UTF contracts, original consumer checks and one clean matching-source Full. Later prose/test-name corrections do not change frozen package bytes.",
+  "PresentationCI": {
+    "Id": 43464836579,
+    "Status": "success",
+    "Closed": true
+  },
+  "SourceContinuationCI": {
+    "Id": 43466179663,
+    "Status": "success",
+    "Closed": true,
+    "Scope": "Subsequent literal-family Count source change; frozen packages unchanged"
+  }
 }
