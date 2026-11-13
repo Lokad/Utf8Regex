@@ -3,6 +3,7 @@ using System.Text;
 
 using global::Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -165,6 +166,17 @@ public sealed class Pcre2ExecutionRouteTests
             regex.DebugCompiledProgram.Operations.Enumerate);
 
         Assert.Equal(expectedPortfolio, program.Regex.ByteOffsetExecution.SearchPortfolioKind.ToString());
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, program.Regex.Inspection.ExecutionKind);
+
+        // These exact portfolios count bytes without coordinate facts. Exercise
+        // the production prepared counter with no description, a borrowed view
+        // and a nonzero scalar start, before changing the adapter's preparation.
+        var textBytes = Encoding.UTF8.GetBytes("é😀 " + input + " 中");
+        byte[] storage = [0xff, .. textBytes, 0xff];
+        var view = storage.AsSpan(1, textBytes.Length);
+        var countInput = Utf8ValidatedInput.BorrowBytes(view);
+        Assert.Equal(expectedCount, program.Regex.ByteOffsetExecution.CountPrepared(countInput, new Utf8BytePosition(7)));
+        Assert.Equal(expectedCount, regex.Count(view, 7));
         var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
         var count = 0;
         while (enumerator.MoveNext())
