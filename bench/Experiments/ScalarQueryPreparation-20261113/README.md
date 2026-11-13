@@ -23,6 +23,10 @@ An initial attempt and one confirmation stopped at the 20 ms sample floor; the
 confirmation's unchanged predecoded .NET control recorded 19.7935 ms. The failed
 after process did not publish a complete sample set. Do not infer throughput or
 parity from the completed baseline alone. No additional timing run was attempted.
+The probe conservatively capped cumulative allocation traffic at 64 MiB per
+sample, limiting that control to 147,168 iterations. That guard is not a producer
+regression; future probes should bound retained sample storage and active workers,
+as the repository guidance requires, rather than treating all GC traffic as live.
 The change is retained for its demonstrated removal of unnecessary index admission
 and subject preparation; its execution-time effect remains unqualified.
 
