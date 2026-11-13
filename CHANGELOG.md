@@ -40,6 +40,8 @@
   capture journaling, coordinate mapping and output copies. More finite-policy
   operations reuse owned checked span/SIMD paths. Complete terminal repeats omit
   unused assertion orchestration while assertion/history execution remains.
+  Scalar-coordinate queries prepare only the requested prefix; later index
+  growth admits old/new working capacity together.
   Performance depends on the operation and input policy; some capture, folded,
   reverse, dense-match and controlled workloads use more time or memory.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
