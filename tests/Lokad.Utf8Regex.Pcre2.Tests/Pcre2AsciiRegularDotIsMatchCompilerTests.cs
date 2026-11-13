@@ -27,6 +27,30 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
         Assert.Equal("file listing", detailed.GetGroup(3).GetValueString());
     }
 
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void ExplicitZeroOffsetKeepsTheScalarBooleanRouteAndSubjectContract(Utf8InputValidation policy)
+    {
+        var regex = new Utf8Pcre2Regex(FtpLinePattern, inputValidation: policy);
+        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.True(program.SupportsPreparedOffsets);
+        Assert.Equal("FallbackRegex", program.Regex.Inspection.ExecutionKind.ToString());
+        foreach (var text in new[] { "123-file listing", "123-\u00e9\u4e2d\U0001f600", "abc-" + new string('\u00e9', 131072), "abc-" + new string('x', 262144) })
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xff, .. bytes, 0xff];
+            var view = storage.AsSpan(1, bytes.Length);
+            Assert.Equal(text.StartsWith("123-", StringComparison.Ordinal), regex.IsMatch(view, 0));
+            Assert.Equal(regex.IsMatch(view), regex.IsMatch(view, 0));
+            if (policy == Utf8InputValidation.Validate)
+            {
+                byte[] malformed = [.. bytes, 0xff];
+                Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, 0));
+            }
+        }
+    }
+
     [Fact]
     public void AnchoredDefaultDotMatchesTheMeteredVmAtEveryValidStart()
     {

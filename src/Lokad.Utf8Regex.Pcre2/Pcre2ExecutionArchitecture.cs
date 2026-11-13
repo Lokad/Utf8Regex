@@ -2085,9 +2085,8 @@ internal static partial class Pcre2Runner
                 matchOptions == Pcre2MatchOptions.None &&
                 invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
-                input.Describe(ref invocation);
-                if (asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(input, start, out result))
-                    return true;
+                result = asciiRegularProgram.Regex.ByteOffsetExecution.IsMatchPrepared(input.Bytes);
+                return true;
             }
 
             result = Pcre2BacktrackingRunner.Match(

@@ -448,54 +448,42 @@ public sealed partial class Utf8Regex
         }
 
         // PCRE2-INTEGRATION-POINT: flavor-neutral definitive prepared boolean kernels.
-        public bool TryIsMatchPrepared(
-            Utf8ValidatedInput input,
-            Utf8BytePosition start,
-            out bool isMatch)
+        public bool IsMatchPrepared(ReadOnlySpan<byte> bytes)
         {
-            if (start.Value != 0)
-            {
-                isMatch = false;
-                return false;
-            }
-
             if (_owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
             {
-                isMatch = _owner.IsMatchAtByteOffset(input, start);
-                return true;
+                return _owner.IsMatchAtByteOffset(Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0));
             }
 
-            var bytes = input.Bytes;
-            if (_owner.TryIsMatchPrioritizedBooleanFamilyWithoutValidation(bytes, out isMatch) ||
+            if (_owner.TryIsMatchPrioritizedBooleanFamilyWithoutValidation(bytes, out var isMatch) ||
                 _owner.TryIsMatchDirectWithoutValidation(bytes, out isMatch))
             {
-                return true;
+                return isMatch;
             }
 
             if (_owner.TryMatchDirectWithoutValidation(bytes, out var match))
             {
-                isMatch = match.Success;
-                return true;
+                return match.Success;
             }
 
+            // Definitive byte kernels need no coordinate facts. Remaining
+            // compiled routes request their existing description here.
+            var input = Utf8ValidatedInput.Create(bytes, Utf8InputValidation.AssumeValid);
             if (_owner.ShouldFallbackForTrailingNewlineAnchoredValidator(bytes, input.Validation))
             {
-                isMatch = _owner.IsMatchAtByteOffset(input, start);
-                return true;
+                return _owner.IsMatchAtByteOffset(input, new Utf8BytePosition(0));
             }
 
             if (!_owner.ShouldSkipRequiredPrefilterForMatch() &&
                 _owner.RejectsByRequiredPrefilter(bytes))
             {
-                isMatch = false;
-                return true;
+                return false;
             }
 
-            isMatch = _owner.IsMatchViaCompiledEngine(
+            return _owner.IsMatchViaCompiledEngine(
                 bytes,
                 input.Validation,
                 Utf8ExecutionDeadline.Infinite);
-            return true;
         }
 
         public int CountPrepared(Utf8ValidatedInput input, Utf8BytePosition start)

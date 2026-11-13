@@ -252,16 +252,7 @@ public sealed partial class Utf8Pcre2Regex
                 return asciiRegular.Regex.IsMatch(input);
             }
 
-            var subject = Utf8ValidatedInput.Create(input, Utf8InputValidation.AssumeValid);
-            if (asciiRegular.Regex.ByteOffsetExecution.TryIsMatchPrepared(
-                    subject,
-                    new Utf8BytePosition(0),
-                    out var result))
-            {
-                return result;
-            }
-
-            return IsMatch(input, 0, Pcre2MatchOptions.None);
+            return asciiRegular.Regex.ByteOffsetExecution.IsMatchPrepared(input);
         }
 
         if (_unmeteredIsMatchProgram is not null)
