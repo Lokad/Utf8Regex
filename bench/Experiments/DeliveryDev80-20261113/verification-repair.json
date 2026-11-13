@@ -1,0 +1,56 @@
+{
+  "Source": "15b248dc3f74df42f8ff669ca05eec6570728798",
+  "StartedAtUtc": "2026-11-13T13:32:55.7235103+00:00",
+  "UpdatedAtUtc": "2026-11-13T13:32:58.2042724+00:00",
+  "ElapsedSeconds": 2.480857,
+  "BudgetSeconds": 548,
+  "Scope": "Selected phases",
+  "Phases": [
+    "Verify"
+  ],
+  "Complete": true,
+  "Steps": [
+    {
+      "Name": "verify-core",
+      "Status": "Passed",
+      "Seconds": 0.1789664,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-python",
+      "Status": "Passed",
+      "Seconds": 0.1202668,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-python-pairs",
+      "Status": "Passed",
+      "Seconds": 1.1277668,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-pcre2",
+      "Status": "Passed",
+      "Seconds": 0.1198416,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-pcre2-pairs",
+      "Status": "Passed",
+      "Seconds": 0.1641932,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "verify-posix",
+      "Status": "Passed",
+      "Seconds": 0.6917173,
+      "ExitCode": 0,
+      "Error": null
+    }
+  ]
+}

@@ -698,7 +698,7 @@ internal struct PythonReScalarMatchState
         // String-only results need the selected scalar range's char count,
         // not a coordinate map for the complete subject. Detailed results
         // already project coordinates and can supply their character count.
-        // Validation or the caller's trusted-input contract proves these ranges.
+        // The caller's valid-text contract proves these scalar ranges.
         // Unknown lengths need bounded character counting, not validation.
         // Reuse facts already requested by coordinates or matching. Creating
         // one string must not describe an unrelated, possibly enormous suffix.

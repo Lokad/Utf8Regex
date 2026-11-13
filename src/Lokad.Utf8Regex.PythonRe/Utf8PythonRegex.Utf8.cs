@@ -481,7 +481,7 @@ public sealed partial class Utf8PythonRegex
             {
                 // A required start permits one bounded comparison of the complete
                 // literal, within the profile's existing 256-byte comparison
-                // block. Validate the whole subject before any rejection.
+                // block. The caller guarantees valid, unchanged subject text.
                 var remaining = input.Length - startOffsetInBytes;
                 if (remaining < literal.Length || kind == 2 && remaining != literal.Length) return false;
                 Utf8InvocationOutput.Checkpoint(control);

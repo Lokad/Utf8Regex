@@ -101,20 +101,20 @@ resumes the existing window search and scalar progression. Captures still come
 from the VM; no result is inferred from the prefix. Actual discovery work changes
 and rejection-heavy subjects can cost more, under the same original authority.
 
-On a validated ASCII subject, a leading positive class's ASCII mask can also
+On an ASCII subject, a leading positive class's ASCII mask can also
 guide starts when its only additional term is a positive non-ASCII range. Other
 unproved class shapes and non-ASCII subjects retain their existing routes. This
 necessary hint preserves full scalar verification and can reduce numerical work
 and VM scratch requirements under the same invocation.
 
 Value `Search` from byte zero can borrow the existing complete literal search
-under finite limits, a live token and an absolute deadline. It validates the whole
-subject before discovery; nonempty literal misses omit unused UTF-16 metadata,
+under finite limits, a live token and an absolute deadline. The caller supplies
+valid text; nonempty literal misses omit unused UTF-16 metadata,
 while hits derive their returned coordinates. No VM workspace or capture storage
 is needed for that route. Numerical work/depth/working requirements can decrease;
 actual payload admission and original interruption authority remain. Other
 patterns and nonzero offsets retain their existing routes.
-Successful literal values count coordinates over the already validated scalar
+Successful literal values count coordinates over the valid scalar
 ranges, using the existing sizing helper's scalar-aligned blocks of at most 4096
 bytes. This replaces coordinate-only validation blocks of 2048 bytes and can
 reduce numerical work charges; the caller supplies valid UTF-8 text,
@@ -125,8 +125,8 @@ a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Capture
 ordered choice and original invocation controls remain; required capacity can fall.
 
 Capture-free programs proved unable to match empty can Count through the shared
-scalar counter, using Python's compiled predicates and instructions. The whole
-subject is validated without deriving unused UTF-16 coordinates. A leading class
+scalar counter, using Python's compiled predicates and instructions, without
+subject validation or unused UTF-16 coordinates. A leading class
 run followed by an exact ASCII delimiter can bound candidate windows; scalar
 membership and complete VM verification remain authoritative. This can reduce
 work and scratch on misses. Captured and empty-capable programs retain their
@@ -454,15 +454,15 @@ acquisition/copy can lower cumulative result traffic, work and peak working
 requirements. Returned arrays and children remain valid across later calls;
 execution time and allocations still depend on capacity and pooling.
 
-Unmetered native ASCII-literal substitutions reuse validated scalar extents to
-size string output. On a miss, text output decodes the validated input directly,
+Unmetered native ASCII-literal substitutions reuse valid scalar extents to
+size string output. On a miss, text output decodes the input directly,
 without an intermediate byte array; byte output still acquires an independent
 owned copy. Required output allocation remains admitted before acquisition.
-Removing intermediate storage and repeated validation can lower modeled result
+Removing intermediate storage and repeated sizing can lower modeled result
 traffic, work and peak working requirements. Finite limits, cancellable tokens
 and deadlines retain their existing scalar substitution path.
 
-Native literal value/text operations use validation and discovery's own bounded
+Native literal value/text operations use discovery's own bounded
 checkpoints, followed by final publication checks. Adjacent helper boundaries
 add no separate work charges. This can reduce required work units without
 changing interruption bounds or byte/depth/result admission.
@@ -473,27 +473,28 @@ sharing immutable tables/names. Its token/deadline is the current invocation's;
 failure is retryable and leaves no failed publication. Exact capture-free literal
 value/string paths can use prepared literal operations without this preparation.
 For an unfolded literal of 1-256 UTF-8 bytes without boundary or trailing-literal
-requirements, Match/FullMatch can compare directly at the required start after
-full-subject validation. The comparison and final publication remain charged;
+requirements, Match/FullMatch can compare directly at the required scalar start. The comparison and final publication remain charged;
 avoiding candidate discovery lowers work requirements. Other eligible literals
 retain the complete finder.
 Value FullMatch can verify capture-free positive greedy literal repeats with an
 optional fixed literal tail directly from owned scalar instructions. FullMatch's
 endpoints determine one possible repetition count, including overlapping tails.
-It validates the whole subject and compares bounded blocks under the original
-invocation, avoiding cold FullMatch preparation, VM arrays and coordinate maps.
+It compares bounded blocks under the original invocation, avoiding cold
+FullMatch preparation, VM arrays and coordinate maps.
 Proof scratch is fixed at at most 240 stack bytes, independently of subject size;
 like fixed scalar helpers, it adds no modeled major-storage reservation. These
-calls need no major temporary/result buffer; finite work is charged at validation,
-comparison and publication checkpoints. Work/depth/byte requirements can therefore
+calls need no major temporary/result buffer; finite work is charged at comparison
+and publication checkpoints. Work/depth/byte requirements can therefore
 be lower than general matching. Captures, folding, lazy or nonliteral bodies and
 unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
-Scalar value results reuse the original validation's UTF-16 coordinates at byte
-zero and subject end. Interior coordinates still use an existing map or bounded
-validation of the necessary span. Avoiding redundant endpoint scans lowers work
-charges without changing full-subject validation or publication checks.
+Scalar value results reuse existing coordinate facts/maps when available;
+otherwise they count only the prefix and range requested by that value. String
+output sizes its selected range without describing an unrelated subject suffix.
+LTR backtracking search reuses the shared beginning-anchor finder for an initial
+mandatory \A/^; candidate verification, RTL and NonBacktracking remain unchanged.
+Sizing, discovery and publication retain bounded original interruption and limits.
 
 Fused VM repeats need no unused counter vectors. Counter-dependent execution
 still admits its state before acquisition and retains it across candidate
@@ -600,7 +601,7 @@ requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
 `Result` contains the owned UTF-8 byte array and replacement count. It uses the
 ordinary template validation, native/scalar matching and output pipeline, without
 another output copy or a Release/TryReserve gap. Invalid templates are validated
-even on no match. Count, byte offsets, strict UTF-8 validation, scalar progression,
+even on no match. Count, byte offsets, independent template checks, scalar progression,
 the original token/deadline and numeric resource limits retain their meanings.
 The receipt conservatively charges its object and final output; temporary match
 and writer storage is refunded when the operation finishes. Numeric result traffic
@@ -649,7 +650,7 @@ current match fails explicitly.
 Byte-only advances do no extra coordinate preparation. The first mixed-input
 query lazily admits one compact working array (one prefix count per 256 UTF-8
 bytes); ASCII and subjects shorter than 256 bytes need no such allocation. It
-counts scalar starts over already validated bytes, including blocks cutting
+counts scalar starts over caller-guaranteed valid bytes, including blocks cutting
 through scalars, with bounded scans inside the selected block on later queries.
 No text or full UTF-16 coordinate map is created for this query. The array stays
 charged until cursor EOF, failure or disposal; repeated queries reuse it. Index
@@ -692,7 +693,7 @@ empty-match progression, suffix/start-offset behavior and maxSplit semantics
 (zero unlimited, negative no splits). The final array grows from actual output;
 a no-separator split emits one range without reserving hypothetical matches or
 copying/decoding the subject. The caller slices its unchanged input to consume
-UTF-8 bytes. Explicit tokens cover validation, discovery and result publication.
+UTF-8 bytes. Explicit tokens cover discovery, shaping and result publication.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

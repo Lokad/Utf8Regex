@@ -190,8 +190,8 @@ not; first-acceptance routes retain their existing allocation strategy. Recheck
 finite policies when upgrading rather than relying on exact prior step/byte totals.
 
 Scalar/coordinate scans retain bounded original interruption checks. Coordinate
-projection sizes already-validated ranges through the shared UTF-16 helper; it
-does not validate them a second time. Neither scalar units nor byte offsets,
+projection sizes valid ranges through the shared UTF-16 helper; it does not
+perform a subject-validity pass. Neither scalar units nor byte offsets,
 valid-text contract, captures or original-token/deadline behavior changes.
 
 Working limits cover modeled matching/history/projection capacity, not borrowed

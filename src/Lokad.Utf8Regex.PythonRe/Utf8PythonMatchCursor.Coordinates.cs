@@ -124,7 +124,7 @@ public sealed partial class Utf8PythonMatchCursor
 
     private int CountScalarStarts(ReadOnlySpan<byte> bytes)
     {
-        // Validation and the borrowed-input lifetime precede every query.
+        // The valid-text guarantee and borrowed-input lifetime cover every query.
         // Counting starts also works when a block cuts through a scalar.
         var count = 0;
         for (var offset = 0; offset < bytes.Length;)

@@ -1,0 +1,19 @@
+{
+  "Source": "15b248dc3f74df42f8ff669ca05eec6570728798",
+  "Scope": "FullCompletedAfterPresentationRepair",
+  "Complete": true,
+  "OriginalCommandExitCode": 1,
+  "OriginalReceipt": "utf8regex-dev80-full-output/refresh.json",
+  "OriginalReceiptSha256": "0DE8B86D5A347CC5E637CDB1A235D9CF521D60BD123C35942D8F14FFB10641F8",
+  "VerificationReceipt": "utf8regex-dev80-verification-repair/refresh.json",
+  "StartedAtUtc": "2026-11-13T12:42:04.2164844+00:00",
+  "CompletedAtUtc": "2026-11-13T13:32:58.3824809+00:00",
+  "ElapsedSeconds": 3054.3769939,
+  "BudgetSeconds": 3600,
+  "OriginalSteps": 79,
+  "VerificationSteps": 6,
+  "MeasurementsRepeated": false,
+  "OriginalSourceAndBinariesReused": true,
+  "FullSourceAndPairCompletenessPassed": true,
+  "Repair": "Restore missing POSIX opening README marker and render the already completed measurements. The original failed receipt is preserved unchanged."
+}

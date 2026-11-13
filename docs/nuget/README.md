@@ -66,8 +66,9 @@ results preserve their documented lifetime; the host accounts for its own storag
 ## Upgrading and further documentation
 
 Version 0.4 introduced scalar matching over strict UTF-8 in place of the older
-UTF-16 matching behavior. Version 0.5 adds .NET 11 assets, POSIX and the optional
-caller-validity policy while preserving default strict rejection.
+UTF-16 matching behavior. Version 0.5 adds .NET 11 assets, POSIX and Core's optional
+caller-validity policy while preserving Core's default strict rejection. PythonRe/
+POSIX require existing valid text; PCRE2 follows its UTF checking contract.
 
 NuGet's project-website link leads to the repository specifications, migration
 guide, profile examples and benchmark tables. Those tables retain their measured

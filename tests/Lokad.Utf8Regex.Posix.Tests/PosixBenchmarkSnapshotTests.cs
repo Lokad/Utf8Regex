@@ -20,6 +20,8 @@ public sealed class PosixBenchmarkSnapshotTests
         var hash = root.GetProperty("Evidence").GetProperty("SnapshotSha256").GetString()!;
         Assert.Matches("^[0-9A-F]{64}$", hash);
         var page = Read("src/Lokad.Utf8Regex.Posix/README.md").ReplaceLineEndings("\n");
+        Assert.Contains("<!-- BEGIN GENERATED POSIX BENCHMARKS -->", page, StringComparison.Ordinal);
+        Assert.Contains("<!-- END GENERATED POSIX BENCHMARKS -->", page, StringComparison.Ordinal);
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.DoesNotContain(".NET predecoded", page, StringComparison.Ordinal);
         var sections = root.GetProperty("Sections");
