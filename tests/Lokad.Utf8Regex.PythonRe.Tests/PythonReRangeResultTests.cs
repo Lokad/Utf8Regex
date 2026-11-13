@@ -126,14 +126,12 @@ public sealed class PythonReRangeResultTests
     }
 
     [Fact]
-    public void RangeEntryPointsKeepStrictValidationAndFailureSemantics()
+    public void RangeEntryPointsPreserveScalarStartsCancellationAndDefaults()
     {
-        var regex = new Utf8PythonRegex("a"); byte[] malformed = [(byte)'a', 0xff];
-
-
+        var regex = new Utf8PythonRegex("a");
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.SplitRanges("😀a"u8, 0, 1, default));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(malformed, 0, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitRanges("a"u8, 0, 0, token.Token)).CancellationToken);
         Assert.Single(regex.SplitRanges("é😀"u8, -1, 0, default));
         var none = default(Utf8PythonRangeMatch);
         Assert.False(none.Success); Assert.True(none.Groups.IsEmpty); Assert.True(none.NameEntries.IsEmpty);

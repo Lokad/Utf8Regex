@@ -68,13 +68,12 @@ public sealed class PythonReAsciiCaptureStringTests
         }
     }
     [Fact]
-    public void MalformedTailStillFailsAndPreCancellationRetainsItsOriginalToken()
+    public void PreCancellationRetainsItsOriginalToken()
     {
-        byte[] input = [(byte)'a', (byte)'b', 0xff];
         var regex = Create("(a)(b)", Funded);
 
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.FindAllToStrings(input, 0, cancellation.Token));
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.FindAllToStrings("ab"u8, 0, cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 }

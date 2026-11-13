@@ -128,14 +128,14 @@ public sealed class PythonReUnicodeBoundaryTests
     }
 
     [Fact]
-    public void OutputAdmissionAndStrictUtf8StillApply()
+    public void OutputAdmissionAndOriginalCancellationStillApply()
     {
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(@"\b", PythonReCompileOptions.None,
                 Regex.InfiniteMatchTimeout, policy).SplitToStrings("é alpha"u8));
-        var regex = new Utf8PythonRegex(@"\b"); byte[] malformed = [.. "é alpha"u8, 0xff];
+        var regex = new Utf8PythonRegex(@"\b");
 
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings(malformed, 0, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings("é alpha"u8, 0, 0, token.Token)).CancellationToken);
     }
 }

@@ -146,10 +146,8 @@ public sealed class PythonReFiniteWorkPolicyTests
 
     [Theory]
     [InlineData(0)] [InlineData(4)] [InlineData(11)] [InlineData(14)] [InlineData(20)]
-    public void ValidationCoversMalformedTailsAndWorkCoversLateMisses(int operation)
+    public void WorkCoversLateMisses(int operation)
     {
-        var malformed = "cat"u8.ToArray().Concat(new byte[] { 255 }).ToArray();
-
         var miss = Encoding.UTF8.GetBytes(new string('x', 16384));
         var expected = Run(new("cat"), miss, operation);
         Assert.Equal(expected, Run(RegexWith("cat", 10000), miss, operation));

@@ -128,7 +128,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FiniteWorkingPolicyStillValidatesMalformedTailsAndByteScalarOffsets(bool bytePattern)
+    public void FiniteWorkingPolicyPreservesScalarByteOffsets(bool bytePattern)
     {
         var regex = Create("ab", 1_048_576, bytePattern);
 

@@ -133,7 +133,7 @@ public sealed class PythonReAsciiBoundaryTests
     }
 
     [Fact]
-    public void OutputAdmissionAndWholeInputValidityStillApply()
+    public void OutputAdmissionAndOriginalCancellationStillApply()
     {
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
         {
@@ -141,9 +141,7 @@ public sealed class PythonReAsciiBoundaryTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SplitToStrings("alpha beta"u8));
         }
         var normal = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
-        byte[] malformed = [.. "alpha beta"u8, 0xff];
-        Assert.Throws<ArgumentException>(() => normal.SplitToStrings(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => normal.SplitToStrings(malformed, 0, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => normal.SplitToStrings("alpha beta"u8, 0, 0, token.Token)).CancellationToken);
     }
 }

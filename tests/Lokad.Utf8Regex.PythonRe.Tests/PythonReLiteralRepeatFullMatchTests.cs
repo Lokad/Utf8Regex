@@ -176,7 +176,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void EveryValidBoundaryAndMalformedPrefixOrTailRetainsItsAuthority(bool hasTail)
+    public void EveryScalarBoundaryAndOriginalCancellationRetainTheirAuthority(bool hasTail)
     {
         var regex = new Utf8PythonRegex("(?:é😀)+" + (hasTail ? "Ω" : ""));
         var bytes = Encoding.UTF8.GetBytes("πé😀é😀" + (hasTail ? "Ω" : ""));

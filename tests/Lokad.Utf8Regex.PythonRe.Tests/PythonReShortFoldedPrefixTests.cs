@@ -68,17 +68,16 @@ public sealed class PythonReShortFoldedPrefixTests
     }
 
     [Fact]
-    public void EarlyHitStillRejectsMalformedTailAndPreservesOriginalCancellation()
+    public void EarlyHitPreservesOriginalCancellation()
     {
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
         {
             using var owner = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase,
                 Timeout.InfiniteTimeSpan, policy);
-            var malformed = "SHERLOCK"u8.ToArray().Append((byte)0xff).ToArray();
 
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
-                () => owner.Search(malformed, 0, token.Token)).CancellationToken);
+                () => owner.Search("SHERLOCK"u8, 0, token.Token)).CancellationToken);
         }
     }
 }

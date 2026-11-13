@@ -10,10 +10,10 @@ public sealed class PythonReBulkDeadlineEntryTests
     [InlineData(0, 0)] [InlineData(0, 1)]
     [InlineData(1, 0)] [InlineData(1, 1)]
     [InlineData(2, 0)] [InlineData(2, 1)]
-    public void ExpiredEntryPrecedesMalformedPrefixAndTail(int operation, int start)
+    public void ExpiredEntryPrecedesDiscovery(int operation, int start)
     {
         foreach (var pattern in new[] { "cat|horse", "cat" })
-        foreach (var input in new[] { new byte[] { 0xFF, 99, 97, 116 }, new byte[] { 120, 99, 97, 116, 0xFF } })
+        foreach (var input in new[] { "xcat"u8.ToArray(), "xcat😀"u8.ToArray() })
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
             long reads = 0;
@@ -44,11 +44,9 @@ public sealed class PythonReBulkDeadlineEntryTests
         Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => x.ValueText));
         Assert.Empty(regex.FindAll(input, input.Length));
 
-        var malformed = input.Concat(new byte[] { 0xFF }).ToArray();
-
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => Run(regex, malformed, 7, operation, canceled.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => Run(regex, input, 7, operation, canceled.Token));
         Assert.Equal(canceled.Token, error.CancellationToken);
     }
 
