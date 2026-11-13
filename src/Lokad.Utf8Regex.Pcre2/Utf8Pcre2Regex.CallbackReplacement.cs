@@ -86,7 +86,7 @@ public sealed partial class Utf8Pcre2Regex
         Utf8SliceByteOutputScope? scope = null;
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);

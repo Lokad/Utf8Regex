@@ -51,7 +51,7 @@ public sealed class Pcre2FiniteLanguageCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 100)));
         var measured = Create(pattern, new() { MatchLimit = 1000000 });
         var invocation = Pcre2SliceDriver.CreateInvocation(measured.DebugCompiledProgram.Request, default);
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var validated));
+        var validated = Pcre2Runner.PrepareInput(measured.DebugCompiledProgram, input, 0, ref invocation);
         var validationSteps = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(measured.DebugCompiledProgram,
             ref validated, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -74,8 +74,7 @@ public sealed class Pcre2FiniteLanguageCountTests
             // Four alternatives retain the scalar VM and its real rewind frames.
             var regex = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("ab a"u8,
-                ref invocation, out var input));
+            var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, "ab a"u8, 0, ref invocation);
             if (allowance == 1)
             {
                 Pcre2MatchException? failure = null;
@@ -183,8 +182,7 @@ public sealed class Pcre2FiniteLanguageCountTests
             TimeSpan.FromMilliseconds(20));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes,
-            ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
         var validatedSteps = invocation.Budget.Steps;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>

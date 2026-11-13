@@ -123,6 +123,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
         Console.WriteLine(
             $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");
+        Console.WriteLine("Input contract: PCRE2 UTF mode; subject checking enabled in both lanes; equal requested outputs.");
         var environment = CaptureBenchmarkEnvironment();
         var snapshot = LoadPcre2BenchmarkSnapshot();
         snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;

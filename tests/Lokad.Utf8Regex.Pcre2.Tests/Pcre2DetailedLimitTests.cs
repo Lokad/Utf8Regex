@@ -27,8 +27,8 @@ public sealed class Pcre2DetailedLimitTests
     {
         var input = Encoding.UTF8.GetBytes("foo foo foo");
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 5 }).MatchDetailed(input)).ErrorKind);
-        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 6 });
+            Assert.Throws<Pcre2MatchException>(() => Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 2 }).MatchDetailed(input)).ErrorKind);
+        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 64 });
         var actual = regex.MatchDetailed(input);
         Assert.True(actual.Success);
         var expected = Create("foo", default).MatchDetailed(input);

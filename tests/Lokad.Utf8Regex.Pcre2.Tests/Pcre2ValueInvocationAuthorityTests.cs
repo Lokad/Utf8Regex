@@ -99,7 +99,7 @@ public sealed class Pcre2ValueInvocationAuthorityTests
         var input = Encoding.UTF8.GetBytes(text);
         var compiled = regex.DebugCompiledProgram;
         var invocation = Pcre2SliceDriver.CreateInvocation(compiled.Request, source.Token);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+        var subject = Pcre2Runner.PrepareInput(compiled, input, 0, ref invocation);
         source.Cancel();
         Exception? failure = null;
         try { _ = Pcre2Runner.TryIsMatch(compiled, ref subject, new(0), Pcre2MatchOptions.None, ref invocation, out _); }

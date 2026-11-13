@@ -58,9 +58,9 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         int[] starts = [7, -1, 2, 5];
         int[] ends = [1, 7, 5, -1];
         var groups = Pcre2Runner.ProjectSliceCaptures(5, 1, 7, starts, ends, ref input, ref invocation);
-        Assert.Equal(Pcre2GroupData.FromByteOffsets(input.Bytes, 1, 1, 7), groups[1]);
+        Assert.Equal(new Pcre2GroupData { Number = 1, Success = true, StartOffsetInBytes = 1, EndOffsetInBytes = 7, StartOffsetInUtf16 = 1, EndOffsetInUtf16 = 4, CoordinateFlagsSpecified = true, Utf8SliceIsWellFormed = true, Utf16ProjectionIsExact = true }, groups[1]);
         Assert.False(groups[2].Success);
-        Assert.Equal(Pcre2GroupData.FromByteOffsets(input.Bytes, 3, 2, 5), groups[3]);
+        Assert.Equal(new Pcre2GroupData { Number = 3, Success = true, StartOffsetInBytes = 2, EndOffsetInBytes = 5, CoordinateFlagsSpecified = true }, groups[3]);
         Assert.False(groups[3].HasUtf16Projection);
         Assert.False(groups[4].Success);
         Pcre2SliceDriver.DetachProjectedGroups(groups, ref invocation);

@@ -245,13 +245,14 @@ public sealed partial class Utf8Pcre2Regex
     {
         if (_unmeteredIsMatchProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegular)
         {
+            Utf8Validation.CheckSubject(input, InputValidation);
             if (!asciiRegular.SupportsPreparedOffsets ||
                 asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
             {
                 return asciiRegular.Regex.IsMatch(input);
             }
 
-            var subject = Utf8ValidatedInput.Create(input, InputValidation);
+            var subject = Utf8ValidatedInput.Create(input, Utf8InputValidation.AssumeValid);
             if (asciiRegular.Regex.ByteOffsetExecution.TryIsMatchPrepared(
                     subject,
                     new Utf8BytePosition(0),
@@ -325,7 +326,7 @@ public sealed partial class Utf8Pcre2Regex
             if (Pcre2Runner.TryIsMatchWithoutCoordinates(_program, input, startOffsetInBytes, matchOptions,
                 ref invocation, out var coordinateFreeResult))
                 return coordinateFreeResult;
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))
             {
@@ -391,7 +392,7 @@ public sealed partial class Utf8Pcre2Regex
                 (uint)startOffsetInBytes <= (uint)input.Length &&
                 literal.Program.CanCountDirectly(input.Length - startOffsetInBytes))
             {
-                Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryCheckSubject(input, ref invocation));
+                Pcre2Runner.CheckInput(_program, input, startOffsetInBytes, ref invocation);
                 if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                     throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes), startOffsetInBytes,
                         "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
@@ -404,7 +405,7 @@ public sealed partial class Utf8Pcre2Regex
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return count;
             }
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, ref invocation, out var result))
             {
@@ -454,7 +455,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch))
             {
@@ -505,7 +506,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation);
         }
@@ -574,7 +575,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             return EnumerateMatchesValidated(input, subject, start, matchOptions, invocation);
         }
@@ -675,7 +676,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
             {
@@ -905,7 +906,7 @@ public sealed partial class Utf8Pcre2Regex
             if (construction is not null) construction.Budget.Deadline = invocation.Budget.Deadline;
             using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacementPatternUtf8, ref invocation));
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var replacement = new Utf8ConstructionPattern(replacementPatternUtf8);
             Pcre2ReplacementPreparation? preparation = null;
@@ -1033,7 +1034,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2GlobalOperationDriver.TryCreateCursor(
                     _program,
@@ -1100,8 +1101,8 @@ public sealed partial class Utf8Pcre2Regex
                 HasContiguousByteRange = current.HasContiguousByteRange,
                 IsUtf8SliceWellFormed = current.IsUtf8SliceWellFormed,
                 HasUtf16Projection = current.HasUtf16Projection,
-                StartOffsetInUtf16 = current.StartOffsetInUtf16,
-                EndOffsetInUtf16 = current.EndOffsetInUtf16,
+                StartOffsetInUtf16 = current.HasUtf16Projection ? current.StartOffsetInUtf16 : 0,
+                EndOffsetInUtf16 = current.HasUtf16Projection ? current.EndOffsetInUtf16 : 0,
             };
             written++;
         }
@@ -1591,7 +1592,7 @@ public sealed partial class Utf8Pcre2Regex
         using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, cancellationToken);
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions,
                 matchOptions, invocation, text ? Pcre2ReplacementResultKind.Text : Pcre2ReplacementResultKind.Bytes, default);
@@ -1610,7 +1611,7 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacement, ref invocation));
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), options,
                 matchOptions, invocation, Pcre2ReplacementResultKind.Bytes, default);

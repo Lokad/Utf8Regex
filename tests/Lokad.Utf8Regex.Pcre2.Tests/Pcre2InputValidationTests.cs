@@ -88,4 +88,102 @@ public sealed class Pcre2InputValidationTests
         Assert.Equal(Utf8InputValidation.AssumeValid, created.InputValidation);
         Assert.Equal(1, created.Count("é😀 needle"u8));
     }
+
+    [Theory]
+    [InlineData("needle")]
+    [InlineData("(needle)")]
+    [InlineData("needle|other")]
+    [InlineData("(?=needle)needle")]
+    [InlineData("n[ae]+dle")]
+    public void NonzeroStartChecksTheNativeWindowWithoutRejectingAnIgnoredPrefix(string pattern)
+    {
+        byte[] input = [0xff, (byte)' ', .. "needle"u8];
+        var regex = new Utf8Pcre2Regex(pattern);
+        Assert.True(regex.IsMatch(input, 2));
+        Assert.Equal(1, regex.Count(input, 2));
+        var match = regex.Match(input, 2);
+        Assert.True(match.Success);
+        Assert.Equal((2, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(match.IsUtf8SliceWellFormed);
+        Assert.False(match.HasUtf16Projection);
+        Assert.Equal("needle", match.GetValueString());
+        var detailed = regex.MatchDetailed(input, 2);
+        Assert.True(detailed.GetGroup(0).Success);
+        Assert.False(detailed.GetGroup(0).HasUtf16Projection);
+        Assert.Equal("needle", detailed.GetGroup(0).GetValueString());
+        var enumerator = regex.EnumerateMatches(input, 2);
+        Assert.True(enumerator.MoveNext());
+        Assert.False(enumerator.Current.HasUtf16Projection);
+        Assert.False(enumerator.MoveNext());
+        using var cursor = regex.CreateMatchCursor(input, 2);
+        Assert.True(cursor.MoveNext(out var range));
+        Assert.True(range.Success);
+        Assert.False(cursor.MoveNext(out _));
+        Span<Utf8Pcre2MatchData> buffer = stackalloc Utf8Pcre2MatchData[2];
+        Assert.Equal(1, regex.MatchMany(input, buffer, out var more, 2, Pcre2MatchOptions.None));
+        Assert.False(more);
+        Assert.False(buffer[0].HasUtf16Projection);
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(input, 0));
+        byte[] badTail = [.. input, 0xff];
+        var error = Assert.Throws<ArgumentException>(() => regex.Count(badTail, 2));
+        Assert.Contains($"byte offset {input.Length}.", error.Message);
+    }
+
+    [Theory]
+    [InlineData(@"\bneedle", " ")]
+    [InlineData(@"\Bneedle", "x")]
+    [InlineData(@"(?<=ab)needle", "ab")]
+    [InlineData(@"(?<!zz)needle", "ab")]
+    [InlineData(@"(?<=é😀)needle", "é😀")]
+    public void LookbehindMovesByScalarsAndReportsAbsoluteInvalidOffsets(string pattern, string context)
+    {
+        var prefix = Encoding.UTF8.GetBytes(context);
+        byte[] input = [0xff, .. prefix, .. "needle"u8];
+        var start = prefix.Length + 1;
+        var regex = new Utf8Pcre2Regex(pattern);
+        Assert.True(regex.IsMatch(input, start));
+        Assert.Equal(1, regex.Count(input, start));
+        using var cursor = regex.CreateMatchCursor(input, start);
+        Assert.True(cursor.MoveNext(out _));
+        input[1] = 0xff;
+        var error = Assert.Throws<ArgumentException>(() => regex.IsMatch(input, start));
+        Assert.Contains("byte offset 1.", error.Message);
+        Assert.Throws<ArgumentException>(() => regex.CreateMatchCursor(input, start));
+    }
+
+    [Theory]
+    [InlineData(@"\Aneedle")]
+    [InlineData(@"(?#comment)\Aneedle")]
+    public void NativeAbsoluteStartRecordsLookbehindEvenWhenTheAnchorWillMiss(string pattern)
+    {
+        byte[] input = [0xff, .. "needle"u8];
+        Assert.Throws<ArgumentException>(() => new Utf8Pcre2Regex(pattern).IsMatch(input, 1));
+        Assert.False(new Utf8Pcre2Regex("^needle").IsMatch(input, 1));
+        Assert.True(new Utf8Pcre2Regex(@"\Gneedle").IsMatch(input, 1));
+        Assert.True(new Utf8Pcre2Regex("needle", Pcre2CompileOptions.Anchored).IsMatch(input, 1));
+    }
+
+    [Fact]
+    public void TrustedByteCursorDoesNotPrepareCoordinatesOrClassifyAnUnconsumedSuffix()
+    {
+        byte[] input = [.. "needle "u8, .. Encoding.UTF8.GetBytes(new string('é', 65536))];
+        var regex = new Utf8Pcre2Regex("(needle)", defaultExecutionLimits: new() { MatchLimit = 64 },
+            inputValidation: Utf8InputValidation.AssumeValid);
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.True(match.Success);
+        var strict = new Utf8Pcre2Regex("(needle)", defaultExecutionLimits: new() { MatchLimit = 64 });
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => strict.CreateMatchCursor(input)).ErrorKind);
+    }
+
+    [Fact]
+    public void ControlledTrustedBooleanDoesNotDescribeAnUnconsumedSuffix()
+    {
+        byte[] input = [.. "foo123bar "u8, .. Encoding.UTF8.GetBytes(new string('é', 65536))];
+        var regex = new Utf8Pcre2Regex("foo[0-9]+bar", defaultExecutionLimits: new() { MatchLimit = 64 },
+            inputValidation: Utf8InputValidation.AssumeValid);
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None));
+    }
 }

@@ -75,6 +75,8 @@ internal static class Pcre2BacktrackingCompiler
                 static group => group.Key,
                 static group => group.Select(static entry => entry.Number).ToArray(),
                 StringComparer.Ordinal);
+        request = request with { MaximumLookbehind = Pcre2BacktrackingAnalysis.GetMaximumLookbehind(
+            root, parser.CaptureDefinitions, nameSlots) };
         var lowerer = new Pcre2BacktrackingLowerer(
             parser.CaptureCount,
             nameEntries,
@@ -320,7 +322,9 @@ internal static class Pcre2BacktrackingAnalysis
         };
     }
 
-    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node)
+    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode>? definitions = null,
+        IReadOnlyDictionary<string, int[]>? names = null, HashSet<int>? active = null)
     {
         Utf8ConstructionScope.ChargeWork(1);
         return node switch
@@ -334,21 +338,71 @@ internal static class Pcre2BacktrackingAnalysis
             },
             Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
                 0,
-                static (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child))),
-            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(GetMaximumScalarLength),
-            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body), repeat.Maximum),
-            Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body),
-            Pcre2BackreferenceBacktrackingNode => int.MaxValue,
+                (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child, definitions, names, active))),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(child => GetMaximumScalarLength(child, definitions, names, active)),
+            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body, definitions, names, active), repeat.Maximum),
+            Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body, definitions, names, active),
+            Pcre2BackreferenceBacktrackingNode reference => ReferenceMaximum(reference.Target),
             Pcre2AssertionBacktrackingNode => 0,
-            Pcre2SubroutineCallBacktrackingNode => int.MaxValue,
+            Pcre2SubroutineCallBacktrackingNode call => ReferenceMaximum(call.Target),
             Pcre2ConditionalBacktrackingNode conditional => Math.Max(
-                GetMaximumScalarLength(conditional.YesBranch),
-                GetMaximumScalarLength(conditional.NoBranch)),
-            Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
+                GetMaximumScalarLength(conditional.YesBranch, definitions, names, active),
+                GetMaximumScalarLength(conditional.NoBranch, definitions, names, active)),
+            Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body, definitions, names, active),
             Pcre2ControlVerbBacktrackingNode => 0,
             Pcre2MatchBoundaryResetBacktrackingNode => 0,
             _ => int.MaxValue,
         };
+        int ReferenceMaximum(Pcre2BackreferenceTarget target)
+        {
+            if (definitions is null) return int.MaxValue;
+            if (target.Kind == Pcre2BackreferenceTargetKind.Named)
+                return names is not null && names.TryGetValue(target.Name, out var slots)
+                    ? slots.Max(CaptureMaximum) : int.MaxValue;
+            return CaptureMaximum(ResolveReferenceSlot(target));
+        }
+        int CaptureMaximum(int slot)
+        {
+            active ??= [];
+            if ((ulong)active.Count >= Pcre2BacktrackingCompiler.MaximumRecursiveDepth)
+                throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth,
+                    Pcre2BacktrackingCompiler.MaximumRecursiveDepth, (ulong)active.Count + 1);
+            if (!definitions!.TryGetValue(slot, out var definition) || !active.Add(slot)) return int.MaxValue;
+            try { return GetMaximumScalarLength(definition.Body, definitions, names, active); }
+            finally { active.Remove(slot); }
+        }
+    }
+
+    // Mirrors the native maximum backward move, including \b/\B and \A.
+    // Nested assertions are inspected independently, as in pcre2_compile.c.
+    internal static int GetMaximumLookbehind(IPcre2BacktrackingNode node,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> definitions,
+        IReadOnlyDictionary<string, int[]> names)
+    {
+        var budget = Pcre2BacktrackingCompiler.EnterDepth();
+        try
+        {
+            int Visit(IPcre2BacktrackingNode child) => GetMaximumLookbehind(child, definitions, names);
+            return node switch
+            {
+                Pcre2TokenBacktrackingNode token => token.Token.Kind is
+                    Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary or
+                    Pcre2CharacterTokenKind.BeginningOfSubject ? 1 : 0,
+                Pcre2SequenceBacktrackingNode sequence => sequence.Children.Max(Visit),
+                Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(Visit),
+                Pcre2RepeatBacktrackingNode repeat => Visit(repeat.Body),
+                Pcre2CaptureBacktrackingNode capture => Visit(capture.Body),
+                Pcre2AtomicBacktrackingNode atomic => Visit(atomic.Body),
+                Pcre2AssertionBacktrackingNode assertion => Math.Max(Visit(assertion.Body),
+                    assertion.AssertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind
+                        ? GetMaximumScalarLength(assertion.Body, definitions, names) : 0),
+                Pcre2ConditionalBacktrackingNode conditional => Math.Max(
+                    Math.Max(Visit(conditional.YesBranch), Visit(conditional.NoBranch)),
+                    conditional.Assertion is { } assertion ? Visit(assertion) : 0),
+                _ => 0,
+            };
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     internal static byte? GetLeadingAsciiByte(IPcre2BacktrackingNode node)

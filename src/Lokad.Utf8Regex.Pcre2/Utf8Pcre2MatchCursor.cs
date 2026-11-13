@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 /// <remarks>Keep subject bytes unchanged and their memory manager alive. Aliases share position/lifetime; concurrent or reentrant access is rejected. Sequential advances may cross awaits under one original deadline and cumulative work/result policy. Dispose early abandonment; there is no finalizer. EOF, failure and Dispose refund exclusive scratch and program use. Returned ranges survive later moves and close.</remarks>
 public sealed class Utf8Pcre2MatchCursor : IDisposable
 {
-    private Utf8ValidatedInput.Memory _input;
+    private ReadOnlyMemory<byte> _input;
     private Pcre2CompiledProgram? _program;
     private readonly Pcre2MatchOptions _options;
     private Pcre2ResourceBudget _budget;
@@ -29,8 +29,9 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
         _budget.WorkingInvocation.ShareStorageForCursor();
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.Memory.TryCreate(input, ref _budget.WorkingInvocation, out _input));
-            var subject = _input.Borrow();
+            Pcre2Runner.CheckInput(program, input.Span, start, ref _budget.WorkingInvocation);
+            _input = input;
+            var subject = Utf8ValidatedInput.BorrowBytes(input.Span);
             _progress = new(subject.GetBytePosition(start, "startOffsetInBytes"));
             Checkpoint();
         }
@@ -94,7 +95,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     {
         match = default; retained = null;
         Checkpoint();
-        var subject = _input.Borrow();
+        var subject = Utf8ValidatedInput.BorrowBytes(_input.Span);
         while (!_progress.Finished)
         {
             var results = new Utf8InvocationResultLedger();
@@ -110,7 +111,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
                 if (!outcome.Success) { _progress.AfterMiss(ref subject, _program!.Request, _options); continue; }
                 _progress.Accept(outcome.StartOffsetInBytes, outcome.EndOffsetInBytes,
                     outcome.ConsumedStartOffsetInBytes, outcome.ConsumedEndOffsetInBytes);
-                var completed = new Utf8Pcre2RangeMatch(_input.Bytes, groups, _program!.NameEntries, outcome.Mark);
+                var completed = new Utf8Pcre2RangeMatch(_input, groups, _program!.NameEntries, outcome.Mark);
                 Utf8Pcre2RetainedRangeMatch? receipt = null;
                 var allowance = resultAllowance ?? _budget.WorkingInvocation.Ledger.MemoryAllowance;
                 if (retain)

@@ -60,8 +60,7 @@ public sealed class Pcre2NonEmptyCountScopeTests
     {
         var regex = Create("(a+)(b)", working: working);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("aaab ab"u8,
-            ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, "aaab ab"u8, 0, ref invocation);
         for (var attempt = 0; attempt < 2; attempt++)
         {
             if (working == 1)
@@ -92,8 +91,7 @@ public sealed class Pcre2NonEmptyCountScopeTests
         var regex = Create("(a+)(b)");
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes,
-            ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -119,8 +117,7 @@ public sealed class Pcre2NonEmptyCountScopeTests
         var retained = regex.MatchDetailed("aaab"u8);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes,
-            ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>

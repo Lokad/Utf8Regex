@@ -31,7 +31,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [InlineData("é")]
     [InlineData("😀")]
     [InlineData("夏洛克·福尔摩斯")]
-    public void ControlledByteOnlyCountKeepsScalarOffsetsAndWholeInputErrors(string pattern)
+    public void ControlledByteOnlyCountKeepsScalarOffsetsAndNativeWindowErrors(string pattern)
     {
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex(pattern, default, default,
@@ -42,7 +42,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
             Assert.Equal(2, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2, default, token.Token));
-            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 2, default, token.Token));
+            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 4, default, token.Token));
         }
     }
 
@@ -117,7 +117,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [InlineData("é")]
     [InlineData("😀")]
     [InlineData("夏洛克·福尔摩斯")]
-    public void DirectCountNeedsNoDiscardedCoordinatesButKeepsFullValidation(string pattern)
+    public void DirectCountNeedsNoDiscardedCoordinatesButKeepsNativeWindowValidation(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);
         foreach (var padding in new[] { 1023, 1024, 1025, 4096 })
@@ -127,8 +127,9 @@ public sealed class Pcre2LiteralGlobalOperationTests
             Assert.Equal(2, regex.Count(input, 4));
             var invalidOffset = Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2));
             Assert.Equal("startOffsetInBytes", invalidOffset.ParamName);
-            foreach (var offset in new[] { -1, 2, input.Length + 1 })
-                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], offset));
+            foreach (var offset in new[] { -1, 2, input.Length + 2 })
+                Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count([.. input, 0xff], offset));
+            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 4));
             var matches = regex.EnumerateMatches(input, 4);
             Assert.True(matches.MoveNext());
             Assert.Equal(4 + padding, matches.Current.StartOffsetInBytes);

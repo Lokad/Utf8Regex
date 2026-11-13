@@ -113,7 +113,7 @@ public sealed class Pcre2AsciiIpv4CountTests
         var input = Encoding.UTF8.GetBytes(new string(denseDots ? '.' : 'x', 200000) + "00.11.22.255");
         var regex = Create(timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
         var calibration = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ValidatedInput.TryCreate(input, ref calibration, out _));
+        _ = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, input, 0, ref calibration);
         var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;

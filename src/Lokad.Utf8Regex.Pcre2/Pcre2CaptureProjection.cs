@@ -94,7 +94,8 @@ internal static partial class Pcre2Runner
                 }
                 var startIndex = sortedEndpoints.BinarySearch(captureStart);
                 var endIndex = sortedEndpoints.BinarySearch(captureEnd);
-                var hasUtf16Projection = startIndex >= 0 && endIndex >= 0;
+                var scalarAligned = startIndex >= 0 && endIndex >= 0;
+                var hasUtf16Projection = scalarAligned && utf16Endpoints[startIndex] >= 0 && utf16Endpoints[endIndex] >= 0;
                 groups[slot] = new Pcre2GroupData
                 {
                     Number = slot,
@@ -104,7 +105,7 @@ internal static partial class Pcre2Runner
                     StartOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[startIndex] : 0,
                     EndOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[endIndex] : 0,
                     CoordinateFlagsSpecified = true,
-                    Utf8SliceIsWellFormed = captureStart <= captureEnd && hasUtf16Projection,
+                    Utf8SliceIsWellFormed = captureStart <= captureEnd && scalarAligned,
                     Utf16ProjectionIsExact = hasUtf16Projection,
                 };
             }
@@ -137,7 +138,7 @@ internal static partial class Pcre2Runner
         if (budget.IsUnmetered || input.IsAscii)
         {
             budget.ChargeWorkspaceStep();
-            return projection.Project(new Utf8BytePosition(endpoint)).Value;
+            return projection.TryProject(new Utf8BytePosition(endpoint), out var result) ? result.Value : -1;
         }
         // Project in bounded byte windows; every cut remains a whole scalar.
         while (projection.BytesConsumed < endpoint)
@@ -145,9 +146,9 @@ internal static partial class Pcre2Runner
             budget.ChargeWorkspaceStep();
             var end = projection.BytesConsumed + Math.Min(2048, endpoint - projection.BytesConsumed);
             while (!input.IsScalarBoundary(new Utf8BytePosition(end))) end--;
-            projection.Project(new Utf8BytePosition(end));
+            if (!projection.TryProject(new Utf8BytePosition(end), out _)) return -1;
         }
-        return projection.Project(new Utf8BytePosition(endpoint)).Value;
+        return projection.TryProject(new Utf8BytePosition(endpoint), out var projected) ? projected.Value : -1;
     }
 
     private static void SortCaptureEndpoints(scoped Span<int> values, scoped Pcre2CaptureProjectionBudget budget)

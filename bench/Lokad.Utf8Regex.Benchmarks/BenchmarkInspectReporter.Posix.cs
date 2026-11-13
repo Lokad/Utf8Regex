@@ -37,6 +37,7 @@ internal static partial class BenchmarkInspectReporter
                     writeSnapshot: false);
                 return true;
             case "--refresh-posix-benchmarks":
+                if (args.Length > 3) throw new ArgumentException("POSIX comparisons consume existing valid UTF-8 text; no validation-policy argument is accepted.");
                 exitCode = RefreshPosix(args.Length > 1 ? args[1] : null, args.Length > 2 ? int.Parse(args[2], CultureInfo.InvariantCulture) : 9);
                 return true;
             case "--rewrite-posix-benchmark-markdown": RewritePosixMarkdown(verify: false); return true;
@@ -144,7 +145,7 @@ internal static partial class BenchmarkInspectReporter
             if (!writeSnapshot)
             {
                 Console.WriteLine(JsonSerializer.Serialize(new { CaseId = benchmarkCase.Id, InputContract = "Preexisting valid unchanged UTF-8 text; native PCRE2 NFA uses NO_UTF_CHECK",
-                    NativeInputContract = "Native UTF validation enabled", Records = benchmarkCase.Records, Result = result }, PosixJsonOptions));
+                    NativeInputContract = "PCRE2 UTF mode with NO_UTF_CHECK; caller guarantees valid text", Records = benchmarkCase.Records, Result = result }, PosixJsonOptions));
                 continue;
             }
             snapshot.Cases[benchmarkCase.Id] = result;

@@ -8,15 +8,24 @@ other than Core and the BCL.
 
 ## Subject validation policy
 
+`Validate` is default and follows native UTF-mode checking: validate from the
+requested byte start, extended backward by the pattern's maximum lookbehind in
+scalars, through the end of the subject. A malformed suffix is rejected even on
+an early hit; bytes before this window are ignored. Checking runs at most once
+per logical operation or cursor lifetime under the original work/token/deadline.
+
 Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
-host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
-`InputValidation` reports the choice; `Validate` is default and checks the whole
-subject at most once per logical operation or cursor lifetime. Matching, counting,
-replacement/splitting where supported and cursors inherit the engine policy.
-Pattern/replacement validation, checked accesses, scalar/byte semantics,
-cooperative cancellation/deadlines and admission remain. Required coordinate or
-output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
-Existing benchmark tables use Validate unless explicitly labeled otherwise.
+host guarantees valid UTF-8 and unchanged borrowed storage. This is the subject
+`PCRE2_NO_UTF_CHECK` equivalent; read-only `InputValidation` reports the choice.
+Pattern/replacement validation, checked accesses, scalar semantics and matching/
+output admission remain independent. Byte-only operations do not prepare whole
+UTF-16 coordinates. Requested byte results remain usable when an ignored invalid
+prefix prevents exact UTF-16 projection; consult `HasUtf16Projection`.
+See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-validation).
+
+The canonical benchmark compares default UTF-checked managed and native PCRE2
+operations with matching options and requested outputs. Trusted-input coverage
+uses focused checks rather than a second complete benchmark catalog.
 
 ## Supported scope and limitations
 
@@ -34,7 +43,7 @@ it does not identify machine code or a particular fast path.
 backends. A scalar token can contribute one byte even when its accepted scalars
 require more; zero can mean that no positive bound was established.
 
-Subjects must be valid UTF-8 throughout under the selected validation policy. Normal character matching and
+Subjects follow the UTF checking or trusted-input contract above. Normal character matching and
 empty-match progression use scalars and primary byte coordinates. Explicit `\C`
 is a separately opted-in byte atom: it can report a slice splitting a scalar.
 `\K` in an opted-in lookaround can report non-slice ranges. Check the reported

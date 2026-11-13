@@ -13,14 +13,25 @@ Historical receipts retain their original product/runtime identities.
 ## Subject input validation
 
 The immutable constructor/factory `inputValidation` option and read-only
-`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
-`Validate` is default: strict whole-input validation runs at most once per operation
-or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
-unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
-Unicode semantics, coordinates, cancellation/deadlines and resource admission
-remain independent. Below, mandatory subject-validation statements apply to
-Validate mode; coordinate/scalar/result work can still inspect input in either mode.
-No per-call policy or public validation-token API is introduced.
+`InputValidation` property select native UTF-mode checking. `Validate` is default:
+check from the requested start offset, extended backward by the pattern's maximum
+lookbehind in Unicode scalars, through the end of the subject. Native PCRE2 also
+records a one-scalar lookbehind for `\b`, `\B` and `\A`. Invalid bytes before this
+window do not cause rejection; an invalid suffix does, even after an early match.
+Errors report absolute byte offsets. Checking occurs at most once per operation
+or cursor lifetime, under the original cancellation/deadline and work budget.
+See [PCRE2 UTF support](https://www.pcre.org/current/doc/html/pcre2unicode.html).
+
+`AssumeValid` is the subject `PCRE2_NO_UTF_CHECK` equivalent: the caller guarantees
+valid UTF-8 and unchanged borrowed storage. It omits subject checking while
+retaining managed bounds and matching/output resource controls. Pattern and
+replacement validation remain independent. No invalid-UTF matching mode,
+per-call override or public validation token is introduced.
+
+Byte-only operations do not prepare whole-subject UTF-16 coordinates. Requested
+coordinates are projected over the necessary prefix; when an ignored prefix is
+invalid, byte results remain available and `HasUtf16Projection` is false.
+The match's own well-formed UTF-8 slice remains independently identifiable.
 
 ## Surface and admission
 
@@ -115,7 +126,7 @@ uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
 A lone default `\X` under unlimited Boolean matching can answer existence from
 validated nonempty scalar input, retaining the candidate charge without computing
-an unused cluster endpoint. Whole-input strict validation runs in Validate mode. Explicit
+an unused cluster endpoint. Native UTF-window validation runs in Validate mode. Explicit
 flags, finite/token/deadline/funded calls, hooks and range-returning operations
 retain the established execution and grapheme metering.
 
@@ -258,7 +269,7 @@ Uncontrolled compilation can also omit rewind state for positive word-only repea
 before `\b`; explicit finite execution policies retain their established lowering.
 Original tokens and working allowances still meter/admit actual optimized work.
 Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
-most 2048 bytes after whole-subject validation, retaining scalar endpoints and
+most 2048 bytes after UTF-window validation, retaining scalar endpoints and
 bounded work/interruption checks. This can reduce route-dependent work charges.
 Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
 impossible starts. Each scan admits at most 2048 bytes, with original-token and
@@ -300,7 +311,7 @@ retain their selection; nondefault match options keep their owned PCRE2 continua
 Bounded ASCII Boolean plans can include subroutine calls whose authoritative
 lowered body is exactly capture-start, one eligible ASCII token, capture-end and
 return. They reuse the existing 64-alternative/128-token limits and construction
-admission, without recursive expansion. Strict whole-input validation runs in Validate mode;
+admission, without recursive expansion. Native UTF-window validation runs in Validate mode;
 controlled matching, match flags and capture-returning operations retain the
 owned VM and their original interruption/resource authority.
 The same Boolean plans can filter nonempty ASCII conditional branches guarded
@@ -343,7 +354,7 @@ The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
 and each call's cancellation token. Temporary storage uses program funding by
 default; an explicit working allowance selects a separate host account. Ordinary
 expressions also accept shared working admission through their full IsMatch/Count
-signatures. Existing numeric limits, strict whole-subject validation, original
+signatures. Existing numeric limits, native UTF-window validation, original
 cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
 `Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
 Covered temporary loans refund on success, failure and interruption. Borrowed

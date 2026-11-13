@@ -22,6 +22,8 @@ internal readonly record struct Pcre2CompileRequest(
 {
     internal Utf8InputValidation InputValidation { get; init; }
 
+    internal int MaximumLookbehind { get; init; }
+
     internal Utf8ConstructionPattern ConstructionPattern => PatternSource is byte[] bytes
         ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)PatternSource);
 
@@ -87,8 +89,8 @@ internal static class Pcre2Compiler
         {
             var source = request.ConstructionPattern;
             regex = source.IsUtf8
-                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, request.InputValidation)
-                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, inputValidation: request.InputValidation);
+                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, Utf8InputValidation.AssumeValid)
+                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, inputValidation: Utf8InputValidation.AssumeValid);
             return true;
         }
         catch (ArgumentException)
@@ -577,7 +579,11 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileRequest request,
         Pcre2LiteralProgram literalProgram)
     {
-        request = request with { SkipsCrLfContinuation = request.UsesCrLfNewlines && !literalProgram.HasExplicitCrOrLf };
+        request = request with
+        {
+            SkipsCrLfContinuation = request.UsesCrLfNewlines && !literalProgram.HasExplicitCrOrLf,
+            MaximumLookbehind = literalProgram.StartAnchor == Pcre2LiteralAnchor.AbsoluteStart ? 1 : 0,
+        };
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
         return new Pcre2CompiledProgram(
             request,
@@ -1850,7 +1856,7 @@ internal static partial class Pcre2Runner
             character.Program.Request.Options != Pcre2CompileOptions.None ||
             character.Program.Tokens is not [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster, Options: Pcre2CharacterOptions.None }])
             return false;
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryCheckSubject(input, ref invocation));
+        CheckInput(program, input, startOffsetInBytes, ref invocation);
         var start = Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var budget = new Pcre2ResourceBudget(program.Request.DefaultLimits, invocation, false);
         budget.ChargeCandidate();
@@ -2075,15 +2081,13 @@ internal static partial class Pcre2Runner
 
         if (program is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram)
         {
-            if (asciiRegularProgram.SupportsPreparedOffsets &&
+            if (start.Value == 0 && asciiRegularProgram.SupportsPreparedOffsets &&
                 matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
-                asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(
-                    input,
-                    start,
-                    out result))
+                invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
-                return true;
+                input.Describe(ref invocation);
+                if (asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(input, start, out result))
+                    return true;
             }
 
             result = Pcre2BacktrackingRunner.Match(
@@ -2109,9 +2113,8 @@ internal static partial class Pcre2Runner
             if (matchOptions == Pcre2MatchOptions.None &&
                 (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
-                var enumerator = literalFamilyProgram.Regex.ByteOffsetExecution.EnumerateMatches(input, start);
-                result = enumerator.MoveNext();
-                return true;
+                if (literalFamilyProgram.Regex.TryFindNativeLiteralForResult(input.Bytes, start.Value,
+                        ref invocation, out result, out _, out _)) return true;
             }
 
             result = Pcre2BacktrackingRunner.Match(
@@ -2262,15 +2265,9 @@ internal static partial class Pcre2Runner
             return true;
         }
 
-        if (budget.IsUnmetered)
-            result = Pcre2GroupData.FromByteOffsets(input.Bytes, 0,
-                directMatch.StartOffsetInBytes, directMatch.EndOffsetInBytes);
-        else
-        {
-            var projection = input.CreateProjectionCursor();
-            result = Pcre2GlobalCursorProjection.Project(directMatch.StartOffsetInBytes,
-                directMatch.EndOffsetInBytes, ref input, ref projection, ref budget);
-        }
+        var directProjection = input.CreateProjectionCursor();
+        result = Pcre2GlobalCursorProjection.Project(directMatch.StartOffsetInBytes,
+            directMatch.EndOffsetInBytes, ref input, ref directProjection, ref budget);
         return true;
     }
 
@@ -2418,11 +2415,13 @@ internal static class Pcre2GlobalOperationDriver
         }
 
         if (program is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
-            !input.Validation.ContainsSupplementaryScalars &&
             matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
+            input.Bytes[start.Value..].IndexOfAnyInRange((byte)0xf0, (byte)0xf4) < 0)
         {
-            result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+            var suffix = Utf8ValidatedInput.BorrowBytes(input.Bytes[start.Value..]);
+            suffix.Describe(ref invocation);
+            result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(suffix, new Utf8BytePosition(0));
             return true;
         }
 
@@ -2453,6 +2452,7 @@ internal static class Pcre2GlobalOperationDriver
         {
             if (invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
+                input.Describe(ref invocation);
                 result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
                 return true;
             }
@@ -2520,14 +2520,15 @@ internal static class Pcre2GlobalOperationDriver
         }
 
         if (program is Pcre2SingleTokenRepeatDirectProgram { Program: var repeat } &&
-            input.Validation.IsAscii && matchOptions == Pcre2MatchOptions.None &&
+            matchOptions == Pcre2MatchOptions.None &&
             invocation.CheckpointHook is null &&
             repeat.Minimum > 0 && repeat.Maximum == int.MaxValue && repeat.Preference != Pcre2RepeatPreference.Lazy &&
             !repeat.Request.SkipsCrLfContinuation &&
             (repeat.Request.Options & (Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine)) == 0 &&
             repeat.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
             (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
-            repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet)
+            repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet &&
+            (input.IsAscii || Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
         {
             // Every scalar is one byte here. A complete greedy root selects
             // each maximal member run; shorter runs cannot qualify at a suffix.
@@ -3586,19 +3587,28 @@ internal static class Pcre2GlobalCursorProjection
             };
         }
 
-        var startInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, start.Value, control);
-        var endInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, end.Value, control);
+        int startInUtf16, endInUtf16;
+        if (end.Value < start.Value)
+        {
+            endInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, end.Value, control);
+            startInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, start.Value, control);
+        }
+        else
+        {
+            startInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, start.Value, control);
+            endInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, end.Value, control);
+        }
         return new Pcre2GroupData
         {
             Number = 0,
             Success = true,
             StartOffsetInBytes = start.Value,
             EndOffsetInBytes = end.Value,
-            StartOffsetInUtf16 = startInUtf16,
-            EndOffsetInUtf16 = endInUtf16,
+            StartOffsetInUtf16 = Math.Max(0, startInUtf16),
+            EndOffsetInUtf16 = Math.Max(0, endInUtf16),
             CoordinateFlagsSpecified = true,
             Utf8SliceIsWellFormed = start.Value <= end.Value,
-            Utf16ProjectionIsExact = true,
+            Utf16ProjectionIsExact = startInUtf16 >= 0 && endInUtf16 >= 0,
         };
     }
 

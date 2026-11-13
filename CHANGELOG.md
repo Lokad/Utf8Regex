@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- PCRE2 follows native UTF-mode checking from the start offset minus maximum
+  lookbehind through the subject end, with the existing explicit trusted bypass.
+  Byte-only discovery no longer prepares whole-subject UTF-16 coordinates.
+
 - Target .NET 10 and .NET 11 in Core and all three adapters. The stable .NET 11
   runtime is the new benchmark baseline; historical measurements keep their
   runtime labels. Adapters require the exact matching Core package version.

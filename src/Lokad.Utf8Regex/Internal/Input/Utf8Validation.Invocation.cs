@@ -21,8 +21,12 @@ internal static partial class Utf8Validation
 
     // PCRE2-INTEGRATION-POINT: byte-only Count needs the existing bounded
     // validator's breach result to retain its profile-specific failure mapping.
-    internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
-        => TryValidate(input, ref invocation, computeUtf16Length: false, out _, out _);
+    internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, int byteOffset = 0)
+        => TryValidateOnly(input, ref invocation, out _, byteOffset);
+
+    internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation,
+        out bool isAscii, int byteOffset = 0)
+        => TryValidate(input, ref invocation, computeUtf16Length: false, out _, out isAscii, byteOffset);
 
     // Byte-only counters need ASCII eligibility, not derived coordinates.
     internal static bool ValidateIsAscii(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
@@ -41,7 +45,7 @@ internal static partial class Utf8Validation
         => TryValidate(input, ref invocation, computeUtf16Length: true, out validation, out _);
 
     private static Utf8ExecutionLimitKind TryValidate(ReadOnlySpan<byte> input,
-        ref Utf8SliceInvocation invocation, bool computeUtf16Length, out Utf8ValidationResult validation, out bool isAscii)
+        ref Utf8SliceInvocation invocation, bool computeUtf16Length, out Utf8ValidationResult validation, out bool isAscii, int byteOffset = 0)
     {
         validation = default;
         isAscii = true;
@@ -56,7 +60,7 @@ internal static partial class Utf8Validation
                 isAscii = validation.IsAscii;
             }
             else if (!Utf8InputAnalyzer.TryValidateOnly(input, out var errorOffset, out isAscii))
-                throw CreateInvalidUtf8Exception(errorOffset);
+                throw CreateInvalidUtf8Exception(byteOffset + errorOffset);
             return Utf8ExecutionLimitKind.None;
         }
 
@@ -80,7 +84,7 @@ internal static partial class Utf8Validation
             if (computeUtf16Length)
             {
                 if (!Utf8ValidationCore.TryValidate(span, true, out var block, out var errorOffset))
-                    throw CreateInvalidUtf8Exception(offset + errorOffset);
+                    throw CreateInvalidUtf8Exception(byteOffset + offset + errorOffset);
                 utf16Length += block.Utf16Length;
                 isAscii &= block.IsAscii;
                 supplementary |= block.ContainsSupplementaryScalars;
@@ -88,7 +92,7 @@ internal static partial class Utf8Validation
             else
             {
                 if (!Utf8InputAnalyzer.TryValidateOnly(span, out var errorOffset, out var blockIsAscii))
-                    throw CreateInvalidUtf8Exception(offset + errorOffset);
+                    throw CreateInvalidUtf8Exception(byteOffset + offset + errorOffset);
                 isAscii &= blockIsAscii;
             }
             offset += length;

@@ -110,7 +110,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     public void ContinuationsAndOutputShareWorkingCapacityAndAlwaysRelease()
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:B}", Pcre2SubstitutionOptions.Extended));
-        var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
+        var groups = new[] { new Pcre2GroupData { Number = 0, Success = true, EndOffsetInBytes = 1, EndOffsetInUtf16 = 1 }, new Pcre2GroupData { Number = 1, Success = true, EndOffsetInBytes = 1, EndOffsetInUtf16 = 1 } };
         var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
             new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
                 Timeout.InfiniteTimeSpan, default));
@@ -200,7 +200,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     public void AnErrorInUnselectedNestedValidationKeepsAndReleasesTheStackLoan()
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:${missing:+B:C}}", Pcre2SubstitutionOptions.Extended));
-        var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
+        var groups = new[] { new Pcre2GroupData { Number = 0, Success = true, EndOffsetInBytes = 1, EndOffsetInUtf16 = 1 }, new Pcre2GroupData { Number = 1, Success = true, EndOffsetInBytes = 1, EndOffsetInUtf16 = 1 } };
         var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
             new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
                 Timeout.InfiniteTimeSpan, default));
@@ -223,7 +223,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         var template = "z";
         for (var index = 0; index < 128; index++) template = "${1:-" + template + "}";
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.Extended));
-        var groups = new Pcre2GroupData[2]; groups[0] = Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1);
+        var groups = new Pcre2GroupData[2]; groups[0] = new Pcre2GroupData { Number = 0, Success = true, EndOffsetInBytes = 1, EndOffsetInUtf16 = 1 };
         using var token = new CancellationTokenSource();
         var reads = 0;
         using var timer = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>

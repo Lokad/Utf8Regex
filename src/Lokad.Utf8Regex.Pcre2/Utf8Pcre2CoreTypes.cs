@@ -46,35 +46,7 @@ internal readonly struct Pcre2GroupData
     public bool HasUtf16Projection => Success &&
         (!CoordinateFlagsSpecified || Utf16ProjectionIsExact);
 
-    public static Pcre2GroupData FromByteOffsets(ReadOnlySpan<byte> input, int number, int startOffsetInBytes, int endOffsetInBytes)
-    {
-        var startIsBoundary = IsScalarBoundary(input, startOffsetInBytes);
-        var endIsBoundary = IsScalarBoundary(input, endOffsetInBytes);
-        var hasUtf16Projection = startIsBoundary && endIsBoundary;
-        var startOffsetInUtf16 = hasUtf16Projection
-            ? Encoding.UTF8.GetCharCount(input[..startOffsetInBytes])
-            : 0;
-        var endOffsetInUtf16 = hasUtf16Projection
-            ? Encoding.UTF8.GetCharCount(input[..endOffsetInBytes])
-            : 0;
-        return new Pcre2GroupData
-        {
-            Number = number,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = endOffsetInBytes,
-            StartOffsetInUtf16 = startOffsetInUtf16,
-            EndOffsetInUtf16 = endOffsetInUtf16,
-            CoordinateFlagsSpecified = true,
-            Utf8SliceIsWellFormed = startOffsetInBytes <= endOffsetInBytes && hasUtf16Projection,
-            Utf16ProjectionIsExact = hasUtf16Projection,
-        };
-    }
 
-    private static bool IsScalarBoundary(ReadOnlySpan<byte> input, int offset) =>
-        offset >= 0 &&
-        offset <= input.Length &&
-        (offset == 0 || offset == input.Length || (input[offset] & 0xC0) != 0x80);
 }
 
 /// <summary>Provides a stack-only PCRE2 match view over the original UTF-8 input.</summary>
@@ -183,12 +155,12 @@ public readonly ref struct Utf8Pcre2ValueMatch
     }
 
     /// <summary>Gets the match value decoded as UTF-16 text.</summary>
-    /// <exception cref="InvalidOperationException">The match has no exact UTF-16 projection or contiguous byte range.</exception>
+    /// <exception cref="InvalidOperationException">The match has no well-formed contiguous UTF-8 value.</exception>
     public string GetValueString()
     {
-        if (!HasUtf16Projection)
+        if (!IsUtf8SliceWellFormed)
         {
-            throw new InvalidOperationException("This match has no exact string projection.");
+            throw new InvalidOperationException("This match has no well-formed UTF-8 string value.");
         }
 
         return Encoding.UTF8.GetString(GetValueBytes());
@@ -459,12 +431,12 @@ public readonly ref struct Utf8Pcre2GroupContext
     }
 
     /// <summary>Gets the group value decoded as UTF-16 text.</summary>
-    /// <exception cref="InvalidOperationException">The group has no exact UTF-16 projection or contiguous byte range.</exception>
+    /// <exception cref="InvalidOperationException">The group has no well-formed contiguous UTF-8 value.</exception>
     public string GetValueString()
     {
-        if (!HasUtf16Projection)
+        if (!IsUtf8SliceWellFormed)
         {
-            throw new InvalidOperationException("This group has no exact string projection.");
+            throw new InvalidOperationException("This group has no well-formed UTF-8 string value.");
         }
 
         return Encoding.UTF8.GetString(GetValueBytes());

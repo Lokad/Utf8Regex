@@ -304,6 +304,9 @@ internal static class Pcre2CharacterCompiler
         if (request.UsesCrLfNewlines)
             request = request with { SkipsCrLfContinuation = !tokens.Any(HasExplicitCrOrLf) &&
                 !LeadingFilterRejectsCr(tokens) };
+        request = request with { MaximumLookbehind = tokens.Any(static token =>
+            token.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary or
+                Pcre2CharacterTokenKind.BeginningOfSubject) ? 1 : 0 };
         var result = new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
             tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
             tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit));

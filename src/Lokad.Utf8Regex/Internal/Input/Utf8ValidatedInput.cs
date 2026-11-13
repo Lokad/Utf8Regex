@@ -5,71 +5,53 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Input;
 
 /// <summary>
-/// Operation-local authority for well-formed UTF-8, established by validation
-/// or the immutable engine's caller-validity contract.
+/// Operation-local subject bytes and optional coordinate facts. Core validates
+/// or trusts the whole subject; PCRE2 establishes its own native UTF window.
 /// Derived coordinate projection state is materialized only when requested.
 /// </summary>
 internal ref struct Utf8ValidatedInput
 {
     private readonly ReadOnlySpan<byte> _bytes;
-    private readonly Utf8ValidationResult _validation;
+    private Utf8ValidationResult? _validation;
     private Utf8BoundaryMap? _boundaryMap;
 
-    private Utf8ValidatedInput(ReadOnlySpan<byte> bytes, Utf8ValidationResult validation)
+    private Utf8ValidatedInput(ReadOnlySpan<byte> bytes, Utf8ValidationResult? validation)
     {
         _bytes = bytes;
         _validation = validation;
         _boundaryMap = null;
     }
 
-    // PCRE2-INTEGRATION-POINT: durable subject authority for unchanged borrowed
-    // memory. The factory applies the invocation's immutable validation policy
-    // and derives metadata; borrowers cannot supply fabricated coordinates.
-    internal readonly struct Memory
+    // PCRE2-INTEGRATION-POINT: the adapter has checked its native UTF window,
+    // or has an explicit trusted-input contract. Byte execution needs no whole
+    // subject description; genuine metadata consumers request it separately.
+    internal static Utf8ValidatedInput BorrowBytes(ReadOnlySpan<byte> bytes, bool isAscii = false)
+        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, bytes.Length, true, false) : null);
+
+    internal void Describe(ref Utf8SliceInvocation invocation)
     {
-        private readonly ReadOnlyMemory<byte> _bytes;
-        private readonly Utf8ValidationResult _validation;
-
-        private Memory(ReadOnlyMemory<byte> bytes, Utf8ValidationResult validation)
-        { _bytes = bytes; _validation = validation; }
-
-        internal ReadOnlyMemory<byte> Bytes => _bytes;
-        internal Utf8ValidatedInput Borrow() => new(_bytes.Span, _validation);
-
-        internal static Utf8ExecutionLimitKind TryCreate(ReadOnlyMemory<byte> bytes,
-            scoped ref Utf8SliceInvocation invocation, out Memory memory)
-        {
-            var breach = Utf8Validation.TrySubject(bytes.Span, ref invocation, out var validation);
-            memory = breach == Utf8ExecutionLimitKind.None ? new(bytes, validation) : default;
-            return breach;
-        }
+        if (_validation.HasValue) return;
+        var breach = Utf8Validation.TryDescribeValid(_bytes, ref invocation, out var validation);
+        if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+        _validation = validation;
     }
 
     public ReadOnlySpan<byte> Bytes => _bytes;
 
-    public Utf8ValidationResult Validation => _validation;
+    public Utf8ValidationResult Validation => _validation ??
+        throw new InvalidOperationException("This byte operation has not requested a subject description.");
 
-    public int ByteLength => _validation.ByteLength;
+    public int ByteLength => _bytes.Length;
 
-    public int Utf16Length => _validation.Utf16Length;
+    public int Utf16Length => Validation.Utf16Length;
 
-    public bool IsAscii => _validation.IsAscii;
+    public bool IsAscii => _validation?.IsAscii == true;
 
     public Utf8BoundaryMap BoundaryMap => GetRandomAccessMap();
 
     public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input,
         Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => new(input, Utf8Validation.Subject(input, inputValidation));
-
-    // PCRE2-INTEGRATION-POINT: apply the caller's existing invocation policy
-    // without exposing construction from caller-supplied metadata.
-    internal static Utf8ExecutionLimitKind TryCreate(ReadOnlySpan<byte> input,
-        scoped ref Utf8SliceInvocation invocation, out Utf8ValidatedInput validated)
-    {
-        var breach = Utf8Validation.TrySubject(input, ref invocation, out var validation);
-        validated = breach == Utf8ExecutionLimitKind.None ? new(input, validation) : default;
-        return breach;
-    }
 
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
         => GetBytePosition(_bytes, value, parameterName);
@@ -92,7 +74,7 @@ internal ref struct Utf8ValidatedInput
 
     public Utf16Position GetUtf16Position(int value, string parameterName)
     {
-        var position = Utf16Position.CreateChecked(_validation, value, parameterName);
+        var position = Utf16Position.CreateChecked(Validation, value, parameterName);
         if (!BoundaryMap.Resolve(value).IsScalarBoundary)
         {
             throw new ArgumentOutOfRangeException(parameterName, value,
@@ -105,7 +87,7 @@ internal ref struct Utf8ValidatedInput
     public Utf8ByteRange GetByteRange(int start, int length, string startParameterName, string lengthParameterName)
     {
         var range = Utf8ByteRange.CreateChecked(
-            _validation,
+            Validation,
             start,
             length,
             startParameterName,
@@ -137,11 +119,11 @@ internal ref struct Utf8ValidatedInput
 
     public Utf8BoundaryMap GetRandomAccessMap()
     {
-        _boundaryMap ??= Utf8BoundaryMap.Create(_bytes, _validation);
+        _boundaryMap ??= Utf8BoundaryMap.Create(_bytes, Validation);
         return _boundaryMap.Value;
     }
 
-    public Utf8ProjectionCursor CreateProjectionCursor() => new(_bytes, _validation);
+    public Utf8ProjectionCursor CreateProjectionCursor() => new(_bytes, IsAscii);
 
     public Utf16Position Project(Utf8BytePosition position)
     {
@@ -164,7 +146,7 @@ internal ref struct Utf8ValidatedInput
             ByteLength - start.Value,
             Utf16Length - startInUtf16.Value,
             IsAscii,
-            _validation.ContainsSupplementaryScalars);
+            Validation.ContainsSupplementaryScalars);
     }
 
     public bool TryAdvanceScalar(Utf8BytePosition position, out Utf8BytePosition next)
@@ -212,9 +194,12 @@ internal ref struct Utf8ProjectionCursor
     private int _utf16Offset;
 
     public Utf8ProjectionCursor(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+        : this(input, validation.IsAscii) { }
+
+    internal Utf8ProjectionCursor(ReadOnlySpan<byte> input, bool isAscii)
     {
         _input = input;
-        _isAscii = validation.IsAscii;
+        _isAscii = isAscii;
         _byteOffset = 0;
         _utf16Offset = 0;
     }
@@ -223,6 +208,17 @@ internal ref struct Utf8ProjectionCursor
 
     public Utf16Position Project(Utf8BytePosition position)
     {
+        if (!TryProject(position, out var result))
+            throw new ArgumentOutOfRangeException(nameof(position), "The requested byte offset splits a UTF-8 scalar.");
+        return result;
+    }
+
+    // PCRE2-INTEGRATION-POINT: native matching can ignore an invalid prefix
+    // before a nonzero start. Its byte result remains usable; exact UTF-16
+    // coordinates are unavailable when that prefix cannot be decoded.
+    internal bool TryProject(Utf8BytePosition position, out Utf16Position result)
+    {
+        result = default;
         if (position.Value < _byteOffset || position.Value > _input.Length)
         {
             throw new ArgumentOutOfRangeException(nameof(position), "Projection offsets must be in increasing order.");
@@ -232,7 +228,8 @@ internal ref struct Utf8ProjectionCursor
         {
             _byteOffset = position.Value;
             _utf16Offset = position.Value;
-            return new Utf16Position(_utf16Offset);
+            result = new Utf16Position(_utf16Offset);
+            return true;
         }
 
         while (_byteOffset < position.Value)
@@ -240,13 +237,14 @@ internal ref struct Utf8ProjectionCursor
             var status = Rune.DecodeFromUtf8(_input[_byteOffset..position.Value], out var rune, out var consumed);
             if (status != OperationStatus.Done)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), "The requested byte offset splits a UTF-8 scalar.");
+                return false;
             }
 
             _byteOffset += consumed;
             _utf16Offset += rune.Utf16SequenceLength;
         }
 
-        return new Utf16Position(_utf16Offset);
+        result = new Utf16Position(_utf16Offset);
+        return true;
     }
 }

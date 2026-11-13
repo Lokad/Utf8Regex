@@ -83,8 +83,7 @@ public sealed class Pcre2LiteralCountBridgeTests
             HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
         var funded = Pcre2SliceDriver.CreateInvocation(control.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, funded.TryReserveWorking(13));
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("ab ab ab ab"u8,
-            ref funded, out var controlInput));
+        var controlInput = Pcre2Runner.PrepareInput(control.DebugCompiledProgram, "ab ab ab ab"u8, 0, ref funded);
         ulong requiredWork;
         try
         {
@@ -100,8 +99,7 @@ public sealed class Pcre2LiteralCountBridgeTests
             HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("ab ab ab ab"u8,
-            ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, "ab ab ab ab"u8, 0, ref invocation);
         try
         {
             for (var attempt = 0; attempt < 2; attempt++)
@@ -135,7 +133,7 @@ public sealed class Pcre2LiteralCountBridgeTests
         var retained = regex.MatchDetailed("ab"u8);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes("π😀" + string.Concat(Enumerable.Repeat("ab ", 1000)));
-        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
+        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };

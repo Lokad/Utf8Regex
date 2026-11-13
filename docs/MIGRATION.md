@@ -291,3 +291,11 @@ Specifications: [Core](SPEC.md),
 [PCRE2](SPEC-PCRE2.md), [POSIX](SPEC-POSIX.md).
 Historical benchmark rows retain their own versions and do not qualify this
 development source or promise complete flavor equivalence.
+
+PCRE2's default subject check now follows its native UTF-mode window: the start
+offset minus the maximum lookbehind, through the subject end. Invalid bytes
+before that window no longer reject a match. Byte ranges and well-formed matched
+values remain available; exact UTF-16 positions are unavailable if an ignored
+prefix cannot be decoded. `AssumeValid` retains the explicit trusted-input bypass.
+Removing unnecessary preparation can lower route-specific work requirements;
+finite work limits remain enforceable rather than promising fixed instruction counts.
