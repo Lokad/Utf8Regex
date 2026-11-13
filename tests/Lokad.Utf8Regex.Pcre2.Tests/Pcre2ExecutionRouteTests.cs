@@ -177,6 +177,9 @@ public sealed class Pcre2ExecutionRouteTests
         var countInput = Utf8ValidatedInput.BorrowBytes(view);
         Assert.Equal(expectedCount, program.Regex.ByteOffsetExecution.CountPrepared(countInput, new Utf8BytePosition(7)));
         Assert.Equal(expectedCount, regex.Count(view, 7));
+        Assert.Equal(1, regex.Count(view, 7, Pcre2MatchOptions.Anchored));
+        var trusted = new Utf8Pcre2Regex(pattern, inputValidation: Utf8InputValidation.AssumeValid);
+        Assert.Equal(expectedCount, trusted.Count(view, 7));
         var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
         var count = 0;
         while (enumerator.MoveNext())

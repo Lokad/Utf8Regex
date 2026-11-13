@@ -2453,7 +2453,8 @@ internal static class Pcre2GlobalOperationDriver
         {
             if (invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
-                input.Describe(ref invocation);
+                // Exact, case-sensitive literal portfolios count byte ranges;
+                // they consume no whole-subject coordinate description.
                 result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
                 return true;
             }
