@@ -1,0 +1,275 @@
+{
+  "Source": "b7a7e631d48a1d06a1077af713bd018c5143799e",
+  "Decision": "Retain: substantial Unicode public-output improvements, no demonstrated material ASCII regression. No exact causal percentages.",
+  "FirstAttempt": {
+    "CompleteComparison": false,
+    "Reason": "After sample below20ms; benchmark guard aborted, not a production failure.",
+    "BeforeComplete": true,
+    "AfterQualified": false,
+    "RawSha256": "783A1675AD70D7283EDE774FE5A89B36B6217C01586240C66FAD8435B2A0A7FB",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "ConfirmationRemaining": 1
+  },
+  "ConfirmationSetup": {
+    "Reason": "Named branch assumption failed before after setup; original VM used detached commits. Confirmation baseline complete and preserved; after process not started.",
+    "RawSha256": "AE833967BF9F80F3BF06D1CEA0A58001C50B9CA578036061ED0A28357D7B7F51",
+    "OffVmVerified": true,
+    "ResumeOnlyMissingAfter": true,
+    "ExtraConfirmationAllowed": false
+  },
+  "Confirmation": {
+    "Acceptance": {
+      "Before": "7e212396fdbb5933a2976fc26ce548dbe337953e",
+      "After": "b7a7e631d48a1d06a1077af713bd018c5143799e",
+      "Comparisons": 1,
+      "Confirmations": 1,
+      "CorePairsUnchanged": true,
+      "CallerUnchanged": true,
+      "EqualCompleteOutputs": true,
+      "BaselineBodyEquivalentToFrozen82": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "Scope": "One confirmation pair; baseline was not repeated after a checkout assertion interrupted setup. No further attempts."
+    },
+    "Rows": [
+      {
+        "Id": "unicode-4095",
+        "OutputBytes": 4095,
+        "PythonText": {
+          "BeforeUs": 6.884874739932169,
+          "AfterUs": 5.229464285714286,
+          "ObservedPercent": -24.044162265095792,
+          "BeforeBytes": 16800,
+          "AfterBytes": 16800,
+          "BeforeRangeUs": [
+            6.77878701513381,
+            7.078578960868698
+          ],
+          "AfterRangeUs": [
+            5.1583459821428574,
+            5.308553571428572
+          ],
+          "MinimumSampleMs": 231.0939
+        },
+        "UnchangedPythonBytes": {
+          "BeforeUs": 3.3243070246813127,
+          "AfterUs": 3.270399957252398,
+          "ObservedPercent": -1.621603150030415,
+          "BeforeBytes": 16800,
+          "AfterBytes": 16800,
+          "BeforeRangeUs": [
+            3.2957716300515325,
+            3.4316327637645783
+          ],
+          "AfterRangeUs": [
+            3.253389083331107,
+            3.3370715220818084
+          ],
+          "MinimumSampleMs": 243.0302
+        }
+      },
+      {
+        "Id": "ascii-4096",
+        "OutputBytes": 4096,
+        "PythonText": {
+          "BeforeUs": 5.512024313470096,
+          "AfterUs": 5.245682001614205,
+          "ObservedPercent": -4.832023530901575,
+          "BeforeBytes": 20896,
+          "AfterBytes": 20896,
+          "BeforeRangeUs": [
+            5.438866818625855,
+            5.563614457831325
+          ],
+          "AfterRangeUs": [
+            5.2063830277873855,
+            5.500721780237519
+          ],
+          "MinimumSampleMs": 225.7748
+        },
+        "UnchangedPythonBytes": {
+          "BeforeUs": 5.236771354512026,
+          "AfterUs": 5.145747172455209,
+          "ObservedPercent": -1.7381736931934233,
+          "BeforeBytes": 16800,
+          "AfterBytes": 16800,
+          "BeforeRangeUs": [
+            5.216866598348303,
+            5.26040147085418
+          ],
+          "AfterRangeUs": [
+            5.044175758182364,
+            5.169458512661395
+          ],
+          "MinimumSampleMs": 251.9818
+        }
+      },
+      {
+        "Id": "unicode-large",
+        "OutputBytes": 131073,
+        "PythonText": {
+          "BeforeUs": 276.25974625144175,
+          "AfterUs": 180.07787401574802,
+          "ObservedPercent": -34.815739006779665,
+          "BeforeBytes": 524978.4359861591,
+          "AfterBytes": 524843.4141732283,
+          "BeforeRangeUs": [
+            271.5869665513264,
+            291.21384083044984
+          ],
+          "AfterRangeUs": [
+            177.50755905511812,
+            189.58984251968505
+          ],
+          "MinimumSampleMs": 225.4346
+        },
+        "UnchangedPythonBytes": {
+          "BeforeUs": 119.37457943925234,
+          "AfterUs": 115.82243035542747,
+          "ObservedPercent": -2.975632752392232,
+          "BeforeBytes": 524867.2373831776,
+          "AfterBytes": 524865.3909702209,
+          "BeforeRangeUs": [
+            117.36855140186917,
+            130.06434579439252
+          ],
+          "AfterRangeUs": [
+            114.96589817483189,
+            125.59735830931797
+          ],
+          "MinimumSampleMs": 239.359
+        }
+      },
+      {
+        "Id": "ascii-large",
+        "OutputBytes": 131073,
+        "PythonText": {
+          "BeforeUs": 203.05032021957913,
+          "AfterUs": 195.76796280642435,
+          "ObservedPercent": -3.586479157126976,
+          "BeforeBytes": 655924.4574565416,
+          "AfterBytes": 655924.17920541,
+          "BeforeRangeUs": [
+            197.9419945105215,
+            211.32314730100643
+          ],
+          "AfterRangeUs": [
+            194.08360101437023,
+            211.3980557903635
+          ],
+          "MinimumSampleMs": 216.3506
+        },
+        "UnchangedPythonBytes": {
+          "BeforeUs": 184.87345864661654,
+          "AfterUs": 178.17978883861235,
+          "ObservedPercent": -3.62067646540819,
+          "BeforeBytes": 524849.3894736842,
+          "AfterBytes": 524841.1402714932,
+          "BeforeRangeUs": [
+            179.79112781954888,
+            202.02285714285716
+          ],
+          "AfterRangeUs": [
+            174.53861236802413,
+            194.0452488687783
+          ],
+          "MinimumSampleMs": 231.4382
+        }
+      },
+      {
+        "Id": "unicode-callback-finite",
+        "OutputBytes": 131073,
+        "PythonText": {
+          "BeforeUs": 234.4921875,
+          "AfterUs": 154.63200692041525,
+          "ObservedPercent": -34.05664872292803,
+          "BeforeBytes": 262838.3416666667,
+          "AfterBytes": 262851.8246828143,
+          "BeforeRangeUs": [
+            225.96197916666668,
+            247.10145833333334
+          ],
+          "AfterRangeUs": [
+            150.3977508650519,
+            156.31568627450983
+          ],
+          "MinimumSampleMs": 216.9235
+        },
+        "UnchangedPythonBytes": {
+          "BeforeUs": 93.34709151537606,
+          "AfterUs": 88.54117850953206,
+          "ObservedPercent": -5.148433580335365,
+          "BeforeBytes": 262857.37532419414,
+          "AfterBytes": 262844.891507799,
+          "BeforeRangeUs": [
+            90.01185624305299,
+            96.19147832530567
+          ],
+          "AfterRangeUs": [
+            85.19116117850953,
+            100.65535528596187
+          ],
+          "MinimumSampleMs": 242.942
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "RawSha256": "83EED98576A9745CAA48AA067E52E9A40016A811881F26EE945629EBB5108F4D",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherAttemptsAllowed": false
+  },
+  "Correctness": {
+    "CorePairsUnchanged": true,
+    "Results": [
+      {
+        "Framework": "net10.0",
+        "Counts": {
+          "total": "426",
+          "executed": "426",
+          "passed": "426",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      {
+        "Framework": "net11.0",
+        "Counts": {
+          "total": "426",
+          "executed": "426",
+          "passed": "426",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    ],
+    "PackagesRepacked": false
+  },
+  "PackagesRepacked": false,
+  "FullRepeated": false,
+  "UnchangedPackageCandidate": "0.5.0-dev.82"
+}
