@@ -42,6 +42,12 @@ scalar semantics, offsets and interruption/admission remain active; malformed-ta
 rejection is not an additional compatibility guarantee. Recheck finite work limits
 because removed preparation changes route-dependent work requirements.
 
+String-only Python results with no known UTF-16 length can preadmit a conservative
+byte-derived string capacity for ranges up to4096 UTF-8 bytes, avoiding a separate
+sizing pass. Known lengths and larger bounded decoding retain their existing
+paths. Recheck finite working/result budgets for Unicode output: conservative
+charges can cause earlier denial while preserving admission before allocation.
+
 Core also accepts native UTF-8 patterns, including the funded program overload:
 
 ```csharp

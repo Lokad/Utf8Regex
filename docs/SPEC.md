@@ -679,6 +679,14 @@ retention are excluded. Shared/temporary/final storage may count again.
 The limits do not bound total heap/RSS. PCRE2 uses its own
 [limit names and failure vocabulary](SPEC-PCRE2.md#interruption-and-resource-controls).
 
+String shaping reuses a known UTF-16 length when available. An unknown complete
+valid UTF-8 range of at most4096 bytes can instead admit the string capacity for
+`byteLength` UTF-16 units before decoding. This conservative upper bound avoids a
+separate sizing pass; short Unicode output can therefore require more modeled
+working/result bytes than its actual UTF-16 length. Larger unknown ranges retain
+bounded exact sizing/decoding. Original interruption checks surround the bounded
+decode; publication/refund and cumulative result-traffic rules are unchanged.
+
 PythonRe's range cursor and range split publish byte metadata without captured
 text or a coordinate map. They retain the same preallocation working/result
 admission; immutable range/name arrays are owned and subject bytes are borrowed.

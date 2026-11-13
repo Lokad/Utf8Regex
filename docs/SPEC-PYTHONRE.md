@@ -492,6 +492,11 @@ The previously rejected program-sharing prototype is not delivered.
 Scalar value results reuse existing coordinate facts/maps when available;
 otherwise they count only the prefix and range requested by that value. String
 output sizes its selected range without describing an unrelated subject suffix.
+For an unknown string length of at most4096 UTF-8 bytes, admission can use the
+byte-derived upper bound on UTF-16 capacity before a bounded checked decode,
+avoiding a separate character-count pass. Known lengths remain exact; larger
+ranges retain bounded sizing/decoding. Unicode working/result charges can be
+larger under this conservative model, so an existing finite budget can deny earlier.
 LTR backtracking search reuses the shared beginning-anchor finder for an initial
 mandatory \A/^; candidate verification, RTL and NonBacktracking remain unchanged.
 Sizing, discovery and publication retain bounded original interruption and limits.
