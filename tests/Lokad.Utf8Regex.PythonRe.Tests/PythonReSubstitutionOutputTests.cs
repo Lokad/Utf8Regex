@@ -156,6 +156,35 @@ public sealed class PythonReSubstitutionOutputTests
     }
 
     [Theory]
+    [InlineData(2047, 1)] //4095 UTF-8 bytes: conservative short-string charge.
+    [InlineData(2047, 2)] //4096 UTF-8 bytes: last short-string extent.
+    [InlineData(2048, 1)] //4097 UTF-8 bytes: bounded exact sizing.
+    public void FinalUnicodeTextUsesBoundedAdmissionAndSurvivesDisposal(int unicodeChars, int asciiChars)
+    {
+        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
+        var program = core.Inspection.AvailableOwnedSliceProgram;
+        Assert.NotNull(program);
+        var text = new string('é', unicodeChars) + new string('x', asciiChars);
+        var length = Encoding.UTF8.GetByteCount(text);
+        var charge = TextBytes(length <= 4096 ? length : text.Length);
+        var cursor = new PythonReScalarMatchCursor([], program, 0, Regex.InfiniteMatchTimeout,
+            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var writer = cursor.CreateOutputWriter();
+        string result;
+        try
+        {
+            cursor.AppendText(ref writer, text);
+            result = cursor.CompleteOutputText(ref writer);
+            Assert.Equal(text, result);
+            Assert.Equal(charge, cursor.ResultReservation);
+            Assert.Equal(0, writer.Length);
+        }
+        finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
+        Assert.Equal(0UL, cursor.ReservedBytes);
+        Assert.Equal(text, result);
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void FinalTextFailureRestoresTheWriterAndPreservesProfileIdentity(bool expire)
     {

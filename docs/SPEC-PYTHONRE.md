@@ -602,6 +602,13 @@ while (cursor.MoveNextRetained(out var retained, cancellationToken))
 }
 ```
 
+String substitution output assembled from valid scalar slices and validated or
+repaired text fragments needs no second validity pass. Unknown short output uses
+the conservative byte-derived string charge described above; larger output retains
+bounded sizing/decoding. Completed byte-callback output remains independently
+validated, allowing valid scalars to join across fragments and rejecting malformed
+output. Original interruption, admission, ownership and result lifetimes remain.
+
 `SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
 requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
 `Result` contains the owned UTF-8 byte array and replacement count. It uses the

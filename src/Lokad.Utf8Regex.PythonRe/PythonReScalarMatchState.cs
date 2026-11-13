@@ -770,8 +770,10 @@ internal struct PythonReScalarMatchState
     internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer)
     {
         Checkpoint();
-        var validation = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
-        var result = _results.DecodeUtf8(writer.WrittenBytes, validation.Utf16Length, ref _invocation);
+        // Text templates and encoded string callbacks assemble valid scalar
+        // fragments. Reuse bounded sizing/admission without validating them again.
+        // Raw byte callbacks retain their completed-stream check above.
+        var result = _results.DecodeUtf8(writer.WrittenBytes, null, ref _invocation);
         Checkpoint();
         writer.Release(ref _invocation);
         return result;
