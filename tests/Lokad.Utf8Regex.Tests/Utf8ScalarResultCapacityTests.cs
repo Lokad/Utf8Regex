@@ -70,6 +70,37 @@ public sealed class Utf8ScalarResultCapacityTests
     }
 
     [Theory]
+    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
+    public void UnknownStringLengthAdmitsItsBoundBeforeDecodingAndRefundsIt(int byteCount)
+    {
+        var text = new string('\u00e9', byteCount / 2) + ((byteCount & 1) == 0 ? "" : "x");
+        var input = Encoding.UTF8.GetBytes(text);
+        var extent = StringBytes(byteCount <= 4096 ? byteCount : text.Length);
+        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + extent, extent), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        Utf8InvocationResultLedger results = default;
+        var retained = results.DecodeUtf8(input, null, ref invocation);
+        Assert.Equal(text, retained);
+        Assert.Equal(extent, results.ReservedBytes);
+        Assert.Equal(extent, invocation.Budget.ResultBytes);
+        results.Release(ref invocation);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(text, retained);
+        foreach (var resultLimit in new[] { false, true })
+        {
+            var denied = new Utf8SliceInvocation(new(0, 0, resultLimit ? 13 + extent : 12 + extent,
+                resultLimit ? extent - 1 : extent), Regex.InfiniteMatchTimeout, default);
+            Assert.True(denied.Ledger.TryReserve(13));
+            Utf8InvocationResultLedger rejected = default;
+            Assert.Throws<InvalidOperationException>(() => rejected.DecodeUtf8(input, null, ref denied));
+            Assert.Equal(resultLimit ? Utf8ExecutionLimitKind.ResultBytes : Utf8ExecutionLimitKind.WorkingBytes,
+                denied.Budget.LimitBreach);
+            Assert.Equal(0UL, rejected.ReservedBytes);
+            Assert.Equal(13UL, denied.Ledger.ReservedBytes);
+        }
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(16)] [InlineData(17)]
     [InlineData(33)] [InlineData(257)] [InlineData(513)]
     public void StagingAndFinalExtentsUseOneCumulativeAllowance(int count)

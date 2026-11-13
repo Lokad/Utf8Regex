@@ -9,6 +9,9 @@ public sealed class PythonReUnicodeStringSizingTests
 {
     [Theory]
     [InlineData(0)]
+    [InlineData(4086)]
+    [InlineData(4087)]
+    [InlineData(4088)]
     [InlineData(4092)]
     [InlineData(4093)]
     [InlineData(4094)]

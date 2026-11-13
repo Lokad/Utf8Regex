@@ -707,13 +707,12 @@ internal struct PythonReScalarMatchState
         // not a coordinate map for the complete subject. Detailed results
         // already project coordinates and can supply their character count.
         // The caller's valid-text contract proves these scalar ranges.
-        // Unknown lengths need bounded character counting, not validation.
         // Reuse facts already requested by coordinates or matching. Creating
         // one string must not describe an unrelated, possibly enormous suffix.
-        var count = characterCount ?? (_validation is { IsAscii: true } ? end - start
+        int? count = characterCount ?? (_validation is { IsAscii: true } ? end - start
             : start == 0 && end == input.Length && _validation is { } known ? known.Utf16Length : _hasMap
             ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
-            : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
+            : (int?)null);
         var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
         Checkpoint();
         return text;
