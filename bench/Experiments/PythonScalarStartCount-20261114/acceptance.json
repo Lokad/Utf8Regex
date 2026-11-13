@@ -1,0 +1,243 @@
+{
+  "Decision": "Accept checked32-byte SIMD scalar-start counting; public mixed/late/finite operations improve with unchanged allocations and checkpoint units. No further timing.",
+  "Source": "8ab773726ab5eab3df522e2602519e374a2ad3bf",
+  "BaselineCheckout": "7202ada0a042d8476f32f37d93268e830eac4cb8",
+  "BaselinePythonProducer": "bbf6d452cd7f97d4c4eed8fcf79b65a0b3dd3619",
+  "SharedCoreUnchanged": true,
+  "CallerUnchanged": true,
+  "InputGuarantees": "Valid unchanged UTF8; same public cursor/range/two-query output before/after. Byte-only controls have a different coordinate contract, not CPython parity.",
+  "WorkUnitBytesBefore": 32,
+  "WorkUnitBytesAfter": 32,
+  "AllocationsUnchanged": true,
+  "NoOwnerOrPublicApiChange": true,
+  "NoUncheckedRead": true,
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "FurtherTiming": false,
+  "BeforePlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+  "AfterPlacement": "least-contended allowed processor (0x4; Linux efficiency class unknown)",
+  "Rows": [
+    {
+      "Id": "first-block",
+      "InputBytes": 1048578,
+      "ScalarQueries": {
+        "BeforeUs": 0.44903405875392294,
+        "AfterUs": 0.4495471645011492,
+        "ObservedPercent": 0.11426878144835673,
+        "BeforeBytes": 592,
+        "AfterBytes": 592,
+        "BeforeRangeUs": [
+          0.44592933947772656,
+          0.45481776288227904
+        ],
+        "AfterRangeUs": [
+          0.4413510952671326,
+          0.45545044326656975
+        ],
+        "MinimumSampleMs": 235.2291
+      },
+      "ByteOnlyControl": {
+        "BeforeUs": 0.39329210885666954,
+        "AfterUs": 0.3834050859610167,
+        "ObservedPercent": -2.513913366936138,
+        "BeforeBytes": 592,
+        "AfterBytes": 592,
+        "BeforeRangeUs": [
+          0.39004742186152563,
+          0.4004599778159994
+        ],
+        "AfterRangeUs": [
+          0.3788573486166957,
+          0.3885925956341974
+        ],
+        "MinimumSampleMs": 239.8902
+      }
+    },
+    {
+      "Id": "late-mixed",
+      "InputBytes": 16385,
+      "ScalarQueries": {
+        "BeforeUs": 14.284150150491227,
+        "AfterUs": 3.0982168890882584,
+        "ObservedPercent": -78.3101069615842,
+        "BeforeBytes": 880,
+        "AfterBytes": 880,
+        "BeforeRangeUs": [
+          14.118246351297632,
+          14.616031574762905
+        ],
+        "AfterRangeUs": [
+          3.0824268251654146,
+          3.105683276637633
+        ],
+        "MinimumSampleMs": 247.374
+      },
+      "ByteOnlyControl": {
+        "BeforeUs": 0.5880421041888472,
+        "AfterUs": 0.5715915625163356,
+        "ObservedPercent": -2.7975108508945468,
+        "BeforeBytes": 592,
+        "AfterBytes": 592,
+        "BeforeRangeUs": [
+          0.5801034976259565,
+          0.597306092721069
+        ],
+        "AfterRangeUs": [
+          0.5675100968433302,
+          0.5778853562248147
+        ],
+        "MinimumSampleMs": 249.6982
+      }
+    },
+    {
+      "Id": "late-mixed-finite-live",
+      "InputBytes": 16385,
+      "ScalarQueries": {
+        "BeforeUs": 16.022431126778955,
+        "AfterUs": 5.858898346782129,
+        "ObservedPercent": -63.43315006054288,
+        "BeforeBytes": 992,
+        "AfterBytes": 992,
+        "BeforeRangeUs": [
+          15.965674370022198,
+          16.130806893850373
+        ],
+        "AfterRangeUs": [
+          5.742727809486322,
+          6.743756150364102
+        ],
+        "MinimumSampleMs": 233.4304
+      },
+      "ByteOnlyControl": {
+        "BeforeUs": 0.8933761739990114,
+        "AfterUs": 0.8762227773257198,
+        "ObservedPercent": -1.9200642654826905,
+        "BeforeBytes": 704,
+        "AfterBytes": 704,
+        "BeforeRangeUs": [
+          0.8834987570991156,
+          0.901598167832516
+        ],
+        "AfterRangeUs": [
+          0.8666864466703859,
+          0.8865195129144473
+        ],
+        "MinimumSampleMs": 243.9107
+      }
+    },
+    {
+      "Id": "progressive-mixed",
+      "InputBytes": 8192,
+      "ScalarQueries": {
+        "BeforeUs": 2834.8781609195403,
+        "AfterUs": 1298.7608247422681,
+        "ObservedPercent": -54.18636177573877,
+        "BeforeBytes": 230440,
+        "AfterBytes": 230440,
+        "BeforeRangeUs": [
+          2821.5873563218393,
+          2864.020689655172
+        ],
+        "AfterRangeUs": [
+          1289.073711340206,
+          1310.7896907216495
+        ],
+        "MinimumSampleMs": 245.4781
+      },
+      "ByteOnlyControl": {
+        "BeforeUs": 603.7915254237288,
+        "AfterUs": 610.8336561743341,
+        "ObservedPercent": 1.1663182496083113,
+        "BeforeBytes": 229912,
+        "AfterBytes": 229912,
+        "BeforeRangeUs": [
+          601.0762711864406,
+          607.1658595641646
+        ],
+        "AfterRangeUs": [
+          607.2687651331719,
+          620.5745762711864
+        ],
+        "MinimumSampleMs": 248.2445
+      }
+    },
+    {
+      "Id": "progressive-ascii",
+      "InputBytes": 4096,
+      "ScalarQueries": {
+        "BeforeUs": 846.179797979798,
+        "AfterUs": 818.6460784313726,
+        "ObservedPercent": -3.2538852397753226,
+        "BeforeBytes": 229912,
+        "AfterBytes": 229912,
+        "BeforeRangeUs": [
+          840.1919191919192,
+          852.8797979797979
+        ],
+        "AfterRangeUs": [
+          814.2712418300654,
+          820.7346405228758
+        ],
+        "MinimumSampleMs": 249.167
+      },
+      "ByteOnlyControl": {
+        "BeforeUs": 603.8125301204819,
+        "AfterUs": 610.5600961538462,
+        "ObservedPercent": 1.1174935425765087,
+        "BeforeBytes": 229912,
+        "AfterBytes": 229912,
+        "BeforeRangeUs": [
+          599.1486746987952,
+          613.3002409638555
+        ],
+        "AfterRangeUs": [
+          608.1661057692307,
+          613.3704326923078
+        ],
+        "MinimumSampleMs": 248.6467
+      }
+    }
+  ],
+  "Windows": [
+    {
+      "Framework": "net10.0",
+      "DisabledIntrinsics": false,
+      "Passed": 73
+    },
+    {
+      "Framework": "net11.0",
+      "DisabledIntrinsics": false,
+      "Passed": 73
+    },
+    {
+      "Framework": "net11.0",
+      "DisabledIntrinsics": true,
+      "Passed": 35
+    }
+  ],
+  "Linux": [
+    {
+      "Framework": "net10.0",
+      "Passed": 73
+    },
+    {
+      "Framework": "net11.0",
+      "Passed": 73
+    }
+  ],
+  "Codegen": {
+    "PublicRouteObserved": true,
+    "FullOpts": true,
+    "VectorCompare": true,
+    "MaskAndPopcount": true,
+    "RangeFailureBlocks": 0,
+    "Scope": "Release diagnostic preflight only; no timing or unmanaged access."
+  },
+  "RawSha256": "F94ED917AA4D61AF6FC3EF7119A4BCD4583C1D746935CB11F2D64923C78D916D",
+  "LocalChecksSha256": "C618BC3615485DD600FEFF7259868A44B0A01377BD803C5BA1C6F91ACE68BAAB",
+  "OffVmVerified": true,
+  "KeeperReleased": true,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "SeparateRunCaution": "Earlier prefix-growth after progressive3625us versus this baseline2835us is context movement, not a source change. Preserve the earlier +31.12%/376B result; do not compose percentages or claim cumulative equivalence."
+}
