@@ -1,0 +1,384 @@
+{
+  "Before": "6ac208cfc443b5eba75005bdc4aa3a8417bcb9ff",
+  "After": "260aa1cd9e3549ef749bb7bbabd571f996f0ba28",
+  "Decision": "Retain the proved removal of unrelated suffix description/map and reduced one-shot admission. Explicitly retain +33.9/+39.9% dense neighbor observations as unresolved costs for the next delivery catalog; do not claim bulk throughput is preserved.",
+  "Checks": {
+    "CorePairsUnchanged": true,
+    "Results": [
+      {
+        "Framework": "net10.0",
+        "Counts": {
+          "total": "318",
+          "executed": "318",
+          "passed": "318",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      {
+        "Framework": "net11.0",
+        "Counts": {
+          "total": "318",
+          "executed": "318",
+          "passed": "318",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    ],
+    "PackagesRepacked": false
+  },
+  "Original": {
+    "Acceptance": {
+      "Before": "6ac208cfc443b5eba75005bdc4aa3a8417bcb9ff",
+      "After": "260aa1cd9e3549ef749bb7bbabd571f996f0ba28",
+      "OrdinaryProcesses": 2,
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CorePairsUnchanged": true,
+      "CallerUnchanged": true,
+      "EqualCompleteOutputs": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "RetainedOutputs": 16,
+      "Scope": "One-shot public details with unchanged value and dense bulk neighbors. No packages/catalogs refreshed."
+    },
+    "Rows": [
+      {
+        "Id": "owned-early",
+        "InputBytes": 114696,
+        "PublicDetails": {
+          "BeforeUs": 374.9227344992051,
+          "AfterUs": 0.6710748081283795,
+          "ObservedPercent": -99.82100983846051,
+          "BeforeBytes": 270896,
+          "AfterBytes": 560,
+          "BeforeRangeUs": [
+            374.0319554848967,
+            378.77424483306834
+          ],
+          "AfterRangeUs": [
+            0.6684641003837433,
+            0.6817392181231466
+          ],
+          "MinimumSampleMs": 235.2661
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.33538054206730455,
+          "AfterUs": 0.32632668985109076,
+          "ObservedPercent": -2.6995758789121638,
+          "BeforeBytes": 272,
+          "AfterBytes": 272,
+          "BeforeRangeUs": [
+            0.32106577267088177,
+            0.3660244323014063
+          ],
+          "AfterRangeUs": [
+            0.32393850995996015,
+            0.3271444605410839
+          ],
+          "MinimumSampleMs": 246.191
+        }
+      },
+      {
+        "Id": "context-early-finite",
+        "InputBytes": 114696,
+        "PublicDetails": {
+          "BeforeUs": 382.7165151515151,
+          "AfterUs": 1.0509290633317843,
+          "ObservedPercent": -99.72540274021995,
+          "BeforeBytes": 270952,
+          "AfterBytes": 616,
+          "BeforeRangeUs": [
+            380.1577272727273,
+            386.705
+          ],
+          "AfterRangeUs": [
+            1.0415978706324729,
+            1.0584671933753012
+          ],
+          "MinimumSampleMs": 246.5358
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.47133379560089167,
+          "AfterUs": 0.4177398638087342,
+          "ObservedPercent": -11.370695734608194,
+          "BeforeBytes": 384,
+          "AfterBytes": 384,
+          "BeforeRangeUs": [
+            0.43869321335657674,
+            0.5018457598774222
+          ],
+          "AfterRangeUs": [
+            0.4123445421554103,
+            0.4269689627988528
+          ],
+          "MinimumSampleMs": 242.6994
+        }
+      },
+      {
+        "Id": "owned-lookahead",
+        "InputBytes": 114695,
+        "PublicDetails": {
+          "BeforeUs": 379.47095808383233,
+          "AfterUs": 0.7883688875962621,
+          "ObservedPercent": -99.79224526388602,
+          "BeforeBytes": 271400,
+          "AfterBytes": 1064,
+          "BeforeRangeUs": [
+            377.85404191616766,
+            380.0862275449102
+          ],
+          "AfterRangeUs": [
+            0.78434484895234,
+            0.8016280775407494
+          ],
+          "MinimumSampleMs": 248.1071
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.4827424144924655,
+          "AfterUs": 0.4291318530881354,
+          "ObservedPercent": -11.105417670973438,
+          "BeforeBytes": 800,
+          "AfterBytes": 800,
+          "BeforeRangeUs": [
+            0.4333748380357464,
+            0.5080686536606973
+          ],
+          "AfterRangeUs": [
+            0.424187836425894,
+            0.4337548319465374
+          ],
+          "MinimumSampleMs": 246.0264
+        }
+      },
+      {
+        "Id": "unchanged-dense-bulk",
+        "InputBytes": 896,
+        "PublicDetails": {
+          "BeforeUs": 51.16866734486266,
+          "AfterUs": 68.51848830886351,
+          "ObservedPercent": 33.90711907165347,
+          "BeforeBytes": 25816,
+          "AfterBytes": 25816,
+          "BeforeRangeUs": [
+            51.09936927772126,
+            51.546103763987794
+          ],
+          "AfterRangeUs": [
+            68.31759108210984,
+            68.6768624252311
+          ],
+          "MinimumSampleMs": 251.1534
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.2474787518602938,
+          "AfterUs": 0.25732228910427024,
+          "ObservedPercent": 3.9775282402964907,
+          "BeforeBytes": 64,
+          "AfterBytes": 64,
+          "BeforeRangeUs": [
+            0.24724725962037647,
+            0.24780032929054202
+          ],
+          "AfterRangeUs": [
+            0.25697413208698916,
+            0.258335165290228
+          ],
+          "MinimumSampleMs": 250.0325
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x20; Linux efficiency class unknown)",
+    "RawSha256": "15C5F375C9F733C511F794E2E9CBD5AB0F41ADE00DE664DCB1E67EAF22F82719",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherAttemptsAllowed": false
+  },
+  "Confirmation": {
+    "RawExit": 1,
+    "Reason": "Post-timing cross-process checksum assertion counted legal NameEntries iteration order. Both possible catalog orders reproduce the two exact raw checksums; group values/coordinates were independently checked before each process timed. No runtime result defect or sample replacement.",
+    "PermittedCatalogOrderChecksums": [
+      -4719034493949972928,
+      -4698733981499675968
+    ],
+    "Rows": [
+      {
+        "Id": "owned-early",
+        "InputBytes": 114696,
+        "PublicDetails": {
+          "BeforeUs": 377.2930303030303,
+          "AfterUs": 0.6667026949128116,
+          "ObservedPercent": -99.82329313256135,
+          "BeforeBytes": 270896,
+          "AfterBytes": 560,
+          "BeforeRangeUs": [
+            375.4409090909091,
+            379.5048484848485
+          ],
+          "AfterRangeUs": [
+            0.6631364322962536,
+            0.6759953136592421
+          ],
+          "MinimumSampleMs": 247.791
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.3387423756165016,
+          "AfterUs": 0.32024617032113145,
+          "ObservedPercent": -5.460257300760674,
+          "BeforeBytes": 272,
+          "AfterBytes": 272,
+          "BeforeRangeUs": [
+            0.32226514563837266,
+            0.3694500585044145
+          ],
+          "AfterRangeUs": [
+            0.3175934075979784,
+            0.3226872396275449
+          ],
+          "MinimumSampleMs": 243.1908
+        }
+      },
+      {
+        "Id": "context-early-finite",
+        "InputBytes": 114696,
+        "PublicDetails": {
+          "BeforeUs": 385.71276595744683,
+          "AfterUs": 1.0468255275303935,
+          "ObservedPercent": -99.72859971981174,
+          "BeforeBytes": 270952,
+          "AfterBytes": 616,
+          "BeforeRangeUs": [
+            384.2161094224924,
+            392.4673252279635
+          ],
+          "AfterRangeUs": [
+            1.0425571447272297,
+            1.0530270975588127
+          ],
+          "MinimumSampleMs": 246.889
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.4843987231562365,
+          "AfterUs": 0.4081253821476987,
+          "ObservedPercent": -15.745983084256975,
+          "BeforeBytes": 384,
+          "AfterBytes": 384,
+          "BeforeRangeUs": [
+            0.44663168398658193,
+            0.5279886101782998
+          ],
+          "AfterRangeUs": [
+            0.40703414044020136,
+            0.4147328285568628
+          ],
+          "MinimumSampleMs": 247.5139
+        }
+      },
+      {
+        "Id": "owned-lookahead",
+        "InputBytes": 114695,
+        "PublicDetails": {
+          "BeforeUs": 384.7183734939759,
+          "AfterUs": 0.7783724204538683,
+          "ObservedPercent": -99.79767734683821,
+          "BeforeBytes": 271400,
+          "AfterBytes": 1064,
+          "BeforeRangeUs": [
+            383.4653614457831,
+            387.21460843373495
+          ],
+          "AfterRangeUs": [
+            0.7732103492284488,
+            0.7846934647839625
+          ],
+          "MinimumSampleMs": 246.5791
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.4860204267417351,
+          "AfterUs": 0.425711792354133,
+          "ObservedPercent": -12.408662490156896,
+          "BeforeBytes": 800,
+          "AfterBytes": 800,
+          "BeforeRangeUs": [
+            0.4424413352660658,
+            0.5193504338144157
+          ],
+          "AfterRangeUs": [
+            0.4214110134099519,
+            0.4299663007551284
+          ],
+          "MinimumSampleMs": 247.7252
+        }
+      },
+      {
+        "Id": "unchanged-dense-bulk",
+        "InputBytes": 896,
+        "PublicDetails": {
+          "BeforeUs": 48.98218167701864,
+          "AfterUs": 68.54348664279813,
+          "ObservedPercent": 39.93555267661184,
+          "BeforeBytes": 25816,
+          "AfterBytes": 25816,
+          "BeforeRangeUs": [
+            48.84846661490683,
+            49.26710015527951
+          ],
+          "AfterRangeUs": [
+            68.38105205177636,
+            68.58840539796199
+          ],
+          "MinimumSampleMs": 248.2916
+        },
+        "UnchangedValue": {
+          "BeforeUs": 0.27646276908850786,
+          "AfterUs": 0.24838090054272371,
+          "ObservedPercent": -10.1575588779529,
+          "BeforeBytes": 64,
+          "AfterBytes": 64,
+          "BeforeRangeUs": [
+            0.2755172000453788,
+            0.27864020000899015
+          ],
+          "AfterRangeUs": [
+            0.24805609459800582,
+            0.24879445128108038
+          ],
+          "MinimumSampleMs": 251.5646
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x10; Linux efficiency class unknown)",
+    "RawSha256": "06B1B07CFCF6AA4DE6720F551F455CE33FF9B1BEDCEBB58ACE5B9304E55B0DCD",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherAttemptsAllowed": false
+  },
+  "ImmutableAssetsPreserved": 516,
+  "PackagesRepacked": false,
+  "FurtherAttemptsAllowed": false
+}
