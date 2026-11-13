@@ -117,7 +117,7 @@ public sealed class PythonReSharedWorkingAllowanceTests
     }
 
     [Fact]
-    public void PreCancellationWinsBeforeAllowanceOrInputValidation()
+    public void PreCancellationWinsBeforeAllowanceAndOffsetChecks()
     {
         using var token = new CancellationTokenSource(); token.Cancel();
         var regex = new Utf8PythonRegex("a");

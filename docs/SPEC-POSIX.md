@@ -221,7 +221,7 @@ requirements remain subject to the admission rules above.
 [Independent selection fixtures](../tests/Lokad.Utf8Regex.Posix.Tests/Corpus/selection.json)
 pin ambiguous, nested/repeated/nullable, absent/empty and supplementary-scalar
 coordinates before execution changes. Qualification covers every capture-span size,
-public discovery/count/cursor routes, malformed subjects/offsets, original-token
+public discovery/count/cursor routes, valid text/scalar-aligned offsets, original-token
 and deadline interruption, each finite limit, shared refusal and alias disposal
 on both target frameworks. Fixture data alone is not implementation qualification.
 

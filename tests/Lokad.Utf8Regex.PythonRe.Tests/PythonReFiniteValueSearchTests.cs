@@ -52,7 +52,7 @@ public sealed class PythonReFiniteValueSearchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalCancellationAndAbsoluteDeadlineInterruptWholeInputValidation(bool deadline)
+    public void OriginalCancellationAndAbsoluteDeadlineInterruptNativeLiteralDiscovery(bool deadline)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

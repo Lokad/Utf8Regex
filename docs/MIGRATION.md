@@ -11,13 +11,13 @@ Benchmark runs default to .NET 11; use `-Framework net10.0` with
 the test/benchmark scripts for .NET 10 controls. Historical measurements retain
 their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
 
-Core and PCRE2 retain an explicit immutable subject-validation choice:
+Core retains an explicit immutable subject-validation choice:
 
 ```csharp
 var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
 ```
 
-The default `Validate` preserves strict whole-input rejection. `AssumeValid` skips
+Core's default `Validate` preserves strict whole-input rejection. `AssumeValid` skips
 that pass because the host guarantees valid UTF-8 and unchanged borrowed storage;
 it does not guarantee rejection of malformed subjects. Choose it once at engine
 construction or a `Compile`/`Create` factory and inspect `InputValidation` afterward.
@@ -27,6 +27,11 @@ interruption/admission. Patterns and replacements keep their separate validation
 Required coordinates/materialization may still scan input. Validation runs at most
 once per logical operation/cursor lifetime; omitted/redundant passes can reduce
 numeric work requirements. See the [input contract](SPEC.md#subject-input-validation).
+
+PCRE2 retains the same immutable choice, but `Validate` follows native UTF-mode
+checking: start offset minus the maximum scalar lookbehind through subject end.
+It can ignore invalid bytes before that window. `AssumeValid` is the explicit
+subject `PCRE2_NO_UTF_CHECK` equivalent. See its [input contract](SPEC-PCRE2.md#subject-input-validation).
 
 PythonRe models Python `re` over `str`; PythonRe and POSIX instead require existing
 valid UTF-8 text. Their regex operations omit whole-subject validation, and their

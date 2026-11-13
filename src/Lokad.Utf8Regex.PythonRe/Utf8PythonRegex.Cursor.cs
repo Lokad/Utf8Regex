@@ -19,7 +19,6 @@ public sealed partial class Utf8PythonRegex
     /// <remarks>Funded expressions use their program account for temporary working/result staging. Work and result capacity are cumulative through moves and snapshots. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity and growth overlap. Exclusive scratch releases synchronously; result traffic is never refunded. Sequential advances may cross asynchronous host waits.</remarks>
     /// <exception cref="OperationCanceledException">The invocation token is canceled.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The byte offset is outside the subject or inside a scalar.</exception>
-    /// <exception cref="ArgumentException">The subject is malformed UTF-8.</exception>
     public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
