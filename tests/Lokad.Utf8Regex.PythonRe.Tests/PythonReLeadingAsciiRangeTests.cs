@@ -130,7 +130,7 @@ public sealed class PythonReLeadingAsciiRangeTests
 
     [Theory]
     [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void FoldedSearchGlobalsKeepCapturesOffsetsAndStrictValidation(int padding)
+    public void FoldedSearchGlobalsKeepCapturesAndScalarOffsets(int padding)
     {
         var regex = new Utf8PythonRegex("(?i:(?P<word>sherlock))");
         var prefix = new string('9', padding);

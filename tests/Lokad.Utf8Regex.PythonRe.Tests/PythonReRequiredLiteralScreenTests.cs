@@ -125,7 +125,7 @@ public sealed class PythonReRequiredLiteralScreenTests
     }
 
     [Fact]
-    public void SearchCannotOutrunFiniteWorkAfterValidation()
+    public void SearchCannotOutrunFiniteWork()
     {
         var input = Enumerable.Repeat((byte)'a', 32768).ToArray();
         var measured = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 1, 1), Timeout.InfiniteTimeSpan, default);

@@ -99,7 +99,7 @@ public sealed class PythonReUnicodeBoundaryTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionAppliesAfterValidation(bool expire)
+    public void LongUnicodeWordScanObservesOriginalInterruption(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

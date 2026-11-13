@@ -288,7 +288,7 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void CancellationBeatsValidation()
+    public void PreCanceledTokenIsReportedAtEntry()
     {
         var regex = Create();
         var token = CanceledToken();

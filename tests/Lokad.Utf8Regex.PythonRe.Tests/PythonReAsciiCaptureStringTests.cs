@@ -32,7 +32,7 @@ public sealed class PythonReAsciiCaptureStringTests
     [InlineData("(a+)(b)", "😀aaabé", "aaa", "b")]
     [InlineData("(😀+)(é+)", "x😀😀ééx", "😀😀", "éé")]
     [InlineData("(a+)(b)", "aaab\0", "aaa", "b")]
-    public void WholeSubjectValidationKeepsAsciiAndUnicodeCaptureLengths(
+    public void ValidTextPreservesAsciiAndUnicodeCaptureLengths(
         string pattern, string input, string first, string second)
     {
         {

@@ -42,7 +42,7 @@ public sealed class PythonReAtomicRepeatCommitTests
     }
 
     [Fact]
-    public void FullSubjectValidationAndMeaningfulLimitsRemain()
+    public void ValidTextAndMeaningfulLimitsRemain()
     {
         var regex = new Utf8PythonRegex("a++b");
 

@@ -156,7 +156,7 @@ public sealed class PythonReNativeOneShotInvocationTests
     [InlineData(0, false)] [InlineData(0, true)]
     [InlineData(1, false)] [InlineData(1, true)]
     [InlineData(2, false)] [InlineData(2, true)]
-    public void NativeScansObserveTokenAndDeadlineAfterValidation(int lane, bool expire)
+    public void NativeScansObserveOriginalTokenAndDeadline(int lane, bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

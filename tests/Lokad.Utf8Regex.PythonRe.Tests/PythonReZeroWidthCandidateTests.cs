@@ -96,7 +96,7 @@ public sealed class PythonReZeroWidthCandidateTests
     }
 
     [Fact]
-    public void CompleteValidationAndOriginalTokenPrecedeCandidateRejection()
+    public void OriginalTokenPrecedesCandidateRejection()
     {
         var regex = new Utf8PythonRegex(@"\b\d+\b");
         var invalid = "no digits "u8.ToArray().Append((byte)0xff).ToArray();

@@ -174,7 +174,7 @@ public sealed class PythonReLiteralFullMatchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void FullValidationObservesInFlightCancellationAndFreshInvocationRecovers(bool text)
+    public void LongMatchObservesInFlightCancellationAndFreshInvocationRecovers(bool text)
     {
         var regex = new Utf8PythonRegex("cat", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
         var input = Encoding.UTF8.GetBytes(new string('x', 65536) + "cat");

@@ -235,16 +235,14 @@ public sealed class PythonReClassDelimiterWindowTests
     }
 
     [Fact]
-    public void StrictValidationAndScalarFloorsPrecedeWindowSearch()
+    public void ScalarFloorsAndOriginalCancellationPrecedeWindowSearch()
     {
         using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
         var valid = Encoding.UTF8.GetBytes("😀" + new string('x', 256) + " item-123");
         Assert.Throws<ArgumentOutOfRangeException>(() => owner.Search(valid, 1));
-        byte[] invalid = [.. valid, 0xff];
-
-        Assert.Throws<ArgumentException>(() => owner.ReplaceToString(invalid, @"\2:\1"));
+        Assert.Equal("😀" + new string('x', 256) + " 123:item", owner.ReplaceToString(valid, @"\2:\1"));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Search(invalid, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Search(valid, 0, token.Token)).CancellationToken);
     }
 
     [Theory]

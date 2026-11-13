@@ -105,7 +105,7 @@ public sealed class PythonReAsciiBoundaryTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionAppliesAfterWholeSubjectValidation(bool expire)
+    public void LongWordScanObservesOriginalInterruption(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

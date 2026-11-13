@@ -35,7 +35,7 @@ public sealed class PythonReLazyDisjointRepeatTests
     }
 
     [Fact]
-    public void FullValidationAndUsefulLimitsRemain()
+    public void ScalarOffsetsAndUsefulLimitsRemain()
     {
         var regex = new Utf8PythonRegex("a+?b");
 

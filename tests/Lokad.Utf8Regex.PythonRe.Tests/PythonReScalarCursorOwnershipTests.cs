@@ -53,7 +53,7 @@ public sealed class PythonReScalarCursorOwnershipTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void ValidationAndMapUseTheOriginalOperationToken(bool snapshot)
+    public void PreparationAndMapUseTheOriginalOperationToken(bool snapshot)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;

@@ -152,7 +152,7 @@ public sealed class PythonReRetainedSubnTests
     }
 
     [Fact]
-    public void StrictValidationAndScalarOffsetsApplyBeforeOutputPublication()
+    public void ScalarOffsetsAndOriginalCancellationApplyBeforeOutputPublication()
     {
         var account = new Allowance(16 << 20); using var regex = Compile("a", account);
         regex.Subn("a"u8, "x"); var held = account.Used;

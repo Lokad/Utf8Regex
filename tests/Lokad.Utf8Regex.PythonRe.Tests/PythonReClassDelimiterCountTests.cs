@@ -37,7 +37,7 @@ public sealed class PythonReClassDelimiterCountTests
     }
 
     [Fact]
-    public void StrictValidationAndWorkAdmissionRemainRequired()
+    public void ScalarFloorsAndWorkAdmissionRemainRequired()
     {
         var regex = Create(@"\w+@");
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "é@");

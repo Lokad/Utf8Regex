@@ -72,7 +72,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     [InlineData(6, true)]
     [InlineData(7, true)]
     [InlineData(8, true)]
-    public void FourToEightLiteralCountsDiscardCaptureStorageAndKeepWholeSubjectValidation(int width, bool captured)
+    public void FourToEightLiteralCountsDiscardCaptureStorageForValidText(int width, bool captured)
     {
         var pattern = string.Join('|', Literals.Take(width));
         if (captured) pattern = "(" + pattern + ")";
@@ -178,7 +178,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(expected, admitted.Count(input)); Assert.Equal(expected, admitted.Count(input));
     }
     [Fact]
-    public void DeadlinePrecedesWholeValidationAndUsesPythonDiagnosticLimits()
+    public void DeadlineAtEntryUsesPythonDiagnosticLimits()
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), Generous);
         var invalid = new byte[] { 0xFF, 99, 97, 116 };
@@ -198,7 +198,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     [InlineData(true, 5)]
     [InlineData(false, 8)]
     [InlineData(true, 8)]
-    public void NativeSearchKeepsOriginalInterruptionAfterValidation(bool expire, int width)
+    public void NativeSearchKeepsOriginalInterruption(bool expire, int width)
     {
         var regex = new Utf8PythonRegex(string.Join('|', Literals.Take(width)), PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 512)));

@@ -125,7 +125,7 @@ public sealed class PythonReFiniteResultPolicyTests
 
     [Theory]
     [MemberData(nameof(Operations))]
-    public void FullValidationOriginalCancellationAndCombinedWorkRemainAuthoritative(int operation, string pattern, string text)
+    public void OriginalCancellationAndCombinedWorkRemainAuthoritative(int operation, string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text).Concat(new byte[] { 255 }).ToArray();
 

@@ -47,3 +47,9 @@ before keeper release. First failure and setup repair remain under
 `artifacts/experiments/python-substitution-text-20261113/`, alongside confirmation.
 The immutable [dev82](../DeliveryDev82-20261113/README.md) assets remain unchanged.
 Current profile tables retain their separately recorded producer identities.
+
+CI follow-up: an old window-search test still required rejection of a malformed
+subject, outside PythonRe's valid-text domain. It now checks valid replacement,
+scalar floors and original cancellation.23 stale test labels were also corrected.
+Both complete Python suites pass5101 checks. Runtime and timing evidence are
+unchanged; CI43490495406 retains the original failure.

@@ -66,7 +66,7 @@ public sealed class PythonReTerminalClassRepeatTests
     }
 
     [Fact]
-    public void StartFloorsWholeValidationAndPinnedNewerCharactersRemainAuthoritative()
+    public void ScalarStartFloorsAndPinnedNewerCharactersRemainAuthoritative()
     {
         var regex = Create(@"\w+", 1, 1 << 20);
         Assert.Equal(1, regex.Count("😀é² ab"u8, 9));

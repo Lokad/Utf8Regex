@@ -65,7 +65,7 @@ public sealed class PythonReCompletedBackreferenceTests
     }
 
     [Fact]
-    public void StrictValidationAndFiniteAdmissionRemainBeforePublication()
+    public void OriginalCancellationAndFiniteAdmissionRemainBeforePublication()
     {
         var malformed = "token-token"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
 

@@ -49,7 +49,7 @@ public sealed class PythonReIpv4BooleanTests
     }
 
     [Fact]
-    public void WholeSubjectValidationAndEntryFailuresArePreserved()
+    public void ScalarOffsetsAndEntryFailuresArePreserved()
     {
         using var regex = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, Small);
         foreach (var input in new[] { "012.200.033.199"u8.ToArray().Concat(new byte[] { 0xff }).ToArray(),

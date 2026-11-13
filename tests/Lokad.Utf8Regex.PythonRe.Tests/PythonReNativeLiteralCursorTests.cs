@@ -62,7 +62,7 @@ public sealed class PythonReNativeLiteralCursorTests
     }
 
     [Fact]
-    public void MatchFullMatchValidationAndBudgetFailuresKeepTheirContracts()
+    public void MatchFullMatchAndBudgetFailuresKeepTheirContracts()
     {
         var regex = new Utf8PythonRegex("cat|dog");
         Assert.False(regex.Match("xcat"u8).Success);

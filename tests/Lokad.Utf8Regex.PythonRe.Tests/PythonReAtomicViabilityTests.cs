@@ -76,7 +76,7 @@ public sealed class PythonReAtomicViabilityTests
     }
 
     [Fact]
-    public void StrictValidationOffsetsOriginalTokensAndFundingRemainAuthoritative()
+    public void ScalarOffsetsOriginalTokensAndFundingRemainAuthoritative()
     {
         var allowance = new Allowance(16 << 20);
         using var regex = Utf8PythonRegex.Compile("a++a", PythonReCompileOptions.None,
