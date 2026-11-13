@@ -1,0 +1,1837 @@
+{
+  "Source": "891cabbf23c9076b4ab9cf2bcceb5f6cd3ae9207",
+  "Version": "0.5.0-dev.79",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "Sdk": "11.0.100",
+  "BenchmarkRuntime": ".NET 11.0.0",
+  "ExactCorePins": true,
+  "PackageCandidate": "artifacts/package-candidates/0.5.0-dev.79/candidate.json",
+  "Feed": "artifacts/nuget",
+  "Windows": {
+    "Source": "891cabbf23c9076b4ab9cf2bcceb5f6cd3ae9207",
+    "Version": "0.5.0-dev.79",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112394.0,
+    "Seconds": 495.0087968,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "891cabbf23c9076b4ab9cf2bcceb5f6cd3ae9207",
+    "Version": "0.5.0-dev.79",
+    "Sha256": "252D4409BF2A20879C414691CF68546547969AB90663A0ACEDA21B89FCD8ED42",
+    "Bytes": 46700332,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112394.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "Full": {
+    "Source": "891cabbf23c9076b4ab9cf2bcceb5f6cd3ae9207",
+    "Version": "0.5.0-dev.79",
+    "RawSha256": "AEC46EABED399D4E397C9854ECB571368F846B8F67C57BB3773B3C1771B17DA0",
+    "Bytes": 34397422,
+    "Seconds": 2848.3520643,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "SourceCI": {
+    "Source": "891cabbf23c9076b4ab9cf2bcceb5f6cd3ae9207",
+    "Run": 43350375017,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/43350375017",
+    "Closed": true
+  },
+  "SnapshotChecksPerFrameworkPerPlatform": 9,
+  "SnapshotLogs": [
+    {
+      "Platform": "Windows",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "116CD344EDC6EF428AC1FE479EA027CD94B8C3CD8421494B7F0F47F949931931"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "471BF6083823FD6EEFF7525E1CA71A3F83E180CC5E61071F515070A722606C38"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "ADDB9968B65505113E5FCA8B9486EB62CEBDB356FB5BC22380E2784CD7A8B0D4"
+    },
+    {
+      "Platform": "Windows",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "2BD2C8767E85DCC2945DBF0D9EA9E28BDFE9834BB5D4BEA28AE4C06BA413EDDD"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Core",
+      "PerFramework": 2,
+      "LogSha256": "D9F4AF8CDE750B21CB5EBA606791E65AE74FA9C4EB0E0E2FF842B92E9E7C651D"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "PythonRe",
+      "PerFramework": 1,
+      "LogSha256": "1592C1C6E3E173598E2B4EB940C7813B63BBEEAEFAD2B95D7DC2F1BF89A4F338"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Pcre2",
+      "PerFramework": 1,
+      "LogSha256": "DB2B22A6110FE7487E2635A9D4022267BCCF007C943557FD22C679F523DCBA77"
+    },
+    {
+      "Platform": "Linux",
+      "Profile": "Posix",
+      "PerFramework": 5,
+      "LogSha256": "5A20FEA766ECECC219C15E3F616036B532B940E594F903D8F83C720CA3D7B29C"
+    }
+  ],
+  "OriginalConsumers": {
+    "Scope": "Unchanged copied handoffs; not downstream adoption or POSIX acceptance",
+    "AwkPerFramework": 19,
+    "LythonPerFramework": 118,
+    "PublicApiProbesPassed": true,
+    "FinalRootLoans": 0,
+    "OriginalSourceFilesVerified": 1565,
+    "ChangedExactVersionPins": 3
+  },
+  "PreservedCanonicalFiles": 484,
+  "NewCanonicalFiles": 8,
+  "CompilerInputsSha256": "BBE9A6821FC3BACC908A6992B40C3EFACB7682C9152B8BD653F6241FDEC9D1A6",
+  "PreviousCheckpoint": {
+    "Version": "0.5.0-dev.78",
+    "Source": "faa48f5730df5c6c5f56c10222bfc12fdba6c5de",
+    "Runtime": ".NET 11.0.0"
+  },
+  "CatalogInterpretation": "Separate Full observations, not a causal A/B or composition of focused gains. Both policies remain separate contracts.",
+  "StatusCounts": {
+    "Core": {
+      "Win": 121,
+      "Gap": 52,
+      "TieCandidate": 5
+    },
+    "PythonRe": {
+      "ManagedFaster": 48,
+      "CpythonFaster": 29,
+      "Equivalent": 2,
+      "Unqualified": 5,
+      "Inconclusive": 6
+    },
+    "Pcre2": {
+      "Inconclusive": 9,
+      "ManagedFaster": 77,
+      "NativeFaster": 14,
+      "Excluded": 25,
+      "Equivalent": 1
+    },
+    "Posix": {
+      "NativeFaster": 6,
+      "Measured": 9,
+      "Excluded": 8,
+      "Equivalent": 1,
+      "ManagedFaster": 1
+    }
+  },
+  "SelectedComparisons": [
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "aws-keys/quick",
+      "Previous": {
+        "ManagedUs": 3733.8666666666663,
+        "ReferenceUs": 3528.8227272727277,
+        "Ratio": 1.058105480280787,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 3780.1150000000002,
+        "ReferenceUs": 3630.8454545454547,
+        "Ratio": 1.0411115117190337,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-name-family-count",
+      "Previous": {
+        "ManagedUs": 1569.1346938775512,
+        "ReferenceUs": 2978.5481481481484,
+        "Ratio": 0.5268119284400786,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1567.878,
+        "ReferenceUs": 2945.759259259259,
+        "Ratio": 0.5322491968994977,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-river-window-count",
+      "Previous": {
+        "ManagedUs": 2140.2833333333333,
+        "ReferenceUs": 1541.526,
+        "Ratio": 1.3884185757057184,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2155.3,
+        "ReferenceUs": 1552.2244897959183,
+        "Ratio": 1.388523383163071,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-symbol-count",
+      "Previous": {
+        "ManagedUs": 1614.3574468085108,
+        "ReferenceUs": 1238.6016393442621,
+        "Ratio": 1.3033709915507463,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1525.17,
+        "ReferenceUs": 1199.2650793650794,
+        "Ratio": 1.2717538651316878,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/mariomka-email-count",
+      "Previous": {
+        "ManagedUs": 998.9480000000001,
+        "ReferenceUs": 454.1870588235294,
+        "Ratio": 2.1994197778059834,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1040.1426666666666,
+        "ReferenceUs": 467.08385093167703,
+        "Ratio": 2.2268863815178532,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/mariomka-uri-count",
+      "Previous": {
+        "ManagedUs": 1224.4396825396825,
+        "ReferenceUs": 1093.3228571428572,
+        "Ratio": 1.1199250747756875,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1247.8754098360655,
+        "ReferenceUs": 1091.5710144927536,
+        "Ratio": 1.1431921453282134,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/rust-sherlock-holmes-window-count",
+      "Previous": {
+        "ManagedUs": 106.32800565770862,
+        "ReferenceUs": 58.84616588419405,
+        "Ratio": 1.8068807722657099,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 102.62132049518569,
+        "ReferenceUs": 60.57315270935961,
+        "Ratio": 1.6941716900155488,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal-alternate/sherlock-zh",
+      "Previous": {
+        "ManagedUs": 117.50747663551402,
+        "ReferenceUs": 35.91900668576886,
+        "Ratio": 3.271456743319981,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 118.29920634920634,
+        "ReferenceUs": 36.33069212410501,
+        "Ratio": 3.2561781632207367,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal/sherlock-casei-en",
+      "Previous": {
+        "ManagedUs": 154.34020408163263,
+        "ReferenceUs": 79.37763713080169,
+        "Ratio": 1.944378916536714,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 158.14050104384134,
+        "ReferenceUs": 77.73159541188738,
+        "Ratio": 2.034443011311937,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal/sherlock-casei-ru",
+      "Previous": {
+        "ManagedUs": 236.08145896656535,
+        "ReferenceUs": 193.7310606060606,
+        "Ratio": 1.2186040701373204,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 233.4248447204969,
+        "ReferenceUs": 196.0234375,
+        "Ratio": 1.1908006904556854,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal/sherlock-ru",
+      "Previous": {
+        "ManagedUs": 164.59403973509936,
+        "ReferenceUs": 87.16475409836065,
+        "Ratio": 1.8883095746402727,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 166.40714285714284,
+        "ReferenceUs": 87.15782155272305,
+        "Ratio": 1.909262300188179,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal/sherlock-zh",
+      "Previous": {
+        "ManagedUs": 93.65210918114144,
+        "ReferenceUs": 23.142310067943175,
+        "Ratio": 4.0467917379980465,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 96.5719275549806,
+        "ReferenceUs": 23.93275474124076,
+        "Ratio": 4.035136305833132,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/full-strings",
+      "Previous": {
+        "ManagedUs": 478.5379629629629,
+        "ReferenceUs": 362.7819214285715,
+        "Ratio": 1.3181192907277024,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 184440,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 390.4282442748092,
+        "ReferenceUs": 367.7396956521739,
+        "Ratio": 1.0627177234043312,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 184440,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/many-capture-strings",
+      "Previous": {
+        "ManagedUs": 600.4845238095238,
+        "ReferenceUs": 335.60358389261745,
+        "Ratio": 1.7908880594206906,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 242008,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 623.8768292682927,
+        "ReferenceUs": 342.6583533333333,
+        "Ratio": 1.8235952911803206,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 242008,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/named-capture-strings",
+      "Previous": {
+        "ManagedUs": 120.11004784688996,
+        "ReferenceUs": 91.39911172161173,
+        "Ratio": 1.312377876581309,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 43144,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 125.83167082294264,
+        "ReferenceUs": 96.1208433962264,
+        "Ratio": 1.3095432406115979,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 43144,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/one-capture-strings",
+      "Previous": {
+        "ManagedUs": 384.51374045801526,
+        "ReferenceUs": 208.55973966942148,
+        "Ratio": 1.8291630832803345,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 94344,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 392.5558139534883,
+        "ReferenceUs": 213.45118220338983,
+        "Ratio": 1.8410281713376404,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 94344,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/unicode-full-utf8",
+      "Previous": {
+        "ManagedUs": 94.19621928166352,
+        "ReferenceUs": 60.01011374407583,
+        "Ratio": 1.5670664774922067,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 32928,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 95.37295238095238,
+        "ReferenceUs": 61.48552100840336,
+        "Ratio": 1.5475607986693976,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 32928,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Split",
+      "Case": "split/captures",
+      "Previous": {
+        "ManagedUs": 349.17414965986393,
+        "ReferenceUs": 251.2938811881188,
+        "Ratio": 1.3903148538822894,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 274648,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 353.16344827586204,
+        "ReferenceUs": 261.47369072164946,
+        "Ratio": 1.347048657292436,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 274648,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Split",
+      "Case": "split/unicode",
+      "Previous": {
+        "ManagedUs": 61.081386861313874,
+        "ReferenceUs": 43.39773720728534,
+        "Ratio": 1.4104929608240497,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 19512,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 65.42768434670116,
+        "ReferenceUs": 39.281424678274036,
+        "Ratio": 1.6655944341312314,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 19512,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Split",
+      "Case": "split/zero-width",
+      "Previous": {
+        "ManagedUs": 103.10247933884297,
+        "ReferenceUs": 64.1019081632653,
+        "Ratio": 1.6114795911851663,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 40016,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 104.06196319018406,
+        "ReferenceUs": 66.11142282749677,
+        "Ratio": 1.568645229203503,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 40016,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "AdapterControl",
+      "Case": "capture/sku007",
+      "Previous": {
+        "ManagedUs": 2563.4100000000003,
+        "ReferenceUs": 640.0179487179488,
+        "Ratio": 4.0281005741024885,
+        "Status": "NativeFaster",
+        "ManagedBytes": 21.6,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2664.9033333333336,
+        "ReferenceUs": 682.0839285714285,
+        "Ratio": 3.921012412074807,
+        "Status": "NativeFaster",
+        "ManagedBytes": 21.6,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FiniteDeadlineLive",
+      "Case": "capture/sku007",
+      "Previous": {
+        "ManagedUs": 4591.388235294118,
+        "ReferenceUs": null,
+        "Ratio": 1.7911251946797888,
+        "Status": "Measured",
+        "ManagedBytes": 3309568,
+        "ReferenceBytes": null,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 4624.235294117647,
+        "ReferenceUs": null,
+        "Ratio": 1.7352356598742091,
+        "Status": "Measured",
+        "ManagedBytes": 3309568,
+        "ReferenceBytes": null,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FiniteLive",
+      "Case": "capture/sku007",
+      "Previous": {
+        "ManagedUs": 3627.87619047619,
+        "ReferenceUs": null,
+        "Ratio": 1.4152539743841952,
+        "Status": "Measured",
+        "ManagedBytes": 3112929.1428571427,
+        "ReferenceBytes": null,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 3685.6,
+        "ReferenceUs": null,
+        "Ratio": 1.383014518350259,
+        "Status": "Measured",
+        "ManagedBytes": 3112930.5454545454,
+        "ReferenceBytes": null,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Posix",
+      "Section": "FundedFiniteLive",
+      "Case": "capture/sku007",
+      "Previous": {
+        "ManagedUs": 4049.2473684210527,
+        "ReferenceUs": null,
+        "Ratio": 1.5796331325933237,
+        "Status": "Measured",
+        "ManagedBytes": 3112960,
+        "ReferenceBytes": null,
+        "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans."
+      },
+      "Current": {
+        "ManagedUs": 4063.494736842105,
+        "ReferenceUs": null,
+        "Ratio": 1.5248188127557238,
+        "Status": "Measured",
+        "ManagedBytes": 3112960,
+        "ReferenceBytes": null,
+        "Reason": "Peak covered host working storage 784 bytes; zero outstanding loans."
+      }
+    }
+  ],
+  "ObservedStatusChanges": [
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal-alternate/sherlock-en",
+      "Previous": {
+        "ManagedUs": 369.6951923076923,
+        "ReferenceUs": 335.78684210526313,
+        "Ratio": 1.1009817716198644,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 375.805527638191,
+        "ReferenceUs": 369.13252427184466,
+        "Ratio": 1.0180775275207992,
+        "Status": "TieCandidate",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "ruff-noqa/tweaked",
+      "Previous": {
+        "ManagedUs": 4456.233333333334,
+        "ReferenceUs": 4546.964705882353,
+        "Ratio": 0.9800457275527912,
+        "Status": "TieCandidate",
+        "ManagedBytes": 1088,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 4405.229411764705,
+        "ReferenceUs": 4559.364705882353,
+        "Ratio": 0.9661936905554437,
+        "Status": "Win",
+        "ManagedBytes": 1088,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "lokad",
+      "Case": "lokad/langserv/helper-identifier",
+      "Previous": {
+        "ManagedUs": 7.182624314615239,
+        "ReferenceUs": 6.993875598086124,
+        "Ratio": 1.0269877143054655,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 12896,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 7.241970838633917,
+        "ReferenceUs": 7.11094522019334,
+        "Ratio": 1.0184259074403352,
+        "Status": "TieCandidate",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 12896,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Core",
+      "Section": "lokad",
+      "Case": "lokad/lexer/identifier",
+      "Previous": {
+        "ManagedUs": 22.76409638554217,
+        "ReferenceUs": 22.389387755102042,
+        "Ratio": 1.0167359927184583,
+        "Status": "TieCandidate",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 45760,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 23.428814814814817,
+        "ReferenceUs": 22.481009110021024,
+        "Ratio": 1.0421602829372683,
+        "Status": "Gap",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 45760,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Count, FindAll, and FindIter",
+      "Case": "findall/optional-capture-strings",
+      "Previous": {
+        "ManagedUs": 51.30312815338043,
+        "ReferenceUs": 53.962796157950905,
+        "Ratio": 0.9531679410538345,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 4208,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 54.38938906752412,
+        "ReferenceUs": 54.737784017278614,
+        "Ratio": 0.993630243906352,
+        "Status": "Equivalent",
+        "ManagedBytes": 4208,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Detailed and scalar projections",
+      "Case": "capture/search-detailed",
+      "Previous": {
+        "ManagedUs": 0.8945838837516513,
+        "ReferenceUs": 1.3183970944928127,
+        "Ratio": 0.6795464219536093,
+        "Status": "Inconclusive",
+        "ManagedBytes": 496,
+        "ReferenceBytes": null,
+        "Reason": "Lane-order median ratios differ by 5.77%."
+      },
+      "Current": {
+        "ManagedUs": 0.926937207748831,
+        "ReferenceUs": 1.3259758724572768,
+        "Ratio": 0.6989380137045128,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 496,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Direct matching",
+      "Case": "ascii-option/search-hit",
+      "Previous": {
+        "ManagedUs": 0.26397172404765024,
+        "ReferenceUs": 0.3006112898683588,
+        "Ratio": 0.8764461730356853,
+        "Status": "Unqualified",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "Removable harness floors are 0.20 %/11.17 % of the lanes."
+      },
+      "Current": {
+        "ManagedUs": 0.2369700495683135,
+        "ReferenceUs": 0.3076283596148906,
+        "Ratio": 0.7729427928428079,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "The conclusion survives the conservative harness-floor bound."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Direct matching",
+      "Case": "lookbehind/search-hit",
+      "Previous": {
+        "ManagedUs": 0.3286848124880518,
+        "ReferenceUs": 0.3222472154358156,
+        "Ratio": 1.0190145566165478,
+        "Status": "Unqualified",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "Removable harness floors are 0.13 %/10.44 % of the lanes."
+      },
+      "Current": {
+        "ManagedUs": 0.35005130253344996,
+        "ReferenceUs": 0.33141300971002136,
+        "Ratio": 1.0650322023850252,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "The conclusion survives the conservative harness-floor bound."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Direct matching",
+      "Case": "unicode-option/search-hit",
+      "Previous": {
+        "ManagedUs": 0.3244811280870521,
+        "ReferenceUs": 0.28988346576076424,
+        "Ratio": 1.1149916986107073,
+        "Status": "CpythonFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "The conclusion survives the conservative harness-floor bound."
+      },
+      "Current": {
+        "ManagedUs": 0.30069743173517305,
+        "ReferenceUs": 0.3018817422932443,
+        "Ratio": 0.9950360307948564,
+        "Status": "Unqualified",
+        "ManagedBytes": 0,
+        "ReferenceBytes": null,
+        "Reason": "Removable harness floors are 0.16 %/11.16 % of the lanes."
+      }
+    },
+    {
+      "Profile": "PythonRe",
+      "Section": "Split",
+      "Case": "split/no-captures",
+      "Previous": {
+        "ManagedUs": 216.26638297872339,
+        "ReferenceUs": 214.79339662447256,
+        "Ratio": 1.0004758344807705,
+        "Status": "Equivalent",
+        "ManagedBytes": 143488,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      },
+      "Current": {
+        "ManagedUs": 222.08999999999997,
+        "ReferenceUs": 229.31772398190046,
+        "Ratio": 0.9691717544131336,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 143488,
+        "ReferenceBytes": null,
+        "Reason": "Qualified paired evidence."
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "backtracking/alternation-repeat",
+      "Previous": {
+        "ManagedUs": 78.9453307392996,
+        "ReferenceUs": 157.55529411764707,
+        "Ratio": 0.5035213796012986,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 79.46713426853707,
+        "ReferenceUs": 159.69133858267716,
+        "Ratio": 0.4989433170898982,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.12%."
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/leipzig-river-window-count",
+      "Previous": {
+        "ManagedUs": 2255.8055555555557,
+        "ReferenceUs": 53692.3,
+        "Ratio": 0.0423912544971946,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.09%."
+      },
+      "Current": {
+        "ManagedUs": 2253.4277777777775,
+        "ReferenceUs": 54617.8,
+        "Ratio": 0.040942057304388026,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/mariomka-email-count",
+      "Previous": {
+        "ManagedUs": 18562.95,
+        "ReferenceUs": 140682.4,
+        "Ratio": 0.13196707034874008,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.04%."
+      },
+      "Current": {
+        "ManagedUs": 18557.85,
+        "ReferenceUs": 143495.7,
+        "Ratio": 0.1291769071987794,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/rust-sherlock-letter-count",
+      "Previous": {
+        "ManagedUs": 2749.7933333333335,
+        "ReferenceUs": 95210.6,
+        "Ratio": 0.0289765486582674,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2895.3571428571427,
+        "ReferenceUs": 96938.5,
+        "Ratio": 0.0296640704225476,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.46%."
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "backtracking/assertion-capture",
+      "Previous": {
+        "ManagedUs": 0.6191807498221966,
+        "ReferenceUs": 2.2747535077739856,
+        "Ratio": 0.2755504536125672,
+        "Status": "Inconclusive",
+        "ManagedBytes": 800,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.008/1.162; the maximum is 1.10."
+      },
+      "Current": {
+        "ManagedUs": 0.5893234442230741,
+        "ReferenceUs": 1.9505504462465455,
+        "Ratio": 0.3034889562075906,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 800,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "backtracking/capture-backreference",
+      "Previous": {
+        "ManagedUs": 0.7362795455998636,
+        "ReferenceUs": 13.134644837602323,
+        "Ratio": 0.0560562965122602,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 64,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 0.7619707677144714,
+        "ReferenceUs": 11.8329703569268,
+        "Ratio": 0.06443153037428426,
+        "Status": "Inconclusive",
+        "ManagedBytes": 64,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.004/1.185; the maximum is 1.10."
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/ip-match",
+      "Previous": {
+        "ManagedUs": 0.07961515707567507,
+        "ReferenceUs": 0.2813674553079422,
+        "Ratio": 0.28372070926228116,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.109/1.011; the maximum is 1.10."
+      },
+      "Current": {
+        "ManagedUs": 0.07943215276854727,
+        "ReferenceUs": 0.28482077409334694,
+        "Ratio": 0.27854532133102106,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "literal/late",
+      "Previous": {
+        "ManagedUs": 0.16811136661305393,
+        "ReferenceUs": 1.8825503058239517,
+        "Ratio": 0.08962318949924329,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.009/1.128; the maximum is 1.10."
+      },
+      "Current": {
+        "ManagedUs": 0.16614354778728152,
+        "ReferenceUs": 1.9970499876877617,
+        "Ratio": 0.08343615507848963,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-count",
+      "Case": "pcre2/kreset-atomic-alt",
+      "Previous": {
+        "ManagedUs": 0.31367320763277523,
+        "ReferenceUs": 0.3177039792511045,
+        "Ratio": 0.9892919880011642,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "The paired 95% interval crosses a Status decision boundary."
+      },
+      "Current": {
+        "ManagedUs": 0.297689610121708,
+        "ReferenceUs": 0.3112544223965544,
+        "Ratio": 0.9569805200352902,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-enumerate",
+      "Case": "pcre2/branch-reset-backref",
+      "Previous": {
+        "ManagedUs": 1.0313580860821039,
+        "ReferenceUs": 1.013047883810959,
+        "Ratio": 1.0163893806998447,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "The paired 95% interval crosses a Status decision boundary."
+      },
+      "Current": {
+        "ManagedUs": 1.098624042185054,
+        "ReferenceUs": 1.0351098582643974,
+        "Ratio": 1.0570933950745633,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-enumerate",
+      "Case": "pcre2/branch-reset-basic",
+      "Previous": {
+        "ManagedUs": 1.1426337209302324,
+        "ReferenceUs": 1.1631319210399613,
+        "Ratio": 0.9818643628499298,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "The paired 95% interval crosses a Status decision boundary."
+      },
+      "Current": {
+        "ManagedUs": 1.1841092876679746,
+        "ReferenceUs": 1.1923452577076958,
+        "Ratio": 0.9923096992367713,
+        "Status": "Equivalent",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/backslash-c-literal",
+      "Previous": {
+        "ManagedUs": 0.1488703603348344,
+        "ReferenceUs": 0.10054842787327434,
+        "Ratio": 1.4863512509445602,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.344/1.003; the maximum is 1.10."
+      },
+      "Current": {
+        "ManagedUs": 0.10914920612121538,
+        "ReferenceUs": 0.08629343546822035,
+        "Ratio": 1.2625844440145195,
+        "Status": "NativeFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-lookahead",
+      "Previous": {
+        "ManagedUs": 0.012297574249472781,
+        "ReferenceUs": 0.11722241136851455,
+        "Ratio": 0.10551141866399232,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.18%."
+      },
+      "Current": {
+        "ManagedUs": 0.013103312833226717,
+        "ReferenceUs": 0.11769889130540959,
+        "Ratio": 0.11049109980217706,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/subroutine-prefix-digits",
+      "Previous": {
+        "ManagedUs": 0.013728354031529432,
+        "ReferenceUs": 0.10317677562396727,
+        "Ratio": 0.13249450405187235,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 0.016552610469541252,
+        "ReferenceUs": 0.10688080668005041,
+        "Ratio": 0.156248795770352,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane interquartile spreads are 1.465/1.029; the maximum is 1.10."
+      }
+    }
+  ],
+  "ObservedCostIncreases": [
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "bounded-repeat/context",
+      "Previous": {
+        "ManagedUs": 21573.325,
+        "ReferenceUs": 67268.3,
+        "Ratio": 0.32070566671076867,
+        "Status": "Win",
+        "ManagedBytes": 9528,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 22754.2,
+        "ReferenceUs": 68303.25,
+        "Ratio": 0.333134953314813,
+        "Status": "Win",
+        "ManagedBytes": 9528,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 5.473773746049804,
+      "ObservedUs": 1180.875
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "bounded-repeat/context",
+      "Previous": {
+        "ManagedUs": 21528.625,
+        "ReferenceUs": 143461.3,
+        "Ratio": 0.15006573201274492,
+        "Status": "Win",
+        "ManagedBytes": 9528,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 22304.8,
+        "ReferenceUs": 146307,
+        "Ratio": 0.15245203578776134,
+        "Status": "Win",
+        "ManagedBytes": 9528,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.6053161778794474,
+      "ObservedUs": 776.1749999999993
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "bounded-repeat/capitals",
+      "Previous": {
+        "ManagedUs": 9137.077777777777,
+        "ReferenceUs": 44287.25,
+        "Ratio": 0.2063139566755167,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 9466.7625,
+        "ReferenceUs": 44560.9,
+        "Ratio": 0.21244549593926515,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.6082074623907445,
+      "ObservedUs": 329.6847222222241
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "bounded-repeat/capitals",
+      "Previous": {
+        "ManagedUs": 9189.05,
+        "ReferenceUs": 12978.966666666667,
+        "Ratio": 0.7079955004122053,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 9483.025,
+        "ReferenceUs": 13641.816666666666,
+        "Ratio": 0.6951438530303271,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.199188164173661,
+      "ObservedUs": 293.97500000000036
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "dictionary/single",
+      "Previous": {
+        "ManagedUs": 8039.7699999999995,
+        "ReferenceUs": 25890.7,
+        "Ratio": 0.31052733220809015,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 8274.41,
+        "ReferenceUs": 26761.266666666666,
+        "Ratio": 0.30919351101965775,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 2.9184914493822545,
+      "ObservedUs": 234.64000000000033
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/mariomka-ip-count",
+      "Previous": {
+        "ManagedUs": 4738.45,
+        "ReferenceUs": 21111.45,
+        "Ratio": 0.2261097666191622,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 4906.4,
+        "ReferenceUs": 21833.25,
+        "Ratio": 0.22472741157023285,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.5444079815129426,
+      "ObservedUs": 167.94999999999982
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "aws-keys/full",
+      "Previous": {
+        "ManagedUs": 10661.4125,
+        "ReferenceUs": 18340.04,
+        "Ratio": 0.5813189338736447,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 10822.042857142858,
+        "ReferenceUs": 18225.379999999997,
+        "Ratio": 0.5937896964092304,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 1.5066517419043413,
+      "ObservedUs": 160.63035714285797
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "dictionary/single",
+      "Previous": {
+        "ManagedUs": 8056.99,
+        "ReferenceUs": 44632.85,
+        "Ratio": 0.18051704069984328,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 8207,
+        "ReferenceUs": 45776.4,
+        "Ratio": 0.17928452215552118,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 1.8618615636857072,
+      "ObservedUs": 150.01000000000022
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/rust-sherlock-letter-count",
+      "Previous": {
+        "ManagedUs": 2749.7933333333335,
+        "ReferenceUs": 95210.6,
+        "Ratio": 0.0289765486582674,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2895.3571428571427,
+        "ReferenceUs": 96938.5,
+        "Ratio": 0.0296640704225476,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.46%."
+      },
+      "ObservedPercent": 5.293627261338751,
+      "ObservedUs": 145.56380952380914
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "aws-keys/full",
+      "Previous": {
+        "ManagedUs": 10669.25,
+        "ReferenceUs": 84264.9,
+        "Ratio": 0.12661558964646016,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 10787.7375,
+        "ReferenceUs": 85969.8,
+        "Ratio": 0.12548287305542177,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 1.1105513508447018,
+      "ObservedUs": 118.48749999999927
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "ruff-noqa/real",
+      "Previous": {
+        "ManagedUs": 4388.905555555556,
+        "ReferenceUs": 20840.975,
+        "Ratio": 0.21059022217317358,
+        "Status": "Win",
+        "ManagedBytes": 1496,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 4506.594444444444,
+        "ReferenceUs": 20645.4,
+        "Ratio": 0.2182856444750135,
+        "Status": "Win",
+        "ManagedBytes": 1496,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 2.681508804396926,
+      "ObservedUs": 117.68888888888796
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/leipzig-symbol-count",
+      "Previous": {
+        "ManagedUs": 1565.3769230769233,
+        "ReferenceUs": 467757.2,
+        "Ratio": 0.003343657124212989,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.03%."
+      },
+      "Current": {
+        "ManagedUs": 1671.1083333333333,
+        "ReferenceUs": 479616.6,
+        "Ratio": 0.0034858627980200365,
+        "Status": "Inconclusive",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": "Lane-order median ratios differ by 2.90%."
+      },
+      "ObservedPercent": 6.754373895367194,
+      "ObservedUs": 105.73141025641007
+    },
+    {
+      "Profile": "Posix",
+      "Section": "AdapterControl",
+      "Case": "capture/sku007",
+      "Previous": {
+        "ManagedUs": 2563.4100000000003,
+        "ReferenceUs": 640.0179487179488,
+        "Ratio": 4.0281005741024885,
+        "Status": "NativeFaster",
+        "ManagedBytes": 21.6,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2664.9033333333336,
+        "ReferenceUs": 682.0839285714285,
+        "Ratio": 3.921012412074807,
+        "Status": "NativeFaster",
+        "ManagedBytes": 21.6,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.95930940947149,
+      "ObservedUs": 101.49333333333334
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "aws-keys/quick",
+      "Previous": {
+        "ManagedUs": 3702.095238095238,
+        "ReferenceUs": 9493.925,
+        "Ratio": 0.38994359425582553,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 3803.0800000000004,
+        "ReferenceUs": 9359.5125,
+        "Ratio": 0.4063331289957677,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 2.7277732043630376,
+      "ObservedUs": 100.98476190476231
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/leipzig-twain-count",
+      "Previous": {
+        "ManagedUs": 1174.7984375,
+        "ReferenceUs": 1286.906779661017,
+        "Ratio": 0.9128854211254157,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1253.660655737705,
+        "ReferenceUs": 1326.0293103448275,
+        "Ratio": 0.9454245437543884,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 6.712829683832888,
+      "ObservedUs": 78.86221823770484
+    },
+    {
+      "Profile": "Pcre2",
+      "Section": "pcre2-managed-compatible-count",
+      "Case": "industry/mariomka-uri-count",
+      "Previous": {
+        "ManagedUs": 21780.6,
+        "ReferenceUs": 129822.8,
+        "Ratio": 0.16764736240475478,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 21854.55,
+        "ReferenceUs": 131959.4,
+        "Ratio": 0.16779941953101268,
+        "Status": "ManagedFaster",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 0.33952232720861897,
+      "ObservedUs": 73.95000000000073
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "industry/leipzig-twain-count",
+      "Previous": {
+        "ManagedUs": 1178.3353846153846,
+        "ReferenceUs": 1292.9216666666666,
+        "Ratio": 0.9113741497219228,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1244.462295081967,
+        "ReferenceUs": 1358.941379310345,
+        "Ratio": 0.9157586294955009,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 5.611892108982763,
+      "ObservedUs": 66.12691046658256
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "literal-alternate/sherlock-ru",
+      "Previous": {
+        "ManagedUs": 1482.3634615384615,
+        "ReferenceUs": 2288.8735294117646,
+        "Ratio": 0.6476388679803665,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 1545.3591836734695,
+        "ReferenceUs": 2350.1696969696973,
+        "Ratio": 0.657552169813972,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 4.249681253585957,
+      "ObservedUs": 62.99572213500801
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance",
+      "Case": "bounded-repeat/letters-ru",
+      "Previous": {
+        "ManagedUs": 1983.807894736842,
+        "ReferenceUs": 5734.923076923077,
+        "Ratio": 0.3459170887085729,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2045.791891891892,
+        "ReferenceUs": 5858.284615384615,
+        "Ratio": 0.34921346882317345,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 3.1244959413407436,
+      "ObservedUs": 61.98399715505002
+    },
+    {
+      "Profile": "Core",
+      "Section": "dotnet-performance-compiled",
+      "Case": "industry/mariomka-ip-count",
+      "Previous": {
+        "ManagedUs": 2082.8594594594597,
+        "ReferenceUs": 3438.790909090909,
+        "Ratio": 0.605695290735223,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "Current": {
+        "ManagedUs": 2143.22,
+        "ReferenceUs": 3469.5727272727277,
+        "Ratio": 0.6177187130718217,
+        "Status": "Win",
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "Reason": null
+      },
+      "ObservedPercent": 2.8979651155246255,
+      "ObservedUs": 60.360540540540114
+    }
+  ],
+  "HistoricalCausalEvidence": [
+    "../PosixClosedCaptures-20261112/README.md",
+    "../TerminalRepeatDispatch-20261113/README.md"
+  ],
+  "FocusedPosixAudit": {
+    "Receipt": "../PosixClosedCaptures-20261112/README.md",
+    "Source": "02dcb08d",
+    "PublicObservationsPerPlatform": 480,
+    "OldSuccessfulObservations": 408,
+    "ResolvedWholeCountRefusals": 24,
+    "ResolvedCapturedRefusals": 48,
+    "RemainingWorkRefusals": 0,
+    "NotPackageReplay": true
+  },
+  "ClosedIntervalImplementation": {
+    "Receipt": "../PosixClosedCaptures-20261112/README.md",
+    "Shipped": true,
+    "GeneralStatePotentiallyQuadratic": true,
+    "WholeMatchSearchStillPotentiallyExpensive": true,
+    "ModelIsNotTotalHeapOrRss": true
+  },
+  "MaterialGapDispositions": "../GapDisposition-20261113/README.md",
+  "CompleteParityClaim": false,
+  "FinalObjectiveAuditPending": false,
+  "NextAction": "Preserve this qualified candidate and explicit remaining costs. Larger redesigns require a distinct demonstrated cause or consumer need; publication and adoption are separate actions.",
+  "TableCI": {
+    "Source": "acb80b0d855c10dcc57bf1ed1cce1374b253c34c",
+    "Run": 43356549408,
+    "Conclusion": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Closed": true
+  },
+  "FinalObjectiveAudit": {
+    "Complete": true,
+    "Scope": "Bounded P0-P5 improvement, explicit material-gap dispositions and usable immutable delivery; not complete parity.",
+    "Receipt": "../GapDisposition-20261113/README.md",
+    "CoreMaterialLaneObservations": 15,
+    "PythonMaterialCases": 7,
+    "MaterialDefinition": "At least25us absolute excess per complete measured operation; lower-cost cases retained separately.",
+    "AdditionalCurrentCase": {
+      "Case": "split/unicode",
+      "ExcessUs": 26.14584323040381,
+      "Disposition": "Existing scalar progression/output group; defer a larger output/fusion design without a distinct demonstrated repeated cost and consumer need."
+    },
+    "Pcre2LargestNativeExcessUs": 0.16199340449368982,
+    "PosixSkuManagedUsPerCall": 0.6506111653645834,
+    "AdverseObservation": "Bounded-repeat/context observed+1180.875us/+5.47% between separate Full runs; not a causal A/B. Retain other adverse rows and focused POSIX short-root time/allocation trade-offs.",
+    "Contracts": "Owned managed checked scalar UTF8; immutable input policy; captures and retained aliases/results; NonBacktracking/RTL behavior; original synchronous cancellation/deadlines; meaningful finite admission and refunds.",
+    "DeferredLargerOptions": [
+      "Combined vectorized strict validity/search/category design with new semantic/public-cost proof; no scalar fusion replay or density selector.",
+      "Different candidate discovery preserving ordered/earlier-shorter retries, demonstrated on sparse/dense/false-head workloads before another campaign.",
+      "Capture-producing compilation or output fusion under the original invocation only with concrete consumer value; existing range-only IL is not a drop-in.",
+      "POSIX whole/existence complexity and memo growth; broader locale/grammar work and PCRE2 profile expansion remain separate milestones."
+    ],
+    "NoFurtherJustifiedBoundedTrial": true,
+    "Published": false,
+    "OriginalConsumerAdoption": false
+  }
+}
