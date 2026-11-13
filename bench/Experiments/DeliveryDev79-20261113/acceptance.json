@@ -1817,7 +1817,7 @@
     "MaterialDefinition": "At least25us absolute excess per complete measured operation; lower-cost cases retained separately.",
     "AdditionalCurrentCase": {
       "Case": "split/unicode",
-      "ExcessUs": 26.14584323040381,
+      "ExcessUs": 26.146,
       "Disposition": "Existing scalar progression/output group; defer a larger output/fusion design without a distinct demonstrated repeated cost and consumer need."
     },
     "Pcre2LargestNativeExcessUs": 0.16199340449368982,
