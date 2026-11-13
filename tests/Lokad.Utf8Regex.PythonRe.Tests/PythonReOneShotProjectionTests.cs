@@ -55,6 +55,70 @@ public sealed class PythonReOneShotProjectionTests
         => kind switch { 0 => regex.SearchDetailed(input, start, token), 1 => regex.MatchDetailed(input, start, token), _ => regex.FullMatchDetailed(input, start, token) };
 
     [Theory]
+    [InlineData("(?<=(?P<left>é))a", "πéa", 4, "left", "é", 2, 4, 1, 2)]
+    [InlineData("a(?=(?P<right>😀))", "πa😀", 2, "right", "😀", 3, 7, 2, 4)]
+    [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?", "πé😀", 2, "inner", "é😀", 2, 8, 1, 4)]
+    [InlineData("(?P<empty>)", "π", 2, "empty", "", 2, 2, 1, 1)]
+    public void OneShotDetailsProjectAllCapturesWithoutUnrelatedUnicodeSuffix(string pattern, string prefix,
+        int start, string name, string text, int begin, int end, int beginUtf16, int endUtf16)
+    {
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat("é😀", 65536)));
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
+        {
+            MaxWorkSteps = 5000, MaxDepth = 4096, MaxWorkingBytes = 65536, MaxResultBytes = 65536
+        });
+        foreach (var kind in new[] { 0, 1 })
+        {
+            var owned = kind == 0 ? regex.SearchDetailedData(input, start, token.Token)
+                : regex.MatchDetailedData(input, start, token.Token);
+            var context = Context(regex, input, start, kind, token.Token);
+            Assert.True(owned.Success); Assert.True(context.Success);
+            Assert.True(owned.TryGetFirstSetGroup(name, out var group));
+            Assert.True(context.TryGetFirstSetGroup(name, out var borrowed));
+            Assert.Equal(text, group.ValueText); Assert.Equal(text, borrowed.GetValueString());
+            Assert.Equal((begin, end, beginUtf16, endUtf16),
+                (group.StartOffsetInBytes, group.EndOffsetInBytes, group.StartOffsetInUtf16, group.EndOffsetInUtf16));
+            Assert.Equal((begin, end, beginUtf16, endUtf16),
+                (borrowed.Value.StartOffsetInBytes, borrowed.Value.EndOffsetInBytes,
+                 borrowed.Value.StartOffsetInUtf16, borrowed.Value.EndOffsetInUtf16));
+            Assert.Equal(1, owned.LastIndex); Assert.Equal(owned.LastIndex, context.LastIndex);
+            Assert.Equal(owned.LastGroup, context.LastGroup);
+            if (name == "inner")
+            {
+                Assert.Equal("outer", owned.LastGroup);
+                Assert.False(owned.Groups[3].Success); Assert.False(context.GetGroup(3).Success);
+            }
+            // The independently owned text survives another operation's scratch release.
+            _ = regex.SearchDetailedData("!"u8);
+            Assert.Equal(text, group.ValueText);
+        }
+    }
+
+    [Fact]
+    public void CompletedOneShotProjectionCannotAdvanceAndRefundsItsPrefixMap()
+    {
+        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)(?=(.))");
+        var program = core.Inspection.AvailableOwnedSliceProgram;
+        Assert.NotNull(program);
+        var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, 0, Regex.InfiniteMatchTimeout,
+            null, "(.)(?=(.))", new(new(0, 0, 65536), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
+        Utf8PythonDetailedMatchData result;
+        try
+        {
+            Assert.True(cursor.MoveNext());
+            cursor.PrepareOneShotProjection();
+            result = cursor.SnapshotDetailed([]);
+            Assert.Equal("😀", result.Groups[2].ValueText);
+            Assert.True(HasMap(ref cursor)); Assert.False(cursor.MoveNext());
+        }
+        finally { cursor.Dispose(); }
+        Assert.Equal(13UL, cursor.ReservedBytes); cursor.WorkingInvocation.Ledger.Release(13);
+        Assert.Equal("é", result.Value.ValueText); Assert.Equal("😀", result.Groups[2].ValueText);
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void KnownEndpointPublicationKeepsOriginalCancellationAndDeadline(bool expire)
     {

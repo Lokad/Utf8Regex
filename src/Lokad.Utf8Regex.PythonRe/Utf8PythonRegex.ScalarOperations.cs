@@ -178,6 +178,7 @@ public sealed partial class Utf8PythonRegex
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
                 var lastIndex = cursor.GetLastIndex();
+                cursor.PrepareOneShotProjection();
                 var groups = cursor.SnapshotGroups();
                 var names = cursor.SnapshotNameEntries(_nameEntries);
                 result = new Utf8PythonMatchContext(input, groups, names, lastIndex);
@@ -199,8 +200,12 @@ public sealed partial class Utf8PythonRegex
         var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
         try
         {
-            var result = (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
-                ? cursor.SnapshotDetailed(_nameEntries) : default;
+            Utf8PythonDetailedMatchData result = default;
+            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
+            {
+                cursor.PrepareOneShotProjection();
+                result = cursor.SnapshotDetailed(_nameEntries);
+            }
             cursor.Checkpoint();
             return result;
         }

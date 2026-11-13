@@ -493,6 +493,13 @@ The previously rejected program-sharing prototype is not delivered.
 Scalar value results reuse existing coordinate facts/maps when available;
 otherwise they count only the prefix and range requested by that value. String
 output sizes its selected range without describing an unrelated subject suffix.
+One-shot detailed results and capture contexts prepare coordinates only through
+the furthest participating capture end, including captures inside lookarounds.
+They do not describe or map an unrelated suffix. Repeated detailed iteration,
+callbacks and durable cursors retain their shared whole-subject coordinate map.
+This reduces one-shot work and modeled map capacity; finite requirements can fall.
+Borrowed contexts retain their existing unchanged-input lifetime contract, while
+owned detailed text remains independent of the input and temporary map.
 For an unknown string length of at most4096 UTF-8 bytes, admission can use the
 byte-derived upper bound on UTF-16 capacity before a bounded checked decode,
 avoiding a separate character-count pass. Known lengths remain exact; larger

@@ -625,6 +625,30 @@ internal struct PythonReScalarMatchState
         }
     }
 
+    // Completes discovery for one owned/context result. The caller still owns
+    // disposal, but cannot advance this state with a prefix-only coordinate map.
+    internal void PrepareOneShotProjection(ReadOnlySpan<byte> input)
+    {
+        Checkpoint();
+        _finished = true;
+        if (_hasMap) return;
+        var length = EndOffsetInBytes;
+        for (var number = 1; number <= _program.GroupCount; number++)
+        {
+            if ((number & 255) == 0) Checkpoint();
+            if (TryGetCaptureByteRange(number, out _, out var end)) length = Math.Max(length, end);
+        }
+        if (length == input.Length) { EnsureMap(input); return; }
+        var prefix = input[..length];
+        Utf8ValidationResult description;
+        if (_validation is { IsAscii: true }) description = new(length, length, true, false);
+        else if (Utf8Validation.TryDescribeValid(prefix, ref _invocation, out description) != Utf8ExecutionLimitKind.None)
+            throw ResourceFailure();
+        // Prefix facts do not describe the original subject: keep them local.
+        _map = Utf8BoundaryMap.Create(prefix, description, ref _invocation, out _mapReservation);
+        _hasMap = true;
+    }
+
     internal int? GetLastIndex()
     {
         if (_program.GroupCount == 0) return null;

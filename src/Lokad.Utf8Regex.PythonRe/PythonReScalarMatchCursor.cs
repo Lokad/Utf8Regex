@@ -42,6 +42,7 @@ internal ref struct PythonReScalarMatchCursor
     internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups(_input);
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);
     internal void EnsureMap() => _state.EnsureMap(_input);
+    internal void PrepareOneShotProjection() => _state.PrepareOneShotProjection(_input);
     internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names) => _state.SnapshotDetailed(_input, names);
     internal string GetText(int start, int end) => _state.GetText(_input, start, end, null);
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);
