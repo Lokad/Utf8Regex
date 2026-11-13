@@ -48,6 +48,9 @@ slice-validity rules; check result slice properties before decoding those result
 
 ## Cancellation, limits and ownership
 
+Unknown short Python string lengths can use a conservative UTF-8-byte-derived
+capacity before decoding; finite Unicode working/result budgets can deny earlier.
+
 Synchronous cancellation observes the original token. Absolute deadlines and
 finite work/depth/working/result policies cover the documented operation stages.
 Explicit compilation factories offer separate construction controls.
