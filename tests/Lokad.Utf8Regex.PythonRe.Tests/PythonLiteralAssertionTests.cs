@@ -52,7 +52,7 @@ public sealed class PythonLiteralAssertionTests
             Assert.Equal("bar", retained.Value.ValueText);
             if (pattern.Contains("?P<x>", StringComparison.Ordinal)) Assert.Equal("foo", retained.Groups[1].ValueText);
             Assert.Equal("bar", retained.Value.ValueText);
-            Assert.Throws<ArgumentException>(() => regex.Search([.. input, 0xff]));
+
         }
     }
 }

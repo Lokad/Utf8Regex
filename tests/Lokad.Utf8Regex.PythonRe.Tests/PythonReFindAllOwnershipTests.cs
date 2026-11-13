@@ -128,15 +128,6 @@ public sealed class PythonReFindAllOwnershipTests
         Assert.Equal(expected, regex.FindAll(input).Select(static match => match.ValueText));
     }
 
-    [Fact]
-    public void GenericBulkMissStillValidatesTheWholeSubject()
-    {
-        var regex = new Utf8PythonRegex("[a-z]+");
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("123 ", 1024)));
-        input[^1] = 0xff;
-        Assert.Throws<ArgumentException>(() => regex.FindAllToStrings(input));
-        Assert.Throws<ArgumentException>(() => regex.FindAllToUtf8(input));
-        Assert.Throws<ArgumentException>(() => regex.FindAll(input));
-    }
+
 
 }

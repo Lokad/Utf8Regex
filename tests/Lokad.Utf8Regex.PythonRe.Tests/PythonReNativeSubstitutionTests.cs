@@ -66,7 +66,7 @@ public sealed class PythonReNativeSubstitutionTests
             Assert.Throws<ArgumentException>(() => regex.Replace("none"u8, malformed, count));
             Assert.Equal(retained, regex.DebugReplacementPlanCachePayloadBytes);
         }
-        Assert.Throws<ArgumentException>(() => regex.Subn([97, 0x80], "!"u8, 1));
+
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Subn("éa"u8, "!"u8, startOffsetInBytes: 1));
         using var token = new CancellationTokenSource(); token.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() =>

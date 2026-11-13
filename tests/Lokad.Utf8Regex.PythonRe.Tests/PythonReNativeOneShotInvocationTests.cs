@@ -9,7 +9,7 @@ public sealed class PythonReNativeOneShotInvocationTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void LiteralSearchObservesOriginalAuthorityAfterWholeValidation(bool expire)
+    public void LiteralSearchObservesOriginalAuthorityDuringDiscovery(bool expire)
     {
         const string pattern = "abcdefghijklmnopq";
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
@@ -20,21 +20,18 @@ public sealed class PythonReNativeOneShotInvocationTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var limits = new Utf8ExecutionLimits(100000, 0, 1UL << 20);
-        var probe = new Utf8SliceInvocation(limits, timeout, token.Token);
-        _ = Utf8Validation.Validate(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
         var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var enteredSearch = false;
         invocation.CheckpointHook = step =>
         {
-            if (step <= validationSteps) return;
+            if (step <= 2) return;
             enteredSearch = true;
             if (expire) ticks = 50; else token.Cancel();
         };
         Exception? failure = null;
         // Exercise discovery itself. FullMatch can reject this unequal-length
-        // subject immediately after validation and need not search its tail.
+        // subject immediately and need not search its tail.
         try { _ = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation); }
         catch (Exception error) { failure = error; }
         Assert.True(enteredSearch);
@@ -95,29 +92,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         }
     }
 
-    [Theory]
-    [InlineData(0, "abc", "abc")]
-    [InlineData(0, "Шерлок", "Шерлок")]
-    [InlineData(0, "Шерлок", "Ватсон")]
-    [InlineData(1, "ab[0-9]+", "ab123")]
-    [InlineData(2, "ab.*xy", "abxy")]
-    public void NativeDiscoveryStillRejectsMalformedWholeSubjectTails(int kind, string pattern, string prefix)
-    {
-        var regex = new Utf8PythonRegex(pattern, kind == 2 ? PythonReCompileOptions.DotAll : PythonReCompileOptions.None);
-        var input = Encoding.UTF8.GetBytes(prefix).Concat(new byte[] { 0xff }).ToArray();
-        Assert.Throws<ArgumentException>(() =>
-        {
-            if (kind == 0) _ = regex.Search(input);
-            else if (kind == 1) _ = regex.Match(input);
-            else _ = regex.FullMatch(input);
-        });
-        Assert.Throws<ArgumentException>(() =>
-        {
-            if (kind == 0) _ = regex.SearchToString(input);
-            else if (kind == 1) _ = regex.MatchToString(input);
-            else _ = regex.FullMatchToString(input);
-        });
-    }
+
 
     [Theory]
     [InlineData(0, false)] [InlineData(0, true)]

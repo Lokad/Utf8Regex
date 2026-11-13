@@ -32,9 +32,9 @@ internal static partial class BenchmarkInspectReporter
                 }
                 return true;
             case "--measure-posix-case":
-                if (args.Length < 2) throw new ArgumentException("A single POSIX case is required.");
+                if (args.Length is < 2 or > 3) throw new ArgumentException("Select one POSIX valid-text case and optional sample count.");
                 exitCode = RefreshPosix(args[1], args.Length > 2 ? int.Parse(args[2], CultureInfo.InvariantCulture) : 9,
-                    args.Length > 3 ? Enum.Parse<Utf8InputValidation>(args[3]) : Utf8InputValidation.Validate, writeSnapshot: false);
+                    writeSnapshot: false);
                 return true;
             case "--refresh-posix-benchmarks":
                 exitCode = RefreshPosix(args.Length > 1 ? args[1] : null, args.Length > 2 ? int.Parse(args[2], CultureInfo.InvariantCulture) : 9);
@@ -68,14 +68,14 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static int RefreshPosix(string? filter, int samples,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate, bool writeSnapshot = true)
+        bool writeSnapshot = true)
     {
 #if DEBUG
         throw new InvalidOperationException("POSIX measurements require Release binaries.");
 #else
         if (samples is < 9 or > 31) throw new ArgumentOutOfRangeException(nameof(samples));
-        if ((!writeSnapshot && string.IsNullOrEmpty(filter)) || (writeSnapshot && inputValidation != Utf8InputValidation.Validate))
-            throw new ArgumentException("Standalone policy measurements select one case; published snapshots retain Validate.");
+        if (!writeSnapshot && string.IsNullOrEmpty(filter))
+            throw new ArgumentException("Standalone measurements select one valid-text case.");
         var environment = CaptureBenchmarkEnvironment();
         if (environment.TrackedDirty || environment.HasUntrackedFiles)
             throw new InvalidOperationException("POSIX measurement requires clean tracked source inputs.");
@@ -99,7 +99,7 @@ internal static partial class BenchmarkInspectReporter
         var nativeBuild = PcreNetNativeBenchmarkBaseline.CaptureBuildFingerprint().Sha256;
         foreach (var benchmarkCase in selected)
         {
-            using var context = new PosixBenchmarkContext(benchmarkCase, inputValidation);
+            using var context = new PosixBenchmarkContext(benchmarkCase);
             var exclusion = PreflightPosix(benchmarkCase, context);
             var result = new PosixBenchmarkRow
             {
@@ -143,8 +143,7 @@ internal static partial class BenchmarkInspectReporter
             if (context.OutstandingWorkingBytes != 0) throw new InvalidOperationException("POSIX measurement leaked working storage.");
             if (!writeSnapshot)
             {
-                Console.WriteLine(JsonSerializer.Serialize(new { CaseId = benchmarkCase.Id, InputValidation = inputValidation.ToString(),
-                    InputContract = inputValidation == Utf8InputValidation.Validate ? "Engine validates whole subject" : "Caller guarantees valid unchanged UTF-8",
+                Console.WriteLine(JsonSerializer.Serialize(new { CaseId = benchmarkCase.Id, InputContract = "Preexisting valid unchanged UTF-8 text; native PCRE2 NFA uses NO_UTF_CHECK",
                     NativeInputContract = "Native UTF validation enabled", Records = benchmarkCase.Records, Result = result }, PosixJsonOptions));
                 continue;
             }

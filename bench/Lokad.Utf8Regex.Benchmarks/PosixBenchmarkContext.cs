@@ -17,22 +17,21 @@ internal sealed class PosixBenchmarkContext : IDisposable
     private readonly PcreRegexUtf8 _native;
     private readonly PcreMatchBuffer8Bit _buffer;
 
-    internal PosixBenchmarkContext(PosixBenchmarkCase benchmarkCase,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+    internal PosixBenchmarkContext(PosixBenchmarkCase benchmarkCase)
     {
         _case = benchmarkCase; _input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var finite = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxDepth = 4096,
             MaxWorkingBytes = 16 << 20, MaxResultBytes = 1 };
         _managed =
         [
-            new(benchmarkCase.Pattern, inputValidation: inputValidation),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite, inputValidation),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite, inputValidation),
-            new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite, inputValidation),
+            new(benchmarkCase.Pattern),
+            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
+            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
+            new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite),
         ];
         if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
         _groups = new Utf8ValueMatch[_managed[0].GroupCount + 1];
-        // Private benchmark-only NFA baseline. Keep UTF validation enabled,
+        // Private benchmark-only PCRE2 NFA comparator over the same valid UTF-8 text;
         // ASCII POSIX classes, dot-all and true-end dollar semantics. Do not
         // reorder alternatives to imitate longest matching; exclude mismatches.
         _native = new PcreRegexUtf8(benchmarkCase.Pattern, PcreOptions.Utf | PcreOptions.Singleline | PcreOptions.DollarEndOnly);
@@ -79,7 +78,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
         var result = new List<PosixBenchmarkResult>();
         if (native)
         {
-            foreach (var match in _buffer.Matches(_input, _case.StartOffsetInBytes))
+            foreach (var match in _buffer.Matches(_input, _case.StartOffsetInBytes, PcreMatchOptions.NoUtfCheck, null))
             {
                 var value = NativeResult(match, 1);
                 result.Add(_case.Operation == PosixBenchmarkOperation.Count ? value with { Group1 = default, Group2 = default } : value);
@@ -104,7 +103,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
         var result = new PosixBenchmarkResult[_case.Records];
         for (var record = 0; record < result.Length; record++)
         {
-            if (lane == 4) result[record] = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes), _case.Records);
+            if (lane == 4) result[record] = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes, PcreMatchOptions.NoUtfCheck), _case.Records);
             else
             {
                 var whole = _managed[lane].Match(_input, _groups, _case.StartOffsetInBytes,
@@ -123,12 +122,12 @@ internal sealed class PosixBenchmarkContext : IDisposable
             case PosixBenchmarkOperation.Captures:
                 PosixBenchmarkResult last = default;
                 for (var record = 0; record < _case.Records; record++)
-                    last = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes), _case.Records);
+                    last = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes, PcreMatchOptions.NoUtfCheck), _case.Records);
                 return last;
             default:
                 var count = 0;
                 PosixBenchmarkResult result = default;
-                foreach (var match in _buffer.Matches(_input, _case.StartOffsetInBytes))
+                foreach (var match in _buffer.Matches(_input, _case.StartOffsetInBytes, PcreMatchOptions.NoUtfCheck, null))
                 {
                     count++;
                     if (_case.Operation == PosixBenchmarkOperation.Cursor)

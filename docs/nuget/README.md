@@ -27,15 +27,21 @@ int count = regex.Count("A😀"u8); // 2 scalars
 var match = regex.Match("😀"u8); // 4 bytes, 2 derived UTF-16 units
 ```
 
-`Utf8InputValidation.Validate` is the default: it checks the entire subject,
+Core's `Utf8InputValidation.Validate` is the default: it checks the entire subject,
 including unsearched prefixes/suffixes, at most once per operation or cursor
 lifetime. Select `inputValidation: Utf8InputValidation.AssumeValid` once at engine
 construction or through a factory only when the host guarantees valid UTF-8 and
 unchanged borrowed bytes. Read-only `InputValidation` reports that choice.
-Supported matching, counting, replacement, splitting and cursor operations inherit
+Supported Core matching, counting, replacement, splitting and cursor operations inherit
 it. Pattern/replacement validation keeps its separate profile rules. There is no
 per-call validation override. Required coordinates and result shaping may still
 scan input.
+
+PythonRe models Python `re` over `str`; PythonRe and POSIX take already-valid,
+unchanged UTF-8 text without regex-operation validity passes or validation options.
+Validate external bytes at the application's text boundary. PCRE2 retains its
+UTF-mode checking and explicit trusted-input bypass. Pattern/replacement checks
+remain separate in every profile.
 
 PCRE2's explicitly enabled `\C` byte atom and special `\K` ranges have separate
 slice-validity rules; check result slice properties before decoding those results.

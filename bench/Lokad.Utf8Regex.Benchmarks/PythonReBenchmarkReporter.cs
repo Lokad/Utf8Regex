@@ -22,6 +22,8 @@ internal static partial class PythonReBenchmarkReporter
 
     internal static bool TryHandleCommand(string[] args, out int exitCode)
     {
+        if (args.Length > 3 && args[0].StartsWith("--measure-pythonre-paired-case", StringComparison.Ordinal))
+            throw new ArgumentException("PythonRe comparisons consume existing text; no validation-policy argument is accepted.");
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-case", StringComparison.Ordinal))
         {
             exitCode = MeasureCase(
@@ -37,8 +39,7 @@ internal static partial class PythonReBenchmarkReporter
                 args[1],
                 Math.Min(ParsePositive(args, 2, 9), 17),
                 cpythonFirst: false,
-                PythonReQualificationWriteMode.None,
-                args.Length >= 4 ? Enum.Parse<Utf8InputValidation>(args[3]) : Utf8InputValidation.Validate);
+                PythonReQualificationWriteMode.None);
             return true;
         }
 
@@ -48,8 +49,7 @@ internal static partial class PythonReBenchmarkReporter
                 args[1],
                 Math.Min(ParsePositive(args, 2, 9), 17),
                 cpythonFirst: true,
-                PythonReQualificationWriteMode.None,
-                args.Length >= 4 ? Enum.Parse<Utf8InputValidation>(args[3]) : Utf8InputValidation.Validate);
+                PythonReQualificationWriteMode.None);
             return true;
         }
 
@@ -1903,8 +1903,7 @@ internal sealed class PythonReBenchmarkContext
     private int _callbackChecksum;
     private ulong _callbackSemanticDigest;
 
-    internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+    internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
     {
         _case = benchmarkCase;
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
@@ -1919,7 +1918,7 @@ internal sealed class PythonReBenchmarkContext
         _startOffsetInUtf16 = s_strictUtf8.GetCharCount(
             InputBytes.AsSpan(0, benchmarkCase.Coverage.StartOffsetInBytes));
         _replacementBytes = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
-        _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options, inputValidation: inputValidation);
+        _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed, true);
         var translatedPattern = PythonReDotNetReference.Render(parsed);

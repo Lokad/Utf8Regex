@@ -4,15 +4,14 @@
 
 Core and all three adapters build `net10.0` and `net11.0` assets. Adapters still require
 exactly the same Core version; NuGet selects the asset matching the application.
-The build SDK is pinned in `global.json`; its .NET 11 version is currently a
-release candidate. Scalar matching, strict validation and primary byte coordinates
-remain. The new ownership controls below cover additional storage lifetimes.
+The stable .NET 11 build SDK is pinned in `global.json`. Scalar matching and
+primary byte coordinates remain. The input and ownership contracts below define
+subject checks and additional storage lifetimes.
 Benchmark runs default to .NET 11; use `-Framework net10.0` with
 the test/benchmark scripts for .NET 10 controls. Historical measurements retain
 their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
 
-Subject validation is now an explicit immutable choice in Core, PythonRe,
-PCRE2 and POSIX:
+Core and PCRE2 retain an explicit immutable subject-validation choice:
 
 ```csharp
 var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
@@ -28,6 +27,15 @@ interruption/admission. Patterns and replacements keep their separate validation
 Required coordinates/materialization may still scan input. Validation runs at most
 once per logical operation/cursor lifetime; omitted/redundant passes can reduce
 numeric work requirements. See the [input contract](SPEC.md#subject-input-validation).
+
+PythonRe models Python `re` over `str`; PythonRe and POSIX instead require existing
+valid UTF-8 text. Their regex operations omit whole-subject validation, and their
+development-only `inputValidation` parameters and `InputValidation` properties
+are removed. Validate/decode external bytes at the text boundary. Borrowed text
+must remain unchanged while in use. Pattern/replacement validation, managed bounds,
+scalar semantics, offsets and interruption/admission remain active; malformed-tail
+rejection is not an additional compatibility guarantee. Recheck finite work limits
+because removed preparation changes route-dependent work requirements.
 
 Core also accepts native UTF-8 patterns, including the funded program overload:
 

@@ -67,16 +67,7 @@ public sealed class PythonReNativeCountTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => generic.Count(input)).ResourceKind);
     }
 
-    [Theory]
-    [InlineData(2)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
-    public void CountRejectsMalformedWholeSubjectAtOriginalByteOffset(int offset)
-    {
-        byte[] input = [.. Encoding.UTF8.GetBytes("ab" + new string('x', offset - 2)), 0xF0, 0x80, 0x80, 0x80];
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-        var regex = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.Count(input)).Message);
-    }
+
 
     [Fact]
     public void StartCancellationAndWorkFailureKeepPrecedence()
@@ -91,9 +82,9 @@ public sealed class PythonReNativeCountTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void OriginalInterruptionAppliesDuringValidationAndCount(bool timeout, bool duringSearch)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OriginalInterruptionAppliesDuringCount(bool timeout)
     {
         using var token = new CancellationTokenSource();
         long ticks = 0;
@@ -104,7 +95,7 @@ public sealed class PythonReNativeCountTests
         var interrupted = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= (duringSearch ? 192UL : 64UL)) return;
+            if (steps < 64) return;
             interrupted = true;
             if (timeout) ticks = 25; else token.Cancel();
         });

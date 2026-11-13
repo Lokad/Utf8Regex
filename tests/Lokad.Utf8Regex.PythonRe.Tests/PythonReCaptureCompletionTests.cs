@@ -18,10 +18,9 @@ public sealed class PythonReCaptureCompletionTests
     public void MultipleCaptureCompletionSurvivesReducedRollbackStorage(
         string pattern, string text, int last, string name, string capture)
     {
-        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-                new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 }, inputValidation);
+                new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
             var input = Encoding.UTF8.GetBytes(text);
             var result = regex.SearchDetailedData(input);
             Assert.True(result.Success);
@@ -38,7 +37,6 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(capture, result.Groups[last].ValueText);
         }
     }
-
     [Theory]
     [InlineData("(?P<v>a)", "a", "a")]
     [InlineData("(?P<v>)", "", "")]
@@ -111,7 +109,6 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(group.GetProperty("endUtf16").GetInt32(), value.Value.EndOffsetInUtf16);
         }
     }
-
     [Theory]
     [MemberData(nameof(SingleCases))]
     public void CompleteOneShotCapturesFollowCpython(int id, int kind, string json)
@@ -134,7 +131,6 @@ public sealed class PythonReCaptureCompletionTests
             AssertContext(expected, context);
         }
     }
-
     [Theory]
     [MemberData(nameof(GlobalCases))]
     public void GlobalCursorAliasesAndCallbacksPublishCompleteRetainableCaptures(int id, string json)
@@ -168,7 +164,6 @@ public sealed class PythonReCaptureCompletionTests
             AssertOwned(expected[index], callbacks[index]);
         }
     }
-
     [Theory]
     [InlineData("(?P<outer>(😀))", "😀")]
     [InlineData("(?<=(?P<last>.){2})", "😀é")]
@@ -199,7 +194,6 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(first - 1, failure.Limit);
         }
     }
-
     [Theory]
     [InlineData(false, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
     [InlineData(true, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
@@ -222,7 +216,6 @@ public sealed class PythonReCaptureCompletionTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal("😀", retained.Groups[1].ValueText); Assert.Equal(lastGroup, retained.LastGroup);
     }
-
     [Fact]
     public void DefaultDetailedResultsHaveNoCompletion()
     {

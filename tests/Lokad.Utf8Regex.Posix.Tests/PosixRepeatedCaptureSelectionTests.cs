@@ -5,14 +5,15 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixRepeatedCaptureSelectionTests
 {
     [Theory]
-    [InlineData("a", false)] [InlineData("a", true)]
-    [InlineData("😀", false)] [InlineData("😀", true)]
+    [InlineData("a", false)]
+    [InlineData("a", true)]
+    [InlineData("😀", false)]
+    [InlineData("😀", true)]
     public void ParentBoundsKeepIndependentOccurrencePriority(string scalar, bool nullable)
     {
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var (tailPattern, tail) in new[] { ("[bc]", "b"), (".", "é"), ("[^a]", "中"), ("[é中]", "é"),
             ("[bc]?", "b"), ("[bc]*", "bcc"), ("[bc]{1,3}", "bc"), ("[é中]*", "中é") })
         foreach (var capturedTail in new[] { false, true })
@@ -22,8 +23,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             // Each longer alternative consumes exactly two of these input
             // scalars; the independent extent oracle does not inspect bytecode.
             var alternatives = (longerFirst ? longer + "|" + scalar : scalar + "|" + longer) + (nullable ? "|" : "");
-            var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern),
-                inputValidation: validation);
+            var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern));
             for (var count = 0; count <= 8; count++)
             foreach (var rest in new[] { "", "!", "#" })
             {
@@ -44,7 +44,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             }
         }
     }
-
     [Theory]
     [InlineData("((a|a[^!#])*)!*", "a", "!", PosixCompileOptions.None)]
     [InlineData("((a|a[ab中])*)!*", "a", "!", PosixCompileOptions.None)]
@@ -67,10 +66,9 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var parentMatch = new Utf8ValueMatch(true, true, prefix.Length, parent.Length, floor, Encoding.UTF8.GetByteCount(parent));
         var lastMatch = new Utf8ValueMatch(true, true, prefix.Length + parent.Length - last.Length, last.Length,
             floor + Encoding.UTF8.GetByteCount(parent) - Encoding.UTF8.GetByteCount(last), Encoding.UTF8.GetByteCount(last));
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var groups = new Utf8ValueMatch[regex.GroupCount + 1];
             Assert.Equal(whole, regex.Match(input, groups, floor));
             Assert.Equal(parentMatch, groups[1]); Assert.Equal(lastMatch, groups[2]);
@@ -92,7 +90,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         }
     }
-
     [Theory]
     [InlineData("((a|a[^!])*)!*", "a", "!", PosixCompileOptions.None)]
     [InlineData("((a|a[ab中])*)!*", "a", "!", PosixCompileOptions.None)]
@@ -107,10 +104,9 @@ public sealed class PosixRepeatedCaptureSelectionTests
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail);
             var expected = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length + tail.Length,
                 floor, count * width + Encoding.UTF8.GetByteCount(tail));
@@ -132,18 +128,18 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         }
     }
-
     [Theory]
-    [InlineData("a", "é", "😀")] [InlineData("中", "é", "😀")]
-    [InlineData("a", ".", "[😀]")] [InlineData("中", "[^a]", ".")]
+    [InlineData("a", "é", "😀")]
+    [InlineData("中", "é", "😀")]
+    [InlineData("a", ".", "[😀]")]
+    [InlineData("中", "[^a]", ".")]
     public void FixedSuffixCanDetermineDifferentEndsForNestedParents(string scalar, string innerTail, string outerTail)
     {
         const int count = 32;
         var width = Encoding.UTF8.GetByteCount(scalar);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex($"(({scalar}|{scalar}{scalar})*{innerTail}){outerTail}",
-                resourcePolicy: new() { MaxWorkSteps = 100_000 }, inputValidation: validation);
+                resourcePolicy: new() { MaxWorkSteps = 100_000 });
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, count)) + "é😀");
             var groups = new Utf8ValueMatch[3];
             Assert.Equal(new Utf8ValueMatch(true, true, 0, count * scalar.Length + 3, 0, count * width + 6), regex.Match(input, groups));
@@ -152,43 +148,28 @@ public sealed class PosixRepeatedCaptureSelectionTests
                 (count - 2) * width, 2 * width), groups[2]);
         }
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "(a|aa)*b", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(a|aa)*b", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)b", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)b", "a")]
-    [InlineData(Utf8InputValidation.Validate, "(((a|aa)*))b", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(((a|aa)*))b", "a")]
-    [InlineData(Utf8InputValidation.Validate, "(a|a[ab])*b", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(a|a[ab])*b", "a")]
-    [InlineData(Utf8InputValidation.Validate, "(😀|😀😀)*b", "😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(😀|😀😀)*b", "😀")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[bc]", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[bc]", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*).", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*).", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[^a]", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[^a]", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((😀|😀😀)*)[ab]", "😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((😀|😀😀)*)[ab]", "😀")]
-    [InlineData(Utf8InputValidation.Validate, "(a|aa)*[bc]?", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(a|aa)*[bc]?", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[bc]?", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[bc]?", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((a|aa)*)[bc]*", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((a|aa)*)[bc]*", "a")]
-    [InlineData(Utf8InputValidation.Validate, "((😀|😀😀)*)[ab]?", "😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "((😀|😀😀)*)[ab]?", "😀")]
-    public void BoundedParentsAllowFiniteDescendantHistoryCompetition(
-        Utf8InputValidation validation, string pattern, string scalar)
+    [InlineData("(a|aa)*b", "a")]
+    [InlineData("((a|aa)*)b", "a")]
+    [InlineData("(((a|aa)*))b", "a")]
+    [InlineData("(a|a[ab])*b", "a")]
+    [InlineData("(😀|😀😀)*b", "😀")]
+    [InlineData("((a|aa)*)[bc]", "a")]
+    [InlineData("((a|aa)*).", "a")]
+    [InlineData("((a|aa)*)[^a]", "a")]
+    [InlineData("((😀|😀😀)*)[ab]", "😀")]
+    [InlineData("(a|aa)*[bc]?", "a")]
+    [InlineData("((a|aa)*)[bc]?", "a")]
+    [InlineData("((a|aa)*)[bc]*", "a")]
+    [InlineData("((😀|😀😀)*)[ab]?", "😀")]
+    public void BoundedParentsAllowFiniteDescendantHistoryCompetition( string pattern, string scalar)
     {
         const int count = 32;
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         using var token = new CancellationTokenSource();
         foreach (var nonEof in new[] { false, true })
         {
@@ -228,11 +209,13 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Equal(2 * width, retained.LengthInBytes);
         }
     }
-
     [Theory]
-    [InlineData("a", "b", false)] [InlineData("a", "b", true)]
-    [InlineData("é", "😀", false)] [InlineData("é", "😀", true)]
-    [InlineData("😀", "é", false)] [InlineData("😀", "é", true)]
+    [InlineData("a", "b", false)]
+    [InlineData("a", "b", true)]
+    [InlineData("é", "😀", false)]
+    [InlineData("é", "😀", true)]
+    [InlineData("😀", "é", false)]
+    [InlineData("😀", "é", true)]
     public void ReachableWholeBoundariesPreserveNestedCapturesAndCursorAliases(string scalar, string tail, bool nullable)
     {
         const int count = 32;
@@ -240,11 +223,9 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var body = string.Concat(Enumerable.Repeat(scalar, count));
         var input = Encoding.UTF8.GetBytes(prefix + body + tail + "中!");
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex($"((({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})*).)",
-                resourcePolicy: new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 1 << 20, MaxDepth = 4096 },
-                inputValidation: validation);
+                resourcePolicy: new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 1 << 20, MaxDepth = 4096 });
             var groups = new Utf8ValueMatch[4];
             var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + tail.Length,
                 floor, Encoding.UTF8.GetByteCount(body + tail));
@@ -270,14 +251,19 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         }
     }
-
     [Theory]
-    [InlineData("a", false, false)] [InlineData("a", true, false)]
-    [InlineData("a", false, true)] [InlineData("a", true, true)]
-    [InlineData("é", false, false)] [InlineData("é", true, false)]
-    [InlineData("é", false, true)] [InlineData("é", true, true)]
-    [InlineData("😀", false, false)] [InlineData("😀", true, false)]
-    [InlineData("😀", false, true)] [InlineData("😀", true, true)]
+    [InlineData("a", false, false)]
+    [InlineData("a", true, false)]
+    [InlineData("a", false, true)]
+    [InlineData("a", true, true)]
+    [InlineData("é", false, false)]
+    [InlineData("é", true, false)]
+    [InlineData("é", false, true)]
+    [InlineData("é", true, true)]
+    [InlineData("😀", false, false)]
+    [InlineData("😀", true, false)]
+    [InlineData("😀", false, true)]
+    [InlineData("😀", true, true)]
     public void ImprovedParentEndsRefreshReachableHistoryBounds(string scalar, bool nullable, bool enclosed)
     {
         const string prefix = "é😀#";
@@ -285,13 +271,12 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var body = string.Concat(Enumerable.Repeat(scalar, count));
         var input = Encoding.UTF8.GetBytes(prefix + body + "!#");
         var floor = Encoding.UTF8.GetByteCount(prefix);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
         {
             var pattern = $"(({scalar}|{scalar}.{(nullable ? "|" : "")})*)!*";
             if (enclosed) pattern = "(" + pattern + ")";
             var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var groups = new Utf8ValueMatch[regex.GroupCount + 1];
             var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + 1,
                 floor, Encoding.UTF8.GetByteCount(body) + 1);
@@ -318,11 +303,13 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         }
     }
-
     [Theory]
-    [InlineData("a", false)] [InlineData("a", true)]
-    [InlineData("é", false)] [InlineData("é", true)]
-    [InlineData("😀", false)] [InlineData("😀", true)]
+    [InlineData("a", false)]
+    [InlineData("a", true)]
+    [InlineData("é", false)]
+    [InlineData("é", true)]
+    [InlineData("😀", false)]
+    [InlineData("😀", true)]
     public void ConfinedRootAlternativesKeepHierarchicalPriority(string scalar, bool nullable)
     {
         const string prefix = "é😀!";
@@ -331,7 +318,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var input = Encoding.UTF8.GetBytes(prefix + body + "b#");
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var choice = $"({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})";
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
         foreach (var reverse in new[] { false, true })
         {
@@ -339,7 +325,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             var right = "(" + choice + "*).";
             var pattern = reverse ? right + "|" + left : left + "|" + right;
             var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var groups = new Utf8ValueMatch[regex.GroupCount + 1];
             var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + 1,
                 floor, Encoding.UTF8.GetByteCount(body) + 1);
@@ -368,11 +354,13 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         }
     }
-
     [Theory]
-    [InlineData("a", false)] [InlineData("a", true)]
-    [InlineData("é", false)] [InlineData("é", true)]
-    [InlineData("😀", false)] [InlineData("😀", true)]
+    [InlineData("a", false)]
+    [InlineData("a", true)]
+    [InlineData("é", false)]
+    [InlineData("é", true)]
+    [InlineData("😀", false)]
+    [InlineData("😀", true)]
     public void ImmediateNestedRootBranchesPreserveAncestorPriority(string scalar, bool nullable)
     {
         const string prefix = "é😀!";
@@ -383,13 +371,12 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var choice = $"({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})";
         var left = choice + "*b";
         var right = "(" + choice + "*).";
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
         foreach (var order in new[] { 0, 1, 2 })
         {
             var pattern = order == 0 ? "z|" + left + "|" + right : order == 1 ? left + "|" + right + "|z" : "|" + left + "|" + right;
             var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var whole = new Utf8ValueMatch(true, true, prefix.Length, body.Length + 1,
                 floor, Encoding.UTF8.GetByteCount(body) + 1);
             var last = new Utf8ValueMatch(true, true, prefix.Length + body.Length - scalar.Length * 2, scalar.Length * 2,
@@ -421,16 +408,14 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         }
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void SeparateParentCeilingsAllowVariableCapturedTails(Utf8InputValidation validation)
+    public void SeparateParentCeilingsAllowVariableCapturedTails()
     {
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var regex = new Utf8PosixRegex("(((a|aa)*)(b|cc))d*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(prefix + new string('a', 32) + "bdd!");
         var groups = new Utf8ValueMatch[5];
         var whole = new Utf8ValueMatch(true, true, prefix.Length, 35, floor, 35);
@@ -449,18 +434,12 @@ public sealed class PosixRepeatedCaptureSelectionTests
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2, retained.LengthInBytes);
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "a", false)]
-    [InlineData(Utf8InputValidation.AssumeValid, "a", false)]
-    [InlineData(Utf8InputValidation.Validate, "a", true)]
-    [InlineData(Utf8InputValidation.AssumeValid, "a", true)]
-    [InlineData(Utf8InputValidation.Validate, "😀", false)]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀", false)]
-    [InlineData(Utf8InputValidation.Validate, "😀", true)]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀", true)]
-    public void LongAmbiguousCaptureFitsFiniteWorkWithoutRescanningEqualOccurrences(
-        Utf8InputValidation validation, string scalar, bool nonEof)
+    [InlineData("a", false)]
+    [InlineData("a", true)]
+    [InlineData("😀", false)]
+    [InlineData("😀", true)]
+    public void LongAmbiguousCaptureFitsFiniteWorkWithoutRescanningEqualOccurrences( string scalar, bool nonEof)
     {
         const int count = 1024;
         const string prefix = "é😀!";
@@ -468,7 +447,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + (nonEof ? "!" : ""));
         var regex = new Utf8PosixRegex($"({scalar}|{scalar}{scalar})*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         using var token = new CancellationTokenSource();
         var groups = new Utf8ValueMatch[2];
         var expected = new Utf8ValueMatch(true, true, prefix.Length, count * scalar.Length, floor, count * width);
@@ -486,25 +465,18 @@ public sealed class PosixRepeatedCaptureSelectionTests
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2 * width, retained.LengthInBytes);
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "a", "aa")]
-    [InlineData(Utf8InputValidation.AssumeValid, "a", "aa")]
-    [InlineData(Utf8InputValidation.Validate, "😀", "😀😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀", "😀😀")]
-    [InlineData(Utf8InputValidation.Validate, "a", "a[^!]")]
-    [InlineData(Utf8InputValidation.AssumeValid, "a", "a[^!]")]
-    [InlineData(Utf8InputValidation.Validate, "😀", "😀[^!]")]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀", "😀[^!]")]
-    [InlineData(Utf8InputValidation.Validate, "a", ".a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "a", ".a")]
-    [InlineData(Utf8InputValidation.Validate, "😀", ".😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "😀", ".😀")]
-    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition(Utf8InputValidation validation, string scalar, string longer)
+    [InlineData("a", "aa")]
+    [InlineData("😀", "😀😀")]
+    [InlineData("a", "a[^!]")]
+    [InlineData("😀", "😀[^!]")]
+    [InlineData("a", ".a")]
+    [InlineData("😀", ".😀")]
+    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition( string scalar, string longer)
     {
         var pair = scalar + scalar;
         var regex = new Utf8PosixRegex($"({scalar}|{longer})*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         const string prefix = "é😀!";
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, 32)));
         var floor = Encoding.UTF8.GetByteCount(prefix);
@@ -536,20 +508,15 @@ public sealed class PosixRepeatedCaptureSelectionTests
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2 * width, retained.LengthInBytes);
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "(a|aa)*", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(a|aa)*", "a")]
-    [InlineData(Utf8InputValidation.Validate, "(a|a[ab])*", "a")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(a|a[ab])*", "a")]
-    [InlineData(Utf8InputValidation.Validate, "(é|éé)*", "é")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(é|éé)*", "é")]
-    [InlineData(Utf8InputValidation.Validate, "(😀|😀😀)*", "😀")]
-    [InlineData(Utf8InputValidation.AssumeValid, "(😀|😀😀)*", "😀")]
-    public void ExcludedBoundariesKeepNonEofHistoryAndWholeOnlyCountsWithinFiniteWork(Utf8InputValidation validation, string pattern, string scalar)
+    [InlineData("(a|aa)*", "a")]
+    [InlineData("(a|a[ab])*", "a")]
+    [InlineData("(é|éé)*", "é")]
+    [InlineData("(😀|😀😀)*", "😀")]
+    public void ExcludedBoundariesKeepNonEofHistoryAndWholeOnlyCountsWithinFiniteWork( string pattern, string scalar)
     {
         var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
@@ -571,22 +538,23 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.False(alias.MoveNext(out _));
             Assert.Equal(2 * width, retained.LengthInBytes);
         }
-        if (validation == Utf8InputValidation.Validate)
-            Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(prefix + new string('a', 32)), 0xff], floor));
     }
-
     [Theory]
-    [InlineData(2048, "a")] [InlineData(2049, "a")] [InlineData(2050, "a")]
-    [InlineData(683, "中")] [InlineData(684, "中")] [InlineData(685, "中")]
-    [InlineData(512, "😀")] [InlineData(513, "😀")]
+    [InlineData(2048, "a")]
+    [InlineData(2049, "a")]
+    [InlineData(2050, "a")]
+    [InlineData(683, "中")]
+    [InlineData(684, "中")]
+    [InlineData(685, "中")]
+    [InlineData(512, "😀")]
+    [InlineData(513, "😀")]
     public void AShortFirstAcceptanceCannotDiscardLongerEndpointsAcrossLongScalarBranches(int length, string scalar)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, length)) + "é");
         var bytes = length * Encoding.UTF8.GetByteCount(scalar);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             // ERE interval numbers stay <=255, including this long fixed branch.
-            var regex = new Utf8PosixRegex($"({scalar}|({scalar}{{128}}){{{length / 128}}}{scalar}{{{length % 128}}})", inputValidation: validation);
+            var regex = new Utf8PosixRegex($"({scalar}|({scalar}{{128}}){{{length / 128}}}{scalar}{{{length % 128}}})");
             var captures = new Utf8ValueMatch[2];
             Assert.Equal(new Utf8ValueMatch(true, true, 0, length * scalar.Length, 0, bytes), regex.Match(input, captures));
             Assert.Equal(bytes, captures[1].LengthInBytes);
@@ -594,12 +562,15 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Equal(1, regex.Count(input));
         }
     }
-
     [Theory]
-    [InlineData("a", false, false)] [InlineData("a", true, false)]
-    [InlineData("😀", false, false)] [InlineData("😀", true, false)]
-    [InlineData("a", false, true)] [InlineData("a", true, true)]
-    [InlineData("😀", false, true)] [InlineData("😀", true, true)]
+    [InlineData("a", false, false)]
+    [InlineData("a", true, false)]
+    [InlineData("😀", false, false)]
+    [InlineData("😀", true, false)]
+    [InlineData("a", false, true)]
+    [InlineData("a", true, true)]
+    [InlineData("😀", false, true)]
+    [InlineData("😀", true, true)]
     public void AmbiguousAlternativesKeepOccurrencePriorityAcrossNestingAndOutputSizes(string scalar, bool nullable, bool fixedSuffix)
     {
         var empty = nullable ? "|" : "";
@@ -648,7 +619,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             }
         }
     }
-
     [Theory]
     [InlineData("(aa|a)(aab)*", "aaab", "a", "aab", null)]
     [InlineData("((aab|aa|ba)*)([ab]*)", "aaba", "aaba", "ba", "")]
@@ -676,15 +646,15 @@ public sealed class PosixRepeatedCaptureSelectionTests
         }
         Assert.Equal(whole, regex.Match(input));
     }
-
     [Theory]
-    [InlineData(1)] [InlineData(16)] [InlineData(80)]
+    [InlineData(1)]
+    [InlineData(16)]
+    [InlineData(80)]
     public void FixedLiteralSuffixKeepsSelectionForShortAndLargePrograms(int suffixLength)
     {
         var tail = new string('b', suffixLength);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex("(a|aa)*" + tail, inputValidation: validation);
+            var regex = new Utf8PosixRegex("(a|aa)*" + tail);
             var input = Encoding.ASCII.GetBytes("aaaaaaaa" + tail);
             var groups = new Utf8ValueMatch[2];
             var whole = regex.Match(input, groups);
@@ -692,7 +662,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Equal(new Utf8ValueMatch(true, true, 6, 2, 6, 2), groups[1]);
         }
     }
-
     [Fact]
     public void BoundedLiteralRunCapturesMatchAnIndependentOccurrenceOracle()
     {
@@ -706,7 +675,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
                 Check(regex, outerMin, outerMax, innerMin, innerMax, count);
         }
     }
-
     [Theory]
     [InlineData(0, 4, 0, int.MaxValue)]
     [InlineData(1, 4, 1, int.MaxValue)]
@@ -724,7 +692,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         for (var count = 0; count <= 6; count++)
             Check(regex, outerMin, outerMax, innerMin, innerMax, count);
     }
-
     [Fact]
     public void FirstAcceptanceDoesNotReplaceGeneralRankingForCounterexamples()
     {
@@ -742,7 +709,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         Assert.Equal(1, nullable.Match("a"u8, captures).LengthInBytes);
         Assert.Equal((0, 1), (captures[1].IndexInBytes, captures[1].LengthInBytes));
     }
-
     [Fact]
     public void RepeatedLiteralProofDeclinesAdditionalHistoryAndConsumingTails()
     {
@@ -751,9 +717,10 @@ public sealed class PosixRepeatedCaptureSelectionTests
         foreach (var pattern in new[] { "((a)?){2,4}", "(a?){2,4}a", "(a|aa){2,4}", "([ab]?){2,4}" })
             Assert.False(PosixProgram.Compile(pattern, default).FirstAcceptanceIsLongest);
     }
-
     [Theory]
-    [InlineData("é")] [InlineData("😀")] [InlineData("\0")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    [InlineData("\0")]
     public void RepeatedCaptureKeepsScalarFloorsEmptyCoordinatesAndRetainedValues(string atom)
     {
         var regex = new Utf8PosixRegex($"({atom}?){{2,4}}");
@@ -774,13 +741,15 @@ public sealed class PosixRepeatedCaptureSelectionTests
         regex.Match(input, captures, floor + width);
         Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length + atom.Length, 0, floor + width, 0), retained);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(storage.AsSpan(3, storage.Length - 6), captures, 1));
-        Assert.Throws<ArgumentException>(() => regex.Match(new byte[] { (byte)'a', 255 }, captures));
-    }
 
+    }
     [Theory]
-    [InlineData("a", false)] [InlineData("a", true)]
-    [InlineData("é", false)] [InlineData("é", true)]
-    [InlineData("😀", false)] [InlineData("😀", true)]
+    [InlineData("a", false)]
+    [InlineData("a", true)]
+    [InlineData("é", false)]
+    [InlineData("é", true)]
+    [InlineData("😀", false)]
+    [InlineData("😀", true)]
     public void LargeGlobalBoundaryKeepsWholeCountAndCursorWithoutHistoryCompetition(string scalar, bool equalLeading)
     {
         const string prefix = "é😀!";
@@ -794,11 +763,10 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var length = Encoding.UTF8.GetByteCount(prefix + text + "#");
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var expected = new Utf8ValueMatch(true, true, prefix.Length, text.Length, floor, Encoding.UTF8.GetByteCount(text));
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             using var token = new CancellationTokenSource();
             var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var input = storage.AsSpan(3, length);
             Assert.Equal(expected, regex.Match(input, floor, token.Token));
             var shortOutput = new Utf8ValueMatch[1];
@@ -811,16 +779,12 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.False(alias.MoveNext(out _)); cursor.Dispose();
             Assert.Equal(expected, first);
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
-            if (validation == Utf8InputValidation.Validate)
-            {
-                var invalid = storage.AsSpan(3, length).ToArray().Append((byte)0xff).ToArray();
-                Assert.Throws<ArgumentException>(() => regex.Count(invalid, floor));
-            }
         }
     }
-
     [Theory]
-    [InlineData("a")] [InlineData("é")] [InlineData("😀")]
+    [InlineData("a")]
+    [InlineData("é")]
+    [InlineData("😀")]
     public void LargeGlobalBoundaryCannotDiscardAConsumingLaterWinner(string scalar)
     {
         var body = $"({scalar}|{scalar}{scalar})*";
@@ -828,9 +792,8 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var pattern = first + "|" + first + "#x";
         Assert.True(PosixProgram.Compile(pattern, default).Scalar.Instructions.Length > 64);
         var text = "x" + string.Concat(Enumerable.Repeat(scalar, 8)) + "b#x";
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8PosixRegex(pattern, inputValidation: validation);
+            var regex = new Utf8PosixRegex(pattern);
             var input = Encoding.UTF8.GetBytes(text);
             var whole = regex.Match(input);
             Assert.Equal(0, whole.IndexInBytes);
@@ -838,12 +801,11 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.Equal(1, regex.Count(input));
         }
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, "a")] [InlineData(Utf8InputValidation.AssumeValid, "a")]
-    [InlineData(Utf8InputValidation.Validate, "é")] [InlineData(Utf8InputValidation.AssumeValid, "é")]
-    [InlineData(Utf8InputValidation.Validate, "😀")] [InlineData(Utf8InputValidation.AssumeValid, "😀")]
-    public void ConsumingAndRepeatedCaptureContextsFitFiniteWork(Utf8InputValidation validation, string scalar)
+    [InlineData("a")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    public void ConsumingAndRepeatedCaptureContextsFitFiniteWork( string scalar)
     {
         const int count = 32;
         const string prefix = "é😀!";
@@ -863,7 +825,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
         })
         {
             var regex = new Utf8PosixRegex(item.Pattern, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             var wholeText = item.Lead + run + "b" + item.Tail;
             var input = Encoding.UTF8.GetBytes(prefix + wholeText + "#");
             var storage = new byte[input.Length + 7]; input.CopyTo(storage.AsSpan(3));
@@ -889,8 +851,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             Assert.False(alias.MoveNext(output, out _)); Assert.All(output, item => Assert.False(item.Success));
             cursor.Dispose(); Assert.Equal(last, retained);
             Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
-            if (validation == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Match(input.Append((byte)0xff).ToArray(), output, floor));
         }
     }
 

@@ -244,7 +244,7 @@ public sealed class PythonRePersistentCursorTests
     public void FactoryValidatesWholeSubjectScalarOffsetAndCancellationBeforePublication()
     {
         var regex = new Utf8PythonRegex("a");
-        Assert.Throws<ArgumentException>(() => regex.CreateMatchCursor(new byte[] { (byte)'a', 0xff }));
+
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor(Encoding.UTF8.GetBytes("😀"), 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor("a"u8.ToArray(), 2));
         using var token = new CancellationTokenSource(); token.Cancel();

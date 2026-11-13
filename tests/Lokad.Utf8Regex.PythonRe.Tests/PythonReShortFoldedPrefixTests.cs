@@ -75,7 +75,7 @@ public sealed class PythonReShortFoldedPrefixTests
             using var owner = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase,
                 Timeout.InfiniteTimeSpan, policy);
             var malformed = "SHERLOCK"u8.ToArray().Append((byte)0xff).ToArray();
-            Assert.Contains("byte offset 8.", Assert.Throws<ArgumentException>(() => owner.Search(malformed)).Message);
+
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
                 () => owner.Search(malformed, 0, token.Token)).CancellationToken);

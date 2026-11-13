@@ -41,7 +41,6 @@ public sealed class PythonReCountOwnershipTests
         yield return new object?[] { "(?=(a+))a", none, "aa ba", 0, 3 };
         yield return new object?[] { "(a*)", none, "aa b", 0, 4 };
     }
-
     [Theory]
     [MemberData(nameof(OwnedCountCases))]
     public void OwnedCountMatchesFindAll(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
@@ -51,7 +50,6 @@ public sealed class PythonReCountOwnershipTests
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
         Assert.Equal(regex.FindAll(input, startOffsetInBytes).Length, regex.Count(input, startOffsetInBytes));
     }
-
     [Fact]
     public void SplitBackendCountAgreesWithFindAll()
     {
@@ -62,7 +60,6 @@ public sealed class PythonReCountOwnershipTests
         Assert.Equal(3, regex.Count(input, 8));
         Assert.Equal(3, regex.FindAll(input, 8).Length);
     }
-
     [Theory]
     [InlineData("(?P<word>foo)-(?P=word)", PythonReCompileOptions.None, "xx foo-foo yy foo-foo", 3, 2)]
     public void NamedReferenceCountRunsOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
@@ -71,30 +68,24 @@ public sealed class PythonReCountOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void CapturedRepeatCountNeedsNoScratchAndPreservesActualCaptureValues(Utf8InputValidation validation)
+    public void CapturedRepeatCountNeedsNoScratchAndPreservesActualCaptureValues()
     {
         var policy = new Utf8ResourcePolicy
             { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         const string pattern = "([A-Za-z]){2,3}";
-        var count = new Utf8PythonRegex(pattern, resourcePolicy: policy, inputValidation: validation);
+        var count = new Utf8PythonRegex(pattern, resourcePolicy: policy);
         var input = "éabcdefg 😀 ab"u8.ToArray();
         using var token = new CancellationTokenSource();
         Assert.Equal(3, count.Count(input));
         Assert.Equal(2, count.Count(input, 5, token.Token));
-        var values = new Utf8PythonRegex(pattern, inputValidation: validation).FindAllToStrings(input);
+        var values = new Utf8PythonRegex(pattern).FindAllToStrings(input);
         Assert.Equal(new[] { "c", "f", "b" }, values.ScalarValues);
-        if (validation == Utf8InputValidation.Validate)
-            Assert.Throws<ArgumentException>(() => count.Count([.. input, 0xff]));
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void IndependentCapturedCountsNeedNoCaptureScratch(Utf8InputValidation validation)
+    public void IndependentCapturedCountsNeedNoCaptureScratch()
     {
         var policy = new Utf8ResourcePolicy
             { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1 };
@@ -105,31 +96,25 @@ public sealed class PythonReCountOwnershipTests
             ("([a-z]+)([0-9]+)", "é😀item12 other345", 2, 13),
         })
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: policy, inputValidation: validation);
+            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: policy);
             var input = Encoding.UTF8.GetBytes(text);
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(expected, regex.Count(input));
-                Assert.Equal(validation == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
+                Assert.Equal(0, session.SubjectValidations);
             }
             finally { session.Complete(); }
             using var token = new CancellationTokenSource();
             Assert.Equal(1, regex.Count(input, afterFirst, token.Token));
             Assert.Equal(0, regex.Count(input, input.Length));
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
-            if (validation == Utf8InputValidation.Validate)
-            {
-                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
-                Assert.Throws<ArgumentException>(() => regex.Count([0xff, .. input], 7));
-            }
-            using var detailed = new Utf8PythonRegex(pattern, inputValidation: validation);
+            using var detailed = new Utf8PythonRegex(pattern);
             var retained = detailed.SearchDetailedData(input);
             Assert.Equal(expected, detailed.Count(input));
             Assert.Equal("12", retained.Groups[^1].ValueText);
         }
     }
-
     [Theory]
     [InlineData(@"([a-z]+)-\1", "ab-ab")]
     [InlineData("(a)?b(?(1)c|d)", "abc bd")]
@@ -137,27 +122,23 @@ public sealed class PythonReCountOwnershipTests
     [InlineData("(a*)", "aaa")]
     public void CaptureReadersAssertionsAndNullableProgressionRetainAdmission(string pattern, string text)
     {
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkingBytes = 1 },
-                inputValidation: validation);
+            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkingBytes = 1 });
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
         }
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void CountPreservesProgramFundingAndAdmitsRemainingVmStorage(Utf8InputValidation validation)
+    public void CountPreservesProgramFundingAndAdmitsRemainingVmStorage()
     {
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(16 << 20);
         Assert.True(account.TryReserve(17));
         using var simple = Utf8PythonRegex.Compile("([a-z]+)-([0-9]+)", default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account, validation);
+            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
         using var compound = Utf8PythonRegex.Compile("((ab)+)x", default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account, validation);
+            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
         var held = account.Used;
         account.Maximum = held;
         Assert.Equal(2, simple.Count("é😀item-12 other-345"u8));
@@ -177,11 +158,9 @@ public sealed class PythonReCountOwnershipTests
         Assert.Equal(17UL, account.Used);
         account.Release(17);
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void CaptureFreeCountRetainsEveryUsefulWorkCutoff(Utf8InputValidation validation)
+    public void CaptureFreeCountRetainsEveryUsefulWorkCutoff()
     {
         const string pattern = "([a-z]+)-([0-9]+)";
         var input = "é😀item-12 other-345"u8.ToArray();
@@ -189,8 +168,7 @@ public sealed class PythonReCountOwnershipTests
         for (ulong limit = 1; limit <= 256; limit++)
         {
             using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
-                { MaxWorkSteps = limit, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1 },
-                inputValidation: validation);
+                { MaxWorkSteps = limit, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1 });
             int? published = null;
             var failure = Record.Exception(() => published = regex.Count(input));
             if (failure is null) { Assert.Equal(2, published); succeeded = true; break; }

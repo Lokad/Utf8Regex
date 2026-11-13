@@ -5,24 +5,24 @@ dependency. It owns ERE admission and POSIX selection. Core, PythonRe and PCRE2
 retain their contracts. This is an invariant, scalar ERE subset, not complete
 locale-sensitive POSIX, GNU or BSD compatibility.
 
-## Subject input validation
+## Subject text contract
 
-The immutable constructor/factory `inputValidation` option and read-only
-`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
-`Validate` is default: strict whole-input validation runs at most once per operation
-or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
-unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
-Unicode semantics, coordinates, cancellation/deadlines and resource admission
-remain independent. Below, mandatory subject-validation statements apply to
-Validate mode; coordinate/scalar/result work can still inspect input in either mode.
-No per-call policy or public validation-token API is introduced.
+Subjects are already-valid UTF-8 text, borrowed unchanged during an operation or
+cursor lifetime. The profile does not impose a whole-input validity pass or
+malformed-suffix rejection as an additional POSIX compatibility requirement.
+Invalid UTF-8 subjects are outside this profile's domain. External byte validation
+belongs at the application's text boundary.
+
+There is no subject-validation option, property or token. Pattern validation,
+managed bounds, scalar selection, captures, coordinate projection, resource
+admission and original synchronous cancellation/deadlines remain independent.
+Only requested matching and output work needs to inspect text.
 
 ## Input and syntax
 
 Patterns are well-formed Unicode strings; subjects are strict UTF-8. A matching
 character is one Unicode scalar, including supplementary characters and U+0000.
-Validate mode checks the entire subject before matching, including bytes outside a requested
-search range. Primary offsets refer to the original bytes; UTF-16 coordinates are
+Primary offsets refer to the original bytes; UTF-16 coordinates are
 derived. A start offset must be a scalar boundary in `[0,input.Length]` and does
 not rebase anchors or remove prefix context.
 
@@ -192,7 +192,7 @@ finite policies when upgrading rather than relying on exact prior step/byte tota
 Scalar/coordinate scans retain bounded original interruption checks. Coordinate
 projection sizes already-validated ranges through the shared UTF-16 helper; it
 does not validate them a second time. Neither scalar units nor byte offsets,
-subject validation policy, captures or original-token/deadline behavior changes.
+valid-text contract, captures or original-token/deadline behavior changes.
 
 Working limits cover modeled matching/history/projection capacity, not borrowed
 input, the compiled program, fixed owner metadata, all GC traffic or process RAM.

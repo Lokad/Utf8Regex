@@ -5,18 +5,16 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixCoordinateProjectionTests
 {
     [Theory]
-    [InlineData(false, Utf8InputValidation.Validate)]
-    [InlineData(true, Utf8InputValidation.Validate)]
-    [InlineData(false, Utf8InputValidation.AssumeValid)]
-    [InlineData(true, Utf8InputValidation.AssumeValid)]
-    public void CaptureOriginsPreserveOverlappingEmptyAbsentAndPartialOutput(bool empty, Utf8InputValidation policy)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CaptureOriginsPreserveOverlappingEmptyAbsentAndPartialOutput(bool empty)
     {
         foreach (var prefix in new[] { new string('p',8192), new string('é',4097), string.Concat(Enumerable.Repeat("é😀",2049)) })
         {
             var text = empty ? "é😀" : "é😀xx";
             var input = Encoding.UTF8.GetBytes(prefix+text);
             var start = Encoding.UTF8.GetByteCount(prefix);
-            var regex = new Utf8PosixRegex(empty ? "((é😀)())|(absent)" : "((é😀)(x*))|(absent)", inputValidation:policy);
+            var regex = new Utf8PosixRegex(empty ? "((é😀)())|(absent)" : "((é😀)(x*))|(absent)");
             var whole = Value(start,Encoding.UTF8.GetByteCount(text),prefix.Length,text.Length);
             var retained = Value(0,1,0,1);
             var expected = new[] {whole,whole,Value(start,6,prefix.Length,3),
@@ -30,16 +28,14 @@ public sealed class PosixCoordinateProjectionTests
             }
         }
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void CursorAliasesKeepCaptureCoordinatesAcrossOutputSizes(Utf8InputValidation policy)
+    public void CursorAliasesKeepCaptureCoordinatesAcrossOutputSizes()
     {
         var prefix=string.Concat(Enumerable.Repeat("é😀",2049));
         var input=Encoding.UTF8.GetBytes(prefix+"é😀xx!é😀!");
         var start=Encoding.UTF8.GetByteCount(prefix);
-        var regex=new Utf8PosixRegex("((é😀)(x*))",inputValidation:policy);
+        var regex=new Utf8PosixRegex("((é😀)(x*))");
         using var cursor=regex.CreateMatchCursor(input,start);
         var alias=cursor; var groups=new Utf8ValueMatch[4];
         Assert.True(cursor.MoveNext(groups,out var first));

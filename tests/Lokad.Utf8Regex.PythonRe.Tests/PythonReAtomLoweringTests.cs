@@ -18,9 +18,8 @@ public sealed class PythonReAtomLoweringTests
     public void ResolvedBracketOperandsPreserveFoldingComplementsAndCaptures(string pattern, string text, string[] expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkSteps = 1000000 }, inputValidation: policy);
+            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkSteps = 1000000 });
             Assert.Equal(expected.Length, regex.Count(input));
             using var cursor = regex.CreateMatchCursor(input);
             var values = new List<string>();
@@ -28,7 +27,6 @@ public sealed class PythonReAtomLoweringTests
             Assert.Equal(expected, values);
         }
     }
-
     [Theory]
     [InlineData("^.$", "😀\n", new[] { "😀" })]
     [InlineData("(?s:.)", "😀\n", new[] { "😀", "\n" })]
@@ -41,11 +39,10 @@ public sealed class PythonReAtomLoweringTests
     public void ResolvedAtomsKeepScopedFlagsScalarsAndEscapedLiterals(string pattern, string text, string[] expected)
     {
         var input=Encoding.UTF8.GetBytes(text);
-        foreach(var policy in new[]{Utf8InputValidation.Validate,Utf8InputValidation.AssumeValid})
         foreach(var finite in new[]{false,true})
         {
             var regex=new Utf8PythonRegex(pattern,resourcePolicy:finite
-                ? new(){MaxWorkSteps=1000000,MaxWorkingBytes=1048576}:default,inputValidation:policy);
+                ? new(){MaxWorkSteps=1000000,MaxWorkingBytes=1048576}:default);
             Assert.Equal(expected.Length,regex.Count(input));
             Assert.Equal(expected,regex.FindAllToStrings(input).ScalarValues);
         }

@@ -106,7 +106,7 @@ public sealed class PythonRePrefixDiscoveryTests
         Assert.Equal(4, regex.SearchDetailedData(input).Value.StartOffsetInBytes);
         Assert.Equal(1, regex.Count(input, 4));
         Assert.Equal(0, regex.Count(input, 8));
-        Assert.Throws<ArgumentException>(() => regex.FindIterDetailed(input.Concat(new byte[] { 0xff }).ToArray()));
+
     }
 
     [Fact]

@@ -74,19 +74,7 @@ public sealed class PythonReFundedExecutionTests
         Assert.True(refusals > 0); Assert.True(successes > 0);
     }
 
-    [Fact]
-    public void FundedLiteralAndScalarOperationsStillValidateTheWholeSubject()
-    {
-        var invalid = new byte[] { (byte)'c', (byte)'a', (byte)'t', 0xff };
-        foreach (var pattern in new[] { "cat", "(?P<x>a+)" })
-        {
-            var account = new Allowance(16 << 20); using var regex = Compile(pattern, account);
-            var held = account.Used; account.Maximum = held;
-            Assert.Throws<ArgumentException>(() => regex.Count(invalid));
-            Assert.Throws<ArgumentException>(() => { _ = regex.Search(invalid); });
-            Assert.Equal(held, account.Used);
-        }
-    }
+
 
     [Fact]
     public void ExactLiteralBooleanAndCountKeepTheirStorageFreeRoute()

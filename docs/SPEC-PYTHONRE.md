@@ -10,17 +10,20 @@ See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
 [API snapshot](../tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
 This is a selected profile, not complete Python equivalence.
 
-## Subject input validation
+## Subject text contract
 
-The immutable constructor/factory `inputValidation` option and read-only
-`InputValidation` property follow the [shared subject contract](SPEC.md#subject-input-validation).
-`Validate` is default: strict whole-input validation runs at most once per operation
-or cursor lifetime. `AssumeValid` omits that pass under the caller's valid-UTF-8,
-unchanged-borrowed-input guarantee. Pattern/replacement checks, managed bounds,
-Unicode semantics, coordinates, cancellation/deadlines and resource admission
-remain independent. Below, mandatory subject-validation statements apply to
-Validate mode; coordinate/scalar/result work can still inspect input in either mode.
-No per-call policy or public validation-token API is introduced.
+This profile models Python `re` over `str`. A subject is already-valid UTF-8 text;
+the caller keeps borrowed storage unchanged during an operation or cursor lifetime.
+Validate external bytes where they become text, before passing them to this API.
+Regex operations do not perform a whole-subject validity pass, and malformed-prefix
+or malformed-suffix rejection is not a compatibility requirement. Invalid UTF-8
+subjects are outside this profile's domain.
+
+There is no subject-validation option, property or token. Pattern, replacement and
+capture-name validation remain independent. Managed bounds, Unicode scalars, byte
+offsets, captures, cooperative cancellation/deadlines and resource admission remain
+active. Requested coordinate/output work can still inspect the relevant text;
+whole-subject descriptions are not a prerequisite for byte-only discovery.
 
 ## Operations and result shape
 
@@ -38,7 +41,7 @@ No per-call policy or public validation-token API is introduced.
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
 and suffix context. FullMatch covers [pos,end). There is no `endpos` parameter.
-In Validate mode, the whole subject is validated even when discovery starts later or returns early.
+An early result needs no validity scan of the remaining text.
 
 Nonempty scalar programs can reject an absent mandatory exact literal, proved by
 their existing native rendering, before acquiring VM scratch. The search observes
@@ -50,7 +53,7 @@ on the selected route and version.
 Anchored Match/FullMatch can reuse a bounded necessary-start proof to reject an
 impossible starting byte before mandatory-literal screening or VM scratch. This
 never establishes success; possible starts retain screening and verification.
-Validate still checks the whole subject first.
+The original invocation still checks interruption and resource admission.
 
 Shared scalar execution can scan no-rewind, unbounded positive ASCII interval
 repeats in blocks of at most 2048 bytes. Basic work and original interruption are
@@ -85,7 +88,7 @@ markers between them, including short subjects of at least 16 bytes.
 Existing checked, metered search and scalar rewind locate
 a necessary window; the profile VM still verifies its candidates with complete
 prefix context and original capture/backreference order. Match and FullMatch
-retain anchored verification. The validation policy and admission for used capture
+retain anchored verification. The text contract and admission for used capture
 slots remain; avoiding impossible starts can lower execution work and required VM
 workspace. Search blocks, rewound scalars, verification and publication keep the
 same invocation's cancellation, deadline and resource authority.
@@ -114,7 +117,7 @@ patterns and nonzero offsets retain their existing routes.
 Successful literal values count coordinates over the already validated scalar
 ranges, using the existing sizing helper's scalar-aligned blocks of at most 4096
 bytes. This replaces coordinate-only validation blocks of 2048 bytes and can
-reduce numerical work charges; whole-subject validation still precedes discovery,
+reduce numerical work charges; the caller supplies valid UTF-8 text,
 and sizing/publication retain the same cancellation and deadline authority.
 
 The shared scalar runner can also omit impossible plain-alternative frames using
@@ -273,8 +276,8 @@ Text output sizes only its selected range; value output derives prefix/range
 coordinates after a hit. Batch output retains its consumed shared subject facts.
 Counting/decoding use bounded blocks and the original
 invocation, with string capacity admitted before allocation and held through
-publication. Numerical work requirements can change. Validate still checks the
-complete input; AssumeValid continues to trust valid, unchanged borrowed input.
+publication. Numerical work requirements can change. The caller supplies valid unchanged UTF-8 text; matching and output work retain
+their original interruption/admission authority.
 
 Supported families include literals/classes/standard escapes, ordered alternatives,
 greedy/lazy/possessive repetition, captures/named groups, references,
@@ -497,7 +500,7 @@ still admits its state before acquisition and retains it across candidate
 attempts. This can lower execution work/working requirements without changing
 captures, retained results or synchronous interruption and release.
 Proved unbounded repeats excluding an ASCII pair can use checked 2048-byte search
-blocks after whole-subject validation. They retain scalar endpoints and bounded
+blocks over the existing valid UTF-8 text. They retain scalar endpoints and bounded
 work/interruption checks; numeric work charges can fall.
 Ordinary class complements lower directly to scalar classes. A complement of a
 union containing standalone predicate branches retains its guard form. Removing

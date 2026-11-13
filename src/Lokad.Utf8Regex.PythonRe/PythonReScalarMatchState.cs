@@ -51,16 +51,13 @@ internal struct PythonReScalarMatchState
         _invocation = invocation;
         try
         {
-            // Strict input is validated once before any early exit. Trusted
-            // byte discovery needs no whole-subject coordinate description.
-            if (_invocation.InputValidation == Utf8InputValidation.Validate)
-                _validation = Utf8Validation.Subject(input, ref _invocation);
-            else
-                Utf8Validation.CheckSubject(input, ref _invocation);
+            // Python re consumes text. The caller supplies valid unchanged UTF-8;
+            // admission/interruption still precede preparation and early results.
+            Checkpoint();
             // Anchored calls cannot skip a rejected starting byte. Reuse the
             // bounded necessary-start proof before scanning for a required
             // literal elsewhere; possible starts keep that useful screen.
-            // Strict validation and final publication still use this invocation.
+            // Preparation and final publication still use this invocation.
             if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
                 !prepareSearch && candidateRegex is not null &&
                 (uint)startOffsetInBytes <= (uint)input.Length &&
@@ -80,8 +77,9 @@ internal struct PythonReScalarMatchState
             {
                 if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
                 if (_candidateRegex is null &&
-                    (TryGetLeadingAsciiRange(program, _validation?.IsAscii == true, out var low, out var high) ||
-                     _validation is null && TryGetLeadingAsciiRange(program, true, out low, out high) && DescribeInput(input).IsAscii))
+                    (TryGetLeadingAsciiRange(program, false, out var low, out var high) ||
+                     TryGetLeadingAsciiRange(program, true, out low, out high) &&
+                     Utf8Validation.SubjectIsAscii(input, ref _invocation)))
                 {
                     _leadingAsciiLow = low;
                     _leadingAsciiHigh = high;
@@ -706,7 +704,11 @@ internal struct PythonReScalarMatchState
 
     private Utf8ValidationResult DescribeInput(ReadOnlySpan<byte> input)
     {
-        return _validation ??= Utf8Validation.Subject(input, ref _invocation);
+        if (_validation is { } known) return known;
+        if (Utf8Validation.TryDescribeValid(input, ref _invocation, out var result) != Utf8ExecutionLimitKind.None)
+            throw ResourceFailure();
+        _validation = result;
+        return result;
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)

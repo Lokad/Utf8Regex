@@ -156,7 +156,7 @@ public sealed class PythonReRetainedSubnTests
     {
         var account = new Allowance(16 << 20); using var regex = Compile("a", account);
         regex.Subn("a"u8, "x"); var held = account.Used;
-        Assert.Throws<ArgumentException>(() => regex.SubnRetained(new byte[] { (byte)'a', 0xf0, 0x9f }, "x"));
+
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.SubnRetained("😀a"u8, "x", startOffsetInBytes: 1));
         Assert.Equal(held, account.Used);
     }

@@ -12,9 +12,8 @@ public sealed class PythonReTranslationLifetimeTests
     [InlineData("(?s:.*)", 2)]
     public void NullableNonliteralsUseScalarProgressionWithoutUnusedCorePreparation(string pattern, int count)
     {
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            using var regex = new Utf8PythonRegex(pattern, inputValidation: policy);
+            using var regex = new Utf8PythonRegex(pattern);
             var input = "ab😀!"u8.ToArray();
             Assert.False(regex.DebugUsesUtf8RegexBackend);
             Assert.True(regex.IsMatch(input));
@@ -31,11 +30,8 @@ public sealed class PythonReTranslationLifetimeTests
             cancellation.Cancel();
             Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Count(input, 0, cancellation.Token)).CancellationToken);
-            if (policy == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Search(input.Append((byte)0xFF).ToArray()));
         }
     }
-
     [Fact]
     public void ExactEmptyLiteralRetainsItsLiveCoreValueRoute()
     {
@@ -47,7 +43,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         Assert.False(regex.FullMatch("😀!"u8).Success);
     }
-
     [Theory]
     [InlineData("distinct_native_literal_abc123")]
     [InlineData("(?P<nomé>é😀)+")]
@@ -58,7 +53,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Equal(pattern, regex.Pattern);
         Assert.DoesNotContain(ReachableStrings(regex), text => text == pattern);
     }
-
     [Theory]
     [InlineData(@"\w+", "alpha")]
     [InlineData(@"(?P<word>\w+)", "alpha")]
@@ -80,7 +74,6 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal("X", regex.ReplaceToString(input, "X"));
         }
     }
-
     [Theory]
     [InlineData(@"([0-9]+)", "123")]
     [InlineData(@"(?P<n>[0-9]+)", "123")]
@@ -101,7 +94,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Equal(1, regex.FindAllToStrings(input).Count);
         Assert.Equal("X", regex.ReplaceToString(input, "X"));
     }
-
     [Theory]
     [InlineData("needle", "needle")]
     [InlineData("😀", "😀")]
@@ -116,7 +108,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.SearchDetailedData(input).Success);
     }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -141,7 +132,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.False(regex.Search("xxneedlexbar"u8).Success);
         Assert.False(regex.FullMatch("needlebar"u8).Success);
     }
-
     [Fact]
     public void ScalarOnlyInstancesDoNotRetainUnusedRenderedPatterns()
     {
@@ -162,7 +152,6 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal("a", regex.ReplaceToString("ab"u8, @"\g<α>", 1));
         }
     }
-
     [Theory]
     [InlineData("(?(missing)a|)")]
     [InlineData("(?:(?<=a+)b)?(a)?(?(1)b|)")]
@@ -171,7 +160,6 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(pattern));
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)));
     }
-
     [Fact]
     public void ScalarOnlyTranslationAdmitsLessWorkAndStorageWithoutChangingNames()
     {

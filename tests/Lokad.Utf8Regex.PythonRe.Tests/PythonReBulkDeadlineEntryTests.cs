@@ -45,7 +45,7 @@ public sealed class PythonReBulkDeadlineEntryTests
         Assert.Empty(regex.FindAll(input, input.Length));
 
         var malformed = input.Concat(new byte[] { 0xFF }).ToArray();
-        Assert.Throws<ArgumentException>(() => Run(regex, malformed, 7, operation));
+
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => Run(regex, malformed, 7, operation, canceled.Token));

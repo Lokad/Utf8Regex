@@ -32,7 +32,7 @@ public sealed class PythonReLeadingAsciiTests
         Assert.Equal(1, regex.Count(input, 23 + padding));
         Assert.Equal(0, regex.Count(input, input.Length));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
-        Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xFF }).ToArray(), 6));
+
     }
 
     [Theory]
@@ -107,21 +107,17 @@ public sealed class PythonReLeadingAsciiTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void LongMissKeepsOriginalInterruptionAfterValidation(bool expire)
+    public void LongMissKeepsOriginalInterruptionDuringSearch(bool expire)
     {
         var regex = new Utf8PythonRegex(@"needle\d+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
         var input = Encoding.UTF8.GetBytes(new string('x', 256 * 1024));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var validation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1_000_000, 1024, 1 << 20, 1 << 20),
-            TimeSpan.FromMilliseconds(20), default);
-        _ = Utf8Validation.Validate(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         using var cancellation = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= validationSteps) return;
+            if (steps < 64) return;
             entered = true;
             if (expire) ticks = 50; else cancellation.Cancel();
         });

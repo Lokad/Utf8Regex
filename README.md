@@ -44,14 +44,15 @@ Matching uses **Unicode scalars**. For example,
 Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
 
 The entire subject must be valid UTF-8, including text after an early match.
-The default Validate policy checks this; AssumeValid makes it a caller guarantee.
+Core's default Validate policy checks this. PythonRe and POSIX consume existing
+valid text; PCRE2 has its own UTF-mode checking and trusted-input bypass.
 Byte coordinates are primary; UTF-16 coordinates and strings are derived
 conveniences. Keep borrowed input unchanged and its owner alive while a view or
 cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
 
-## Subject validation policy
+## Subject input contracts
 
-Choose once when constructing an engine or through its factory:
+Core selects its validation policy once at construction or through its factory:
 
 ```csharp
 var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
@@ -60,8 +61,11 @@ var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeV
 
 `Validate` (default) checks the whole subject at most once per operation or cursor
 lifetime. `AssumeValid` omits that pass when the caller guarantees valid UTF-8 and
-unchanged borrowed bytes. All four packages inherit the choice through matching,
-counting, output, splitting and cursors where supported. Pattern/replacement
+unchanged borrowed bytes. Core operations and cursors inherit this choice.
+PythonRe models Python `re` over `str`; PythonRe and POSIX require already-valid
+UTF-8 text and omit regex-operation validity passes. Validate external bytes where
+they become text. PCRE2 retains explicit UTF-mode validation controls.
+Pattern/replacement
 validation, checked memory access, scalar semantics and cooperative cancellation
 remain. Coordinate/result work may still scan input. Read the
 [contract](docs/SPEC.md#subject-input-validation) before choosing AssumeValid.

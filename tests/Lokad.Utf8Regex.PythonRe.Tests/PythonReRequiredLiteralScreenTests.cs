@@ -80,11 +80,8 @@ public sealed class PythonReRequiredLiteralScreenTests
         Assert.True(regex.Search("é😀aab"u8, 6).Success);
         Assert.False(regex.Search("aab😀"u8, 3).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("é😀aab"u8, 3));
-        byte[] malformed = [.. "aaa"u8, 0xf0, 0x9f];
-        Assert.Throws<ArgumentException>(() => regex.Search(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Search(malformed, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Search("aaa"u8, 0, token.Token)).CancellationToken);
     }
 
     [Fact]
@@ -110,14 +107,12 @@ public sealed class PythonReRequiredLiteralScreenTests
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var input = Enumerable.Repeat((byte)'a', 262144).ToArray();
-        var measured = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 1, 1), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref measured); var validatedSteps = measured.Budget.Steps;
         var regex = new Utf8PythonRegex("a+b", PythonReCompileOptions.None,
             timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, new() { MaxWorkingBytes = 1 });
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= validatedSteps) return;
+            if (steps < 64) return;
             reached = true; if (timeout) ticks = 100; else token.Cancel();
         });
         try

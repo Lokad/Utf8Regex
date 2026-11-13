@@ -105,7 +105,7 @@ public sealed partial class Utf8PythonRegex
                 // Complete literal eligibility also covers ordinary captures;
                 // a boolean needs neither capture slots nor coordinate metadata.
                 // Keep validation and the existing finder under one authority.
-                Utf8Validation.CheckSubject(input, ref invocation);
+                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 if (ipv4)
                 {
                     // The complete capture-free ASCII grammar is unanchored:

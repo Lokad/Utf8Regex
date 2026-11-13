@@ -52,7 +52,7 @@ public sealed partial class Utf8PythonRegex
         }
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
+            Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             if (invocation.TryReserveWorking(0) != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Literal repeat exceeded the working budget.");
             var control = new Utf8InvocationBufferControl(ref invocation);
@@ -77,13 +77,17 @@ public sealed partial class Utf8PythonRegex
             }
             Utf8InvocationOutput.Checkpoint(control);
             if (!matched) return default;
-            var startUtf16 = validation.IsAscii || startOffsetInBytes == 0 ? startOffsetInBytes
+            var startUtf16 = startOffsetInBytes == 0 ? 0
                 : Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
+            // A successful exact repetition already proves every input byte.
+            // Derive its width from the bounded pattern instead of rescanning text.
+            var endUtf16 = startUtf16 + repetitions * Utf8SliceBufferWork.CountUtf16(literal, ref invocation)
+                + Utf8SliceBufferWork.CountUtf16(suffix, ref invocation);
             var completed = Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
                 Number = 0, Success = true,
                 StartOffsetInBytes = startOffsetInBytes, EndOffsetInBytes = input.Length,
-                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = validation.Utf16Length,
+                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
             });
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
@@ -443,7 +447,7 @@ public sealed partial class Utf8PythonRegex
         var control = new Utf8InvocationBufferControl(ref invocation);
         // Strict whole-subject validity precedes every search and early rejection.
         // Consumers derive text sizing or coordinates only for a selected range.
-        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
         start = end = -1;
         if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
         {

@@ -5,18 +5,20 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReAsciiEscapeLoweringTests
 {
     [Theory]
-    [InlineData('w')] [InlineData('d')] [InlineData('s')] [InlineData('u')]
+    [InlineData('w')]
+    [InlineData('d')]
+    [InlineData('s')]
+    [InlineData('u')]
     public void AsciiBracketUnionsKeepResolvedOperandsAndScalarComplements(char kind)
     {
         var body = kind switch { 'w' => @"\w.-", 'd' => @"\dA-F", 's' => @"\s\x1c-", _ => @"\w\d\s-" };
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         foreach (var negate in new[] { false, true })
         foreach (var bytes in new[] { false, true })
         {
             var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
             using var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), inputValidation: policy)
-                : new Utf8PythonRegex(pattern, inputValidation: policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
+                : new Utf8PythonRegex(pattern);
             foreach (var scalar in Enumerable.Range(0, 128).Concat(new[] { 0xE9, 0x660, 0xA0, 0x212A, 0x10400, 0x1F600 }))
             {
                 var word = scalar is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
@@ -40,19 +42,21 @@ public sealed class PythonReAsciiEscapeLoweringTests
             }
         }
     }
-
     [Theory]
-    [InlineData('w')] [InlineData('W')] [InlineData('d')]
-    [InlineData('D')] [InlineData('s')] [InlineData('S')]
+    [InlineData('w')]
+    [InlineData('W')]
+    [InlineData('d')]
+    [InlineData('D')]
+    [InlineData('s')]
+    [InlineData('S')]
     public void AsciiEscapesKeepTheirScalarComplementAndCaptureCoordinates(char escape)
     {
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         foreach (var bytes in new[] { false, true })
         {
             var pattern = @"(?ai:(?P<x>\" + escape + "))";
             using var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), inputValidation: policy)
-                : new Utf8PythonRegex(pattern, inputValidation: policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
+                : new Utf8PythonRegex(pattern);
             // ASCII whitespace deliberately omits U+001C..U+001F. The wider
             // scalars also distinguish ASCII classes from Unicode predicates
             // and catch accidental folding of Kelvin sign into ASCII word.
@@ -77,14 +81,13 @@ public sealed class PythonReAsciiEscapeLoweringTests
             Assert.False(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         }
     }
-
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, false)] [InlineData(Utf8InputValidation.AssumeValid, false)]
-    [InlineData(Utf8InputValidation.Validate, true)] [InlineData(Utf8InputValidation.AssumeValid, true)]
-    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults(Utf8InputValidation policy, bool union)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults( bool union)
     {
         using var regex = new Utf8PythonRegex(union ? @"(?ai:([\w-]))(?u:([\w-]))(?a:([^\w-]))"
-            : @"(?ai:(\w))(?u:(\w))(?a:(\W))", inputValidation: policy);
+            : @"(?ai:(\w))(?u:(\w))(?a:(\W))");
         var input = "aé😀 bé😀"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
         var actual = regex.FindAllToStrings(input).TupleValues;

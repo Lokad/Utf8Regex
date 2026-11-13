@@ -48,7 +48,7 @@ is visited. UTF-8 pattern and replacement validation is independent and remains 
 
 ### Subject input validation
 
-Core and all three compatibility packages select an immutable `inputValidation`
+Core selects an immutable `inputValidation`
 constructor/factory option and expose it as read-only `InputValidation`:
 
 ```csharp
@@ -64,8 +64,8 @@ subject is valid UTF-8 and borrowed bytes remain unchanged throughout use. It
 provides no malformed-subject rejection guarantee. There is no per-call override
 or public validation token. Static matching conveniences keep default validation.
 
-The policy covers matching/counting, detailed results, replacements, splits and
-value/persistent cursors wherever a profile offers them, including funded and
+The Core policy covers matching/counting, detailed results, replacements, splits and
+value/persistent cursors, including funded and
 derived operation programs. Managed bounds checking, Unicode/scalar semantics,
 byte coordinates, cooperative cancellation/deadlines and resource admission
 remain active. Required coordinate/ASCII classification, scalar decoding and
@@ -74,6 +74,11 @@ Pattern, capture-name, replacement-template and assembled-output validation keep
 their separate existing rules. Trusting subject input does not trust those inputs.
 Work requirements can decrease when validation is omitted or redundant validation
 is removed; finite policies remain enforceable and version/route dependent.
+
+Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
+and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text
+without a subject-validation policy. [PCRE2](SPEC-PCRE2.md#subject-input-validation)
+has UTF-mode checking and an explicit trusted-input bypass.
 
 An integration may select AssumeValid once when its own text representation
 already guarantees valid UTF-8. It must still keep borrowed storage alive and

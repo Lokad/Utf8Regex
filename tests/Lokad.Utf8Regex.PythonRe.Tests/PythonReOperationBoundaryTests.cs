@@ -6,15 +6,11 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReOperationBoundaryTests
 {
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, false, false)]
-    [InlineData(Utf8InputValidation.Validate, false, true)]
-    [InlineData(Utf8InputValidation.Validate, true, false)]
-    [InlineData(Utf8InputValidation.Validate, true, true)]
-    [InlineData(Utf8InputValidation.AssumeValid, false, false)]
-    [InlineData(Utf8InputValidation.AssumeValid, false, true)]
-    [InlineData(Utf8InputValidation.AssumeValid, true, false)]
-    [InlineData(Utf8InputValidation.AssumeValid, true, true)]
-    public void FinalPublicPollPreservesTimeoutDiagnosticsAndOriginalToken(Utf8InputValidation policy, bool expire, bool funded)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FinalPublicPollPreservesTimeoutDiagnosticsAndOriginalToken( bool expire, bool funded)
     {
         const string pattern = "([a-z]+)-([0-9]+)";
         var input = "item-12 other-345"u8.ToArray();
@@ -22,8 +18,8 @@ public sealed class PythonReOperationBoundaryTests
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
         Assert.True(account.TryReserve(17));
         using var regex = funded
-            ? Utf8PythonRegex.Compile(pattern, default, timeout, default, default, Timeout.InfiniteTimeSpan, default, account, policy)
-            : new Utf8PythonRegex(pattern, matchTimeout: timeout, inputValidation: policy);
+            ? Utf8PythonRegex.Compile(pattern, default, timeout, default, default, Timeout.InfiniteTimeSpan, default, account)
+            : new Utf8PythonRegex(pattern, matchTimeout: timeout);
         for (var operation = 0; operation < 14; operation++)
         {
             // Observe the final poll of the real public route, including projection

@@ -13,7 +13,6 @@ public sealed class PosixPublicContractTests
     [Fact]
     public void PublicApiMatchesReviewedSnapshot()
         => PublicApiSnapshot.AssertMatches(typeof(Utf8PosixRegex).Assembly, "Lokad.Utf8Regex.Posix.Tests");
-
     [Fact]
     public void AdapterReferencesOnlyCoreAndBclWithoutAnExternalMatcher()
         => AssemblyDependencyInventory.AssertNoExternalMatchers(typeof(Utf8PosixRegex).Assembly.Location);
@@ -36,12 +35,10 @@ public sealed class PosixPublicContractTests
         foreach (var row in fixtures.RootElement.GetProperty(family).EnumerateArray())
             yield return [row.GetProperty("id").GetString()!, row.GetRawText()];
     }
-
     [Theory]
     [MemberData(nameof(RejectedPatterns))]
     public void UnsupportedPatternsFailAtPublicAdmission(string pattern)
         => Assert.Throws<ArgumentException>(() => new Utf8PosixRegex(pattern));
-
     [Theory]
     [MemberData(nameof(SelectionCases))]
     public void PublicMatchPreservesWinnerForEveryCaptureSpanSize(string id, string fixture)
@@ -76,7 +73,6 @@ public sealed class PosixPublicContractTests
             Assert.Equal(0UL, account.Used);
         }
     }
-
     [Theory]
     [MemberData(nameof(IterationCases))]
     public void PublicCountAndCursorAgreeOnScalarEmptyProgression(string id, string fixture)
@@ -102,7 +98,6 @@ public sealed class PosixPublicContractTests
         Assert.All(output, value => Assert.False(value.Success));
         Assert.Equal(0UL, account.Used);
     }
-
     [Fact]
     public void CursorAliasesAndRetainedValuesUseExplicitLifetime()
     {
@@ -118,7 +113,6 @@ public sealed class PosixPublicContractTests
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         cursor.Dispose(); Assert.Equal(0UL, account.Used);
     }
-
     [Fact]
     public void CursorAliasesCanAlternateWholeAndCaptureWindows()
     {
@@ -138,7 +132,6 @@ public sealed class PosixPublicContractTests
         Assert.Equal(2, retained.LengthInBytes); Assert.Equal(4, second.IndexInBytes);
         Assert.Equal(0UL, account.Used);
     }
-
     [Fact]
     public void ProvenCaptureCursorReusesHistoriesAcrossAliasesAndOutputSizes()
     {
@@ -166,7 +159,6 @@ public sealed class PosixPublicContractTests
         alias.Dispose(); Assert.Equal(0UL, account.Used);
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
     }
-
     [Fact]
     public void FlatWholeOperationsDoNotRequestAbsentTagBuffers()
     {
@@ -185,22 +177,6 @@ public sealed class PosixPublicContractTests
     }
 
     [Fact]
-    public void MalformedWholeSubjectsCannotBeHiddenByEarlyHitsOrSearchFloors()
-    {
-        var regex = new Utf8PosixRegex("a"); byte[] malformed = [(byte)'a', 0xff];
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed, 1));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed, malformed.Length));
-        Assert.Throws<ArgumentException>(() => regex.CreateMatchCursor(malformed, 1));
-        var unicode = "😀a"u8.ToArray();
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(unicode, 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(unicode, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor(unicode, unicode.Length + 1));
-        Assert.False(new Utf8PosixRegex("^a").Match("ba"u8, 1).Success);
-    }
-
-    [Fact]
     public void ValidatedCoordinateProjectionKeepsScalarsAcrossCountingBlocks()
     {
         const int prefix = 4093, repeats = 2048;
@@ -212,7 +188,6 @@ public sealed class PosixPublicContractTests
         Assert.Equal(new Utf8ValueMatch(true, true, prefix, 2, prefix, 4), groups[1]);
         Assert.Equal(new Utf8ValueMatch(true, true, prefix + 2, repeats, prefix + 4, 2 * repeats), groups[2]);
     }
-
     [Fact]
     public void CoordinateProjectionWorkRefusalUsesThePublicFailureAndClearsOutput()
     {
@@ -221,7 +196,7 @@ public sealed class PosixPublicContractTests
         var baseline = new Utf8PosixRegex("a");
         var invocation = baseline.StartInvocation(token.Token, account);
         ulong beforeProjection;
-        Utf8PosixRegex.ValidateInput(input, 8192, ref invocation);
+        Utf8PosixRegex.CheckStart(input, 8192, ref invocation);
         var workspace = baseline.CreateWorkspace(ref invocation, captureHistory: false);
         try
         {
@@ -240,7 +215,6 @@ public sealed class PosixPublicContractTests
         Assert.Equal(beforeProjection + 2, error.Requested);
         Assert.False(output[0].Success); Assert.Equal(0UL, account.Used);
     }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -272,17 +246,19 @@ public sealed class PosixPublicContractTests
         }
         finally { diagnostics.Complete(); }
     }
-
     [Theory]
-    [InlineData(false, false, "a")] [InlineData(true, false, "a")]
-    [InlineData(false, true, "a")] [InlineData(true, true, "a")]
-    [InlineData(false, false, "😀")] [InlineData(true, false, "😀")]
-    [InlineData(false, true, "😀")] [InlineData(true, true, "😀")]
+    [InlineData(false, false, "a")]
+    [InlineData(true, false, "a")]
+    [InlineData(false, true, "a")]
+    [InlineData(true, true, "a")]
+    [InlineData(false, false, "😀")]
+    [InlineData(true, false, "😀")]
+    [InlineData(false, true, "😀")]
+    [InlineData(true, true, "😀")]
     public void InterruptionInsideClosedCaptureSelectionClearsOutputAndRefunds(bool deadline, bool projection, string scalar)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             now = 0;
             using var token = new CancellationTokenSource();
@@ -290,7 +266,7 @@ public sealed class PosixPublicContractTests
             var body = $"({scalar}|{scalar}{scalar})*";
             var regex = new Utf8PosixRegex($"x({body}b|{body}b)", default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
+                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
             var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
             var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
             var input = Encoding.UTF8.GetBytes("x" + string.Concat(Enumerable.Repeat(scalar, 128)) + "b#");
@@ -320,21 +296,22 @@ public sealed class PosixPublicContractTests
             finally { diagnostics.Complete(); }
         }
     }
-
     [Theory]
-    [InlineData(false, false, false)] [InlineData(true, false, false)]
-    [InlineData(false, true, false)] [InlineData(true, true, false)]
-    [InlineData(false, false, true)] [InlineData(true, false, true)]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
     public void InterruptionInsideBoundaryProofClearsOutputAndRefunds(bool deadline, bool parent, bool large)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex(large ? "a|" + new string('b', 48) :
                 parent ? "((a|a.)*)!*" : "((a|a[^!#])*)!*", default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 }, inputValidation: validation);
+                new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
             var reached = false;
             // The normal diagnostic hook polls every64 charged steps. Vary a
             // bounded set of real run lengths to observe a poll inside this
@@ -373,7 +350,6 @@ public sealed class PosixPublicContractTests
             Assert.True(reached, "The injection must reach the actual global/reachable whole boundary proof.");
         }
     }
-
     [Theory]
     [InlineData(false, "(a)")]
     [InlineData(true, "(a)")]
@@ -394,7 +370,6 @@ public sealed class PosixPublicContractTests
         Assert.All(output, match => Assert.False(match.Success)); Assert.Equal(0UL, account.Used);
         Assert.True(retained.Success); Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
     }
-
     [Fact]
     public void PublicPoliciesRefuseBeforeCoveredAcquisitionAndDoNotRetry()
     {
@@ -412,7 +387,6 @@ public sealed class PosixPublicContractTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", default, Timeout.InfiniteTimeSpan, new() { MaxResultBytes = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", default, TimeSpan.Zero, default));
     }
-
     [Fact]
     public void CompilationUsesOriginalCancellationDeadlineAndInstructionAdmission()
     {
@@ -427,7 +401,6 @@ public sealed class PosixPublicContractTests
         Assert.Throws<RegexMatchTimeoutException>(() => Utf8PosixRegex.Compile("a", default,
             Timeout.InfiniteTimeSpan, default, default, TimeSpan.FromMilliseconds(100), default));
     }
-
     [Theory]
     [InlineData("(a|aa)*", "aaaaa", 1, 4, 1)]
     [InlineData("(a|aa)*", "aaaa", 1, 2, 2)]
@@ -446,7 +419,6 @@ public sealed class PosixPublicContractTests
         Assert.Equal(start >= 0, groups[slot].Success);
         if (start >= 0) { Assert.Equal(start, groups[slot].IndexInBytes); Assert.Equal(length, groups[slot].LengthInBytes); }
     }
-
     [Theory]
     [InlineData(63)]
     [InlineData(64)]
@@ -471,7 +443,6 @@ public sealed class PosixPublicContractTests
         Assert.Equal(0UL, account.Used);
         Assert.Equal(4 * count, retained.LengthInBytes);
     }
-
     [Theory]
     [InlineData(0, "a", "")]
     [InlineData(1, "a", "")]
@@ -502,9 +473,12 @@ public sealed class PosixPublicContractTests
         Assert.Equal(expected, output[last == 1 ? 2 : 3]);
         Assert.False(output[last == 1 ? 3 : 2].Success);
     }
-
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
     public void RequiredNullableIterationsKeepOnlyNecessaryEmptyTails(int count)
     {
         // Earlier occurrences consume the available atoms. The two required
@@ -515,7 +489,6 @@ public sealed class PosixPublicContractTests
         var length = count >= 2 ? 1 : 0; var start = count - length;
         Assert.Equal(new Utf8ValueMatch(true, true, start, length, start, length), groups[1]);
     }
-
     [Fact]
     public void SmallAsciiLanguagesHaveIndependentLeftmostLongestWholeMatches()
     {
@@ -548,7 +521,6 @@ public sealed class PosixPublicContractTests
             }
         }
     }
-
     [Theory]
     [InlineData("(a|aa)*")]
     [InlineData("(a|aa)*b")]
@@ -568,7 +540,6 @@ public sealed class PosixPublicContractTests
             Assert.All(output, match => Assert.False(match.Success));
         }
     }
-
     [Fact]
     public void CursorWorkIsCumulativeAcrossAdvances()
     {
@@ -582,7 +553,6 @@ public sealed class PosixPublicContractTests
         Assert.InRange(hits, 1, 127); Assert.Equal(0UL, account.Used);
         Assert.True(regex.IsMatch("a"u8));
     }
-
     [Fact]
     public void NumericWorkingAdmissionIncludesGrowthOverlap()
     {
@@ -595,26 +565,29 @@ public sealed class PosixPublicContractTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => capped.Match("aaaaaa"u8, workingMemoryAllowance: loan)).ResourceKind);
         Assert.Equal(0UL, loan.Used);
     }
-
     [Theory]
-    [InlineData("IsMatch", false)] [InlineData("IsMatch", true)]
-    [InlineData("Match", false)] [InlineData("Match", true)]
-    [InlineData("Count", false)] [InlineData("Count", true)]
-    [InlineData("Cursor", false)] [InlineData("Cursor", true)]
-    public void FullValidationObservesOriginalInterruptionBeforeTheNextWorkRefusal(string operation, bool deadline)
+    [InlineData("IsMatch", false)]
+    [InlineData("IsMatch", true)]
+    [InlineData("Match", false)]
+    [InlineData("Match", true)]
+    [InlineData("Count", false)]
+    [InlineData("Count", true)]
+    [InlineData("Cursor", false)]
+    [InlineData("Cursor", true)]
+    public void MatchingObservesOriginalInterruptionAndRefundsWorkingLoans(string operation, bool deadline)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource(); var account = new Account();
         var regex = new Utf8PosixRegex("a", default, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 64 });
-        var input = Encoding.ASCII.GetBytes("a" + new string('x', 1_000_000)); var triggered = false;
+            new() { MaxWorkSteps = 1_000_000 });
+        var input = Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a"); var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { triggered = true; if (deadline) now = 101; else token.Cancel(); });
         try
         {
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(Call);
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(Call).CancellationToken);
-            Assert.True(triggered); Assert.Equal(0, account.Attempts); Assert.Equal(0UL, account.Used);
+            Assert.True(triggered); Assert.Equal(0UL, account.Used);
         }
         finally { diagnostics.Complete(); }
         void Call()
@@ -624,7 +597,7 @@ public sealed class PosixPublicContractTests
                 case "IsMatch": regex.IsMatch(input, token.Token, account); break;
                 case "Match": regex.Match(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "Count": regex.Count(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                default: using (regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) { } break;
+                default: using (var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) cursor.MoveNext(out _); break;
             }
         }
     }

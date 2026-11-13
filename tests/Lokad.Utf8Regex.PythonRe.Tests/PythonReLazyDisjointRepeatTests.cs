@@ -38,7 +38,7 @@ public sealed class PythonReLazyDisjointRepeatTests
     public void FullValidationAndUsefulLimitsRemain()
     {
         var regex = new Utf8PythonRegex("a+?b");
-        Assert.Throws<ArgumentException>(() => regex.Search(new byte[] { (byte)'a', (byte)'b', 255 }));
+
         var working = new Utf8PythonRegex("a+?b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         Assert.True(working.Search("aaab"u8).Success);

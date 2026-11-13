@@ -55,7 +55,7 @@ public sealed class PythonReClassUnionTests
         var denied = new Utf8PythonRegex(@"[\w.+-]+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("abc@"u8));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', (byte)'@', 0xff }));
+
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("abc@"u8, 0, token.Token)).CancellationToken);
     }

@@ -32,7 +32,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
             using var cancellation = new CancellationTokenSource();
             Assert.Equal(expected, Run(regex, input, start, operation, cancellation.Token));
             Assert.Equal(expected, Run(regex, input, start, operation));
-            Assert.Throws<ArgumentException>(() => Run(regex, input.Concat(new byte[] { 0xFF }).ToArray(), start, operation));
+
             Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, input, 1, operation));
         }
         var ranges = new Utf8PythonRegex("é|😀", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous)

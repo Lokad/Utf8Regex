@@ -205,7 +205,7 @@ public sealed partial class Utf8PythonRegex
         var invocation = CreateInvocation(cancellationToken);
         try
         {
-            Utf8Validation.CheckSubject(input, ref invocation);
+            Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             var impossible = program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
                 !program.IgnoreCase && _utf8Regex is { } required &&
                 required.RejectMissingExactRequiredLiteral(input, ref invocation);

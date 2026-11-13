@@ -68,7 +68,7 @@ public sealed class PythonReCompletedBackreferenceTests
     public void StrictValidationAndFiniteAdmissionRemainBeforePublication()
     {
         var malformed = "token-token"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        Assert.Throws<ArgumentException>(() => new Utf8PythonRegex(Pattern).FullMatch(malformed));
+
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>

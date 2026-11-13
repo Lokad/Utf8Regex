@@ -50,7 +50,7 @@ public sealed class PythonReByteOffsetCollectionTests
                 Assert.Throws<ArgumentOutOfRangeException>(() => regex.FindAllToUtf8("😀 foo"u8, offset));
             }
             Assert.Empty(regex.FindAllToUtf8("😀 foo"u8, "😀 foo"u8.Length).ScalarValues);
-            Assert.Throws<ArgumentException>(() => regex.FindAllToUtf8(new byte[] { 0xc3, 0xa9, 32, 102, 111, 111, 0xff }, 2));
+
             var failure = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8("😀 foo"u8, 4, canceled.Token));
             Assert.Equal(canceled.Token, failure.CancellationToken);
         }

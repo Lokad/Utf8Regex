@@ -7,8 +7,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReScalarCoordinateTests
 {
-    [Theory] [InlineData(0)] [InlineData(253)] [InlineData(254)] [InlineData(255)]
-    [InlineData(256)] [InlineData(257)] [InlineData(511)]
+    [Theory]
+    [InlineData(0)]
+    [InlineData(253)]
+    [InlineData(254)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(511)]
     public void ScalarPositionsCrossByteBlocksAndSupplementaryTails(int asciiPrefix)
     {
         var text = new string('x', asciiPrefix) + "é😀a\u0301" + new string('y', 260) + "😀é";
@@ -29,7 +35,6 @@ public sealed class PythonReScalarCoordinateTests
         }
         Assert.Equal(edges.Count - 1, ordinal);
     }
-
     [Fact]
     public void DetailedUtf16CoordinatesAndScalarCoordinatesKeepDistinctUnits()
     {
@@ -41,9 +46,11 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal(1, snapshot.Groups[1].StartOffsetInUtf16); Assert.Equal(3, snapshot.Groups[1].EndOffsetInUtf16);
         cursor.Dispose(); Assert.Equal("😀", snapshot.Groups[1].ValueText); Assert.Equal(1, start);
     }
-
-    [Theory] [InlineData("(?<=(é))😀", 1, 0, 1)] [InlineData("(?=(é))", 1, 0, 1)]
-    [InlineData("(?:(a)|(é))()", 1, -1, -1)] [InlineData("(?:(a)|(é))()", 3, 1, 1)]
+    [Theory]
+    [InlineData("(?<=(é))😀", 1, 0, 1)]
+    [InlineData("(?=(é))", 1, 0, 1)]
+    [InlineData("(?:(a)|(é))()", 1, -1, -1)]
+    [InlineData("(?:(a)|(é))()", 3, 1, 1)]
     public void LookaroundUnmatchedAndParticipatingEmptyRangesRemainDistinct(string pattern, int group, int expectedStart, int expectedEnd)
     {
         using var cursor = new Utf8PythonRegex(pattern).CreateMatchCursor("é😀"u8.ToArray());
@@ -53,7 +60,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.False(cursor.TryGetScalarRange(-1, out start, out end)); Assert.Equal(-1, start); Assert.Equal(-1, end);
         Assert.False(cursor.TryGetScalarRange(999, out _, out _)); Assert.False(cursor.HasCoordinateMap);
     }
-
     [Fact]
     public void EmptySubjectAndCursorPositionGuardsAreExplicit()
     {
@@ -64,7 +70,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Throws<InvalidOperationException>(() => cursor.TryGetScalarRange(0, out _, out _));
         cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => cursor.TryGetScalarRange(0, out _, out _));
     }
-
     [Fact]
     public void NoIndexIsAcquiredUntilARealMixedInputCaptureIsQueried()
     {
@@ -77,7 +82,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal(0UL, account.Used); Assert.Equal("a", Encoding.UTF8.GetString(snapshot.GetValueMemory().Span));
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
     }
-
     [Fact]
     public void RepeatedQueriesReuseOneLoanAndRetainedResultsSurviveClosure()
     {
@@ -94,8 +98,9 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal("é", Encoding.UTF8.GetString(receipt.Match.GetValueMemory().Span));
         receipt.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
     }
-
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void HalfMillionDiscardedScalarRangesHaveBoundedLiveStorage(bool unicode)
     {
         var account = new Allowance(32768); var input = unicode ? Encoding.UTF8.GetBytes(new string('é', 500000)) : new byte[500000];
@@ -110,7 +115,6 @@ public sealed class PythonReScalarCoordinateTests
         }
         Assert.Equal(500000, count); Assert.Equal(0UL, account.Used); Assert.True(account.Peak <= 32768);
     }
-
     [Fact]
     public void CompletedQueryAndAdvanceTokensHaveNoAuthorityOverLaterCalls()
     {
@@ -123,14 +127,13 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal(0, start); Assert.Equal(1, end); Assert.True(cursor.MoveNext(out _));
         Assert.True(cursor.TryGetScalarRange(0, out start, out end)); Assert.Equal(1, start); Assert.Equal(2, end);
     }
-
     [Theory]
-    [InlineData(false, Utf8InputValidation.Validate)] [InlineData(true, Utf8InputValidation.Validate)]
-    [InlineData(false, Utf8InputValidation.AssumeValid)] [InlineData(true, Utf8InputValidation.AssumeValid)]
-    public void CancellationDuringIndexConstructionPreservesOriginalTokenAndRefunds(bool cancelCreation, Utf8InputValidation policy)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CancellationDuringIndexConstructionPreservesOriginalTokenAndRefunds(bool cancelCreation)
     {
         using var creation = new CancellationTokenSource(); using var query = new CancellationTokenSource();
-        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", inputValidation: policy)
+        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)")
             .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, creation.Token, account);
         Assert.True(cursor.MoveNext(out var snapshot)); var held = account.Used; var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) { if (cancelCreation) creation.Cancel(); query.Cancel(); } };
@@ -139,19 +142,17 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(account.Peak >= held); Assert.Equal(0UL, account.Used);
         Assert.Equal("a", Encoding.UTF8.GetString(snapshot.GetValueMemory().Span));
     }
-
-    [Theory] [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
-    public void DeadlineDuringIndexConstructionOmitsUnadmittedSubjectText(Utf8InputValidation policy)
+    [Fact]
+    public void DeadlineDuringIndexConstructionOmitsUnadmittedSubjectText()
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", default, TimeSpan.FromMilliseconds(100), inputValidation: policy)
+        var account = new Allowance(1 << 20); using var cursor = new Utf8PythonRegex("(a)", default, TimeSpan.FromMilliseconds(100))
             .CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('é', 32768)), 0, default, account);
         Assert.True(cursor.MoveNext(out _)); var steps = cursor.WorkingInvocation.Budget.Steps;
         cursor.WorkingInvocation.CheckpointHook = current => { if (current > steps + 128) ticks = 100; };
         var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.TryGetScalarRange(0, out _, out _));
         Assert.Empty(error.Input); Assert.Equal("(a)", error.Pattern); Assert.Equal(0UL, account.Used);
     }
-
     [Fact]
     public void ScalarIndexUsesWorkingAdmissionWithoutSpendingResultTraffic()
     {
@@ -161,8 +162,9 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(cursor.MoveNext(out _)); var traffic = cursor.WorkingInvocation.Budget.ResultBytes;
         Assert.True(cursor.TryGetScalarRange(1, out _, out _)); Assert.Equal(traffic, cursor.WorkingInvocation.Budget.ResultBytes);
     }
-
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void IndexConstructionPreservesFiniteWorkAndWorkingDenials(bool work)
     {
         var input = Encoding.UTF8.GetBytes("é" + new string('x', 65536));
@@ -185,7 +187,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal(work ? Utf8ResourceLimitKind.ExecutionWorkSteps : Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
         Assert.Equal(0UL, account.Used); Assert.Equal("é", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
-
     [Fact]
     public void ReentrantProjectionIsRejectedWithoutCorruptingTheActiveQuery()
     {
@@ -199,7 +200,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
         Assert.True(rejected); Assert.Equal(0, start); Assert.Equal(1, end);
     }
-
     [Fact]
     public async Task SharedHostLifetimesComposeAcrossWaitsAndProgramClosure()
     {

@@ -132,14 +132,12 @@ internal static partial class PythonReBenchmarkReporter
         string caseId,
         int samples,
         bool cpythonFirst,
-        PythonReQualificationWriteMode writeMode, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        PythonReQualificationWriteMode writeMode)
     {
 #if DEBUG
         Console.Error.WriteLine("PythonRe paired measurement requires a Release build.");
         return 1;
 #else
-        if (inputValidation != Utf8InputValidation.Validate && writeMode != PythonReQualificationWriteMode.None)
-            throw new ArgumentException("Trusted-input measurements cannot replace default-validation snapshots.", nameof(inputValidation));
         if (samples < 9)
         {
             Console.Error.WriteLine("PythonRe paired measurement requires at least nine samples.");
@@ -173,7 +171,7 @@ internal static partial class PythonReBenchmarkReporter
             RequirePythonReLoadedSources(CaptureEnvironment());
         using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         using var currentProcess = Process.GetCurrentProcess();
-        var context = new PythonReBenchmarkContext(benchmarkCase, inputValidation);
+        var context = new PythonReBenchmarkContext(benchmarkCase);
         var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
             benchmarkCase,
             context.InputBytes);
@@ -645,8 +643,7 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         if (writeMode == PythonReQualificationWriteMode.None)
-            Console.WriteLine(JsonSerializer.Serialize(new { CaseId = caseId, InputValidation = inputValidation.ToString(),
-                InputContract = inputValidation == Utf8InputValidation.Validate ? "Engine validates whole subject" : "Caller guarantees valid unchanged UTF-8",
+            Console.WriteLine(JsonSerializer.Serialize(new { CaseId = caseId, InputContract = "Preexisting valid unchanged UTF-8 text; CPython str",
                 InputBytes = context.InputBytes.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes)), Qualification = qualification }));
 
         if (writeMode == PythonReQualificationWriteMode.Snapshot)

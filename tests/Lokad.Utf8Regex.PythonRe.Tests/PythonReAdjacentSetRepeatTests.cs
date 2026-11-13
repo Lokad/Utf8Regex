@@ -38,7 +38,7 @@ public sealed class PythonReAdjacentSetRepeatTests
             Assert.Equal(1, owner.Count(input));
             Assert.Equal(text, retained.Value.ValueText);
             Assert.Equal(text, value.GetValueString());
-            Assert.Throws<ArgumentException>(() => owner.FullMatch(input.Concat(new byte[] { 0xFF }).ToArray()));
+
         }
     }
 

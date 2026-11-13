@@ -5,17 +5,21 @@ over strict UTF-8 Unicode scalars, requiring the exact Core package version
 matching the adapter. It can coexist with PCRE2 at the same version. No Python
 runtime or BCL regex matcher is a shipped implementation dependency.
 
-## Subject validation policy
+## Subject text contract
 
-Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
-host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
-`InputValidation` reports the choice; `Validate` is default and checks the whole
-subject at most once per logical operation or cursor lifetime. Matching, counting,
-replacement/splitting where supported and cursors inherit the engine policy.
-Pattern/replacement validation, checked accesses, scalar/byte semantics,
-cooperative cancellation/deadlines and admission remain. Required coordinate or
-output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
-Existing benchmark tables use Validate unless explicitly labeled otherwise.
+This profile models Python `re` over `str`. Pass already-valid UTF-8 text and keep
+borrowed bytes unchanged during use. Validate external bytes where they become
+text. Regex operations do not validate the whole subject, and there is no
+`inputValidation` option or `InputValidation` property in this adapter.
+
+Pattern, template and capture-name validation remain separate. Managed bounds,
+scalar/byte semantics, captures, original cooperative cancellation/deadlines and
+resource admission remain. Requested coordinates and output sizing may inspect
+text. See the [profile contract](../../docs/SPEC-PYTHONRE.md#subject-text-contract).
+
+The tables below are historical dev79 measurements under the former shared
+validation contract. They retain their producer identities; the canonical
+preexisting-text comparison is being refreshed after the contract correction.
 
 ## Supported scope
 
@@ -56,7 +60,7 @@ stay scoped. `Options` retains the flags originally supplied by the caller.
 
 Instances accept positive nullable `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`,
 `MaxWorkingBytes` and `MaxResultBytes`. Null is unlimited; zero is invalid.
-**Defaults remain unlimited.** Work includes covered validation, matching and
+**Defaults remain unlimited.** Work includes matching and
 required shaping cumulatively. Depth admits live frames before acquisition;
 working/result controls admit modeled major capacities and growth overlap.
 Result/staging charges do not refund and may conservatively count storage again.
@@ -67,7 +71,7 @@ Replacement evaluator delegates must be non-null, even on misses; otherwise
 `ArgumentNullException` names `evaluator`. An already-cancelled explicit token
 still takes precedence. Return-value rules for valid callbacks are unchanged.
 
-Strict full-subject validation, original synchronous cancellation and one absolute
+Original synchronous cancellation and one absolute
 deadline apply through required shaping and persistent cursor advances, including
 waits between moves. Caller callbacks cannot be preempted; copying/encoding their
 returned output remains covered. Timeouts use `RegexMatchTimeoutException`; its
@@ -187,9 +191,9 @@ reference aliases share position/disposal. No finalizer-based lease is required.
 Read [release notes](../../CHANGELOG.md). Benchmark observations below retain their
 recorded source/runtime and qualification scope.
 
-Use `--measure-pythonre-paired-case findall/many-capture-strings 9 AssumeValid`
-for a focused trusted-input comparison. Omit the final argument for `Validate`.
-The command prints labeled raw paired evidence without changing the recorded tables.
+Use `--measure-pythonre-paired-case findall/many-capture-strings 9` for the
+canonical preexisting-text comparison. The command prints labeled paired evidence
+without changing the recorded tables. There is no validation-policy matrix.
 
 <!-- BEGIN GENERATED PYTHONRE BENCHMARKS -->
 ## Benchmarks

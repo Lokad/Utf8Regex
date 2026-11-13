@@ -8,45 +8,39 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReUnicodeStringSizingTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(4092)] [InlineData(4093)] [InlineData(4094)]
-    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
+    [InlineData(0)]
+    [InlineData(4092)]
+    [InlineData(4093)]
+    [InlineData(4094)]
+    [InlineData(4095)]
+    [InlineData(4096)]
+    [InlineData(4097)]
     public void InteriorUnicodeStringsKeepOffsetsCapturesAndBlockTails(int prefixLength)
     {
         var word = new string('a', prefixLength) + "é中😀";
         var input = Encoding.UTF8.GetBytes("😀" + word + "，" + word + ",尾😀");
         foreach (var funded in new[] { false, true })
-        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
         {
             var policy = funded ? new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 1_000_000, MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
             } : default;
-            using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy, inputValidation);
-            using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy, inputValidation);
+            using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             Assert.Equal(new string?[] { word, word, "尾😀" }, plain.SplitToStrings(input, 0, 4));
             Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, captured.SplitToStrings(input, 0, 4));
             Assert.Equal(new string?[] { word, word + ",尾😀" }, plain.SplitToStrings(input, 1, 4));
-            using var findall = new Utf8PythonRegex("([^,，]+)", inputValidation: inputValidation);
+            using var findall = new Utf8PythonRegex("([^,，]+)");
             Assert.Equal(new string?[] { word, word, "尾😀" },
                 findall.FindAllToStrings(Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀")).ScalarValues);
         }
     }
 
-    [Fact]
-    public void LimitedSplitStillRejectsTheCompleteMalformedTail()
-    {
-        var input = "😀a，b"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        var regex = new Utf8PythonRegex("[,，]");
-        Assert.Throws<ArgumentException>(() => regex.SplitToStrings(input, 1, 4));
-    }
-
     [Theory]
-    [InlineData(false, Utf8InputValidation.Validate)]
-    [InlineData(true, Utf8InputValidation.Validate)]
-    [InlineData(false, Utf8InputValidation.AssumeValid)]
-    [InlineData(true, Utf8InputValidation.AssumeValid)]
-    public void InteriorSizingObservesOriginalInterruptionBeforeStringAdmission(bool expire, Utf8InputValidation inputValidation)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InteriorSizingObservesOriginalInterruptionBeforeStringAdmission(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -56,7 +50,7 @@ public sealed class PythonReUnicodeStringSizingTests
         var program = core.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes("x" + new string('é', 10_000) + "z");
         var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, null, ".+",
-            new(new(0, 0, 1UL << 20), timeout, token.Token) { InputValidation = inputValidation });
+            new(new(0, 0, 1UL << 20), timeout, token.Token) { InputValidation = Utf8InputValidation.AssumeValid });
         try
         {
             Assert.True(cursor.MoveNext());

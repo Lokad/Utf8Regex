@@ -16,9 +16,8 @@ public sealed class PythonReAnchoredStartTests
     public void AnchoredRejectionDoesNotSkipToALaterValidStart(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            using var regex = new Utf8PythonRegex(pattern, inputValidation: policy);
+            using var regex = new Utf8PythonRegex(pattern);
             Assert.False(regex.Match(input).Success);
             Assert.False(regex.FullMatch(input).Success);
             Assert.Null(regex.MatchToString(input));
@@ -26,7 +25,6 @@ public sealed class PythonReAnchoredStartTests
             Assert.True(regex.Search(input).Success);
         }
     }
-
     [Theory]
     [InlineData("(a)?(b)", "b", 0, "b")]
     [InlineData("(?=bad)(bad)([0-9]+)", "bad123", 0, "bad123")]
@@ -39,9 +37,8 @@ public sealed class PythonReAnchoredStartTests
     public void NullableFoldedAndOffsetStartsKeepValuesAndCoordinates(string pattern, string text, int start, string expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            using var regex = new Utf8PythonRegex(pattern, inputValidation: policy);
+            using var regex = new Utf8PythonRegex(pattern);
             var match = regex.Match(input, start);
             Assert.True(match.Success);
             Assert.Equal(start, match.StartOffsetInBytes);
@@ -52,23 +49,6 @@ public sealed class PythonReAnchoredStartTests
             Assert.Equal(expected, regex.FullMatchToString(input, start));
         }
     }
-
-    [Theory]
-    [InlineData("(needle)")]
-    [InlineData("(?=bad)(bad)([0-9]+)")]
-    [InlineData("([0-9]+)end")]
-    public void StrictValidationPrecedesAllAnchoredRejectionShapes(string pattern)
-    {
-        byte[] input = [.. "xlater needle123end"u8, 0xff];
-        using var regex = new Utf8PythonRegex(pattern);
-        Assert.Throws<ArgumentException>(() => regex.Match(input));
-        Assert.Throws<ArgumentException>(() => regex.FullMatch(input));
-        Assert.Throws<ArgumentException>(() => regex.MatchToString(input));
-        Assert.Throws<ArgumentException>(() => regex.FullMatchToString(input));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailedData(input));
-        Assert.Throws<ArgumentException>(() => regex.FullMatchDetailedData(input));
-    }
-
     [Fact]
     public void ProvenMismatchNeedsNoSubjectTraversalOrWorkingScratchUnderTrustedInput()
     {
@@ -76,14 +56,12 @@ public sealed class PythonReAnchoredStartTests
         using var regex = new Utf8PythonRegex("(needle)", resourcePolicy: new()
         {
             MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1,
-        }, inputValidation: Utf8InputValidation.AssumeValid);
+        });
         Assert.False(regex.Match(input).Success);
         Assert.Null(regex.MatchToString(input));
         using var strict = new Utf8PythonRegex("(needle)", resourcePolicy: new() { MaxWorkSteps = 64 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.Match(input)).ResourceKind);
+        Assert.False(strict.Match(input).Success);
     }
-
     [Fact]
     public void KnownLookaheadMismatchRejectsBeforeItsWholeSubjectScreen()
     {
@@ -91,11 +69,10 @@ public sealed class PythonReAnchoredStartTests
         using var regex = new Utf8PythonRegex("(?=bad)(bad)([0-9]+)", resourcePolicy: new()
         {
             MaxWorkSteps = 64, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
-        }, inputValidation: Utf8InputValidation.AssumeValid);
+        });
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.FullMatch(input).Success);
     }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -105,16 +82,14 @@ public sealed class PythonReAnchoredStartTests
         using var regex = new Utf8PythonRegex("(a+)+missing", resourcePolicy: new()
         {
             MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
-        }, inputValidation: Utf8InputValidation.AssumeValid);
+        });
         Assert.False(full ? regex.FullMatch(input).Success : regex.Match(input).Success);
     }
+    [Fact]
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void RejectionStillObservesOriginalCancellationAndDeadline(Utf8InputValidation policy)
+    public void RejectionStillObservesOriginalCancellationAndDeadline()
     {
-        using var regex = new Utf8PythonRegex("(needle)", inputValidation: policy);
+        using var regex = new Utf8PythonRegex("(needle)");
         using var token = new CancellationTokenSource();
         token.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() => regex.Match("x"u8, 0, token.Token));
@@ -122,17 +97,16 @@ public sealed class PythonReAnchoredStartTests
         Assert.False(regex.Match("x"u8).Success);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks += 100);
-        using var deadline = new Utf8PythonRegex("(needle)", matchTimeout: TimeSpan.FromMilliseconds(1), inputValidation: policy);
+        using var deadline = new Utf8PythonRegex("(needle)", matchTimeout: TimeSpan.FromMilliseconds(1));
         Assert.Throws<RegexMatchTimeoutException>(() => deadline.Match("x"u8));
     }
-
     [Theory]
     [InlineData(-1)]
     [InlineData(1)]
     [InlineData(3)]
     public void AnchoredRejectionDoesNotHideInvalidOffsets(int start)
     {
-        using var regex = new Utf8PythonRegex("(needle)", inputValidation: Utf8InputValidation.AssumeValid);
+        using var regex = new Utf8PythonRegex("(needle)");
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("é"u8, start));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.FullMatch("é"u8, start));
     }

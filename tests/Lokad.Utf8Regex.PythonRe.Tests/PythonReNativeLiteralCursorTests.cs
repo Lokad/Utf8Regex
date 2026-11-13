@@ -69,7 +69,7 @@ public sealed class PythonReNativeLiteralCursorTests
         Assert.True(regex.Match("xcat"u8, 1).Success);
         Assert.False(regex.FullMatch("cat tail"u8).Success);
         Assert.True(regex.FullMatch("dog"u8).Success);
-        Assert.Throws<ArgumentException>(() => regex.Search(new byte[] { (byte)'c', (byte)'a', (byte)'t', 0x80 }));
+
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀cat"u8, 1));
         var bounded = new Utf8PythonRegex("cat|dog", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });

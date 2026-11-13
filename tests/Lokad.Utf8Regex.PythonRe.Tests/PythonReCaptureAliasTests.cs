@@ -53,7 +53,7 @@ public sealed class PythonReCaptureAliasTests
             Assert.Equal("a|b", regex.ReplaceToString(input, "\\g<" + first + ">|\\g<" + second + ">"));
             Assert.Equal("a", retained.Groups[1].ValueText);
             Assert.Equal("b", retained.Groups[2].ValueText);
-            Assert.Throws<ArgumentException>(() => regex.Count([0xff]));
+
         }
     }
 

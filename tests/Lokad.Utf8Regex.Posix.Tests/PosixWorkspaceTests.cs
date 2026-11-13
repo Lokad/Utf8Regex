@@ -16,10 +16,9 @@ public sealed class PosixWorkspaceTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Utf8ValueMatch(true, true, 0, text.Length, 0, input.Length);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = 10_000, MaxDepth = 64, MaxWorkingBytes = 1024, MaxResultBytes = 1 }, inputValidation: validation);
+            { MaxWorkSteps = 10_000, MaxDepth = 64, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
             var output = new Utf8ValueMatch[2];
             var account = new Account(1024); Assert.True(account.TryReserve(17));
             Assert.Equal(expected, regex.Match(input, output, workingMemoryAllowance: account));
@@ -27,9 +26,9 @@ public sealed class PosixWorkspaceTests
             Assert.Equal(17UL, account.Used); account.Release(17);
         }
     }
-
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExactStateLoansResetWithoutChangingAnotherActiveWorkspace(bool finite)
     {
         var program = PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default);
@@ -63,7 +62,6 @@ public sealed class PosixWorkspaceTests
         }
         Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
     }
-
     [Fact]
     public void HomogeneousProofEngagesThePublicGapAndDeclinesHistoryCounterexamples()
     {
@@ -74,7 +72,6 @@ public sealed class PosixWorkspaceTests
         Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("(a*)(b*)", default).FirstAcceptanceIsLongest);
     }
-
     [Fact]
     public void FixedAlternativeProofKeepsUnequalNestedAndConsumingTailsGeneral()
     {
@@ -85,7 +82,6 @@ public sealed class PosixWorkspaceTests
         Assert.False(PosixProgram.Compile("(a)|(a)|(a)", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("((a)|(a))b*", default).FirstAcceptanceIsLongest);
     }
-
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps, "(a|aa)*")]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth, "(a|aa)*")]
@@ -114,7 +110,6 @@ public sealed class PosixWorkspaceTests
         finally { workspace.Release(ref invocation); }
         Assert.Equal(0UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
-
     [Fact]
     public void SharedRefusalAndCancellationAtAcquisitionRefundExactly()
     {
@@ -130,16 +125,14 @@ public sealed class PosixWorkspaceTests
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
-
     [Theory]
-    [InlineData(63, Utf8InputValidation.Validate)] [InlineData(64, Utf8InputValidation.Validate)]
-    [InlineData(65, Utf8InputValidation.Validate)]
-    [InlineData(63, Utf8InputValidation.AssumeValid)] [InlineData(64, Utf8InputValidation.AssumeValid)]
-    [InlineData(65, Utf8InputValidation.AssumeValid)]
-    public void StateStorageBoundariesKeepCapturesAndCursorOwnership(int groups, Utf8InputValidation validation)
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    public void StateStorageBoundariesKeepCapturesAndCursorOwnership(int groups)
     {
         var pattern = new string('(', groups) + "é😀" + new string(')', groups);
-        var regex = new Utf8PosixRegex(pattern, inputValidation: validation);
+        var regex = new Utf8PosixRegex(pattern);
         var program = PosixProgram.Compile(pattern, default);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         var workspace = new PosixWorkspace(program, ref invocation);
@@ -161,9 +154,9 @@ public sealed class PosixWorkspaceTests
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         Assert.Equal(match, retained);
     }
-
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void AmbiguousWholeBoundaryRetainsOriginalInterruptionAndParentLoans(bool timeout)
     {
         var program = PosixProgram.Compile("((a|aa)*).", default);

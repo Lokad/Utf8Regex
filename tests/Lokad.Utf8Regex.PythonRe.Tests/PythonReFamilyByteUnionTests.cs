@@ -25,7 +25,7 @@ public sealed class PythonReFamilyByteUnionTests
         Assert.False(regex.Match(input, 4).Success);
         Assert.True(regex.FullMatch(input, matches[1].Value.StartOffsetInBytes).Success);
         Assert.Equal(new[] { "345" }, regex.FindAllToStrings(input, matches[1].Value.StartOffsetInBytes).ScalarValues);
-        Assert.Throws<ArgumentException>(() => regex.FindAllToStrings([.. input, 0xff]));
+
     }
 
     [Theory]

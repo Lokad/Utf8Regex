@@ -43,32 +43,6 @@ public sealed class PythonReNativeLiteralValidationTests
         }
     }
 
-    public static IEnumerable<object[]> MalformedSubjects()
-    {
-        var needle = Encoding.UTF8.GetBytes("Шерлок");
-        yield return new object[] { new byte[] { 0xff }.Concat(needle).ToArray(), 0 };
-        yield return new object[] { new byte[] { 0xc2 }.Concat(needle).ToArray(), 0 };
-        yield return new object[] { needle.Append((byte)0xff).ToArray(), needle.Length };
-        yield return new object[] { new byte[] { 0xc0, 0x80 }, 0 };
-        yield return new object[] { new byte[] { 0xed, 0xa0, 0x80 }, 0 };
-        yield return new object[] { new byte[] { 0xf0, 0x9f, 0x98 }, 0 };
-        yield return new object[] { Encoding.UTF8.GetBytes("é😀").Concat(needle).Append((byte)0xff).ToArray(), 6 + needle.Length };
-        yield return new object[] { Enumerable.Repeat((byte)'x', 8193).Append((byte)0xff).ToArray(), 8193 };
-    }
-
-    [Theory]
-    [MemberData(nameof(MalformedSubjects))]
-    public void EveryNativeOutcomeRejectsTheWholeMalformedSubject(byte[] input, int offset)
-    {
-        var regex = new Utf8PythonRegex("Шерлок");
-        for (var operation = 0; operation < 6; operation++)
-        {
-            var error = Assert.Throws<ArgumentException>(() => Run(regex, input, operation, default));
-            Assert.Contains($"byte offset {offset}.", error.Message);
-        }
-        Assert.True(regex.Search("Шерлок"u8).Success);
-    }
-
     [Fact]
     public void BorrowedValueProjectionPreservesHitCoordinatesAndParentLoan()
     {
@@ -86,7 +60,7 @@ public sealed class PythonReNativeLiteralValidationTests
     }
 
     [Fact]
-    public void ControlledWorkDenialStillPrecedesMalformedInputAndReleasesNoParentLoan()
+    public void ControlledWorkDenialReleasesNoParentLoan()
     {
         var regex = new Utf8PythonRegex("Шерлок");
         var invocation = new Utf8SliceInvocation(new(1, 1, 7, 1), Timeout.InfiniteTimeSpan, default);
@@ -102,7 +76,7 @@ public sealed class PythonReNativeLiteralValidationTests
     }
 
     [Fact]
-    public void OriginalTokenPrecedesMalformedInputAndFreshCallsRecover()
+    public void OriginalTokenAndFreshCallsRemainIndependent()
     {
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -130,38 +104,19 @@ public sealed class PythonReNativeLiteralValidationTests
         Assert.Equal("é😀", snapshot.Value.ValueText);
     }
 
-    [Fact]
-    public void DiagnosticHooksKeepValidationAheadOfDiscovery()
-    {
-        var regex = new Utf8PythonRegex("Шерлок");
-        var input = new byte[] { 0xff }.Concat(Enumerable.Repeat((byte)'x', 200000))
-            .Concat(Encoding.UTF8.GetBytes("Шерлок")).ToArray();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; throw new ApplicationException("Discovery ran before validation."); };
-        Exception? failure = null;
-        try { _ = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation); }
-        catch (Exception error) { failure = error; }
-        Assert.Contains("byte offset 0.", Assert.IsType<ArgumentException>(failure).Message);
-        Assert.False(entered);
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        invocation.Ledger.Release(7);
-    }
-
     [Theory]
     [InlineData(4)] [InlineData(5)]
-    public void ControlledDeadlineStillPrecedesMalformedTail(int operation)
+    public void ImmediateMissStillChecksTheOriginalDeadline(int operation)
     {
         var regex = new Utf8PythonRegex("Шерлок", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1),
             new() { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        var input = Enumerable.Repeat((byte)'x', 65536).Append((byte)0xff).ToArray();
+        var input = "absent"u8.ToArray();
         var reads = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads < 6 ? 0 : 1000);
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads < 2 ? 0 : 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, operation, default));
         Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Empty(error.Input);
-        Assert.True(reads >= 6);
+        Assert.True(reads >= 2);
     }
 
     private static void Check(Utf8PythonValueMatch match, string pattern, string text, int start)

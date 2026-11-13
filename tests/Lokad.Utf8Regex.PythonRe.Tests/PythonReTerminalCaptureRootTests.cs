@@ -6,11 +6,10 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTerminalCaptureRootTests
 {
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
-    public void CompleteRootPreservesStringsBytesLastIndexAndRetainedCursorAliases(Utf8InputValidation validation)
+    [Fact]
+    public void CompleteRootPreservesStringsBytesLastIndexAndRetainedCursorAliases()
     {
-        var regex = new Utf8PythonRegex("item-([0-9]+)", inputValidation: validation);
+        var regex = new Utf8PythonRegex("item-([0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 item-345!");
         Assert.Equal(new[] { "12", "345" }, regex.FindAllToStrings(input).ScalarValues);
         var bytes = regex.FindAllToUtf8(input).ScalarValues;
@@ -22,15 +21,11 @@ public sealed class PythonReTerminalCaptureRootTests
         Assert.True(alias.MoveNext()); Assert.Equal("345", cursor.Current.Groups[1].ValueText);
         Assert.Equal(1, cursor.Current.LastIndex); Assert.False(cursor.MoveNext());
         alias.Dispose(); cursor.Dispose(); Assert.Equal("12", first.Groups[1].ValueText);
-        if (validation == Utf8InputValidation.Validate)
-            Assert.Throws<ArgumentException>(() => regex.FindAllToStrings([.. input, 0xff]));
     }
-
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)] [InlineData(Utf8InputValidation.AssumeValid)]
-    public void SeparatedRootPreservesTuplesClosingOrderAndRetainedAliases(Utf8InputValidation validation)
+    [Fact]
+    public void SeparatedRootPreservesTuplesClosingOrderAndRetainedAliases()
     {
-        using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)-(?P<number>[0-9]+)", inputValidation: validation);
+        using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)-(?P<number>[0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 other-345!");
         var strings = regex.FindAllToStrings(input).TupleValues;
         Assert.Equal(new[] { "item", "12" }, strings[0]); Assert.Equal(new[] { "other", "345" }, strings[1]);
@@ -44,20 +39,18 @@ public sealed class PythonReTerminalCaptureRootTests
         Assert.Equal("345", cursor.Current.Groups[2].ValueText); Assert.Equal(2, cursor.Current.LastIndex);
         alias.Dispose(); cursor.Dispose(); Assert.Equal("12", first.Groups[2].ValueText);
         Assert.Equal(2, first.LastIndex); Assert.Equal("number", first.LastGroup);
-        if (validation == Utf8InputValidation.Validate)
-            Assert.Throws<ArgumentException>(() => regex.FindAllToUtf8([.. input, 0xff]));
     }
-
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void LongRootObservesOriginalCancellationAndDeadline(bool expire, bool separated)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var regex = new Utf8PythonRegex(separated ? "([a-z]+)-([0-9]+)" : "item-([0-9]+)", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(100), new() { MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            Utf8InputValidation.AssumeValid);
+            TimeSpan.FromMilliseconds(100), new() { MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         var bytes = Encoding.ASCII.GetBytes("item-" + new string('1', 1 << 18));
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (expire) ticks = 100; else token.Cancel(); });

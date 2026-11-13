@@ -52,7 +52,7 @@ public sealed class PythonReAstralRangeRenderingTests
             Assert.Equal(expectedValues, regex.FindAllToUtf8(input, 0, cancellation.Token)
                 .ScalarValues.Select(Encoding.UTF8.GetString));
             Assert.Equal(expectedValues.Length, regex.Count(input, 0, cancellation.Token));
-            Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 0xff }));
+
         }
     }
 

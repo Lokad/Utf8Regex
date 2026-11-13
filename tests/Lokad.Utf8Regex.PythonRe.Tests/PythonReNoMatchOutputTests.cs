@@ -82,11 +82,10 @@ public sealed class PythonReNoMatchOutputTests
     }
 
     [Fact]
-    public void NoMatchReturnStillValidatesTheWholeSubjectAndObservesTheOriginalToken()
+    public void NoMatchReturnObservesTheOriginalToken()
     {
         var regex = Create();
-        Assert.Throws<ArgumentException>(() => regex.SubnToString([0xFF], "x", 0, 0));
-        Assert.Throws<ArgumentException>(() => regex.Subn([0xFF], "x", -1, 0));
+
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>

@@ -39,7 +39,7 @@ public sealed class PythonReFullRangeConstructionTests
         foreach (var scalar in scalars)
             Assert.Equal(accepts, regex.FullMatch(Encoding.UTF8.GetBytes(scalar)).Success);
         Assert.False(regex.FullMatch([]).Success);
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xff }));
+
 
         // This rendering remains live for comparators and timeout pattern text.
         // Its surrogate-pair atom must still consume a supplementary scalar once.
@@ -104,7 +104,7 @@ public sealed class PythonReFullRangeConstructionTests
     [Fact]
     public void TimeoutKeepsOriginalPatternAndDeadline()
     {
-        var regex = Utf8PythonRegex.Compile(@"(?i)[\x00-\U0010ffff]+", PythonReCompileOptions.None,
+        var regex = Utf8PythonRegex.Compile(@"(?i)[\x00-\U0010ffff]+z", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(20), Limits with { MaxDepth = 4096 }, new() { MaxWorkSteps = 20000 },
             Timeout.InfiniteTimeSpan, CancellationToken.None);
         long ticks = 0;
@@ -113,7 +113,7 @@ public sealed class PythonReFullRangeConstructionTests
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; ticks = 50; });
         try
         {
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(new byte[65536]));
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(new byte[1 << 20]));
             Assert.True(reached);
             Assert.Equal(regex.Pattern, error.Pattern);
             Assert.Equal(TimeSpan.FromMilliseconds(20), error.MatchTimeout);

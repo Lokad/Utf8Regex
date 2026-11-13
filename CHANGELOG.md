@@ -5,11 +5,15 @@
 - Target .NET 10 and .NET 11 in Core and all three adapters. The stable .NET 11
   runtime is the new benchmark baseline; historical measurements keep their
   runtime labels. Adapters require the exact matching Core package version.
-- Add immutable `inputValidation` and read-only `InputValidation` across all
-  profiles. `Validate` remains the default whole-subject UTF-8 check;
+- Add immutable `inputValidation` and read-only `InputValidation` in Core and
+  PCRE2. Core `Validate` remains the default whole-subject UTF-8 check;
   `AssumeValid` omits that pass when the caller guarantees valid, unchanged
   borrowed UTF-8. Operations and cursors inherit the policy. Pattern/replacement
   checks, managed bounds, scalar matching and resource controls remain active.
+- PythonRe models Python `re` over `str`; PythonRe and POSIX consume already-valid
+  UTF-8 text without regex-operation validity passes. Validate external bytes at
+  the text boundary. The earlier development-only subject-validation options and
+  properties in these adapters are removed; pattern/replacement checks remain.
 - Add Lokad.Utf8Regex.Posix: a case-sensitive scalar ERE subset with
   leftmost-longest matching and hierarchical subexpression priority. Match into
   caller-owned capture spans, count, or iterate with a disposable cursor. Named

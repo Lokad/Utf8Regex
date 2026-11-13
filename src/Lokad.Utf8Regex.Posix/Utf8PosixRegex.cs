@@ -9,20 +9,10 @@ namespace Lokad.Utf8Regex.Posix;
 /// <remarks>Selected matches are leftmost-longest with hierarchical subpattern priority. Instances are immutable and reusable; there is no native or BCL matcher fallback.</remarks>
 public sealed class Utf8PosixRegex
 {
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
-        => Compile(pattern, options, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
-
-
-    /// <summary>Gets the immutable subject UTF-8 validation policy.</summary>
-    public Utf8InputValidation InputValidation { get; }
-
-    /// <summary>Compiles an ERE with an immutable subject validation policy.</summary>
+    /// <summary>Compiles an ERE over already-valid UTF-8 text.</summary>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None, TimeSpan? matchTimeout = null,
-        Utf8ResourcePolicy resourcePolicy = default, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        : this(pattern, options, matchTimeout ?? Regex.InfiniteMatchTimeout, resourcePolicy, inputValidation) { }
+        Utf8ResourcePolicy resourcePolicy = default)
+        : this(pattern, options, matchTimeout ?? Regex.InfiniteMatchTimeout, resourcePolicy) { }
 
     // A synchronous vector never escapes its call. Keep its stack footprint
     // bounded; the workspace admits the same conservative capacity first.
@@ -35,14 +25,7 @@ public sealed class Utf8PosixRegex
 
     /// <summary>Compiles an ERE with explicit newline semantics, timeout and resource policy.</summary>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(pattern, options, matchTimeout, resourcePolicy, Utf8InputValidation.Validate) { }
-
-    /// <summary>Compiles an ERE with explicit execution and subject validation policies.</summary>
-    public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
-        Utf8InputValidation inputValidation)
     {
-        Utf8Validation.ValidatePolicy(inputValidation);
-        InputValidation = inputValidation;
         ArgumentNullException.ThrowIfNull(pattern);
         if ((options & ~PosixCompileOptions.Newline) != 0) throw new ArgumentOutOfRangeException(nameof(options));
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
@@ -56,8 +39,7 @@ public sealed class Utf8PosixRegex
     /// <summary>Compiles with separate bounded eager construction and execution controls.</summary>
     public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        TimeSpan constructionTimeout, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
@@ -65,7 +47,7 @@ public sealed class Utf8PosixRegex
         using var owner = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
         try
         {
-            var result = new Utf8PosixRegex(pattern, options, matchTimeout, resourcePolicy, inputValidation);
+            var result = new Utf8PosixRegex(pattern, options, matchTimeout, resourcePolicy);
             owner.Budget.ChargeWork(0);
             owner.Complete();
             return result;
@@ -83,7 +65,7 @@ public sealed class Utf8PosixRegex
     /// <summary>Gets the number of capturing parentheses, excluding whole-match slot zero.</summary>
     public int GroupCount => _program.CaptureTags.Length - 1;
 
-    /// <summary>Tests existence under the instance's subject validation policy, with original interruption and optional working admission.</summary>
+    /// <summary>Tests existence over valid UTF-8 text, with original interruption and optional working admission.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
@@ -91,7 +73,7 @@ public sealed class Utf8PosixRegex
         PosixWorkspace workspace = default;
         try
         {
-            ValidateInput(input, 0, ref invocation);
+            CheckStart(input, 0, ref invocation);
             workspace = CreateWorkspace(ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             return workspace.Find(input, state, 0, true, ref invocation, out _, out _);
@@ -115,7 +97,7 @@ public sealed class Utf8PosixRegex
         PosixWorkspace workspace = default;
         try
         {
-            ValidateInput(input, startOffsetInBytes, ref invocation);
+            CheckStart(input, startOffsetInBytes, ref invocation);
             var captureHistory = output.Length > 1;
             workspace = CreateWorkspace(ref invocation, captureHistory);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
@@ -136,7 +118,7 @@ public sealed class Utf8PosixRegex
         PosixWorkspace workspace = default;
         try
         {
-            ValidateInput(input, startOffsetInBytes, ref invocation);
+            CheckStart(input, startOffsetInBytes, ref invocation);
             workspace = CreateWorkspace(ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             var count = 0; var position = startOffsetInBytes;
@@ -162,17 +144,15 @@ public sealed class Utf8PosixRegex
     internal Utf8SliceInvocation StartInvocation(CancellationToken token, IUtf8MemoryAllowance? allowance)
     {
         token.ThrowIfCancellationRequested();
-        return new(_limits, MatchTimeout, token, allowance) { InputValidation = InputValidation };
+        return new(_limits, MatchTimeout, token, allowance);
     }
 
     internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)
         => new(_program, ref invocation, captureHistory);
 
-    internal static void ValidateInput(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+    internal static void CheckStart(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {
         if ((uint)start > (uint)input.Length) throw new ArgumentOutOfRangeException("startOffsetInBytes");
-        var breach = Utf8Validation.TryCheckSubject(input, ref invocation);
-        if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
         if (start < input.Length && (input[start] & 0xc0) == 0x80)
             throw new ArgumentOutOfRangeException("startOffsetInBytes", "The start must be a Unicode scalar boundary.");
         PosixWorkspace.Finish(ref invocation);
@@ -202,7 +182,7 @@ public sealed class Utf8PosixRegex
     private static Utf8ValueMatch ProjectRange(ReadOnlySpan<byte> input, int from, int to,
         ref Utf8SliceInvocation invocation, int originByte = 0, int originUtf16 = 0)
     {
-        // Invocation entry validated the whole subject; the scalar interpreter
+        // The valid-text contract and scalar interpreter
         // produced complete ranges. Count coordinates without validating again.
         try
         {

@@ -46,7 +46,7 @@ public sealed partial class Utf8PythonRegex
         var programUse = EnterProgramUse();
         try
         {
-            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = Utf8InputValidation.AssumeValid };
             ValidateScalarStartOffset(input.Span, startOffsetInBytes);
             return new Utf8PythonMatchCursor(input, ScalarProgram,
                 _nameEntries, startOffsetInBytes, MatchTimeout, this, invocation, _utf8Regex, programUse);

@@ -41,24 +41,19 @@ The `projection/short-*` and `projection/unicode-prefix-*` cases isolate capture
 coordinate scaling with one/four captures. Their native comparisons await the
 next refresh; the frozen tables below retain their original measured scope.
 
-## Subject validation policy
+## Subject text contract
 
-Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
-host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
-`InputValidation` reports the choice; `Validate` is default and checks the whole
-subject at most once per logical operation or cursor lifetime. Matching, counting,
-replacement/splitting where supported and cursors inherit the engine policy.
-Pattern/replacement validation, checked accesses, scalar/byte semantics,
-cooperative cancellation/deadlines and admission remain. Required coordinate or
-output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
-Existing benchmark tables use Validate unless explicitly labeled otherwise.
+Subjects are already-valid UTF-8 text, borrowed unchanged while in use. Validate
+external bytes at the application's text boundary. The adapter has no subject
+validation option/property and does not require malformed-suffix rejection.
+Pattern validation, scalar starts/selection, captures, coordinate projection,
+resource admission and original cancellation/deadlines remain active.
 
-Use `--measure-posix-case capture/sku007 9 AssumeValid` for a focused trusted-input
-comparison, including its finite/live/funded lanes. Omit the final argument for
-`Validate`. The command prints labeled raw evidence without changing these tables;
-the native comparator keeps UTF validation enabled.
+Historical dev79 tables below include the former whole-input check. Their
+canonical valid-text comparison is being refreshed; its native PCRE2 NFA
+comparator must use the same trusted UTF-8 guarantee. That comparator is not a
+POSIX implementation: ranges/captures must agree before a ratio is reported.
 
-<!-- BEGIN GENERATED POSIX BENCHMARKS -->
 ## Benchmarks
 
 Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, capture participation and nested/nullable histories. Unicode and nonzero floors are part of a selection case. Core's generic search, validation, dense counting and scalar progression are not repeated here. Native PCRE2 NFA uses a prepared reusable match buffer, UTF validation and equivalent byte/UTF-16 result projection. Its ratios apply only to verified equal-result inputs, not general POSIX semantics. Native allocations below cover CLR traffic, excluding native workspace.

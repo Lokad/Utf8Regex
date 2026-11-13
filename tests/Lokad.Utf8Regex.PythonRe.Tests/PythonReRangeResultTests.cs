@@ -129,8 +129,8 @@ public sealed class PythonReRangeResultTests
     public void RangeEntryPointsKeepStrictValidationAndFailureSemantics()
     {
         var regex = new Utf8PythonRegex("a"); byte[] malformed = [(byte)'a', 0xff];
-        Assert.Throws<ArgumentException>(() => regex.CreateMatchCursor(malformed));
-        Assert.Throws<ArgumentException>(() => regex.SplitRanges(malformed));
+
+
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.SplitRanges("😀a"u8, 0, 1, default));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(malformed, 0, 0, token.Token)).CancellationToken);

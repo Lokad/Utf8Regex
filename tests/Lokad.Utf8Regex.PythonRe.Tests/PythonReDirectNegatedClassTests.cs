@@ -68,15 +68,7 @@ public sealed class PythonReDirectNegatedClassTests
         Assert.Equal(1, regex.Count(input, 0, token.Token));
     }
 
-    [Fact]
-    public void EarlyMatchesDoNotAdmitMalformedSuffixes()
-    {
-        using var regex = new Utf8PythonRegex(@"[^ab]+a");
-        var input = new byte[] { (byte)'x', (byte)'a', 0xFF };
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-        Assert.Throws<ArgumentException>(() => regex.Search(input));
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-    }
+
 
     [Theory]
     [InlineData(false)] [InlineData(true)]

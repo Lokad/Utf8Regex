@@ -72,7 +72,7 @@ public sealed class PythonReTerminalClassRepeatTests
         Assert.Equal(1, regex.Count("😀é² ab"u8, 9));
         Assert.Equal(9, regex.Search("😀é² ab"u8, 9).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é² ab"u8, 1));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 255 }));
+
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes("\u1c89\U0001e5f1")));
     }
 

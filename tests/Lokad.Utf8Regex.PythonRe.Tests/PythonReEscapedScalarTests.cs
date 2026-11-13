@@ -81,14 +81,7 @@ public sealed class PythonReEscapedScalarTests
         Assert.Equal("😀😁", retained.Groups[1].ValueText);
     }
 
-    [Fact]
-    public void AValidEscapedPrefixDoesNotHideMalformedUtf8()
-    {
-        var regex = new Utf8PythonRegex(@"\😀");
-        var input = "😀"u8.ToArray().Append((byte)0xff).ToArray();
-        Assert.Throws<ArgumentException>(() => regex.Search(input));
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-    }
+
 
     [Fact]
     public void RepeatedEscapedScalarsKeepConstructionWorkAdmissionAndRecovery()
