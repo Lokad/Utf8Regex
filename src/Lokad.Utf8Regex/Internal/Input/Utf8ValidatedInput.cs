@@ -5,8 +5,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Input;
 
 /// <summary>
-/// Operation-local subject bytes and optional coordinate facts. Core validates
-/// or trusts the whole subject; PCRE2 establishes its own native UTF window.
+/// Operation-local subject bytes and optional coordinate facts. The engine
+/// establishes validity or a caller guarantee for the relevant input range.
 /// Derived coordinate projection state is materialized only when requested.
 /// </summary>
 internal ref struct Utf8ValidatedInput
