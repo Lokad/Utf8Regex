@@ -35,6 +35,29 @@ public sealed class PythonReScalarCoordinateTests
         }
         Assert.Equal(edges.Count - 1, ordinal);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(7)]
+    public void ScalarCountsKeepAllWidthsAcrossVectorAndIndexBlockCuts(int borrowedOffset)
+    {
+        using var regex = new Utf8PythonRegex("(.*)");
+        for (var prefix = 0; prefix < 64; prefix++)
+        foreach (var tail in new[] { 0, 1, 31, 32, 33 })
+        {
+            var text = new string('x', prefix) + string.Concat(Enumerable.Repeat("aé中😀\u0800\uD7FF\U0010ffff", 32)) + new string('y', tail);
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. bytes, 0xff];
+            using var cursor = regex.CreateMatchCursor(storage.AsMemory(borrowedOffset, bytes.Length));
+            Assert.True(cursor.MoveNext(out _));
+            var expected = text.EnumerateRunes().Count();
+            Assert.True(cursor.TryGetScalarRange(0, out var start, out var end));
+            Assert.Equal((0, expected), (start, end));
+            Assert.True(cursor.TryGetScalarRange(1, out start, out end));
+            Assert.Equal((0, expected), (start, end));
+        }
+    }
     [Fact]
     public void DetailedUtf16CoordinatesAndScalarCoordinatesKeepDistinctUnits()
     {

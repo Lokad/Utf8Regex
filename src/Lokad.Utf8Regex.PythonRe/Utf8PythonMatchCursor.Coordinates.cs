@@ -1,3 +1,6 @@
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -183,7 +186,18 @@ public sealed partial class Utf8PythonMatchCursor
             // invocation's original work, cancellation and deadline authority.
             _discovery.Checkpoint();
             var block = bytes.Slice(offset, Math.Min(32, bytes.Length - offset));
-            foreach (var value in block) if ((value & 0xc0) != 0x80) count++;
+            if (Vector256.IsHardwareAccelerated && block.Length == Vector256<byte>.Count)
+            {
+                // Exactly the already-admitted work unit. Count non-continuation
+                // bytes, including when a coordinate block cuts through a scalar.
+                var current = MemoryMarshal.Read<Vector256<byte>>(block);
+                var continuations = Vector256.Equals(current & Vector256.Create((byte)0xc0), Vector256.Create((byte)0x80));
+                count += Vector256<byte>.Count - BitOperations.PopCount(continuations.ExtractMostSignificantBits());
+            }
+            else
+            {
+                foreach (var value in block) if ((value & 0xc0) != 0x80) count++;
+            }
             offset += block.Length;
         }
         return count;
