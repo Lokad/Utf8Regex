@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
 
@@ -48,5 +49,55 @@ public sealed class PosixDisjointRunTests
         Assert.Equal(whole, regex.Match(input, captures, floor, token.Token));
         Assert.Equal(1, regex.Count(input, floor, token.Token));
         Assert.True(regex.IsMatch(input, token.Token));
+    }
+
+    [Theory]
+    [InlineData("([a-b]+)([0-1]+)")]
+    [InlineData("(([a-b]{1,3}))([0-1]{2,4})")]
+    [InlineData("([a-b]{2,4})([0-1]{1,2})([!]{1,2})")]
+    public void UniqueRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)
+    {
+        var regex = new Utf8PosixRegex(pattern);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        foreach (var text in new[] { "", "ab01!", "😀ab011!", "aaab00111!!ab01!", "a0 b1 ab001", "aabb0011!", "ab", "0011", "ab01\nab11!" })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            for (var floor = 0; floor <= text.Length; floor++)
+            {
+                if (floor < text.Length && char.IsLowSurrogate(text[floor])) continue;
+                var byteFloor = Encoding.UTF8.GetByteCount(text.AsSpan(0, floor));
+                var expected = oracle.Match(text, floor);
+                for (var width = 0; width <= regex.GroupCount + 2; width++)
+                {
+                    var output = new Utf8ValueMatch[width];
+                    var actual = regex.Match(input, output, byteFloor);
+                    Assert.Equal(expected.Success, actual.Success);
+                    if (!expected.Success) { Assert.All(output, value => Assert.False(value.Success)); continue; }
+                    Check(expected, actual);
+                    for (var slot = 0; slot < Math.Min(output.Length, regex.GroupCount + 1); slot++)
+                        Check(expected.Groups[slot], output[slot]);
+                    if (width > regex.GroupCount + 1) Assert.False(output[^1].Success);
+                }
+                Assert.Equal(oracle.Matches(text, floor).Count, regex.Count(input, byteFloor));
+            }
+            using var cursor = regex.CreateMatchCursor(input);
+            var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+            foreach (Match expected in oracle.Matches(text))
+            {
+                Assert.True(cursor.MoveNext(groups, out var actual));
+                Check(expected, actual);
+                for (var slot = 0; slot < groups.Length; slot++) Check(expected.Groups[slot], groups[slot]);
+            }
+            Assert.False(cursor.MoveNext(out _));
+
+            void Check(Group expected, Utf8ValueMatch actual)
+            {
+                Assert.Equal(expected.Success, actual.Success);
+                if (!expected.Success) return;
+                Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
+                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
+                    (actual.IndexInBytes, actual.LengthInBytes));
+            }
+        }
     }
 }

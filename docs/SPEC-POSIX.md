@@ -153,6 +153,11 @@ literal alternatives, disjoint positive ASCII runs and eligible repeated literal
 captures. Those routes keep one native trace and project it directly. First and
 mandatory empty participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
+For flat pairwise-disjoint positive ASCII runs, the proved unique boundaries
+also allow direct run consumption in the scalar executor. Each examined byte
+remains metered; impossible alternative exits, their undo journal and unused
+repeat-counter capacity are omitted. Work, pending depth and working admission
+can therefore be lower for these programs; capture selection is unchanged.
 
 Other requested captures select completed syntax intervals after the scalar
 executor fixes the whole winner. Immutable syntax records carry conservative

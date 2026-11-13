@@ -35,7 +35,7 @@ internal partial struct PosixWorkspace
     internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
         _program = program;
-        _openOffset = checked(program.Scalar.RepeatCount * 2);
+        _openOffset = program.DisjointAsciiRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
         var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
         _lastOffset = checked(_openOffset + tags);
         var count = checked(_lastOffset + tags);
@@ -132,6 +132,27 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
+                    if (_program.DisjointAsciiRuns)
+                    {
+                        // The existing compiler proof admits only positive,
+                        // pairwise-disjoint ASCII classes with captures outside
+                        // their bodies. A shorter run cannot help its successor
+                        // or an anchor, so no alternative exit/counter undo is
+                        // useful. Keep ordinary capture events around the run.
+                        var mask = _program.Scalar.SetMasks[code[pc + 1].A];
+                        var limit = at + (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
+                        var runStart = at;
+                        while (at < limit)
+                        {
+                            Charge(ref invocation);
+                            var value = input[at];
+                            if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) break;
+                            at++;
+                        }
+                        if (at - runStart < instruction.RepeatMinimum) { failed = true; break; }
+                        pc = instruction.A + 1; // Skip the unused counter reset.
+                        break;
+                    }
                     var slot = instruction.B * 2;
                     var count = state[slot];
                     if (count < 0) { count = 0; SetState(state, slot, 0, ref invocation); }

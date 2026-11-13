@@ -188,6 +188,60 @@ public sealed class PosixWorkspaceTests
         account.Release(17);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UniqueClassRunRetainsOriginalInterruptionAndParentLoans(bool timeout)
+    {
+        const string pattern = "^([a-z]+)([0-9]+)$";
+        var regex = new Utf8PosixRegex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20),
+            resourcePolicy: new() { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20 });
+        var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "0");
+        var output = new Utf8ValueMatch[3];
+        using var source = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var fired = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps => {
+            if (steps < 512) return;
+            fired = true;
+            if (timeout) ticks = 25; else source.Cancel();
+        });
+        var account = new Account(1 << 20);
+        Assert.True(account.TryReserve(17));
+        try
+        {
+            var error = Record.Exception(() => regex.Match(input, output,
+                cancellationToken: source.Token, workingMemoryAllowance: account));
+            Assert.True(fired);
+            if (timeout) Assert.IsType<System.Text.RegularExpressions.RegexMatchTimeoutException>(error);
+            else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+            Assert.All(output, value => Assert.False(value.Success));
+        }
+        finally { session.Complete(); }
+        Assert.Equal(17UL, account.Used); account.Release(17);
+    }
+
+    [Fact]
+    public void UniqueClassRunsKeepWorkAdmissionWithoutImpossiblePendingDepth()
+    {
+        const string pattern = "^([a-z]+)([0-9]+)$";
+        var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "000");
+        var admitted = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
+        var output = new Utf8ValueMatch[3];
+        Assert.Equal(input.Length, admitted.Match(input, output).LengthInBytes);
+        Assert.Equal(4096, output[1].LengthInBytes); Assert.Equal(3, output[2].LengthInBytes);
+        var refused = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
+        var account = new Account(1024); Assert.True(account.TryReserve(17));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            refused.Match(input, output, workingMemoryAllowance: account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+        Assert.All(output, value => Assert.False(value.Success));
+        Assert.Equal(17UL, account.Used); account.Release(17);
+    }
+
     private sealed class Account(ulong limit) : IUtf8MemoryAllowance
     {
         internal ulong Used;
