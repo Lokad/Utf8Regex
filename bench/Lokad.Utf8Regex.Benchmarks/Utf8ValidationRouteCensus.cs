@@ -53,8 +53,6 @@ internal sealed class Utf8ValidationRouteCensus
 
     public int BlockShapeTransitions { get; private set; }
 
-    public bool InitialWideMode { get; private set; }
-
     public long[] ScalarCounts { get; } = new long[5];
 
     public long[] ScalarBytes { get; } = new long[5];
@@ -128,22 +126,6 @@ internal sealed class Utf8ValidationRouteCensus
     private void AnalyzeBlocks(ReadOnlySpan<byte> input)
     {
         BlockCount = (input.Length + VectorBlockSize - 1) / VectorBlockSize;
-        var initialSample = input[..Math.Min(input.Length, 256)];
-        var initialTwoByteLeads = 0;
-        var initialSafeThreeByteLeads = 0;
-        foreach (var value in initialSample)
-        {
-            if (value is >= 0xC2 and < 0xE0)
-            {
-                initialTwoByteLeads++;
-            }
-            else if (IsSafeThreeByteLead(value))
-            {
-                initialSafeThreeByteLeads++;
-            }
-        }
-
-        InitialWideMode = initialSafeThreeByteLeads > initialTwoByteLeads;
         var previousShape = (Utf8ValidationBlockShape?)null;
         var currentShapeRun = 0;
         for (var blockOffset = 0; blockOffset < input.Length; blockOffset += VectorBlockSize)

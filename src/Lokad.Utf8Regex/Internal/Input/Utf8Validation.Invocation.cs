@@ -83,7 +83,7 @@ internal static partial class Utf8Validation
             var span = input.Slice(offset, length);
             if (computeUtf16Length)
             {
-                if (!Utf8ValidationCore.TryValidate(span, true, out var block, out var errorOffset))
+                if (!Utf8ValidationCore.TryValidate(span, out var block, out var errorOffset))
                     throw CreateInvalidUtf8Exception(byteOffset + offset + errorOffset);
                 utf16Length += block.Utf16Length;
                 isAscii &= block.IsAscii;

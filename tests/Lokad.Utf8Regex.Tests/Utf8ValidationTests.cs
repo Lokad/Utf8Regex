@@ -1,4 +1,3 @@
-using System.Runtime.Intrinsics;
 using System.Text;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Input;
@@ -23,8 +22,8 @@ public sealed class Utf8ValidationTests
                 input[prefix + 1] = second;
                 input[prefix + 2] = 0x80;
                 var expected = Utf8.IsValid(input);
-                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, true, out var scalar, out var scalarError));
-                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out var scalar, out var scalarError));
+                Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
                 if (expected) Assert.Equal(Encoding.UTF8.GetString(input).Length, scalar.Utf16Length);
                 else Assert.Equal(scalarError, vectorError);
             }
@@ -78,6 +77,8 @@ public sealed class Utf8ValidationTests
     [InlineData("café", false)]
     [InlineData("K", true)]
     [InlineData("before K after", true)]
+    [InlineData("中K文", true)]
+    [InlineData("中文K😀", true)]
     public void ValidateOnlyCanReportKelvinSignWithoutASecondScan(string text, bool expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -141,24 +142,11 @@ public sealed class Utf8ValidationTests
         }
     }
 
-    [Fact]
-    public void AsciiAndTwoByteDrainCrossesVectorBoundaries()
-    {
-        var input = Encoding.UTF8.GetBytes(
-            new string('a', 31) + "é" +
-            new string('b', 32) + "Ж中" +
-            new string('c', 33));
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: true, out var nextOffset, out var errorOffset));
-        Assert.Equal(input.Length, nextOffset);
-        Assert.Equal(-1, errorOffset);
-    }
-
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(3)]
-    public void CommonDrainMatchesScalarValidationAtEveryWideLaneAndSliceOffset(int sliceOffset)
+    public void ValidityMatchesMetadataDecoderAtEveryWideLaneAndSliceOffset(int sliceOffset)
     {
         var scalars = new[] { "é", "中", "ࠀ", "\uD7FF", "😀", "\U0010FFFF" };
         foreach (var scalar in scalars)
@@ -168,7 +156,7 @@ public sealed class Utf8ValidationTests
             var storage = new byte[sliceOffset + bytes.Length + 3];
             bytes.CopyTo(storage, sliceOffset);
             var input = storage.AsSpan(sliceOffset, bytes.Length);
-            Assert.True(Utf8ValidationCore.TryValidate(input, false, out _, out var validOffset));
+            Assert.True(Utf8InputAnalyzer.TryValidateOnly(input, out var validOffset));
             Assert.Equal(-1, validOffset);
             for (var index = prefix; index < prefix + Encoding.UTF8.GetByteCount(scalar); index++)
             {
@@ -176,223 +164,14 @@ public sealed class Utf8ValidationTests
                 foreach (var replacement in new byte[] { 0, 0x7F, 0x80, 0xBF, 0xC0, 0xC1, 0xC2, 0xDF, 0xE0, 0xFF })
                 {
                     input[index] = replacement;
-                    var expected = Utf8ValidationCore.TryValidate(input, true, out _, out var expectedOffset);
-                    var actual = Utf8ValidationCore.TryValidate(input, false, out _, out var actualOffset);
+                    var expected = Utf8ValidationCore.TryValidate(input, out _, out var expectedOffset);
+                    var actual = Utf8InputAnalyzer.TryValidateOnly(input, out var actualOffset);
                     Assert.True(expected == actual && expectedOffset == actualOffset,
                         $"slice={sliceOffset}, prefix={prefix}, scalar={scalar}, index={index}, byte={replacement:X2}: " +
                         $"expected={expected}/{expectedOffset}, actual={actual}/{actualOffset}");
                 }
                 input[index] = original;
             }
-        }
-    }
-
-    [Fact]
-    public void CommonUtf8DrainStopsBeforeAConstrainedThreeByteScalar()
-    {
-        var prefix = Encoding.UTF8.GetBytes(new string('a', 37) + "é");
-        var input = prefix.Concat(Encoding.UTF8.GetBytes("ࠀsuffix")).ToArray();
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: true, out var nextOffset, out var errorOffset));
-        Assert.Equal(prefix.Length, nextOffset);
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void LeanTwoByteDrainLeavesThreeByteScalarsToTheSemanticValidator()
-    {
-        var prefix = Encoding.UTF8.GetBytes(new string('a', 37) + "é");
-        var input = prefix
-            .Concat(Encoding.UTF8.GetBytes("中" + new string('b', 96)))
-            .ToArray();
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
-        Assert.Equal(prefix.Length, nextOffset);
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void LeanTwoByteDrainAdaptsToLocallyDenseThreeByteScalars()
-    {
-        var input = Encoding.UTF8.GetBytes(
-            new string('a', 40) + "中文" + new string('b', 160));
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-            input,
-            0,
-            drainSafeThreeByte: false,
-            out var nextOffset,
-            out var errorOffset));
-        if (Vector256.IsHardwareAccelerated)
-        {
-            Assert.Equal(input.Length, nextOffset);
-        }
-
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void AdaptiveThreeByteDrainReturnsToLeanModeAfterAsciiBlocks()
-    {
-        var sparseScalarOffset = Encoding.UTF8.GetByteCount("中文" + new string('a', 192));
-        var input = Encoding.UTF8.GetBytes(
-            "中文" + new string('a', 192) + "語" + new string('b', 96));
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-            input,
-            0,
-            drainSafeThreeByte: false,
-            out var nextOffset,
-            out var errorOffset));
-        if (Vector256.IsHardwareAccelerated)
-        {
-            Assert.Equal(sparseScalarOffset, nextOffset);
-        }
-
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void AdaptiveThreeByteDrainReportsMalformedContinuationsAtEveryDenseBlockLane()
-    {
-        for (var lane = 0; lane <= 25; lane++)
-        {
-            var scalarStart = 64 + lane;
-            var input = Enumerable.Repeat((byte)'a', scalarStart)
-                .Concat("中文"u8.ToArray())
-                .Concat(Enumerable.Repeat((byte)'b', 96))
-                .ToArray();
-
-            Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-                input,
-                0,
-                drainSafeThreeByte: false,
-                out var nextOffset,
-                out var errorOffset));
-            if (Vector256.IsHardwareAccelerated)
-            {
-                Assert.Equal(input.Length, nextOffset);
-            }
-
-            Assert.Equal(-1, errorOffset);
-
-            // Drain-level malformed detection is a 256-bit-block property: lean paths stop
-            // at the scalar lead and let the resuming validator report the error, so end-to-end
-            // soundness holds on every ISA (see the ungated asserts above and the full-validation suites).
-            if (!Vector256.IsHardwareAccelerated)
-            {
-                continue;
-            }
-
-            for (var byteOffset = 1; byteOffset < 6; byteOffset++)
-            {
-                if (byteOffset == 3)
-                {
-                    continue;
-                }
-
-                var malformed = input.ToArray();
-                malformed[scalarStart + byteOffset] = (byte)'x';
-
-                Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-                    malformed,
-                    0,
-                    drainSafeThreeByte: false,
-                    out _,
-                    out errorOffset));
-                Assert.Equal(byteOffset < 3 ? scalarStart : scalarStart + 3, errorOffset);
-            }
-        }
-    }
-
-    [Fact]
-    public void LeanTwoByteDrainAcceptsAScalarEndingAtTheVectorBoundary()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('a', 30) + "é" + new string('b', 32));
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
-        Assert.Equal(input.Length, nextOffset);
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void LeanTwoByteDrainCompletesAScalarCrossingTheVectorBoundary()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('a', 31) + "é" + new string('b', 32));
-
-        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
-        Assert.Equal(input.Length, nextOffset);
-        Assert.Equal(-1, errorOffset);
-    }
-
-    [Fact]
-    public void LeanTwoByteDrainReportsAnInvalidCrossVectorContinuationAtTheLead()
-    {
-        var input = Enumerable.Repeat((byte)'a', 31).Concat(new byte[] { 0xC2, (byte)'x' }).ToArray();
-
-        Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out _, out var errorOffset));
-        Assert.Equal(31, errorOffset);
-    }
-
-    [Fact]
-    public void CommonUtf8DrainCarriesExpectedContinuationsAcrossEveryVectorLane()
-    {
-        var scalarCases = new[]
-        {
-            (Bytes: "é"u8.ToArray(), DrainSafeThreeByte: false),
-            (Bytes: "中"u8.ToArray(), DrainSafeThreeByte: true),
-        };
-
-        foreach (var scalarCase in scalarCases)
-        {
-            for (var prefixLength = 0; prefixLength < 96; prefixLength++)
-            {
-                var input = Enumerable.Repeat((byte)'a', prefixLength)
-                    .Concat(scalarCase.Bytes)
-                    .Concat(Enumerable.Repeat((byte)'b', 96))
-                    .ToArray();
-
-                Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-                    input,
-                    0,
-                    scalarCase.DrainSafeThreeByte,
-                    out var nextOffset,
-                    out var errorOffset));
-                Assert.Equal(input.Length, nextOffset);
-                Assert.Equal(-1, errorOffset);
-
-                for (var continuation = 1; continuation < scalarCase.Bytes.Length; continuation++)
-                {
-                    var malformed = input.ToArray();
-                    malformed[prefixLength + continuation] = (byte)'x';
-
-                    Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
-                        malformed,
-                        0,
-                        scalarCase.DrainSafeThreeByte,
-                        out _,
-                        out errorOffset));
-                    Assert.Equal(prefixLength, errorOffset);
-                }
-            }
-        }
-    }
-
-    [Fact]
-    public void AsciiAndTwoByteDrainReportsInvalidLeadOffsetsAroundVectorBoundaries()
-    {
-        var cases = new[]
-        {
-            (Input: Enumerable.Repeat((byte)'a', 30).Concat(new byte[] { 0xC2, 0xE2 }).ToArray(), ErrorOffset: 30),
-            (Input: Enumerable.Repeat((byte)'a', 31).Concat(new byte[] { 0xC2, (byte)'x' }).ToArray(), ErrorOffset: 31),
-            (Input: Enumerable.Repeat((byte)'a', 32).Concat(new byte[] { 0x80 }).ToArray(), ErrorOffset: 32),
-            (Input: Enumerable.Repeat((byte)'a', 15).Concat(new byte[] { 0xC0, 0x80 }).ToArray(), ErrorOffset: 15),
-        };
-
-        foreach (var testCase in cases)
-        {
-            Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(testCase.Input, 0, drainSafeThreeByte: true, out _, out var errorOffset));
-            Assert.Equal(testCase.ErrorOffset, errorOffset);
         }
     }
 
@@ -662,7 +441,7 @@ public sealed class Utf8ValidationTests
         // guards the SIMD lead-classification matrix (ASCII,
         // two-byte, safe/constrained three-byte, four-byte, overlong and
         // surrogate leads) at every 32-byte alignment reviewers of the
-        // validation drain may disturb.
+        // validator may disturb.
         var random = new Random(0xC10);
         var pool = new byte[] { 0x41, 0x7F, 0xC2, 0xDF, 0xE0, 0xE1, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF4, 0x80, 0xBF, 0xA0, 0x9F, 0xC0, 0xC1, 0xF5, 0xFF, 0xFE };
         for (var trial = 0; trial < 4000; trial++)

@@ -34,7 +34,7 @@ internal static class Utf8SliceBufferWork
         {
             Checkpoint(ref invocation);
             var count = Utf8BlockLength(bytes[offset..]);
-            if (!Input.Utf8ValidationCore.TryValidate(bytes.Slice(offset, count), false, out _, out var error))
+            if (!Input.Utf8InputAnalyzer.TryValidateOnly(bytes.Slice(offset, count), out var error))
                 throw Input.Utf8Validation.CreateInvalidUtf8Exception(offset + error);
             offset += count;
         }

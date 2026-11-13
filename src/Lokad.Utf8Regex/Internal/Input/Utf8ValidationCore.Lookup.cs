@@ -28,7 +28,7 @@ internal static partial class Utf8ValidationCore
     internal static bool IsValidLookup256(ReadOnlySpan<byte> input)
     {
         if (input.Length < Vector256<byte>.Count + 3)
-            return TryValidate(input, false, out _, out _);
+            return TryValidate(input, out _, out _);
         var offset = LookupStart(input);
         if (offset < 0) return false;
         var high = Vector256.Create(LookupPreviousHigh, LookupPreviousHigh);
@@ -66,7 +66,7 @@ internal static partial class Utf8ValidationCore
     internal static bool IsValidLookup512(ReadOnlySpan<byte> input)
     {
         if (input.Length < Vector512<byte>.Count + 3)
-            return TryValidate(input, false, out _, out _);
+            return TryValidate(input, out _, out _);
         var offset = LookupStart(input);
         if (offset < 0) return false;
         var previousHigh256 = Vector256.Create(LookupPreviousHigh, LookupPreviousHigh);
@@ -125,6 +125,6 @@ internal static partial class Utf8ValidationCore
         // authority rather than introducing a separate tail decoder.
         var floor = offset - 1;
         while (floor > 0 && (input[floor] & 0xC0) == 0x80) floor--;
-        return TryValidate(input[floor..], false, out _, out _);
+        return TryValidate(input[floor..], out _, out _);
     }
 }

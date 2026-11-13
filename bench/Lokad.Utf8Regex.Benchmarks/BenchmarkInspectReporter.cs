@@ -2688,10 +2688,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CaseId                    : {caseId}");
         Console.WriteLine($"Origin                    : {origin}");
         Console.WriteLine($"InputBytes                : {census.InputBytes}");
-        Console.WriteLine($"ThrowIfInvalidMode        : {Utf8InputAnalyzer.SelectThrowIfInvalidOnlyMode(input)}");
         WriteUtf8LeadByteSample("First256", first256);
         WriteUtf8LeadByteSample("First4096", first4096);
-        Console.WriteLine($"InitialWideMode           : {census.InitialWideMode}");
         Console.WriteLine($"ScalarCount               : {census.ScalarCount}");
         Console.WriteLine($"FirstNonAsciiOffset       : {census.FirstNonAsciiOffset}");
         Console.WriteLine($"FirstTwoByteOffset        : {census.FirstTwoByteOffset}");
@@ -2762,7 +2760,7 @@ internal static partial class BenchmarkInspectReporter
                     Console.WriteLine($"CompiledGateUtf8LiteralFamily: {context.CompiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralFamilyCount}");
                     Measure("Utf8IsValid", iterations, context.ExecuteUtf8IsValidOnly);
                     Measure("Utf8InputValidateOnly", iterations, context.ExecuteUtf8InputValidateOnly);
-                    Measure("Utf8ValidationCoreOnly", iterations, context.ExecuteUtf8ValidationCoreWellFormedOnly);
+                    Measure("Utf8ValidityOnly", iterations, context.ExecuteUtf8ValidityOnly);
                     Measure("CompiledDirectCount", iterations, context.ExecuteUtf8CompiledDirectCountOnly);
                     if (context.CompiledUtf8Regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(context.InputBytes, out _))
                     {
@@ -2798,7 +2796,7 @@ internal static partial class BenchmarkInspectReporter
                         Utf8InputAnalyzer.IsAscii(context.InputBytes) ? context.InputBytes.Length : 0);
                     Measure("Utf8IsValid", iterations, context.ExecuteUtf8IsValidOnly);
                     Measure("Utf8InputValidateOnly", iterations, context.ExecuteUtf8InputValidateOnly);
-                    Measure("Utf8ValidationCoreOnly", iterations, context.ExecuteUtf8ValidationCoreWellFormedOnly);
+                    Measure("Utf8ValidityOnly", iterations, context.ExecuteUtf8ValidityOnly);
                     if (context.Operation == LokadPublicBenchmarkOperation.IsMatch)
                     {
                         Measure("DirectBoolOnly", iterations, context.ExecuteUtf8DirectBoolOnly);
@@ -2900,7 +2898,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledGateUtf8Literal      : {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralCount}");
         Console.WriteLine($"CompiledGateUtf8LiteralFamily: {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralFamilyCount}");
         Console.WriteLine($"CompiledThrowIfInvalidCount  : {compiledUtf8Regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount}");
-        Console.WriteLine($"ThrowIfInvalidMode          : {Utf8InputAnalyzer.SelectThrowIfInvalidOnlyMode(replicaCase.InputBytes)}");
         var inputShape = Utf8LeadByteSampling.DescribeLeadByteSample(replicaCase.InputBytes);
         Console.WriteLine($"ShapeSampleBytes            : {inputShape.SampleLength}");
         Console.WriteLine($"ShapeAsciiBytes             : {inputShape.AsciiBytes}");
@@ -2912,9 +2909,9 @@ internal static partial class BenchmarkInspectReporter
         Measure("ValidationOnly", compiledIterations, () => ExecuteValidationOnly(replicaCase.InputBytes));
         Measure("Utf8IsValid", compiledIterations, () => Utf8.IsValid(replicaCase.InputBytes) ? replicaCase.InputBytes.Length : 0);
         Measure("Utf8InputValidateOnly", compiledIterations, () => Utf8InputAnalyzer.ValidateOnly(replicaCase.InputBytes).Utf16Length);
-        Measure("Utf8ValidationCoreOnly", compiledIterations, () =>
+        Measure("Utf8ValidityOnly", compiledIterations, () =>
         {
-            Utf8ValidationCore.TryValidate(replicaCase.InputBytes, computeUtf16Length: false, out _, out _);
+            Utf8InputAnalyzer.TryValidateOnly(replicaCase.InputBytes, out _);
             return replicaCase.InputBytes.Length;
         });
         Measure("WellFormedOnly", compiledIterations, () =>

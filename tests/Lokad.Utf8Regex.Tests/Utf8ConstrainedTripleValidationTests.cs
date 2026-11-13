@@ -20,8 +20,8 @@ public sealed class Utf8ConstrainedTripleValidationTests
             input[prefix.Length + 1] = (byte)second;
             input[prefix.Length + 2] = (byte)third;
             var expected = Utf8.IsValid(input);
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, true, out _, out var scalarError));
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
+            Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
             Assert.Equal(scalarError, vectorError);
         }
     }
@@ -52,8 +52,8 @@ public sealed class Utf8ConstrainedTripleValidationTests
     private static void Check(ReadOnlySpan<byte> input)
     {
         var expected = Utf8.IsValid(input);
-        Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, true, out _, out var scalarError));
-        Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+        Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
+        Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
         Assert.Equal(scalarError, vectorError);
     }
 

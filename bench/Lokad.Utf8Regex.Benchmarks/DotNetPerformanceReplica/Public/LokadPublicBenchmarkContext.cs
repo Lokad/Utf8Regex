@@ -137,9 +137,9 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8InputValidateOnly() => Utf8InputAnalyzer.ValidateOnly(InputBytes).Utf16Length;
 
-    public int ExecuteUtf8ValidationCoreWellFormedOnly()
+    public int ExecuteUtf8ValidityOnly()
     {
-        return Utf8ValidationCore.TryValidate(InputBytes, computeUtf16Length: false, out _, out _)
+        return Utf8InputAnalyzer.TryValidateOnly(InputBytes, out _)
             ? InputBytes.Length
             : 0;
     }

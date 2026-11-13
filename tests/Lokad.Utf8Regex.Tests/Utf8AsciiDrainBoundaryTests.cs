@@ -34,8 +34,8 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var malformedAt = 6 + length / 2;
             input[malformedAt] = 0xFF;
             input[^1] = 0xFF;
-            Assert.False(Utf8ValidationCore.TryValidate(input, true, out _, out var scalarError));
-            Assert.False(Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+            Assert.False(Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
+            Assert.False(Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
             Assert.Equal(malformedAt, scalarError); Assert.Equal(malformedAt, vectorError);
         }
     }
@@ -53,7 +53,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var encoded = Encoding.UTF8.GetBytes(text);
             byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. encoded, 0xff];
             var subject = storage.AsSpan(offset, encoded.Length);
-            Assert.True(Utf8ValidationCore.TryValidate(subject, true, out var expected, out var error));
+            Assert.True(Utf8ValidationCore.TryValidate(subject, out var expected, out var error));
             Assert.Equal(-1, error);
             Assert.Equal(encoded.Length, expected.ByteLength);
             Assert.Equal(text.Length, expected.Utf16Length);
@@ -80,7 +80,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             new byte[] { 0xc2, (byte)'x' }, new byte[] { 0xed, 0xa0, 0x80 }, new byte[] { 0xf4, 0x90, 0x80, 0x80 } })
         {
             byte[] subject = [.. prefix, .. malformed];
-            Assert.False(Utf8ValidationCore.TryValidate(subject, true, out _, out var error));
+            Assert.False(Utf8ValidationCore.TryValidate(subject, out _, out var error));
             Assert.Equal(prefix.Length, error);
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));

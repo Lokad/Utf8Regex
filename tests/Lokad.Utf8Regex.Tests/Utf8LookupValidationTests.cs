@@ -41,7 +41,7 @@ public sealed class Utf8LookupValidationTests
             var input = storage.AsSpan(borrowedOffset, offset + sequence.Length + tail);
             var expected = Utf8.IsValid(input);
             CheckKernels(input, expected);
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, true, out _, out var scalarError));
+            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
             Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var actualError));
             Assert.Equal(scalarError, actualError);
         }

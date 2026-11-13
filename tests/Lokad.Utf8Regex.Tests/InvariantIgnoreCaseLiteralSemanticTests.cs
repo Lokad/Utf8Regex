@@ -19,6 +19,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     [InlineData("(cat)|(horse)", "😀é CAT λ Horse")]
     [InlineData(@"\b(?:cat|dog)\b", "éCAT😀 catDOG dog")]
     [InlineData("kilo|cat|dog", "é😀 KILO CAT dog")]
+    [InlineData("kilo", "中文KILO")]
+    [InlineData("kilo|cat|dog", "中文KILO CAT dog")]
     [InlineData("sherlock|moriarty", "éſherlock SHERLOCK 😀 moriarty")]
     [InlineData("cat||dog", "é😀 CAT dog")]
     public void FoldedFamiliesKeepAllPublicOperationsOnMixedSubjects(string pattern, string text)
