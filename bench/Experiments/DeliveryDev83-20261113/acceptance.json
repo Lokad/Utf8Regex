@@ -1,0 +1,227 @@
+{
+  "Source": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+  "Version": "0.5.0-dev.83",
+  "Published": false,
+  "Full": {
+    "Source": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+    "Version": "0.5.0-dev.83",
+    "RawSha256": "07F28F1835F07963BB0185A062CB0A1F61B3F751EC6B3F264DFD607BA358E3F3",
+    "Bytes": 34394289,
+    "Seconds": 2772.4876238,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "Windows": {
+    "Source": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+    "Version": "0.5.0-dev.83",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112256.0,
+    "Seconds": 603.3871285,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "7b8c22d0f082ddc378cf3e174edf9212c1de75e7",
+    "Version": "0.5.0-dev.83",
+    "Sha256": "F037C43E675F2DD33C6585FC6203598D504E4EC2B344E4EBA001787D0A99433E",
+    "Bytes": 46687929,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112256.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "Presentation": {
+    "FrozenProducersPreserved": true,
+    "MeasurementsRepeated": false,
+    "PackagesRepacked": false,
+    "OfflineWritersVerified": 4,
+    "BothRuntimeSourceGuardsPassed": true
+  },
+  "PreviousImmutableAssetsPreserved": 516,
+  "NewImmutableAssets": 8,
+  "SourceCI": {
+    "Id": 43497828832,
+    "Status": "success",
+    "Closed": true
+  },
+  "PostFreezeSpecificationCorrections": [],
+  "CallbackTiming": "Three corrected constant-callback operation definitions are frozen in this Full; rich checksum/semantic replay is outside timing in both languages.",
+  "OneShotPrefixTradeoff": {
+    "Receipt": "bench/Experiments/PythonOneShotPrefix-20261113/acceptance.json",
+    "DenseObservedPercent": [
+      33.9,
+      39.9
+    ],
+    "RawConfirmationExit": 1,
+    "CheckerOrderErratumProved": true,
+    "FurtherTrialsAllowed": false
+  },
+  "RemainingGaps": {
+    "Core": {
+      "StatusCounts": {
+        "Win": 121,
+        "Gap": 51,
+        "TieCandidate": 6
+      },
+      "MaterialCases": [
+        "aws-keys/quick",
+        "industry/leipzig-river-window-count",
+        "industry/leipzig-symbol-count",
+        "industry/mariomka-email-count",
+        "industry/mariomka-uri-count",
+        "industry/rust-sherlock-holmes-window-count",
+        "literal-alternate/sherlock-zh",
+        "literal/sherlock-casei-en",
+        "literal/sherlock-ru",
+        "literal/sherlock-zh"
+      ],
+      "LargestObservedSeparateRunIncrease": [
+        {
+          "Case": "bounded-repeat/capitals",
+          "Section": "dotnet-performance-compiled",
+          "PreviousUs": 9155.155555555555,
+          "CurrentUs": 9337.625,
+          "ObservedIncreaseUs": 182.4694444444449,
+          "ObservedPercent": 1.9930785811030693,
+          "CausalClaim": false,
+          "Status": "Win",
+          "Reason": null
+        },
+        {
+          "Case": "industry/leipzig-river-window-count",
+          "Section": "dotnet-performance-compiled",
+          "PreviousUs": 2013.5447368421053,
+          "CurrentUs": 2163.5333333333333,
+          "ObservedIncreaseUs": 149.988596491228,
+          "ObservedPercent": 7.448982570233786,
+          "CausalClaim": false,
+          "Status": "Gap",
+          "Reason": null
+        }
+      ]
+    },
+    "PythonRe": {
+      "StatusCounts": {
+        "ManagedFaster": 43,
+        "CpythonFaster": 34,
+        "Unqualified": 5,
+        "Equivalent": 2,
+        "Inconclusive": 6
+      },
+      "MaterialCases": [
+        "findall/full-strings",
+        "findall/many-capture-strings",
+        "findall/named-capture-strings",
+        "findall/one-capture-strings",
+        "replacement/evaluator-replace-string",
+        "replacement/evaluator-string",
+        "replacement/evaluator-utf8",
+        "split/captures",
+        "split/zero-width"
+      ],
+      "LargestObservedSeparateRunIncrease": [
+        {
+          "Case": "replacement/evaluator-string",
+          "Section": "Replace and Subn",
+          "PreviousUs": 401.0768,
+          "CurrentUs": 494.7823529411765,
+          "ObservedIncreaseUs": 93.7055529411765,
+          "ObservedPercent": 23.36349371022619,
+          "CausalClaim": false,
+          "Status": "CpythonFaster",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Case": "replacement/evaluator-utf8",
+          "Section": "Replace and Subn",
+          "PreviousUs": 380.19552238805966,
+          "CurrentUs": 467.1101851851852,
+          "ObservedIncreaseUs": 86.91466279712552,
+          "ObservedPercent": 22.860517202097164,
+          "CausalClaim": false,
+          "Status": "CpythonFaster",
+          "Reason": "Qualified paired evidence."
+        }
+      ]
+    },
+    "Pcre2": {
+      "StatusCounts": {
+        "ManagedFaster": 75,
+        "Inconclusive": 14,
+        "NativeFaster": 12,
+        "Excluded": 25
+      },
+      "MaterialCases": [],
+      "LargestObservedSeparateRunIncrease": [
+        {
+          "Case": "industry/leipzig-river-window-count",
+          "Section": "pcre2-managed-compatible-count",
+          "PreviousUs": 2675.4933333333333,
+          "CurrentUs": 2754.4357142857143,
+          "ObservedIncreaseUs": 78.94238095238097,
+          "ObservedPercent": 2.950572889450198,
+          "CausalClaim": false,
+          "Status": "ManagedFaster",
+          "Reason": null
+        },
+        {
+          "Case": "industry/leipzig-symbol-count",
+          "Section": "pcre2-managed-compatible-count",
+          "PreviousUs": 1618.896,
+          "CurrentUs": 1643.9360000000001,
+          "ObservedIncreaseUs": 25.04000000000019,
+          "ObservedPercent": 1.5467330822980685,
+          "CausalClaim": false,
+          "Status": "Inconclusive",
+          "Reason": "Lane-order median ratios differ by 3.58%."
+        }
+      ]
+    },
+    "Posix": {
+      "StatusCounts": {
+        "NativeFaster": 6,
+        "Measured": 9,
+        "Excluded": 8,
+        "ManagedFaster": 2
+      },
+      "MaterialCases": [
+        "capture/sku007"
+      ],
+      "LargestObservedSeparateRunIncrease": [
+        {
+          "Case": "projection/unicode-prefix-1",
+          "Section": "Operations",
+          "PreviousUs": 129.87283737024222,
+          "CurrentUs": 132.85604203152366,
+          "ObservedIncreaseUs": 2.983204661281434,
+          "ObservedPercent": 2.297019701492231,
+          "CausalClaim": false,
+          "Status": "ManagedFaster",
+          "Reason": null
+        },
+        {
+          "Case": "projection/unicode-prefix-4",
+          "Section": "Operations",
+          "PreviousUs": 130.6267605633803,
+          "CurrentUs": 133.08384201077197,
+          "ObservedIncreaseUs": 2.457081447391687,
+          "ObservedPercent": 1.8809939378382712,
+          "CausalClaim": false,
+          "Status": "ManagedFaster",
+          "Reason": null
+        }
+      ]
+    }
+  },
+  "Scope": "Exact pinned four-profile packages; corrected callback definitions, assembled text completion and one-shot prefix projection. One clean Full, original consumers and preserved uncertainty/adverse costs."
+}
