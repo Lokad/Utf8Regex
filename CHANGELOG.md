@@ -2,126 +2,57 @@
 
 ## Unreleased — 0.5.0
 
-- Add immutable `inputValidation` across Core and all adapters. `Validate` remains
-  the default whole-subject UTF-8 check; `AssumeValid` skips that pass when the
-  caller guarantees valid UTF-8 and unchanged borrowed input. Read-only
-  `InputValidation` reports the choice. Operations and cursors inherit it;
-  pattern/replacement checks, managed bounds, scalar semantics, cancellation and
-  resource limits remain active.
-- Target .NET 10 and .NET 11 in Core and the three adapters. Use the stable .NET 11
-  SDK; benchmarks default to .NET 11. Historical results keep their runtime labels.
-  Adapters require the exact matching Core package version.
-- Add the optional Lokad.Utf8Regex.Posix package: a case-sensitive scalar ERE
-  subset with leftmost-longest matching and hierarchical capture priority.
-  Match into caller-owned capture spans, count, or iterate with a disposable
-  cursor under the existing cancellation and finite resource policies. Named
+- Target .NET 10 and .NET 11 in Core and all three adapters. The stable .NET 11
+  runtime is the new benchmark baseline; historical measurements keep their
+  runtime labels. Adapters require the exact matching Core package version.
+- Add immutable `inputValidation` and read-only `InputValidation` across all
+  profiles. `Validate` remains the default whole-subject UTF-8 check;
+  `AssumeValid` omits that pass when the caller guarantees valid, unchanged
+  borrowed UTF-8. Operations and cursors inherit the policy. Pattern/replacement
+  checks, managed bounds, scalar matching and resource controls remain active.
+- Add Lokad.Utf8Regex.Posix: a case-sensitive scalar ERE subset with
+  leftmost-longest matching and hierarchical subexpression priority. Match into
+  caller-owned capture spans, count, or iterate with a disposable cursor. Named
   classes are fixed ASCII; locale collation, backreferences and lookarounds are
-  excluded. Whole-only operations omit unused capture histories; coordinate
-  projection reuses validated ranges, and ASCII classes reuse Core's masks.
-  Worst-case linear matching is not promised.
-- Compile UTF-8 patterns and parse UTF-8 replacement templates directly across
-  Core, PythonRe and PCRE2. Add UTF-8 capture-name lookup and caller-buffer pattern
-  metadata. Owned byte keys replace mandatory whole-pattern/template strings;
-  explicit text interoperability remains.
-- Add caller-funded Core and PCRE2 program owners, working admission and byte-template
-  replacement into caller-owned destinations. Extend PythonRe hosting with effective
-  flags, structured errors, funded compilation/cache storage and retained substitution
-  output. Program owners and retained outputs have deterministic disposal.
+  excluded. Proven first-acceptance cases keep their direct execution; general
+  captures select closed subexpression intervals after whole-match discovery.
+  Interval memo capacity can be quadratic and whole-match search can still be
+  expensive. Worst-case linear matching is not promised.
+- Add direct UTF-8 pattern/replacement parsing, byte capture-name lookup and
+  caller-buffer pattern metadata across Core, PythonRe and PCRE2. Explicit text
+  interoperability remains; owned byte keys avoid mandatory whole-pattern strings.
+- Add caller-funded Core/PCRE2 program owners and byte-template replacement into
+  caller-owned destinations. Extend PythonRe hosting with effective flags,
+  structured errors, funded compilation/cache storage and retained substitution
+  output. Program owners and retained outputs support deterministic disposal.
 - Add persistent memory cursors, byte-range captures and retained result receipts.
   Current-call tokens supplement original cancellation and absolute deadlines;
   returned results remain valid across cursor advances and program closure.
-- Improve literal, class/repeat, assertion, declaration and token matching through
-  checked span/SIMD search and scalar execution. More finite-policy operations
-  reuse proved fast paths, and captures/coordinates/output avoid unused scratch,
-  journals and copies. PythonRe Count, Search, Split and FullMatch share these
-  improvements while retaining ordered scalar verification and interruption.
-  Class/delimiter Count can reject impossible windows before VM admission.
-  Complete greedy scalar repeats can Count without unobserved capture storage
-  across Core, PythonRe and PCRE2, including finite policies.
-  Single-category and letter Count omit unused whole-input width metadata,
-  retaining strict validation and bounded scalar counting; AssumeValid can skip
-  that preparation entirely.
-  Strict validity checks vectorize eligible constrained three-byte sequences
-  while preserving exact malformed-input offsets and original interruption.
-  Math-symbol Count avoids repeated ASCII-counter setup across Unicode fragments.
-  Eligible PCRE2 math-symbol Count shares that bounded counter under the original
-  finite limits, token and deadline, without capture/VM scratch; numerical work
-  requirements can change.
-  Prepare eligible ASCII category membership once for captured-field matching,
-  with bounded construction work and admitted replacement masks.
-  Ordered windows reuse branch admission for bounded short-prefix comparisons;
-  long prefixes retain chunked checks and numerical work requirements can fall.
-  Exact-pair candidates preserve their verified prefix identity through window
-  search, avoiding repeated comparisons while retaining ordered suffix retries.
-  PythonRe can verify a bounded first candidate before redundant delimiter
-  search/rewind, retaining scalar capture verification and finite controls.
-  Complete ASCII-prefix/terminal-interval capture roots reuse the admitted repeat
-  runner for latest-capture operations, preserving LastIndex and retained results
-  while reducing dispatch and route-dependent work.
-  Two nonnested ASCII interval captures separated by an excluded exact literal
-  share those repeat loops while retaining both closing-journal entries.
-- Reduce repeated POSIX root-history scans and omit duplicate capture-body tags.
-  Prove fixed-length literal-alternative ties, prune redundant optional empty
-  iterations and discard history buffers in bounded chunks without changing
-  capture priority, working admission or interruption guarantees.
-  Prove first-acceptance selection for homogeneous literal repeats with captures
-  outside repeated bodies, retaining general history competition elsewhere.
-  Flat positive ASCII class runs also admit this proof when their sets are
-  mutually disjoint. A restricted repeated single-literal capture can select its
-  first acceptance while retaining required empty tails. Proven winners transfer
-  their admitted history instead of allocating and copying a second trace;
-  general capture competition remains. Proved scalar boundaries also bound
-  history competition before separators, without truncating the subject. The
-  whole-endpoint proof uses normal atom predicates on the next scalar, replacing
-  coarse alphabet construction and scanning ahead; proof work totals can change.
-  A bounded reachability refinement can exclude atoms that cannot occur at that
-  boundary, enabling more finite-work captures and counts without allocating
-  another state store. Confined leading parents reuse that proof, refreshed when
-  a better history changes their endpoint. Confined root alternatives, including
-  immediate nested alternatives, reuse those bounds and participating-branch
-  priority at a maximal whole endpoint. Longer winners retry an unproved whole
-  bound after earlier empty/short acceptances. General history competition remains.
-  Fixed scalar suffixes can also fix enclosing capture boundaries, allowing the
-  existing losing-history rule to prune descendant alternatives safely.
-  Synchronous POSIX operations use bounded stack state or an exact-size heap
-  buffer; cursors retain their owned state. Conservative working admission stays
-  unchanged while small synchronous calls avoid the state-array allocation.
-  PCRE2 commits word-only repeats
-  before required boundaries when shorter endpoints cannot succeed, avoiding
-  unused rewind workspace while retaining cancellation and working admission.
-  Its bounded ASCII Boolean compiler also accepts proved single-token subroutine
-  calls, assertion conditionals including terminal unnamed ACCEPT guards, and
-  outer word boundaries around languages with word-only ASCII endpoints;
-  controlled matching and capture results retain the owned VM.
-  Unlimited default `\X` Boolean calls avoid computing an unused cluster endpoint,
-  retaining strict whole-input validation and the candidate charge.
-  Unlimited complete greedy ASCII class-repeat Count scans maximal member runs
-  once; controlled, flagged and other scalar cases retain their existing runners.
-  Literal string substitutions reuse validated output sizes and decode no-match
-  input directly, avoiding an intermediate byte array. Byte outputs remain owned.
+- Reduce repeated preparation, candidate verification, scalar-repeat dispatch,
+  capture journaling, coordinate mapping and output copies. More finite-policy
+  operations reuse owned checked span/SIMD paths. Complete terminal repeats omit
+  unused assertion orchestration while assertion/history execution remains.
+  Performance depends on the operation and input policy; some capture, folded,
+  reverse, dense-match and controlled workloads use more time or memory.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
-  Fix literal Count throwing on a trailing partial Unicode needle after a match.
-- Reject null replacement evaluators even on misses; an already-cancelled explicit
-  token retains precedence.
+  Fix literal Count on a trailing partial Unicode needle after a match. Reject
+  null replacement evaluators even on misses; an already-cancelled explicit token
+  retains precedence.
 
-Performance changes include local trade-offs: some long capture histories,
-assertions, reverse, folded, dense-match and controlled workloads can take more
-execution time or memory. No blanket speedup or complete profile equivalence is
-promised. Refreshed public-operation tables and focused receipts retain allocations,
-uncertainty and adverse observations.
+Resource limits cover modeled major capacity and growth overlap, not total heap,
+RSS or arbitrary caller retention; execution defaults remain unlimited. Numerical
+work, depth and working/result requirements depend on the execution route and can
+change between versions. POSIX depth now includes explicit interval dependencies;
+its major memo growth is admitted conservatively before allocation. Recheck finite
+policies when upgrading. Temporary loans refund synchronously; original-token
+cancellation, deadlines, captures and conditional whole-input validation remain.
 
-Resource limits cover modeled major capacity and growth overlap, not total heap/RSS
-or arbitrary caller retention; execution defaults remain unlimited. Numerical work,
-depth and working/result requirements depend on the execution route and can change
-between versions. Recheck finite policies when upgrading. Admission still precedes
-covered acquisition, temporary loans refund synchronously, and default whole-subject
-UTF-8 validation, scalar matching, captures and interruption contracts remain.
-
-See the [migration guide](docs/MIGRATION.md) and the
-[Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md),
-[PCRE2](docs/SPEC-PCRE2.md) and [POSIX](docs/SPEC-POSIX.md) specifications for
-API contracts and profile limitations. Execution remains owned, managed and checked.
+No blanket speedup or complete .NET/Python/PCRE2/POSIX equivalence is promised.
+See the [migration guide](docs/MIGRATION.md), [Core](docs/SPEC.md),
+[PythonRe](docs/SPEC-PYTHONRE.md), [PCRE2](docs/SPEC-PCRE2.md) and
+[POSIX](docs/SPEC-POSIX.md) specifications for contracts and limitations.
+Execution remains owned, managed and checked.
 
 ## 0.4.0 — 2026-10-27
 
