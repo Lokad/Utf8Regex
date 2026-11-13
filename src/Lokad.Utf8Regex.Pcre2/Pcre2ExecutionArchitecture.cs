@@ -2420,7 +2420,8 @@ internal static class Pcre2GlobalOperationDriver
             input.Bytes[start.Value..].IndexOfAnyInRange((byte)0xf0, (byte)0xf4) < 0)
         {
             var suffix = Utf8ValidatedInput.BorrowBytes(input.Bytes[start.Value..]);
-            suffix.Describe(ref invocation);
+            // This kind's prepared counter consumes only bytes; its analyzer
+            // and the supplementary-scalar guard above establish eligibility.
             result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(suffix, new Utf8BytePosition(0));
             return true;
         }

@@ -5,6 +5,23 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
 {
+    [Theory]
+    [InlineData("é", 25, 1)]
+    [InlineData("中", 25, 1)]
+    [InlineData("K", 25, 1)]
+    [InlineData("é", 26, 0)]
+    [InlineData("😀", 25, 1)]
+    public void CountKeepsScalarWindowWidthsWithoutUnusedCoordinates(string scalar, int width, int expected)
+    {
+        var regex = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
+        Assert.IsType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        const string prefix = "😀π ";
+        var text = prefix + "Holmes" + string.Concat(Enumerable.Repeat(scalar, width)) + "Watson";
+        var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
+        var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
+        Assert.Equal(expected, regex.Count(input, Encoding.UTF8.GetByteCount(prefix)));
+    }
+
     [Fact]
     public void SymmetricOrderedWindowReusesPreparedCountOnly()
     {
