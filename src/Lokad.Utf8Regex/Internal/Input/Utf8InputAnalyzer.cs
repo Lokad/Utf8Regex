@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
@@ -71,7 +72,9 @@ internal static class Utf8InputAnalyzer
         // Other inputs retain the established UTF-8 selector and error offsets.
         isAscii = IsAscii(input);
         if (isAscii ||
-            SelectThrowIfInvalidOnlyMode(input) == ThrowIfInvalidOnlyMode.Utf8IsValid && Utf8.IsValid(input))
+            (Avx2.IsSupported || Vector512.IsHardwareAccelerated && Avx512BW.IsSupported
+                ? Utf8ValidationCore.IsValidLookup(input)
+                : SelectThrowIfInvalidOnlyMode(input) == ThrowIfInvalidOnlyMode.Utf8IsValid && Utf8.IsValid(input)))
         {
             errorOffset = -1;
             return true;

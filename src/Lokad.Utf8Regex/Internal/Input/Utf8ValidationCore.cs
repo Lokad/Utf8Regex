@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-internal static class Utf8ValidationCore
+internal static partial class Utf8ValidationCore
 {
     private const int DenseThreeByteLeadThreshold = 2;
     private const int ThreeByteIdleBlockLimit = 4;
