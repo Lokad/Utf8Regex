@@ -166,5 +166,85 @@
       ]
     }
   },
-  "Scope": "Exact pinned four-profile packages; canonical profile text contracts; actual consumer acceptance and full workload/verification completion with an explicitly preserved presentation failure and repair."
+  "Scope": "Exact pinned four-profile packages; canonical profile text contracts; actual consumer acceptance and full workload/verification completion with an explicitly preserved presentation failure and repair.",
+  "PresentationCI": {
+    "Source": "a5c1ee344ab7005ec84a0b2ef390a9f43980c610",
+    "Id": 43437006374,
+    "Status": "success",
+    "Closed": true
+  },
+  "SourceSnapshotChecks": [
+    {
+      "Platform": "windows",
+      "Profile": "Core",
+      "Counts": [
+        2,
+        2
+      ],
+      "Sha256": "CE8577873996CA3B3EFAF34F5EA5DDB964DB66CC423E823FB63B4BD6723ECCA7"
+    },
+    {
+      "Platform": "windows",
+      "Profile": "PythonRe",
+      "Counts": [
+        1,
+        1
+      ],
+      "Sha256": "37AF288B260BF1B409FF393E50C13C1CAD0D69DA5BEB6A376F74BC03C7C2C996"
+    },
+    {
+      "Platform": "windows",
+      "Profile": "Pcre2",
+      "Counts": [
+        1,
+        1
+      ],
+      "Sha256": "A2ABA050AD76A2398E61844D9906B3AB58EE6E4E34EEFEB84810DB6CB87F646A"
+    },
+    {
+      "Platform": "windows",
+      "Profile": "Posix",
+      "Counts": [
+        5,
+        5
+      ],
+      "Sha256": "73991C2E464C92A67919B4B09CE2A57EF68604DD634D711A65992099B323FCE9"
+    },
+    {
+      "Platform": "linux",
+      "Profile": "Core",
+      "Counts": [
+        2,
+        2
+      ],
+      "Sha256": "DBB8BCCD51FE377B83835BBC2F4A10AE397841C36FB054B98E8D45DD1DFB44B7"
+    },
+    {
+      "Platform": "linux",
+      "Profile": "PythonRe",
+      "Counts": [
+        1,
+        1
+      ],
+      "Sha256": "FB1B66E19FAFE6A055AA967DD8E03D2815C98618BAD4177498C5A9F98BC0DCB1"
+    },
+    {
+      "Platform": "linux",
+      "Profile": "Pcre2",
+      "Counts": [
+        1,
+        1
+      ],
+      "Sha256": "0DF62A4B3C95598E57FB6601EBB7640F7A57E5A33156E99CBB3D76DE7D14FC72"
+    },
+    {
+      "Platform": "linux",
+      "Profile": "Posix",
+      "Counts": [
+        5,
+        5
+      ],
+      "Sha256": "6A6BE6E088B57C1FA486B12FB98FCC04A0DDFF1E259808D6F2C162129F521C82"
+    }
+  ]
 }

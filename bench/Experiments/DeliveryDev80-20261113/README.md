@@ -28,7 +28,9 @@ Frozen producer `15b248dc3f74df42f8ff669ca05eec6570728798`; SDK11.0.100/.NET11.0
 - Imported generated summaries/tables pass offline writers and both-runtime
   Windows snapshot checks. Renderer changes and comment/prose corrections do not
   rebuild/repack the frozen producer DLL/PDBs. Source CI43427357266 is green/closed;
-  final presentation CI is recorded after it finishes.
+  presentation CI43437006374 also passed both platforms and is closed. Matching
+  source snapshot checks pass perruntime/OS; the new marker assertion is covered
+  by both-platform source CI.
 
 ## Current public costs and priorities
 
@@ -66,7 +68,7 @@ execution remain. No public per-call validation token or new profile framework.
 
 [Useful follow-through](../PythonStringSizing-20261113/README.md) removes Python's
 unused-suffix string sizing and futile beginning-anchor searches. Its bounded
-public comparison observed242.198→0.499us for an anchored1MiB subject,136B unchanged;
+public comparison observed242.198â†’0.499us for an anchored1MiB subject,136B unchanged;
 the dense capture case cost about5% more,242008B unchanged. Accept that local
 tradeoff. Current full-catalog dense/string/split observations also moved adversely
 (many captures674.591us versus historical623.877us; full strings456.068 versus
