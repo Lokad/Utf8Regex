@@ -61,8 +61,8 @@ internal static partial class Utf8SliceRunner
         if (slot != 0)
         {
             // A required excluded literal fixes the first greedy endpoint.
-            // Keep the original two closing entries: detailed Python results
-            // still observe which group closed last.
+            // Only the final close is observed: this complete root cannot
+            // roll back, and detailed Python results ask which group closed last.
             if (prefixLength <= 6 ||
                 code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
                 code[1] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, B: 0,
@@ -106,8 +106,7 @@ internal static partial class Utf8SliceRunner
         if (last.EndIndex < 0 || last.Breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, last.Breach, null, null); return true; }
         if (slot != 0 && captureStarts.Length != 0 &&
-            (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
-             !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
+            !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation))
         { outcome = new(false, -1, stacks.Breach, null, null); return true; }
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
