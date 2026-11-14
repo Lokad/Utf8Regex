@@ -70,7 +70,7 @@ public sealed class PosixWorkspaceTests
         Assert.False(PosixProgram.Compile("a?(ab*)?", default).FirstAcceptanceIsLongest);
         Assert.True(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("(a*)(b*)", default).FirstAcceptanceIsLongest);
+        Assert.True(PosixProgram.Compile("(a*)(b*)", default).GreedyAsciiRuns);
     }
     [Fact]
     public void FixedAlternativeProofKeepsUnequalNestedAndConsumingTailsGeneral()
@@ -189,11 +189,12 @@ public sealed class PosixWorkspaceTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void UniqueClassRunRetainsOriginalInterruptionAndParentLoans(bool timeout)
+    [InlineData("^([a-z]+)([0-9]+)$", false)]
+    [InlineData("^([a-z]+)([0-9]+)$", true)]
+    [InlineData("(a*)(a*)", false)]
+    [InlineData("(a*)(a*)", true)]
+    public void UniqueClassRunRetainsOriginalInterruptionAndParentLoans(string pattern, bool timeout)
     {
-        const string pattern = "^([a-z]+)([0-9]+)$";
         var regex = new Utf8PosixRegex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20),
             resourcePolicy: new() { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20 });
         var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "0");
@@ -273,10 +274,12 @@ public sealed class PosixWorkspaceTests
         Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
     }
 
-    [Fact]
-    public void PrivateRunBodiesKeepPublicWorkRefusalAndOriginalCancellation()
+    [Theory]
+    [InlineData("([a-z]+)[0-9]+")]
+    [InlineData("a*([a-b]*)")]
+    [InlineData("(a*)(a*)")]
+    public void RunBodiesKeepPublicWorkRefusalAndOriginalCancellation(string pattern)
     {
-        const string pattern = "([a-z]+)[0-9]+";
         var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
             { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1024 });
         var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "12");

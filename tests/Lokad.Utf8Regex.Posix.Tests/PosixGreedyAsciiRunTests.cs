@@ -27,7 +27,10 @@ public sealed class PosixGreedyAsciiRunTests
             "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}", "(a*)(a*)",
             "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)" })
             Assert.True(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
-        foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)", "(a*)(a+)",
+        // The older homogeneous-literal proof can still accept (a*)(a+),
+        // but its required overlapping tail cannot use the direct run loop.
+        Assert.False(PosixProgram.Compile("(a*)(a+)", default).GreedyAsciiRuns);
+        foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)",
             "(a*)^(a*)", "(a*)^(b*)", "^([a-z]*)([0-9]+)$",
             "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
             "([a-z])+[0-9]+", "[a-z]+([0-9])+", "[a-z]+([0-9]+)+", "([a-z]+[0-9]+)+" })
@@ -99,17 +102,23 @@ public sealed class PosixGreedyAsciiRunTests
                         Check(expected.Groups[slot], output[slot]);
                     if (width > regex.GroupCount + 1) Assert.False(output[^1].Success);
                 }
-                Assert.Equal(oracle.Matches(text, floor).Count, regex.Count(input, byteFloor));
+                Assert.Equal(ScalarMatches(floor).Count(), regex.Count(input, byteFloor));
             }
             using var cursor = regex.CreateMatchCursor(input);
             var groups = new Utf8ValueMatch[regex.GroupCount + 1];
-            foreach (Match expected in oracle.Matches(text))
+            foreach (var expected in ScalarMatches(0))
             {
                 Assert.True(cursor.MoveNext(groups, out var actual));
                 Check(expected, actual);
                 for (var slot = 0; slot < groups.Length; slot++) Check(expected.Groups[slot], groups[slot]);
             }
             Assert.False(cursor.MoveNext(out _));
+
+            // ASCII-only consuming atoms cannot match a surrogate. BCL empty
+            // progression also visits the middle of a supplementary scalar;
+            // exclude only those positions from this otherwise shared oracle.
+            IEnumerable<Match> ScalarMatches(int floor) => oracle.Matches(text, floor).Cast<Match>()
+                .Where(match => match.Index == text.Length || !char.IsLowSurrogate(text[match.Index]));
 
             void Check(Group expected, Utf8ValueMatch actual)
             {
