@@ -130,6 +130,43 @@ public sealed class Utf8PreparedFamilyCandidateTests
     }
 
     [Theory]
+    [InlineData(1023)] [InlineData(1024)] [InlineData(1025)]
+    public void LongSharedPrefixesKeepUnsearchedPrefixBytesAndWindowTails(int length)
+    {
+        var prefix = new string('a', length);
+        var literals = Enumerable.Range(0, 10).Select(i => Encoding.UTF8.GetBytes(prefix + i + "tail")).ToArray();
+        var plan = Plan(literals, false);
+        Assert.True(plan.AlternateLiteralSearch!.Value.SearchData.Buckets[0].PrefixDiscriminator.HasValue);
+        foreach (var padding in new[] { 0, 1024, 2047 })
+        {
+            var input = Encoding.UTF8.GetBytes(new string('x', padding) + prefix[..^1] + "!3tail " +
+                prefix + "2fail " + prefix + "7tail");
+            var expected = input.AsSpan().IndexOf(literals[7]);
+            var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.True(invocation.Ledger.TryReserve(7));
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(
+                plan, input, 0, input.Length, ref invocation, out var candidate));
+            Assert.Equal(expected, candidate); Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Fact]
+    public void SharedPrefixMayEndInsideAScalarWithoutAdmittingTheWrongTail()
+    {
+        var literals = Enumerable.Range(0x1f600, 10).Select(i => Encoding.UTF8.GetBytes(char.ConvertFromUtf32(i) + "a")).ToArray();
+        var plan = Plan(literals, false);
+        Assert.Equal(3, plan.AlternateLiteralSearch!.Value.SearchData.Buckets[0].PrefixDiscriminator.Offset);
+        foreach (var padding in new[] { 300, 2045, 2047, 2048 })
+        {
+            var input = Encoding.UTF8.GetBytes(new string('x', padding) + "😀b😃a");
+            var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(
+                plan, input, 0, input.Length, ref invocation, out var candidate));
+            Assert.Equal(padding + 5, candidate);
+        }
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void SelectedLongNeedleKeepsOriginalInterruptionDuringVerification(bool expire)
     {

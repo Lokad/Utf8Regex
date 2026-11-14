@@ -80,22 +80,30 @@ internal static partial class Utf8SearchExecutor
             ArgumentOutOfRangeException.ThrowIfNegative(start);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-            var first = buckets[0].FirstByte;
+            // The prepared discriminator proves this prefix is shared by every
+            // branch. Search it once instead of replaying a full confirmation
+            // after each first-byte hit. Keep a bounded complete-prefix window;
+            // long prefixes and selected tails retain chunked verification.
+            var prefixLength = Math.Min(discriminator.Offset, 1024);
+            var prefix = buckets[0].Literals[0].AsSpan(0, prefixLength);
+            var verified = prefixLength == discriminator.Offset ? prefixLength + 1 : prefixLength;
             for (var low = start; low < end;)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                var count = Math.Min(2048, end - low);
-                var relative = input.Slice(low, count).IndexOf(first);
-                if (relative < 0) { low += count; continue; }
+                var starts = Math.Min(2049 - prefixLength, end - low);
+                var block = input.Slice(low, Math.Min(starts + prefixLength - 1, end - low));
+                var relative = block.IndexOf(prefix);
+                if (relative < 0) { low += starts; continue; }
                 var at = low + relative;
                 // The prepared column is unique across all branches. A selected
-                // byte proves no prefix: confirm the entire needle under budget.
+                // byte plus the searched prefix proves no remaining tail.
                 if ((uint)discriminator.Offset < (uint)(end - at) &&
                     discriminator.LiteralsByByte[input[at + discriminator.Offset]] is { } literal &&
                     literal.Length <= end - at)
                 {
-                    breach = TryCompareLiteral(input.Slice(at, literal.Length), literal, false,
+                    breach = TryCompareLiteral(input.Slice(at + verified, literal.Length - verified),
+                        literal.AsSpan(verified), false,
                         ref invocation, out var equal);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (equal)

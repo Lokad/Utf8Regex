@@ -82,6 +82,13 @@ between charged entry/completion checkpoints. It returns only a necessary start;
 the scalar verifier retains ordered matching and captures. Reusing shared prefixes
 can lower numerical work charges without changing allocation or admission scope.
 
+A prepared exact family with one first-byte bucket and a unique discriminator
+can search its shared prefix in bounded windows, then check the discriminator
+and only the still-unproved tail. Prefixes longer than1024 bytes retain chunked
+confirmation beyond that searched prefix. Earliest complete candidate selection,
+scalar verification/captures and original interruption remain; avoiding repeated
+prefix confirmation can lower work units without adding storage.
+
 Search-based operations can also narrow candidate starts for a positive greedy
 ASCII set repeat followed directly by an exact ASCII delimiter, allowing capture
 markers between them, including short subjects of at least 16 bytes.
