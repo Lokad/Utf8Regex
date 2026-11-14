@@ -1,0 +1,156 @@
+{
+  "Source": "b2ade2201c4ba5badf89df47d694e526cf44f017",
+  "RawSha256": "5FC751E15BF121E63076F5CC37D7FD55605490C891E55F086D034CCEC1C0DD43",
+  "DiagnosticRuns": 1,
+  "Confirmations": 0,
+  "ProducerChanges": false,
+  "PackagesRepacked": false,
+  "FullRepeated": false,
+  "TerminalExit": 0,
+  "Result": {
+    "Pid": 687214,
+    "StartupProcessors": 8,
+    "Description": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "Runtime": ".NET 11.0.0",
+    "Core": {
+      "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=38103652DAD5CE26E48B97C89726917FA0DB421351EA525C7E1FFC7C42CCA9D9",
+      "PdbSha256": "B9464DA6BA78B79B7A74E235A9BCFAE0BBCC631ED8C35A5F49EC7A206069C156",
+      "Documents": 343
+    },
+    "ManagedMembers": {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    "InputBytes": 6839410,
+    "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+    "Pattern": "[\\w\\.+-]+@[\\w\\.-]+\\.[\\w\\.-]+",
+    "Provenance": "DotNetPerformanceReplica/Public/Data/mariomka.txt.gz",
+    "ExpectedMatches": 92,
+    "WarmCalls": 1568,
+    "ProfileCalls": 16352,
+    "ProfileMilliseconds": 15008.4699,
+    "InputContract": "Core default whole-subject Validate; public compiled Count on unchanged shared catalog text. Every result checked after32-call batches. CPU attribution only, not throughput/parity/speedup."
+  },
+  "Scope": "ONE whole-process cpu-clock:u/997Hz CPU IP capture. Includes startup, warmup, public Core compiled email Count batches, checksum, GC and runtime work. Flat self samples with JIT map addresses; inlined costs belong to their containing method. Not per-phase timings, a public speedup, causal optimization proof or an exact CPU percentage. Managed sampled-thread-time PollGC shares are not used as CPU attribution.",
+  "Samples": 17127,
+  "ManagedMapSamples": 16361,
+  "NativeOrUnresolvedSamples": 766,
+  "SampleSpanSeconds": 17.157079000025988,
+  "TopRows": [
+    {
+      "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Input.Utf8ValidationCore::IsValidLookup512(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>)[OptimizedTier1]",
+      "Samples": 11143,
+      "Percent": 65.06101477199743,
+      "MapRanges": [
+        [
+          "0x7deba6b6ce00",
+          "0x7deba6b6d111"
+        ]
+      ]
+    },
+    {
+      "Name": "int32 [System.Private.CoreLib] System.SpanHelpers::NonPackedIndexOfValueType(!!0&,!!0,int32)[OptimizedTier1]",
+      "Samples": 4099,
+      "Percent": 23.932971331815263,
+      "MapRanges": [
+        [
+          "0x7deba6b5a520",
+          "0x7deba6b5a7c7"
+        ]
+      ]
+    },
+    {
+      "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::OwnedSliceCountFromByte(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int32,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)[OptimizedTier1]",
+      "Samples": 924,
+      "Percent": 5.394990366088632,
+      "MapRanges": [
+        [
+          "0x7deba6b6da80",
+          "0x7deba6b6f8ab"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libcoreclr.so [unknown]",
+      "Samples": 376,
+      "Percent": 2.195364045075028,
+      "MapRanges": []
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libclrjit.so [unknown]",
+      "Samples": 256,
+      "Percent": 1.4947159455829977,
+      "MapRanges": []
+    },
+    {
+      "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Input.Utf8ValidationCore::IsValidLookup512(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>)[OptimizedTier1OSR]",
+      "Samples": 122,
+      "Percent": 0.7123255678168973,
+      "MapRanges": [
+        [
+          "0x7deba6b4e200",
+          "0x7deba6b4e415"
+        ],
+        [
+          "0x7deba6b65d40",
+          "0x7deba6b65f38"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/System.Private.CoreLib.dll [unknown]",
+      "Samples": 64,
+      "Percent": 0.3736789863957494,
+      "MapRanges": []
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 [unknown]",
+      "Samples": 23,
+      "Percent": 0.13429088573597245,
+      "MapRanges": []
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libSystem.IO.Compression.Native.so [unknown]",
+      "Samples": 20,
+      "Percent": 0.11677468324867168,
+      "MapRanges": []
+    },
+    {
+      "Name": "valuetype Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8WordDelimitedTokenExecutor::TryCountWellFormed(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&,int32&)[OptimizedTier1OSR]",
+      "Samples": 20,
+      "Percent": 0.11677468324867168,
+      "MapRanges": [
+        [
+          "0x7deba6b522e0",
+          "0x7deba6b53856"
+        ],
+        [
+          "0x7deba6b66580",
+          "0x7deba6b678d0"
+        ]
+      ]
+    },
+    {
+      "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8SliceScalarClasses::IsWord(valuetype [System.Runtime]System.Text.Rune,bool,bool)[OptimizedTier1]",
+      "Samples": 18,
+      "Percent": 0.10509721492380451,
+      "MapRanges": [
+        [
+          "0x7deba6b66330",
+          "0x7deba6b66439"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libcrypto.so.3 [unknown]",
+      "Samples": 11,
+      "Percent": 0.06422607578676943,
+      "MapRanges": []
+    }
+  ],
+  "OtherSamples": 51
+}
