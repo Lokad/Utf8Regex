@@ -1,0 +1,257 @@
+{
+  "Acceptance": {
+    "BeforeCheckout": "f4049b6775a3419da79c788bcec5bb622e76334d",
+    "BeforePythonProducer": "834162dffe2d15be4245ef3f4e6f72fb83e8b84d",
+    "After": "462bd67d89cfc2ff3d8c4b6c3029ed6f03a315a6",
+    "BaselineReused": true,
+    "SharedCoreUnchanged": true,
+    "CallerUnchanged": true,
+    "PublicOutputsEqual": true,
+    "Comparisons": 1,
+    "Confirmations": 0,
+    "SampleTargetMs": 250,
+    "WarmupMs": 1000,
+    "Results": [
+      {
+        "Framework": "net10.0",
+        "Counts": {
+          "total": "121",
+          "executed": "121",
+          "passed": "121",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      {
+        "Framework": "net11.0",
+        "Counts": {
+          "total": "121",
+          "executed": "121",
+          "passed": "121",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    ],
+    "PackagesRepacked": false
+  },
+  "Rows": [
+    {
+      "Id": "text/early-unicode",
+      "InputBytes": 262159,
+      "Callback": {
+        "BeforeUs": 1151.8899038461539,
+        "AfterUs": 505.2498823529412,
+        "ObservedPercent": -56.13731132932802,
+        "BeforeBytes": 1066811.2692307692,
+        "AfterBytes": 525942.5129411764,
+        "BeforeRangeUs": [
+          1133.4283653846155,
+          1178.2475961538462
+        ],
+        "AfterRangeUs": [
+          499.8807058823529,
+          525.7654117647058
+        ],
+        "MinimumSampleMs": 212.4493
+      },
+      "TemplateControl": {
+        "BeforeUs": 498.86831460674154,
+        "AfterUs": 504.2879606879607,
+        "ObservedPercent": 1.0863881153669874,
+        "BeforeBytes": 525530.1393258427,
+        "AfterBytes": 525521.5528255529,
+        "BeforeRangeUs": [
+          485.421797752809,
+          516.6384269662922
+        ],
+        "AfterRangeUs": [
+          485.75307125307125,
+          515.8211302211303
+        ],
+        "MinimumSampleMs": 197.7015
+      }
+    },
+    {
+      "Id": "bytes/early-unicode",
+      "InputBytes": 262159,
+      "Callback": {
+        "BeforeUs": 1310.8132596685084,
+        "AfterUs": 715.3675078864353,
+        "ObservedPercent": -45.42567351909877,
+        "BeforeBytes": 1066788.950276243,
+        "AfterBytes": 525884.5678233438,
+        "BeforeRangeUs": [
+          1299.8458563535912,
+          1324.3154696132597
+        ],
+        "AfterRangeUs": [
+          711.5356466876972,
+          746.2047318611988
+        ],
+        "MinimumSampleMs": 225.5568
+      },
+      "TemplateControl": {
+        "BeforeUs": 52.46160458452722,
+        "AfterUs": 55.917951425554385,
+        "ObservedPercent": 6.588336114382898,
+        "BeforeBytes": 525482.1394460363,
+        "AfterBytes": 525496.1723336853,
+        "BeforeRangeUs": [
+          51.39493791786055,
+          64.54083094555874
+        ],
+        "AfterRangeUs": [
+          54.68048574445618,
+          65.75784582893348
+        ],
+        "MinimumSampleMs": 215.242
+      }
+    },
+    {
+      "Id": "text/finite-live",
+      "InputBytes": 262159,
+      "Callback": {
+        "BeforeUs": 1126.3823788546256,
+        "AfterUs": 515.2355889724311,
+        "ObservedPercent": -54.2574885185656,
+        "BeforeBytes": 1066898.9251101322,
+        "AfterBytes": 526012.1904761905,
+        "BeforeRangeUs": [
+          1103.2008810572688,
+          1233.2321585903085
+        ],
+        "AfterRangeUs": [
+          498.7072681704261,
+          544.7887218045113
+        ],
+        "MinimumSampleMs": 198.9842
+      },
+      "TemplateControl": {
+        "BeforeUs": 484.22960372960375,
+        "AfterUs": 500.59977827051,
+        "ObservedPercent": 3.3806637212638213,
+        "BeforeBytes": 525682.2191142191,
+        "AfterBytes": 525655.0243902439,
+        "BeforeRangeUs": [
+          480.31958041958046,
+          497.7808857808858
+        ],
+        "AfterRangeUs": [
+          497.13170731707316,
+          510.6319290465632
+        ],
+        "MinimumSampleMs": 206.0571
+      }
+    },
+    {
+      "Id": "text/late-unicode",
+      "InputBytes": 32780,
+      "Callback": {
+        "BeforeUs": 134.17857905982905,
+        "AfterUs": 145.37434588385452,
+        "ObservedPercent": 8.34393008367853,
+        "BeforeBytes": 200160,
+        "AfterBytes": 200160,
+        "BeforeRangeUs": [
+          132.6974893162393,
+          137.7207264957265
+        ],
+        "AfterRangeUs": [
+          142.9274409700064,
+          176.42514358647097
+        ],
+        "MinimumSampleMs": 223.9673
+      },
+      "TemplateControl": {
+        "BeforeUs": 61.0293918100315,
+        "AfterUs": 65.62890644285362,
+        "ObservedPercent": 7.536556561368335,
+        "BeforeBytes": 132232,
+        "AfterBytes": 132232,
+        "BeforeRangeUs": [
+          60.411969953961716,
+          62.17380663920523
+        ],
+        "AfterRangeUs": [
+          64.32473463342384,
+          65.81434213774378
+        ],
+        "MinimumSampleMs": 249.3202
+      }
+    },
+    {
+      "Id": "text/bulk-control",
+      "InputBytes": 3328,
+      "Callback": {
+        "BeforeUs": 213.79026248941574,
+        "AfterUs": 213.75804081632654,
+        "ObservedPercent": -0.015071628012430782,
+        "BeforeBytes": 81432,
+        "AfterBytes": 81432,
+        "BeforeRangeUs": [
+          211.46477561388653,
+          217.01049957662997
+        ],
+        "AfterRangeUs": [
+          208.53755102040816,
+          215.4823673469388
+        ],
+        "MinimumSampleMs": 249.7399
+      },
+      "TemplateControl": {
+        "BeforeUs": 52.170392196707986,
+        "AfterUs": 51.38272650296359,
+        "ObservedPercent": -1.509794464980263,
+        "BeforeBytes": 7320,
+        "AfterBytes": 7320,
+        "BeforeRangeUs": [
+          50.84872993294046,
+          52.92552326762853
+        ],
+        "AfterRangeUs": [
+          50.91881879762913,
+          51.89553344623201
+        ],
+        "MinimumSampleMs": 240.5405
+      }
+    }
+  ],
+  "BeforePlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+  "AfterPlacement": "least-contended allowed processor (0x4; Linux efficiency class unknown)",
+  "RawSha256": "31F40DF64152D543D4978B40A35FF18EA1210E3996580BEC1D4B28429D5B7EF7",
+  "OffVmVerified": true,
+  "KeeperReleased": true,
+  "FurtherAttemptsAllowed": false,
+  "WindowsPythonChecksPerTarget": 5159,
+  "NewFocusedTests": 19,
+  "OriginalWorkingLimitBytes": 1048576,
+  "OriginalRequestedWorkingBytes": 1066048,
+  "OriginalPublicRefusals": 3,
+  "SamePolicyNowAdmits": 3,
+  "ExistingImmutableAssetsPreserved": 532,
+  "NotInFrozenDev84Packages": true,
+  "Decision": "Promote; preserve late+8.34% and control movement; one pair closed without confirmation."
+}
