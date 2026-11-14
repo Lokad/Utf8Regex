@@ -37,33 +37,17 @@
   Current-call tokens supplement original cancellation and absolute deadlines;
   returned results remain valid across cursor advances and program closure.
 - Reduce repeated preparation, candidate verification, scalar-repeat dispatch,
-  capture journaling, coordinate mapping and output copies. More finite-policy
-  operations reuse owned checked span/SIMD paths. Complete terminal repeats omit
-  unused assertion orchestration while assertion/history execution remains.
-  Scalar-coordinate queries prepare only the requested prefix; later index
-  growth admits old/new working capacity together.
-  PythonRe shares lazy scalar/UTF-16 prefix coordinates across detailed results,
-  cursors and callbacks, including lookaround captures. Empty name metadata and
-  captures equal to group zero omit redundant publication/projection work.
-  Distant scalar-only queries can require more working capacity for the shared
-  two-count index. False literal prefixes avoid repeated verification; direct
-  class/delimiter eligibility is prepared once per discovery. Raw callback output keeps
-  its strict completed-stream UTF-8 check without unused coordinate metadata.
-  Core Count reuses existing ASCII validity proofs and omits discarded literal
-  coordinates; checked folded search compares punctuation anchors exactly.
-  Boolean admission omits unused subject coordinates. Complete Unicode word-run
-  Count can use constant working space, including mixed and supplementary text;
-  this reduces finite-policy admission requirements, with an intentional cost
-  on ASCII-only word counting.
-  Short string output handles one-byte ASCII directly. POSIX suffix captures
-  reuse the whole match's ending coordinate. Proven disjoint ASCII runs keep
-  unique capture boundaries in existing state without an occurrence trace. Forward
-  POSIX cursors reuse previously projected ends rather than rescanning prefixes.
-  PCRE2 positive ASCII-range Count
-  can keep its workspace-free byte counter on valid mixed Unicode text, with
-  unchanged native UTF checking and basic work/interruption controls.
-  Performance depends on the operation and input policy; some capture, folded,
-  reverse, dense-match and controlled workloads use more time or memory.
+  capture journaling, coordinate mapping and output copies. PythonRe shares lazy
+  scalar/UTF-16 prefixes across detailed results, cursors and callbacks; distant
+  scalar-only queries can need more working capacity. Core Count omits unused
+  coordinates and more finite-policy operations use checked span/SIMD paths.
+  Proven POSIX disjoint ASCII runs, including private class-repeat bodies, avoid
+  general capture-history storage. Adjacent captures and forward cursors reuse
+  projected coordinates. Complete boundary roots share the existing predicate
+  while preserving workspace admission and step-based deadline polling. Raw
+  callback output retains its strict completed-stream UTF-8 check.
+  Performance and numerical work/working admission depend on operation, policy
+  and input; some workloads use more time or memory. Recheck finite limits.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count on a trailing partial Unicode needle after a match. Reject
