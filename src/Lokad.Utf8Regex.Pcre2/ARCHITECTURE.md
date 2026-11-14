@@ -13,7 +13,7 @@ Compilation is one-way:
 
 Invocation is one-way:
 
-`validated UTF-8 subject -> operation program -> runner/cursor -> public projection`
+`UTF-8 subject -> native UTF-window checking or trusted bypass -> operation program -> runner/cursor -> public projection`
 
 Backtracking Count and search keep frame/repeat journals and lazily acquired
 fixed vectors under one lexical owner. Candidate attempts borrow and reset that

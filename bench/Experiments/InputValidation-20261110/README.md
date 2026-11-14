@@ -1,6 +1,8 @@
 # Immutable subject validation policy
 
-Core/PythonRe/PCRE2/Posix now select `inputValidation` once at construction or
+Historical development API and .NET11 RC3 measurements. PythonRe/POSIX now require caller-valid text without a subject-validation option, and PCRE2 checks its native UTF window. See the current [Core](../../../docs/SPEC.md#subject-input-validation), [PythonRe](../../../docs/SPEC-PYTHONRE.md#subject-text-contract), [POSIX](../../../docs/SPEC-POSIX.md) and [PCRE2](../../../docs/SPEC-PCRE2.md#subject-input-validation) contracts. Original observations below are preserved.
+
+At the recorded revision, Core/PythonRe/PCRE2/Posix selected `inputValidation` once at construction or
 factory creation and expose read-only `InputValidation`. Default **Validate**
 checks the entire subject at most once per operation/cursor lifetime.
 **AssumeValid** omits that pass; the caller guarantees valid, unchanged borrowed
