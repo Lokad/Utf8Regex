@@ -58,3 +58,10 @@ All workers/collectors/keepers terminal. All580 staged package/symbol bytes unch
 No package/Full/canonical refresh. Source is restored byte-for-byte to accepted
 `33d7c00d`; accepted Python hint and POSIX cursor improvements remain. This
 experiment is closed; do not infer a canonical CPython ratio from its private A/B.
+
+Restoration is verified at clean source `11549880`: only Core was rebuilt, then
+31 terminal-root checks passed per Windows.NET10/11 and Linux.NET11 using the
+unchanged test hosts. All `src/` and `tests/` files equal accepted `33d7c00d`.
+Rebuilt mutable DLL/PDB identities change; no claim of identical restored binaries
+or new performance qualification is made. Frozen before/candidate pairs remain
+untouched. Restoration logs are archived in `restored-state.tar.gz` alongside raw.

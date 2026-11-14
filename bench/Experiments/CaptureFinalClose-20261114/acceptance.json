@@ -453,5 +453,22 @@
     "Initial VM admission failed before producer staging/build/timing because the repository tmpfs had16MiB free; RAM was sufficient. Aborted archive/worker terminal1 retained. Controller cleanup reached126MiB, still below128MiB, then retired an exact offVM aborted transfer and used an8KiB incremental bundle. No benchmark repeated.",
     "Four temporary transfer bundles only were retired after exact offVM SHA/path checks; three commits were already imported. No package,raw measurement,consumer evidence,old/denied/shared path or recursive deletion. Local originals remain.",
     "Reuse existing focused Release test hosts because their sources did not change. Build only Core; adapters remain bit-identical. No new intent flag,descriptor,selector,test executor or qualification framework."
-  ]
+  ],
+  "VerifiedRestoration": {
+    "Source": "11549880090e4e2a86cd6c184237db597bfeda35",
+    "SourceAndTestsEqualAccepted33d7c00d": true,
+    "RebuiltOnlyCoreFromCleanSource": true,
+    "ExactOldBinaryIdentityClaimed": false,
+    "Windows": [
+      "Passed!  - Failed:     0, Passed:    31, Skipped:     0, Total:    31, Duration: 128 ms - Lokad.Utf8Regex.Tests.dll (net10.0)",
+      "Passed!  - Failed:     0, Passed:    31, Skipped:     0, Total:    31, Duration: 129 ms - Lokad.Utf8Regex.Tests.dll (net11.0)"
+    ],
+    "Linux": [
+      "Passed!  - Failed:     0, Passed:    31, Skipped:     0, Total:    31, Duration: 298 ms - Lokad.Utf8Regex.Tests.dll (net11.0)"
+    ],
+    "FrozenComparisonImagesPreserved": true,
+    "PreservedImmutableAssets": 580,
+    "NoPerformanceOrPackageRepeat": true,
+    "RawSha256": "9CC8605ABFDF0AF1204199083662318F8E7906A21299C51C45C7E12402B2A69F"
+  }
 }
