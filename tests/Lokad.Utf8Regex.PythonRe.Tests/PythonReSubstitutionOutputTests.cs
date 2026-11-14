@@ -40,8 +40,9 @@ public sealed class PythonReSubstitutionOutputTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void ScalarFinalByteRootAdmitsTheWriterOverlapBeforeAllocation(bool allow)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void ScalarFinalByteRootAdmitsTheWriterOverlapBeforeAllocation(bool allow, bool validateOutput)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
@@ -56,7 +57,7 @@ public sealed class PythonReSubstitutionOutputTests
             cursor.AppendBytes(ref writer, payload);
             byte[] result = [];
             Exception? failure = null;
-            try { result = cursor.CompleteOutputBytes(ref writer, false); }
+            try { result = cursor.CompleteOutputBytes(ref writer, validateOutput); }
             catch (InvalidOperationException error) { failure = error; }
             if (allow)
             {
@@ -235,18 +236,24 @@ public sealed class PythonReSubstitutionOutputTests
         else Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Subn(input, values, callback).ResultBytes);
     }
 
-    [Fact]
-    public void CompletedByteCallbackOutputRejectsMalformedBytesAndCanJoinFragments()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CompletedByteCallbackOutputRejectsMalformedBytesAndCanJoinFragments(bool controlled)
     {
-        var regex = new Utf8PythonRegex("(.)");
+        using var regex = new Utf8PythonRegex("(.)", resourcePolicy: controlled ? new()
+        { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default);
         var input = "xy"u8.ToArray();
         Utf8PythonUtf8MatchEvaluator<int> malformed = static (_, match) => match.Value.StartOffsetInBytes == 0 ? "a"u8.ToArray() : [0xff];
         var error = Assert.Throws<ArgumentException>(() => regex.Subn(input, 0, malformed));
         Assert.Contains("byte offset 1", error.Message);
-        Utf8PythonUtf8MatchEvaluator<int> fragments = static (_, match) => match.Value.StartOffsetInBytes == 0 ? [0xe2] : [0x82, 0xac];
-        var result = regex.Subn(input, 0, fragments);
-        Assert.Equal("€"u8.ToArray(), result.ResultBytes);
+        byte[][] parts = [[.. Encoding.UTF8.GetBytes(new string('a', 2047)), 0xe2], [0x82, 0xac]];
+        Utf8PythonUtf8MatchEvaluator<byte[][]> fragments = static (state, match) => state[match.Value.StartOffsetInBytes];
+        var result = regex.Subn(input, parts, fragments);
+        Assert.Equal(Encoding.UTF8.GetBytes(new string('a', 2047) + "€"), result.ResultBytes);
         Assert.Equal(2, result.ReplacementCount);
+        parts[1] = [0x82];
+        error = Assert.Throws<ArgumentException>(() => regex.Subn(input, parts, fragments));
+        Assert.Contains("byte offset 2047", error.Message);
         Assert.Equal("xy", regex.SubnToString(input, @"\1").ResultText);
     }
 

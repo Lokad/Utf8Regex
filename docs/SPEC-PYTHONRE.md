@@ -623,8 +623,9 @@ String substitution output assembled from valid scalar slices and validated or
 repaired text fragments needs no second validity pass. Unknown short output uses
 the conservative byte-derived string charge described above; larger output retains
 bounded sizing/decoding. Completed byte-callback output remains independently
-validated, allowing valid scalars to join across fragments and rejecting malformed
-output. Original interruption, admission, ownership and result lifetimes remain.
+validated for validity only, allowing valid scalars to join across fragments and
+rejecting malformed output without computing unused UTF-16 length/supplementary
+metadata. Original interruption, admission, ownership and result lifetimes remain.
 
 `SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
 requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its

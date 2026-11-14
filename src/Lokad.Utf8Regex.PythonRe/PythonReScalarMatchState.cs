@@ -786,7 +786,9 @@ internal struct PythonReScalarMatchState
     internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput)
     {
         Checkpoint();
-        if (validateOutput) _ = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
+        // Byte output needs strict completed-stream validity, without unused
+        // UTF-16 length or supplementary-scalar metadata.
+        if (validateOutput) Utf8Validation.ThrowIfInvalidOnly(writer.WrittenBytes, ref _invocation);
         var result = AllocateResultArray<byte>(writer.Length);
         CopyBytes(writer.WrittenBytes, result);
         writer.Release(ref _invocation);
