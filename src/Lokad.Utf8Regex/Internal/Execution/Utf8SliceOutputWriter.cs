@@ -37,6 +37,18 @@ internal struct Utf8SliceOutputWriter
     internal bool AppendUtf16(ReadOnlySpan<char> text, ref Utf8SliceInvocation invocation)
     {
         Utf8SliceBufferWork.Checkpoint(ref invocation);
+        // UTF-8 needs at most three bytes per UTF-16 unit, including repaired
+        // isolated surrogates. Already-admitted room can prove a bounded short
+        // callback fits without scanning it once for sizing and again to encode.
+        if (!text.IsEmpty && text.Length <= 2048 && _buffer is { } existing &&
+            text.Length <= (existing.Length - _length) / 3)
+        {
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            var count = Encoding.UTF8.GetBytes(text, existing.AsSpan(_length));
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            _length += count;
+            return true;
+        }
         long needed = _length;
         for (var offset = 0; offset < text.Length;)
         {

@@ -327,12 +327,13 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
     }
 
-    [Fact]
-    public void CallbackCancellationPrecedesEncodingItsLargeReturnedString()
+    [Theory]
+    [InlineData(5)] [InlineData(1 << 20)]
+    public void CallbackCancellationPrecedesEncodingItsReturnedString(int length)
     {
         var regex = new Utf8PythonRegex("(.)");
         var input = "x"u8.ToArray();
-        var text = new string('é', 1 << 20);
+        var text = new string('é', length);
         Utf8PythonMatchEvaluator<(CancellationTokenSource Source, string Text)> evaluator = static (state, _) =>
         {
             state.Source.Cancel();

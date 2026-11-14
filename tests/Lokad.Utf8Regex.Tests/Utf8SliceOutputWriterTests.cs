@@ -101,4 +101,64 @@ public sealed class Utf8SliceOutputWriterTests
         writer.Release(ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
+
+    [Fact]
+    public void TextEncodingPreservesContentAcrossCapacityAndBlockBoundaries()
+    {
+        foreach (var text in new[] { "", "word", "é😀中", new string((char)0xd800, 1),
+            new string((char)0xdc00, 1), new string('€', 19), new string('€', 20),
+            new string('x', 2048), new string('x', 2049), new string('x', 2047) + "😀" })
+        foreach (var capacity in new[] { 64, 8192 })
+        {
+            var invocation = Invoke(100000, 64, 1 << 20);
+            Assert.True(Utf8SliceOutputWriter.Rent(capacity, ref invocation, out var writer));
+            try
+            {
+                Assert.True(writer.Append("seed:"u8, ref invocation));
+                Assert.True(writer.AppendUtf16(text, ref invocation));
+                Assert.True(writer.Append(":tail"u8, ref invocation));
+                Assert.Equal(Encoding.UTF8.GetBytes("seed:" + text + ":tail"), writer.WrittenBytes.ToArray());
+            }
+            finally { writer.Release(ref invocation); }
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Fact]
+    public void EveryShortEncodingWorkCutoffKeepsThePriorLogicalOutput()
+    {
+        var measured = Invoke(100000, 64, 1 << 20);
+        Assert.True(Utf8SliceOutputWriter.Rent(64, ref measured, out var baseline));
+        Assert.True(baseline.Append("seed:"u8, ref measured));
+        var seed = measured.Budget.Steps;
+        Assert.True(baseline.AppendUtf16("é😀", ref measured));
+        var work = measured.Budget.Steps - seed;
+        baseline.Release(ref measured);
+        Assert.True(work > 0);
+        for (ulong cutoff = 0; cutoff <= work; cutoff++)
+        {
+            var invocation = Invoke(seed + cutoff, 64, 1 << 20);
+            Assert.True(Utf8SliceOutputWriter.Rent(64, ref invocation, out var writer));
+            try
+            {
+                Assert.True(writer.Append("seed:"u8, ref invocation));
+                var reserved = invocation.Ledger.ReservedBytes;
+                var failure = Record.Exception(() => writer.AppendUtf16("é😀", ref invocation));
+                if (cutoff == work)
+                {
+                    Assert.Null(failure);
+                    Assert.Equal("seed:é😀"u8.ToArray(), writer.WrittenBytes.ToArray());
+                }
+                else
+                {
+                    Assert.IsAssignableFrom<InvalidOperationException>(failure);
+                    Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
+                    Assert.Equal("seed:"u8.ToArray(), writer.WrittenBytes.ToArray());
+                }
+                Assert.Equal(reserved, invocation.Ledger.ReservedBytes);
+            }
+            finally { writer.Release(ref invocation); }
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        }
+    }
 }
