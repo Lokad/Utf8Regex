@@ -1,0 +1,345 @@
+{
+  "Decision": "ACCEPT",
+  "Campaign": "CLOSED",
+  "Before": "8ec2f99265e05628afd38c36f429817854a6e679",
+  "BaselineCheckout": "364a5accec4388e9cb740994de27f21ae1c3b57d",
+  "After": "9b19d1ee2c4910599c0de2f6a00bb82078d98bc5",
+  "Change": "Empty names keep entry checkpoint then canonical empty storage, without zero-extent result/copy helpers. Captures with whole-match byte edges reuse completed metadata/text with independent numbered entries.",
+  "Guarantees": [
+    "Owned immutable text and independent mutable group/name arrays",
+    "Numbering, LastIndex/LastGroup, absent/empty/lookaround/nested captures and derived scalar/UTF16 coordinates",
+    "Nonempty names still copy; positive extents still admitted before allocation, same result/working byte charges",
+    "Original synchronous cancellation/deadlines and useful work/depth/result/working bounds"
+  ],
+  "IntentionalAccountingChange": "Omitted zero-storage helpers and redundant coordinate scans lower numerical work requirements; no byte admission/result traffic change.",
+  "Measurement": {
+    "Seconds": 61.89067491143942,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Rows": [
+    {
+      "Id": "callback-replacement",
+      "InputBytes": 1536,
+      "InputSha256": "7B44462EA066EE3BCD352794D23A2A30FB4ADB5A270CE5D5EAE41B9BE6546844",
+      "ExpectedValues": 384,
+      "Before": {
+        "MedianUs": 106.89407991452993,
+        "RangeUs": [
+          106.50110151187904,
+          127.72088461538462
+        ],
+        "Bytes": 58832.0,
+        "ProcessMediansUs": [
+          106.91922222222223,
+          106.7813765298776
+        ]
+      },
+      "After": {
+        "MedianUs": 92.20162857142857,
+        "RangeUs": [
+          90.43304099378882,
+          94.59509822560203
+        ],
+        "Bytes": 58832.0,
+        "ProcessMediansUs": [
+          94.04477186311787,
+          91.60915590062112
+        ]
+      },
+      "ObservedPercent": -13.74486908428334,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "funded-finite-callback",
+      "InputBytes": 1536,
+      "InputSha256": "7B44462EA066EE3BCD352794D23A2A30FB4ADB5A270CE5D5EAE41B9BE6546844",
+      "ExpectedValues": 384,
+      "Before": {
+        "MedianUs": 184.38814015820552,
+        "RangeUs": [
+          183.61314496314495,
+          184.74084710234277
+        ],
+        "Bytes": 58968.0,
+        "ProcessMediansUs": [
+          184.5450591861899,
+          184.23122113022114
+        ]
+      },
+      "After": {
+        "MedianUs": 160.5733664553979,
+        "RangeUs": [
+          158.2818152059134,
+          162.04787231759656
+        ],
+        "Bytes": 58968.0,
+        "ProcessMediansUs": [
+          161.18825858369098,
+          159.64518901795142
+        ]
+      },
+      "ObservedPercent": -12.915566956949887,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "duplicate-unnamed-unicode",
+      "InputBytes": 1536,
+      "InputSha256": "CCEFEA984F7C8F811245CEFBA17FF5013A559D55E22DD8A2590CA95AA1D9EE1C",
+      "ExpectedValues": 512,
+      "Before": {
+        "MedianUs": 325.3030053739364,
+        "RangeUs": [
+          323.29127155172415,
+          327.8466142241379
+        ],
+        "Bytes": 89064.0,
+        "ProcessMediansUs": [
+          325.0035172413793,
+          325.6024935064935
+        ]
+      },
+      "After": {
+        "MedianUs": 192.882806875,
+        "RangeUs": [
+          191.4327144790257,
+          194.1132
+        ],
+        "Bytes": 89064.0,
+        "ProcessMediansUs": [
+          193.0217875,
+          192.5860297699594
+        ]
+      },
+      "ObservedPercent": -40.706724595648645,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "duplicate-named-unicode",
+      "InputBytes": 1536,
+      "InputSha256": "CCEFEA984F7C8F811245CEFBA17FF5013A559D55E22DD8A2590CA95AA1D9EE1C",
+      "ExpectedValues": 512,
+      "Before": {
+        "MedianUs": 353.8704194232681,
+        "RangeUs": [
+          346.8811252900232,
+          358.6345142857143
+        ],
+        "Bytes": 117736.0,
+        "ProcessMediansUs": [
+          357.36319285714285,
+          349.9703712296984
+        ]
+      },
+      "After": {
+        "MedianUs": 313.36743698347107,
+        "RangeUs": [
+          310.4452708333334,
+          321.2485520833334
+        ],
+        "Bytes": 117736.0,
+        "ProcessMediansUs": [
+          313.34247107438017,
+          313.6596479166667
+        ]
+      },
+      "ObservedPercent": -11.445710129094177,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "distinct-unicode",
+      "InputBytes": 1536,
+      "InputSha256": "CCEFEA984F7C8F811245CEFBA17FF5013A559D55E22DD8A2590CA95AA1D9EE1C",
+      "ExpectedValues": 256,
+      "Before": {
+        "MedianUs": 164.75690274725275,
+        "RangeUs": [
+          164.40425054945052,
+          165.70515164835163
+        ],
+        "Bytes": 59864.0,
+        "ProcessMediansUs": [
+          164.68530109890108,
+          164.96165714285712
+        ]
+      },
+      "After": {
+        "MedianUs": 148.5666618357488,
+        "RangeUs": [
+          146.30319420289857,
+          149.89549604743084
+        ],
+        "Bytes": 59864.0,
+        "ProcessMediansUs": [
+          147.47168212560388,
+          148.99914525691702
+        ]
+      },
+      "ObservedPercent": -9.826745126631076,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "string-only-control",
+      "InputBytes": 9216,
+      "InputSha256": "43FAAEB258AE0F828E0ACE9C5BDB0FFAFDB683B017153D987BD58F4489A1B8E2",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 263.53686815651974,
+        "RangeUs": [
+          259.8296091549296,
+          268.2115734767025
+        ],
+        "Bytes": 119104.0,
+        "ProcessMediansUs": [
+          266.40643369175626,
+          260.421838028169
+        ]
+      },
+      "After": {
+        "MedianUs": 261.5735685741898,
+        "RangeUs": [
+          254.3111727748691,
+          266.7210770609319
+        ],
+        "Bytes": 119104.0,
+        "ProcessMediansUs": [
+          265.7016630824373,
+          257.3264685863874
+        ]
+      },
+      "ObservedPercent": -0.7449809949034991,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 12.353925786734948,
+        "RangeUs": [
+          12.144719903155787,
+          12.66542861913508
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.356583133724293,
+          12.244828435465019
+        ]
+      },
+      "After": {
+        "MedianUs": 12.429947349223212,
+        "RangeUs": [
+          12.231188819261211,
+          12.574765261326927
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.268082866094986,
+          12.544610038929843
+        ]
+      },
+      "ObservedPercent": 0.6153636002079077,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 23.519260257799502,
+        "RangeUs": [
+          23.145597983142682,
+          23.72351864766525
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          23.68040342631898,
+          23.294924292594825
+        ]
+      },
+      "After": {
+        "MedianUs": 23.748163678332546,
+        "RangeUs": [
+          23.5743738317757,
+          23.955642255247433
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          23.76782122905028,
+          23.68693672437567
+        ]
+      },
+      "ObservedPercent": 0.9732594393870642,
+      "RangesDisjoint": false
+    }
+  ],
+  "BeforeProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Python": {
+      "Assembly": "0.5.0-dev.89+8ec2f99265e05628afd38c36f429817854a6e679 sha256=206035B716B8944C1E848E0644F0EEC34D634A93A63B1D1248B1D89F788CD830",
+      "PdbSha256": "E20C6616934868ED9EA535E4EF50F81771576BDCCDB9F5A3FE80975373C0EA04",
+      "Documents": 50
+    }
+  },
+  "AfterProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Python": {
+      "Assembly": "0.5.0-dev.89+9b19d1ee2c4910599c0de2f6a00bb82078d98bc5 sha256=922D4B2E27AC72F12EFFF5E161EEC4F6E00F2786DFBA3FDB4CD8B5C4008FA6F5",
+      "PdbSha256": "4526871FC0BCEB25F7E4DD17B569F434332A08A71A058722C8FAEC849671B16C",
+      "Documents": 50
+    }
+  },
+  "InputContract": "Python re over str: caller-valid unchanged UTF8. Equal full callback/detailed/string outputs; same matching options. Callback capture metadata checked in preflight, timed callback returns prepared constant. Finite/funded charges included where labelled. No new CPython ratio.",
+  "WindowsFull": [
+    "Passed!  - Failed:     0, Passed:  5198, Skipped:     0, Total:  5198, Duration: 9 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:  5198, Skipped:     0, Total:  5198, Duration: 10 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "LinuxFull": [
+    "Passed!  - Failed:     0, Passed:  5198, Skipped:     0, Total:  5198, Duration: 11 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "CompleteCompilerInputsVerified": true,
+  "CoreCallerDotNetUnchanged": true,
+  "OrdinaryProcesses": true,
+  "ManagedMemberInventory": [
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": []
+    }
+  ],
+  "RawArchive": "artifacts/experiments/python-snapshot-publication-20261114/evidence.tar.gz",
+  "RawSha256": "EDC05E871F07F3180813F382F75EDE4A0BDA631AFF8BBE60EEBD3EACE725FF9C",
+  "WindowsRawSha256": "3B2D47EB74904678CF705AA0C1172A9AE7C631C5B96DA1057BD6C485F2648CEC",
+  "EvidenceOffVmVerified": true,
+  "WorkersAndCollectorTerminal": true,
+  "PreservedImmutableAssets": 572,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Notes": [
+    "All eight allocation medians unchanged. Five affected operation ranges separate; string-only-0.74/Core+0.62/.NET+0.97% overlap and are not normalizers.",
+    "This is a producer A/B with complete equal outputs, not a new CPython ratio, formal confidence interval or causal split between the two omissions.",
+    "Callback capture metadata is checked in preflight; measured callback returns its prepared constant, matching the existing canonical contract.",
+    "Initial private caller assumed names were returned in opening order; the public mapping is instead checked by name and number. Failure retained, fixed before timing; no library defect or repeated measurement."
+  ]
+}
