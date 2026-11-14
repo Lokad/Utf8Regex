@@ -637,6 +637,8 @@ internal partial struct PythonReScalarMatchState
     internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names)
     {
         Checkpoint();
+        // No storage or copying is needed for canonical empty metadata.
+        if (names.Length == 0) return [];
         var copied = AllocateResultArray<PythonReNameEntry>(names.Length);
         Utf8InvocationResultLedger.Copy<PythonReNameEntry>(names, copied, ref _invocation);
         Checkpoint();
@@ -734,6 +736,13 @@ internal partial struct PythonReScalarMatchState
                 projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
                 continue;
             }
+            // Equal ranges already share owned immutable text. Reuse their
+            // completed coordinates too, with an independent numbered slot.
+            if (i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes)
+            {
+                projected[i] = projected[0] with { Number = i };
+                continue;
+            }
             var startInUtf16 = CoordinateOffset(input, start).Utf16;
             var endInUtf16 = CoordinateOffset(input, end).Utf16;
             projected[i] = new Utf8PythonGroupMatchData
@@ -743,10 +752,7 @@ internal partial struct PythonReScalarMatchState
                 StartOffsetInUtf16 = startInUtf16,
                 EndOffsetInUtf16 = endInUtf16,
                 HasContiguousByteRange = true,
-                // Equal ranges can share owned immutable text; keep every
-                // group's independently projected metadata and mutable slot.
-                ValueText = i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes
-                    ? projected[0].ValueText : GetText(input, start, end, endInUtf16 - startInUtf16),
+                ValueText = GetText(input, start, end, endInUtf16 - startInUtf16),
             };
         }
         var copiedNames = SnapshotNameEntries(names);

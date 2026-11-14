@@ -10,6 +10,8 @@ public sealed class PythonReDetailedPublicationContractTests
     [InlineData("(?P<outer>(?P<face>😀)(é)?)(x)?", "xx😀é yy😀", 2, 1, "outer")]
     [InlineData("(?<=(?P<before>😀))(?P<body>é)", "😀é", 1, 2, "body")]
     [InlineData("(?P<empty>)(?P<next>😀)?", "😀", 2, 2, "next")]
+    [InlineData("(?P<outer>(?P<inner>😀))", "é😀 é😀", 2, 1, "outer")]
+    [InlineData("(?P<outer>(?P<inner>))", "é😀", 3, 1, "outer")]
     public void DetailedSnapshotsKeepScalarValuesCoordinatesAndOwnership(
         string pattern, string subject, int expectedCount, int firstLastIndex, string firstLastGroup)
     {
@@ -48,6 +50,48 @@ public sealed class PythonReDetailedPublicationContractTests
         retained.Groups[0] = default;
         retained.NameEntries[0] = default;
         Assert.True(finiteRegex.FindIterDetailed(input)[0].Success);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void RetainedEqualRangeCallbacksKeepNumberingAndIndependentSlots(bool named)
+    {
+        var input = "é😀"u8.ToArray();
+        var retained = new List<Utf8PythonDetailedMatchData>();
+        using (var regex = new Utf8PythonRegex(named ? "(?P<outer>(?P<inner>.))" : "((.))",
+            resourcePolicy: new() { MaxWorkSteps = 10000, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }))
+        {
+            var result = regex.ReplaceToString(input, retained, static (values, match) =>
+            {
+                values.Add(match);
+                return match.Groups[1].ValueText;
+            });
+            Assert.Equal("é😀", result);
+        }
+        input.AsSpan().Fill((byte)'x');
+        Assert.Equal(2, retained.Count);
+        foreach (var (match, ordinal) in retained.Select((value, index) => (value, index)))
+        {
+            Assert.Equal(1, match.LastIndex); Assert.Equal(named ? "outer" : null, match.LastGroup);
+            Assert.Equal(named ? 2 : 0, match.NameEntries.Length);
+            Assert.Equal(3, match.Groups.Length);
+            for (var group = 0; group < 3; group++)
+            {
+                var value = match.Groups[group];
+                Assert.Equal(group, value.Number); Assert.True(value.Success); Assert.True(value.HasContiguousByteRange);
+                Assert.Equal(ordinal == 0 ? "é" : "😀", value.ValueText);
+                Assert.Equal(ordinal == 0 ? (0, 2, 0, 1) : (2, 6, 1, 3),
+                    (value.StartOffsetInBytes, value.EndOffsetInBytes, value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+            }
+        }
+        Assert.NotSame(retained[0].Groups, retained[1].Groups);
+        retained[0].Groups[0] = default;
+        Assert.Equal("é", retained[0].Groups[1].ValueText); Assert.Equal("😀", retained[1].Value.ValueText);
+        if (named)
+        {
+            retained[0].NameEntries[0] = default;
+            Assert.True(retained[1].TryGetFirstSetGroup("outer", out var outer)); Assert.Equal("😀", outer.ValueText);
+        }
     }
 
     [Fact]

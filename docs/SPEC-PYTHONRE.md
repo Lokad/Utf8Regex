@@ -524,6 +524,10 @@ required output and validate assembled raw-byte callback output. Removing the
 whole-subject bidirectional map reduces early-result work and capacity; finite
 requirements can fall. Coordinate scratch is working storage, not result traffic;
 returned arrays and strings still consume modeled result capacity independently.
+Captures equal to group zero may reuse its completed projection with independent
+capture numbers and mutable entries. Empty name metadata needs no result allocation
+or copy. These omissions can reduce numerical work requirements; positive result
+extents retain their admission and traffic charges.
 Borrowed contexts retain their existing unchanged-input lifetime contract, while
 owned detailed text remains independent of the input and temporary index.
 For an unknown string length of at most4096 UTF-8 bytes, admission can use the
