@@ -1,0 +1,486 @@
+{
+  "Decision": "Accept smaller private result; no settled Python string speedup",
+  "Source": "656167121bf14f1b955b6e6c384487bee8441e71",
+  "Baseline": "b2ade2201c4ba5badf89df47d694e526cf44f017",
+  "RawSha256": "13670468C16F47049435818FA9C520AFFDDE48B4A4F2F37FFB41A835772BA54A",
+  "WindowsRawSha256": "8744FDC0AD010A8C6EF5A10004E88239ED667B07505929AEB53749B7D03DEA07",
+  "Checks": {
+    "Windows/Core": {
+      "PerTarget": 6364,
+      "Targets": [
+        "net10.0",
+        "net11.0"
+      ]
+    },
+    "Linux/Core": {
+      "PerTarget": 6364,
+      "Targets": [
+        "net11.0"
+      ]
+    },
+    "Windows/PythonRe": {
+      "PerTarget": 1464,
+      "Targets": [
+        "net10.0",
+        "net11.0"
+      ]
+    },
+    "Linux/PythonRe": {
+      "PerTarget": 1464,
+      "Targets": [
+        "net11.0"
+      ]
+    },
+    "Windows/Pcre2": {
+      "PerTarget": 1066,
+      "Targets": [
+        "net10.0",
+        "net11.0"
+      ]
+    },
+    "Linux/Pcre2": {
+      "PerTarget": 1066,
+      "Targets": [
+        "net11.0"
+      ]
+    },
+    "Windows/Posix": {
+      "PerTarget": 247,
+      "Targets": [
+        "net10.0",
+        "net11.0"
+      ]
+    },
+    "Linux/Posix": {
+      "PerTarget": 247,
+      "Targets": [
+        "net11.0"
+      ]
+    }
+  },
+  "ImmutableAssetsPreserved": 564,
+  "Measurements": {
+    "Rows": [
+      {
+        "Id": "many-capture-strings",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 2048,
+        "Before": {
+          "MedianUs": 431.74195676836564,
+          "RangeUs": [
+            421.5936602209945,
+            444.5560623145401
+          ],
+          "Bytes": 242008.0,
+          "ProcessMediansUs": [
+            441.7933026706231,
+            423.7014447513812
+          ]
+        },
+        "After": {
+          "MedianUs": 445.88739116830754,
+          "RangeUs": [
+            436.7704613095238,
+            455.8072258064516
+          ],
+          "Bytes": 242008.0,
+          "ProcessMediansUs": [
+            443.0715357142858,
+            451.71675073313787
+          ]
+        },
+        "ObservedPercent": 3.2763631558586415,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "one-capture-strings",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 1024,
+        "Before": {
+          "MedianUs": 157.58303290887042,
+          "RangeUs": [
+            153.91677442827444,
+            159.9835625
+          ],
+          "Bytes": 45168.0,
+          "ProcessMediansUs": [
+            155.54603846153844,
+            159.11773958333333
+          ]
+        },
+        "After": {
+          "MedianUs": 153.6377451481103,
+          "RangeUs": [
+            151.8462625127681,
+            154.69147154471545
+          ],
+          "Bytes": 45168.0,
+          "ProcessMediansUs": [
+            154.1406768292683,
+            152.56763534218592
+          ]
+        },
+        "ObservedPercent": -2.5036247164005654,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "finite-many-capture-strings",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 2048,
+        "Before": {
+          "MedianUs": 610.6663783068784,
+          "RangeUs": [
+            599.7307909604519,
+            632.2237566137567
+          ],
+          "Bytes": 246208.0,
+          "ProcessMediansUs": [
+            614.9134867724867,
+            608.0276045197741
+          ]
+        },
+        "After": {
+          "MedianUs": 619.7810259999999,
+          "RangeUs": [
+            607.6966732283464,
+            645.7456
+          ],
+          "Bytes": 246208.0,
+          "ProcessMediansUs": [
+            613.3992440944882,
+            625.134288
+          ]
+        },
+        "ObservedPercent": 1.4925740169931423,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "detailed-captures",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 2048,
+        "Before": {
+          "MedianUs": 783.262717914673,
+          "RangeUs": [
+            718.5627765363129,
+            807.3334035874439
+          ],
+          "Bytes": 545112.0,
+          "ProcessMediansUs": [
+            789.7860313901346,
+            730.0713128491619
+          ]
+        },
+        "After": {
+          "MedianUs": 752.0506972789116,
+          "RangeUs": [
+            716.6712727272727,
+            769.1824848484848
+          ],
+          "Bytes": 545112.0,
+          "ProcessMediansUs": [
+            735.1547333333333,
+            757.069693877551
+          ]
+        },
+        "ObservedPercent": -3.9848724983181927,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "unicode-capture-strings",
+        "InputBytes": 11264,
+        "InputSha256": "4B13A73668A5CF1FFA539EE096DCDF34CDC9A91D57187E17ABABE8039EDD5FAB",
+        "ExpectedValues": 1024,
+        "Before": {
+          "MedianUs": 476.06099206933203,
+          "RangeUs": [
+            466.3291296296297,
+            487.1213410596027
+          ],
+          "Bytes": 115008.0,
+          "ProcessMediansUs": [
+            486.4779867549668,
+            467.8051080246914
+          ]
+        },
+        "After": {
+          "MedianUs": 474.8916396543748,
+          "RangeUs": [
+            468.5331271477664,
+            484.76210897435897
+          ],
+          "Bytes": 115008.0,
+          "ProcessMediansUs": [
+            479.38059294871795,
+            471.45778350515474
+          ]
+        },
+        "ObservedPercent": -0.2456307982458994,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "full-class-strings",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 2048,
+        "Before": {
+          "MedianUs": 215.24034599156118,
+          "RangeUs": [
+            211.93690576652605,
+            235.18164454976306
+          ],
+          "Bytes": 94280.0,
+          "ProcessMediansUs": [
+            215.06883966244726,
+            216.244682464455
+          ]
+        },
+        "After": {
+          "MedianUs": 207.61023638761336,
+          "RangeUs": [
+            205.27180213903742,
+            215.18780213903742
+          ],
+          "Bytes": 94280.0,
+          "ProcessMediansUs": [
+            208.49268885869563,
+            206.29868983957218
+          ]
+        },
+        "ObservedPercent": -3.5449253571851136,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "core-captured-count",
+        "InputBytes": 18432,
+        "InputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+        "ExpectedValues": 2048,
+        "Before": {
+          "MedianUs": 274.61086039587326,
+          "RangeUs": [
+            272.9661082568807,
+            277.0585486238532
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            275.1621174311927,
+            274.32767216117213
+          ]
+        },
+        "After": {
+          "MedianUs": 268.04329804270463,
+          "RangeUs": [
+            267.020256227758,
+            269.51682918149464
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            267.65134159292035,
+            268.3841743772242
+          ]
+        },
+        "ObservedPercent": -2.391588717103532,
+        "RangesDisjoint": true
+      },
+      {
+        "Id": "core-bounded-captured-match",
+        "InputBytes": 7,
+        "InputSha256": "923E9A1C0B788AD6923CE7B70CA0E8E9217DBF9BD472A4DC88EC7562F1E45020",
+        "ExpectedValues": 1,
+        "Before": {
+          "MedianUs": 0.11439697747746305,
+          "RangeUs": [
+            0.11280260040349514,
+            0.12867399278327407
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            0.11563388082228143,
+            0.11363587801317108
+          ]
+        },
+        "After": {
+          "MedianUs": 0.1117707193621773,
+          "RangeUs": [
+            0.11062345672155936,
+            0.11308145336612138
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            0.11156798570553732,
+            0.11186515838649513
+          ]
+        },
+        "ObservedPercent": -2.2957408256727208,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "unchanged-core-literal-count",
+        "InputBytes": 9216,
+        "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+        "ExpectedValues": 1024,
+        "Before": {
+          "MedianUs": 12.001869772998806,
+          "RangeUs": [
+            11.936287455197132,
+            12.126279619324139
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            12.086680780708122,
+            11.969236320191161
+          ]
+        },
+        "After": {
+          "MedianUs": 12.260944648085424,
+          "RangeUs": [
+            12.069015098258506,
+            12.50859750184896
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            12.142360361080042,
+            12.318669898923494
+          ]
+        },
+        "ObservedPercent": 2.1586209481248675,
+        "RangesDisjoint": false
+      },
+      {
+        "Id": "unchanged-dotnet-count",
+        "InputBytes": 9216,
+        "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+        "ExpectedValues": 1024,
+        "Before": {
+          "MedianUs": 22.051467215683893,
+          "RangeUs": [
+            21.79526119190191,
+            22.186397490732823
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            22.012030382323015,
+            22.09090404904477
+          ]
+        },
+        "After": {
+          "MedianUs": 22.20047021017694,
+          "RangeUs": [
+            22.002961416642673,
+            22.58184650211772
+          ],
+          "Bytes": 0.0,
+          "ProcessMediansUs": [
+            22.064024618485462,
+            22.493758288301443
+          ]
+        },
+        "ObservedPercent": 0.6757055802031564,
+        "RangesDisjoint": false
+      }
+    ],
+    "Codegen": {
+      "Before": [
+        {
+          "Header": " for method Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner:RunClassRepeat(Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int,System.ReadOnlySpan`1[byte],int,byref):Lokad.Utf8Regex.Internal.Execution.Utf8SliceMatchOutcome (Tier1)",
+          "Bytes": 2981,
+          "OutcomeConstructorCalls": 0,
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Header": " for method Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner:TryRunTerminalCaptureRoot(Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,System.ReadOnlySpan`1[byte],int,int[],int[],byref,byref,byref):bool (Tier1)",
+          "Bytes": 6526,
+          "OutcomeConstructorCalls": 0,
+          "BulkWriteBarrierCalls": 2
+        }
+      ],
+      "After": [
+        {
+          "Header": " for method Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner:RunClassRepeat(Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int,System.ReadOnlySpan`1[byte],int,byref):System.ValueTuple`2[int,byte] (Tier1)",
+          "Bytes": 2827,
+          "OutcomeConstructorCalls": 0,
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Header": " for method Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner:TryRunTerminalCaptureRoot(Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,System.ReadOnlySpan`1[byte],int,int[],int[],byref,byref,byref):bool (Tier1)",
+          "Bytes": 6404,
+          "OutcomeConstructorCalls": 0,
+          "BulkWriteBarrierCalls": 0
+        }
+      ]
+    },
+    "Measurement": {
+      "Seconds": 75.10421640332788,
+      "Processes": 4,
+      "Comparisons": 1,
+      "Confirmations": 0
+    },
+    "Runs": [
+      {
+        "Core": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=38103652DAD5CE26E48B97C89726917FA0DB421351EA525C7E1FFC7C42CCA9D9",
+          "PdbSha256": "B9464DA6BA78B79B7A74E235A9BCFAE0BBCC631ED8C35A5F49EC7A206069C156",
+          "Documents": 343
+        },
+        "Python": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=850F9883E535A49B9CE0DEB934D9B8E4431FA961BEE095A5F158F28A551C0891",
+          "PdbSha256": "350716E4AA2448E023F1388278601F593CE3AF6BFFA092AB71E24E5DD6B778EE",
+          "Documents": 49
+        },
+        "Placement": "least-contended allowed processor (0x20; Linux efficiency class unknown)",
+        "StartupProcessors": 8
+      },
+      {
+        "Core": {
+          "Assembly": "0.5.0-dev.88+656167121bf14f1b955b6e6c384487bee8441e71 sha256=6B4C1E11A016EB2F6A717F8F30556085C7E69C7726705DB8FFA459F3DEEE43C5",
+          "PdbSha256": "9292657E3692E30C0BAA745C6B11A7C0EFE4EFE17D51E31C12B7FC7475FB619F",
+          "Documents": 343
+        },
+        "Python": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=850F9883E535A49B9CE0DEB934D9B8E4431FA961BEE095A5F158F28A551C0891",
+          "PdbSha256": "350716E4AA2448E023F1388278601F593CE3AF6BFFA092AB71E24E5DD6B778EE",
+          "Documents": 49
+        },
+        "Placement": "least-contended allowed processor (0x20; Linux efficiency class unknown)",
+        "StartupProcessors": 8
+      },
+      {
+        "Core": {
+          "Assembly": "0.5.0-dev.88+656167121bf14f1b955b6e6c384487bee8441e71 sha256=6B4C1E11A016EB2F6A717F8F30556085C7E69C7726705DB8FFA459F3DEEE43C5",
+          "PdbSha256": "9292657E3692E30C0BAA745C6B11A7C0EFE4EFE17D51E31C12B7FC7475FB619F",
+          "Documents": 343
+        },
+        "Python": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=850F9883E535A49B9CE0DEB934D9B8E4431FA961BEE095A5F158F28A551C0891",
+          "PdbSha256": "350716E4AA2448E023F1388278601F593CE3AF6BFFA092AB71E24E5DD6B778EE",
+          "Documents": 49
+        },
+        "Placement": "least-contended allowed processor (0x10; Linux efficiency class unknown)",
+        "StartupProcessors": 8
+      },
+      {
+        "Core": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=38103652DAD5CE26E48B97C89726917FA0DB421351EA525C7E1FFC7C42CCA9D9",
+          "PdbSha256": "B9464DA6BA78B79B7A74E235A9BCFAE0BBCC631ED8C35A5F49EC7A206069C156",
+          "Documents": 343
+        },
+        "Python": {
+          "Assembly": "0.5.0-dev.88+b2ade2201c4ba5badf89df47d694e526cf44f017 sha256=850F9883E535A49B9CE0DEB934D9B8E4431FA961BEE095A5F158F28A551C0891",
+          "PdbSha256": "350716E4AA2448E023F1388278601F593CE3AF6BFFA092AB71E24E5DD6B778EE",
+          "Documents": 49
+        },
+        "Placement": "least-contended allowed processor (0x2; Linux efficiency class unknown)",
+        "StartupProcessors": 8
+      }
+    ]
+  },
+  "Scope": "Same algorithms, eligibility, allocation, work and original interruption; only private repeat endpoint/status representation and boundary adapters change.",
+  "CodegenIsStaticEvidence": true,
+  "LogLimitation": "Windows case-insensitive filename collision replaced the Core-library build log with the Core-test build log. The gate exited0, both-target tests used the candidate, and the Linux Core build log is retained. No rebuild repeated solely for this logging error.",
+  "FullRepeated": false,
+  "PackagesRepacked": false,
+  "Confirmations": 0
+}
