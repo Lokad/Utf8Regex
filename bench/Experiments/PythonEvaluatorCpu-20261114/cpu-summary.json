@@ -1,0 +1,219 @@
+{
+  "ProducerSources": {
+    "Core": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "Python": "8ec2f99265e05628afd38c36f429817854a6e679"
+  },
+  "VmCheckout": "364a5accec4388e9cb740994de27f21ae1c3b57d",
+  "RawSha256": "434231F3158D95FA7BDACF1DDD3516E15533DDABCA922F9B6D09751670DC8A01",
+  "DiagnosticRuns": 1,
+  "Confirmations": 0,
+  "ProducerChanges": false,
+  "PackagesRepacked": false,
+  "FullRepeated": false,
+  "TerminalExit": 0,
+  "Result": {
+    "Pid": 724549,
+    "StartupProcessors": 8,
+    "Description": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "Runtime": ".NET 11.0.0",
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Python": {
+      "Assembly": "0.5.0-dev.89+8ec2f99265e05628afd38c36f429817854a6e679 sha256=206035B716B8944C1E848E0644F0EEC34D634A93A63B1D1248B1D89F788CD830",
+      "PdbSha256": "E20C6616934868ED9EA535E4EF50F81771576BDCCDB9F5A3FE80975373C0EA04",
+      "Documents": 50
+    },
+    "ManagedMembers": {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    "InputBytes": 1536,
+    "InputSha256": "7B44462EA066EE3BCD352794D23A2A30FB4ADB5A270CE5D5EAE41B9BE6546844",
+    "ExpectedMatches": 384,
+    "ExpectedValues": 2304,
+    "WarmCalls": 5088,
+    "ProfileCalls": 139104,
+    "ProfileMilliseconds": 15003.2004,
+    "InputContract": "PythonRe over str: valid unchanged UTF8. Public ReplaceToString, prepared constant callback, complete2304-character output checked after each32-call batch. CPU attribution only; includes setup/warmup/checks, not throughput/parity/speedup."
+  },
+  "Scope": "ONE whole-process cpu-clock:u/997Hz CPU IP capture. Includes startup, warmup, public constant-callback ReplaceToString batches, checksum, GC and runtime work. Flat self samples with JIT map addresses; inlined costs belong to their containing method. Not per-phase timings, a public speedup, causal optimization proof or an exact CPU percentage. Managed sampled-thread-time PollGC shares are not used as CPU attribution.",
+  "Samples": 17238,
+  "ManagedMapSamples": 14566,
+  "NativeOrUnresolvedSamples": 2672,
+  "SampleSpanSeconds": 17.11128900013864,
+  "TopRows": [
+    {
+      "Name": "instance valuetype Lokad.Utf8Regex.PythonRe.Utf8PythonDetailedMatchData [Lokad.Utf8Regex.PythonRe] Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState::SnapshotDetailed(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype Lokad.Utf8Regex.PythonRe.PythonReNameEntry[])[OptimizedTier1]",
+      "Samples": 3132,
+      "Percent": 18.169161155586494,
+      "MapRanges": [
+        [
+          "0x7d39f4e10240",
+          "0x7d39f4e12275"
+        ]
+      ]
+    },
+    {
+      "Name": "instance bool [Lokad.Utf8Regex.PythonRe] Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState::MoveNextCore(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,bool)[OptimizedTier1]",
+      "Samples": 1621,
+      "Percent": 9.403643114050354,
+      "MapRanges": [
+        [
+          "0x7d39f4e09360",
+          "0x7d39f4e0b261"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libcoreclr.so [unknown]",
+      "Samples": 1543,
+      "Percent": 8.951154426267548,
+      "MapRanges": []
+    },
+    {
+      "Name": "valuetype [System.Runtime]System.ValueTuple`2<int32,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind> [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner::RunClassRepeat(class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int32,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)[OptimizedTier1]",
+      "Samples": 1540,
+      "Percent": 8.933751015198979,
+      "MapRanges": [
+        [
+          "0x7d39f4e0d8e0",
+          "0x7d39f4e0e3fa"
+        ]
+      ]
+    },
+    {
+      "Name": "instance void [Lokad.Utf8Regex.PythonRe] Lokad.Utf8Regex.PythonRe.Utf8PythonRegex::SubstituteScalar(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,!!0,class Lokad.Utf8Regex.PythonRe.PythonReScalarReplacementAppender`1<!!0>,int32,int32,valuetype [Lokad.Utf8Regex]Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation,bool,bool,valuetype Lokad.Utf8Regex.PythonRe.Utf8PythonSubnUtf8Result&,valuetype Lokad.Utf8Regex.PythonRe.Utf8PythonSubnResult&,class Lokad.Utf8Regex.PythonRe.Utf8PythonRetainedSubnResult&,bool)[OptimizedTier1]",
+      "Samples": 1525,
+      "Percent": 8.846733959856131,
+      "MapRanges": [
+        [
+          "0x7d39f4f90020",
+          "0x7d39f4f92af1"
+        ]
+      ]
+    },
+    {
+      "Name": "instance !!0[] [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultLedger::AllocateArray(int32,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)[OptimizedTier1]",
+      "Samples": 1172,
+      "Percent": 6.798932590787794,
+      "MapRanges": [
+        [
+          "0x7d39f4e13620",
+          "0x7d39f4e1403a"
+        ],
+        [
+          "0x7d39f4e169c0",
+          "0x7d39f4e173c8"
+        ]
+      ]
+    },
+    {
+      "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner::TryRunTerminalCaptureRoot(class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32,int32[],int32[],valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner/ChunkedStacks&,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceMatchOutcome&)[OptimizedTier1]",
+      "Samples": 959,
+      "Percent": 5.563290404919364,
+      "MapRanges": [
+        [
+          "0x7d39f4e0ca20",
+          "0x7d39f4e0d83b"
+        ]
+      ]
+    },
+    {
+      "Name": "instance string [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultLedger::DecodeUtf8(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.Nullable`1<int32>,valuetype Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)[OptimizedTier1]",
+      "Samples": 871,
+      "Percent": 5.052790346907994,
+      "MapRanges": [
+        [
+          "0x7d39f4e14680",
+          "0x7d39f4e14fe8"
+        ]
+      ]
+    },
+    {
+      "Name": "instance bool [Lokad.Utf8Regex.PythonRe] Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState::SeekCandidate(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>)[OptimizedTier1]",
+      "Samples": 849,
+      "Percent": 4.925165332405151,
+      "MapRanges": [
+        [
+          "0x7d39f4e0ba00",
+          "0x7d39f4e0c178"
+        ]
+      ]
+    },
+    {
+      "Name": "void [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8InvocationOutput::Copy(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.Span`1<uint8>,!!0)[OptimizedTier1]",
+      "Samples": 427,
+      "Percent": 2.477085508759717,
+      "MapRanges": [
+        [
+          "0x7d39f4e08600",
+          "0x7d39f4e08d58"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libclrjit.so [unknown]",
+      "Samples": 380,
+      "Percent": 2.2044320686854624,
+      "MapRanges": []
+    },
+    {
+      "Name": "instance valuetype Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionBudget::TryChargeResultBytes(uint64)[OptimizedTier1]",
+      "Samples": 357,
+      "Percent": 2.0710059171597632,
+      "MapRanges": [
+        [
+          "0x7d39f4e05f60",
+          "0x7d39f4e06031"
+        ]
+      ]
+    },
+    {
+      "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 __tls_get_addr",
+      "Samples": 336,
+      "Percent": 1.9491820396797772,
+      "MapRanges": []
+    },
+    {
+      "Name": "instance valuetype Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation::TryChargeStep()[OptimizedTier1]",
+      "Samples": 332,
+      "Percent": 1.9259774915883514,
+      "MapRanges": [
+        [
+          "0x7d39f4dff1c0",
+          "0x7d39f4dff2e7"
+        ]
+      ]
+    },
+    {
+      "Name": "void [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8InvocationOutput::Checkpoint(!!0)[OptimizedTier1]",
+      "Samples": 295,
+      "Percent": 1.7113354217426615,
+      "MapRanges": [
+        [
+          "0x7d39f4e05140",
+          "0x7d39f4e052fe"
+        ]
+      ]
+    },
+    {
+      "Name": "valuetype System.Buffers.OperationStatus [System.Private.CoreLib] System.Text.Unicode.Utf8Utility::TranscodeToUtf16(uint8*,int32,char*,int32,uint8*&,char*&)[OptimizedTier1]",
+      "Samples": 253,
+      "Percent": 1.4676876667826895,
+      "MapRanges": [
+        [
+          "0x7d39f4e077c0",
+          "0x7d39f4e08173"
+        ]
+      ]
+    }
+  ],
+  "OtherSamples": 1646
+}
