@@ -239,11 +239,15 @@ each candidate and at most 4096 bytes per scan block, using the original shared
 budget and publication checks. The counter needs no scratch or result storage:
 it makes no working-allowance loan, and depth/working/result ceilings need not
 reject work that acquires none of that storage. Existing shared denials remain
-authoritative, including for an empty stream. A single positive, nonnegated
-ASCII range also admits mixed valid UTF-8: its members are scalar-aligned ASCII
-bytes and all bytes of other scalars are excluded. It needs no subject ASCII
+authoritative, including for an empty stream. Positive, nonnegated unions of
+ASCII ranges also admit mixed valid UTF-8: their members are scalar-aligned ASCII
+bytes and all bytes of other scalars are excluded. This needs no subject ASCII
 classification or VM workspace; native UTF validation still follows the instance
-policy. Other classes on non-ASCII subjects, lazy/bounded/caseless forms,
+policy. Eligibility scans immutable class terms with interruption/work checks
+at most 64 additional terms apart, without another retained program flag. An empty
+suffix is already ASCII and needs no such proof. Modeled work and working-state
+requirements can decrease; a large pattern's eligibility remains bounded.
+Other classes on non-ASCII subjects, lazy/bounded/caseless forms,
 anchoring, match flags and diagnostic hooks retain their runners.
 Eligible standalone positive, case-sensitive `\p{Sm}` Count reuses Core's scalar
 category counter under the original invocation, including finite policies, live
