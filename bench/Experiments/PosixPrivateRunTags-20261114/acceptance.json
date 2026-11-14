@@ -1,0 +1,436 @@
+{
+  "Decision": "ACCEPT",
+  "Campaign": "CLOSED",
+  "Before": "ec31fe66575f484f8d90515f02b4d737c167451e",
+  "After": "6c69661957da9597577ad3982f8f171e4c04bf3c",
+  "SharedCoreSource": "1f2b34c102f54277d370dec95f3b2f1084938efb",
+  "Change": "Extend the existing globally-disjoint positive ASCII run proof over exactly one balanced private syntax wrapper around a class atom. Check the existing public capture-tag array under construction work admission. Existing byte loop skips only that proved wrapper; no instruction rewriting, new descriptor, buffer, owner, API or engine.",
+  "Guarantees": [
+    "Caller-valid unchanged UTF8, checked scalar matching, POSIX earliest/longest and hierarchical capture selection",
+    "Repeated public captures, nullable/overlapping/Unicode/uncertain bodies retain their existing routes",
+    "Every examined byte remains metered; original synchronous cancellation/deadline, useful finite work/depth/working/result controls, admission/refunds, aliases and failure clearing"
+  ],
+  "Accounting": "Eligible programs need no general interval chart, alternative/undo/trace or repeat-counter storage; public capture state remains admitted. Numerical work/depth/working requirements may fall; construction work includes the bounded public-tag membership check. Every observed allocation is unchanged or lower. No total heap/RSS or global linear-time promise.",
+  "Measurement": {
+    "Seconds": 75.34570903796703,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Rows": [
+    {
+      "Id": "short-sku-control",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 3,
+      "Before": {
+        "MedianUs": 0.2105788828264886,
+        "RangeUs": [
+          0.20667123992358746,
+          0.41357156781696514
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.21226604515545225,
+          0.20958872248190485
+        ]
+      },
+      "After": {
+        "MedianUs": 0.20519917169055868,
+        "RangeUs": [
+          0.20291975994369774,
+          0.21136643385977055
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.20734855596803622,
+          0.20380266398104455
+        ]
+      },
+      "ObservedPercent": -2.5547248915565035,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "private-tail",
+      "InputBytes": 40,
+      "InputSha256": "2B6A36CD3C61C7E30E382D88A873D5C388F7BFD4C95C2573ED3B85797360B122",
+      "ExpectedValues": 2,
+      "Before": {
+        "MedianUs": 85.98488427641468,
+        "RangeUs": [
+          84.2077911036036,
+          88.82998716452742
+        ],
+        "Bytes": 25032.0,
+        "ProcessMediansUs": [
+          88.21770828471412,
+          84.459740990991
+        ]
+      },
+      "After": {
+        "MedianUs": 0.25226144714340115,
+        "RangeUs": [
+          0.24626932847706104,
+          0.26140625391427297
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2565012156766523,
+          0.24890906844534408
+        ]
+      },
+      "ObservedPercent": -99.70662117037634,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "funded-deadline-private-tail",
+      "InputBytes": 40,
+      "InputSha256": "2B6A36CD3C61C7E30E382D88A873D5C388F7BFD4C95C2573ED3B85797360B122",
+      "ExpectedValues": 2,
+      "Before": {
+        "MedianUs": 91.08668422636966,
+        "RangeUs": [
+          89.78200903070439,
+          92.05184216867471
+        ],
+        "Bytes": 31232.0,
+        "ProcessMediansUs": [
+          91.6538590361446,
+          89.8264449127032
+        ]
+      },
+      "After": {
+        "MedianUs": 0.5140822449180706,
+        "RangeUs": [
+          0.49605400769829083,
+          0.5315725728888046
+        ],
+        "Bytes": 160.0,
+        "ProcessMediansUs": [
+          0.5294175740471627,
+          0.4973383525125811
+        ]
+      },
+      "ObservedPercent": -99.4356120773477,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "private-head",
+      "InputBytes": 40,
+      "InputSha256": "2B6A36CD3C61C7E30E382D88A873D5C388F7BFD4C95C2573ED3B85797360B122",
+      "ExpectedValues": 2,
+      "Before": {
+        "MedianUs": 85.34231627006088,
+        "RangeUs": [
+          83.42981849511776,
+          85.88469784172662
+        ],
+        "Bytes": 25032.0,
+        "ProcessMediansUs": [
+          85.48240509131155,
+          84.82381677197014
+        ]
+      },
+      "After": {
+        "MedianUs": 0.24804688679433973,
+        "RangeUs": [
+          0.2424516757656862,
+          0.253118302081437
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2501137053219249,
+          0.24660693055189062
+        ]
+      },
+      "ObservedPercent": -99.70935065084312,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "nested-private-tail",
+      "InputBytes": 47,
+      "InputSha256": "A095B75D9F650C225035E4D871EA3581D7CA886C6107A2922BFC706D217EAD6E",
+      "ExpectedValues": 3,
+      "Before": {
+        "MedianUs": 85.80431019367009,
+        "RangeUs": [
+          84.9664216937355,
+          87.11906765578634
+        ],
+        "Bytes": 25032.0,
+        "ProcessMediansUs": [
+          86.11010385756678,
+          85.53463979118328
+        ]
+      },
+      "After": {
+        "MedianUs": 0.2884998222887892,
+        "RangeUs": [
+          0.2835703559630414,
+          0.2908506686603745
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2897780546982667,
+          0.2857283741724895
+        ]
+      },
+      "ObservedPercent": -99.6637700115092,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "all-private-match",
+      "InputBytes": 40,
+      "InputSha256": "2B6A36CD3C61C7E30E382D88A873D5C388F7BFD4C95C2573ED3B85797360B122",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 1.9484041650336485,
+        "RangeUs": [
+          1.8668901494573802,
+          2.0622896571024962
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          2.0256282234097847,
+          1.8865367705582856
+        ]
+      },
+      "After": {
+        "MedianUs": 0.2252513435524749,
+        "RangeUs": [
+          0.2226593381306366,
+          0.2295692036398058
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.22653947448777065,
+          0.22415643048939196
+        ]
+      },
+      "ObservedPercent": -88.43918794699431,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "all-private-count",
+      "InputBytes": 1280,
+      "InputSha256": "4654E62EBF78F9419A7E4264018E5BBAABA5E9EAF8F28FA158A2418545823531",
+      "ExpectedValues": 256,
+      "Before": {
+        "MedianUs": 93.99572225690324,
+        "RangeUs": [
+          91.02064242424242,
+          97.62724216710183
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          96.39854503916449,
+          91.27466363636364
+        ]
+      },
+      "After": {
+        "MedianUs": 24.163050953304467,
+        "RangeUs": [
+          23.554708616429895,
+          24.983489167067887
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          24.503727973038036,
+          23.672483940704144
+        ]
+      },
+      "ObservedPercent": -74.29345679448738,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "short-empty-overlap-control",
+      "InputBytes": 3,
+      "InputSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "ExpectedValues": 3,
+      "Before": {
+        "MedianUs": 0.5348213957206654,
+        "RangeUs": [
+          0.5235242182427182,
+          0.5504137004799718
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.5447165524226101,
+          0.5259601182260417
+        ]
+      },
+      "After": {
+        "MedianUs": 0.5179604984277508,
+        "RangeUs": [
+          0.511587114534458,
+          0.5339191956830291
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.5148739490385398,
+          0.5264680512318475
+        ]
+      },
+      "ObservedPercent": -3.1526220580974984,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 12.124945399304117,
+        "RangeUs": [
+          12.043558783294438,
+          12.326955669771925
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.16805669771924,
+          12.072664198921702
+        ]
+      },
+      "After": {
+        "MedianUs": 12.134559555772517,
+        "RangeUs": [
+          12.033195427548613,
+          12.223168648648647
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.137176715176714,
+          12.134160686681312
+        ]
+      },
+      "ObservedPercent": 0.07929236917596505,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 22.32295739584845,
+        "RangeUs": [
+          22.206173029467266,
+          22.72171029115019
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.388891179014127,
+          22.293579474524602
+        ]
+      },
+      "After": {
+        "MedianUs": 22.523912976636396,
+        "RangeUs": [
+          22.21376390498262,
+          22.748176598837208
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.60632340116279,
+          22.372055330243338
+        ]
+      },
+      "ObservedPercent": 0.9002193447061657,
+      "RangesDisjoint": false
+    }
+  ],
+  "Windows": [
+    "Passed!  - Failed:     0, Passed:   406, Skipped:     0, Total:   406, Duration: 2 s - Lokad.Utf8Regex.Posix.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   406, Skipped:     0, Total:   406, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "Linux": [
+    "Passed!  - Failed:     0, Passed:   406, Skipped:     0, Total:   406, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "BeforeProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.91+1f2b34c102f54277d370dec95f3b2f1084938efb sha256=BC346C0B8D956527C2402930401F9B0338525A0D5B040CDAEA8D2729B61B0D76",
+      "PdbSha256": "B7B22C1328FF7F75B3BDD0C4E2A6EF831E515BA02FA450F04D832C54F1E8FF2F",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.91+ec31fe66575f484f8d90515f02b4d737c167451e sha256=13533088AC9CD043E2224EFC14212A23E871D6650237ADA3D98F2CE840413B60",
+      "PdbSha256": "D476CEBA5096A117CADB8825C47BA1E343B9F5B493BCD090DF56575D4B5E8D60",
+      "Documents": 12
+    }
+  },
+  "AfterProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.91+1f2b34c102f54277d370dec95f3b2f1084938efb sha256=BC346C0B8D956527C2402930401F9B0338525A0D5B040CDAEA8D2729B61B0D76",
+      "PdbSha256": "B7B22C1328FF7F75B3BDD0C4E2A6EF831E515BA02FA450F04D832C54F1E8FF2F",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.91+6c69661957da9597577ad3982f8f171e4c04bf3c sha256=11736CDA06BED82B137382EA890F957510A8BC8F9D39439192D850381E4CE9C9",
+      "PdbSha256": "3368E55F78B1FCC9000DE0FDCE6EF32DAE5817A5D4A3148F128A16533AAEA846",
+      "Documents": 12
+    }
+  },
+  "InputContract": "POSIX caller-valid unchanged UTF8. Both producers time the complete public Match and every byte/UTF16 capture slot into identical reusable caller-owned storage. Checks are outside timing. Finite work/depth/working/result plus original funded/deadline where labelled. Separate ordinary producer processes; no native parity refresh.",
+  "CompleteCompilerInputsVerified": true,
+  "CommonCoreCallerDotNet": true,
+  "ExistingPosixControlPathsNotIdenticalDll": true,
+  "OrdinaryProcesses": true,
+  "ManagedMemberInventory": [
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": []
+    }
+  ],
+  "RawArchive": "artifacts/experiments/posix-private-run-tags-20261114/evidence.tar.gz",
+  "RawSha256": "FF154AB287A4E7B26EC6997575E9519DB68F36F7ED9365E4CA2F699111DB9BA9",
+  "LocalEvidenceSha256": "2AD12A4F00265E0AC67BADE77AFC588770125D27FC5B549EB18556C58782C562",
+  "EvidenceOffVmVerified": true,
+  "WorkersAndCollectorTerminal": true,
+  "PreservedImmutableAssets": 588,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "SetupFailures": [],
+  "CapacityRetirement": {
+    "RetiredDuplicateVmArchivesOnly": [
+      {
+        "Task": "posix-adjacent-projection-20261114",
+        "Sha256": "5672A0348DC52576C4D5BB649DDB3C63CE6E2CBD18E2E598140DA53C69C9FCD4",
+        "Bytes": 3069673,
+        "VmPath": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/posix-adjacent-projection-20261114/evidence.tar.gz"
+      },
+      {
+        "Task": "posix-adjacent-projection-recovery-20261114",
+        "Sha256": "F738C5EB88499E1931A808913011B5AE9F18531BFA64AA6FA79B4CB4E66C8FFF",
+        "Bytes": 3070001,
+        "VmPath": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/posix-adjacent-projection-recovery-20261114/evidence.tar.gz"
+      },
+      {
+        "Task": "posix-adjacent-projection-bounded-20261114",
+        "Sha256": "393EB38CA441A1273B16489DB62DE5673CA9B2322603FA15F4CC7E8778CCB599",
+        "Bytes": 3078783,
+        "VmPath": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/posix-adjacent-projection-bounded-20261114/evidence.tar.gz"
+      }
+    ],
+    "RepositoryFreeBefore": 144994304,
+    "RepositoryFreeAfter": 154218496,
+    "CanonicalOffVmBytesPreserved": true
+  },
+  "Notes": [
+    "One75.346s ten-row ordinary-process ABBA, five150ms-target samples per process/row, all>=20ms,150s cap,zero confirmations. Both <=30s producer preflights complete and demonstrate old/new route eligibility before timing. No implementation/preflight/timing failure or measurement repeat.",
+    "Forty-byte public captured tail85.985\u21920.252us,25032\u21920B; funded/deadline91.087\u21920.514us,31232\u2192160B. Head/nested captured cases also have separated gains. All-private Match1.948\u21920.225us and256-match Count93.996\u219224.163us have separated ranges and unchanged0B.",
+    "SKU-2.55%,empty-overlap-3.15%,identicalCore+0.08%,identical.NET+0.90% controls overlap. Retain the0.414us SKU-before outlier and process medians/ranges. No normalization, formal confidence interval, new native parity ratio or multiplied independent gain.",
+    "Both producers finish all timed workloads with identical complete output/options/input guarantees. Separate long-input focused checks prove bounded work refusal and state-only finite admission; refusal is not timed or called a speedup.",
+    "Only affected POSIX projects/tests built; Core/caller/.NET comparison images identical. Three redundant completed VM archive copies retired only after exact offVM hash/size and live-process checks; all canonical evidence and588 staged assets unchanged."
+  ]
+}

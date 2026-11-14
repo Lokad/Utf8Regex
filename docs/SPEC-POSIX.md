@@ -172,8 +172,12 @@ also allow direct run consumption in the scalar executor. Each examined byte
 remains metered; impossible alternative exits, their undo journal and unused
 repeat-counter capacity are omitted. Work, pending depth and working admission
 can therefore be lower for these programs; capture selection is unchanged.
-Their capture events occur outside repeat bodies, without forks or repeated
-occurrences. Existing state slots keep their unique opening/closing byte offsets;
+Their public capture events occur outside repeat bodies, without forks or repeated
+occurrences. Construction can admit one balanced compiler-only wrapper around a
+class atom after verifying its tag is not a public capture. The original syntax
+tags stay in the program; this proved route skips that private occurrence history.
+Repeated public captures, nullable/overlapping classes and uncertain bodies retain
+their existing selection. Existing state slots keep unique public opening/closing byte offsets;
 no trace is acquired or replayed for this route. State admission remains before
 acquisition, while numerical work/working requirements can fall. Other proven
 routes and general histories retain their existing trace/interval behavior.
