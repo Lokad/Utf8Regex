@@ -1,0 +1,229 @@
+{
+  "Decision": "ACCEPT with retained small costs",
+  "Campaign": "CLOSED",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "Before": "df831e51a6cbd92b9b15749fa112c7df13a4fca1",
+  "After": "d6a9ccc30f96d4d8bc098caf61b80a18e5f41bf3",
+  "Change": "Reuse selected whole end for suffix/empty-end capture UTF16 coordinates; remove redundant capture prefix count. Existing ProjectRange, no map or new abstraction.",
+  "Preserved": [
+    "Scalar/ERE selection and capture priority",
+    "Primary byte and derived UTF16 values",
+    "Unchanged caller-owned output allocation behavior",
+    "Original synchronous token/deadline and finite admission",
+    "Cursor aliases and retained value validity"
+  ],
+  "Revised": "Modeled coordinate work can decrease by removed prefix scan. No numeric work-equivalence promise.",
+  "Rows": [
+    {
+      "Id": "short-sku",
+      "InputBytes": 6,
+      "ExpectedValues": 3,
+      "BeforeUs": 0.3029289319695528,
+      "AfterUs": 0.3049835928280012,
+      "ObservedPercent": 0.678264979541443,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        0.2994884657469077,
+        0.308863446717412
+      ],
+      "AfterRangeUs": [
+        0.29721597642651965,
+        0.30822719906576973
+      ],
+      "MinimumSampleMs": 240.25929
+    },
+    {
+      "Id": "long-ascii-suffix",
+      "InputBytes": 8193,
+      "ExpectedValues": 3,
+      "BeforeUs": 21.79409725837238,
+      "AfterUs": 21.954468348942076,
+      "ObservedPercent": 0.735846448093147,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        21.61179732778067,
+        22.135124240846782
+      ],
+      "AfterRangeUs": [
+        21.803595993756502,
+        22.012830905306974
+      ],
+      "MinimumSampleMs": 249.097576
+    },
+    {
+      "Id": "unicode-suffix-floor",
+      "InputBytes": 13,
+      "ExpectedValues": 3,
+      "BeforeUs": 1.3291787094452585,
+      "AfterUs": 1.3590592889665538,
+      "ObservedPercent": 2.248048310506423,
+      "BeforeBytes": 680,
+      "AfterBytes": 680,
+      "BeforeRangeUs": [
+        1.3181083041716428,
+        1.347152789874157
+      ],
+      "AfterRangeUs": [
+        1.3504089988983377,
+        1.3797985911747628
+      ],
+      "MinimumSampleMs": 248.835815
+    },
+    {
+      "Id": "unicode-empty-end-floor",
+      "InputBytes": 1792,
+      "ExpectedValues": 3,
+      "BeforeUs": 7.959105009995002,
+      "AfterUs": 6.175693603187407,
+      "ObservedPercent": -22.40718528739094,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        7.908313468265868,
+        8.120889430284858
+      ],
+      "AfterRangeUs": [
+        6.114857813302046,
+        6.2075133338222
+      ],
+      "MinimumSampleMs": 250.164948
+    },
+    {
+      "Id": "finite-sku",
+      "InputBytes": 6,
+      "ExpectedValues": 3,
+      "BeforeUs": 0.39375036805170677,
+      "AfterUs": 0.37870453585960967,
+      "ObservedPercent": -3.8211601595560363,
+      "BeforeBytes": 328,
+      "AfterBytes": 328,
+      "BeforeRangeUs": [
+        0.3885778122975326,
+        0.3956485875088793
+      ],
+      "AfterRangeUs": [
+        0.3760156699592494,
+        0.3809690627966094
+      ],
+      "MinimumSampleMs": 248.897689
+    },
+    {
+      "Id": "unchanged-count",
+      "InputBytes": 6,
+      "ExpectedValues": 1,
+      "BeforeUs": 0.16428315236521815,
+      "AfterUs": 0.16342784918431885,
+      "ObservedPercent": -0.5206274463238181,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        0.16151713630162154,
+        0.16599497370266933
+      ],
+      "AfterRangeUs": [
+        0.16203833154371122,
+        0.16544103255190504
+      ],
+      "MinimumSampleMs": 247.334175
+    }
+  ],
+  "WindowsFocused": [
+    "Passed!  - Failed:     0, Passed:   388, Skipped:     0, Total:   388, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   388, Skipped:     0, Total:   388, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "LinuxFocused": [
+    {
+      "Profile": "posix",
+      "Framework": "net10.0",
+      "Counts": {
+        "total": "388",
+        "executed": "388",
+        "passed": "388",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Profile": "posix",
+      "Framework": "net11.0",
+      "Counts": {
+        "total": "388",
+        "executed": "388",
+        "passed": "388",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "BeforeProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "44F10113C58EC24272415CCA7B8DD53E0AAF0AB715AAA2A7E7CF44DBC6AE5D48"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "26837BF382337D80A4A53C7602AE5C1C5493525C12736AF8D9FAD47A1934906D"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Posix/bin/Release/net11.0/Lokad.Utf8Regex.Posix.dll",
+      "Sha256": "E253D9397EB57D74EAC2C0B7E825226045910B2F00E6088A1E69425BC072273F"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Posix/bin/Release/net11.0/Lokad.Utf8Regex.Posix.pdb",
+      "Sha256": "C09BCDABBE5D95B1D3DA45C9E8888B5C07C47245A5016976530CD7AAE9F9E4DD"
+    }
+  ],
+  "AfterProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "44F10113C58EC24272415CCA7B8DD53E0AAF0AB715AAA2A7E7CF44DBC6AE5D48"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "26837BF382337D80A4A53C7602AE5C1C5493525C12736AF8D9FAD47A1934906D"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Posix/bin/Release/net11.0/Lokad.Utf8Regex.Posix.dll",
+      "Sha256": "098C1888F090E06853466C5194E014F8BFAB81697816960E50627B55058CC7BC"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Posix/bin/Release/net11.0/Lokad.Utf8Regex.Posix.pdb",
+      "Sha256": "443CD3402A36936CBD304FE513F60A1E97B13FDBED57EF1049985847831DECB1"
+    }
+  ],
+  "CoreProducerUnchanged": true,
+  "CallerUnchanged": true,
+  "OrdinaryProcesses": true,
+  "RawSha256": "58FE0E7030A5C3DE8C192EB91D0BA1E85D224CDD582E4B85DD3103B240E8FECA",
+  "WindowsRawSha256": "59ACFA6A581F691C499EC81CEBBD8E1091DB979D4CB13A96B3D384EA53519F64",
+  "EvidenceOffVmVerified": true,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Scope": "Caller-valid unchanged UTF8, same ERE/options/floor and full capture byte/UTF16 output. Before/after producer comparison only. The independent POSIX canonical comparator remains PCRE.NET ordered NFA on verified equal-result overlap, with its semantic exclusions; not a POSIX oracle."
+}
