@@ -111,8 +111,10 @@ Direct class/delimiter windows rewind the class itself, including any accepted
 whitespace. Explicit whitespace/gap prefixes keep their conservative windows;
 omitting impossible starts can lower numerical work requirements.
 The first necessary ASCII-range candidate can be verified before window search
-when an excluded delimiter lies within its64-byte prefix. A failed verification
-resumes the existing window search and scalar progression. Captures still come
+when an excluded delimiter lies within its64-byte prefix. A proved complete
+no-rewind capture root needs no delimiter preview: its existing metered repeat
+runner can verify that first candidate directly, including a long first run.
+A failed verification resumes the existing window search and scalar progression. Captures still come
 from the VM; no result is inferred from the prefix. Actual discovery work changes
 and rejection-heavy subjects can cost more, under the same original authority.
 
