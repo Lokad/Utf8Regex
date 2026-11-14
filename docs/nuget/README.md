@@ -62,6 +62,12 @@ units depend on the engine/version/route. Caller-owned output destinations are
 not producer-owned result allocations. An omitted validation pass can reduce
 required work without disabling matching admission or interruption.
 
+Python detailed results and scalar queries share a lazy prefix coordinate index,
+avoiding unused suffix preparation. Distant scalar-only queries can need more
+working capacity because entries store both scalar and UTF-16 counts. Proven
+POSIX disjoint runs omit redundant capture-history storage. Recheck numerical
+work/working limits when upgrading; published result charges remain independent.
+
 Keep borrowed input alive and unchanged. Follow each cursor's alias contract and
 dispose deterministic program/result/cursor owners on early termination. Retained
 results preserve their documented lifetime; the host accounts for its own storage.

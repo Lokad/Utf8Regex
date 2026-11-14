@@ -42,8 +42,11 @@
   unused assertion orchestration while assertion/history execution remains.
   Scalar-coordinate queries prepare only the requested prefix; later index
   growth admits old/new working capacity together.
-  PythonRe reduces coordinate preparation for one replacement callback and
-  repeated verification of false literal prefixes. Raw callback output keeps
+  PythonRe shares lazy scalar/UTF-16 prefix coordinates across detailed results,
+  cursors and callbacks, including lookaround captures. Empty name metadata and
+  captures equal to group zero omit redundant publication/projection work.
+  Distant scalar-only queries can require more working capacity for the shared
+  two-count index. False literal prefixes avoid repeated verification. Raw callback output keeps
   its strict completed-stream UTF-8 check without unused coordinate metadata.
   Core Count reuses existing ASCII validity proofs and omits discarded literal
   coordinates; checked folded search compares punctuation anchors exactly.
@@ -52,7 +55,8 @@
   this reduces finite-policy admission requirements, with an intentional cost
   on ASCII-only word counting.
   Short string output handles one-byte ASCII directly. POSIX suffix captures
-  reuse the whole match's ending coordinate. PCRE2 positive ASCII-range Count
+  reuse the whole match's ending coordinate. Proven disjoint ASCII runs keep
+  unique capture boundaries in existing state without an occurrence trace. PCRE2 positive ASCII-range Count
   can keep its workspace-free byte counter on valid mixed Unicode text, with
   unchanged native UTF checking and basic work/interruption controls.
   Performance depends on the operation and input policy; some capture, folded,
