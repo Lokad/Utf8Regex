@@ -1,11 +1,15 @@
 # Current captured-split CPU observation
 
 Frozen dev86 source `06ef69e4`, .NET11GA, current source-built Core/Python DLL/PDBs.
-Actual public PythonRe SplitToStrings, `([,;])`, the catalog's10752 valid UTF8
+Actual public PythonRe SplitToStrings, `([,;])`, the catalog's11776 valid UTF8
 bytes (`alpha,beta;gamma,delta;` repeated512 times). Caller-valid unchanged text;
 no subject-validation option/pass.2048 separator matches produce4097 complete
 strings, checked after every64-call batch. Loaded images match staged hashes;
 source/PDB checks and before/after producer/caller identity checks pass.
+
+The initial prose said10752 bytes; the unchanged raw profile, input hash and
+acceptance record have always recorded11776. This corrects that transcription;
+no new capture or measurements were run.
 
 ONE cpu-clock:u capture at997Hz,1.5s warmup/15s workload/30s outer cap.17159
 whole-process samples span17.146s, including startup, warmup, JIT, checks and
@@ -35,12 +39,10 @@ another map-removal/decoder framework is unsupported by this evidence.
 not establish that diagnostics or cancellation checks caused them. These flat
 samples are not phase durations, exact instruction costs or speedup ceilings.
 
-Next bounded source hypothesis: unknown-length one-byte ASCII output can use
-char.ToString instead of the generic UTF8 decoder, after existing conservative
-admission and interruption checkpoints. Other lengths/non-ASCII/exact-known
-decoding must keep their behavior. No cache or new fields. Focused correctness
-and one complete public A/B with an unchanged non-string control must decide;
-sampling alone does not promote it. No repeat CPU capture for this case.
+The subsequent [single-byte output pilot](../PythonAsciiOutput-20261114/README.md)
+is accepted with explicitly retained local costs, after one public A/B and its
+sole noise confirmation. No repeat CPU capture occurred. The sampling alone
+did not promote that change; its recorded public costs did.
 
 Raw SHA256 `7345596B7C7B04FA11206F97C16D9D3DC90CCAAEA1126FF5E8A91EE6D5FF506E` verified offVM before keeper62385 terminal0, under
 `artifacts/experiments/python-split-current-cpu-20261114/`.

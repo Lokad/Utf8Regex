@@ -1,0 +1,373 @@
+{
+  "Decision": "ACCEPT with measured local costs",
+  "Campaign": "CLOSED",
+  "Comparisons": 1,
+  "NoiseConfirmations": 1,
+  "Before": "06ef69e46580fa711cabbb3daa327ba765a037a1",
+  "After": "df831e51a6cbd92b9b15749fa112c7df13a4fca1",
+  "Change": "Only unknown-length one-byte ASCII DecodeUtf8 output uses char.ToString after unchanged preallocation admission/checkpoints. Known lengths, other bytes/lengths, charges and release remain.",
+  "InputContract": "PythonRe models re over str; valid unchanged borrowed UTF8. Same options, complete arrays checked after timing. No new CPython ratio.",
+  "Rows": [
+    {
+      "Id": "captured-split",
+      "InputBytes": 11776,
+      "ExpectedValues": 4097,
+      "BeforeUs": 299.7228668197474,
+      "AfterUs": 295.3305160818713,
+      "ObservedPercent": -1.4654706811268015,
+      "BeforeBytes": 274648,
+      "AfterBytes": 274648,
+      "BeforeRangeUs": [
+        296.51563030998847,
+        307.7023582089552
+      ],
+      "AfterRangeUs": [
+        290.48788888888885,
+        298.6466169590643
+      ],
+      "MinimumSampleMs": 198.693716
+    },
+    {
+      "Id": "ascii-single-findall",
+      "InputBytes": 4096,
+      "ExpectedValues": 4096,
+      "BeforeUs": 101.54146974185359,
+      "AfterUs": 117.8523945386064,
+      "ObservedPercent": 16.063313676884604,
+      "BeforeBytes": 32816,
+      "AfterBytes": 32816,
+      "BeforeRangeUs": [
+        101.16929623360136,
+        102.44193228946256
+      ],
+      "AfterRangeUs": [
+        117.13281732580039,
+        119.37718691148775
+      ],
+      "MinimumSampleMs": 239.063047
+    },
+    {
+      "Id": "word-findall",
+      "InputBytes": 11776,
+      "ExpectedValues": 2048,
+      "BeforeUs": 321.9510229681979,
+      "AfterUs": 314.0832046413502,
+      "ObservedPercent": -2.4437935479474593,
+      "BeforeBytes": 94280,
+      "AfterBytes": 94280,
+      "BeforeRangeUs": [
+        318.6822720848057,
+        323.9234240282685
+      ],
+      "AfterRangeUs": [
+        311.9093227848101,
+        316.0613776371309
+      ],
+      "MinimumSampleMs": 147.845019
+    },
+    {
+      "Id": "unicode-findall",
+      "InputBytes": 5120,
+      "ExpectedValues": 2048,
+      "BeforeUs": 606.0657680722892,
+      "AfterUs": 505.9466909090909,
+      "ObservedPercent": -16.519507030012047,
+      "BeforeBytes": 137808,
+      "AfterBytes": 137808,
+      "BeforeRangeUs": [
+        601.036201807229,
+        613.3401656626506
+      ],
+      "AfterRangeUs": [
+        499.6830161616162,
+        510.89024646464645
+      ],
+      "MinimumSampleMs": 199.544019
+    },
+    {
+      "Id": "finite-captured-split",
+      "InputBytes": 11776,
+      "ExpectedValues": 4097,
+      "BeforeUs": 396.5392474437628,
+      "AfterUs": 398.87262385321105,
+      "ObservedPercent": 0.5884351736908933,
+      "BeforeBytes": 278848,
+      "AfterBytes": 278848,
+      "BeforeRangeUs": [
+        391.7013762781187,
+        403.6297811860941
+      ],
+      "AfterRangeUs": [
+        397.5481834862385,
+        406.9194510703364
+      ],
+      "MinimumSampleMs": 191.541973
+    },
+    {
+      "Id": "unchanged-count",
+      "InputBytes": 11776,
+      "ExpectedValues": 2048,
+      "BeforeUs": 132.2535693548387,
+      "AfterUs": 135.30200107642628,
+      "ObservedPercent": 2.304990131047857,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        131.14218440860213,
+        137.21475752688173
+      ],
+      "AfterRangeUs": [
+        134.84716307857911,
+        136.37555382131325
+      ],
+      "MinimumSampleMs": 243.924463
+    }
+  ],
+  "ConfirmationRows": [
+    {
+      "Id": "captured-split",
+      "BeforeUs": 314.9310676470588,
+      "AfterUs": 294.8455114754098,
+      "ObservedPercent": -6.377762702712686,
+      "BeforeBytes": 274648,
+      "AfterBytes": 274648,
+      "BeforeRangeUs": [
+        310.226825,
+        326.1850897058824
+      ],
+      "AfterRangeUs": [
+        292.1867901639344,
+        302.6559508196721
+      ]
+    },
+    {
+      "Id": "ascii-single-findall",
+      "BeforeUs": 103.26619891745602,
+      "AfterUs": 111.94034962239004,
+      "ObservedPercent": 8.399796638072775,
+      "BeforeBytes": 32816,
+      "AfterBytes": 32816,
+      "BeforeRangeUs": [
+        102.7416544880469,
+        104.21472034280559
+      ],
+      "AfterRangeUs": [
+        111.32998533984895,
+        112.61455752998667
+      ]
+    },
+    {
+      "Id": "word-findall",
+      "BeforeUs": 324.7630644736842,
+      "AfterUs": 322.35926048284625,
+      "ObservedPercent": -0.7401716062550356,
+      "BeforeBytes": 94280,
+      "AfterBytes": 94280,
+      "BeforeRangeUs": [
+        322.43678289473684,
+        330.3177328947368
+      ],
+      "AfterRangeUs": [
+        320.9886759847522,
+        324.55064167725544
+      ]
+    },
+    {
+      "Id": "unicode-findall",
+      "BeforeUs": 597.3523937947493,
+      "AfterUs": 509.962674796748,
+      "ObservedPercent": -14.629508461973039,
+      "BeforeBytes": 137808,
+      "AfterBytes": 137808,
+      "BeforeRangeUs": [
+        595.1035011933175,
+        605.981245823389
+      ],
+      "AfterRangeUs": [
+        507.6502012195122,
+        515.294418699187
+      ]
+    },
+    {
+      "Id": "finite-captured-split",
+      "BeforeUs": 398.050484984985,
+      "AfterUs": 400.21903469079933,
+      "ObservedPercent": 0.5447926299841477,
+      "BeforeBytes": 278848,
+      "AfterBytes": 278848,
+      "BeforeRangeUs": [
+        393.5733153153153,
+        402.6423618618618
+      ],
+      "AfterRangeUs": [
+        397.7762247360482,
+        406.76384615384615
+      ]
+    },
+    {
+      "Id": "unchanged-count",
+      "BeforeUs": 132.26299263157895,
+      "AfterUs": 134.13691176470587,
+      "ObservedPercent": 1.4168128936464797,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        130.68090789473683,
+        137.48096210526316
+      ],
+      "AfterRangeUs": [
+        131.6332331550802,
+        134.99005561497324
+      ]
+    }
+  ],
+  "WindowsFocused": [
+    "Passed!  - Failed:     0, Passed:   418, Skipped:     0, Total:   418, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   418, Skipped:     0, Total:   418, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)",
+    "Passed!  - Failed:     0, Passed:   607, Skipped:     0, Total:   607, Duration: 3 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   607, Skipped:     0, Total:   607, Duration: 2 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "LinuxFocused": [
+    {
+      "Profile": "core",
+      "Framework": "net10.0",
+      "Counts": {
+        "total": "418",
+        "executed": "418",
+        "passed": "418",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Profile": "python",
+      "Framework": "net10.0",
+      "Counts": {
+        "total": "607",
+        "executed": "607",
+        "passed": "607",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Profile": "core",
+      "Framework": "net11.0",
+      "Counts": {
+        "total": "418",
+        "executed": "418",
+        "passed": "418",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Profile": "python",
+      "Framework": "net11.0",
+      "Counts": {
+        "total": "607",
+        "executed": "607",
+        "passed": "607",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "BeforeProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "09FA23F2DA940DB9D94144F0AB1E11F135093C58497BDEDB36AC77305972D88E"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "0A8A1327D5B9D5811DD28F3EF63799CDA29E947784F6D347B0C1D806309FB136"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "3AFB35860400FDE3B51592001DED8287C39DB068C8212536F72D61830B763B06"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "AE47D78A70068435D033755F448C6D9787D4DC041D650DA3D4B1C994FBE67D09"
+    }
+  ],
+  "AfterProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "44F10113C58EC24272415CCA7B8DD53E0AAF0AB715AAA2A7E7CF44DBC6AE5D48"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "26837BF382337D80A4A53C7602AE5C1C5493525C12736AF8D9FAD47A1934906D"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "3AFB35860400FDE3B51592001DED8287C39DB068C8212536F72D61830B763B06"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "AE47D78A70068435D033755F448C6D9787D4DC041D650DA3D4B1C994FBE67D09"
+    }
+  ],
+  "PythonProducerUnchanged": true,
+  "CallerUnchanged": true,
+  "OrdinaryProcesses": true,
+  "PrimaryRawSha256": "0722B490CC4E84AE3B795F92F0235BAB5B64785D75F47860FA262E5336CAA7E1",
+  "ConfirmationRawSha256": "60DFC5DA2E31085E168E3544CB3FB084D368603A4E952158ACA8BFC56A08D500",
+  "WindowsRawSha256": "381A5C9FED53B865FC9617C0DFD93F3E0129ECA81C53C5A85340A3D829AD89B5",
+  "EvidenceOffVmVerified": true,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Notes": [
+    "Per-process medians/observed ranges are not a formal confidence interval; control movement is not subtracted.",
+    "The ASCII exact-literal FindAll route reuses one canonical string, so its whole-operation regression is retained but is not attributed to repeated decoder calls.",
+    "Unicode inputs include one ASCII scalar in four; no proof that all observed gain belongs to the new branch.",
+    "All result/work/working admission and original interruption/lifetime contracts remain.",
+    "Raw CPU profile already recorded11776 bytes; initial README/PLAN prose10752 was a transcription error corrected without another capture."
+  ]
+}
