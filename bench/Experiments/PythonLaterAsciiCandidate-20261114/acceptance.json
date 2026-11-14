@@ -1,0 +1,294 @@
+{
+  "Source": "313d06a925caf0bf0fe95154eb9f215dbc276bd7",
+  "BeforeCheckout": "013f61fd72be9d89d7366aac0e73a780b9479e80",
+  "BeforePythonProducer": "ae463cb431d1be2b216aca0667ca4113640b171b",
+  "CoreProducer": "c430228e9d3f587ef6b5b802e252df773388979f",
+  "Decision": "Promote the large repeated-prefix work reduction; retain short success+11.71%/92ns. No universal10% veto.",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "FurtherTimingOrTuningAllowed": false,
+  "Rows": [
+    {
+      "Case": "long-prefix-columns",
+      "InputBytes": 32769,
+      "InputSha256": "A0C6B9CD3D2EE7C45B032DCFAEACD579259697323745F1062068EC2DDC8DC2AA",
+      "ExpectedCount": 1,
+      "Primary": {
+        "BeforeUs": 122053.96666666667,
+        "AfterUs": 7.046705337752886,
+        "ObservedPercent": -99.99422656589523,
+        "BeforeBytes": 120,
+        "AfterBytes": 120,
+        "BeforeRangeUs": [
+          120569.43333333333,
+          125250.23333333334
+        ],
+        "AfterRangeUs": [
+          6.981635044005029,
+          7.068182077951766
+        ],
+        "MinimumSampleMs": 244.3293
+      },
+      "Control": {
+        "BeforeUs": 63.46599629531622,
+        "AfterUs": 63.65719272001994,
+        "ObservedPercent": 0.3012580529171194,
+        "BeforeBytes": 16440,
+        "AfterBytes": 16440,
+        "BeforeRangeUs": [
+          63.1160624503837,
+          64.45109817412015
+        ],
+        "AfterRangeUs": [
+          63.20772874594864,
+          64.14081276489654
+        ],
+        "MinimumSampleMs": 238.5156
+      }
+    },
+    {
+      "Case": "long-prefix-finite-live",
+      "InputBytes": 32769,
+      "InputSha256": "A0C6B9CD3D2EE7C45B032DCFAEACD579259697323745F1062068EC2DDC8DC2AA",
+      "ExpectedCount": 1,
+      "Primary": {
+        "BeforeUs": 150212.85,
+        "AfterUs": 7.891190759628069,
+        "ObservedPercent": -99.99474666064879,
+        "BeforeBytes": 384,
+        "AfterBytes": 384,
+        "BeforeRangeUs": [
+          149933.1,
+          152596.65
+        ],
+        "AfterRangeUs": [
+          7.826083459348155,
+          7.9383932305910365
+        ],
+        "MinimumSampleMs": 243.2425
+      },
+      "Control": {
+        "BeforeUs": 280.23311403508774,
+        "AfterUs": 290.5222838137472,
+        "ObservedPercent": 3.671646662489425,
+        "BeforeBytes": 98480,
+        "AfterBytes": 98480,
+        "BeforeRangeUs": [
+          272.68629385964914,
+          291.740350877193
+        ],
+        "AfterRangeUs": [
+          288.25055432372505,
+          292.2573170731707
+        ],
+        "MinimumSampleMs": 248.6899
+      }
+    },
+    {
+      "Case": "short-success",
+      "InputBytes": 64,
+      "InputSha256": "5703E1BE2748AB24948328AA8185C38475A677590E6D1F8C4C35DABC7866F2B0",
+      "ExpectedCount": 1,
+      "Primary": {
+        "BeforeUs": 0.7866051068030314,
+        "AfterUs": 0.8787053042099399,
+        "ObservedPercent": 11.70856845580721,
+        "BeforeBytes": 120,
+        "AfterBytes": 120,
+        "BeforeRangeUs": [
+          0.7804933744010096,
+          0.7939082599758842
+        ],
+        "AfterRangeUs": [
+          0.8705800631419551,
+          0.883803445665062
+        ],
+        "MinimumSampleMs": 243.7659
+      },
+      "Control": {
+        "BeforeUs": 62.64217856254663,
+        "AfterUs": 61.961874361593466,
+        "ObservedPercent": -1.0860161899923337,
+        "BeforeBytes": 16440,
+        "AfterBytes": 16440,
+        "BeforeRangeUs": [
+          62.419970156677444,
+          63.487192240736135
+        ],
+        "AfterRangeUs": [
+          61.77290602655771,
+          62.53363125638407
+        ],
+        "MinimumSampleMs": 241.9027
+      }
+    },
+    {
+      "Case": "false-later-bytes",
+      "InputBytes": 32832,
+      "InputSha256": "CBCC410F9BD9EA74B760B0CB73FEA988883CA8B9A456D3677296CB208172050D",
+      "ExpectedCount": 1,
+      "Primary": {
+        "BeforeUs": 2.485959940395111,
+        "AfterUs": 2.0340261259504775,
+        "ObservedPercent": -18.17944879565535,
+        "BeforeBytes": 120,
+        "AfterBytes": 120,
+        "BeforeRangeUs": [
+          2.47142347810983,
+          2.505829760392003
+        ],
+        "AfterRangeUs": [
+          2.022607915773055,
+          2.0956435952427377
+        ],
+        "MinimumSampleMs": 259.3489
+      },
+      "Control": {
+        "BeforeUs": 63.559513444302176,
+        "AfterUs": 62.21147088353413,
+        "ObservedPercent": -2.1209139084259143,
+        "BeforeBytes": 16440,
+        "AfterBytes": 16440,
+        "BeforeRangeUs": [
+          62.49044814340589,
+          64.22197183098591
+        ],
+        "AfterRangeUs": [
+          61.58210341365462,
+          62.749422690763055
+        ],
+        "MinimumSampleMs": 244.0252
+      }
+    },
+    {
+      "Case": "dense-unchanged",
+      "InputBytes": 17408,
+      "InputSha256": "332DF9A8E15D370BEA5C971A99487AB004C70A24DF73ECE9FF954619B5E8C3C1",
+      "ExpectedCount": 2048,
+      "Primary": {
+        "BeforeUs": 352.52385057471264,
+        "AfterUs": 345.1449315068493,
+        "ObservedPercent": -2.0931687475425176,
+        "BeforeBytes": 94344,
+        "AfterBytes": 94344,
+        "BeforeRangeUs": [
+          349.8997126436782,
+          364.6787356321839
+        ],
+        "AfterRangeUs": [
+          340.7272602739726,
+          347.2517808219178
+        ],
+        "MinimumSampleMs": 243.5302
+      },
+      "Control": {
+        "BeforeUs": 63.13735820519284,
+        "AfterUs": 62.16961651917404,
+        "ObservedPercent": -1.532756063175289,
+        "BeforeBytes": 16440,
+        "AfterBytes": 16440,
+        "BeforeRangeUs": [
+          62.45865893622385,
+          63.632064532392235
+        ],
+        "AfterRangeUs": [
+          61.737438544739426,
+          62.784931170108166
+        ],
+        "MinimumSampleMs": 247.7735
+      }
+    }
+  ],
+  "BeforePlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+  "AfterPlacement": "least-contended allowed processor (0x2; Linux efficiency class unknown)",
+  "RawSha256": "157C7B196470356602AB80C23D9A349FD2654A3BDCCA9F4F1519E41CE2DF72BB",
+  "OffVmVerified": true,
+  "KeeperReleased": true,
+  "SharedCoreAndCallerUnchanged": true,
+  "MeasuredFindAllAllocationsUnchanged": true,
+  "WindowsFullChecksPerTarget": 5181,
+  "WindowsFinalFocusedChecksPerTarget": 35,
+  "LinuxFullChecks": [
+    {
+      "Framework": "net10.0",
+      "Counts": {
+        "total": "5182",
+        "executed": "5182",
+        "passed": "5182",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Framework": "net11.0",
+      "Counts": {
+        "total": "5182",
+        "executed": "5182",
+        "passed": "5182",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "ResourceProof": {
+    "Before": {
+      "Success": false,
+      "Error": "The ExecutionWorkSteps resource limit of 2000 was exceeded by a request for 2001.",
+      "Core": {
+        "Assembly": "0.5.0-dev.84+c430228e9d3f587ef6b5b802e252df773388979f",
+        "DllSha256": "ACA273272FE0328A81FB4F48B2B8F6E76D1DD8B228F7C6F99F8909CCB3F429B8",
+        "PdbSha256": "6D13817FC419792CB5772320C4AB514C3A07B52D10E3DC3F6121F69A88E13458",
+        "Documents": 343
+      },
+      "Python": {
+        "Assembly": "0.5.0-dev.84+ae463cb431d1be2b216aca0667ca4113640b171b",
+        "DllSha256": "7282AD25539642D3D87642C09DBBC23855BE75B30F3CB563AE9F2E1191601023",
+        "PdbSha256": "28CFD1B7D57E784CCC3E342AC4A5235807E058DA6B54019B8FECBF373B396E17",
+        "Documents": 49
+      }
+    },
+    "After": {
+      "Success": true,
+      "Values": [
+        "3"
+      ],
+      "Core": {
+        "Assembly": "0.5.0-dev.84+c430228e9d3f587ef6b5b802e252df773388979f",
+        "DllSha256": "ACA273272FE0328A81FB4F48B2B8F6E76D1DD8B228F7C6F99F8909CCB3F429B8",
+        "PdbSha256": "6D13817FC419792CB5772320C4AB514C3A07B52D10E3DC3F6121F69A88E13458",
+        "Documents": 343
+      },
+      "Python": {
+        "Assembly": "0.5.0-dev.84+313d06a925caf0bf0fe95154eb9f215dbc276bd7",
+        "DllSha256": "43B09B044389A819C1A2284CA599B1DE48CD58F069A3E47903EAF2BBA3F8B46A",
+        "PdbSha256": "B6A3AF1FA789357626D435F12417753223398C0E0B0FC6F148A41038F09CB165",
+        "Documents": 49
+      }
+    }
+  },
+  "ExistingImmutableAssetsPreserved": 532,
+  "NotInFrozenDev84PackagesOrCatalog": true,
+  "Scope": "One necessary first-consumer interval after a straight ASCII run; full scalar verification remains. No whole-subject validity/ASCII/UTF16 preparation, cache, buffer or compiler framework added."
+}
