@@ -89,6 +89,14 @@ confirmation beyond that searched prefix. Earliest complete candidate selection,
 scalar verification/captures and original interruption remain; avoiding repeated
 prefix confirmation can lower work units without adding storage.
 
+A straight exact ASCII literal run can also prove the byte distance to a
+mandatory, disjoint later ASCII interval. Search intersects its head and later
+interval using checked range searches; the scalar VM still verifies the full
+prefix, assertions and captures. Program inspection is interrupted in bounded
+chunks and retains no additional buffer. Match/FullMatch remain anchored; opaque
+or possibly empty suffixes keep their existing candidate loop. Numerical work
+charges may change as repeated failed verification is avoided.
+
 Search-based operations can also narrow candidate starts for a positive greedy
 ASCII set repeat followed directly by an exact ASCII delimiter, allowing capture
 markers between them, including short subjects of at least 16 bytes.

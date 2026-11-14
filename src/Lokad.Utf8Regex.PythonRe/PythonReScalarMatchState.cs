@@ -19,6 +19,9 @@ internal struct PythonReScalarMatchState
     private readonly Utf8Regex? _candidateRegex;
     private readonly int _leadingAsciiLow;
     private readonly int _leadingAsciiHigh;
+    private readonly int _laterAsciiDistance;
+    private readonly byte _laterAsciiLow;
+    private readonly byte _laterAsciiHigh;
     // Production retains the expression for lazy diagnostics. Standalone
     // diagnostic/test cursors can supply text without constructing a facade.
     private readonly object _timeoutSource;
@@ -85,6 +88,13 @@ internal struct PythonReScalarMatchState
                         _leadingAsciiLow = low;
                         _leadingAsciiHigh = high;
                         _leadingAsciiMayMatchUnicode = !asciiOnly;
+                        if (asciiOnly && TryGetLaterAsciiRange(program, low, high, ref _invocation,
+                            out var distance, out var laterLow, out var laterHigh))
+                        {
+                            _laterAsciiDistance = distance;
+                            _laterAsciiLow = (byte)laterLow;
+                            _laterAsciiHigh = (byte)laterHigh;
+                        }
                     }
                 }
             }
@@ -187,7 +197,37 @@ internal struct PythonReScalarMatchState
 
     internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, false);
 
-    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, bool asciiInput, out int low, out int high)
+    private static bool TryGetLaterAsciiRange(Utf8SliceProgram program, int leadingLow, int leadingHigh,
+        ref Utf8SliceInvocation invocation, out int distance, out int low, out int high)
+    {
+        distance = 0;
+        low = high = -1;
+        var code = program.Instructions;
+        for (var index = 0; index < code.Length; index++)
+        {
+            // Inspect existing bounded program storage without retaining another
+            // descriptor. Major matching work remains in the original verifier.
+            if ((index & 255) == 0 && invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                throw invocation.Budget.CreateResourceFailure();
+            var atom = code[index];
+            if (atom.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                continue;
+            if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)atom.A < 128)
+            {
+                distance++;
+                continue;
+            }
+            // The same bounded first-consumer proof must cover every suffix
+            // branch. Optional/empty suffixes and opaque effects decline. A
+            // disjoint later interval rejects repeated false prefix heads.
+            return distance > 0 && TryGetLeadingAsciiRange(program, false, out low, out high, index) &&
+                (high < leadingLow || low > leadingHigh);
+        }
+        return false;
+    }
+
+    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, bool asciiInput, out int low, out int high,
+        int startIndex = 0)
     {
         low = high = -1;
         if (program.CanMatchEmpty || program.HasContiguousAnchor || program.RightToLeft || program.IgnoreCase ||
@@ -198,7 +238,7 @@ internal struct PythonReScalarMatchState
         var code = program.Instructions;
         Span<int> pending = stackalloc int[16];
         var count = 0;
-        var index = 0;
+        var index = startIndex;
         var minimum = 128;
         var maximum = -1;
         for (var work = 0; work < 64 && (uint)index < (uint)code.Length; work++)
@@ -405,7 +445,7 @@ internal struct PythonReScalarMatchState
                     }
                     // A necessary start hint still requires profile verification.
                     // Avoid its search helper when the current byte meets the hint.
-                    if (search && (_candidateRegex is not null ||
+                    if (search && (_laterAsciiDistance > 0 || _candidateRegex is not null ||
                         _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
                             (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                         !SeekCandidate(input)) { _finished = true; return false; }
@@ -502,6 +542,35 @@ internal struct PythonReScalarMatchState
         // Native rendering expands lexical folding before planning. Prefixes
         // prove starts only; the profile VM still verifies captures/assertions.
         Utf8ExecutionLimitKind breach;
+        if (_laterAsciiDistance > 0)
+        {
+            var start = _position;
+            while (start < input.Length)
+            {
+                // Intersect the two necessary ranges in order. Seeking heads
+                // first also skips dense later-class bytes with no viable head.
+                breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref start,
+                    (byte)_leadingAsciiLow, (byte)_leadingAsciiHigh, ref _invocation);
+                if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                if (start < 0 || _laterAsciiDistance >= input.Length - start) break;
+                var later = start + _laterAsciiDistance;
+                breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref later,
+                    _laterAsciiLow, _laterAsciiHigh, ref _invocation);
+                if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                if (later < 0) break;
+                start = later - _laterAsciiDistance;
+                // An ASCII start proves scalar alignment even when the
+                // intervening false prefix contains multibyte text.
+                if ((uint)(input[start] - _leadingAsciiLow) <= (uint)(_leadingAsciiHigh - _leadingAsciiLow))
+                {
+                    _position = start;
+                    return true;
+                }
+                start++;
+            }
+            Checkpoint();
+            return false;
+        }
         if (_candidateRegex is not { } candidateRegex)
         {
             if (_leadingAsciiLow < 0) return true;
