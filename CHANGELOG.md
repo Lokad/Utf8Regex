@@ -45,6 +45,8 @@
   PythonRe reduces coordinate preparation for one replacement callback and
   repeated verification of false literal prefixes. Raw callback output keeps
   its strict completed-stream UTF-8 check without unused coordinate metadata.
+  Core Count reuses existing ASCII validity proofs and omits discarded literal
+  coordinates; checked folded search compares punctuation anchors exactly.
   Performance depends on the operation and input policy; some capture, folded,
   reverse, dense-match and controlled workloads use more time or memory.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
