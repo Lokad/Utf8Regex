@@ -2310,10 +2310,10 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.Match => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
             _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath
-                ? "strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges"
+                ? "caller-valid UTF-8; direct anchored ASCII literal-prefix/digit-repeat value ranges"
                 : "anchored value ranges"),
         PythonReBenchmarkOperation.FullMatch when _pythonRegex.DebugUsesAsciiDotAllFullMatchFastPath =>
-            "strict UTF-8 validation; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
+            "caller-valid UTF-8; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             "OwnedScalar",
             "full-match value ranges"),

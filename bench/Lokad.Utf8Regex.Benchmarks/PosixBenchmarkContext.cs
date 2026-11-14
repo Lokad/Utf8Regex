@@ -142,16 +142,30 @@ internal sealed class PosixBenchmarkContext : IDisposable
             _groups.Length > 3 ? _groups[3] : default, _groups.Length > 4 ? _groups[4] : default);
 
     private PosixBenchmarkResult NativeResult(PcreRefMatch8Bit match, int count)
-        => !match.Success ? default : new(count,
-            Project(true, match.Index, match.Length),
-            _groups.Length > 1 ? Project(match[1].Success, match[1].Index, match[1].Length) : default,
-            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length) : default,
-            _groups.Length > 3 ? Project(match[3].Success, match[3].Index, match[3].Length) : default,
-            _groups.Length > 4 ? Project(match[4].Success, match[4].Index, match[4].Length) : default);
+    {
+        if (!match.Success) return default;
+        var whole = Project(true, match.Index, match.Length);
+        return new(count, whole,
+            _groups.Length > 1 ? Project(match[1].Success, match[1].Index, match[1].Length, whole) : default,
+            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length, whole) : default,
+            _groups.Length > 3 ? Project(match[3].Success, match[3].Index, match[3].Length, whole) : default,
+            _groups.Length > 4 ? Project(match[4].Success, match[4].Index, match[4].Length, whole) : default);
+    }
 
-    private Utf8ValueMatch Project(bool success, int start, int length) => success
-        ? new(true, true, Encoding.UTF8.GetCharCount(_input.AsSpan(0, start)),
-            Encoding.UTF8.GetCharCount(_input.AsSpan(start, length)), start, length) : default;
+    private Utf8ValueMatch Project(bool success, int start, int length, Utf8ValueMatch whole = default)
+    {
+        if (!success) return default;
+        if (whole.Success && start == whole.IndexInBytes && length == whole.LengthInBytes) return whole;
+        // ERE captures are within the whole match. Give the native comparator
+        // the same available origins, without a prepared map or extra scan.
+        var characters = Encoding.UTF8.GetCharCount(_input.AsSpan(start, length));
+        var origin = whole.Success ? whole.IndexInBytes : 0;
+        var utf16 = whole.Success && start + length == whole.IndexInBytes + whole.LengthInBytes
+            ? whole.IndexInUtf16 + whole.LengthInUtf16 - characters
+            : (whole.Success ? whole.IndexInUtf16 : 0) +
+                Encoding.UTF8.GetCharCount(_input.AsSpan(origin, start - origin));
+        return new(true, true, utf16, characters, start, length);
+    }
 
     internal (TimeSpan Elapsed, long AllocatedBytes, PosixBenchmarkResult Result) Measure(int lane, int iterations)
     {
