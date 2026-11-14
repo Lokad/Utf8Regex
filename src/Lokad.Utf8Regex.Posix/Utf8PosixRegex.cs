@@ -167,17 +167,27 @@ public sealed class Utf8PosixRegex
         ClearOutput(output, ref invocation);
         var whole = ProjectRange(input, start, end, ref invocation, originByte, originUtf16);
         if (!output.IsEmpty) output[0] = whole;
+        var captureOriginByte = start;
+        var captureOriginUtf16 = whole.IndexInUtf16;
         for (var slot = 1; slot < output.Length; slot++)
         {
             PosixWorkspace.Charge(ref invocation);
             if (workspace.GetCapture(state, slot, ref invocation, out var from, out var to))
+            {
                 // ERE captures are inside the selected whole match. Share its
                 // known end for suffix captures, or its start for interior ones.
-                // Identical nested ranges need no rescan.
-                output[slot] = from == start && to == end ? whole
+                // Advancing siblings can reuse the preceding capture end;
+                // nested/reordered ranges keep the whole-match origin.
+                var projected = from == start && to == end ? whole
                     : to == end
                         ? ProjectRange(input, from, to, ref invocation, end, whole.IndexInUtf16 + whole.LengthInUtf16)
-                        : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
+                        : from >= captureOriginByte
+                            ? ProjectRange(input, from, to, ref invocation, captureOriginByte, captureOriginUtf16)
+                            : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
+                output[slot] = projected;
+                captureOriginByte = to;
+                captureOriginUtf16 = projected.IndexInUtf16 + projected.LengthInUtf16;
+            }
         }
         PosixWorkspace.Finish(ref invocation);
         return whole;

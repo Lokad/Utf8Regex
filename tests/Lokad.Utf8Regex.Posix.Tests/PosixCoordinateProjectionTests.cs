@@ -56,8 +56,51 @@ public sealed class PosixCoordinateProjectionTests
             }
         }
     }
-    [Fact]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AdjacentCaptureOriginsKeepGapsNestedRangesAndAbsentSlots(bool nested)
+    {
+        const string prefix = "中😀";
+        const string text = "é😀!中#😀éx";
+        var input = Encoding.UTF8.GetBytes(prefix + text);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var whole = At(0, text.Length);
+        var expected = nested
+            ? new[] { whole, At(0, 5), At(0, 3), At(4, 1), At(6, 3), At(9, 0), default }
+            : new[] { whole, At(0, 3), At(4, 1), At(6, 3), At(9, 0), default };
+        var sentinel = Value(1, 2, 3, 4);
+        foreach (var finite in new[] { false, true })
+        {
+            var regex = new Utf8PosixRegex(nested
+                ? "((é😀)!(中))#(😀é)()(absent)?x"
+                : "(é😀)!(中)#(😀é)()(absent)?x", resourcePolicy: finite
+                    ? new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
+                    : default);
+            foreach (var count in new[] { 0, 1, 3, expected.Length, expected.Length + 2 })
+            {
+                var output = Enumerable.Repeat(sentinel, count).ToArray();
+                Assert.Equal(whole, regex.Match(input, output, floor));
+                Assert.Equal(expected.Take(count), output.Take(expected.Length));
+                Assert.All(output.Skip(expected.Length), value => Assert.Equal(sentinel, value));
+            }
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var groups = new Utf8ValueMatch[expected.Length];
+            Assert.True(cursor.MoveNext(groups, out var selected));
+            Assert.Equal(whole, selected);
+            Assert.Equal(expected, groups);
+            var retained = groups.ToArray();
+            Assert.False(cursor.MoveNext(groups, out _));
+            Assert.All(groups, value => Assert.False(value.Success));
+            Assert.Equal(expected, retained);
+        }
 
+        Utf8ValueMatch At(int offset, int length) => Value(
+            floor + Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)),
+            Encoding.UTF8.GetByteCount(text.AsSpan(offset, length)), prefix.Length + offset, length);
+    }
+
+    [Fact]
     public void CursorAliasesKeepCaptureCoordinatesAcrossOutputSizes()
     {
         var prefix=string.Concat(Enumerable.Repeat("é😀",2049));
