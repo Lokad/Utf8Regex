@@ -139,15 +139,23 @@ Result/staging traffic is cumulative without refunds; overlap/shared storage can
 count again. Typed denial is not no-match or truncated success.
 
 Cancellation is synchronous and carries the original token. One absolute deadline
-covers validation, matching, required shaping and cursor waits. Callbacks cannot
+covers validation required by the profile/input policy, matching, required shaping
+and cursor waits. Callbacks cannot
 be forcibly interrupted; library copying/encoding of returned output is covered.
 Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decoding.
 
-PythonRe callback substitutions with `count: 1` now project coordinates only
-through participating capture ends, including lookarounds. They still materialize
-the required complete output and validate raw-byte callback output. Avoiding an
-unused suffix map can lower working capacity and work requirements; owned callback
-snapshots, original interruption and other replacement counts keep their contracts.
+PythonRe detailed results, capture contexts, callbacks and scalar queries now share
+one lazy coordinate index through participating capture ends, including lookarounds.
+They do not prepare an unused suffix. Substitutions still materialize required
+output and validate assembled raw-byte callback output. Index capacity uses working
+admission; returned arrays/strings still spend result capacity. Early results can
+need less work/storage, while distant scalar-only queries can need more working
+capacity because entries hold both scalar and UTF-16 counts. Owned snapshots and
+original interruption retain their contracts.
+
+POSIX's proved flat disjoint ASCII runs keep unique capture boundaries in existing
+state slots, omitting an unnecessary history trace. Numerical work/working needs
+can fall. Other proven routes and general POSIX capture histories stay intact.
 
 Core NonBacktracking preparation now meters groups of at most 64 size-scan bytes,
 64 scalar offsets or64 state cells, with token/deadline checks before every group.
@@ -163,18 +171,18 @@ dependent, and qualify finite policies against representative workloads when upg
 
 Core NonBacktracking Count can now scan a proved complete anchored-line shape
 directly: optional Unicode whitespace, mandatory unfolded ASCII prefix, greedy
-non-newline tail and end anchor. It retains strict full-subject validation and
+non-newline tail and end anchor. It follows Core's selected input policy and keeps
 bounded token/deadline/work checks, while avoiding the viability table and local
 scratch. Numeric work and working/depth requirements can be lower. Matching,
 captures and retained cursors keep their existing semantics and implementations.
 
 Proven whole-expression Unicode-letter Count now shares the existing category
 counter's scalar-ended 4096-byte admission, including caller-funded Count. This
-reduces work units and can admit tighter storage policies while retaining strict
-validation, original-token cancellation and deadlines.
+reduces work units and can admit tighter storage policies while preserving the
+selected input policy, original-token cancellation and deadlines.
 
 Bounded greedy Dot repeats with a proved terminal ASCII literal can avoid rewind
-storage. Captures and strict validation are unchanged; finite work, depth and
+storage. Captures and the selected input policy are unchanged; finite work, depth and
 working requirements can be lower for these shapes.
 
 Smaller capture-trail chunks reduce the first reservation for brief captures.
@@ -184,7 +192,7 @@ working policies on those workloads as well. Capture semantics are unchanged.
 Count can reuse a prepared disjoint-class repeat such as
 `(?:[A-Z][a-z]+\s*){10,100}` without VM scratch, including on mixed UTF-8.
 Its original separator predicate preserves Unicode whitespace. Complete-input
-validation, bounded work checks and original interruption authority remain;
+validation follows the selected input policy; bounded work checks and original interruption authority remain;
 route-dependent work/depth/working requirements can be lower. Captured roots
 and unproved shapes retain their existing paths; returned captures/cursors are unchanged.
 
