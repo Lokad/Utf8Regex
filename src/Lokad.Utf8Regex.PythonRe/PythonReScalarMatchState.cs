@@ -22,6 +22,8 @@ internal partial struct PythonReScalarMatchState
     private readonly int _laterAsciiDistance;
     private readonly byte _laterAsciiLow;
     private readonly byte _laterAsciiHigh;
+    private readonly int _delimiter;
+    private readonly int _delimiterLeadingClass;
     // Production retains the expression for lazy diagnostics. Standalone
     // diagnostic/test cursors can supply text without constructing a facade.
     private readonly object _timeoutSource;
@@ -46,6 +48,7 @@ internal partial struct PythonReScalarMatchState
         this = default;
         _program = program;
         _leadingAsciiLow = _leadingAsciiHigh = -1;
+        _delimiter = _delimiterLeadingClass = -1;
         _timeoutSource = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
@@ -94,6 +97,30 @@ internal partial struct PythonReScalarMatchState
                             _laterAsciiDistance = distance;
                             _laterAsciiLow = (byte)laterLow;
                             _laterAsciiHigh = (byte)laterHigh;
+                        }
+                    }
+                    // The program and subject extent are immutable for this
+                    // discovery lifetime. Prepare the existing direct-window
+                    // proof once, rather than rediscovering it for every match.
+                    if (input.Length >= 16 && !program.CanMatchEmpty && !program.HasContiguousAnchor &&
+                        !program.RightToLeft && !program.IgnoreCase)
+                    {
+                        var delimiter = Utf8SliceRunner.GetLeadingWhitespaceLiteral(program,
+                            out var leadingClass, out var literalIndex, out _);
+                        // Only direct ASCII class/delimiter windows qualify;
+                        // whitespace/gaps and opaque prefixes keep their route.
+                        if (delimiter >= 0 && leadingClass >= 0 &&
+                            program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
+                            program.SetMasks[atom.A].Length == 16)
+                        {
+                            var afterRepeat = leadingClass + 3;
+                            while (afterRepeat < literalIndex && program.Instructions[afterRepeat].Kind is
+                                Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) afterRepeat++;
+                            if (afterRepeat == literalIndex)
+                            {
+                                _delimiter = delimiter;
+                                _delimiterLeadingClass = leadingClass;
+                            }
                         }
                     }
                 }
@@ -358,28 +385,8 @@ internal partial struct PythonReScalarMatchState
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
         var keepWorkspace = false;
-        var leadingClass = -1;
-        var literalIndex = -1;
-        var delimiter = !_finished && search && input.Length >= 16 &&
-            !_program.CanMatchEmpty && !_program.HasContiguousAnchor &&
-            !_program.RightToLeft && !_program.IgnoreCase && _candidateRegex is null
-            ? Utf8SliceRunner.GetLeadingWhitespaceLiteral(_program, out leadingClass, out literalIndex, out _) : -1;
-        if (delimiter >= 0)
-        {
-            // Borrow only the direct ASCII class/delimiter case. Capture markers
-            // do not consume input; whitespace/gap and other prefixes stay opaque.
-            if (leadingClass < 0 ||
-                _program.Instructions[leadingClass] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom ||
-                _program.SetMasks[atom.A].Length != 16)
-                delimiter = -1;
-            else
-            {
-                var afterRepeat = leadingClass + 3;
-                while (afterRepeat < literalIndex && _program.Instructions[afterRepeat].Kind is
-                    Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) afterRepeat++;
-                if (afterRepeat != literalIndex) delimiter = -1;
-            }
-        }
+        var leadingClass = _delimiterLeadingClass;
+        var delimiter = search ? _delimiter : -1;
         var windowEnd = -1;
         var verifyFirstCandidate = delimiter >= 0 && _leadingAsciiLow >= 0 &&
             (delimiter < _leadingAsciiLow || delimiter > _leadingAsciiHigh);
