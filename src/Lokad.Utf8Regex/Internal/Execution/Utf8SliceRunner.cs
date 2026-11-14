@@ -274,22 +274,6 @@ internal static partial class Utf8SliceRunner
         => TryReadScalar(input, index, false, out var scalar, out _) &&
             Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
 
-    private static bool MatchesBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
-        ReadOnlySpan<byte> input, int index)
-    {
-        // Callers have checked the scalar-aligned position. The VM and its
-        // complete boundary root classify the same two complete neighbors.
-        var beforeWord = false;
-        if (index > 0)
-        {
-            var previous = index - 1;
-            while (previous > 0 && (input[previous] & 0xC0) == 0x80) previous--;
-            beforeWord = IsWordScalarStartingAt(program, instruction, input, previous);
-        }
-        var afterWord = index < input.Length && IsWordScalarStartingAt(program, instruction, input, index);
-        return (beforeWord != afterWord) == (instruction.A != 0);
-    }
-
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -388,23 +372,6 @@ internal static partial class Utf8SliceRunner
                 captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt))
             {
                 // A proved complete root has no continuation or capture rollback.
-            }
-            else if (!collectHistory && program.GroupCount == 0 && !program.RightToLeft &&
-                program.Assertions.Length == 0 && program.Instructions is { Length: 2 } boundaryCode &&
-                boundaryCode[0].Kind == Utf8SliceInstructionKind.Boundary &&
-                boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept)
-            {
-                // Keep initial workspace admission and reset above. This complete
-                // root has no continuation or consuming nonempty alternative.
-                var breach = invocation.TryChargeInputStep();
-                invocation.Budget.ThrowIfCancellationRequested();
-                if (breach != Utf8ExecutionLimitKind.None)
-                    return new(false, -1, breach, null, null);
-                var matched = !requireNonEmpty && MatchesBoundary(program, boundaryCode[0], input, start);
-                breach = invocation.TryChargeInputStep();
-                invocation.Budget.ThrowIfCancellationRequested();
-                attempt = new(matched && breach == Utf8ExecutionLimitKind.None,
-                    matched && breach == Utf8ExecutionLimitKind.None ? start : -1, breach, null, null);
             }
             else if (!collectHistory && CanRunTerminalClassRepeat(program))
             {
@@ -1326,7 +1293,20 @@ internal static partial class Utf8SliceRunner
                     else if (inputIndex <= input.Length &&
                         (inputIndex == input.Length || (input[inputIndex] & 0xC0) != 0x80))
                     {
-                        if (MatchesBoundary(program, instruction, input, inputIndex))
+                        var beforeWord = false;
+                        if (inputIndex > 0)
+                        {
+                            var previous = inputIndex - 1;
+                            while (previous > 0 && (input[previous] & 0xC0) == 0x80)
+                            {
+                                previous--;
+                            }
+
+                            beforeWord = IsWordScalarStartingAt(program, instruction, input, previous);
+                        }
+
+                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(program, instruction, input, inputIndex);
+                        if ((beforeWord != afterWord) == (instruction.A != 0))
                         {
                             programIndex++;
                         }
