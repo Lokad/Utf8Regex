@@ -43,9 +43,9 @@ Matching uses **Unicode scalars**. For example,
 `new Utf8Regex(".").Count("A😀"u8)` returns 2; the emoji occupies four bytes.
 Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
 
-The entire subject must be valid UTF-8, including text after an early match.
-Core's default Validate policy checks this. PythonRe and POSIX consume existing
-valid text; PCRE2 has its own UTF-mode checking and trusted-input bypass.
+Core's default Validate policy checks the entire subject, including text after
+an early match. PythonRe and POSIX consume existing valid text; PCRE2 checks its
+native UTF-mode window and has an explicit trusted-input bypass.
 Byte coordinates are primary; UTF-16 coordinates and strings are derived
 conveniences. Keep borrowed input unchanged and its owner alive while a view or
 cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
@@ -201,7 +201,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/uri-match` | `IsMatch` | 0.095 us | 0.231 us | 0.264 us | 0.41x |
 | `common/replace-words` | `Replace` | 26.974 us | 73.402 us | 75.730 us | 0.37x |
 | `common/email-match` | `IsMatch` | 0.093 us | 0.264 us | 0.287 us | 0.35x |
-| `common/matches-word` | `Count` | 1.316 us | 4.135 us | 5.832 us | 0.32x |
+| `common/matches-word` | `Count` | 1.356 us | 4.251 us | 5.976 us | 0.32x |
 | `common/email-miss` | `IsMatch` | 0.096 us | 0.340 us | 0.360 us | 0.28x |
 | `common/date-match` | `IsMatch` | 0.027 us | 0.105 us | 0.132 us | 0.25x |
 | `industry/mariomka-ip-count` | `Count` | 2,099.536 us | 8,415.978 us | 16,891.333 us | 0.25x |
@@ -217,9 +217,9 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/rust-sherlock-letter-count` | `Count` | 1,736.332 us | 19,025.550 us | 19,798.950 us | 0.09x |
 | `industry/leipzig-symbol-count` | `Count` | 1,616.291 us | 23,785.650 us | 30,580.900 us | 0.07x |
 | `industry/leipzig-river-window-count` | `Count` | 2,122.244 us | 31,553.233 us | 38,706.250 us | 0.07x |
+| `common/matches-boundary` | `Count` | 9.569 us | 164.144 us | 165.925 us | 0.06x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 465.779 us | 8,223.810 us | 8,638.733 us | 0.06x |
-| `common/matches-boundary` | `Count` | 7.673 us | 160.174 us | 162.320 us | 0.05x |
-| `common/matches-set` | `Count` | 7.356 us | 188.784 us | 189.959 us | 0.04x |
+| `common/matches-set` | `Count` | 10.549 us | 197.132 us | 200.157 us | 0.05x |
 | `industry/rust-sherlock-ing-count` | `Count` | 273.235 us | 11,631.229 us | 12,286.943 us | 0.02x |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 
@@ -293,15 +293,15 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-match` | `IsMatch` | 0.027 us | 0.042 us | 0.069 us | 0.63x |
 | `industry/mariomka-ip-count` | `Count` | 2,121.350 us | 3,404.852 us | 10,816.033 us | 0.62x |
 | `common/matches-words` | `Count` | 8.988 us | 14.803 us | 17.182 us | 0.61x |
-| `common/matches-word` | `Count` | 1.315 us | 2.287 us | 3.316 us | 0.57x |
+| `common/matches-word` | `Count` | 1.354 us | 2.366 us | 3.815 us | 0.57x |
 | `industry/leipzig-name-family-count` | `Count` | 1,668.528 us | 3,006.477 us | 8,144.975 us | 0.55x |
 | `common/date-miss` | `IsMatch` | 0.096 us | 0.195 us | 0.231 us | 0.50x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.011 us | 0.035 us | 0.050 us | 0.31x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 178.501 us | 588.505 us | 838.505 us | 0.30x |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,748.055 us | 8,610.578 us | 9,157.822 us | 0.20x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 463.557 us | 3,938.011 us | 4,280.633 us | 0.12x |
-| `common/matches-boundary` | `Count` | 7.688 us | 104.037 us | 106.571 us | 0.07x |
-| `common/matches-set` | `Count` | 7.401 us | 102.614 us | 104.412 us | 0.07x |
+| `common/matches-set` | `Count` | 10.532 us | 106.820 us | 108.645 us | 0.10x |
+| `common/matches-boundary` | `Count` | 9.595 us | 105.444 us | 107.829 us | 0.09x |
 | `industry/rust-sherlock-ing-count` | `Count` | 271.765 us | 4,658.700 us | 5,050.800 us | 0.06x |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
 
