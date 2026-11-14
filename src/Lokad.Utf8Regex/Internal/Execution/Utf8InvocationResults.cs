@@ -93,7 +93,9 @@ internal struct Utf8InvocationResultLedger
             else
             {
                 Utf8InvocationOutput.Checkpoint(control);
-                result = System.Text.Encoding.UTF8.GetString(bytes);
+                result = bytes.Length == 1 && bytes[0] <= 0x7f
+                    ? ((char)bytes[0]).ToString()
+                    : System.Text.Encoding.UTF8.GetString(bytes);
                 Utf8InvocationOutput.Checkpoint(control);
             }
             _reservedBytes += extent;

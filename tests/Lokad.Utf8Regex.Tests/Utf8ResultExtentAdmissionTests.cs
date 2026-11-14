@@ -10,6 +10,38 @@ public sealed class Utf8ResultExtentAdmissionTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
     private static ulong StringBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
 
+    [Fact]
+    public void UnknownSingleByteStringsKeepAsciiAndDecoderFallbackBehavior()
+    {
+        for (var value = 0; value <= byte.MaxValue; value++)
+        {
+            byte[] input = [(byte)value];
+            var invocation = new Utf8SliceInvocation(new(0, 0, StringBytes(1)),
+                Regex.InfiniteMatchTimeout, CancellationToken.None);
+            Utf8InvocationResultLedger results = default;
+            var result = results.DecodeUtf8(input, null, ref invocation);
+            Assert.Equal(Encoding.UTF8.GetString(input), result);
+            Assert.Equal(StringBytes(1), results.ReservedBytes);
+            results.Release(ref invocation);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+            Assert.Equal(Encoding.UTF8.GetString(input), result);
+        }
+    }
+
+    [Fact]
+    public void UnknownAsciiStringStillRequiresItsConservativeExtent()
+    {
+        var invocation = new Utf8SliceInvocation(new(0, 0, StringBytes(1) - 1),
+            Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Utf8InvocationResultLedger results = default;
+        Exception? failure = null;
+        try { results.DecodeUtf8("a"u8, null, ref invocation); }
+        catch (InvalidOperationException error) { failure = error; }
+        Assert.NotNull(failure);
+        Assert.Equal(0UL, results.ReservedBytes);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(2)] [InlineData(2049)]
     public void StringExtentIsAdmittedAndReleasedWithTheGraph(int chars)

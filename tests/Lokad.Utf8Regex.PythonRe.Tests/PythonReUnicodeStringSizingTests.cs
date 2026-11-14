@@ -7,6 +7,19 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReUnicodeStringSizingTests
 {
+    [Fact]
+    public void SingleCharacterOutputsKeepControlsUnicodeAndCapturedSeparators()
+    {
+        var characters = Enumerable.Range(0, 128).Select(value => (char)value).ToArray();
+        var text = new string(characters) + "é中😀";
+        using var each = new Utf8PythonRegex("[\\s\\S]");
+        Assert.Equal(characters.Select(value => value.ToString()).Concat(["é", "中", "😀"]),
+            each.FindAllToStrings(Encoding.UTF8.GetBytes(text)).ScalarValues);
+        using var split = new Utf8PythonRegex("([,;])");
+        Assert.Equal(new string?[] { "α", ",", "😀", ";", "é", ",", "" },
+            split.SplitToStrings("α,😀;é,"u8));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(4086)]
