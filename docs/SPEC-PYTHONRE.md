@@ -289,7 +289,11 @@ byte-derived admission and checked decoding without a separate sizing pass.
 Larger ranges use the existing checked character counter in scalar-aligned blocks
 of at most 4096 bytes. Sizing/decoding share the invocation and interruption
 checks; result/working admission precedes string allocation and output lifetimes
-retain their contracts. This is not subject validation.
+retain their contracts. This is not subject validation. Captured-text projection
+keeps its entry check before result admission and reuses the decoder's completion
+check under that same invocation. Omitting the duplicate final wrapper check can
+reduce numerical work by one step per decoded range; bounded decoding, allocation
+admission and final operation publication remain checked.
 
 One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
 available ASCII/whole-subject character counts; otherwise they count only their
