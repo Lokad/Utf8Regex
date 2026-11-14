@@ -2530,14 +2530,10 @@ internal static class Pcre2GlobalOperationDriver
             (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
             repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet &&
             (input.IsAscii ||
-             repeat.Token.CharacterClass is
-             {
-                 Negated: false,
-                 Terms: [{ Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 }],
-             } ||
+             HasOnlyPositiveAsciiRanges(repeat.Token.CharacterClass, ref invocation) ||
              Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
         {
-            // A positive ASCII range consumes only scalar-aligned ASCII bytes;
+            // Positive ASCII range unions consume only scalar-aligned bytes;
             // every byte of another scalar is excluded, so no ASCII subject
             // classification is needed. Other classes keep the ASCII proof.
             // A complete greedy root selects each maximal member run; shorter
@@ -2787,6 +2783,23 @@ internal static class Pcre2GlobalOperationDriver
 
         cursor = default;
         return false;
+    }
+
+    private static bool HasOnlyPositiveAsciiRanges(Pcre2CharacterClass characterClass,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        if (characterClass.Negated) return false;
+        var terms = characterClass.Terms;
+        for (var index = 0; index < terms.Length; index++)
+        {
+            // Entry already checked the invocation. Bound a large pattern's
+            // proof without charging individual terms or retaining another flag.
+            if (index != 0 && (index & 63) == 0)
+                Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryChargeInputStep());
+            if (terms[index] is not { Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 })
+                return false;
+        }
+        return terms.Length != 0;
     }
 }
 

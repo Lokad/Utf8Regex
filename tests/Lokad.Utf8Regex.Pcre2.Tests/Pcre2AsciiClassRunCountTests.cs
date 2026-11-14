@@ -7,15 +7,19 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2AsciiClassRunCountTests
 {
     [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void PositiveAsciiRangeNeedsNoScratchOnMixedText(Utf8InputValidation validation)
+    [InlineData("[a-z]{10,}", Utf8InputValidation.Validate)]
+    [InlineData("[a-z]{10,}", Utf8InputValidation.AssumeValid)]
+    [InlineData("[a-zA-Z0-9]{10,}", Utf8InputValidation.Validate)]
+    [InlineData("[a-zA-Z0-9]{10,}", Utf8InputValidation.AssumeValid)]
+    [InlineData("[aba-z]{10,}", Utf8InputValidation.Validate)]
+    [InlineData("[aba-z]{10,}", Utf8InputValidation.AssumeValid)]
+    public void PositiveAsciiRangesNeedNoScratchOnMixedText(string pattern, Utf8InputValidation validation)
     {
         foreach (var length in new[] { 4095, 4096, 4097 })
         {
             var text = "α" + new string('a', length) + "😀shortéabcdefghij中";
             var input = Encoding.UTF8.GetBytes("pad" + text + "pad");
-            var regex = Utf8Pcre2Regex.Create("[a-z]{10,}", Pcre2CompileOptions.Ucp, default,
+            var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.Ucp, default,
                 new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
                 Timeout.InfiniteTimeSpan, validation);
             using var token = new CancellationTokenSource();
@@ -28,6 +32,76 @@ public sealed class Pcre2AsciiClassRunCountTests
             if (validation == Utf8InputValidation.Validate)
                 Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
         }
+    }
+
+    [Fact]
+    public void RangeUnionsKeepCountsAtEveryScalarFloorIncludingNulAndTails()
+    {
+        const string text = "αabZ09\0!😀01zzéAB\0中";
+        var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
+        var bytes = storage.AsSpan(3, storage.Length - 6);
+        foreach (var pattern in new[] { "[a-zA-Z0-9]{2,}", @"[a-z\0]{2,}", "[a-ba-c]{2,}", "[a-zA-Z0-9]++" })
+        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var regex = Utf8Pcre2Regex.Create(pattern, default, default,
+                new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
+                Timeout.InfiniteTimeSpan, validation);
+            // Ordered and longest choices agree for these complete greedy runs.
+            var oracle = new System.Text.RegularExpressions.Regex(pattern.Replace("++", "+"),
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+            for (var floor = 0; floor <= text.Length; floor++)
+            {
+                if (floor < text.Length && char.IsLowSurrogate(text[floor])) continue;
+                Assert.Equal(oracle.Matches(text, floor).Count,
+                    regex.Count(bytes, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor))));
+            }
+        }
+    }
+
+    [Fact]
+    public void LargeUnionProofKeepsUsefulWorkAdmissionEvenOnEmptyInput()
+    {
+        var pattern = "[" + string.Concat(Enumerable.Repeat("a-zA-Z0-9", 43)) + "]+";
+        var bounded = Utf8Pcre2Regex.Create(pattern, default, default,
+            new() { MaxWorkSteps = 2, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
+            Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => bounded.Count([])).ErrorKind);
+        var admitted = Utf8Pcre2Regex.Create(pattern, default, default,
+            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
+            Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
+        var allowance = new RejectStorage();
+        Assert.Equal(0, admitted.Count([], 0, default, default, allowance));
+        Assert.Equal(0, allowance.Attempts);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void LargeUnionPreparationKeepsTheOriginalInterruptionAuthority(bool cancel)
+    {
+        var armed = false; var reads = 0; var stop = int.MaxValue;
+        using var source = new CancellationTokenSource();
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (!armed || ++reads < stop) return 0;
+            if (cancel) { source.Cancel(); return 0; }
+            return 50;
+        });
+        var small = new Utf8Pcre2Regex("[a-z]+", matchTimeout: TimeSpan.FromMilliseconds(20),
+            inputValidation: Utf8InputValidation.AssumeValid);
+        var large = new Utf8Pcre2Regex("[" + string.Concat(Enumerable.Repeat("a-zA-Z0-9", 43)) + "]+",
+            matchTimeout: TimeSpan.FromMilliseconds(20), inputValidation: Utf8InputValidation.AssumeValid);
+        armed = true;
+        Assert.Equal(0, small.Count([], 0, default, source.Token));
+        var ordinaryReads = reads;
+        reads = 0;
+        Assert.Equal(0, large.Count([], 0, default, source.Token));
+        Assert.True(reads > ordinaryReads);
+        // The additional preparation checks occur before ordinary publication.
+        stop = ordinaryReads;
+        reads = 0;
+        var failure = Record.Exception(() => large.Count([], 0, default, source.Token));
+        if (cancel) Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
     }
 
     [Fact]
@@ -134,10 +208,12 @@ public sealed class Pcre2AsciiClassRunCountTests
         Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 255 }, 0, default, source.Token, allowance));
     }
 
-    [Fact]
-    public void WorkAdmissionStillBoundsLongRunsAndDenseCandidates()
+    [Theory]
+    [InlineData("[a-z]+")]
+    [InlineData("[a-zA-Z0-9]+")]
+    public void WorkAdmissionStillBoundsLongRunsAndDenseCandidates(string pattern)
     {
-        var regex = Utf8Pcre2Regex.Create(@"[a-z]+", default, default,
+        var regex = Utf8Pcre2Regex.Create(pattern, default, default,
             new() { MaxWorkSteps = 100 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(1, regex.Count("abc"u8));
         foreach (var text in new[] { new string('a', 1 << 20), string.Concat(Enumerable.Repeat("a!", 4096)) })
@@ -176,9 +252,11 @@ public sealed class Pcre2AsciiClassRunCountTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void ControlledCountKeepsOriginalInterruptionThroughPublication(bool cancel, bool atPublication)
+    [InlineData("[a-z]+", false, false)] [InlineData("[a-z]+", false, true)]
+    [InlineData("[a-z]+", true, false)] [InlineData("[a-z]+", true, true)]
+    [InlineData("[a-zA-Z0-9]+", false, false)] [InlineData("[a-zA-Z0-9]+", false, true)]
+    [InlineData("[a-zA-Z0-9]+", true, false)] [InlineData("[a-zA-Z0-9]+", true, true)]
+    public void ControlledCountKeepsOriginalInterruptionThroughPublication(string pattern, bool cancel, bool atPublication)
     {
         var armed = false; var reads = 0; var interruptAt = int.MaxValue;
         using var source = new CancellationTokenSource();
@@ -188,7 +266,7 @@ public sealed class Pcre2AsciiClassRunCountTests
             if (cancel) { source.Cancel(); return 0; }
             return 20;
         });
-        var regex = Utf8Pcre2Regex.Create(@"[a-z]+", default, default,
+        var regex = Utf8Pcre2Regex.Create(pattern, default, default,
             new() { MaxWorkingBytes = 1 }, TimeSpan.FromMilliseconds(20));
         var input = Encoding.ASCII.GetBytes(new string('a', 65536));
         armed = true;
