@@ -641,8 +641,7 @@ public sealed partial class Utf8Regex
             var simpleInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var simpleValidation = Utf8Validation.Subject(input, ref simpleInvocation);
-                if (!simpleValidation.IsAscii)
+                if (!Utf8Validation.SubjectIsAscii(input, ref simpleInvocation))
                     return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref simpleInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
                 // The existing whole-subject digit kernel can prove existence.
@@ -676,8 +675,7 @@ public sealed partial class Utf8Regex
             var decimalInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var decimalValidation = Utf8Validation.Subject(input, ref decimalInvocation);
-                if (!decimalValidation.IsAscii)
+                if (!Utf8Validation.SubjectIsAscii(input, ref decimalInvocation))
                     return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref decimalInvocation);
                 var breach = Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input,
                     ref decimalInvocation, out var matched);
@@ -1113,8 +1111,7 @@ public sealed partial class Utf8Regex
             var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                var wordValidation = Utf8Validation.Subject(input, ref wordInvocation);
-                if (!wordValidation.IsAscii)
+                if (!Utf8Validation.SubjectIsAscii(input, ref wordInvocation))
                     return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref wordInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiWordBounded);
                 var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,

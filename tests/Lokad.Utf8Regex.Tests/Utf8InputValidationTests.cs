@@ -7,6 +7,60 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8InputValidationTests
 {
     [Theory]
+    [InlineData(@"\b\w{10,}\b", "é😀 abcdefghijkl éééééééééé", true, 2)]
+    [InlineData(@"\b\w{10,}\b", "é😀 short", true, 0)]
+    [InlineData(@"(\d{1,2})X", "é😀 𝟙𝟚X", false, 1)]
+    [InlineData(@"(\d{1,2})X", "é😀 𝟙𝟚Y", false, 0)]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "𝟙.٢", false, 1)]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "x𝟙.٢", false, 0)]
+    public void EligibilityGatesPreserveMixedScalarResultsAndOneValidation(
+        string pattern, string text, bool count, int expected)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        byte[] storage = [0xff, 0xff, 0xff, .. input, 0xff];
+        using var source = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var regex = new Utf8Regex(pattern, options, resourcePolicy: new()
+                { MaxWorkSteps = 100000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
+                inputValidation: validation);
+            var session = Utf8SearchDiagnosticsSession.Start();
+            try
+            {
+                var result = count ? regex.Count(storage.AsSpan(3, input.Length), source.Token)
+                    : regex.IsMatch(storage.AsSpan(3, input.Length), source.Token) ? 1 : 0;
+                Assert.Equal(expected, result);
+                Assert.Equal(validation == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
+            }
+            finally { session.Complete(); }
+            if (validation == Utf8InputValidation.AssumeValid) continue;
+            var error = Assert.Throws<ArgumentException>(() =>
+            {
+                if (count) regex.Count(storage.AsSpan(3), source.Token);
+                else regex.IsMatch(storage.AsSpan(3), source.Token);
+            });
+            Assert.Contains($"byte offset {input.Length}.", error.Message);
+        }
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void TrustedEarlyBooleanNeedsNoUnrelatedSuffixDescription(RegexOptions options)
+    {
+        var input = Encoding.UTF8.GetBytes("12X é" + new string('!', 1 << 20));
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 4096,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var trusted = new Utf8Regex(@"(\d{1,2})X", options, resourcePolicy: policy,
+            inputValidation: Utf8InputValidation.AssumeValid);
+        Assert.True(trusted.IsMatch(input));
+        var strict = new Utf8Regex(@"(\d{1,2})X", options, resourcePolicy: policy);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.IsMatch(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+    }
+
+    [Theory]
     [InlineData("needle", "needle é😀 needle")]
     [InlineData("café|😀", "z😀 café!")]
     [InlineData("(a+)(b*)", "é😀 aabb aa")]

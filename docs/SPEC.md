@@ -462,11 +462,18 @@ revalidating or allocating unneeded VM capture/continuation storage. Numeric
 work, depth and working requirements can decrease; real allocations remain
 admitted before acquisition. This changes no returned capture or result lifetime.
 Caller-funded Count requests only subject facts consumed by its selected route:
-Unicode category/letter counting retains its supplementary-scalar description,
-and ASCII word counting retains ASCII eligibility. Other byte counters check
+Unicode category/letter counting classifies each encountered scalar, and ASCII
+word counting retains only ASCII eligibility. Other byte counters check
 subject validity under the immutable policy without deriving unused UTF-16
 metadata. They keep one original invocation and synchronous interruption,
 admission and refunds. Avoided metadata work can lower numeric work requirements.
+Controlled simple-pattern and signed-decimal IsMatch gates likewise request only
+ASCII eligibility, without UTF-16 totals or supplementary-scalar metadata.
+Validate still checks the complete subject once. AssumeValid can stop ASCII
+classification at its first non-ASCII block; scalar fallback then borrows the
+same invocation without describing an unrelated suffix. This may lower required
+work, while native eligibility, matching algorithms and storage admission stay
+unchanged.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
