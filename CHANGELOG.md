@@ -42,6 +42,9 @@
   unused assertion orchestration while assertion/history execution remains.
   Scalar-coordinate queries prepare only the requested prefix; later index
   growth admits old/new working capacity together.
+  PythonRe reduces coordinate preparation for one replacement callback and
+  repeated verification of false literal prefixes. Raw callback output keeps
+  its strict completed-stream UTF-8 check without unused coordinate metadata.
   Performance depends on the operation and input policy; some capture, folded,
   reverse, dense-match and controlled workloads use more time or memory.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
