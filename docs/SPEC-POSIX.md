@@ -122,9 +122,12 @@ collection, RTL option or separate NonBacktracking mode is part of this subset.
 
 Capture projection reuses the whole match's known start or end coordinate. A
 capture ending with the whole match needs only its own UTF-16 content length;
-an empty capture there needs no prefix scan. Interior captures retain bounded
-coordinate counting. Removing redundant scans can lower modeled work without
-changing selected captures, admission or interruption authority.
+an empty capture there needs no prefix scan. Advancing capture ranges reuse the
+preceding completed capture's byte/UTF-16 end, counting only the intervening gap
+and their content. Nested or reordered ranges fall back to the whole-match start.
+These are call-local coordinates, with no subject index or additional allocation.
+Removing redundant scans can lower modeled work without changing selected
+captures, storage admission or interruption authority.
 Forward cursors reuse their preceding whole-match byte/UTF-16 end when projecting
 the next result, counting only the intervening prefix and selected content.
 Skipped scalars after empty matches still contribute to the next coordinate.

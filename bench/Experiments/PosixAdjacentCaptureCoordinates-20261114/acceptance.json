@@ -1,0 +1,426 @@
+{
+  "Decision": "ACCEPT",
+  "Campaign": "CLOSED",
+  "BeforePosixSource": "cd8eb5c7f1a76625758fd75fdb231dc1a7132176",
+  "After": "ec31fe66575f484f8d90515f02b4d737c167451e",
+  "SharedCoreSource": "1f2b34c102f54277d370dec95f3b2f1084938efb",
+  "Change": "Within one capture projection, reuse the preceding completed capture end for advancing ranges. Keep whole-end reuse; nested/reordered ranges fall back to the whole start. Two call-local integers; no retained state, owner, index, descriptor, new algorithm or public API.",
+  "Guarantees": [
+    "Caller-valid unchanged UTF8, checked scalar matching, POSIX whole/capture selection",
+    "All byte/UTF16 coordinates, Unicode gaps, nested/reordered/empty/absent captures, short/excess outputs and retained values",
+    "Original synchronous tokens/deadlines, useful work/depth/working/result controls, preallocation admission, clearing and refunds"
+  ],
+  "Accounting": "Avoided coordinate scans can reduce numerical work. Storage acquisition/admission and every measured allocation are unchanged. No total heap/RSS promise.",
+  "Measurement": {
+    "Seconds": 74.916285677813,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Rows": [
+    {
+      "Id": "short-sku",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 3,
+      "Before": {
+        "MedianUs": 0.2037095318707799,
+        "RangeUs": [
+          0.1996722447539144,
+          0.20695511657650942
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.20362444616610467,
+          0.20450807729634768
+        ]
+      },
+      "After": {
+        "MedianUs": 0.2039157026740755,
+        "RangeUs": [
+          0.1999302355269037,
+          0.20801747664055556
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2068796466910648,
+          0.20196159609925043
+        ]
+      },
+      "ObservedPercent": 0.10120822594907875,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "adjacent-eight-ascii",
+      "InputBytes": 16385,
+      "InputSha256": "12E5F07DE9ADDEC08EDC8090FC7322C3D072D483A8232A3AD4A29612020C1436",
+      "ExpectedValues": 10,
+      "Before": {
+        "MedianUs": 46.641409341550435,
+        "RangeUs": [
+          46.2527114733928,
+          48.04943139798897
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          46.7946094712942,
+          46.53989910796678
+        ]
+      },
+      "After": {
+        "MedianUs": 45.26281422340257,
+        "RangeUs": [
+          44.21049259366831,
+          46.19109638922888
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          45.90935097919216,
+          44.54591577112983
+        ]
+      },
+      "ObservedPercent": -2.9557321221847066,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "funded-deadline-eight-ascii",
+      "InputBytes": 16385,
+      "InputSha256": "12E5F07DE9ADDEC08EDC8090FC7322C3D072D483A8232A3AD4A29612020C1436",
+      "ExpectedValues": 10,
+      "Before": {
+        "MedianUs": 65.24985184740092,
+        "RangeUs": [
+          64.20441129032258,
+          66.48541454707718
+        ],
+        "Bytes": 160.0,
+        "ProcessMediansUs": [
+          64.24524915110356,
+          65.97724988844266
+        ]
+      },
+      "After": {
+        "MedianUs": 63.72224620215758,
+        "RangeUs": [
+          61.714280798640615,
+          67.38635019455253
+        ],
+        "Bytes": 160.0,
+        "ProcessMediansUs": [
+          66.29204842196282,
+          61.96588954970263
+        ]
+      },
+      "ObservedPercent": -2.3411633927015396,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "adjacent-four-unicode",
+      "InputBytes": 2312,
+      "InputSha256": "D7EFEA281099080DAEB4A3A00F525DEDE92D35ABB670B14828BCE8F716120E69",
+      "ExpectedValues": 5,
+      "Before": {
+        "MedianUs": 20.2085090859407,
+        "RangeUs": [
+          19.920079653102068,
+          20.384806270847232
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          20.280337558372246,
+          20.196526847930045
+        ]
+      },
+      "After": {
+        "MedianUs": 13.833931475559616,
+        "RangeUs": [
+          13.629889642082428,
+          13.972434719049796
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          13.755299530007232,
+          13.85811749657378
+        ]
+      },
+      "ObservedPercent": -31.54402723759544,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "gapped-four-unicode",
+      "InputBytes": 2315,
+      "InputSha256": "6BAA5F6EF38BD76DFC41ADA35B1C9B6604E6D6BC09AB2CADC3C145C24CD2764E",
+      "ExpectedValues": 5,
+      "Before": {
+        "MedianUs": 20.394702967198683,
+        "RangeUs": [
+          20.204472092383835,
+          20.432506560259707
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          20.40030313445147,
+          20.389102799945892
+        ]
+      },
+      "After": {
+        "MedianUs": 13.997599382369456,
+        "RangeUs": [
+          13.863454052030693,
+          14.331201528263671
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          13.913462529920825,
+          14.009481190342505
+        ]
+      },
+      "ObservedPercent": -31.366495482272285,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "nested-reordered-origins",
+      "InputBytes": 8193,
+      "InputSha256": "7B21F415F81020A8A65D2DB5FE0DBB734EB0AC8937657EED9FE6EF3639361C63",
+      "ExpectedValues": 7,
+      "Before": {
+        "MedianUs": 23.034154315197,
+        "RangeUs": [
+          22.80292299415924,
+          24.1169351367968
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          23.71048801106671,
+          23.028874765478427
+        ]
+      },
+      "After": {
+        "MedianUs": 22.84701760397244,
+        "RangeUs": [
+          22.63278398094387,
+          23.078477737114977
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.98327111924367,
+          22.651299985112402
+        ]
+      },
+      "ObservedPercent": -0.8124314383927467,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "short-empty-overlap",
+      "InputBytes": 3,
+      "InputSha256": "9834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0",
+      "ExpectedValues": 3,
+      "Before": {
+        "MedianUs": 0.49491203796950284,
+        "RangeUs": [
+          0.4895399155351405,
+          0.4992836061487329
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.49738909181553803,
+          0.4925722780273585
+        ]
+      },
+      "After": {
+        "MedianUs": 0.5049100915595857,
+        "RangeUs": [
+          0.4959019898783816,
+          0.5106255738499441
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.5011624294533796,
+          0.5069030614305524
+        ]
+      },
+      "ObservedPercent": 2.0201677920590244,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-posix-count-path",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 0.18494849667313903,
+        "RangeUs": [
+          0.18303995976819293,
+          0.18793170495084768
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.1864612178483492,
+          0.18389062414207916
+        ]
+      },
+      "After": {
+        "MedianUs": 0.1855239878812413,
+        "RangeUs": [
+          0.18232856660314076,
+          0.18790194822097192
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.18291119498140962,
+          0.18712022205314055
+        ]
+      },
+      "ObservedPercent": 0.31116295533850646,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 12.022870099635266,
+        "RangeUs": [
+          11.960623232403929,
+          12.136067105804859
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          11.987074378844772,
+          12.11718007410457
+        ]
+      },
+      "After": {
+        "MedianUs": 11.968283214490615,
+        "RangeUs": [
+          11.873624809435931,
+          12.047283501352346
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          11.954344941025434,
+          11.968973444799607
+        ]
+      },
+      "ObservedPercent": -0.45402540901033905,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 22.149688636365102,
+        "RangeUs": [
+          21.85051519516059,
+          22.71096806819824
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.454897991619706,
+          21.892614143741895
+        ]
+      },
+      "After": {
+        "MedianUs": 22.130453265810694,
+        "RangeUs": [
+          21.945507100255607,
+          22.631461689587425
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.0396864527123,
+          22.45066320516419
+        ]
+      },
+      "ObservedPercent": -0.08684262280250765,
+      "RangesDisjoint": false
+    }
+  ],
+  "Windows": [
+    "Passed!  - Failed:     0, Passed:   398, Skipped:     0, Total:   398, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   398, Skipped:     0, Total:   398, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "Linux": [
+    "Passed!  - Failed:     0, Passed:   398, Skipped:     0, Total:   398, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "BeforeProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.91+1f2b34c102f54277d370dec95f3b2f1084938efb sha256=BC346C0B8D956527C2402930401F9B0338525A0D5B040CDAEA8D2729B61B0D76",
+      "PdbSha256": "B7B22C1328FF7F75B3BDD0C4E2A6EF831E515BA02FA450F04D832C54F1E8FF2F",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.91+cd8eb5c7f1a76625758fd75fdb231dc1a7132176 sha256=F29835B22D62774324F02C225A595D1A92557F4FB83380602D11822FCB632619",
+      "PdbSha256": "C2FC968494BA3AD300215C3E1BAF17FEC4BE026C76E965C50143EDA36C1D8F1D",
+      "Documents": 12
+    }
+  },
+  "AfterProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.91+1f2b34c102f54277d370dec95f3b2f1084938efb sha256=BC346C0B8D956527C2402930401F9B0338525A0D5B040CDAEA8D2729B61B0D76",
+      "PdbSha256": "B7B22C1328FF7F75B3BDD0C4E2A6EF831E515BA02FA450F04D832C54F1E8FF2F",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.91+ec31fe66575f484f8d90515f02b4d737c167451e sha256=13533088AC9CD043E2224EFC14212A23E871D6650237ADA3D98F2CE840413B60",
+      "PdbSha256": "D476CEBA5096A117CADB8825C47BA1E343B9F5B493BCD090DF56575D4B5E8D60",
+      "Documents": 12
+    }
+  },
+  "InputContract": "POSIX caller-valid unchanged UTF8. Both producers time the complete public Match and every byte/UTF16 capture slot into identical reusable caller-owned storage. Checks are outside timing. Finite work/depth/working/result plus original funded/deadline where labelled. Separate ordinary producer processes; no native parity refresh.",
+  "CompleteCompilerInputsVerified": true,
+  "CommonCoreCallerDotNet": true,
+  "PosixCountControlHasUnchangedPathNotIdenticalDll": true,
+  "OrdinaryProcesses": true,
+  "ManagedMemberInventory": [
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": []
+    }
+  ],
+  "RawArchive": "artifacts/experiments/posix-adjacent-projection-bounded-20261114/evidence.tar.gz",
+  "RawSha256": "393EB38CA441A1273B16489DB62DE5673CA9B2322603FA15F4CC7E8778CCB599",
+  "LocalEvidenceSha256": "E775FA583CFE429BB35659BED440F0FA1C5E36BEC265B0CE5B2CA78DD7EF7E1A",
+  "EvidenceOffVmVerified": true,
+  "WorkersAndCollectorTerminal": true,
+  "PreservedImmutableAssets": 588,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "SetupFailures": [
+    {
+      "Task": "posix-adjacent-projection-20261114",
+      "Reason": "Finite depth4096 refusal before timing: the uncaptured literal tail excluded the unique-run proof.",
+      "RawSha256": "5672A0348DC52576C4D5BB649DDB3C63CE6E2CBD18E2E598140DA53C69C9FCD4",
+      "WorkerAndCollectorTerminalExit": 1,
+      "TimingStarted": false
+    },
+    {
+      "Task": "posix-adjacent-projection-recovery-20261114",
+      "Reason": "30s preflight timeout before timing: the uncaptured class tail still introduced fictive tags inside its repeat.",
+      "RawSha256": "F738C5EB88499E1931A808913011B5AE9F18531BFA64AA6FA79B4CB4E66C8FFF",
+      "WorkerAndCollectorTerminalExit": 1,
+      "TimingStarted": false
+    }
+  ],
+  "Notes": [
+    "One74.916s ten-row ordinary-process ABBA, five150ms-target samples per process/row, all>=20ms,150s cap,zero confirmations. Complete public Match and all requested byte/UTF16 captures timed; full equality/refunds checked afterward.",
+    "Separated observed improvements: eight large adjacent ASCII captures-2.96%,four Unicode captures-31.54%,four gapped Unicode captures-31.37%. A small final captured run keeps the ASCII fixture on its existing unique-run route.",
+    "Funded/deadline-2.34%,nested-0.81%,shortSKU+0.10%,empty-overlap+2.02% and Count/Core/.NET controls overlap. Preserve process medians/ranges; no normalization, formal confidence interval or new native parity ratio.",
+    "Two setup failures preceded timing. Final fixtures explicitly assert existing route eligibility and preserve finite limits. The final task reuses exact frozen producer pairs/compiler documents; only the caller was rebuilt after those failures. No measured comparison repeated.",
+    "POSIX native comparator remains PCRE.NET ordered NFA on verified equal-result overlap, not a POSIX oracle. This local producer comparison is separate from canonical dev91 data. No package/Full/canonical refresh."
+  ]
+}
