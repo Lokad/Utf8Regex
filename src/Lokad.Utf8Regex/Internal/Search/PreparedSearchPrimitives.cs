@@ -714,16 +714,20 @@ internal readonly struct PreparedSubstringSearch
 
         var firstFolded = foldedNeedle[0];
         var compareFolded = foldedNeedle[preferredCompareIndex];
-        if (!CanUseCaseBitVectorAnchors(firstFolded, compareFolded))
+        if (firstFolded > 0x7f || compareFolded > 0x7f)
         {
             return false;
         }
 
         var maxCandidateStart = input.Length - needleLength;
-        var foldMask128 = Vector128.Create((byte)0x20);
+        // Only letters fold. Punctuation anchors must retain exact byte equality:
+        // setting their case bit would also admit aliases such as NUL for space.
+        var firstCaseMask = firstFolded is >= (byte)'a' and <= (byte)'z' ? (byte)0x20 : (byte)0;
+        var compareCaseMask = compareFolded is >= (byte)'a' and <= (byte)'z' ? (byte)0x20 : (byte)0;
         if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
         {
-            var foldMask256 = Vector256.Create((byte)0x20);
+            var firstMask = Vector256.Create(firstCaseMask);
+            var compareMask = Vector256.Create(compareCaseMask);
             var firstVector = Vector256.Create(firstFolded);
             var compareVector = Vector256.Create(compareFolded);
             nint offset = 0;
@@ -734,10 +738,10 @@ internal readonly struct PreparedSubstringSearch
             {
                 var firstCompare = Vector256.Equals(
                     firstVector,
-                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[(int)offset..]), foldMask256));
+                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[(int)offset..]), firstMask));
                 var preferredCompare = Vector256.Equals(
                     compareVector,
-                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[((int)offset + preferredCompareIndex)..]), foldMask256));
+                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[((int)offset + preferredCompareIndex)..]), compareMask));
                 var candidates = (firstCompare & preferredCompare).ExtractMostSignificantBits();
                 while (candidates != 0)
                 {
@@ -771,6 +775,8 @@ internal readonly struct PreparedSubstringSearch
 
         if (Vector128.IsHardwareAccelerated && input.Length - lastIndex >= Vector128<byte>.Count)
         {
+            var firstMask = Vector128.Create(firstCaseMask);
+            var compareMask = Vector128.Create(compareCaseMask);
             var firstVector = Vector128.Create(firstFolded);
             var compareVector = Vector128.Create(compareFolded);
             nint offset = 0;
@@ -781,10 +787,10 @@ internal readonly struct PreparedSubstringSearch
             {
                 var firstCompare = Vector128.Equals(
                     firstVector,
-                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[(int)offset..]), foldMask128));
+                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[(int)offset..]), firstMask));
                 var preferredCompare = Vector128.Equals(
                     compareVector,
-                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[((int)offset + preferredCompareIndex)..]), foldMask128));
+                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[((int)offset + preferredCompareIndex)..]), compareMask));
                 uint candidates = (firstCompare & preferredCompare).ExtractMostSignificantBits();
                 while (candidates != 0)
                 {
@@ -1029,29 +1035,5 @@ internal readonly struct PreparedSubstringSearch
     {
         return (int)(AsciiSearch.GetDotNetLikeAsciiFrequency(folded) * -1000f);
     }
-
-    private static bool TryGetCaseVariants(byte folded, out byte lower, out byte upper)
-    {
-        lower = folded;
-        upper = folded;
-        if (folded is >= (byte)'a' and <= (byte)'z')
-        {
-            upper = (byte)(folded - 32);
-            return true;
-        }
-
-        if (folded is >= (byte)'A' and <= (byte)'Z')
-        {
-            lower = (byte)(folded + 32);
-            return true;
-        }
-
-        return false;
-    }
-
-    // The vector fold sets the ASCII case bit, so both correlated anchors must be letters.
-    private static bool CanUseCaseBitVectorAnchors(byte firstFolded, byte compareFolded)
-        => TryGetCaseVariants(firstFolded, out _, out _) &&
-           TryGetCaseVariants(compareFolded, out _, out _);
 
 }
