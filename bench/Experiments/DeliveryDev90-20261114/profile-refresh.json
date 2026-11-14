@@ -1,0 +1,57 @@
+{
+  "Source": "70ea16b20f7da5d99865c50fdae4cceaff0a68e2",
+  "StartedAtUtc": "2026-11-14T13:40:02.9261772+00:00",
+  "UpdatedAtUtc": "2026-11-14T13:57:09.1234265+00:00",
+  "ElapsedSeconds": 1026.1975859,
+  "BudgetSeconds": 1721,
+  "Scope": "Selected phases",
+  "Phases": [
+    "PythonRe",
+    "Posix"
+  ],
+  "Complete": true,
+  "Steps": [
+    {
+      "Name": "python-semantic",
+      "Status": "Passed",
+      "Seconds": 4.8310813,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-raw",
+      "Status": "Passed",
+      "Seconds": 483.2932343,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-paired",
+      "Status": "Passed",
+      "Seconds": 463.4355678,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-lifecycle",
+      "Status": "Passed",
+      "Seconds": 2.9982563,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "python-scaling",
+      "Status": "Passed",
+      "Seconds": 18.5870463,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "posix",
+      "Status": "Passed",
+      "Seconds": 52.9527252,
+      "ExitCode": 0,
+      "Error": null
+    }
+  ]
+}
