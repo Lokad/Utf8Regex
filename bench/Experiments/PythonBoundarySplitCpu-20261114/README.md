@@ -7,7 +7,8 @@ built; producer DLL/PDB/source/member inventory and fixed images verify unchange
 
 16992 cpu-clock:u samples at997Hz over16.952s including startup/warmup/runtime:
 MoveNextCore29.04%, RunSegment17.33%, DecodeUtf88.63%, SplitScalar7.22%.
-[All method self samples and producer identities](cpu-summary.json).
+[Leading method self samples and producer identities](cpu-summary.json).
+The immutable raw archive retains the complete method/address inventory.
 Inlined work belongs to its containing method. Unresolved CoreCLR16.24% is not a
 GC attribution. No exact phase fraction, throughput, parity or speedup is claimed.
 
