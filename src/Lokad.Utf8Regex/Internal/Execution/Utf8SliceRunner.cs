@@ -57,6 +57,8 @@ internal struct Utf8SliceCountMutation
 
 internal readonly struct Utf8SliceMatchOutcome
 {
+    // Expose field stores in hot repeat/capture return paths.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Utf8SliceMatchOutcome(bool isMatch, int endIndex, Utf8ExecutionLimitKind breach, int[][]? captureStarts, int[][]? captureLengths)
     {
         IsMatch = isMatch;
