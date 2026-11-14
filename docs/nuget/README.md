@@ -65,7 +65,8 @@ required work without disabling matching admission or interruption.
 Python detailed results and scalar queries share a lazy prefix coordinate index,
 avoiding unused suffix preparation. Distant scalar-only queries can need more
 working capacity because entries store both scalar and UTF-16 counts. Proven
-POSIX disjoint runs omit redundant capture-history storage. Recheck numerical
+POSIX disjoint runs omit redundant capture-history storage; forward cursors reuse
+previously projected ends instead of repeatedly counting their prefixes. Recheck numerical
 work/working limits when upgrading; published result charges remain independent.
 
 Keep borrowed input alive and unchanged. Follow each cursor's alias contract and

@@ -46,7 +46,8 @@
   cursors and callbacks, including lookaround captures. Empty name metadata and
   captures equal to group zero omit redundant publication/projection work.
   Distant scalar-only queries can require more working capacity for the shared
-  two-count index. False literal prefixes avoid repeated verification. Raw callback output keeps
+  two-count index. False literal prefixes avoid repeated verification; direct
+  class/delimiter eligibility is prepared once per discovery. Raw callback output keeps
   its strict completed-stream UTF-8 check without unused coordinate metadata.
   Core Count reuses existing ASCII validity proofs and omits discarded literal
   coordinates; checked folded search compares punctuation anchors exactly.
@@ -56,7 +57,9 @@
   on ASCII-only word counting.
   Short string output handles one-byte ASCII directly. POSIX suffix captures
   reuse the whole match's ending coordinate. Proven disjoint ASCII runs keep
-  unique capture boundaries in existing state without an occurrence trace. PCRE2 positive ASCII-range Count
+  unique capture boundaries in existing state without an occurrence trace. Forward
+  POSIX cursors reuse previously projected ends rather than rescanning prefixes.
+  PCRE2 positive ASCII-range Count
   can keep its workspace-free byte counter on valid mixed Unicode text, with
   unchanged native UTF checking and basic work/interruption controls.
   Performance depends on the operation and input policy; some capture, folded,
