@@ -6,6 +6,34 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTextInputContractTests
 {
     [Theory]
+    [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("abcé")] [InlineData("needle")]
+    public void DelegatedLiteralCountKeepsTheAlreadyValidTextContract(string literal)
+    {
+        using var regex = new Utf8PythonRegex(literal);
+        using var compiled = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(literal), default,
+            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default);
+        var session = Utf8SearchDiagnosticsSession.Start();
+        try
+        {
+            foreach (var length in new[] { 0, 63, 4096 })
+            foreach (var withMatches in new[] { false, true })
+            {
+                var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
+                var bytes = Encoding.UTF8.GetBytes(text);
+                var storage = new byte[bytes.Length + 13];
+                Array.Fill(storage, (byte)0xff);
+                bytes.CopyTo(storage.AsSpan(5));
+                var expected = withMatches ? 2 : 0;
+                Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
+                Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
+            }
+            Assert.Equal(0, session.SubjectValidations);
+        }
+        finally { session.Complete(); }
+    }
+
+    [Theory]
     [InlineData("(needle)", "é😀 needle!", 1, 7, 6)]
     [InlineData("(é|😀)", "é😀", 2, 0, 2)]
     [InlineData("", "é😀", 3, 0, 0)]
