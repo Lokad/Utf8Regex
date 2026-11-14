@@ -49,6 +49,9 @@
   directly into admitted capacity without a sizing pass. PCRE2 positive ASCII
   range-union Count needs no VM workspace on mixed text. Raw byte-callback output
   retains its strict completed-stream UTF-8 check.
+  Python findall tuples reuse owned text for identical capture ranges while
+  keeping tuple arrays independent. Proven complete capture roots omit redundant
+  delimiter preparation, and captured splitting reuses staging interruption checks.
   Performance and numerical work/working admission depend on operation, policy
   and input; some workloads use more time or memory. Recheck finite limits.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote

@@ -50,6 +50,9 @@ slice-validity rules; check result slice properties before decoding those result
 
 Unknown short Python string lengths can use a conservative UTF-8-byte-derived
 capacity before decoding; finite Unicode working/result budgets can deny earlier.
+Python findall tuples can share owned immutable text for identical capture ranges;
+tuple arrays remain independent. Captured splitting and proven complete roots
+omit redundant staging checks and delimiter preparation.
 
 Synchronous cancellation observes the original token. Absolute deadlines and
 finite work/depth/working/result policies cover the documented operation stages.
