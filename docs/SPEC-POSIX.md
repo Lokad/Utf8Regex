@@ -162,22 +162,27 @@ allocate a second execution state.
 
 Fixed sequences without choices or repetitions have one parse. Existing proofs
 also retain first acceptance for homogeneous greedy literal runs, suitable equal
-literal alternatives, disjoint positive ASCII runs and eligible repeated literal
+literal alternatives, eligible flat ASCII runs and repeated literal
 captures. Those routes keep one trace and project it directly, except the flat
-disjoint-run case below. First and
+run case below. First and
 mandatory empty participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
-For flat pairwise-disjoint positive ASCII runs, the proved unique boundaries
-also allow direct run consumption in the scalar executor. Each examined byte
+Flat positive ASCII class or unfolded ASCII literal runs also allow direct run
+consumption in the scalar executor when greedy boundaries prove the selected
+parse. A required run must be disjoint from all preceding runs; an overlapping
+successor must have minimum zero. Finite maxima remain effective. Any anchor in
+a nullable sequence declines this proof, because an interior anchor can require
+rewinding an earlier run. Each examined byte
 remains metered; impossible alternative exits, their undo journal and unused
 repeat-counter capacity are omitted. Work, pending depth and working admission
 can therefore be lower for these programs; capture selection is unchanged.
 Their public capture events occur outside repeat bodies, without forks or repeated
 occurrences. Construction can admit one balanced compiler-only wrapper around a
-class atom after verifying its tag is not a public capture. The original syntax
+atom after verifying its tag is not a public capture. The original syntax
 tags stay in the program; this proved route skips that private occurrence history.
-Repeated public captures, nullable/overlapping classes and uncertain bodies retain
-their existing selection. Existing state slots keep unique public opening/closing byte offsets;
+Repeated public captures, required overlapping successors, anchored nullable
+sequences and uncertain bodies retain their existing selection. Existing state
+slots keep the selected public opening/closing byte offsets;
 no trace is acquired or replayed for this route. State admission remains before
 acquisition, while numerical work/working requirements can fall. Other proven
 routes and general histories retain their existing trace/interval behavior.
