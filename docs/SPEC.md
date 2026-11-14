@@ -392,7 +392,11 @@ boolean eligibility fact; existing workspace/slots remain initialized,
 both multi-group closing entries retain their admission and completion order,
 and slots publish only after complete success and interruption checks. Basic
 literal, repeat-block and publication metering remains. Removed dispatch can
-lower numerical work totals.
+lower numerical work totals. Repeated-root orchestration uses ordinary VM-step
+checks rather than additional forced deadline clock reads. Explicit original-token
+checks remain, and the repeat runner checks deadlines per bounded byte block and
+at each completed repeat; public publication checks retain the original authority.
+This clock-read omission changes neither work charges nor storage/result admission.
 A complete root containing one capture of a positive, unfolded ASCII set can
 similarly omit VM setup and capture-marker/Accept dispatch. It keeps the existing
 scalar decoder and set predicate, admitted workspace/slots, and charged entry and
