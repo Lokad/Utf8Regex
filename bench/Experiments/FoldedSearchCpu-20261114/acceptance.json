@@ -1,0 +1,363 @@
+{
+  "Source": "8b9b0a69d27e71fe900268d2f8dba11f02728be7",
+  "DiagnosticCaptures": 1,
+  "Profile": {
+    "Pid": 611643,
+    "StartupProcessors": 8,
+    "Description": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "Runtime": ".NET 11.0.0",
+    "Core": {
+      "Assembly": "0.5.0-dev.85+8b9b0a69d27e71fe900268d2f8dba11f02728be7 sha256=32F865C91337BD4DF61D2BA37EE5CB6A3BB2B076163275B8AD21E097292B5929",
+      "PdbSha256": "40E6759D23AF8240838DAC9DEDEB0F32E4501A2088272F6E10C36EF491875F0F",
+      "Documents": 343
+    },
+    "ManagedMembers": {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    "InputBytes": 899232,
+    "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+    "ExpectedCount": 11,
+    "WarmCalls": 2624,
+    "ProfileCalls": 26368,
+    "ProfileMilliseconds": 15032.3927,
+    "InputContract": "AssumeValid: caller guarantees valid unchanged UTF8; invariant-ignore-case public Count, complete integer outputs checked after each64-call batch. CPU attribution only, not timing/parity/speedup."
+  },
+  "SampleSummary": {
+    "Scope": "ONE whole-process cpu-clock:u/997Hz CPU IP capture. Includes startup, warmup, public trusted folded Count batches, checksum, GC and runtime work. Flat self samples with JIT map addresses; inlined costs belong to their containing method. Not per-phase timings, a public speedup, causal optimization proof or an exact CPU percentage. Managed sampled-thread-time PollGC shares are not used as CPU attribution.",
+    "Pid": 611643,
+    "Samples": 17093,
+    "ManagedMapSamples": 16478,
+    "NativeOrUnresolvedSamples": 615,
+    "AmbiguousNonStubMapSamples": 0,
+    "FirstSampleSeconds": 4626178.185057,
+    "LastSampleSeconds": 4626195.293864,
+    "SampleSpanSeconds": 17.108806999400258,
+    "Rows": [
+      {
+        "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime::Count(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype Lokad.Utf8Regex.Internal.Input.Utf8ValidationResult,class Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline)[OptimizedTier1]",
+        "Samples": 16196,
+        "Percent": 94.7522377581466,
+        "MapRanges": [
+          [
+            "0x7c524a7ce2c0",
+            "0x7c524a7cf9ff"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libcoreclr.so [unknown]",
+        "Samples": 386,
+        "Percent": 2.2582343649447143,
+        "MapRanges": []
+      },
+      {
+        "Name": "int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch::IndexOfIgnoreCaseHorspool(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32[],int32&,int32&)[OptimizedTier1OSR]",
+        "Samples": 222,
+        "Percent": 1.2987772772479962,
+        "MapRanges": [
+          [
+            "0x7c524a7b6d80",
+            "0x7c524a7b70fe"
+          ],
+          [
+            "0x7c524a7bc880",
+            "0x7c524a7bcbfd"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/libclrjit.so [unknown]",
+        "Samples": 188,
+        "Percent": 1.0998654419937985,
+        "MapRanges": []
+      },
+      {
+        "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch::IndexOfIgnoreCaseWithMetrics(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32,int32&,int32&)[OptimizedTier1]",
+        "Samples": 36,
+        "Percent": 0.210612531445621,
+        "MapRanges": [
+          [
+            "0x7c524a7c5b40",
+            "0x7c524a7c69e1"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 [unknown]",
+        "Samples": 17,
+        "Percent": 0.09945591762709881,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libcrypto.so.3 [unknown]",
+        "Samples": 9,
+        "Percent": 0.05265313286140525,
+        "MapRanges": []
+      },
+      {
+        "Name": "int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch::IndexOfIgnoreCaseHorspool(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32[],int32&,int32&)[QuickJitted]",
+        "Samples": 8,
+        "Percent": 0.04680278476569356,
+        "MapRanges": [
+          [
+            "0x7c524a7b66b0",
+            "0x7c524a7b683a"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 [unknown]",
+        "Samples": 4,
+        "Percent": 0.02340139238284678,
+        "MapRanges": []
+      },
+      {
+        "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::CountCore(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.Threading.CancellationToken)[OptimizedTier1]",
+        "Samples": 4,
+        "Percent": 0.02340139238284678,
+        "MapRanges": [
+          [
+            "0x7c524a7c8200",
+            "0x7c524a7ca82e"
+          ]
+        ]
+      },
+      {
+        "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::CountViaCompiledEngine(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype Lokad.Utf8Regex.Internal.Input.Utf8ValidationResult,class Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline)[OptimizedTier1]",
+        "Samples": 2,
+        "Percent": 0.01170069619142339,
+        "MapRanges": [
+          [
+            "0x7c524a7cdbc0",
+            "0x7c524a7ce0dc"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /memfd:doublemapper (deleted) [unknown]",
+        "Samples": 2,
+        "Percent": 0.01170069619142339,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 __getpid",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/System.Reflection.Metadata.dll [unknown]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 pthread_mutex_lock",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 strchrnul@plt",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 pthread_mutex_unlock",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.AsciiCharClass::MatchesExactly(uint64,uint64,class [System.Runtime]System.Func`2<uint8,bool>)[QuickJitted]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c52495415f0",
+            "0x7c5249541724"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/libc.so.6 cfree",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED [vdso] [unknown]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 __tls_get_addr",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      },
+      {
+        "Name": "bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch::TryIndexOfIgnoreCaseFirstLastVector(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32,int32&,int32&,int32&)[QuickJitted]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7b5810",
+            "0x7c524a7b5fde"
+          ]
+        ]
+      },
+      {
+        "Name": "int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Search.PreparedSubstringSearch::IndexOfIgnoreCaseHorspool(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>,int32[],int32&,int32&)[InstrumentedTier]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7bbab0",
+            "0x7c524a7bbc3a"
+          ]
+        ]
+      },
+      {
+        "Name": "instance valuetype Lokad.Utf8Regex.Internal.Search.PreparedSearcher& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Planning.Utf8PrefilterPlan::get_PrimarySearcher()[InstrumentedTier]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7c3920",
+            "0x7c524a7c3942"
+          ]
+        ]
+      },
+      {
+        "Name": "instance bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::ShouldSkipRequiredPrefilterForCount()[OptimizedTier1]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7cb8e0",
+            "0x7c524a7cba7f"
+          ]
+        ]
+      },
+      {
+        "Name": "void [CoreLookupProbe] Program::<<Main>$>g__ProfileCountBatch|0_0(class [Lokad.Utf8Regex]Lokad.Utf8Regex.Utf8Regex,uint8[],int32[])[InstrumentedTier]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7d24d0",
+            "0x7c524a7d25a6"
+          ]
+        ]
+      },
+      {
+        "Name": "instance valuetype Lokad.Utf8Regex.Internal.Execution.Utf8CompiledRuntimeCapabilities [Lokad.Utf8Regex] Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime::get_Capabilities()[OptimizedTier1]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7c7ce0",
+            "0x7c524a7c7e75"
+          ]
+        ]
+      },
+      {
+        "Name": "instance class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::GetOwnedSliceProgram(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>)[OptimizedTier1]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7caf70",
+            "0x7c524a7cb1f3"
+          ]
+        ]
+      },
+      {
+        "Name": "instance int32 [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::Count(valuetype [System.Runtime]System.ReadOnlySpan`1<uint8>)[OptimizedTier1]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7c8160",
+            "0x7c524a7c819f"
+          ]
+        ]
+      },
+      {
+        "Name": "instance bool [Lokad.Utf8Regex] Lokad.Utf8Regex.Utf8Regex::CanUseFusedCompiledUtf8LiteralFamilyCount()[OptimizedTier1]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": [
+          [
+            "0x7c524a7cb6c0",
+            "0x7c524a7cb7b9"
+          ]
+        ]
+      },
+      {
+        "Name": "NATIVE/UNRESOLVED /home/vermorel/.dotnet/shared/Microsoft.NETCore.App/11.0.0/System.Private.CoreLib.dll [unknown]",
+        "Samples": 1,
+        "Percent": 0.005850348095711695,
+        "MapRanges": []
+      }
+    ],
+    "ArchiveSha256": "raw-archive-hash-pending"
+  },
+  "PreparedAnchorAudit": [
+    {
+      "pattern": "John Watson",
+      "PreferredIndex": 4,
+      "FirstByte": 106,
+      "PreferredByte": 32,
+      "VectorEligible": false,
+      "Tier": "VectorAnchored"
+    },
+    {
+      "pattern": "Sherlock Holmes",
+      "PreferredIndex": 7,
+      "FirstByte": 115,
+      "PreferredByte": 107,
+      "VectorEligible": true,
+      "Tier": "VectorAnchored"
+    },
+    {
+      "pattern": "hello world",
+      "PreferredIndex": 5,
+      "FirstByte": 104,
+      "PreferredByte": 32,
+      "VectorEligible": false,
+      "Tier": "VectorAnchored"
+    },
+    {
+      "pattern": "alpha-beta",
+      "PreferredIndex": 3,
+      "FirstByte": 97,
+      "PreferredByte": 104,
+      "VectorEligible": true,
+      "Tier": "VectorAnchored"
+    },
+    {
+      "pattern": "abcdefghi",
+      "PreferredIndex": 6,
+      "FirstByte": 97,
+      "PreferredByte": 103,
+      "VectorEligible": true,
+      "Tier": "VectorAnchored"
+    }
+  ],
+  "RawSha256": "FE07F4A9DFFF6B275FB5E2CE232D4D122EC04C9976093D2C628C329E153A233E",
+  "RawVerifiedOffVm": true,
+  "KeeperTerminalExit": 0,
+  "NoThroughputOrParityClaim": true,
+  "NoProducerRebuild": true,
+  "NoFurtherCapture": true,
+  "NextHypothesis": "Reuse the checked correlated vector algorithm with per-anchor case masks: ASCII letters fold, nonletters compare exactly. Existing space anchor declines the letter-only gate. Verify correctness and decide from one bounded public A/B; no threshold/anchor-ranking changes or extra descriptors."
+}
