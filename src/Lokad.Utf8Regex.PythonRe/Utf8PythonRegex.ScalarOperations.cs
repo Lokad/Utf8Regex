@@ -439,7 +439,9 @@ public sealed partial class Utf8PythonRegex
                         IsCapture = true, CaptureGroupNumber = i,
                         ValueText = capture,
                     });
-                    cursor.Checkpoint();
+                    // AddResult checks the original invocation before staging,
+                    // including absent groups. The next decoder/discovery and
+                    // final publication retain their own interruption checks.
                 }
                 last = cursor.EndOffsetInBytes;
                 splits++;
