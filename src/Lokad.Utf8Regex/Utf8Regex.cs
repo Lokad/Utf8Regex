@@ -305,12 +305,6 @@ public sealed partial class Utf8Regex
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
         => resourcePolicy.Validate(paramName);
 
-    private static Utf8ValidationResult DescribeKelvinInput(ReadOnlySpan<byte> input, out bool containsKelvinSign)
-    {
-        containsKelvinSign = input.IndexOf("K"u8) >= 0;
-        return Utf8Validation.DescribeValid(input);
-    }
-
     /// <summary>Gets or sets the timeout used by constructors and cached operations that do not specify one.</summary>
     /// <remarks>The initial value is <see cref="Regex.InfiniteMatchTimeout"/>.</remarks>
     public static TimeSpan DefaultMatchTimeout
@@ -1269,17 +1263,27 @@ public sealed partial class Utf8Regex
         if (CanValidateKelvinSignDuringNativeCount())
         {
             bool containsKelvinSign;
+            Utf8ValidationResult kelvinValidation = default;
             if (InputValidation == Utf8InputValidation.Validate)
+            {
                 Utf8SearchDiagnosticsSession.Current?.CountSubjectValidation();
-            var kelvinValidation = InputValidation == Utf8InputValidation.Validate
-                ? Utf8InputAnalyzer.ValidateOnly(input, out containsKelvinSign)
-                : DescribeKelvinInput(input, out containsKelvinSign);
+                kelvinValidation = Utf8InputAnalyzer.ValidateOnly(input, out containsKelvinSign);
+            }
+            else containsKelvinSign = ContainsKelvinSign(input);
             if (containsKelvinSign && !ScalarVerifierServesInput(input))
             {
                 var kelvinInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken)
                     { InputValidation = InputValidation, SubjectValidationCompleted = true };
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref kelvinInvocation);
             }
+
+            // Nonempty unconstrained folded-literal Count consumes no coordinates
+            // or ASCII flag. Keep metadata for other compiled cursor consumers.
+            if (InputValidation == Utf8InputValidation.AssumeValid &&
+                (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase ||
+                 _preparedRegex.SearchPlan.HasBoundaryRequirements ||
+                 _preparedRegex.SearchPlan.HasTrailingLiteralRequirement))
+                kelvinValidation = Utf8Validation.DescribeValid(input);
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
             {

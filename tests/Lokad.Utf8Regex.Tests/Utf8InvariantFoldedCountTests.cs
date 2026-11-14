@@ -48,18 +48,44 @@ public sealed class Utf8InvariantFoldedCountTests
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
             var expected = new Regex(pattern, options).Count(text);
             var regex = new Utf8Regex(pattern, options);
+            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
             var bytes = Encoding.UTF8.GetBytes(text);
             for (var offset = 0; offset < 4; offset++)
             {
                 var padded = new byte[offset + bytes.Length + 3];
                 bytes.CopyTo(padded, offset);
                 Assert.Equal(expected, regex.Count(padded.AsSpan(offset, bytes.Length)));
+                Assert.Equal(expected, trusted.Count(padded.AsSpan(offset, bytes.Length)));
             }
             foreach (var tail in new[] { new byte[] { 255 }, new byte[] { 0xE2 }, new byte[] { 0xE2, 0x84 } })
             {
                 var malformed = bytes.Concat(tail).ToArray();
                 Assert.Throws<ArgumentException>(() => regex.Count(malformed));
             }
+        }
+    }
+
+    [Theory]
+    [InlineData("kit")] [InlineData(@"\bkit\b")]
+    [InlineData("kit|k")] [InlineData("Sherlock Holmes")]
+    public void TrustedFoldedCountsAgreeBeforeAndAfterKelvinFencing(string pattern)
+    {
+        foreach (var length in new[] { 0, 63, 64, 2047, 2048, 4096 })
+        foreach (var tail in new[] { "", " KIT" })
+        {
+            var text = new string('x', length) + " KIT kit Kİ ı Sherlock HOLMES é😀 " + tail;
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var options = Invariant | RegexOptions.Compiled;
+            var expected = new Regex(pattern, options).Count(text);
+            Assert.Equal(expected, new Utf8Regex(pattern, options).Count(bytes));
+            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
+            var session = Utf8SearchDiagnosticsSession.Start();
+            try
+            {
+                Assert.Equal(expected, trusted.Count(bytes));
+                Assert.Equal(0, session.SubjectValidations);
+            }
+            finally { session.Complete(); }
         }
     }
 
@@ -85,6 +111,8 @@ public sealed class Utf8InvariantFoldedCountTests
             var regex = new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase);
             var text = "é I i İ ı Kit ſ";
             Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(oracle.Count(text), new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase,
+                inputValidation: Utf8InputValidation.AssumeValid).Count(Encoding.UTF8.GetBytes(text)));
         }
         finally { CultureInfo.CurrentCulture = previous; }
     }
@@ -100,6 +128,12 @@ public sealed class Utf8InvariantFoldedCountTests
             MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var finite = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(512, finite.Count(input));
+        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy,
+            inputValidation: Utf8InputValidation.AssumeValid);
+        Assert.Equal(512, trusted.Count(input));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
+            "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
+            policy with { MaxWorkSteps = 1 }, inputValidation: Utf8InputValidation.AssumeValid).Count(input));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
             "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
             policy with { MaxWorkSteps = 1 }).Count(input));
@@ -113,6 +147,7 @@ public sealed class Utf8InvariantFoldedCountTests
         var ordinary = new Utf8Regex("Sherlock Holmes|John Watson", options);
         Assert.Throws<OperationCanceledException>(() => ordinary.Count(input, tokens.Token));
         Assert.Throws<OperationCanceledException>(() => finite.Count(input, tokens.Token));
+        Assert.Equal(tokens.Token, Assert.Throws<OperationCanceledException>(() => trusted.Count(input, tokens.Token)).CancellationToken);
 
         var clockReads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clockReads++ == 0 ? 0 : 25);
