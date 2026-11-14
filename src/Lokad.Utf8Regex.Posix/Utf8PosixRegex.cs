@@ -161,10 +161,11 @@ public sealed class Utf8PosixRegex
     internal Span<Utf8ValueMatch> OutputWindow(Span<Utf8ValueMatch> output) => output[..Math.Min(output.Length, GroupCount + 1)];
 
     internal Utf8ValueMatch Project(ReadOnlySpan<byte> input, int start, int end,
-        in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
+        in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation,
+        int originByte = 0, int originUtf16 = 0)
     {
         ClearOutput(output, ref invocation);
-        var whole = ProjectRange(input, start, end, ref invocation);
+        var whole = ProjectRange(input, start, end, ref invocation, originByte, originUtf16);
         if (!output.IsEmpty) output[0] = whole;
         for (var slot = 1; slot < output.Length; slot++)
         {

@@ -12,6 +12,8 @@ public sealed class Utf8PosixMatchCursor : IDisposable
     private PosixWorkspace _workspace;
     private int[] _state = [];
     private int _position;
+    private int _coordinateByte;
+    private int _coordinateUtf16;
     private bool _completed;
 
     internal Utf8PosixMatchCursor(Utf8PosixRegex regex, ReadOnlyMemory<byte> input, int start,
@@ -49,7 +51,13 @@ public sealed class Utf8PosixMatchCursor : IDisposable
                 Complete();
                 return false;
             }
-            match = regex.Project(_input.Span, start, end, in _workspace, _state, output, ref _invocation);
+            // Selected matches progress forward. Reuse the preceding whole end
+            // instead of recounting its prefix; empty-match scalar advancement
+            // remains in the unseen gap before the next selected start.
+            match = regex.Project(_input.Span, start, end, in _workspace, _state, output, ref _invocation,
+                _coordinateByte, _coordinateUtf16);
+            _coordinateByte = end;
+            _coordinateUtf16 = match.IndexInUtf16 + match.LengthInUtf16;
             PosixWorkspace.Charge(ref _invocation);
             if (start == end && end == _input.Length) Complete();
             else _position = start == end ? Utf8SliceRunner.AdvancePastScalar(_input.Span, end, false) : end;

@@ -125,6 +125,10 @@ capture ending with the whole match needs only its own UTF-16 content length;
 an empty capture there needs no prefix scan. Interior captures retain bounded
 coordinate counting. Removing redundant scans can lower modeled work without
 changing selected captures, admission or interruption authority.
+Forward cursors reuse their preceding whole-match byte/UTF-16 end when projecting
+the next result, counting only the intervening prefix and selected content.
+Skipped scalars after empty matches still contribute to the next coordinate.
+This needs no subject index, additional allocation or whole-input preparation.
 
 After a nonempty match, resume at its end. After an empty match, advance one scalar;
 the empty match at subject end is emitted once and completes iteration. For

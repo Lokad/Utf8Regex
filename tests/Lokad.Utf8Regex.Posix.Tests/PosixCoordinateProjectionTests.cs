@@ -80,6 +80,64 @@ public sealed class PosixCoordinateProjectionTests
         Assert.Equal(Value(start,6,prefix.Length,3),retained);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ForwardCursorKeepsCoordinatesAcrossUnicodeGapsAndEmptyProgression(bool nullable, bool finite)
+    {
+        var prefix = string.Concat(Enumerable.Repeat("é😀", 2049));
+        const string suffix = "é中😀\n!é?";
+        var bytes = Encoding.UTF8.GetBytes(prefix + suffix);
+        var storage = Enumerable.Repeat((byte)255, bytes.Length + 12).ToArray();
+        bytes.CopyTo(storage, 5);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var expected = new List<Utf8ValueMatch[]>();
+        var bytePosition = floor;
+        var utf16Position = prefix.Length;
+        foreach (var rune in suffix.EnumerateRunes())
+        {
+            var consumes = rune.Value is 'é' or 0x1f600;
+            if (consumes || nullable) AddExpected(consumes ? rune.Utf8SequenceLength : 0,
+                consumes ? rune.Utf16SequenceLength : 0, consumes);
+            bytePosition += rune.Utf8SequenceLength;
+            utf16Position += rune.Utf16SequenceLength;
+        }
+        if (nullable) AddExpected(0, 0, false);
+
+        var regex = new Utf8PosixRegex(nullable ? "((é|😀)?)()" : "((é|😀))()", resourcePolicy: finite
+            ? new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
+            : default);
+        using var cursor = regex.CreateMatchCursor(storage.AsMemory(5, bytes.Length), floor);
+        var alias = cursor;
+        var sentinel = Value(1, 2, 3, 4);
+        Utf8ValueMatch retained = default;
+        for (var i = 0; i < expected.Count; i++)
+        {
+            var output = Enumerable.Repeat(sentinel, i % 3 == 0 ? 0 : i % 3 == 1 ? 2 : 5).ToArray();
+            Assert.True((i % 2 == 0 ? cursor : alias).MoveNext(output, out var whole));
+            Assert.Equal(expected[i][0], whole);
+            Assert.Equal(expected[i].Take(output.Length), output.Take(4));
+            Assert.All(output.Skip(4), value => Assert.Equal(sentinel, value));
+            if (i == 0) retained = whole;
+        }
+        var finalOutput = Enumerable.Repeat(sentinel, 5).ToArray();
+        Assert.False(alias.MoveNext(finalOutput, out _));
+        Assert.All(finalOutput.Take(4), value => Assert.False(value.Success));
+        Assert.Equal(sentinel, finalOutput[4]);
+        cursor.Dispose(); alias.Dispose();
+        Assert.Equal(expected[0][0], retained);
+        Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+
+        void AddExpected(int byteLength, int utf16Length, bool participates)
+        {
+            var whole = Value(bytePosition, byteLength, utf16Position, utf16Length);
+            expected.Add([whole, whole, participates ? whole : default,
+                Value(bytePosition + byteLength, 0, utf16Position + utf16Length, 0)]);
+        }
+    }
+
     private static Utf8ValueMatch Value(int bytes,int byteLength,int utf16,int utf16Length)
         => new(true,true,utf16,utf16Length,bytes,byteLength);
 }
