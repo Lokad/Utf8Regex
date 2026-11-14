@@ -6,41 +6,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome)
+    internal static bool CanRunTerminalCaptureRoot(Utf8SliceProgram program)
     {
-        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         var code = program.Instructions;
         if (code.Length == 4 && program.GroupCount == 1 && program.RepeatCount == 0 &&
             !program.IsNonBacktracking && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasBalancing && !program.UsesCaptureOpeningJournal && program.Assertions.Length == 0 &&
             code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } &&
-            code[1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } single &&
+            code[1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
             code[2] is { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } &&
-            code[3].Kind == Utf8SliceInstructionKind.Accept)
-        {
-            // One consuming atom has one endpoint and no rollback or competing
-            // closing order. Keep its original scalar decoder and predicate.
-            var singleBreach = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (singleBreach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, singleBreach, null, null); return true; }
-            if (!TryReadScalar(input, start, false, out var scalar, out var width) ||
-                !Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[single.A], false, program.CaseBehavior))
-                return true;
-            singleBreach = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (singleBreach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, singleBreach, null, null); return true; }
-            if (captureStarts.Length != 0)
-            {
-                captureStarts[0] = start;
-                captureEnds[0] = start + width;
-            }
-            outcome = new(true, start + width, Utf8ExecutionLimitKind.None, null, null);
-            return true;
-        }
+            code[3].Kind == Utf8SliceInstructionKind.Accept) return true;
         if (program.GroupCount is not (1 or 2) || program.RepeatCount != program.GroupCount || code.Length is < 7 or > 64 ||
             program.IsNonBacktracking || program.RightToLeft || program.IgnoreCase || program.HasBalancing ||
             program.UsesCaptureOpeningJournal || program.Assertions.Length != 0) return false;
@@ -78,6 +53,44 @@ internal static partial class Utf8SliceRunner
         for (var index = literalStart; index < prefixLength; index++)
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal ||
                 (uint)literal.A >= 128) return false;
+        return true;
+    }
+
+    private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
+        out Utf8SliceMatchOutcome outcome)
+    {
+        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+        if (!program.HasTerminalCaptureRoot) return false;
+        var code = program.Instructions;
+        if (program.RepeatCount == 0)
+        {
+            // One consuming atom has one endpoint and no rollback or competing
+            // closing order. Keep its original scalar decoder and predicate.
+            var single = code[1];
+            var singleBreach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (singleBreach != Utf8ExecutionLimitKind.None)
+            { outcome = new(false, -1, singleBreach, null, null); return true; }
+            if (!TryReadScalar(input, start, false, out var scalar, out var width) ||
+                !Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[single.A], false, program.CaseBehavior))
+                return true;
+            singleBreach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (singleBreach != Utf8ExecutionLimitKind.None)
+            { outcome = new(false, -1, singleBreach, null, null); return true; }
+            if (captureStarts.Length != 0)
+            {
+                captureStarts[0] = start;
+                captureEnds[0] = start + width;
+            }
+            outcome = new(true, start + width, Utf8ExecutionLimitKind.None, null, null);
+            return true;
+        }
+        var repeatIndex = code.Length - 6;
+        var prefixLength = repeatIndex - 1;
+        var slot = program.GroupCount - 1;
+        var literalStart = slot == 0 ? 0 : 6;
 
         // This complete root cannot rewind. Reuse its initialized workspace,
         // admitted closing journal and the existing bounded repeat algorithm.

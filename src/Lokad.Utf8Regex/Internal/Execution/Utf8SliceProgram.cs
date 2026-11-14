@@ -356,6 +356,9 @@ internal sealed class Utf8SliceProgram
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
         RequiresUnicodeCategory = requiresUnicodeCategory;
+        // Instructions and flags are complete before publishing the program.
+        // Keep this bounded, allocation-free proof off repeated match attempts.
+        HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings)
@@ -511,6 +514,7 @@ internal sealed class Utf8SliceProgram
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
+    internal bool HasTerminalCaptureRoot { get; }
 
     // The compiled .NET 10 lazy-loop defect is excluded from our semantics.
     // Route these programs through the owned VM even when a native plan exists.
