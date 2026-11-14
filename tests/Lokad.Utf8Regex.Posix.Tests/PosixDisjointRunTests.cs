@@ -53,6 +53,7 @@ public sealed class PosixDisjointRunTests
 
     [Theory]
     [InlineData("([a-b]+)([0-1]+)")]
+    [InlineData("([a-b]+)()([0-1]+)")]
     [InlineData("(([a-b]{1,3}))([0-1]{2,4})")]
     [InlineData("([a-b]{2,4})([0-1]{1,2})([!]{1,2})")]
     public void UniqueRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)

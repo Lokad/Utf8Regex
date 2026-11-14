@@ -1,0 +1,348 @@
+{
+  "Decision": "ACCEPT",
+  "Campaign": "CLOSED",
+  "Before": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+  "BaselineCheckout": "8ec2f99265e05628afd38c36f429817854a6e679",
+  "After": "364a5accec4388e9cb740994de27f21ae1c3b57d",
+  "Change": "Existing DisjointAsciiRuns proof stores unique open/close byte positions in existing state; omit only this route trace acquisition/events/final scan/history lookup. No new proof/selector/owner/buffer.",
+  "Guarantees": [
+    "Valid unchanged UTF8, checked scalar matching, byte/UTF16 coordinates and POSIX selection",
+    "Nested and empty captures outside repeats, short outputs, unchanged excess slots and retained cursor values",
+    "Original synchronous cancellation/deadlines and useful work/depth/working/result admission",
+    "State admitted before acquisition; output clearing and deterministic refunds"
+  ],
+  "IntentionalAccountingChange": "Numerical work/working requirements fall when nonexistent history storage/processing is omitted. Pooled unmetered trace had0B warm heap traffic; only finite allocation gains below are claimed from measurements.",
+  "Measurement": {
+    "Seconds": 54.27279954403639,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Rows": [
+    {
+      "Id": "sku-captures",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 0.30271785297319254,
+        "RangeUs": [
+          0.2978969138711453,
+          0.3067972152426691
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2991599199261831,
+          0.30659746954361483
+        ]
+      },
+      "After": {
+        "MedianUs": 0.21063398798727068,
+        "RangeUs": [
+          0.2094516449159781,
+          0.21604715621192944
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.20973664343706028,
+          0.21182633195505982
+        ]
+      },
+      "ObservedPercent": -30.419040067014624,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "finite-sku-captures",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 0.3940445138669547,
+        "RangeUs": [
+          0.3848682160240977,
+          0.4180879740099109
+        ],
+        "Bytes": 328.0,
+        "ProcessMediansUs": [
+          0.3888234238037167,
+          0.39522099273010064
+        ]
+      },
+      "After": {
+        "MedianUs": 0.27584520284873976,
+        "RangeUs": [
+          0.27435903071015494,
+          0.27764799021718667
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          0.2747339078676775,
+          0.27705849928511644
+        ]
+      },
+      "ObservedPercent": -29.99643615343515,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "funded-deadline-sku-captures",
+      "InputBytes": 6,
+      "InputSha256": "9C774A6DF32ADADA73F16F02D45A5C1E57915ECF18EB105E52B26BF183A4F996",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 0.6020820574660435,
+        "RangeUs": [
+          0.5911636220422322,
+          0.6153858285287686
+        ],
+        "Bytes": 376.0,
+        "ProcessMediansUs": [
+          0.5930057723214995,
+          0.6073845261231726
+        ]
+      },
+      "After": {
+        "MedianUs": 0.4406840573170124,
+        "RangeUs": [
+          0.4312359392347478,
+          0.4496663699120827
+        ],
+        "Bytes": 160.0,
+        "ProcessMediansUs": [
+          0.4337597341444995,
+          0.4471808014771783
+        ]
+      },
+      "ObservedPercent": -26.80664506567424,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "nested-unicode-floor",
+      "InputBytes": 10,
+      "InputSha256": "348C12334E3454DF1166FD58A5047107B82113A08340A41D189A946F35B98FEA",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 0.2754244803958645,
+        "RangeUs": [
+          0.2693981428237134,
+          0.28091946981744836
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.2712044345117701,
+          0.2800987796079512
+        ]
+      },
+      "After": {
+        "MedianUs": 0.20237430232449688,
+        "RangeUs": [
+          0.20113218270096286,
+          0.22539408753051934
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          0.20156231690352144,
+          0.22444037685060564
+        ]
+      },
+      "ObservedPercent": -26.52276150848081,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "unchanged-general-history",
+      "InputBytes": 4,
+      "InputSha256": "61BE55A8E2F6B4E172338BDDF184D6DBEE29C98853E0A0485ECEE7F27B9AF0B4",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 1.3911374954051856,
+        "RangeUs": [
+          1.3746784566508587,
+          1.4042523227611943
+        ],
+        "Bytes": 680.0,
+        "ProcessMediansUs": [
+          1.3802008932271284,
+          1.3946895708955223
+        ]
+      },
+      "After": {
+        "MedianUs": 1.4097917752031344,
+        "RangeUs": [
+          1.3904902260118406,
+          1.416595928526812
+        ],
+        "Bytes": 680.0,
+        "ProcessMediansUs": [
+          1.394320903302677,
+          1.415797836497511
+        ]
+      },
+      "ObservedPercent": 1.3409371726060382,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 12.424283300699567,
+        "RangeUs": [
+          12.341031477799868,
+          12.565925039606437
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.401581428098078,
+          12.44604794463437
+        ]
+      },
+      "After": {
+        "MedianUs": 12.429757219693835,
+        "RangeUs": [
+          12.26581034340091,
+          12.453476410807237
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.428198345055854,
+          12.450864744278277
+        ]
+      },
+      "ObservedPercent": 0.0440582274388257,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 22.953829644040077,
+        "RangeUs": [
+          22.551512457108757,
+          23.000579786434052
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.68611651499329,
+          22.98847525943751
+        ]
+      },
+      "After": {
+        "MedianUs": 22.654678743653307,
+        "RangeUs": [
+          22.568577797725915,
+          22.83412102671243
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          22.61206852184321,
+          22.748244739591108
+        ]
+      },
+      "ObservedPercent": -1.303272286262891,
+      "RangesDisjoint": false
+    }
+  ],
+  "BeforeProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=626D5335B9AF635BBCC3FE114E265F715F8DC5C315BEEED4535D1B3754602CC6",
+      "PdbSha256": "3230F3BCEBD7D7606273E6DA96163C08F9692FC7DE760C138BFAEFD01593030C",
+      "Documents": 12
+    }
+  },
+  "AfterProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Posix": {
+      "Assembly": "0.5.0-dev.89+364a5accec4388e9cb740994de27f21ae1c3b57d sha256=21030F061AC43E0ADEB7621E60C6F76536E85AFC4136F8085DDE8BF5B16B6E1A",
+      "PdbSha256": "ED8BB58A0980FCA2D1BD1D90B5630F2C46ED6433469A4B745F8B85A32F973CC0",
+      "Documents": 12
+    }
+  },
+  "InputContract": "POSIX valid unchanged UTF8. Same options, captures/byte/UTF16 materialization in both producer lanes; caller-owned capture buffer reused. Funding/deadline included where labelled. No native parity refresh.",
+  "AdmissionBefore": [
+    {
+      "Cursor": false,
+      "Admitted": false,
+      "ResourceKind": 7,
+      "Limit": 128,
+      "Requested": 320,
+      "Peak": 113
+    },
+    {
+      "Cursor": true,
+      "Admitted": false,
+      "ResourceKind": 7,
+      "Limit": 128,
+      "Requested": 320,
+      "Peak": 113
+    }
+  ],
+  "AdmissionAfter": [
+    {
+      "Cursor": false,
+      "Admitted": true,
+      "Peak": 113
+    },
+    {
+      "Cursor": true,
+      "Admitted": true,
+      "Peak": 113
+    }
+  ],
+  "WindowsFull": [
+    "Passed!  - Failed:     0, Passed:   391, Skipped:     0, Total:   391, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   391, Skipped:     0, Total:   391, Duration: 866 ms - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "WindowsExtraEmptyCaptures": [
+    "Passed!  - Failed:     0, Passed:    10, Skipped:     0, Total:    10, Duration: 82 ms - Lokad.Utf8Regex.Posix.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:    10, Skipped:     0, Total:    10, Duration: 80 ms - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "LinuxFull": [
+    "Passed!  - Failed:     0, Passed:   391, Skipped:     0, Total:   391, Duration: 1 s - Lokad.Utf8Regex.Posix.Tests.dll (net11.0)"
+  ],
+  "CompleteCompilerInputsVerified": true,
+  "CoreCallerDotNetUnchanged": true,
+  "OrdinaryProcesses": true,
+  "ManagedMemberInventory": [
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": []
+    }
+  ],
+  "RawArchive": "artifacts/experiments/posix-flat-capture-audit-20261114/comparison/evidence.tar.gz",
+  "RawSha256": "6CFB45FEC80F89F6E95209DCBF4CA0911DD1755CCD5182BF26D209A84A824A73",
+  "WindowsRawSha256": "DA699578DC45785078CE7057DECE5987E3D61E515DB043EB12A2A2AAE9AAA3E7",
+  "EvidenceOffVmVerified": true,
+  "WorkersAndCollectorTerminal": true,
+  "PreservedImmutableAssets": 572,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Notes": [
+    "This measures one public Match with reused caller capture storage and complete returned coordinate values. Do not turn it into a new native ratio or multiply its gains into the canonical4096-record batch.",
+    "General history control+1.34% overlaps. Core+0.044/.NET-1.30% overlap; no normalization or formal confidence-interval claim.",
+    "Source audit/probe had state96+pooledtrace224B modeled working. New state-only128B numeric admission succeeds for Match/cursor; finite heap traffic328\u2192112B/funded-deadline376\u2192160B is independently measured.",
+    "Initial private caller rejected != on Utf8ValueMatch; explicit complete range comparison fixed before preflight/timing. Caller setup import was fixed; no measurement repeated.",
+    "One empty-capture-outside-runs theory was added after frozen producer measurement. Focused tests pass on both Windows runtimes using unchanged producer bytes; no performance/package repetition."
+  ]
+}
