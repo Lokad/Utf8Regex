@@ -47,6 +47,10 @@
   its strict completed-stream UTF-8 check without unused coordinate metadata.
   Core Count reuses existing ASCII validity proofs and omits discarded literal
   coordinates; checked folded search compares punctuation anchors exactly.
+  Short string output handles one-byte ASCII directly. POSIX suffix captures
+  reuse the whole match's ending coordinate. PCRE2 positive ASCII-range Count
+  can keep its workspace-free byte counter on valid mixed Unicode text, with
+  unchanged native UTF checking and basic work/interruption controls.
   Performance depends on the operation and input policy; some capture, folded,
   reverse, dense-match and controlled workloads use more time or memory.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
