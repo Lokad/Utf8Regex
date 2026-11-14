@@ -1,0 +1,429 @@
+{
+  "Decision": "Accept per-anchor case masks in the existing checked vector algorithm: large public punctuation gains with small retained letter/dense/control costs.",
+  "Source": "25fade980e5c4cebef558dc566f23882a8b53ef2",
+  "Before": "8b9b0a69d27e71fe900268d2f8dba11f02728be7",
+  "CampaignClosed": true,
+  "NoFurtherTimingOrTuning": true,
+  "PublicComparison": {
+    "Acceptance": {
+      "Before": "8b9b0a69d27e71fe900268d2f8dba11f02728be7",
+      "After": "25fade980e5c4cebef558dc566f23882a8b53ef2",
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CallerUnchanged": true,
+      "EqualPublicCounts": true,
+      "OrdinaryProducerProcesses": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "LinuxFocusedChecks": [
+        {
+          "Framework": "net10.0",
+          "Counts": {
+            "total": "725",
+            "executed": "725",
+            "passed": "725",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        },
+        {
+          "Framework": "net11.0",
+          "Counts": {
+            "total": "725",
+            "executed": "725",
+            "passed": "725",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        }
+      ],
+      "Controls": [
+        "unchanged-exact"
+      ],
+      "WidthChecks": [
+        {
+          "Mode": "vector128",
+          "Variable": "DOTNET_EnableAVX2",
+          "Value": "0",
+          "Passed": true
+        },
+        {
+          "Mode": "scalar",
+          "Variable": "DOTNET_EnableHWIntrinsic",
+          "Value": "0",
+          "Passed": true
+        }
+      ],
+      "Scope": "Same checked correlated vector algorithm with exact per-anchor ASCII masks, unchanged selected anchors/full comparisons. Valid unchanged text, both policies compared with themselves; exact Count control and finite/live operating cost. No new .NET parity ratio."
+    },
+    "Rows": [
+      {
+        "Id": "letter-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 153.86374478234944,
+          "AfterUs": 153.16380290587492,
+          "ObservedPercent": -0.454910204781922,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            152.564877757901,
+            155.1072152653548
+          ],
+          "AfterRangeUs": [
+            152.21440303221732,
+            157.2684144030322
+          ],
+          "MinimumSampleMs": 240.9554
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 120.67507029053421,
+          "AfterUs": 119.46629268292682,
+          "ObservedPercent": -1.0016796383023996,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            117.65562324273665,
+            121.80360824742267
+          ],
+          "AfterRangeUs": [
+            118.00200000000001,
+            122.99746341463414
+          ],
+          "MinimumSampleMs": 241.9041
+        }
+      },
+      {
+        "Id": "space-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 527.2224948875255,
+          "AfterUs": 140.41751018033742,
+          "ObservedPercent": -73.36655557341246,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            524.4155419222905,
+            531.180163599182
+          ],
+          "AfterRangeUs": [
+            137.25497382198952,
+            145.4756835369401
+          ],
+          "MinimumSampleMs": 235.9413
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 492.14724409448814,
+          "AfterUs": 104.72825150732127,
+          "ObservedPercent": -78.7201385837255,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            489.0352362204724,
+            497.9301181102362
+          ],
+          "AfterRangeUs": [
+            102.12700258397932,
+            109.88910422049958
+          ],
+          "MinimumSampleMs": 237.1389
+        }
+      },
+      {
+        "Id": "dense-space",
+        "InputBytes": 49152,
+        "InputSha256": "1FFD9863EDD7E40ECB5C0CCCF9439DAECA36BA9F030845C2EA3902A7F69DED3A",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 70.34460811561979,
+          "AfterUs": 48.65973062658598,
+          "ObservedPercent": -30.826637705326487,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            70.02812673707615,
+            71.08704836020011
+          ],
+          "AfterRangeUs": [
+            48.031973453054846,
+            49.02701542065196
+          ],
+          "MinimumSampleMs": 246.0678
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 70.00400111919417,
+          "AfterUs": 47.970246478873236,
+          "ObservedPercent": -31.474993269034123,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            69.02456631225517,
+            72.0123670956911
+          ],
+          "AfterRangeUs": [
+            47.412617370892015,
+            49.12695618153364
+          ],
+          "MinimumSampleMs": 242.3733
+        }
+      },
+      {
+        "Id": "family-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 725,
+        "PublicStrictCount": {
+          "BeforeUs": 174.0573611111111,
+          "AfterUs": 176.5645714285714,
+          "ObservedPercent": 1.4404506086127533,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            172.58916666666667,
+            177.2121527777778
+          ],
+          "AfterRangeUs": [
+            173.4475,
+            178.1915
+          ],
+          "MinimumSampleMs": 242.8265
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 136.2410395235517,
+          "AfterUs": 136.83005936319483,
+          "ObservedPercent": 0.43233657178702867,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            135.2286951813752,
+            139.95457498646454
+          ],
+          "AfterRangeUs": [
+            135.04554776038856,
+            138.63275769023207
+          ],
+          "MinimumSampleMs": 249.7674
+        }
+      },
+      {
+        "Id": "john-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 11,
+        "PublicStrictCount": {
+          "BeforeUs": 601.5251798561151,
+          "AfterUs": 96.61115023474179,
+          "ObservedPercent": -83.93896823108034,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            597.2446043165468,
+            614.8781774580336
+          ],
+          "AfterRangeUs": [
+            95.69910015649452,
+            99.46349765258216
+          ],
+          "MinimumSampleMs": 244.6069
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 565.1029478458049,
+          "AfterUs": 63.818781855249746,
+          "ObservedPercent": -88.70669811606372,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            560.2834467120182,
+            569.7970521541951
+          ],
+          "AfterRangeUs": [
+            63.25772171253822,
+            64.32094801223242
+          ],
+          "MinimumSampleMs": 247.085
+        }
+      },
+      {
+        "Id": "finite-live",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 1052.1103734439835,
+          "AfterUs": 1058.2840336134454,
+          "ObservedPercent": 0.5867882615065545,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1045.721161825726,
+            1064.980497925311
+          ],
+          "AfterRangeUs": [
+            1052.6789915966388,
+            1064.0340336134454
+          ],
+          "MinimumSampleMs": 250.5376
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 1023.7491935483871,
+          "AfterUs": 1025.014693877551,
+          "ObservedPercent": 0.12361429314318162,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1018.8883064516128,
+            1037.5596774193548
+          ],
+          "AfterRangeUs": [
+            1017.389387755102,
+            1031.575918367347
+          ],
+          "MinimumSampleMs": 249.2604
+        }
+      },
+      {
+        "Id": "unchanged-exact",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 513,
+        "PublicStrictCount": {
+          "BeforeUs": 65.24801453412925,
+          "AfterUs": 65.3098253844149,
+          "ObservedPercent": 0.0947321550348823,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            64.91655852582403,
+            65.72491565014275
+          ],
+          "AfterRangeUs": [
+            64.83945790982538,
+            65.86369559551733
+          ],
+          "MinimumSampleMs": 248.789
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 32.07663923887889,
+          "AfterUs": 31.878088104608356,
+          "ObservedPercent": -0.618989828678429,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            31.900578554898434,
+            32.12156081254821
+          ],
+          "AfterRangeUs": [
+            31.63727307350514,
+            32.202843722229275
+          ],
+          "MinimumSampleMs": 248.1227
+        }
+      },
+      {
+        "Id": "dense-letters",
+        "InputBytes": 65536,
+        "InputSha256": "D0AC174303DB56B321AC8379A124BC922766ACE73B049F1BA2902690B0752184",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 52.45593925525276,
+          "AfterUs": 53.16064419795222,
+          "ObservedPercent": 1.3434225994321425,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            52.041814021219054,
+            52.63291033908883
+          ],
+          "AfterRangeUs": [
+            52.97634385665529,
+            53.744091296928325
+          ],
+          "MinimumSampleMs": 248.3531
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 51.33496256239601,
+          "AfterUs": 52.36933445661331,
+          "ObservedPercent": 2.0149462327162526,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            50.73829034941764,
+            51.94047420965058
+          ],
+          "AfterRangeUs": [
+            51.88837405223252,
+            52.61960825610783
+          ],
+          "MinimumSampleMs": 243.9497
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x4; Linux efficiency class unknown)",
+    "RawSha256": "FEFD8F945F0CE6388BC44942763C05CE595EDE2A0998809D0EAB7CCAF0660FB2",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "UnusedConfirmationAvailableOnlyIfNoisePreventsDecision": true
+  },
+  "WidthProof": [
+    {
+      "Mode": "vector128",
+      "Vector256": false,
+      "Vector128": true,
+      "Core": {
+        "Assembly": "0.5.0-dev.85+25fade980e5c4cebef558dc566f23882a8b53ef2 sha256=72A473D9BCEF6850C2238696881A67408AE72F0050D81906302F31ECDBF6A12C",
+        "PdbSha256": "E42B3DD4F791EA291CA3D88719D2D0B1BEAE743B72A75AEB18FA9EF827F40733",
+        "Documents": 343
+      },
+      "OutputsChecked": 8
+    },
+    {
+      "Mode": "scalar",
+      "Vector256": false,
+      "Vector128": false,
+      "Core": {
+        "Assembly": "0.5.0-dev.85+25fade980e5c4cebef558dc566f23882a8b53ef2 sha256=72A473D9BCEF6850C2238696881A67408AE72F0050D81906302F31ECDBF6A12C",
+        "PdbSha256": "E42B3DD4F791EA291CA3D88719D2D0B1BEAE743B72A75AEB18FA9EF827F40733",
+        "Documents": 343
+      },
+      "OutputsChecked": 8
+    }
+  ],
+  "WindowsFocusedChecksPerTarget": 725,
+  "LinuxFocusedChecksPerTarget": 725,
+  "AdditionalVector128Checks": 131,
+  "AdditionalScalarChecks": 131,
+  "TwoObsoletePrivateHelpersRemoved": true,
+  "NoFieldsModesOrAlgorithmsAdded": true,
+  "ManagedBoundsAndResourceControlsPreserved": true,
+  "ImmutablePackageAndSymbolFilesVerified": 540,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "NoCanonicalParityClaim": true
+}
