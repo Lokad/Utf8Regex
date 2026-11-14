@@ -21,7 +21,7 @@ import statistics
 import sys
 import sysconfig
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 
@@ -143,12 +143,70 @@ def simple_match_checksum(match: re.Match[str] | None, utf16_offsets: tuple[int,
 
 DetailedGroup = tuple[bool, int, int, int, int, str]
 DetailedMatch = tuple[DetailedGroup, ...] | None
+ValueMatch = tuple[re.Match[str], int, int, int, int] | None
+
+
+def materialize_value(match: re.Match[str] | None) -> ValueMatch:
+    # Value APIs publish byte and UTF-16 ranges within the timed operation,
+    # but do not require an eagerly decoded value string. CPython's isascii()
+    # reads the str representation flag; it does not rescan the subject.
+    if match is None:
+        return None
+    start, end = match.span()
+    if match.string.isascii():
+        return match, start, end, start, end
+    prefix = match.string[:start]
+    value = match.group()
+    start_bytes = len(prefix.encode("utf-8"))
+    start_utf16 = len(prefix.encode("utf-16-le")) // 2
+    return (
+        match,
+        start_bytes,
+        start_bytes + len(value.encode("utf-8")),
+        start_utf16,
+        start_utf16 + len(value.encode("utf-16-le")) // 2,
+    )
+
+
+def result_offsets(
+    input_text: str, matches: list[re.Match[str]], captures: bool = True,
+) -> tuple[Sequence[int] | Mapping[int, int], Sequence[int] | Mapping[int, int]]:
+    # Reuse conversion only inside this logical result. Encode disjoint segments
+    # up to requested boundaries, including lookaround captures outside group 0.
+    # No setup map, full suffix scan, or repeated dense-prefix conversion.
+    if input_text.isascii():
+        identity = range(len(input_text) + 1)
+        return identity, identity
+    boundaries = sorted({
+        position
+        for match in matches
+        for span in (match.regs if captures else (match.span(),))
+        for position in span
+        if position >= 0
+    })
+    utf8_offsets = {0: 0}
+    utf16_offsets = {0: 0}
+    previous = utf8_offset = utf16_offset = 0
+    for boundary in boundaries:
+        segment = input_text[previous:boundary]
+        utf8_offset += len(segment.encode("utf-8"))
+        utf16_offset += len(segment.encode("utf-16-le")) // 2
+        utf8_offsets[boundary] = utf8_offset
+        utf16_offsets[boundary] = utf16_offset
+        previous = boundary
+    return utf8_offsets, utf16_offsets
+
+
+def materialize_detailed_result(match: re.Match[str] | None) -> DetailedMatch:
+    if match is None:
+        return None
+    return materialize_detailed(match, *result_offsets(match.string, [match]))
 
 
 def materialize_detailed(
     match: re.Match[str] | None,
-    utf8_offsets: tuple[int, ...],
-    utf16_offsets: tuple[int, ...],
+    utf8_offsets: Sequence[int] | Mapping[int, int],
+    utf16_offsets: Sequence[int] | Mapping[int, int],
 ) -> DetailedMatch:
     if match is None:
         return None
@@ -264,6 +322,8 @@ class CaseRunner:
         self.operation = request["Operation"]
         self.input_bytes = base64.b64decode(request["InputBase64"], validate=True)
         self.input_text = self.input_bytes.decode("utf-8", "strict")
+        # Setup maps serve only start-offset translation and untimed callback/
+        # bytes-control verification. Timed coordinate results project afresh.
         self.utf8_offsets = build_utf8_offsets(self.input_text)
         self.utf16_offsets = build_utf16_offsets(self.input_text)
         start_offset_in_bytes = request.get("StartOffsetInBytes", 0)
@@ -304,19 +364,15 @@ class CaseRunner:
         if operation == "IsMatch":
             return self.pattern.search(input_text) is not None
         if operation == "Search":
-            return self.pattern.search(input_text)
+            return materialize_value(self.pattern.search(input_text))
         if operation == "SearchFromOffset":
-            return self.pattern.search(input_text, self.start_offset)
+            return materialize_value(self.pattern.search(input_text, self.start_offset))
         if operation == "Match":
-            return self.pattern.match(input_text)
+            return materialize_value(self.pattern.match(input_text))
         if operation == "FullMatch":
-            return self.pattern.fullmatch(input_text)
+            return materialize_value(self.pattern.fullmatch(input_text))
         if operation == "SearchDetailed":
-            return materialize_detailed(
-                self.pattern.search(input_text),
-                self.utf8_offsets,
-                self.utf16_offsets,
-            )
+            return materialize_detailed_result(self.pattern.search(input_text))
         if operation == "Count":
             return sum(1 for _ in self.pattern.finditer(input_text))
         if operation == "CountFromOffset":
@@ -328,10 +384,7 @@ class CaseRunner:
         if operation == "FindAllUtf8":
             return self.encode_findall(self.pattern.findall(input_text))
         if operation == "FindIterDetailed":
-            return [
-                materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
-                for match in self.pattern.finditer(input_text)
-            ]
+            return self.materialize_iter_detailed(input_text)
         if operation == "FindAllStructural":
             return self.materialize_structural(input_text)
         if operation == "ReplaceString":
@@ -370,24 +423,20 @@ class CaseRunner:
                 result = pattern.search(input_text) is not None
         elif operation == "Search":
             for _ in range(iterations):
-                result = pattern.search(input_text)
+                result = materialize_value(pattern.search(input_text))
         elif operation == "SearchFromOffset":
             start_offset = self.start_offset
             for _ in range(iterations):
-                result = pattern.search(input_text, start_offset)
+                result = materialize_value(pattern.search(input_text, start_offset))
         elif operation == "Match":
             for _ in range(iterations):
-                result = pattern.match(input_text)
+                result = materialize_value(pattern.match(input_text))
         elif operation == "FullMatch":
             for _ in range(iterations):
-                result = pattern.fullmatch(input_text)
+                result = materialize_value(pattern.fullmatch(input_text))
         elif operation == "SearchDetailed":
             for _ in range(iterations):
-                result = materialize_detailed(
-                    pattern.search(input_text),
-                    self.utf8_offsets,
-                    self.utf16_offsets,
-                )
+                result = materialize_detailed_result(pattern.search(input_text))
         elif operation == "Count":
             for _ in range(iterations):
                 result = sum(1 for _ in pattern.finditer(input_text))
@@ -414,10 +463,7 @@ class CaseRunner:
                     ]
         elif operation == "FindIterDetailed":
             for _ in range(iterations):
-                result = [
-                    materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
-                    for match in pattern.finditer(input_text)
-                ]
+                result = self.materialize_iter_detailed(input_text)
         elif operation == "FindAllStructural":
             for _ in range(iterations):
                 result = self.materialize_structural(input_text)
@@ -483,15 +529,13 @@ class CaseRunner:
 
         input_text = self.input_text
         pattern = self.pattern
-        utf8_offsets = self.utf8_offsets
-        utf16_offsets = self.utf16_offsets
         consumption_checksum = 0
-        result: re.Match[str] | None = None
+        result: ValueMatch = None
         started = time.perf_counter_ns()
         if operation in {"Search", "SearchFromOffset"}:
             start_offset = self.start_offset
             for _ in range(iterations):
-                result = (
+                result = materialize_value(
                     pattern.search(input_text)
                     if operation == "Search"
                     else pattern.search(input_text, start_offset)
@@ -499,41 +543,41 @@ class CaseRunner:
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    start, end = result.span()
+                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
                     consumption_checksum += (
                         2
-                        + utf8_offsets[start]
-                        + utf8_offsets[end]
-                        + utf16_offsets[start]
-                        + utf16_offsets[end]
+                        + start_bytes
+                        + end_bytes
+                        + start_utf16
+                        + end_utf16
                     )
         elif operation == "Match":
             for _ in range(iterations):
-                result = pattern.match(input_text)
+                result = materialize_value(pattern.match(input_text))
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    start, end = result.span()
+                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
                     consumption_checksum += (
                         2
-                        + utf8_offsets[start]
-                        + utf8_offsets[end]
-                        + utf16_offsets[start]
-                        + utf16_offsets[end]
+                        + start_bytes
+                        + end_bytes
+                        + start_utf16
+                        + end_utf16
                     )
         else:
             for _ in range(iterations):
-                result = pattern.fullmatch(input_text)
+                result = materialize_value(pattern.fullmatch(input_text))
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    start, end = result.span()
+                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
                     consumption_checksum += (
                         2
-                        + utf8_offsets[start]
-                        + utf8_offsets[end]
-                        + utf16_offsets[start]
-                        + utf16_offsets[end]
+                        + start_bytes
+                        + end_bytes
+                        + start_utf16
+                        + end_utf16
                     )
         return time.perf_counter_ns() - started, result, consumption_checksum
 
@@ -599,13 +643,13 @@ class CaseRunner:
             return 0
         if result is None:
             return 1
-        start, end = result.span()
+        _, start_bytes, end_bytes, start_utf16, end_utf16 = result
         return (
             2
-            + self.utf8_offsets[start]
-            + self.utf8_offsets[end]
-            + self.utf16_offsets[start]
-            + self.utf16_offsets[end]
+            + start_bytes
+            + end_bytes
+            + start_utf16
+            + end_utf16
         )
 
     @staticmethod
@@ -630,17 +674,24 @@ class CaseRunner:
             return [value.encode("utf-8") for value in values]
         return [tuple(value.encode("utf-8") for value in item) for item in values]
 
+    def materialize_iter_detailed(self, input_text: str) -> list[DetailedMatch]:
+        matches = list(self.pattern.finditer(input_text))
+        utf8_offsets, utf16_offsets = result_offsets(input_text, matches)
+        return [materialize_detailed(match, utf8_offsets, utf16_offsets) for match in matches]
+
     def materialize_structural(self, input_text: str) -> list[tuple[bool, int, int, int, int, str]]:
         values: list[tuple[bool, int, int, int, int, str]] = []
-        for match in self.pattern.finditer(input_text):
+        matches = list(self.pattern.finditer(input_text))
+        utf8_offsets, utf16_offsets = result_offsets(input_text, matches, captures=False)
+        for match in matches:
             start, end = match.span()
             values.append(
                 (
                     True,
-                    self.utf8_offsets[start],
-                    self.utf8_offsets[end],
-                    self.utf16_offsets[start],
-                    self.utf16_offsets[end],
+                    utf8_offsets[start],
+                    utf8_offsets[end],
+                    utf16_offsets[start],
+                    utf16_offsets[end],
                     match.group(),
                 )
             )
@@ -686,7 +737,7 @@ class CaseRunner:
         if operation == "IsMatch":
             return 1 if result else 0
         if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
-            return simple_match_checksum(result, self.utf16_offsets)
+            return 0 if result is None else combine(1, result[3], result[4])
         if operation == "SearchDetailed":
             return detailed_checksum(result)
         if operation in {"Count", "CountFromOffset"}:
@@ -750,16 +801,16 @@ class CaseRunner:
         if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             if result is None:
                 return digest_add(digest, 0)
-            start, end = result.span()
+            match, start_bytes, end_bytes, start_utf16, end_utf16 = result
             digest = digest_add(
                 digest,
                 1,
-                self.utf8_offsets[start],
-                self.utf8_offsets[end],
-                self.utf16_offsets[start],
-                self.utf16_offsets[end],
+                start_bytes,
+                end_bytes,
+                start_utf16,
+                end_utf16,
             )
-            return digest_string(digest, result.group())
+            return digest_string(digest, match.group())
         if operation == "SearchDetailed":
             return digest_detailed(digest, result)
         if operation in {"Count", "CountFromOffset"}:
