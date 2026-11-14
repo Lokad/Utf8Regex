@@ -23,8 +23,12 @@ public sealed class PosixDisjointRunTests
     {
         Assert.True(PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default).FirstAcceptanceIsLongest);
         Assert.True(PosixProgram.Compile("([a-z]{1,3})([0-9]{2,4})([!]{1,2})", default).FirstAcceptanceIsLongest);
+        foreach (var pattern in new[] { "([a-z]+)[0-9]+", "[a-z]+([0-9]+)",
+            "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}" })
+            Assert.True(PosixProgram.Compile(pattern, default).DisjointAsciiRuns);
         foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)", "([a-z]*)([0-9]+)",
-            "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)" })
+            "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
+            "([a-z])+[0-9]+", "[a-z]+([0-9])+", "[a-z]+([0-9]+)+", "([a-z]+[0-9]+)+" })
             Assert.False(PosixProgram.Compile(pattern, default).FirstAcceptanceIsLongest);
     }
 
@@ -56,6 +60,10 @@ public sealed class PosixDisjointRunTests
     [InlineData("([a-b]+)()([0-1]+)")]
     [InlineData("(([a-b]{1,3}))([0-1]{2,4})")]
     [InlineData("([a-b]{2,4})([0-1]{1,2})([!]{1,2})")]
+    [InlineData("([a-b]+)[0-1]+")]
+    [InlineData("[a-b]+([0-1]+)")]
+    [InlineData("[a-b]+[0-1]+")]
+    [InlineData("(([a-b]{1,3}))[0-1]{2,4}[!]{1,2}")]
     public void UniqueRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)
     {
         var regex = new Utf8PosixRegex(pattern);

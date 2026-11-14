@@ -136,11 +136,13 @@ internal partial struct PosixWorkspace
                     if (_program.DisjointAsciiRuns)
                     {
                         // The existing compiler proof admits only positive,
-                        // pairwise-disjoint ASCII classes with captures outside
-                        // their bodies. A shorter run cannot help its successor
+                        // pairwise-disjoint ASCII classes with public captures
+                        // outside their bodies. A shorter run cannot help its successor
                         // or an anchor, so no alternative exit/counter undo is
                         // useful. Keep ordinary capture events around the run.
-                        var mask = _program.Scalar.SetMasks[code[pc + 1].A];
+                        // A single proved private wrapper has no public observer.
+                        var atomIndex = pc + (code[pc + 1].Kind == Utf8SliceInstructionKind.CaptureStart ? 2 : 1);
+                        var mask = _program.Scalar.SetMasks[code[atomIndex].A];
                         var limit = at + (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
                         var runStart = at;
                         while (at < limit)
@@ -416,8 +418,8 @@ internal partial struct PosixWorkspace
             return start >= 0;
         }
         var tag = _program.CaptureTags[slot];
-        // The existing flat-run proof excludes forks and captures inside repeat
-        // bodies. Each tag opens/closes once on the sole successful parse; no
+        // The existing flat-run proof excludes forks and public captures inside
+        // repeat bodies. Each public tag opens/closes once on the successful parse; no
         // occurrence history or parent reconciliation can change these edges.
         if (_program.DisjointAsciiRuns)
         {

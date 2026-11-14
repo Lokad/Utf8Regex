@@ -246,6 +246,9 @@ public sealed class PosixWorkspaceTests
     [InlineData("([a-z]+)([0-9]+)", "😀ab12!cd34?", 2)]
     [InlineData("(([a-z]+))([0-9]+)", "😀ab12!cd34?", 2)]
     [InlineData("([a-z]+)([0-9]+)([!]+)", "😀ab12!cd34!!", 2)]
+    [InlineData("([a-z]+)[0-9]+", "😀ab12!cd34?", 2)]
+    [InlineData("(([a-z]+))[0-9]+", "😀ab12!cd34?", 2)]
+    [InlineData("([a-z]+)[0-9]+([!]+)", "😀ab12!cd34!!", 2)]
     public void UniqueRunCapturePositionsFitStateOnlyAdmissionAndSurviveCursorClosure(string pattern, string text, int count)
     {
         var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
@@ -268,6 +271,40 @@ public sealed class PosixWorkspaceTests
         cursor.Dispose(); alias.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
         Assert.Equal(4, retained[1].IndexInBytes); Assert.Equal(2, retained[1].LengthInBytes);
         Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+    }
+
+    [Fact]
+    public void PrivateRunBodiesKeepPublicWorkRefusalAndOriginalCancellation()
+    {
+        const string pattern = "([a-z]+)[0-9]+";
+        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1024 });
+        var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "12");
+        var sentinel = new Utf8ValueMatch(true, true, 1, 2, 3, 4);
+        var output = Enumerable.Repeat(sentinel, 2).ToArray();
+        var account = new Account(1024); Assert.True(account.TryReserve(17));
+        var refused = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            regex.Match(input, output, workingMemoryAllowance: account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, refused.ResourceKind);
+        Assert.All(output, value => Assert.False(value.Success));
+        Assert.Equal(17UL, account.Used);
+        refused = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            regex.Count(input, workingMemoryAllowance: account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, refused.ResourceKind);
+        Assert.Equal(17UL, account.Used); account.Release(17);
+
+        regex = new Utf8PosixRegex(pattern);
+        var denied = new Account(0);
+        Assert.Throws<Utf8MemoryAdmissionException>(() =>
+            regex.Match("ab12"u8, output, workingMemoryAllowance: denied));
+        Assert.Equal(0UL, denied.Used);
+        using var canceled = new CancellationTokenSource();
+        account = new Account(1024) { AfterGrant = canceled.Cancel };
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            regex.Match("ab12"u8, output, cancellationToken: canceled.Token, workingMemoryAllowance: account));
+        Assert.Equal(canceled.Token, error.CancellationToken);
+        Assert.Equal(0UL, account.Used);
+        Assert.All(output, value => Assert.False(value.Success));
     }
 
     private sealed class Account(ulong limit) : IUtf8MemoryAllowance

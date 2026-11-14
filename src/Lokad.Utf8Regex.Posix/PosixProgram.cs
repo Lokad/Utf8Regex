@@ -118,7 +118,7 @@ internal sealed partial class PosixProgram
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
-        var disjointAsciiRuns = !firstAcceptanceIsLongest && CanSelectDisjointAsciiRuns(scalar, budget);
+        var disjointAsciiRuns = !firstAcceptanceIsLongest && CanSelectDisjointAsciiRuns(scalar, captureTags.AsSpan(1), budget);
         if (!firstAcceptanceIsLongest)
             firstAcceptanceIsLongest = disjointAsciiRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
@@ -253,7 +253,7 @@ internal sealed partial class PosixProgram
             (outer.RepeatMaximum != long.MaxValue || outer.RepeatMinimum > 0);
     }
 
-    private static bool CanSelectDisjointAsciiRuns(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    private static bool CanSelectDisjointAsciiRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget)
     {
         // Mutually disjoint positive classes give each transition one possible
         // input boundary. Greedy selection maximizes the final run; tags outside
@@ -271,10 +271,26 @@ internal sealed partial class PosixProgram
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
                 return runs >= 2 && index == code.Length - 1;
             if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 1 ||
-                index > code.Length - 4 || instruction.A != index + 3 ||
-                code[index + 2] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
-                code[index + 3] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B ||
-                code[index + 1] is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } atom ||
+                index > code.Length - 4) return false;
+            var atomIndex = index + 1;
+            var exitIndex = index + 3;
+            if (code[atomIndex] is { Kind: Utf8SliceInstructionKind.CaptureStart } open)
+            {
+                // Uncaptured class bodies carry a fictive syntax tag. Disjoint
+                // alphabets fix every run's boundary without that history;
+                // a repeated public capture must still keep its last occurrence.
+                if (index > code.Length - 6 ||
+                    code[index + 3] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || close.A != open.A)
+                    return false;
+                budget.ChargeWork((ulong)publicTags.Length);
+                if (publicTags.Contains(open.A)) return false;
+                atomIndex++;
+                exitIndex += 2;
+            }
+            if (instruction.A != exitIndex ||
+                code[exitIndex - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
+                code[exitIndex] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B ||
+                code[atomIndex] is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } atom ||
                 program.CategorySetMembers[atom.D].Length != 0)
                 return false;
             var mask = program.SetMasks[atom.A];
@@ -289,7 +305,7 @@ internal sealed partial class PosixProgram
             }
             if (!nonempty) return false;
             runs++;
-            index += 3;
+            index = exitIndex;
         }
         return false;
     }
