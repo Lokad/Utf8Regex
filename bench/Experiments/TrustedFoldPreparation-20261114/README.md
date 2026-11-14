@@ -1,5 +1,7 @@
 # Trusted folded Count preparation — corrected attribution
 
+Historical patch70eaf3d2 is superseded by [mixed-text dispatch](../FoldedMixedDispatch-20261114/README.md), which removes the remaining special preparation branch. Measurements below retain their original scope.
+
 Keep source `70eaf3d2` as a small preparation cleanup. Remove DescribeKelvinInput;
 trusted nonempty unconstrained folded-literal Count needs no coordinate/ASCII
 description after the Kelvin fence. Family/boundary/trailing consumers retain

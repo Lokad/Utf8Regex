@@ -1,0 +1,733 @@
+{
+  "Decision": "Accept dispatch and removal of redundant literal Count metadata, retaining demonstrated strict-family regression in exchange for English/trusted-family gains and fewer mechanisms.",
+  "Source": "8b9b0a69d27e71fe900268d2f8dba11f02728be7",
+  "Before": "70eaf3d2cd23e07b55b0a67444ec1b5dcdad335b",
+  "Comparisons": 1,
+  "Confirmations": 1,
+  "CampaignClosed": true,
+  "NoFurtherTimingOrTuning": true,
+  "Initial": {
+    "Acceptance": {
+      "Before": "70eaf3d2cd23e07b55b0a67444ec1b5dcdad335b",
+      "After": "8b9b0a69d27e71fe900268d2f8dba11f02728be7",
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CallerUnchanged": true,
+      "EqualPublicCounts": true,
+      "OrdinaryProducerProcesses": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "LinuxFocusedChecks": [
+        {
+          "Framework": "net10.0",
+          "Counts": {
+            "total": "594",
+            "executed": "594",
+            "passed": "594",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        },
+        {
+          "Framework": "net11.0",
+          "Counts": {
+            "total": "594",
+            "executed": "594",
+            "passed": "594",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        }
+      ],
+      "Controls": [
+        "unaffected-finite-live",
+        "unaffected-kelvin"
+      ],
+      "CallerReusedAfterHashVerification": true,
+      "Scope": "Invariant mixed UTF8 folded single literals reuse existing native search; common Count validity policy replaces the redundant Kelvin metadata branch. Both policies compared with themselves, not a new .NET ratio. Family/no-k routes are affected now; finite/live and Kelvin remain controls."
+    },
+    "Rows": [
+      {
+        "Id": "english-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 169.3964432284542,
+          "AfterUs": 152.0791463414634,
+          "ObservedPercent": -10.222940078875242,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            167.76388508891927,
+            170.52729138166893
+          ],
+          "AfterRangeUs": [
+            150.51999999999998,
+            153.3560975609756
+          ],
+          "MinimumSampleMs": 245.2708
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 135.3244060475162,
+          "AfterUs": 118.36503988737681,
+          "ObservedPercent": -12.532378050256854,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            135.04006479481643,
+            137.02661987041037
+          ],
+          "AfterRangeUs": [
+            117.77733458470202,
+            156.69948381041763
+          ],
+          "MinimumSampleMs": 250.0942
+        }
+      },
+      {
+        "Id": "mixed-text",
+        "InputBytes": 114703,
+        "InputSha256": "3E423AE65D669D8367169CCCEBF91F39C089C146E0FD5E210F52E55A26A2BBB9",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 21.24632409710903,
+          "AfterUs": 21.05886980796887,
+          "ObservedPercent": -0.8822904530844,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            21.011306511109204,
+            23.217731834948957
+          ],
+          "AfterRangeUs": [
+            20.96640724135014,
+            21.344632433804247
+          ],
+          "MinimumSampleMs": 244.9288
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 14.210169002710966,
+          "AfterUs": 13.773672954595307,
+          "ObservedPercent": -3.071716093118848,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            13.968218261521601,
+            14.299936551883256
+          ],
+          "AfterRangeUs": [
+            13.729946260144768,
+            14.06140601008993
+          ],
+          "MinimumSampleMs": 242.167
+        }
+      },
+      {
+        "Id": "dense-ascii",
+        "InputBytes": 65536,
+        "InputSha256": "D0AC174303DB56B321AC8379A124BC922766ACE73B049F1BA2902690B0752184",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 51.703245393634845,
+          "AfterUs": 51.78690228690229,
+          "ObservedPercent": 0.1618020157739375,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            51.341896984924624,
+            51.867713567839196
+          ],
+          "AfterRangeUs": [
+            51.59619542619543,
+            52.0354261954262
+          ],
+          "MinimumSampleMs": 245.2089
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 52.4971350326522,
+          "AfterUs": 50.99511996746645,
+          "ObservedPercent": -2.8611372111097655,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            52.340657257215085,
+            52.611944385927956
+          ],
+          "AfterRangeUs": [
+            50.799369662464414,
+            51.25705571370476
+          ],
+          "MinimumSampleMs": 248.4611
+        }
+      },
+      {
+        "Id": "unaffected-family",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 725,
+        "PublicStrictCount": {
+          "BeforeUs": 129.35823892893924,
+          "AfterUs": 166.4257656458056,
+          "ObservedPercent": 28.65494074732169,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            128.8541709577755,
+            131.74557157569515
+          ],
+          "AfterRangeUs": [
+            165.5685086551265,
+            168.68515312916114
+          ],
+          "MinimumSampleMs": 248.6839
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 192.12163202463432,
+          "AfterUs": 132.98280423280423,
+          "ObservedPercent": -30.781972424764316,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            191.19368745188606,
+            193.06612779060816
+          ],
+          "AfterRangeUs": [
+            131.37613756613757,
+            134.36201058201058
+          ],
+          "MinimumSampleMs": 248.3009
+        }
+      },
+      {
+        "Id": "unaffected-no-k",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 11,
+        "PublicStrictCount": {
+          "BeforeUs": 595.0535377358491,
+          "AfterUs": 595.178622327791,
+          "ObservedPercent": 0.021020729062093402,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            589.9141509433963,
+            604.9235849056604
+          ],
+          "AfterRangeUs": [
+            592.0698337292162,
+            611.4722090261282
+          ],
+          "MinimumSampleMs": 249.2614
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 558.6931567328918,
+          "AfterUs": 560.7530201342282,
+          "ObservedPercent": 0.36869315052685536,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            553.9167770419426,
+            564.5995584988963
+          ],
+          "AfterRangeUs": [
+            559.3427293064877,
+            564.5060402684564
+          ],
+          "MinimumSampleMs": 250.0262
+        }
+      },
+      {
+        "Id": "unaffected-finite-live",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 1224.1911764705883,
+          "AfterUs": 1051.5460251046024,
+          "ObservedPercent": -14.10279331237556,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1215.7475490196077,
+            1230.2779411764707
+          ],
+          "AfterRangeUs": [
+            1047.2071129707113,
+            1063.3364016736402
+          ],
+          "MinimumSampleMs": 248.0125
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 1202.0932692307692,
+          "AfterUs": 1017.7631578947369,
+          "ObservedPercent": -15.334093955453799,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1191.9211538461539,
+            1209.9197115384616
+          ],
+          "AfterRangeUs": [
+            1012.6574898785425,
+            1019.4777327935223
+          ],
+          "MinimumSampleMs": 247.9196
+        }
+      },
+      {
+        "Id": "unaffected-kelvin",
+        "InputBytes": 65554,
+        "InputSha256": "A3E4A46F3B1FA07B272836E13CC5755D2227FCD85269555C400CD9C0FF3457F0",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 2571.157142857143,
+          "AfterUs": 2491.935922330097,
+          "ObservedPercent": -3.0811504752686125,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            2558.6071428571427,
+            2580.0530612244897
+          ],
+          "AfterRangeUs": [
+            2477.7796116504855,
+            2499.133980582524
+          ],
+          "MinimumSampleMs": 250.7435
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 2548.862244897959,
+          "AfterUs": 2464.9930693069305,
+          "ObservedPercent": -3.2904554084438598,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            2520.808163265306,
+            2556.912244897959
+          ],
+          "AfterRangeUs": [
+            2450.680198019802,
+            2472.1316831683166
+          ],
+          "MinimumSampleMs": 247.0392
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x10; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x40; Linux efficiency class unknown)",
+    "RawSha256": "6CF96F6D75B0606FB0D0E1666CC7BEF3C8C4567CFB76A49F9C67F3D6D3CF28E8",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "UnusedConfirmationAvailableOnlyIfNoisePreventsDecision": true
+  },
+  "Confirmation": {
+    "Acceptance": {
+      "Reason": "Initial English improves10/13%, family strict+28.65/trusted-30.78%, finite/live control-14/-15%; use sole reverse-order confirmation without binary/caller changes.",
+      "Confirmations": 1,
+      "Order": [
+        "after",
+        "before"
+      ],
+      "FurtherAttemptsAllowed": false,
+      "SourceUnchanged": true,
+      "CallerUnchanged": true,
+      "ProducersUnchanged": true,
+      "NoBuild": true,
+      "OutputsEqual": true
+    },
+    "Rows": [
+      {
+        "Id": "english-corpus",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 173.14641379310345,
+          "AfterUs": 154.15415647921762,
+          "ObservedPercent": -10.968900191360653,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            172.14186206896554,
+            175.34524137931035
+          ],
+          "AfterRangeUs": [
+            153.48899755501222,
+            154.92610024449877
+          ],
+          "MinimumSampleMs": 249.6057
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 139.54617940199336,
+          "AfterUs": 119.7675881792183,
+          "ObservedPercent": -14.173509663635075,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            138.36805094130676,
+            140.40575858250276
+          ],
+          "AfterRangeUs": [
+            118.36854146806483,
+            120.47955195424214
+          ],
+          "MinimumSampleMs": 248.3372
+        }
+      },
+      {
+        "Id": "mixed-text",
+        "InputBytes": 114703,
+        "InputSha256": "3E423AE65D669D8367169CCCEBF91F39C089C146E0FD5E210F52E55A26A2BBB9",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 21.24428849243257,
+          "AfterUs": 21.078020232422038,
+          "ObservedPercent": -0.7826492286138853,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            21.131106789549335,
+            21.46506299146022
+          ],
+          "AfterRangeUs": [
+            20.921879441518268,
+            21.56661650363682
+          ],
+          "MinimumSampleMs": 249.9176
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 14.149151976867042,
+          "AfterUs": 13.991078656602122,
+          "ObservedPercent": -1.1171928927144137,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            13.923905911138297,
+            14.272874381360174
+          ],
+          "AfterRangeUs": [
+            13.828733180177224,
+            14.118181818181819
+          ],
+          "MinimumSampleMs": 250.3936
+        }
+      },
+      {
+        "Id": "dense-ascii",
+        "InputBytes": 65536,
+        "InputSha256": "D0AC174303DB56B321AC8379A124BC922766ACE73B049F1BA2902690B0752184",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 51.87697737180818,
+          "AfterUs": 51.666715055993365,
+          "ObservedPercent": -0.4053094965572934,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            51.478783475192024,
+            52.08912186007888
+          ],
+          "AfterRangeUs": [
+            51.44635006221485,
+            51.898382413936126
+          ],
+          "MinimumSampleMs": 247.9733
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 52.56713477258436,
+          "AfterUs": 50.89552330335241,
+          "ObservedPercent": -3.179955454037331,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            52.3369105009432,
+            52.80565919094529
+          ],
+          "AfterRangeUs": [
+            50.74094439901881,
+            51.0721586263287
+          ],
+          "MinimumSampleMs": 248.2247
+        }
+      },
+      {
+        "Id": "unaffected-family",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 725,
+        "PublicStrictCount": {
+          "BeforeUs": 137.37139737991265,
+          "AfterUs": 173.52071320182094,
+          "ObservedPercent": 26.315023732294286,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            136.27390829694323,
+            139.8318231441048
+          ],
+          "AfterRangeUs": [
+            172.23285280728376,
+            178.28065250379362
+          ],
+          "MinimumSampleMs": 227.0029
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 200.72885220125787,
+          "AfterUs": 134.96391585760517,
+          "ObservedPercent": -32.76307098977204,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            199.00393081761007,
+            201.5694968553459
+          ],
+          "AfterRangeUs": [
+            133.37092772384034,
+            137.47761596548006
+          ],
+          "MinimumSampleMs": 247.2697
+        }
+      },
+      {
+        "Id": "unaffected-no-k",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 11,
+        "PublicStrictCount": {
+          "BeforeUs": 588.7110070257611,
+          "AfterUs": 597.9580188679246,
+          "ObservedPercent": 1.570721751726789,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            584.9229508196721,
+            604.7981264637002
+          ],
+          "AfterRangeUs": [
+            596.5577830188679,
+            611.4509433962264
+          ],
+          "MinimumSampleMs": 249.7621
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 554.6737885462555,
+          "AfterUs": 562.9202702702703,
+          "ObservedPercent": 1.4867264136688263,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            545.7786343612335,
+            565.2726872246695
+          ],
+          "AfterRangeUs": [
+            561.0331081081081,
+            566.9108108108107
+          ],
+          "MinimumSampleMs": 247.7835
+        }
+      },
+      {
+        "Id": "unaffected-finite-live",
+        "InputBytes": 899232,
+        "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+        "ExpectedCount": 522,
+        "PublicStrictCount": {
+          "BeforeUs": 1191.9622009569377,
+          "AfterUs": 1043.6699588477366,
+          "ObservedPercent": -12.441018850274643,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1187.6755980861244,
+            1200.5741626794259
+          ],
+          "AfterRangeUs": [
+            1040.0164609053497,
+            1046.0539094650205
+          ],
+          "MinimumSampleMs": 248.2242
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 1163.6972093023255,
+          "AfterUs": 1010.4812749003984,
+          "ObservedPercent": -13.166305906481046,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            1161.2572093023255,
+            1171.286511627907
+          ],
+          "AfterRangeUs": [
+            1003.7609561752988,
+            1018.5466135458167
+          ],
+          "MinimumSampleMs": 249.6703
+        }
+      },
+      {
+        "Id": "unaffected-kelvin",
+        "InputBytes": 65554,
+        "InputSha256": "A3E4A46F3B1FA07B272836E13CC5755D2227FCD85269555C400CD9C0FF3457F0",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 2560.9132653061224,
+          "AfterUs": 2478.7306930693067,
+          "ObservedPercent": -3.2091118957514486,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            2541.4,
+            2567.04693877551
+          ],
+          "AfterRangeUs": [
+            2465.550495049505,
+            2492.7009900990097
+          ],
+          "MinimumSampleMs": 249.0206
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 2555.218181818182,
+          "AfterUs": 2474.272277227723,
+          "ObservedPercent": -3.1678666489787344,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            2543.849494949495,
+            2562.4474747474746
+          ],
+          "AfterRangeUs": [
+            2463.981188118812,
+            2491.0534653465347
+          ],
+          "MinimumSampleMs": 248.8621
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x20; Linux efficiency class unknown)",
+    "RawSha256": "925B9C321AA430A89A27BFB29DD700FE023F3A0501AB6608E3E1361E8CF8C1E8",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherTimingOrTuningAllowed": false
+  },
+  "RouteAudit": [
+    {
+      "pattern": "Sherlock Holmes",
+      "ExecutionKind": "AsciiLiteralIgnoreCase",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": true,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": false,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 1
+    },
+    {
+      "pattern": "k",
+      "ExecutionKind": "AsciiLiteralIgnoreCase",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": true,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": false,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 3
+    },
+    {
+      "pattern": "kit",
+      "ExecutionKind": "AsciiLiteralIgnoreCase",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": true,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": false,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 2
+    },
+    {
+      "pattern": "kit|k",
+      "ExecutionKind": "AsciiLiteralIgnoreCaseLiterals",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": true,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": false,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 3
+    },
+    {
+      "pattern": "\\bkit\\b",
+      "ExecutionKind": "FallbackRegex",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8FallbackRegexCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": false,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": true,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 2
+    },
+    {
+      "pattern": "John Watson",
+      "ExecutionKind": "AsciiLiteralIgnoreCase",
+      "Runtime": "Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime",
+      "OwnedIgnoreCase": true,
+      "HasCaptures": false,
+      "RequiresKelvin": false,
+      "PriorPlain": false,
+      "PriorFamily": false,
+      "EarlierOwnedSelector": false,
+      "CyrillicStrategy": false,
+      "PackedFamilyStrategy": false,
+      "NativeCount": 0
+    }
+  ],
+  "FocusedWindowsChecksPerTarget": 594,
+  "FocusedLinuxChecksPerTarget": 594,
+  "InitialBroadAdmissionPassed": 593,
+  "InitialBroadAdmissionFailed": 1,
+  "CapturedSingleLiteralsRetainOriginalOwnedRoute": true,
+  "NoPublicContractChange": true,
+  "SpecialCountBranchAndSelectorRemoved": true,
+  "ImmutablePackageAndSymbolFilesVerified": 540,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "NewCanonicalParityClaim": false
+}
