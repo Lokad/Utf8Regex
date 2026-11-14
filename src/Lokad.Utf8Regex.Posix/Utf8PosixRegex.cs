@@ -171,9 +171,12 @@ public sealed class Utf8PosixRegex
             PosixWorkspace.Charge(ref invocation);
             if (workspace.GetCapture(state, slot, ref invocation, out var from, out var to))
                 // ERE captures are inside the selected whole match. Share its
-                // prefix coordinates; identical nested ranges need no rescan.
+                // known end for suffix captures, or its start for interior ones.
+                // Identical nested ranges need no rescan.
                 output[slot] = from == start && to == end ? whole
-                    : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
+                    : to == end
+                        ? ProjectRange(input, from, to, ref invocation, end, whole.IndexInUtf16 + whole.LengthInUtf16)
+                        : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
         }
         PosixWorkspace.Finish(ref invocation);
         return whole;
@@ -186,6 +189,13 @@ public sealed class Utf8PosixRegex
         // produced complete ranges. Count coordinates without validating again.
         try
         {
+            if (originByte == to)
+            {
+                // A known ending coordinate needs only the selected content,
+                // including zero bytes for an empty capture at the whole end.
+                var length = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
+                return new(true, true, originUtf16 - length, length, from, to - from);
+            }
             var prefix = originUtf16 + Utf8SliceBufferWork.CountUtf16(input[originByte..from], ref invocation);
             var content = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
             return new(true, true, prefix, content, from, to - from);

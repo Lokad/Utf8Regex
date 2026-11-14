@@ -120,6 +120,12 @@ Dispose refunds temporary workspace synchronously. Callers wanting text or owned
 arrays materialize them themselves. No replacement/split API, capture-history
 collection, RTL option or separate NonBacktracking mode is part of this subset.
 
+Capture projection reuses the whole match's known start or end coordinate. A
+capture ending with the whole match needs only its own UTF-16 content length;
+an empty capture there needs no prefix scan. Interior captures retain bounded
+coordinate counting. Removing redundant scans can lower modeled work without
+changing selected captures, admission or interruption authority.
+
 After a nonempty match, resume at its end. After an empty match, advance one scalar;
 the empty match at subject end is emitted once and completes iteration. For
 example, `a*` on `ba` yields empty at 0, `a` at 1 and empty at 2. Count and cursor

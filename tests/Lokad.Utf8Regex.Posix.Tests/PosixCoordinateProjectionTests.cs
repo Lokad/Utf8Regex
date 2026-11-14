@@ -5,6 +5,34 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixCoordinateProjectionTests
 {
     [Theory]
+    [InlineData("")]
+    [InlineData("é")]
+    [InlineData("😀é")]
+    public void SuffixAndEmptyEndCapturesKeepUnicodeCoordinates(string suffix)
+    {
+        const string prefix = "中😀";
+        var input = Encoding.UTF8.GetBytes(prefix + "ab" + suffix);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var whole = Value(start, input.Length - start, prefix.Length, 2 + suffix.Length);
+        var expected = new[] { whole, Value(start, 2, prefix.Length, 2),
+            Value(start + 2, input.Length - start - 2, prefix.Length + 2, suffix.Length),
+            Value(input.Length, 0, prefix.Length + 2 + suffix.Length, 0) };
+        foreach (var finite in new[] { false, true })
+        {
+            var regex = new Utf8PosixRegex("(ab)([é😀]*)()", resourcePolicy: finite
+                ? new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20 }
+                : default);
+            foreach (var count in new[] { 1, 2, 4, 6 })
+            {
+                var output = new Utf8ValueMatch[count];
+                Assert.Equal(whole, regex.Match(input, output, start));
+                Assert.Equal(expected.Take(count), output.Take(expected.Length));
+                Assert.All(output.Skip(expected.Length), value => Assert.False(value.Success));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void CaptureOriginsPreserveOverlappingEmptyAbsentAndPartialOutput(bool empty)
