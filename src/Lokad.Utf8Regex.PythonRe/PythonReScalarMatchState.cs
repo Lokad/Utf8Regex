@@ -781,9 +781,9 @@ internal partial struct PythonReScalarMatchState
             : _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount
             ? CoordinateOffset(input, end).Utf16 - CoordinateOffset(input, start).Utf16
             : (int?)null);
-        var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
-        Checkpoint();
-        return text;
+        // The decoder checks completion under this invocation. Keep the entry
+        // check above so interruption still precedes result/storage admission.
+        return _results.DecodeUtf8(input[start..end], count, ref _invocation);
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)
