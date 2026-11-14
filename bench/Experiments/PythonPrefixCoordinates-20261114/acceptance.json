@@ -1,0 +1,481 @@
+{
+  "Decision": "ACCEPT with measured local costs",
+  "Campaign": "CLOSED",
+  "Before": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+  "After": "8ec2f99265e05628afd38c36f429817854a6e679",
+  "Change": "One existing sparse index moved to shared discovery for scalar/UTF16 prefixes; full bidirectional map/subject description, one-shot finished-state shortcut, separate coordinate owner and test-only map forwarding removed.",
+  "ContractsPreserved": [
+    "Caller-valid unchanged UTF8, managed checked scalar matching and original byte offsets",
+    "Captures including lookaround, closing order and retained arrays/text/ranges",
+    "Original synchronous tokens/deadlines and useful finite work/depth/working/result controls",
+    "Admission before index allocation, old/new overlap and deterministic refunds"
+  ],
+  "IntentionalAccountingChanges": [
+    "Index uses working capacity only; returned arrays/strings still spend result traffic",
+    "Two counts per256B can increase scalar-only index capacity/work; early details omit suffix maps",
+    "One-shot value allocations preserved; no heap/RSS guarantee"
+  ],
+  "Measurement": {
+    "Seconds": 84.13314882479608,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Rows": [
+    {
+      "Id": "early-ascii-detail",
+      "InputBytes": 600002,
+      "InputSha256": "299A025701F929320888E9AE06680B5001EFEC1174DD5B26E860DDC83E7D723D",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 1135.2774239177488,
+        "RangeUs": [
+          1102.4824214285716,
+          1170.9715428571428
+        ],
+        "Bytes": 826298.0,
+        "ProcessMediansUs": [
+          1134.5407121212122,
+          1136.0141357142857
+        ]
+      },
+      "After": {
+        "MedianUs": 0.623030340337164,
+        "RangeUs": [
+          0.609289332657115,
+          0.6468238307724872
+        ],
+        "Bytes": 896.0,
+        "ProcessMediansUs": [
+          0.6147625248298888,
+          0.6297552300441902
+        ]
+      },
+      "ObservedPercent": -99.94512087290637,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "early-lookahead-detail",
+      "InputBytes": 600007,
+      "InputSha256": "E254479CF9114EECBDCE2FC2DFEE2402E60B9C5598567F8C57C2DFA9730633FA",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 1076.9121316999217,
+        "RangeUs": [
+          1042.3144154929578,
+          1097.666375
+        ],
+        "Bytes": 826773.5027386541,
+        "ProcessMediansUs": [
+          1071.0112464788733,
+          1088.0554513888887
+        ]
+      },
+      "After": {
+        "MedianUs": 0.851690249087504,
+        "RangeUs": [
+          0.8334155838107214,
+          1.0165775406362068
+        ],
+        "Bytes": 1368.0,
+        "ProcessMediansUs": [
+          0.8517194686433195,
+          0.8397976747706208
+        ]
+      },
+      "ObservedPercent": -99.92091367308277,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "distant-detail",
+      "InputBytes": 616385,
+      "InputSha256": "B0CB035690822BFA6316C58049B74C00FCCBB04660E15383DC0CE7CABA3CDE81",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 1150.988402255639,
+        "RangeUs": [
+          1111.0169694656488,
+          1165.0956390977444
+        ],
+        "Bytes": 859800.978017563,
+        "ProcessMediansUs": [
+          1120.222969465649,
+          1153.7656691729321
+        ]
+      },
+      "After": {
+        "MedianUs": 3.590811863394237,
+        "RangeUs": [
+          3.559101412035925,
+          3.673661091208366
+        ],
+        "Bytes": 1144.0,
+        "ProcessMediansUs": [
+          3.619248184546863,
+          3.5832292877383405
+        ]
+      },
+      "ObservedPercent": -99.68802362766148,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "dense-ascii-details",
+      "InputBytes": 9216,
+      "InputSha256": "43FAAEB258AE0F828E0ACE9C5BDB0FFAFDB683B017153D987BD58F4489A1B8E2",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 407.21452,
+        "RangeUs": [
+          396.57003733333335,
+          409.9423893333334
+        ],
+        "Bytes": 266560.0,
+        "ProcessMediansUs": [
+          407.0153466666667,
+          408.6597226666667
+        ]
+      },
+      "After": {
+        "MedianUs": 426.96268230563004,
+        "RangeUs": [
+          417.2879383378016,
+          473.0381397849462
+        ],
+        "Bytes": 266560.0,
+        "ProcessMediansUs": [
+          428.78408870967735,
+          426.48480965147456
+        ]
+      },
+      "ObservedPercent": 4.84957223667517,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "dense-unicode-details",
+      "InputBytes": 11264,
+      "InputSha256": "377F989829C4D9B1823D6ACBD08286111EFF7558793A705EEA7A02268F8BBAE1",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 1021.0777965517242,
+        "RangeUs": [
+          1011.5463172413794,
+          1026.5966827586208
+        ],
+        "Bytes": 285888.0,
+        "ProcessMediansUs": [
+          1019.9874137931035,
+          1022.1681793103448
+        ]
+      },
+      "After": {
+        "MedianUs": 1033.7846634974615,
+        "RangeUs": [
+          1022.5458561643836,
+          1048.5478321678322
+        ],
+        "Bytes": 259368.0,
+        "ProcessMediansUs": [
+          1044.8734405594405,
+          1024.6402397260274
+        ]
+      },
+      "ObservedPercent": 1.2444562979088802,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "finite-dense-unicode-details",
+      "InputBytes": 11264,
+      "InputSha256": "377F989829C4D9B1823D6ACBD08286111EFF7558793A705EEA7A02268F8BBAE1",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 1244.4807579693036,
+        "RangeUs": [
+          1226.6039173553718,
+          1252.1476722689076
+        ],
+        "Bytes": 298024.0,
+        "ProcessMediansUs": [
+          1248.7222100840336,
+          1232.294033057851
+        ]
+      },
+      "After": {
+        "MedianUs": 1330.0167435559006,
+        "RangeUs": [
+          1302.6922608695652,
+          1350.7752857142857
+        ],
+        "Bytes": 271504.0,
+        "ProcessMediansUs": [
+          1348.9128392857144,
+          1310.636704347826
+        ]
+      },
+      "ObservedPercent": 6.873226848936698,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "scalar-only-cursor",
+      "InputBytes": 16389,
+      "InputSha256": "B6721A54C4DDA40D6DF91F15835D3DE3DDEC625E0405D6A19290B8BB1709B476",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 3.0031370778117568,
+        "RangeUs": [
+          2.9782767343809886,
+          3.020338825287217
+        ],
+        "Bytes": 888.0,
+        "ProcessMediansUs": [
+          2.991881241048193,
+          3.007731560562925
+        ]
+      },
+      "After": {
+        "MedianUs": 3.5123701565558894,
+        "RangeUs": [
+          3.487533659412585,
+          3.599323226313159
+        ],
+        "Bytes": 1088.0,
+        "ProcessMediansUs": [
+          3.5326400742556583,
+          3.5008014697195247
+        ]
+      },
+      "ObservedPercent": 16.9567044576995,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "one-shot-value",
+      "InputBytes": 16389,
+      "InputSha256": "B6721A54C4DDA40D6DF91F15835D3DE3DDEC625E0405D6A19290B8BB1709B476",
+      "ExpectedValues": 1,
+      "Before": {
+        "MedianUs": 3.2542901185596547,
+        "RangeUs": [
+          3.239236257562662,
+          3.292494533275713
+        ],
+        "Bytes": 64.0,
+        "ProcessMediansUs": [
+          3.2881864304235093,
+          3.2491055797963773
+        ]
+      },
+      "After": {
+        "MedianUs": 3.422578847452673,
+        "RangeUs": [
+          3.2848506398618427,
+          3.599258383553655
+        ],
+        "Bytes": 64.0,
+        "ProcessMediansUs": [
+          3.565926564930016,
+          3.295445954921844
+        ]
+      },
+      "ObservedPercent": 5.1712884457733255,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "string-only-captures",
+      "InputBytes": 9216,
+      "InputSha256": "43FAAEB258AE0F828E0ACE9C5BDB0FFAFDB683B017153D987BD58F4489A1B8E2",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 275.81620264426385,
+        "RangeUs": [
+          272.01079562043793,
+          281.1642528301887
+        ],
+        "Bytes": 119104.0,
+        "ProcessMediansUs": [
+          279.47873396226413,
+          272.8802317518248
+        ]
+      },
+      "After": {
+        "MedianUs": 268.5684471365071,
+        "RangeUs": [
+          265.67512299465244,
+          271.5800813743219
+        ],
+        "Bytes": 119104.0,
+        "ProcessMediansUs": [
+          266.4646434937611,
+          270.7553363471971
+        ]
+      },
+      "ObservedPercent": -2.6277482752181225,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 12.332267654136587,
+        "RangeUs": [
+          12.217506503189464,
+          12.436492739191769
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.381409011700272,
+          12.2972660922873
+        ]
+      },
+      "After": {
+        "MedianUs": 12.448850715467923,
+        "RangeUs": [
+          12.365786064687786,
+          12.506127380061526
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          12.463300656855408,
+          12.44114607208105
+        ]
+      },
+      "ObservedPercent": 0.9453497491374252,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-count",
+      "InputBytes": 9216,
+      "InputSha256": "B14AF4184335B849D237D2D5B1527E78CE31EF478F4C56A43E5A20ED4436DC56",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 23.206654278283068,
+        "RangeUs": [
+          23.045674052567236,
+          23.439086856968398
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          23.18450718215159,
+          23.228013127766754
+        ]
+      },
+      "After": {
+        "MedianUs": 23.28226801836266,
+        "RangeUs": [
+          23.215431828615152,
+          23.53158289334741
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          23.429678382863177,
+          23.24624330527926
+        ]
+      },
+      "ObservedPercent": 0.3258278387434421,
+      "RangesDisjoint": false
+    }
+  ],
+  "InputContract": "Caller-guaranteed valid unchanged UTF8 (Python re over str); same patterns/options/complete public outputs before and after. Cursor construction/first advance/disposal included. Controls unchanged; not a CPython parity refresh.",
+  "BeforeProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Python": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=DEC915643A349F55D6B9FD4C7CBA9735A25B02F504C56D6F1114CF41BCB56E2A",
+      "PdbSha256": "CCA7BF7B8DC038BCA4B979841F109BA2004987D08D76D74104F17E9538CA6CB2",
+      "Documents": 49
+    }
+  },
+  "AfterProducers": {
+    "Core": {
+      "Assembly": "0.5.0-dev.89+e8b20aa51f5c8106a57d5302f1b544320a7c8ec3 sha256=263958946E2E7ACE098FE5D0D71ECD7DEC5DC5B3713EE24FC91F1627729984FD",
+      "PdbSha256": "CC9EE34FD16BDEBFD633F22B373E9E0451550B193971C4E8B35E1ACE6D5BAC53",
+      "Documents": 343
+    },
+    "Python": {
+      "Assembly": "0.5.0-dev.89+8ec2f99265e05628afd38c36f429817854a6e679 sha256=206035B716B8944C1E848E0644F0EEC34D634A93A63B1D1248B1D89F788CD830",
+      "PdbSha256": "E20C6616934868ED9EA535E4EF50F81771576BDCCDB9F5A3FE80975373C0EA04",
+      "Documents": 50
+    }
+  },
+  "OrdinaryProcesses": true,
+  "CommonCoreAndCaller": true,
+  "CompleteCompilerInputsVerified": true,
+  "ManagedMemberInventory": [
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": [
+        "Unsafe.SizeOf"
+      ]
+    },
+    {
+      "UncheckedUnsafeMembers": 0,
+      "UncheckedVectorLoads": 0,
+      "PInvoke": 0,
+      "AllowedSizeQueries": []
+    }
+  ],
+  "AdmissionBefore": [
+    {
+      "Bulk": false,
+      "Admitted": false,
+      "ResourceKind": 5,
+      "Limit": 4096,
+      "Requested": 825088
+    },
+    {
+      "Bulk": true,
+      "Admitted": false,
+      "ResourceKind": 5,
+      "Limit": 4096,
+      "Requested": 825088
+    }
+  ],
+  "AdmissionAfter": [
+    {
+      "Bulk": false,
+      "Admitted": true
+    },
+    {
+      "Bulk": true,
+      "Admitted": true
+    }
+  ],
+  "WindowsFull": [
+    "Passed!  - Failed:     0, Passed:  5191, Skipped:     0, Total:  5191, Duration: 12 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:  5191, Skipped:     0, Total:  5191, Duration: 12 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "WindowsBoundaries": [
+    "Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 743 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "WindowsNoHardwareIntrinsics": [
+    "Passed!  - Failed:     0, Passed:    42, Skipped:     0, Total:    42, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "LinuxFull": [
+    "Passed!  - Failed:     0, Passed:  5194, Skipped:     0, Total:  5194, Duration: 13 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)"
+  ],
+  "RawArchive": "artifacts/experiments/python-cursor-prefix-audit-20261114/comparison/evidence.tar.gz",
+  "RawSha256": "529974A8A0337FF3F54C84C0EC37C641F4AE32E2DF5DB643D1E51383911EF77E",
+  "WindowsRawSha256": "57BFC358BB530B2600BC1BC41E3137142D66A9A5E5481649A54C10D7C04379AE",
+  "EvidenceOffVmVerified": true,
+  "WorkersAndCollectorTerminal": true,
+  "PreservedImmutableAssets": 572,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Notes": [
+    "Accept4.85% dense ASCII,6.87% finite Unicode and16.96% scalar-only regressions in exchange for major early-result gains and simpler preparation; former10% unchecked-access gate is not universal.",
+    "Scalar-only adds200B/op; Unicode bulk saves26520B/op. Unchanged controls move+0.95/+0.33% with overlap; do not normalize.",
+    "One-shot value+5.17% overlaps; same64B/op. String-only-2.63% separates in this comparison but is not attributed to coordinate removal on that unmodified path.",
+    "Observed sample ranges/process medians are not formal confidence intervals or a new CPython ratio.",
+    "Initial build had one residual InputDescription reference and partial-struct field warning. Both fixed before qualification.",
+    "Initial four per-TFM failures were old fixed map charges/work limits and a new bulk lookbehind test with insufficient search-work budget. Revised numerical assertions; all outputs and interruption coverage retained.",
+    "Private caller compile/preflight corrected Core IDisposable/nullable/group enumeration and quantified emoji grouping to keep the BCL oracle scalar-equivalent. No timing occurred before passing preflights.",
+    "First collector refused the already-existing original probe archive directory. Recovered by writing a fresh comparison subdirectory; original probe evidence is unchanged, and no measurement was repeated."
+  ]
+}
