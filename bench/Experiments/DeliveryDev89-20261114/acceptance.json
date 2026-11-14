@@ -1,0 +1,1107 @@
+{
+  "Version": "0.5.0-dev.89",
+  "ProducerSource": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+  "Complete": true,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Targets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "Windows": {
+    "Source": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "Version": "0.5.0-dev.89",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112580.0,
+    "Seconds": 278.7873424,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "Version": "0.5.0-dev.89",
+    "Sha256": "2C1248E5DE6147009FA46BCAD24EAD4F0BA92A64A7DE02705AA26E76BA052BEB",
+    "Bytes": 46820980,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112580.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "OriginalWindowsConsumers": {
+    "Version": "0.5.0-dev.89",
+    "Source": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "Complete": true,
+    "Scope": "Actual copied Awk adapter, matching committed Lython runtime/provider, and public native/funded producer APIs consume immutable Windows package assets. No producer/consumer checkout edits or package repacking. Compatibility is separate from downstream adoption/POSIX acceptance.",
+    "Checks": [
+      {
+        "Fixture": "Awk",
+        "Framework": "net10.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "BCBF595DE6450D3599CAD0FC7D3D96DB5192E4A302E6799C522CBAA8F56F805B",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "B87E6391D7232DE1B6FB4764C0785F7645634FCCC40FB433FE57037AF80A56C8"
+          }
+        ]
+      },
+      {
+        "Fixture": "Awk",
+        "Framework": "net11.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "3F4834B07506D084169639E44E9167CA5CC90999667990F30E986FFD54F113AA",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5209E12F38D364BFC2B8A77E518B374A3BAE9E91F26464A812842352843E0EDA"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net10.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "6935164EF27FD711EE642A694EA99AAFBE33EAE1F1CB9947630A790D023416BA",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "B87E6391D7232DE1B6FB4764C0785F7645634FCCC40FB433FE57037AF80A56C8"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "69E28CD19C8BD48D4D1EC1570AA2642EA165B1E1F1971C6B795692500771A486"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net11.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "02A82C2D09BD0DF33683515535042EC56E94A373A7BE4B511C5AB165317A91BF",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5209E12F38D364BFC2B8A77E518B374A3BAE9E91F26464A812842352843E0EDA"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "47E2A57525B77CED70EB4F032AC4A014E0ACF84DB4A7532A3F2FBF3CD0B15B5D"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net10.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "B87E6391D7232DE1B6FB4764C0785F7645634FCCC40FB433FE57037AF80A56C8"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "69E28CD19C8BD48D4D1EC1570AA2642EA165B1E1F1971C6B795692500771A486"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "22C161CD198C32F637B5FBE97DA5FEE3DD84BED23CC2244A6AC682BAF97A3201"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net11.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5209E12F38D364BFC2B8A77E518B374A3BAE9E91F26464A812842352843E0EDA"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "47E2A57525B77CED70EB4F032AC4A014E0ACF84DB4A7532A3F2FBF3CD0B15B5D"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "AFBE74AB1C440DC749DD338D9DCE7F3FD2ABFE03CD4D8F2BB5692C587B04B26E"
+          }
+        ]
+      }
+    ]
+  },
+  "OriginalSourceAudit": {
+    "OriginalSha256": "CBD35E993774B928D7D8C054F53A3BEABDFBE8C8024C138CF68253D5BA3C41AB",
+    "FilesCompared": 1565,
+    "ChangedFiles": [
+      "producer-apis/Probe.csproj",
+      "lython/src/Lokad.Lython.Utf8Regex/Lokad.Lython.Utf8Regex.csproj",
+      "awk/adapter/Adapter.csproj"
+    ],
+    "OnlyExactPinsChanged": true,
+    "RepinnedArchiveSha256": "F53ECFE510CE70E8BD6F57F92DFE1A466AFFE7C8F50330C58E733FFDF8632874",
+    "Qualified": false
+  },
+  "SourceAuditQualifiedFieldIsPreparatory": true,
+  "Presentation": {
+    "FrozenProducersPreserved": true,
+    "MeasurementsRepeated": false,
+    "PackagesRepacked": false,
+    "OfflineWritersVerified": 4,
+    "BothRuntimeSourceGuardsPassed": true
+  },
+  "Full": {
+    "Source": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "Version": "0.5.0-dev.89",
+    "RawSha256": "F4742A9D22861CF8FC5FF42E9B18255A6B17E9A243EC1901A2FB7971FCBDC46C",
+    "Bytes": 34378322,
+    "Seconds": 2800.3435531,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "CorrectedProfileInputAndOutputProtocols": true,
+  "SourceCi": {
+    "conclusion": "success",
+    "databaseId": 43588305115,
+    "headSha": "e8b20aa51f5c8106a57d5302f1b544320a7c8ec3",
+    "status": "completed"
+  },
+  "PriorImmutableAssetsPreserved": 564,
+  "CurrentCanonicalAssets": 572,
+  "Packages": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.89.nupkg",
+      "PackageSha256": "E8A6A452A517FD18E91B53D21DDFFD77361077FC9AECB887DC5C4F65DA93DE4C",
+      "PackageSha512Base64": "mK23iOstlVOzGy404ooVZUzH2gLNQNY+lnz+uzrxQB7ew5byPdLLh5QmjTqRjHC0GmhzjEnpq8NsHTdt9H7dAQ==",
+      "AssemblySha256": "B87E6391D7232DE1B6FB4764C0785F7645634FCCC40FB433FE57037AF80A56C8",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "1AE0721538A3E8B38ECDC679C9061FABFD05110D9C42BB5EF41FB2E3F13E8979",
+      "PdbSha256": "EC7B93FF2E0D496582E0E18767CFB18E7CBDC1D9017C2140E124CE29EC09538E"
+    },
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.89.nupkg",
+      "PackageSha256": "E8A6A452A517FD18E91B53D21DDFFD77361077FC9AECB887DC5C4F65DA93DE4C",
+      "PackageSha512Base64": "mK23iOstlVOzGy404ooVZUzH2gLNQNY+lnz+uzrxQB7ew5byPdLLh5QmjTqRjHC0GmhzjEnpq8NsHTdt9H7dAQ==",
+      "AssemblySha256": "5209E12F38D364BFC2B8A77E518B374A3BAE9E91F26464A812842352843E0EDA",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "1AE0721538A3E8B38ECDC679C9061FABFD05110D9C42BB5EF41FB2E3F13E8979",
+      "PdbSha256": "B2E037F690B225FD2B4B6F095B3ADFCD650364A98BA2365698F8008A6AC7ADAC"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.89.nupkg",
+      "PackageSha256": "C710B41B3C907CC1FC1F214ACA694C1CC9F6FD9A45EFE9BC16A77CDCC6EB01D9",
+      "PackageSha512Base64": "xGimLPX0JFJDZ3T/T1cdwjHc8EEIaKbrs03DZsZH7vuvxKDJaYmcPZ+f6Bn/sargotsLbTiXLr8nLVsaiKeelA==",
+      "AssemblySha256": "69E28CD19C8BD48D4D1EC1570AA2642EA165B1E1F1971C6B795692500771A486",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "3A1A572B1E9D4997BBCBA1EA51E7B8E065D72FF2A98347F1A87A9C36A15C9FC0",
+      "PdbSha256": "022D6EA8B0E6B29FAD645CFFA4E45EA88AA0AD9C2E98884B1B69F5A7996CCDAB"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.89.nupkg",
+      "PackageSha256": "C710B41B3C907CC1FC1F214ACA694C1CC9F6FD9A45EFE9BC16A77CDCC6EB01D9",
+      "PackageSha512Base64": "xGimLPX0JFJDZ3T/T1cdwjHc8EEIaKbrs03DZsZH7vuvxKDJaYmcPZ+f6Bn/sargotsLbTiXLr8nLVsaiKeelA==",
+      "AssemblySha256": "47E2A57525B77CED70EB4F032AC4A014E0ACF84DB4A7532A3F2FBF3CD0B15B5D",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "3A1A572B1E9D4997BBCBA1EA51E7B8E065D72FF2A98347F1A87A9C36A15C9FC0",
+      "PdbSha256": "5B56B34E96EF299C9377E368094861B01E328ED1A4174CEBB9FC571325E6239E"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.89.nupkg",
+      "PackageSha256": "F608D1CBC7BD7DB8E253BA2C7A176231BD8BDC75052BB36CACBE57756AD3EC53",
+      "PackageSha512Base64": "6oBIYRDMkeyYoN9o2DDwdIlUJpyneHGxq3z6kXmEidI3Fu5BblMnaQ33MlFD/mWwPfOJ0X7Nv9YnNaKW0x7oPA==",
+      "AssemblySha256": "22C161CD198C32F637B5FBE97DA5FEE3DD84BED23CC2244A6AC682BAF97A3201",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "579A91DB37A2472A89FB05D7942DC1299746B4D20E395A2C4F9C709ABCFBB71E",
+      "PdbSha256": "7EF8D616A15E523BD220746473F2DABC23AAC523652F69D6274867D823EE2B90"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.89.nupkg",
+      "PackageSha256": "F608D1CBC7BD7DB8E253BA2C7A176231BD8BDC75052BB36CACBE57756AD3EC53",
+      "PackageSha512Base64": "6oBIYRDMkeyYoN9o2DDwdIlUJpyneHGxq3z6kXmEidI3Fu5BblMnaQ33MlFD/mWwPfOJ0X7Nv9YnNaKW0x7oPA==",
+      "AssemblySha256": "AFBE74AB1C440DC749DD338D9DCE7F3FD2ABFE03CD4D8F2BB5692C587B04B26E",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "579A91DB37A2472A89FB05D7942DC1299746B4D20E395A2C4F9C709ABCFBB71E",
+      "PdbSha256": "344831EC808D24D1AF05C81AF45CD50098A0B2D16D2E5F8C9CAB9E2CAF8BB344"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.89.nupkg",
+      "PackageSha256": "10352C67AF7A8E69AD87E62F552963C1D0FBD36D7C500F1C8116D67AF52FB118",
+      "PackageSha512Base64": "TlpN611Qy6fuIthkbVY9TF1ywddt2RmatQ8nx1nUBUkwdYd8rkeuKS4FcHjLTnGruDYA4WsDNSM1Uoa+WGnU5w==",
+      "AssemblySha256": "062116295300600C854BF88A9ACB02656AD1AB63DC24D8B896B28EAC2539C212",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "233BDAEBB333398896259C435F4A9F048F8822624AAA166A9E76C6E34D5C26BD",
+      "PdbSha256": "153F94DBD5C923B95B5BD849D63FCD63BB9107079A383FF070067A8B7C6308C3"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.89",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.89.nupkg",
+      "PackageSha256": "10352C67AF7A8E69AD87E62F552963C1D0FBD36D7C500F1C8116D67AF52FB118",
+      "PackageSha512Base64": "TlpN611Qy6fuIthkbVY9TF1ywddt2RmatQ8nx1nUBUkwdYd8rkeuKS4FcHjLTnGruDYA4WsDNSM1Uoa+WGnU5w==",
+      "AssemblySha256": "754CE460364B91E6A8347D2A01C2800F771C35E36A7903AB5D29710E2B3F8DA0",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.89.snupkg",
+      "SymbolSha256": "233BDAEBB333398896259C435F4A9F048F8822624AAA166A9E76C6E34D5C26BD",
+      "PdbSha256": "357708E2AB81F17683276898682C94304847C7F8981B4026F268392FC81D3C1B"
+    }
+  ],
+  "WindowsAndLinuxSamePackageBytes": true,
+  "PerformanceProducerPlatform": "Linux source-built e8b20aa51f5c8106a57d5302f1b544320a7c8ec3; exact Windows-produced package acceptance is separate",
+  "Published": false,
+  "Adopted": false,
+  "LocalAcceptanceSha256": "AC4E4DC54FBDFC477F512B78230820D7AEB247AF450C8520CA4D5BC85D50AB28",
+  "RemainingOperatingCostReview": {
+    "Core": {
+      "Evidence": {
+        "Snapshot": "README.Benchmarks.json",
+        "SnapshotSha256": "ED9108AD136F1253CA8A5ABDBD7DE3108FB77A6ABF69CE3B72D9C54ED930AD7A"
+      },
+      "Rows": 178,
+      "LargestRatios": [
+        {
+          "Section": "dotnet-performance",
+          "Case": "literal/sherlock-zh",
+          "Ratio": 3.7442864386878174,
+          "ManagedUs": 71.15530303030303,
+          "ReferenceUs": 19.003701825557812,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-zh",
+          "Ratio": 2.942620491363486,
+          "ManagedUs": 71.09280303030303,
+          "ReferenceUs": 24.15969141755063,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal-alternate/sherlock-zh",
+          "Ratio": 2.578730877691682,
+          "ManagedUs": 93.69787500000001,
+          "ReferenceUs": 36.334879227053136,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "common/match-word",
+          "Ratio": 2.437814806367643,
+          "ManagedUs": 0.19413563623180902,
+          "ReferenceUs": 0.07963510424365343,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "lokad-compiled",
+          "Case": "lokad/imports/module-imports",
+          "Ratio": 2.124000620041691,
+          "ManagedUs": 9.465199797673243,
+          "ReferenceUs": 4.456307455073839,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/mariomka-email-count",
+          "Ratio": 2.064719005967898,
+          "ManagedUs": 951.4200000000001,
+          "ReferenceUs": 460.7987804878049,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-casei-en",
+          "Ratio": 2.022582385443099,
+          "ManagedUs": 158.10273684210526,
+          "ReferenceUs": 78.16875,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "common/backtracking",
+          "Ratio": 1.9532926389193186,
+          "ManagedUs": 0.08674077518556937,
+          "ReferenceUs": 0.04440746535222684,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance",
+          "Case": "industry/mariomka-email-count",
+          "Ratio": 1.935636738584035,
+          "ManagedUs": 951.1354430379746,
+          "ReferenceUs": 491.3811688311688,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/rust-sherlock-holmes-window-count",
+          "Ratio": 1.8797168909314586,
+          "ManagedUs": 110.07675438596492,
+          "ReferenceUs": 58.56028368794326,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-ru",
+          "Ratio": 1.803874970204486,
+          "ManagedUs": 160.89764453961456,
+          "ReferenceUs": 89.19556354916068,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "common/uri-miss",
+          "Ratio": 1.739941037602248,
+          "ManagedUs": 0.114920204918722,
+          "ReferenceUs": 0.06604833292344753,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        }
+      ],
+      "MaterialRows": [
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/mariomka-email-count",
+          "Ratio": 2.064719005967898,
+          "ManagedUs": 951.4200000000001,
+          "ReferenceUs": 460.7987804878049,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-casei-en",
+          "Ratio": 2.022582385443099,
+          "ManagedUs": 158.10273684210526,
+          "ReferenceUs": 78.16875,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance",
+          "Case": "industry/mariomka-email-count",
+          "Ratio": 1.935636738584035,
+          "ManagedUs": 951.1354430379746,
+          "ReferenceUs": 491.3811688311688,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/rust-sherlock-holmes-window-count",
+          "Ratio": 1.8797168909314586,
+          "ManagedUs": 110.07675438596492,
+          "ReferenceUs": 58.56028368794326,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-ru",
+          "Ratio": 1.803874970204486,
+          "ManagedUs": 160.89764453961456,
+          "ReferenceUs": 89.19556354916068,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance",
+          "Case": "literal/sherlock-ru",
+          "Ratio": 1.651151145911615,
+          "ManagedUs": 160.6235546038544,
+          "ReferenceUs": 97.27974025974025,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/leipzig-river-window-count",
+          "Ratio": 1.4341618617550262,
+          "ManagedUs": 2207.582857142857,
+          "ReferenceUs": 1539.2843137254902,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "industry/leipzig-symbol-count",
+          "Ratio": 1.363508114813649,
+          "ManagedUs": 1675.104347826087,
+          "ReferenceUs": 1228.525396825397,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal-alternate/sherlock-casei-en",
+          "Ratio": 1.2567471172094558,
+          "ManagedUs": 167.9763829787234,
+          "ReferenceUs": 133.65965250965252,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal/sherlock-casei-ru",
+          "Ratio": 1.2392782267504137,
+          "ManagedUs": 242.9787781350482,
+          "ReferenceUs": 196.06475195822455,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "literal-alternate/sherlock-en",
+          "Ratio": 1.1388256965678136,
+          "ManagedUs": 395.48324607329846,
+          "ReferenceUs": 347.27285067873305,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "dotnet-performance-compiled",
+          "Case": "aws-keys/quick",
+          "Ratio": 1.1040787915307417,
+          "ManagedUs": 4101.726315789474,
+          "ReferenceUs": 3715.0666666666666,
+          "Status": "Gap",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        }
+      ]
+    },
+    "PythonRe": {
+      "Evidence": {
+        "Snapshot": "PythonRe.Benchmarks.json",
+        "SnapshotSha256": "E972150D8359C36ED1CC56EEBE13469726EEDD0C2BEC3AE6FD0F20CE75F1F52C"
+      },
+      "Rows": 90,
+      "LargestRatios": [
+        {
+          "Section": "Split",
+          "Case": "split/limited",
+          "Ratio": 2.8189772085007667,
+          "ManagedUs": 1.5720278051254513,
+          "ReferenceUs": 0.5470374247971396,
+          "Status": "Inconclusive",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Lane-order median ratios differ by 6.76%."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/limited-string",
+          "Ratio": 2.529951068333992,
+          "ManagedUs": 1.1569489452766737,
+          "ReferenceUs": 0.4545170181213152,
+          "Status": "Inconclusive",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Lane interquartile spreads are 1.148/1.009; the maximum is 1.10."
+        },
+        {
+          "Section": "Direct matching",
+          "Case": "common/date-miss",
+          "Ratio": 2.2025066100541983,
+          "ManagedUs": 1.884157227514815,
+          "ReferenceUs": 0.8554604190125226,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-replace-string",
+          "Ratio": 1.858080494676791,
+          "ManagedUs": 120.06857142857143,
+          "ReferenceUs": 64.63531483870968,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/one-capture-strings",
+          "Ratio": 1.8433919507044316,
+          "ManagedUs": 402.0270491803279,
+          "ReferenceUs": 218.01093073593074,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/many-capture-strings",
+          "Ratio": 1.8195223371626557,
+          "ManagedUs": 631.0825,
+          "ReferenceUs": 346.8396551724138,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-utf8",
+          "Ratio": 1.6983049689292498,
+          "ManagedUs": 472.73271028037385,
+          "ReferenceUs": 279.1476722222222,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-string",
+          "Ratio": 1.6860133501921504,
+          "ManagedUs": 467.76635514018693,
+          "ReferenceUs": 277.78583516483513,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Direct matching",
+          "Case": "backreference/named-fullmatch-miss",
+          "Ratio": 1.6568417932050568,
+          "ManagedUs": 0.36565376389608684,
+          "ReferenceUs": 0.22069322816196743,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "The conclusion survives the conservative harness-floor bound."
+        },
+        {
+          "Section": "Direct matching",
+          "Case": "atomic/search-miss",
+          "Ratio": 1.6137893228148763,
+          "ManagedUs": 0.4597712782107074,
+          "ReferenceUs": 0.28540419941535766,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "The conclusion survives the conservative harness-floor bound."
+        },
+        {
+          "Section": "Split",
+          "Case": "split/zero-width",
+          "Ratio": 1.613175062246098,
+          "ManagedUs": 107.3491452991453,
+          "ReferenceUs": 66.64871883289125,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Split",
+          "Case": "split/unicode",
+          "Ratio": 1.5091389183909925,
+          "ManagedUs": 59.796080760095016,
+          "ReferenceUs": 39.659589622641505,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        }
+      ],
+      "MaterialRows": [
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-replace-string",
+          "Ratio": 1.858080494676791,
+          "ManagedUs": 120.06857142857143,
+          "ReferenceUs": 64.63531483870968,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/one-capture-strings",
+          "Ratio": 1.8433919507044316,
+          "ManagedUs": 402.0270491803279,
+          "ReferenceUs": 218.01093073593074,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/many-capture-strings",
+          "Ratio": 1.8195223371626557,
+          "ManagedUs": 631.0825,
+          "ReferenceUs": 346.8396551724138,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-utf8",
+          "Ratio": 1.6983049689292498,
+          "ManagedUs": 472.73271028037385,
+          "ReferenceUs": 279.1476722222222,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/evaluator-string",
+          "Ratio": 1.6860133501921504,
+          "ManagedUs": 467.76635514018693,
+          "ReferenceUs": 277.78583516483513,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Split",
+          "Case": "split/zero-width",
+          "Ratio": 1.613175062246098,
+          "ManagedUs": 107.3491452991453,
+          "ReferenceUs": 66.64871883289125,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/named-capture-strings",
+          "Ratio": 1.4104745876320133,
+          "ManagedUs": 125.13358024691358,
+          "ReferenceUs": 88.74539361702128,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Split",
+          "Case": "split/captures",
+          "Ratio": 1.3654324694389053,
+          "ManagedUs": 350.43819444444443,
+          "ReferenceUs": 257.6376071428571,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Count, FindAll, and FindIter",
+          "Case": "findall/full-strings",
+          "Ratio": 1.1554271247105352,
+          "ManagedUs": 405.26532258064515,
+          "ReferenceUs": 350.08419444444445,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Split",
+          "Case": "split/no-captures",
+          "Ratio": 1.1245001091094855,
+          "ManagedUs": 253.49242424242425,
+          "ReferenceUs": 225.91684684684682,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        },
+        {
+          "Section": "Replace and Subn",
+          "Case": "replacement/fixed-string",
+          "Ratio": 1.058459429301242,
+          "ManagedUs": 188.75187969924812,
+          "ReferenceUs": 178.29359929078015,
+          "Status": "CpythonFaster",
+          "Source": "1CF97164412B74999B6447967CA6BC9D8D18A2CD8BA24EEEE370D57EBA480A3D",
+          "Reason": "Qualified paired evidence."
+        }
+      ]
+    },
+    "Pcre2": {
+      "Evidence": {
+        "Snapshot": "PCRE2.Benchmarks.json",
+        "SnapshotSha256": "7DF69DBA8EE2848DC85FD201053B6C00C6CAE6CF4A3C5686B6A81A350C902EAE"
+      },
+      "Rows": 101,
+      "LargestRatios": [
+        {
+          "Section": "pcre2-managed-compatible-ismatch",
+          "Case": "common/one-node-backtracking",
+          "Ratio": 2.263384504226612,
+          "ManagedUs": 0.17251484581191834,
+          "ReferenceUs": 0.07656083383958609,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-ismatch",
+          "Case": "pcre2/backslash-c-literal",
+          "Ratio": 1.216958210196241,
+          "ManagedUs": 0.10340696797023392,
+          "ReferenceUs": 0.08483055513618643,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-enumerate",
+          "Case": "pcre2/kreset-atomic-alt",
+          "Ratio": 1.186605667688286,
+          "ManagedUs": 1.0606993409352443,
+          "ReferenceUs": 0.8935487480140527,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-managed-compatible-enumerate",
+          "Case": "simple/loglevel-multiline",
+          "Ratio": 1.1469033584395596,
+          "ManagedUs": 0.9899580143245246,
+          "ReferenceUs": 0.8633898746258297,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-enumerate",
+          "Case": "pcre2/kreset-global",
+          "Ratio": 1.1112079645919501,
+          "ManagedUs": 0.971640339642332,
+          "ReferenceUs": 0.8730564498819489,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-managed-compatible-enumerate",
+          "Case": "simple/httpclient-caseless",
+          "Ratio": 1.1029814382038292,
+          "ManagedUs": 1.2544645306831692,
+          "ReferenceUs": 1.1366590181581258,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-enumerate",
+          "Case": "pcre2/duplicate-names",
+          "Ratio": 1.088764038072713,
+          "ManagedUs": 1.058848680484766,
+          "ReferenceUs": 0.9728969708662936,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-enumerate",
+          "Case": "pcre2/kreset-bar-or-baz",
+          "Ratio": 1.0839803378736845,
+          "ManagedUs": 1.047783316190627,
+          "ReferenceUs": 0.9695526903407045,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-managed-compatible-ismatch",
+          "Case": "simple/httpclient-caseless",
+          "Ratio": 1.0744169841703293,
+          "ManagedUs": 0.13391846419181402,
+          "ReferenceUs": 0.12560027732017123,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-managed-compatible-ismatch",
+          "Case": "simple/foo-dense",
+          "Ratio": 1.0477874982224529,
+          "ManagedUs": 0.08628678683322191,
+          "ReferenceUs": 0.08219430616391765,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-special-enumerate",
+          "Case": "pcre2/branch-reset-followup",
+          "Ratio": 1.0334170492655737,
+          "ManagedUs": 1.068928841377821,
+          "ReferenceUs": 1.0295340668422956,
+          "Status": "NativeFaster",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": null
+        },
+        {
+          "Section": "pcre2-managed-compatible-enumerate",
+          "Case": "simple/ab-plus",
+          "Ratio": 1.0183854941211765,
+          "ManagedUs": 1.1262214703521045,
+          "ReferenceUs": 1.107190819527767,
+          "Status": "Inconclusive",
+          "Source": "6EBDC8BD315A876A4FCCB69E4BBF490B42D0DE3D51C561C1F7FC195BD83F9739",
+          "Reason": "The paired 95% interval crosses a Status decision boundary."
+        }
+      ],
+      "MaterialRows": []
+    },
+    "Posix": {
+      "Evidence": {
+        "Snapshot": "Posix.Benchmarks.json",
+        "SnapshotSha256": "57953E8795D99E0FCAC31E503227AE55CAEA169F388C39C3E9AFE0F79CB74F71"
+      },
+      "Rows": 17,
+      "LargestRatios": [
+        {
+          "Section": "Operations",
+          "Case": "capture/empty",
+          "Ratio": 3.12491667022458,
+          "ManagedUs": 0.4757724000787807,
+          "ReferenceUs": 0.1516581856466047,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "Operations",
+          "Case": "capture/nullable",
+          "Ratio": 2.1707520645372904,
+          "ManagedUs": 0.44409345715440823,
+          "ReferenceUs": 0.20458046057372728,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FiniteDeadlineLive",
+          "Case": "capture/sku007",
+          "Ratio": 2.0391325559608555,
+          "ManagedUs": 2441.877419354839,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "Operations",
+          "Case": "capture/absent",
+          "Ratio": 2.020986417036442,
+          "ManagedUs": 0.287512272428588,
+          "ReferenceUs": 0.14225573581681283,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "AdapterControl",
+          "Case": "capture/sku007",
+          "Ratio": 1.8286720946361508,
+          "ManagedUs": 1197.5079365079366,
+          "ReferenceUs": 654.7706896551724,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FiniteDeadlineLive",
+          "Case": "capture/empty",
+          "Ratio": 1.756103757668026,
+          "ManagedUs": 0.8355056995730822,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FundedFiniteLive",
+          "Case": "capture/sku007",
+          "Ratio": 1.7047768299030839,
+          "ManagedUs": 2041.4837837837836,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": "Peak covered host working storage 320 bytes; zero outstanding loans."
+        },
+        {
+          "Section": "FundedFiniteLive",
+          "Case": "capture/empty",
+          "Ratio": 1.6304470012450019,
+          "ManagedUs": 0.7757216829835852,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": "Peak covered host working storage 752 bytes; zero outstanding loans."
+        },
+        {
+          "Section": "FiniteDeadlineLive",
+          "Case": "cursor/ambiguous",
+          "Ratio": 1.5378564566717594,
+          "ManagedUs": 2.904195885027356,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FiniteLive",
+          "Case": "capture/sku007",
+          "Ratio": 1.489896422649596,
+          "ManagedUs": 1784.1627906976744,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FiniteLive",
+          "Case": "capture/empty",
+          "Ratio": 1.4352792464442419,
+          "ManagedUs": 0.6828662518640407,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "Operations",
+          "Case": "projection/short-1",
+          "Ratio": 1.3964618708486063,
+          "ManagedUs": 0.15290403087845789,
+          "ReferenceUs": 0.10945941031076016,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        }
+      ],
+      "MaterialRows": [
+        {
+          "Section": "FiniteDeadlineLive",
+          "Case": "capture/sku007",
+          "Ratio": 2.0391325559608555,
+          "ManagedUs": 2441.877419354839,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "AdapterControl",
+          "Case": "capture/sku007",
+          "Ratio": 1.8286720946361508,
+          "ManagedUs": 1197.5079365079366,
+          "ReferenceUs": 654.7706896551724,
+          "Status": "NativeFaster",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "FundedFiniteLive",
+          "Case": "capture/sku007",
+          "Ratio": 1.7047768299030839,
+          "ManagedUs": 2041.4837837837836,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": "Peak covered host working storage 320 bytes; zero outstanding loans."
+        },
+        {
+          "Section": "FiniteLive",
+          "Case": "capture/sku007",
+          "Ratio": 1.489896422649596,
+          "ManagedUs": 1784.1627906976744,
+          "ReferenceUs": null,
+          "Status": "Measured",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "Operations",
+          "Case": "projection/unicode-prefix-1",
+          "Ratio": 1.0048030691225842,
+          "ManagedUs": 136.89049360146254,
+          "ReferenceUs": 136.2396021699819,
+          "Status": "Equivalent",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        },
+        {
+          "Section": "Operations",
+          "Case": "projection/unicode-prefix-4",
+          "Ratio": 1.0040236108450065,
+          "ManagedUs": 136.93697632058286,
+          "ReferenceUs": 136.38820326678766,
+          "Status": "Equivalent",
+          "Source": "E4591008FC748D17943CDD3D09BBA998C8253129A5450FF2D95EE372CA4BAAB4",
+          "Reason": null
+        }
+      ]
+    }
+  }
+}
