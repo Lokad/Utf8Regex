@@ -445,7 +445,7 @@ public sealed partial class Utf8PythonRegex
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var control = new Utf8InvocationBufferControl(ref invocation);
-        // Strict whole-subject validity precedes every search and early rejection.
+        // The caller supplies valid, unchanged UTF-8 text.
         // Consumers derive text sizing or coordinates only for a selected range.
         Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
         start = end = -1;
