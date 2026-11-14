@@ -6,6 +6,33 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 [Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReFindAllOwnershipTests
 {
+    [Fact]
+    public void NestedTupleValuesKeepIndependentSlotsAndSurviveProgramDisposal()
+    {
+        var regex = new Utf8PythonRegex("((é😀))");
+        var tuples = regex.FindAllToStrings(Encoding.UTF8.GetBytes("é😀 é😀")).TupleValues;
+        regex.Dispose();
+        Assert.Equal(2, tuples.Length);
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[0]);
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1]);
+        tuples[0][0] = "changed";
+        Assert.Equal("é😀", tuples[0][1]);
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1]);
+    }
+
+    [Fact]
+    public void EqualCaptureRangesFitAUsefulFiniteResultBudget()
+    {
+        using var regex = new Utf8PythonRegex("(([a-z]+))", resourcePolicy: new()
+        {
+            MaxResultBytes = 12 << 10, MaxWorkingBytes = 1 << 20, MaxWorkSteps = 1000000,
+        });
+        var text = new string('a', 4096);
+        var tuples = regex.FindAllToStrings(Encoding.UTF8.GetBytes(text)).TupleValues;
+        Assert.Single(tuples);
+        Assert.Equal(new[] { text, text }, tuples[0]);
+    }
+
     public static IEnumerable<object?[]> OwnedScalarCases()
     {
         var none = PythonReCompileOptions.None;
@@ -57,6 +84,9 @@ public sealed class PythonReFindAllOwnershipTests
     {
         var none = PythonReCompileOptions.None;
         var ignoreCase = PythonReCompileOptions.IgnoreCase;
+        yield return new object?[] { "((é😀))", none, "xé😀 é😀", 1, new[] { new[] { "é😀", "é😀" }, new[] { "é😀", "é😀" } } };
+        yield return new object?[] { "(([a-z]+)-[0-9]+)", none, "item-12 other-345", 0, new[] { new[] { "item-12", "item" }, new[] { "other-345", "other" } } };
+        yield return new object?[] { "()([a-z]+)", none, "word next", 0, new[] { new[] { "", "word" }, new[] { "", "next" } } };
         yield return new object?[] { "(cat)|(horse)", none, "cat horse", 0, new[] { new[] { "cat", "" }, new[] { "", "horse" } } };
         yield return new object?[] { "(cat)|(horse)", none, "horsecat", 0, new[] { new[] { "", "horse" }, new[] { "cat", "" } } };
         yield return new object?[] { "(cat)|(horse)", none, "cat horse", 4, new[] { new[] { "", "horse" } } };

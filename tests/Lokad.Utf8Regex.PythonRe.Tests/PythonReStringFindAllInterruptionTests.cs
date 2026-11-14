@@ -11,6 +11,7 @@ public sealed class PythonReStringFindAllInterruptionTests
     {
         foreach (var (pattern, unit) in new[] { ("(?P<word>[a-z]+)", "alpha beta "),
             ("([a-z]+)([0-9]+)", "alpha12 beta34 "), ("(😀)?", "😀é"), ("x*", "xé😀y"),
+            ("(([^ ]+))", "é😀 word "), ("(foo)?([a-z]+)", "bar fooword "),
             (new string('a', 63) + "([0-9]+)", new string('a', 127) + "3 ") })
         foreach (var finite in new[] { false, true })
         foreach (var expire in new[] { false, true })
