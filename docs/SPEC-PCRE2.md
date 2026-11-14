@@ -391,9 +391,12 @@ and survives owner disposal. No new retained-output receipt or string overload i
 required for this funded route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
-on expressions and program owners returns `Utf8Pcre2MatchCursor`. The entire
-unchanged subject is validated once in Validate mode; AssumeValid trusts the caller. Explicit starts are scalar-aligned bytes;
-prefix/lookbehind/anchor context remains the original subject. Sequential advances
+on expressions and program owners returns `Utf8Pcre2MatchCursor`. In Validate
+mode, the native UTF checking window (creation start minus maximum scalar
+lookbehind through the subject end) is validated once for the cursor lifetime.
+AssumeValid omits that pass under the caller's valid-text guarantee. Explicit starts
+are scalar-aligned bytes; prefix/lookbehind/anchor context remains the original
+subject. Sequential advances
 can cross awaits under the creation token, absolute deadline and cumulative limits.
 An advance token applies only to that synchronous call; if both cancel, the
 original token wins. Aliases share position/disposal and reject concurrent or

@@ -1,10 +1,14 @@
 # Prepare immutable complete-capture-root eligibility once
 
 Accepted source `1f2b34c1`, against dev91 `cd8eb5c7`. Move the same existing
-complete-root proof to program construction and keep one boolean. Instructions
-are finalized by ordinary lowering or the FullMatch clone before Create; the
-bounded proof examines at most64 instructions and allocates nothing. Keep the
-original matcher, arrays, paired close journal, history/RTL/NonBacktracking
+complete-root proof to program construction and keep one boolean. Core/Python
+execution instructions are finalized by ordinary lowering or the FullMatch clone
+before Create; the
+bounded proof examines at most64 instructions and allocates nothing. POSIX also
+reorders forks in its private scalar stream after lowering: those streams fail
+this proof and execute only in the POSIX-owned runner, so this cached fact is not
+consumed there. Keep the original matcher, arrays, paired close journal,
+history/RTL/NonBacktracking
 declines and all input/interruption/resource controls. Existing conservative512B
 program admission remains; no new engine,descriptor,buffer,intent flag or mode.
 [Acceptance/all observations](acceptance.json).

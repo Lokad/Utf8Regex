@@ -153,7 +153,8 @@ rejected neighbouring bytes still consume work. Every surviving start runs the
 normal VM with captures and rollback. Nullable, contiguous-anchor, folded and RTL
 roots retain their existing discovery, as do initial beginning anchors. Skipping
 impossible starts can reduce work and avoid local scratch; enclosing storage loans,
-strict whole-subject validation and final interruption/admission still apply.
+the selected subject-validation policy and final interruption/admission still
+apply.
 
 Boolean/count/value matching share the same conservative unobserved-capture proof.
 Eligible owned backtracking programs omit capture slots and their trails when
@@ -284,8 +285,9 @@ groups. Detailed results expose the owned capture history.
 
 After scalar matching, `MatchDetailed` can reuse the identity coordinate map
 when every returned capture history endpoint lies in a proved ASCII prefix.
-The subject is still validated completely and borrowed unchanged. Lookaround
-captures beyond the whole match are included in the proof; Unicode in the
+Validate still checks the complete subject; AssumeValid trusts the caller. Borrowed
+bytes remain unchanged. Lookaround captures beyond the whole match are included
+in the proof; Unicode in the
 required prefix retains full mapping, as do already admitted UTF-16 offset maps.
 History and prefix scans have bounded interruption/work checkpoints. Avoiding
 map arrays can lower working/result charges and admit formerly denied calls;
@@ -377,7 +379,8 @@ literal prefix and one outer capture of a terminal positive ASCII interval `+`
 can reuse the admitted repeat runner. Two nonnested positive ASCII interval `+`
 captures can share that runner when a nonempty exact ASCII literal separates
 them and its first byte is excluded from the first interval. The whole-root proof
-inspects at most64 instructions; existing workspace/slots remain initialized,
+inspects at most64 instructions once at program construction and retains one
+boolean eligibility fact; existing workspace/slots remain initialized,
 both multi-group closing entries retain their admission and completion order,
 and slots publish only after complete success and interruption checks. Basic
 literal, repeat-block and publication metering remains. Removed dispatch can
@@ -481,7 +484,7 @@ For a direct class/literal prefix, only the actual class is rewound, including
 whitespace that belongs to it. Explicit whitespace/gap prefixes retain their
 conservative union. Omitting impossible starts across nonmember whitespace can
 lower numerical work requirements without changing allocation admission.
-Skipped starts need no VM work or scratch. Whole-subject strict validation,
+Skipped starts need no VM work or scratch. The selected subject-validation policy,
 bounded search/rewind checkpoints and admission before live VM storage remain.
 A backwards class step proves membership at the rewound start. When it makes
 no progress, bounded classification can discard only the unproved window prefix;
@@ -541,8 +544,9 @@ Complete literal discovery can also use a proved positive literal suffix,
 confirmed under the same bounded comparison budget without consuming the suffix.
 Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
 with its bounded checkpoints, without scalar capture/backtracking workspace.
-Full strict subject validation still precedes the decision. Unsupported shapes,
-mixed Unicode input, RTL and NonBacktracking keep their existing paths. The
+Validate checks the complete subject before the decision; AssumeValid relies on
+the caller's valid-text guarantee. Unsupported shapes, mixed Unicode input, RTL
+and NonBacktracking keep their existing paths. The
 controlled invocation owner remains; this is not a general zero-allocation claim.
 For example, the fixed predicate `^[A-Z]{3}[0-9]{4}$` keeps this Boolean path
 with a live caller token and finite numeric limits. Its fixed invocation metadata
@@ -556,19 +560,20 @@ execution resumes.
 Finite-policy zero-origin LTR ASCII `Count` can reuse the existing structural
 family search and linear verifier when the family's leading word-boundary proof
 resolves proper-start prefix overlap, for example declaration keywords followed
-by identifiers. Whole-subject validation, search, verification and publication
-share the original work/token/deadline scope. Same-start or unproved overlaps,
+by identifiers. Subject preparation under the selected policy, search, verification
+and publication share the original work/token/deadline scope. Same-start or
+unproved overlaps,
 mixed Unicode, folding, RTL and NonBacktracking retain their existing routes.
 Avoiding scalar VM scratch can lower route-dependent work, depth and working
 requirements; invocation metadata still allocates.
 
-Finite structural/simple `Count` needs validity and ASCII eligibility, not UTF-16
-lengths or supplementary-scalar metadata. It carries the existing ASCII proof
-through the same bounded validation blocks; validation work charges, error offsets
-and interruption points stay unchanged. Coordinate-producing operations still
-derive their complete metadata. Unicode subjects retain scalar matching.
+Finite structural/simple `Count` needs the valid-text guarantee and ASCII eligibility,
+not UTF-16 lengths or supplementary-scalar metadata. Validate carries the existing
+ASCII proof through its bounded validation blocks; AssumeValid needs only the
+route's ASCII eligibility checks. Original work/interruption and admission remain.
+Coordinate-producing operations still derive their complete metadata. Unicode subjects retain scalar matching.
 
-On fully validated ASCII subjects of at most 2048 bytes, a proved zero-origin
+On subjects proved ASCII and of at most 2048 bytes, a proved zero-origin
 operator or quoted-string prefix can publish its value-Match range through the existing
 bounded prefix helper. The original invocation meters discovery and publication,
 including cancellation/deadline checks. Wider or mixed subjects, nonzero origins,
@@ -596,8 +601,8 @@ folding. Validation, bounded interruption/publication and detailed captures stay
 unchanged; this route can avoid VM workspace and nesting records.
 
 A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
-use zero-origin span Count by searching for that byte after strict whole-subject UTF-8 validation.
-The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
+use zero-origin span Count by searching for that byte under the selected input
+validation policy. The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
 work/interruption checkpoint and carry nonempty runs across block boundaries;
 the original invocation also checks final publication. Empty matches still
 advance one scalar. This constant-space counter needs no VM capture workspace,
@@ -609,8 +614,9 @@ The scalar counter for a complete capture-free greedy literal or contiguous
 ASCII range repeat can skip nonmembers through checked span search. Active runs
 retain their original minimum/maximum splitting. Controlled searches charge
 before each block of at most 2048 bytes and preserve the original token,
-deadline and final publication check. Strict whole-subject validation still
-precedes counting; no capture workspace or result payload is introduced.
+deadline and final publication check. Validate checks the complete subject before
+counting; AssumeValid trusts the caller's valid-text guarantee. No capture workspace
+or result payload is introduced.
 Nonmember work charges can fall from per-scalar steps to bounded scan units.
 Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
 
@@ -648,9 +654,9 @@ uses this existing block admission rather than VM instruction charges, so its
 route-dependent work and working-storage costs can be lower.
 
 A complete greedy set repeat with a positive minimum (for example
-`[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. Full
-strict validation, one work charge per examined scalar and final publication
-checks remain. Complemented/folded sets retain scalar membership; positive
+`[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. The
+selected input-validation policy, one work charge per examined scalar and final
+publication checks remain. Complemented/folded sets retain scalar membership; positive
 unfolded sets can use their existing ASCII mask. Tight working/depth/result
 limits can admit this constant-space route. A bounded proof over at most 64
 instructions can ignore plain capture markers around or inside that repeat for
@@ -662,8 +668,8 @@ are unchanged; route-dependent workspace/depth and work charges can decrease.
 An uncaptured, case-sensitive finite repeat of disjoint classes, such as
 `(?:[A-Z][a-z]+\s*){10,100}`, can Count through its existing prepared plan after
 a complete-root check. The leading and trailing classes must be ASCII; the
-original separator predicate retains Unicode membership. Full strict validation
-precedes counting. Work admission covers at most 2048 search bytes, 64 trailing
+original separator predicate retains Unicode membership. Subject preparation
+follows the selected input-validation policy before counting. Work admission covers at most 2048 search bytes, 64 trailing
 ASCII bytes or 64 separator scalars per quantum; non-ASCII separator predicates
 retain their direct atom charges. Original-token/deadline checks include final
 publication. No local VM arrays or frames are needed, while zero-byte working
@@ -716,8 +722,9 @@ accepting API defines its covered lifetime.
 
 Core `IsMatch(input, token, workingMemoryAllowance)` and
 `Count(input, token, workingMemoryAllowance)` admit modeled temporary matching
-storage through that allowance. Strict whole-subject validation and the original
-token/deadline precede matching; covered loans refund on completion or failure.
+storage through that allowance. Subject preparation follows the selected validation
+policy under the original token/deadline; covered loans refund on completion or
+failure.
 Numeric work/depth/working/result limits remain independently enforceable. Fixed
 invocation metadata, borrowed input and the compiled expression are separate.
 Funded timeout diagnostics omit subject text rather than decoding it without
@@ -765,8 +772,9 @@ required for this route.
 on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
 selects zero for LTR or the subject end for RTL; explicit starts are scalar-aligned
 bytes within the original subject, preserving assertion context. The cursor
-validates the entire unchanged subject once. Byte discovery and capture histories
-need neither captured strings nor a whole-subject UTF-16 map. NonBacktracking
+validates the entire unchanged subject once in Validate mode; AssumeValid omits
+that pass under the caller's valid-text guarantee. Byte discovery and capture
+histories need neither captured strings nor a whole-subject UTF-16 map. NonBacktracking
 retains its existing scalar viability table and last-capture semantics; other
 Core paths preserve all capture histories, sparse numbers and repeated names.
 Sequential calls can cross awaits, under one absolute deadline and cumulative
