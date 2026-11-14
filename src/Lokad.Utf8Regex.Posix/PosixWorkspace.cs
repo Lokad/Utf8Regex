@@ -8,7 +8,8 @@ namespace Lokad.Utf8Regex.Posix;
 
 // One exclusive call/cursor owns these admitted buffers. Scalar execution finds
 // the earliest longest whole extent; proven first-acceptance programs also keep
-// their native capture trace. General captures select closed syntax intervals.
+// their capture trace, except flat disjoint runs with unique capture boundaries.
+// General captures select closed syntax intervals.
 // State belongs to the synchronous stack/heap vector or the cursor's array.
 // Pass this owner by reference; no borrowed span or result aliases its buffers.
 internal partial struct PosixWorkspace
@@ -69,7 +70,7 @@ internal partial struct PosixWorkspace
                     _frames.Release(ref invocation); _undo.Release(ref invocation);
                     SelectChart(input, state, candidate, end, ref invocation);
                 }
-                else if (captureHistory)
+                else if (captureHistory && !_program.DisjointAsciiRuns)
                 {
                     var trace = _trace.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
@@ -191,15 +192,23 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
-                        Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
+                        if (_program.DisjointAsciiRuns)
+                            state[_openOffset + instruction.A] = at;
+                        else
+                        {
+                            SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
+                            Check(_trace.TryPush(new(instruction.A, at, -1), ref invocation), ref invocation);
+                        }
                     }
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
                     {
-                        Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
+                        if (_program.DisjointAsciiRuns)
+                            state[_lastOffset + instruction.A] = at;
+                        else
+                            Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
                     }
                     pc++;
                     break;
@@ -407,6 +416,14 @@ internal partial struct PosixWorkspace
             return start >= 0;
         }
         var tag = _program.CaptureTags[slot];
+        // The existing flat-run proof excludes forks and captures inside repeat
+        // bodies. Each tag opens/closes once on the sole successful parse; no
+        // occurrence history or parent reconciliation can change these edges.
+        if (_program.DisjointAsciiRuns)
+        {
+            start = state[_openOffset + tag]; end = state[_lastOffset + tag];
+            return start >= 0 && end >= 0;
+        }
         var close = state[_lastOffset + tag];
         start = end = -1;
         if (close < 0) return false;

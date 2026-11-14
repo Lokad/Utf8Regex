@@ -242,6 +242,34 @@ public sealed class PosixWorkspaceTests
         Assert.Equal(17UL, account.Used); account.Release(17);
     }
 
+    [Theory]
+    [InlineData("([a-z]+)([0-9]+)", "😀ab12!cd34?", 2)]
+    [InlineData("(([a-z]+))([0-9]+)", "😀ab12!cd34?", 2)]
+    [InlineData("([a-z]+)([0-9]+)([!]+)", "😀ab12!cd34!!", 2)]
+    public void UniqueRunCapturePositionsFitStateOnlyAdmissionAndSurviveCursorClosure(string pattern, string text, int count)
+    {
+        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkingBytes = 128, MaxResultBytes = 1, MaxDepth = 1, MaxWorkSteps = 10000 });
+        var account = new Account(128); Assert.True(account.TryReserve(17));
+        var input = Encoding.UTF8.GetBytes(text);
+        var output = new Utf8ValueMatch[regex.GroupCount + 2];
+        var sentinel = new Utf8ValueMatch(true, true, 10, 20, 30, 40);
+        output[^1] = sentinel;
+        using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: account);
+        var alias = cursor;
+        Assert.True(cursor.MoveNext(output, out var whole));
+        var retained = output.ToArray();
+        Assert.Equal(4, whole.IndexInBytes); Assert.Equal(2, whole.IndexInUtf16);
+        Assert.Equal(whole, output[0]); Assert.Equal(sentinel, output[^1]);
+        for (var found = 1; found < count; found++) Assert.True(alias.MoveNext(output, out _));
+        Assert.False(alias.MoveNext(output, out _));
+        Assert.All(output[..^1], value => Assert.False(value.Success));
+        Assert.Equal(sentinel, output[^1]); Assert.Equal(17UL, account.Used);
+        cursor.Dispose(); alias.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
+        Assert.Equal(4, retained[1].IndexInBytes); Assert.Equal(2, retained[1].LengthInBytes);
+        Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+    }
+
     private sealed class Account(ulong limit) : IUtf8MemoryAllowance
     {
         internal ulong Used;

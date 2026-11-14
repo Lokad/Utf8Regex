@@ -156,7 +156,8 @@ allocate a second execution state.
 Fixed sequences without choices or repetitions have one parse. Existing proofs
 also retain first acceptance for homogeneous greedy literal runs, suitable equal
 literal alternatives, disjoint positive ASCII runs and eligible repeated literal
-captures. Those routes keep one native trace and project it directly. First and
+captures. Those routes keep one trace and project it directly, except the flat
+disjoint-run case below. First and
 mandatory empty participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
 For flat pairwise-disjoint positive ASCII runs, the proved unique boundaries
@@ -164,6 +165,11 @@ also allow direct run consumption in the scalar executor. Each examined byte
 remains metered; impossible alternative exits, their undo journal and unused
 repeat-counter capacity are omitted. Work, pending depth and working admission
 can therefore be lower for these programs; capture selection is unchanged.
+Their capture events occur outside repeat bodies, without forks or repeated
+occurrences. Existing state slots keep their unique opening/closing byte offsets;
+no trace is acquired or replayed for this route. State admission remains before
+acquisition, while numerical work/working requirements can fall. Other proven
+routes and general histories retain their existing trace/interval behavior.
 
 Other requested captures select completed syntax intervals after the scalar
 executor fixes the whole winner. Immutable syntax records carry conservative
