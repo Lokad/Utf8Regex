@@ -651,6 +651,14 @@ validated for validity only, allowing valid scalars to join across fragments and
 rejecting malformed output without computing unused UTF-16 length/supplementary
 metadata. Original interruption, admission, ownership and result lifetimes remain.
 
+String callbacks of at most 2048 UTF-16 units can encode directly into already
+admitted output capacity when three bytes per unit fit. That bound includes
+isolated-surrogate repair. No sizing pass or growth is needed in that case;
+other fragments retain exact sizing and bounded encoding. Entry, encoding,
+completion and operation publication checks remain under the original invocation.
+Numerical work can decrease by the omitted sizing-block step; buffer admission
+and result charges are unchanged.
+
 `SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
 requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
 `Result` contains the owned UTF-8 byte array and replacement count. It uses the

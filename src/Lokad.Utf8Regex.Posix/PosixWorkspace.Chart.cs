@@ -69,7 +69,7 @@ internal partial struct PosixWorkspace
         if (at == 0) return -1;
         at--;
         // Valid UTF8 has at most three continuation bytes. Bound the operation
-        // even for a caller violating AssumeValid; all indexing remains checked.
+        // even when the caller violates the valid-text contract; indexing stays checked.
         for (var skipped = 0; skipped < 3 && at > 0 && (input[at] & 0xc0) == 0x80; skipped++) at--;
         return at;
     }
