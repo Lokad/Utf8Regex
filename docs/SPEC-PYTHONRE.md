@@ -278,6 +278,11 @@ timeout diagnostics; successful operations do not implicitly request `Pattern`.
 Canonical `FindAllToStrings` values are decoded only when that string output is
 requested. Repeated exact values share one string within an invocation; it is
 admitted as result/working capacity rather than borrowed from a prepared string.
+Within one capture tuple, groups whose byte range equals the first group's can
+reuse its owned immutable string. Tuple arrays remain independently mutable;
+no cross-match cache is created. Reused and absent groups retain interruption
+checks. Shared text is acquired once, so result traffic, live working admission
+and numerical work can decrease without weakening preallocation bounds.
 This can change covered capacity/work compared with earlier development builds.
 No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
