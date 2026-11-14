@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -75,39 +76,41 @@ internal static partial class Utf8ValidationCore
         var high = Vector512.Create(previousHigh256, previousHigh256);
         var low = Vector512.Create(previousLow256, previousLow256);
         var currentHigh = Vector512.Create(currentHigh256, currentHigh256);
-        var nibble = Vector512.Create((byte)15);
-        var continuation = Vector512.Create((byte)128);
         while (offset <= input.Length - Vector512<byte>.Count)
         {
             var window = input.Slice(offset - 3, Vector512<byte>.Count + 3);
             var current = MemoryMarshal.Read<Vector512<byte>>(window[3..]);
-            if (current.ExtractMostSignificantBits() == 0)
-            {
-                if (LookupPending(input, offset)) return false;
-            }
-            else
-            {
-                var previous = MemoryMarshal.Read<Vector512<byte>>(window[2..]);
-                var previous2 = MemoryMarshal.Read<Vector512<byte>>(window[1..]);
-                var previous3 = MemoryMarshal.Read<Vector512<byte>>(window);
-                var faults = Avx512BW.Shuffle(high, Avx512BW.ShiftRightLogical(previous.AsUInt16(), 4).AsByte() & nibble)
-                    & Avx512BW.Shuffle(low, previous & nibble)
-                    & Avx512BW.Shuffle(currentHigh, Avx512BW.ShiftRightLogical(current.AsUInt16(), 4).AsByte() & nibble);
-                var required = (Avx512BW.SubtractSaturate(previous2, Vector512.Create((byte)0x60))
-                    | Avx512BW.SubtractSaturate(previous3, Vector512.Create((byte)0x70))) & continuation;
-                if ((faults ^ required) != Vector512<byte>.Zero) return false;
-            }
+            if (!IsValidLookupBlock512(window, current, high, low, currentHigh)) return false;
             offset += Vector512<byte>.Count;
         }
         return LookupTail(input, offset);
     }
 
-    private static int LookupStart(ReadOnlySpan<byte> input)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsValidLookupBlock512(ReadOnlySpan<byte> window, Vector512<byte> current,
+        Vector512<byte> high, Vector512<byte> low, Vector512<byte> currentHigh)
     {
-        var offset = 0;
+        if (current.ExtractMostSignificantBits() == 0)
+            return window[2] < 0xC0 && window[1] < 0xE0 && window[0] < 0xF0;
+        var nibble = Vector512.Create((byte)15);
+        var previous = MemoryMarshal.Read<Vector512<byte>>(window[2..]);
+        var previous2 = MemoryMarshal.Read<Vector512<byte>>(window[1..]);
+        var previous3 = MemoryMarshal.Read<Vector512<byte>>(window);
+        var faults = Avx512BW.Shuffle(high, Avx512BW.ShiftRightLogical(previous.AsUInt16(), 4).AsByte() & nibble)
+            & Avx512BW.Shuffle(low, previous & nibble)
+            & Avx512BW.Shuffle(currentHigh, Avx512BW.ShiftRightLogical(current.AsUInt16(), 4).AsByte() & nibble);
+        var required = (Avx512BW.SubtractSaturate(previous2, Vector512.Create((byte)0x60))
+            | Avx512BW.SubtractSaturate(previous3, Vector512.Create((byte)0x70))) & Vector512.Create((byte)128);
+        return (faults ^ required) == Vector512<byte>.Zero;
+    }
+
+    private static int LookupStart(ReadOnlySpan<byte> input, int start = 0)
+    {
+        var offset = start;
+        var end = start + Math.Min(3, input.Length - start);
         // A few complete scalars supply the preceding three bytes for all
         // later windows. This also rejects an invalid initial continuation.
-        while (offset < 3)
+        while (offset < end)
         {
             if (Rune.DecodeFromUtf8(input[offset..], out _, out var width) != OperationStatus.Done) return -1;
             offset += width;
