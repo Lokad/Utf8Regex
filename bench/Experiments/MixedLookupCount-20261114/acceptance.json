@@ -1,0 +1,570 @@
+{
+  "Decision": "Defer: modest Chinese corpus gain does not justify repeated broad trusted/finite operating-cost increases. No normalization or exact causal attribution.",
+  "Prototype": "bad2a143bf9eaefbb9a3e20850bd7bfb11ab0ce6",
+  "RestoredProduction": "5b8505e8c32913d3a5d4caf3ec6f61bb76b470bc",
+  "Comparisons": 1,
+  "Confirmations": 1,
+  "NoFurtherTimingOrTuning": true,
+  "Initial": {
+    "Acceptance": {
+      "BeforeRepository": "5b8505e8c32913d3a5d4caf3ec6f61bb76b470bc",
+      "BeforeProducer": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+      "After": "bad2a143bf9eaefbb9a3e20850bd7bfb11ab0ce6",
+      "BaselineReused": true,
+      "OrdinaryProcesses": 2,
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CallerUnchanged": true,
+      "EqualPublicCounts": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "VmWidthChecks": [
+        {
+          "Framework": "net10.0",
+          "Counts": {
+            "total": "393",
+            "executed": "393",
+            "passed": "393",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        },
+        {
+          "Framework": "net11.0",
+          "Counts": {
+            "total": "393",
+            "executed": "393",
+            "passed": "393",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        }
+      ],
+      "PublicAvx512Observed": true,
+      "FullOptsInspected": true,
+      "Scope": "One public strict Count A/B with unchanged trusted matching-route controls. AVX512 pilot already shares the validity predicate; accept/defer only from measured public evidence."
+    },
+    "Rows": [
+      {
+        "Id": "chinese",
+        "InputBytes": 813478,
+        "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+        "ExpectedCount": 30,
+        "PublicStrictCount": {
+          "BeforeUs": 68.21923401858632,
+          "AfterUs": 61.73822109275731,
+          "ObservedPercent": -9.500272201917802,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            67.68484933821459,
+            68.67437341593917
+          ],
+          "AfterRangeUs": [
+            61.301524777636594,
+            62.30015247776366
+          ],
+          "MinimumSampleMs": 240.3489
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 21.906213834238404,
+          "AfterUs": 32.20574508733625,
+          "ObservedPercent": 47.01648277074768,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            21.645927178848037,
+            22.01759992878127
+          ],
+          "AfterRangeUs": [
+            31.989082969432314,
+            33.101514737991266
+          ],
+          "MinimumSampleMs": 234.416
+        }
+      },
+      {
+        "Id": "dense-mixed",
+        "InputBytes": 94208,
+        "InputSha256": "34F1D0F3AFC6D3654D758D20BB6C2B64B23CE6B90062CE0D1FE8652F9BF36313",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 58.682727911881884,
+          "AfterUs": 16.486429291232785,
+          "ObservedPercent": -71.90582326713093,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            58.27982188891493,
+            58.83325521443637
+          ],
+          "AfterRangeUs": [
+            16.40355391333557,
+            21.99186429291233
+          ],
+          "MinimumSampleMs": 244.1669
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 50.232490974729245,
+          "AfterUs": 49.50612966601179,
+          "ObservedPercent": -1.4459989831738018,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            49.94528680304854,
+            50.53678299237866
+          ],
+          "AfterRangeUs": [
+            49.12559921414538,
+            49.905874263261296
+          ],
+          "MinimumSampleMs": 249.0272
+        }
+      },
+      {
+        "Id": "false-columns",
+        "InputBytes": 147479,
+        "InputSha256": "B8A9C17136DC9A942AFA00AF153BDC176A7AA24ADC9472F2F36E8B49798EDA59",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 26.711790627687016,
+          "AfterUs": 24.20653575897584,
+          "ObservedPercent": -9.378835375096328,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            26.57657996560619,
+            27.042401117798796
+          ],
+          "AfterRangeUs": [
+            24.02668206757147,
+            24.327615747425163
+          ],
+          "MinimumSampleMs": 247.2685
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 17.165523367040176,
+          "AfterUs": 30.941028151774788,
+          "ObservedPercent": 80.25100365529897,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            16.83869909811424,
+            17.242381798305548
+          ],
+          "AfterRangeUs": [
+            30.407454100367197,
+            31.266193390452877
+          ],
+          "MinimumSampleMs": 246.4512
+        }
+      },
+      {
+        "Id": "ascii-miss",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 29.417264997638167,
+          "AfterUs": 14.516138211382113,
+          "ObservedPercent": -50.65435820581017,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            29.247779877184698,
+            29.88973783656117
+          ],
+          "AfterRangeUs": [
+            14.46527293844367,
+            14.56987224157956
+          ],
+          "MinimumSampleMs": 247.6702
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 29.448626665094896,
+          "AfterUs": 41.715771086341704,
+          "ObservedPercent": 41.65608318769889,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            29.235954261464105,
+            29.69009784274431
+          ],
+          "AfterRangeUs": [
+            41.43986025619697,
+            41.92447180169689
+          ],
+          "MinimumSampleMs": 248.0086
+        }
+      },
+      {
+        "Id": "unaffected-validity",
+        "InputBytes": 131072,
+        "InputSha256": "A8E29B973EA93FB8354C76954B5F5A8770DA52520060744EE9D59B4C365B5122",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 11.064512586214471,
+          "AfterUs": 13.389286853013074,
+          "ObservedPercent": 21.01108610690263,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            10.983666476299257,
+            11.099991213811888
+          ],
+          "AfterRangeUs": [
+            13.329126368370709,
+            13.532171325326814
+          ],
+          "MinimumSampleMs": 250.0212
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 3.554650660056494,
+          "AfterUs": 5.49717203117242,
+          "ObservedPercent": 54.647321407529084,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            3.5295598662592957,
+            3.6074494148844183
+          ],
+          "AfterRangeUs": [
+            5.476773956781728,
+            5.511693974915269
+          ],
+          "MinimumSampleMs": 244.9091
+        }
+      },
+      {
+        "Id": "chinese-finite-live",
+        "InputBytes": 813478,
+        "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+        "ExpectedCount": 30,
+        "PublicStrictCount": {
+          "BeforeUs": 93.69516783474732,
+          "AfterUs": 254.0765306122449,
+          "ObservedPercent": 171.1735690151775,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            92.79579490962745,
+            94.25223164883806
+          ],
+          "AfterRangeUs": [
+            252.91836734693877,
+            255.62744897959183
+          ],
+          "MinimumSampleMs": 247.86
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 24.786907606531262,
+          "AfterUs": 37.218689903846155,
+          "ObservedPercent": 50.154632012422404,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            24.63119275189168,
+            24.885324571883714
+          ],
+          "AfterRangeUs": [
+            37.009930889423075,
+            37.86009615384615
+          ],
+          "MinimumSampleMs": 246.3381
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x10; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "RawSha256": "6BBC1F8E5B5B08643BD0C3B465B69B07A96E4EEBB0BDDB2EB08310E761F9DE7A",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "UnusedConfirmationAvailableOnlyIfNoisePreventsDecision": true
+  },
+  "Confirmation": {
+    "Acceptance": {
+      "Reason": "Initial unchanged trusted controls moved41-80% and finite strict+171%; use the sole confirmation without source/binary/caller changes.",
+      "Confirmations": 1,
+      "FurtherAttemptsAllowed": false,
+      "SourceUnchanged": true,
+      "CallerUnchanged": true,
+      "ProducersUnchanged": true,
+      "NoBuild": true,
+      "OutputsEqual": true
+    },
+    "Rows": [
+      {
+        "Id": "chinese",
+        "InputBytes": 813478,
+        "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+        "ExpectedCount": 30,
+        "PublicStrictCount": {
+          "BeforeUs": 70.66486638537272,
+          "AfterUs": 63.090440414507775,
+          "ObservedPercent": -10.718800385976268,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            70.16841068917019,
+            71.07310829817159
+          ],
+          "AfterRangeUs": [
+            62.799507772020725,
+            63.42145077720207
+          ],
+          "MinimumSampleMs": 242.4061
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 22.605240134876514,
+          "AfterUs": 35.30952630201518,
+          "ObservedPercent": 56.20062468408751,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            22.48039733892281,
+            22.67835596464048
+          ],
+          "AfterRangeUs": [
+            34.8046061240513,
+            35.684912326616065
+          ],
+          "MinimumSampleMs": 246.6774
+        }
+      },
+      {
+        "Id": "dense-mixed",
+        "InputBytes": 94208,
+        "InputSha256": "34F1D0F3AFC6D3654D758D20BB6C2B64B23CE6B90062CE0D1FE8652F9BF36313",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 59.56294428434198,
+          "AfterUs": 17.06470023322815,
+          "ObservedPercent": -71.35013985916383,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            59.37723342939481,
+            59.953362151777135
+          ],
+          "AfterRangeUs": [
+            16.752078474413498,
+            17.203107422142956
+          ],
+          "MinimumSampleMs": 244.2118
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 50.65952236389395,
+          "AfterUs": 50.69003045685279,
+          "ObservedPercent": 0.060221833004447944,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            50.303723942521756,
+            51.09378668285772
+          ],
+          "AfterRangeUs": [
+            49.386091370558376,
+            51.05023350253807
+          ],
+          "MinimumSampleMs": 243.2265
+        }
+      },
+      {
+        "Id": "false-columns",
+        "InputBytes": 147479,
+        "InputSha256": "B8A9C17136DC9A942AFA00AF153BDC176A7AA24ADC9472F2F36E8B49798EDA59",
+        "ExpectedCount": 1,
+        "PublicStrictCount": {
+          "BeforeUs": 27.335899073778346,
+          "AfterUs": 24.89255860349127,
+          "ObservedPercent": -8.938211484073054,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            27.144714148834236,
+            27.929852017459808
+          ],
+          "AfterRangeUs": [
+            24.676568578553617,
+            25.03785536159601
+          ],
+          "MinimumSampleMs": 247.3826
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 17.617792665726373,
+          "AfterUs": 30.345806299398372,
+          "ObservedPercent": 72.24522319662132,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            17.490225669957688,
+            17.753413258110015
+          ],
+          "AfterRangeUs": [
+            30.176288781408516,
+            30.652695529078684
+          ],
+          "MinimumSampleMs": 248.0114
+        }
+      },
+      {
+        "Id": "ascii-miss",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 30.30392986698912,
+          "AfterUs": 15.110561838744983,
+          "ObservedPercent": -50.13662615684271,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            30.123784764207983,
+            30.564558645707375
+          ],
+          "AfterRangeUs": [
+            14.81777331874012,
+            15.160263893955978
+          ],
+          "MinimumSampleMs": 243.6931
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 30.28414529390109,
+          "AfterUs": 43.327652112923026,
+          "ObservedPercent": 43.07041421323772,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            30.08764265554056,
+            30.451699595042335
+          ],
+          "AfterRangeUs": [
+            42.94167981763984,
+            43.61920042083114
+          ],
+          "MinimumSampleMs": 244.8964
+        }
+      },
+      {
+        "Id": "unaffected-validity",
+        "InputBytes": 131072,
+        "InputSha256": "A8E29B973EA93FB8354C76954B5F5A8770DA52520060744EE9D59B4C365B5122",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 11.42186562414765,
+          "AfterUs": 13.773201708169264,
+          "ObservedPercent": 20.58626989141348,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            11.342244749522685,
+            11.499745431402854
+          ],
+          "AfterRangeUs": [
+            13.39107093339249,
+            13.94731296101159
+          ],
+          "MinimumSampleMs": 241.4544
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 3.6842824533839265,
+          "AfterUs": 5.679301312015898,
+          "ObservedPercent": 54.14945471402699,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            3.6571280348620046,
+            3.7024486407968458
+          ],
+          "AfterRangeUs": [
+            5.603436984847458,
+            5.748885576857936
+          ],
+          "MinimumSampleMs": 246.7318
+        }
+      },
+      {
+        "Id": "chinese-finite-live",
+        "InputBytes": 813478,
+        "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+        "ExpectedCount": 30,
+        "PublicStrictCount": {
+          "BeforeUs": 97.5991436356559,
+          "AfterUs": 131.5460359408034,
+          "ObservedPercent": 34.781957136707575,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            96.99022966134683,
+            98.0158816660179
+          ],
+          "AfterRangeUs": [
+            130.25914376321353,
+            132.6313424947146
+          ],
+          "MinimumSampleMs": 246.4503
+        },
+        "UnchangedTrustedCount": {
+          "BeforeUs": 25.702794805194806,
+          "AfterUs": 38.43400523157409,
+          "ObservedPercent": 49.5323972465678,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            25.521589610389608,
+            25.736612987012986
+          ],
+          "AfterRangeUs": [
+            38.18096630250808,
+            38.69836897984305
+          ],
+          "MinimumSampleMs": 245.6453
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x40; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+    "RawSha256": "C96498345F7E0C5202FBE54ABDD6211A1D2D5E9B9BBC8881DC333183FFB0E042",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "FurtherTimingOrTuningAllowed": false
+  },
+  "Codegen": {
+    "ThreeLookupShufflesPerObservedMethod": true,
+    "SharedPredicateCallObserved": false,
+    "BoundsFailurePathsPresent": true,
+    "FullOpts": true
+  },
+  "WindowsFocusedChecksPerTarget": 393,
+  "LinuxFocusedChecksPerTarget": 393,
+  "AllCountsAndValidationErrorsCorrect": true,
+  "AllPilotCodeGetterPredicateRefactorAndTestsRemoved": true,
+  "ExistingImmutableAssetsPreserved": 540,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "NotAUniversalTenPercentGate": true,
+  "FutureViabilityNotRuledOut": true,
+  "SharedPredicateRegressionCauseNotEstablished": true
+}

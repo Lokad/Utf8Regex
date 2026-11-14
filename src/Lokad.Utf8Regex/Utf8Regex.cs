@@ -1206,23 +1206,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
         }
 
-        if (InputValidation == Utf8InputValidation.Validate && !cancellationToken.CanBeCanceled &&
-            MatchTimeout == Regex.InfiniteMatchTimeout &&
-            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
-            System.Runtime.Intrinsics.Vector512.IsHardwareAccelerated &&
-            System.Runtime.Intrinsics.X86.Avx512BW.IsSupported &&
-            _compiledEngine.Kind == Utf8CompiledEngineKind.ExactLiteral &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            !UsesRightToLeft() && !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            _preparedRegex.SearchPlan.LiteralSearch is { Length: > 16, HasExactAnchors: true } mixed &&
-            input.Length >= System.Runtime.Intrinsics.Vector512<byte>.Count + mixed.Length + 6)
-        {
-            Utf8SearchDiagnosticsSession.Current?.CountSubjectValidation();
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount);
-            return Utf8ValidationCore.CountExactValidatedLookup512(input, mixed.Needle, mixed.ExactSecondAnchor);
-        }
-
         if (_fusedAsciiLiteralCountAnchorOffset >= 0 &&
             _preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral &&
             Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(

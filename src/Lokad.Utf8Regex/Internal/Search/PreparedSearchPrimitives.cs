@@ -178,8 +178,6 @@ internal readonly struct PreparedSubstringSearch
 
     internal bool HasExactAnchors => _exactAnchors.Anchor2 > 0;
 
-    internal int ExactSecondAnchor => _exactAnchors.Anchor2;
-
     public PreparedIgnoreCaseSearchTier IgnoreCaseTier => !IgnoreCase
         ? PreparedIgnoreCaseSearchTier.None
         : Needle.Length <= 8 ? PreparedIgnoreCaseSearchTier.ShortLiteral : PreparedIgnoreCaseSearchTier.VectorAnchored;
