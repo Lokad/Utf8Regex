@@ -1,0 +1,126 @@
+{
+  "Source": "b2ade2201c4ba5badf89df47d694e526cf44f017",
+  "Runtime": ".NET11.0.0 GA",
+  "InputBytes": 813478,
+  "Protocol": "AlternatingSelectedCountPhasesV2",
+  "Iterations": 1000,
+  "Samples": 5,
+  "OuterCapSeconds": 120,
+  "DiagnosticRuns": 1,
+  "Confirmations": 0,
+  "ProducerChanges": false,
+  "PackagesRepacked": false,
+  "FullRepeated": false,
+  "CanonicalRowsRefreshed": false,
+  "TerminalExit": 0,
+  "RawSha256": "DD2BB19B32D4D0F9A97F1C3B28A27C100E710F524EEC8F8921B93DA612F975EF",
+  "ProducerDllPdbHashes": [
+    "b24a5f141b6a7566d47c22af6614e9e7c291480ae88aa7978dfdb45e305220dc  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll",
+    "294b9877c1c3dd5bb63bc1938cf307420099acc6e5b7dfe6fe1addb0077b0950  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.pdb",
+    "38103652dad5ce26e48b97c89726917fa0db421351ea525c7e1ffc7c42cca9d9  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+    "b9464da6ba78b79b7a74e235a9bcfae0bbcc631ed8c35a5f49ec7a206069c156  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+    "850f9883e535a49b9ce0deb934d9b8e4431fa961bee095a5f158f28a551c0891  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+    "350716e4aa2448e023f1388278601f593ce3af6bffa092ab71e24e5dd6b778ee  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.pdb",
+    "3b37c8a41f78d5f5af277283427a20247ada7470aceacf2e22ee483fc50d0730  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.dll",
+    "7666f2b1339f26d6aa44d034ac51855886e83d1d380a0fac614d969eef29b124  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.pdb",
+    "a3cbb5d45af59d1001cbd4cdc1e2264f37ce0b64358ac9dad910e645e3e9ec2e  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Posix.dll",
+    "db86de38c4e8b23539fd1afc6644c31af2e8fd9c73bcc2ba0f3b37dda5b413c9  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Posix.pdb"
+  ],
+  "Observations": {
+    "literal_sherlock-zh-attribution.txt": {
+      "ValidationOnly": {
+        "MedianUs": 47.16,
+        "MinUs": 46.571,
+        "MaxUs": 48.013
+      },
+      "OrdinarySelectedKernel": {
+        "MedianUs": 22.318,
+        "MinUs": 21.952,
+        "MaxUs": 22.482
+      },
+      "CompiledSelectedKernel": {
+        "MedianUs": 22.288,
+        "MinUs": 21.929,
+        "MaxUs": 22.568
+      },
+      "ValidationThenOrdinaryKernel": {
+        "MedianUs": 69.668,
+        "MinUs": 69.222,
+        "MaxUs": 70.561
+      },
+      "ValidationThenCompiledKernel": {
+        "MedianUs": 69.335,
+        "MinUs": 68.346,
+        "MaxUs": 70.699
+      },
+      "Utf8Regex": {
+        "MedianUs": 70.186,
+        "MinUs": 69.331,
+        "MaxUs": 70.653
+      },
+      "Utf8Compiled": {
+        "MedianUs": 69.865,
+        "MinUs": 69.192,
+        "MaxUs": 70.723
+      },
+      "PredecodedRegex": {
+        "MedianUs": 18.819,
+        "MinUs": 18.295,
+        "MaxUs": 19.039
+      },
+      "PredecodedCompiledRegex": {
+        "MedianUs": 24.056,
+        "MinUs": 23.706,
+        "MaxUs": 27.636
+      }
+    },
+    "literal-alternate_sherlock-zh-attribution.txt": {
+      "ValidationOnly": {
+        "MedianUs": 47.299,
+        "MinUs": 46.783,
+        "MaxUs": 47.726
+      },
+      "OrdinarySelectedKernel": {
+        "MedianUs": 43.438,
+        "MinUs": 43.013,
+        "MaxUs": 44.127
+      },
+      "CompiledSelectedKernel": {
+        "MedianUs": 43.425,
+        "MinUs": 43.284,
+        "MaxUs": 43.864
+      },
+      "ValidationThenOrdinaryKernel": {
+        "MedianUs": 90.792,
+        "MinUs": 89.731,
+        "MaxUs": 91.849
+      },
+      "ValidationThenCompiledKernel": {
+        "MedianUs": 90.315,
+        "MinUs": 89.363,
+        "MaxUs": 92.043
+      },
+      "Utf8Regex": {
+        "MedianUs": 91.137,
+        "MinUs": 90.073,
+        "MaxUs": 92.519
+      },
+      "Utf8Compiled": {
+        "MedianUs": 91.532,
+        "MinUs": 90.464,
+        "MaxUs": 92.778
+      },
+      "PredecodedRegex": {
+        "MedianUs": 68.438,
+        "MinUs": 67.318,
+        "MaxUs": 71.027
+      },
+      "PredecodedCompiledRegex": {
+        "MedianUs": 36.261,
+        "MinUs": 35.097,
+        "MaxUs": 39.382
+      }
+    }
+  },
+  "Scope": "Phase attribution only; independently timed sums are not realizable speedups. The shortest reference batches are below20ms and do not establish a canonical status."
+}
