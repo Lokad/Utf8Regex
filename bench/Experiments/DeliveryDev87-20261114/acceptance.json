@@ -1,0 +1,541 @@
+{
+  "Version": "0.5.0-dev.87",
+  "ProducerSource": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+  "Complete": true,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Targets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "Windows": {
+    "Source": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+    "Version": "0.5.0-dev.87",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112510.0,
+    "Seconds": 286.4502222,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+    "Version": "0.5.0-dev.87",
+    "Sha256": "AE47E1350D1AE9A3DA4182417F5D283A974DA053CB25C16CBB535A12CE89768D",
+    "Bytes": 46774783,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112510.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "OriginalWindowsConsumers": {
+    "Version": "0.5.0-dev.87",
+    "Source": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+    "Complete": true,
+    "Scope": "Actual copied Awk adapter, matching committed Lython runtime/provider, and public native/funded producer APIs consume immutable Windows package assets. No producer/consumer checkout edits or package repacking. Compatibility is separate from downstream adoption/POSIX acceptance.",
+    "Checks": [
+      {
+        "Fixture": "Awk",
+        "Framework": "net10.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "BF29D11DB80B6DEFA8A939599534354498FEF210E5970A179CE1A8550E89EDAE",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1447E1EE59A11C721557CF4F7F8C48A23DD22EF22D18D81EB02EACF8CBCADF1D"
+          }
+        ]
+      },
+      {
+        "Fixture": "Awk",
+        "Framework": "net11.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "92057353F47AF717D13859A8BB7086E4FEA182C48DDE5A947A825BCE5FB3A8E0",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5FE0FB38B809BEBC153EB804548B9B9D4B000B2F18AFA6E6A4D504300F0E4579"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net10.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "2951FB41B51067582D3B2991523B6D052B9BC65A6FA5E946DC56D7D91B4BF02E",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1447E1EE59A11C721557CF4F7F8C48A23DD22EF22D18D81EB02EACF8CBCADF1D"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "6805242E192AF90E71FF99A5B0E663FBFD7F836A4D5FE592A90EAE1A25DF7EB8"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net11.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "753F057FA45F1CEC6A48B9461B74D6E7F4C5A317B194B7ADB1D2E6EF8DA4107F",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5FE0FB38B809BEBC153EB804548B9B9D4B000B2F18AFA6E6A4D504300F0E4579"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "47B3CC8167741039F14C21BF85AD125D339EEB1421C374D091903B582D915A7D"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net10.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1447E1EE59A11C721557CF4F7F8C48A23DD22EF22D18D81EB02EACF8CBCADF1D"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "6805242E192AF90E71FF99A5B0E663FBFD7F836A4D5FE592A90EAE1A25DF7EB8"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "0CA8F353756BBE1161175EF135BB91F0E108FB25C067C7CEDE8DFD63957309F6"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net11.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "5FE0FB38B809BEBC153EB804548B9B9D4B000B2F18AFA6E6A4D504300F0E4579"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "47B3CC8167741039F14C21BF85AD125D339EEB1421C374D091903B582D915A7D"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "BB2DFAA837935F647F9406FDD5229A8DBC454E1E9E2364BC41E6BF8FFDCCE25C"
+          }
+        ]
+      }
+    ]
+  },
+  "OriginalSourceAudit": {
+    "OriginalSha256": "CBD35E993774B928D7D8C054F53A3BEABDFBE8C8024C138CF68253D5BA3C41AB",
+    "FilesCompared": 1565,
+    "ChangedFiles": [
+      "producer-apis/Probe.csproj",
+      "lython/src/Lokad.Lython.Utf8Regex/Lokad.Lython.Utf8Regex.csproj",
+      "awk/adapter/Adapter.csproj"
+    ],
+    "OnlyExactPinsChanged": true,
+    "RepinnedArchiveSha256": "4A5B8E5A5FBA8F4F1BF3016AD46227875BE7B3230AF106B2C7D86099CDD2063D",
+    "Qualified": false
+  },
+  "SourceAuditQualifiedFieldIsPreparatory": true,
+  "Full": {
+    "Source": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+    "Version": "0.5.0-dev.87",
+    "RawSha256": "05F955E4BA53CED2EDFC15AB4C23EDCB9977D65051D173ECCCB33906D4AFB359",
+    "Bytes": 34389487,
+    "Seconds": 2746.5862684,
+    "BudgetSeconds": 3600,
+    "Steps": 85,
+    "Complete": true,
+    "OffVmVerified": true,
+    "TerminalExit": 0
+  },
+  "FullProtocolCaveat": "Original POSIX native projection has redundant prefix scans; Python value/detail/structural coordinates use setup maps. Preserve this Full as its original protocol, not proof that every row has aligned materialization.",
+  "PosixComparatorCorrection": {
+    "Acceptance": {
+      "Source": "4b05fff2bb0c90087403e57e39ba14198dacf717",
+      "ProducerSource": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+      "Refreshes": 1,
+      "Confirmations": 0,
+      "Traces": 18,
+      "FrozenProducerFiles": 16,
+      "ProducersUnchanged": true,
+      "PackagesRebuilt": false,
+      "FullRepeated": false,
+      "Scope": "Comparator coordinate projection only; same PCRE.NET UTF+NO_UTF_CHECK/options/exclusions/full output. One selective existing16-case catalog refresh, not a producer speedup."
+    },
+    "RawSha256": "F3110A38DA8862ADCDCC13393CBD2BC2902D52BEBB6F1AA0C8E37AEB832BE5E3",
+    "OffVmVerified": true,
+    "ProducerChanges": false,
+    "Rows": [
+      {
+        "Id": "capture/absent",
+        "BeforeRatio": 2.0007493127891807,
+        "AfterRatio": 2.0235706911446414,
+        "Status": "NativeFaster",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 0.14088301401318667,
+          "AfterUs": 0.1371463770595022,
+          "ObservedPercent": -2.6522977094561084
+        },
+        "Unlimited": {
+          "BeforeUs": 0.280989379063707,
+          "AfterUs": 0.2784531066495163,
+          "ObservedPercent": -0.9026221640981325
+        }
+      },
+      {
+        "Id": "capture/ambiguous",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 1.0707545821061961,
+          "AfterUs": 1.072386911329191,
+          "ObservedPercent": 0.15244662505053963
+        }
+      },
+      {
+        "Id": "capture/empty",
+        "BeforeRatio": 2.8892653009528235,
+        "AfterRatio": 3.0470307160172423,
+        "Status": "NativeFaster",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 0.1524696395242758,
+          "AfterUs": 0.1513850809502194,
+          "ObservedPercent": -0.7113275649108575
+        },
+        "Unlimited": {
+          "BeforeUs": 0.4414931473483476,
+          "AfterUs": 0.46127499160207525,
+          "ObservedPercent": 4.4806684707428435
+        }
+      },
+      {
+        "Id": "capture/nested",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 1.5002849290708484,
+          "AfterUs": 1.4946698631505344,
+          "ObservedPercent": -0.37426663505788493
+        }
+      },
+      {
+        "Id": "capture/nullable",
+        "BeforeRatio": 2.222797726850806,
+        "AfterRatio": 2.147479442297312,
+        "Status": "NativeFaster",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 0.1885944937378682,
+          "AfterUs": 0.19756674839487742,
+          "ObservedPercent": 4.75743192666056
+        },
+        "Unlimited": {
+          "BeforeUs": 0.41795265073265153,
+          "AfterUs": 0.42678707880750094,
+          "ObservedPercent": 2.113738974824786
+        }
+      },
+      {
+        "Id": "capture/sku007",
+        "BeforeRatio": 1.7909528648362198,
+        "AfterRatio": 1.7914338256266724,
+        "Status": "Inconclusive",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 634.2705882352941,
+          "AfterUs": 633.4658333333333,
+          "ObservedPercent": -0.12687879855817208
+        },
+        "Unlimited": {
+          "BeforeUs": 1135.310606060606,
+          "AfterUs": 1143.081818181818,
+          "ObservedPercent": 0.684500970899693
+        }
+      },
+      {
+        "Id": "capture/unicode-longest",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 1.1058389491379184,
+          "AfterUs": 1.1016900216165557,
+          "ObservedPercent": -0.37518370325054784
+        }
+      },
+      {
+        "Id": "count/ambiguous",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 0.36333549030073164,
+          "AfterUs": 0.3569347818800783,
+          "ObservedPercent": -1.7616524098307829
+        }
+      },
+      {
+        "Id": "cursor/ambiguous",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 1.7682374022326075,
+          "AfterUs": 1.7668464214711728,
+          "ObservedPercent": -0.07866481953602289
+        }
+      },
+      {
+        "Id": "history/length-12",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 3.308167220376523,
+          "AfterUs": 3.259721003684857,
+          "ObservedPercent": -1.4644428006318155
+        }
+      },
+      {
+        "Id": "history/length-4",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 1.312775346265377,
+          "AfterUs": 1.3160257314064152,
+          "ObservedPercent": 0.2475964490257221
+        }
+      },
+      {
+        "Id": "history/length-8",
+        "BeforeRatio": null,
+        "AfterRatio": null,
+        "Status": "Excluded",
+        "NativeExclusion": "Ordered native NFA returns different ranges or captures for this input; no POSIX ratio.",
+        "Unlimited": {
+          "BeforeUs": 2.221826769758416,
+          "AfterUs": 2.1795881087769953,
+          "ObservedPercent": -1.901078047863003
+        }
+      },
+      {
+        "Id": "projection/short-1",
+        "BeforeRatio": 1.3716292730523432,
+        "AfterRatio": 1.2718559399137814,
+        "Status": "NativeFaster",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 0.10881367041736861,
+          "AfterUs": 0.11766890851334764,
+          "ObservedPercent": 8.137983087983013
+        },
+        "Unlimited": {
+          "BeforeUs": 0.14958206219676204,
+          "AfterUs": 0.14844526687692675,
+          "ObservedPercent": -0.7599810452806444
+        }
+      },
+      {
+        "Id": "projection/short-4",
+        "BeforeRatio": 0.9971196237512897,
+        "AfterRatio": 1.120116951973491,
+        "Status": "NativeFaster",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 0.21220200263152028,
+          "AfterUs": 0.18926962648319365,
+          "ObservedPercent": -10.806861322674566
+        },
+        "Unlimited": {
+          "BeforeUs": 0.21196491491116276,
+          "AfterUs": 0.2110872997000335,
+          "ObservedPercent": -0.41403796071489696
+        }
+      },
+      {
+        "Id": "projection/unicode-prefix-1",
+        "BeforeRatio": 0.5004831571453303,
+        "AfterRatio": 0.9994340950974826,
+        "Status": "Equivalent",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 259.5908163265306,
+          "AfterUs": 129.07972742759796,
+          "ObservedPercent": -50.275695706726054
+        },
+        "Unlimited": {
+          "BeforeUs": 130.14126984126986,
+          "AfterUs": 128.7352839931153,
+          "ObservedPercent": -1.0803535649140383
+        }
+      },
+      {
+        "Id": "projection/unicode-prefix-4",
+        "BeforeRatio": 0.20100015527355444,
+        "AfterRatio": 1.0007620836765014,
+        "Status": "Equivalent",
+        "NativeExclusion": null,
+        "NativeNfa": {
+          "BeforeUs": 647.7398305084746,
+          "AfterUs": 128.669795221843,
+          "ObservedPercent": -80.13557463019721
+        },
+        "Unlimited": {
+          "BeforeUs": 129.94065743944637,
+          "AfterUs": 129.47756849315067,
+          "ObservedPercent": -0.3563849494231608
+        }
+      }
+    ],
+    "Note": "Different benchmark protocol/source, same producer images. Native projection cost correction, not a producer speedup. Frozen Full remains its original source/protocol; no new Full claim."
+  },
+  "Presentation": {
+    "FullSource": "d7e28bd3e7315194312df47506e37a190f65b1b1",
+    "PosixComparatorSource": "4b05fff2bb0c90087403e57e39ba14198dacf717",
+    "FrozenProducersPreserved": true,
+    "MeasurementsRepeated": false,
+    "PackagesRepacked": false,
+    "OfflineWritersVerified": 4,
+    "BothRuntimeSourceGuardsPassed": true
+  },
+  "PriorImmutableAssetsPreserved": 548,
+  "CurrentCanonicalAssets": 556,
+  "Packages": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.87.nupkg",
+      "PackageSha256": "5CCBDBB0300B73CAF451BBDC9C2F27BBB55E12E0AE1C2B3615F02024CDB82518",
+      "PackageSha512Base64": "N+Iv4ut/h/vMmvvMwp9lFdwg+j/xvWJC7GmcQpmgek+gYd51/WB/D8LkOS6xoGuuFx00px3UAxd298IwYN7yHg==",
+      "AssemblySha256": "1447E1EE59A11C721557CF4F7F8C48A23DD22EF22D18D81EB02EACF8CBCADF1D",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "62A707CF88627D7578074306F0A8A0AAED635B088DC66AF4556E4C711C44B073",
+      "PdbSha256": "D21DA5EBDA888249451DDA9619E9596FD89497BA9A946C18942020C2120EC567"
+    },
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.87.nupkg",
+      "PackageSha256": "5CCBDBB0300B73CAF451BBDC9C2F27BBB55E12E0AE1C2B3615F02024CDB82518",
+      "PackageSha512Base64": "N+Iv4ut/h/vMmvvMwp9lFdwg+j/xvWJC7GmcQpmgek+gYd51/WB/D8LkOS6xoGuuFx00px3UAxd298IwYN7yHg==",
+      "AssemblySha256": "5FE0FB38B809BEBC153EB804548B9B9D4B000B2F18AFA6E6A4D504300F0E4579",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "62A707CF88627D7578074306F0A8A0AAED635B088DC66AF4556E4C711C44B073",
+      "PdbSha256": "01C3D29AE826C4CBD2433CB52BBE93EEF9708A504AD51A4E4C38D6EB3E0E8C51"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.87.nupkg",
+      "PackageSha256": "6036D5F76DEEF1BB7A78C4ECCF64948FF6BAFCD4F8E4BDC8B1557A0E5277E600",
+      "PackageSha512Base64": "4dRsr+n0SXePubZttU5nDDLoJXLP7zqdPujn6+WYtqIvggdDt6h5jXMURJ3SkmtQ+srhy3EvVaLr3swL5K7liw==",
+      "AssemblySha256": "6805242E192AF90E71FF99A5B0E663FBFD7F836A4D5FE592A90EAE1A25DF7EB8",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "7A969D54369E2769A56847CC3EE1364FA092E16BFA613B2E219BFD4DA2555A34",
+      "PdbSha256": "3E891F4A99FE55AF558F950B897746568469B8603B1B443259223C93A6B1419B"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.87.nupkg",
+      "PackageSha256": "6036D5F76DEEF1BB7A78C4ECCF64948FF6BAFCD4F8E4BDC8B1557A0E5277E600",
+      "PackageSha512Base64": "4dRsr+n0SXePubZttU5nDDLoJXLP7zqdPujn6+WYtqIvggdDt6h5jXMURJ3SkmtQ+srhy3EvVaLr3swL5K7liw==",
+      "AssemblySha256": "47B3CC8167741039F14C21BF85AD125D339EEB1421C374D091903B582D915A7D",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "7A969D54369E2769A56847CC3EE1364FA092E16BFA613B2E219BFD4DA2555A34",
+      "PdbSha256": "C86533D4D754616C5995A8A618843AE4249E05CA68B98E1880B78A8EE1957B43"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.87.nupkg",
+      "PackageSha256": "FCEF4BACE3D6D4A029BAD5A82A97E897A3B614B1EFBF630A841D48C708135450",
+      "PackageSha512Base64": "19LvHqDFrHgJ88wTc9iqnucFoPL4tys+3Ibwy7aLcIGM/TThBWxrIBM7+039dWPOB7REY2zQFujHcxf0Uz0oBg==",
+      "AssemblySha256": "0CA8F353756BBE1161175EF135BB91F0E108FB25C067C7CEDE8DFD63957309F6",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "6705ED8C0127D6281243134789648020055B2273340EC777F7CAD95A4650629D",
+      "PdbSha256": "6C4D1CEFC0841CA2150650F6BACE8E37A36D564EF9890624291CACBEA05BECA7"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.87.nupkg",
+      "PackageSha256": "FCEF4BACE3D6D4A029BAD5A82A97E897A3B614B1EFBF630A841D48C708135450",
+      "PackageSha512Base64": "19LvHqDFrHgJ88wTc9iqnucFoPL4tys+3Ibwy7aLcIGM/TThBWxrIBM7+039dWPOB7REY2zQFujHcxf0Uz0oBg==",
+      "AssemblySha256": "BB2DFAA837935F647F9406FDD5229A8DBC454E1E9E2364BC41E6BF8FFDCCE25C",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "6705ED8C0127D6281243134789648020055B2273340EC777F7CAD95A4650629D",
+      "PdbSha256": "DF2C560B3BEE65498BF568EDD72E518DBF7CF9AED612B8F086B59F3D5C36E8BB"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.87.nupkg",
+      "PackageSha256": "2DAAFBE4484EFFC598183B7B6AE7A28422709325ABBE0271B356F565B85C9E2C",
+      "PackageSha512Base64": "AOdr0ebL+z7kG8p/XPHvpd9mcBYMSZsE7uTbaK9GM3TRTYtxYFkI2nkSf0GniLmgWwIlyXByR6ZmpaU0xC/hvw==",
+      "AssemblySha256": "9DF7A0138589DF48F62E70E617157743E10991B237FED838BB3444A5EE42149A",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "38634E5200B5F2BE0D6D7D8C9D992F0453DD479CDCF9175BED385D8684B29542",
+      "PdbSha256": "7B6FF73EF76CCAD393F458EAE9B85257C4AEE94A80EA83C93E74C4A0E336A7CE"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.87",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.87.nupkg",
+      "PackageSha256": "2DAAFBE4484EFFC598183B7B6AE7A28422709325ABBE0271B356F565B85C9E2C",
+      "PackageSha512Base64": "AOdr0ebL+z7kG8p/XPHvpd9mcBYMSZsE7uTbaK9GM3TRTYtxYFkI2nkSf0GniLmgWwIlyXByR6ZmpaU0xC/hvw==",
+      "AssemblySha256": "526B84FD54741D6690B71E0C445246CFBAB2AE8A9CD95EE1BD13109B5F060B15",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.87.snupkg",
+      "SymbolSha256": "38634E5200B5F2BE0D6D7D8C9D992F0453DD479CDCF9175BED385D8684B29542",
+      "PdbSha256": "5D6DF3628777C5644AC47E6F576F4A41284018F1A57B7DE3E193DE1754151AE7"
+    }
+  ],
+  "WindowsAndLinuxSamePackageBytes": true,
+  "PerformanceProducerPlatform": "Linux source-built d7e28bd3; exact Windows-produced package acceptance is separate",
+  "Published": false,
+  "Adopted": false,
+  "LocalAcceptanceSha256": "93FF5265EE8BDF8F2A1AB023FB89291EF5ADEDE9A651E88B1DC176AA6491933B",
+  "RemainingFairnessWork": "Python coordinate-valued result materialization; other text operations retain their existing protocol."
+}
