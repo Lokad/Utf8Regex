@@ -1364,9 +1364,20 @@ public sealed partial class Utf8Regex
             Utf8ValidationResult countValidation;
             if (_compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount)
             {
-                if (!TryUseAsciiInputValidationShortcut(input))
+                // This ASCII scan exists only to prove strict validity. Trusted
+                // text needs no such pass. Reuse a successful proof when the
+                // exact literal starts with a byte an ASCII subject cannot have.
+                if (InputValidation == Utf8InputValidation.Validate)
                 {
-                    Utf8Validation.CheckSubject(input, InputValidation);
+                    if (!TryUseAsciiInputValidationShortcut(input))
+                    {
+                        Utf8Validation.CheckSubject(input, InputValidation);
+                    }
+                    else if (_preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+                        _preparedRegex.LiteralUtf8 is { Length: > 0 } literal && literal[0] >= 0x80)
+                    {
+                        return 0;
+                    }
                 }
 
                 countValidation = default;

@@ -10,6 +10,79 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CountValidationMetadataTests
 {
     [Theory]
+    [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("abcé")] [InlineData("needle")] [InlineData("é|a")]
+    public void LiteralCountsPreserveBothTextPoliciesAtBorrowedAsciiAndUnicodeTails(string pattern)
+    {
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+        {
+            var reference = new Regex(pattern, options);
+            var strict = new Utf8Regex(pattern, options);
+            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
+            foreach (var length in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 127, 128, 4095, 4096 })
+            foreach (var tail in new[] { "", "é😀 夏洛克·福尔摩斯 abcé needle" })
+            {
+                var text = new string('a', length) + tail;
+                var bytes = Encoding.UTF8.GetBytes(text);
+                var storage = new byte[bytes.Length + 13];
+                Array.Fill(storage, (byte)0xff);
+                bytes.CopyTo(storage.AsSpan(5));
+                var expected = reference.Count(text);
+                Assert.Equal(expected, strict.Count(storage.AsSpan(5, bytes.Length)));
+                Assert.Equal(expected, trusted.Count(storage.AsSpan(5, bytes.Length)));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
+    public void UnicodeLiteralMissStillRejectsMalformedWholeSubject(string pattern)
+    {
+        foreach (var length in new[] { 0, 63, 4096 })
+        foreach (var suffix in new byte[][] { [0xff], [0xc2], [0xf0, 0x9f] })
+        {
+            var input = Encoding.UTF8.GetBytes(new string('a', length)).Concat(suffix).ToArray();
+            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input));
+            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+            {
+                var regex = new Utf8Regex(pattern, options);
+                Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.Count(input)).Message);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void UnicodeLiteralMissKeepsOriginalWorkAndInterruption(bool expire)
+    {
+        var input = Encoding.ASCII.GetBytes(new string('a', 262144));
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var limited = new Utf8Regex("夏洛克·福尔摩斯", resourcePolicy: new() { MaxWorkSteps = 1 }, inputValidation: policy);
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
+            long ticks = 0;
+            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+            using var source = new CancellationTokenSource();
+            var regex = new Utf8Regex("夏洛克·福尔摩斯", matchTimeout: TimeSpan.FromMilliseconds(20), inputValidation: policy);
+            var entered = false;
+            var session = Utf8SearchDiagnosticsSession.Start(_ =>
+            {
+                entered = true;
+                if (expire) ticks = 50;
+                else source.Cancel();
+            });
+            try
+            {
+                if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, source.Token));
+                else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
+                Assert.True(entered);
+            }
+            finally { session.Complete(); }
+        }
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2045)] [InlineData(2046)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
     public void BorrowedAsciiProofKeepsBlockWorkAndFullCoordinateValidation(int prefix)
