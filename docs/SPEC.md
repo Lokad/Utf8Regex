@@ -156,6 +156,14 @@ impossible starts can reduce work and avoid local scratch; enclosing storage loa
 the selected subject-validation policy and final interruption/admission still
 apply.
 
+A complete LTR backtracking root containing only a word-boundary instruction and
+Accept can omit general VM dispatch when capture history is not requested. It
+shares the VM's complete-neighbor predicate, including profile-specific word sets.
+Scalar-start checks, initial workspace admission/reset, entry/final work charges
+and original token checks remain. Deadline polling keeps its existing step cadence;
+operation/cursor publication retains its original checks. No extra state or
+allocation is introduced. RTL, NonBacktracking and extended roots keep their paths.
+
 Boolean/count/value matching share the same conservative unobserved-capture proof.
 Eligible owned backtracking programs omit capture slots and their trails when
 captures cannot affect matching. Backreferences, conditions, lookarounds, balancing,
