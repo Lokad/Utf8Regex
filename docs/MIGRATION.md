@@ -143,6 +143,12 @@ covers validation, matching, required shaping and cursor waits. Callbacks cannot
 be forcibly interrupted; library copying/encoding of returned output is covered.
 Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decoding.
 
+PythonRe callback substitutions with `count: 1` now project coordinates only
+through participating capture ends, including lookarounds. They still materialize
+the required complete output and validate raw-byte callback output. Avoiding an
+unused suffix map can lower working capacity and work requirements; owned callback
+snapshots, original interruption and other replacement counts keep their contracts.
+
 Core NonBacktracking preparation now meters groups of at most 64 size-scan bytes,
 64 scalar offsets or64 state cells, with token/deadline checks before every group.
 Scanning prepared candidate starts similarly admits at most 64 scalar-boundary

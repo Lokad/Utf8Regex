@@ -502,8 +502,11 @@ otherwise they count only the prefix and range requested by that value. String
 output sizes its selected range without describing an unrelated subject suffix.
 One-shot detailed results and capture contexts prepare coordinates only through
 the furthest participating capture end, including captures inside lookarounds.
-They do not describe or map an unrelated suffix. Repeated detailed iteration,
-callbacks and durable cursors retain their shared whole-subject coordinate map.
+They do not describe or map an unrelated suffix. Callback substitutions limited
+to one replacement use that same final-result projection before invoking the
+callback. They still copy the complete required output and validate assembled
+raw-byte callback output. Repeated detailed iteration, callbacks with other
+replacement counts and durable cursors retain their shared whole-subject map.
 This reduces one-shot work and modeled map capacity; finite requirements can fall.
 Borrowed contexts retain their existing unchanged-input lifetime contract, while
 owned detailed text remains independent of the input and temporary map.

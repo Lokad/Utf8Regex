@@ -544,9 +544,15 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
-        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
-                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries, Count: count),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names, int Count) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                {
+                    // A one-replacement operation cannot advance again. Reuse
+                    // one-shot projection through every participating capture,
+                    // including lookahead, without mapping the unused suffix.
+                    if (s.Count == 1) cursor.PrepareOneShotProjection();
+                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names)));
+                },
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 true, false, out _, out var scalarResult, out _);
         return scalarResult;
@@ -601,9 +607,12 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
-        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
-                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries, Count: count),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names, int Count) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                {
+                    if (s.Count == 1) cursor.PrepareOneShotProjection();
+                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names)));
+                },
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 false, false, out var scalarResult, out _, out _);
         return scalarResult;
@@ -697,9 +706,12 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
-        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
-                    cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+        SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries, Count: count),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names, int Count) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                {
+                    if (s.Count == 1) cursor.PrepareOneShotProjection();
+                    cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names)));
+                },
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 false, true, out var scalarResult, out _, out _);
         return scalarResult;
