@@ -517,7 +517,8 @@ public sealed partial class Utf8Regex
         // Unicode elsewhere in the subject does not require scalar discovery.
         var scalarAlignedLiteral = _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
             NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals ||
+             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase && !_hasCaptures) &&
             (Options & RegexOptions.CultureInvariant) != 0;
         if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
@@ -1258,40 +1259,6 @@ public sealed partial class Utf8Regex
             }
 
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());
-        }
-
-        if (CanValidateKelvinSignDuringNativeCount())
-        {
-            bool containsKelvinSign;
-            Utf8ValidationResult kelvinValidation = default;
-            if (InputValidation == Utf8InputValidation.Validate)
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSubjectValidation();
-                kelvinValidation = Utf8InputAnalyzer.ValidateOnly(input, out containsKelvinSign);
-            }
-            else containsKelvinSign = ContainsKelvinSign(input);
-            if (containsKelvinSign && !ScalarVerifierServesInput(input))
-            {
-                var kelvinInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken)
-                    { InputValidation = InputValidation, SubjectValidationCompleted = true };
-                return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref kelvinInvocation);
-            }
-
-            // Nonempty unconstrained folded-literal Count consumes no coordinates
-            // or ASCII flag. Keep metadata for other compiled cursor consumers.
-            if (InputValidation == Utf8InputValidation.AssumeValid &&
-                (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase ||
-                 _preparedRegex.SearchPlan.HasBoundaryRequirements ||
-                 _preparedRegex.SearchPlan.HasTrailingLiteralRequirement))
-                kelvinValidation = Utf8Validation.DescribeValid(input);
-
-            if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
-                return 0;
-            }
-
-            return CountViaCompiledEngine(input, kelvinValidation, CreateExecutionBudget());
         }
 
         if (ShouldUseKelvinSignFallback(input))

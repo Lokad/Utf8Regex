@@ -11,6 +11,41 @@ public sealed class Utf8InvariantFoldedCountTests
 {
     private const RegexOptions Invariant = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
+    [Theory]
+    [InlineData("kit")] [InlineData("k")]
+    [InlineData("Sherlock Holmes")] [InlineData("John Watson")]
+    public void MixedTextFoldedLiteralPublicResultsKeepScalarByteAndInteropCoordinates(string pattern)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+        foreach (var tail in new[] { "", " KIT" })
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var text = "\0é😀 ſ Iİı KIT kit Sherlock HOLMES JOHN WATSON é" + tail;
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var options = Invariant | mode;
+            var reference = new Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            Assert.Equal(reference.IsMatch(text), regex.IsMatch(bytes));
+            Assert.Equal(reference.Count(text), regex.Count(bytes));
+            var expected = reference.Matches(text).Select(m => (m.Index, m.Length,
+                Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), Encoding.UTF8.GetByteCount(m.Value))).ToArray();
+            var actual = new List<(int, int, int, int)>();
+            foreach (var match in regex.EnumerateMatches(bytes))
+                actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected, actual);
+            var first = regex.Match(bytes);
+            Assert.Equal(expected[0], (first.IndexInUtf16, first.LengthInUtf16, first.IndexInBytes, first.LengthInBytes));
+            Assert.Equal(reference.Replace(text, "$0:X"), regex.ReplaceToString(bytes, "$0:X"));
+            Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
+            if (mode != RegexOptions.RightToLeft)
+            {
+                var parts = new List<string>();
+                foreach (var part in regex.EnumerateSplits(bytes)) parts.Add(part.GetValueString());
+                Assert.Equal(reference.Split(text), parts);
+            }
+        }
+    }
+
     [Fact]
     public void KelvinIsTheOnlyInvariantNonAsciiAliasOfAnAsciiNeedle()
     {

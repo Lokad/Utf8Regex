@@ -624,14 +624,6 @@ public sealed partial class Utf8Regex
         => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
         Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input);
 
-    private bool CanValidateKelvinSignDuringNativeCount()
-        => _requiresKelvinSignFallback &&
-           (Options & RegexOptions.CultureInvariant) != 0 &&
-           !UsesRightToLeft() &&
-           _compiledEngineRuntime.SupportsWellFormedOnlyCount &&
-           _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase or
-               NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
-
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
         => input.IndexOf("K"u8) >= 0;
 
