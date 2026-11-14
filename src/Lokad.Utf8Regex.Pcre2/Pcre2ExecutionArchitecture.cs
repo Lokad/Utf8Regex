@@ -2529,13 +2529,14 @@ internal static class Pcre2GlobalOperationDriver
             repeat.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
             (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
             repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet &&
-            (input.IsAscii ||
+            (input.IsAscii || start.Value == input.ByteLength ||
              HasOnlyPositiveAsciiRanges(repeat.Token.CharacterClass, ref invocation) ||
              Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
         {
             // Positive ASCII range unions consume only scalar-aligned bytes;
             // every byte of another scalar is excluded, so no ASCII subject
             // classification is needed. Other classes keep the ASCII proof.
+            // An empty suffix is already ASCII and needs no class-term proof.
             // A complete greedy root selects each maximal member run; shorter
             // runs cannot qualify at a suffix.
             var asciiBudget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
