@@ -1,0 +1,366 @@
+{
+  "Decision": "Accept existing strict ASCII proof reuse and omit trusted validity-only classification.",
+  "CampaignClosed": true,
+  "NoFurtherTiming": true,
+  "PublicComparison": {
+    "Acceptance": {
+      "Before": "804ff869d1e643ff2428339c22e383bef52e23c6",
+      "After": "09ce19dd962656294d110380e199dd9e352b1844",
+      "Comparisons": 1,
+      "Confirmations": 0,
+      "CallerUnchanged": true,
+      "EqualPublicCounts": true,
+      "OrdinaryProducerProcesses": true,
+      "TargetSampleMs": 250,
+      "WarmupMs": 1000,
+      "LinuxFocusedChecks": [
+        {
+          "Framework": "net10.0",
+          "Counts": {
+            "total": "494",
+            "executed": "494",
+            "passed": "494",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        },
+        {
+          "Framework": "net11.0",
+          "Counts": {
+            "total": "494",
+            "executed": "494",
+            "passed": "494",
+            "failed": "0",
+            "error": "0",
+            "timeout": "0",
+            "aborted": "0",
+            "inconclusive": "0",
+            "passedButRunAborted": "0",
+            "notRunnable": "0",
+            "notExecuted": "0",
+            "disconnected": "0",
+            "warning": "0",
+            "completed": "0",
+            "inProgress": "0",
+            "pending": "0"
+          }
+        }
+      ],
+      "Controls": [
+        "unaffected-ascii-literal",
+        "unaffected-finite-live"
+      ],
+      "Scope": "Reuse existing strict ASCII validity proof; trusted path omits this validity-only classification. Each policy is compared with itself. No cross-policy or new comparator parity claim."
+    },
+    "Rows": [
+      {
+        "Id": "unicode-lead-ascii-miss",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 28.231055549270277,
+          "AfterUs": 7.731814122501771,
+          "ObservedPercent": -72.6123803305625,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            27.990066749632312,
+            28.771976467926237
+          ],
+          "AfterRangeUs": [
+            7.684959812767531,
+            7.833701844609368
+          ],
+          "MinimumSampleMs": 247.4042
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 28.30290855590765,
+          "AfterUs": 20.515459702986817,
+          "ObservedPercent": -27.51465927092982,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            28.096310547759167,
+            28.750260298777725
+          ],
+          "AfterRangeUs": [
+            20.39384281661939,
+            20.969798097780743
+          ],
+          "MinimumSampleMs": 244.4406
+        }
+      },
+      {
+        "Id": "unicode-tail-ascii-miss",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 25.925226350296597,
+          "AfterUs": 23.989582539077393,
+          "ObservedPercent": -7.46625616712141,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            25.758091372671455,
+            26.20361119783536
+          ],
+          "AfterRangeUs": [
+            23.886027449485322,
+            24.281042699199393
+          ],
+          "MinimumSampleMs": 247.5095
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 25.927542548775424,
+          "AfterUs": 16.68892742796158,
+          "ObservedPercent": -35.63243644643133,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            25.81389580738896,
+            26.119157326691575
+          ],
+          "AfterRangeUs": [
+            16.549166221985057,
+            20.206463447171824
+          ],
+          "MinimumSampleMs": 248.1051
+        }
+      },
+      {
+        "Id": "chinese",
+        "InputBytes": 813478,
+        "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+        "ExpectedCount": 30,
+        "PublicStrictCount": {
+          "BeforeUs": 67.42010854816826,
+          "AfterUs": 67.55631875503086,
+          "ObservedPercent": 0.2020320195202263,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            67.20181818181818,
+            68.26485753052917
+          ],
+          "AfterRangeUs": [
+            67.04719613630266,
+            68.26187281996243
+          ],
+          "MinimumSampleMs": 247.6387
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 21.676710807347288,
+          "AfterUs": 21.607777682916417,
+          "ObservedPercent": -0.3180054623762696,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            21.474164886800512,
+            21.863280649295174
+          ],
+          "AfterRangeUs": [
+            21.34257662426364,
+            21.788371894476224
+          ],
+          "MinimumSampleMs": 249.9856
+        }
+      },
+      {
+        "Id": "dense-mixed",
+        "InputBytes": 94208,
+        "InputSha256": "34F1D0F3AFC6D3654D758D20BB6C2B64B23CE6B90062CE0D1FE8652F9BF36313",
+        "ExpectedCount": 4096,
+        "PublicStrictCount": {
+          "BeforeUs": 57.97783352337514,
+          "AfterUs": 58.46364681535985,
+          "ObservedPercent": 0.8379293644852126,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            57.69256556442417,
+            58.406841505131126
+          ],
+          "AfterRangeUs": [
+            57.76463554840193,
+            59.288043228328355
+          ],
+          "MinimumSampleMs": 251.2184
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 49.89233246125981,
+          "AfterUs": 50.263330049261086,
+          "ObservedPercent": 0.7435963998863926,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            49.36999396256792,
+            50.24918494666935
+          ],
+          "AfterRangeUs": [
+            49.81773399014779,
+            50.523310344827586
+          ],
+          "MinimumSampleMs": 245.3195
+        }
+      },
+      {
+        "Id": "unaffected-ascii-literal",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 28.104062362758015,
+          "AfterUs": 27.851241712551975,
+          "ObservedPercent": -0.8995875647538565,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            27.999033816425122,
+            28.524187527448397
+          ],
+          "AfterRangeUs": [
+            27.707382852005843,
+            28.114170131475447
+          ],
+          "MinimumSampleMs": 246.568
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 28.094714866498187,
+          "AfterUs": 28.03464133123454,
+          "ObservedPercent": -0.2138250398664221,
+          "BeforeBytes": 0,
+          "AfterBytes": 0,
+          "BeforeRangeUs": [
+            27.864190748269422,
+            29.440171409735193
+          ],
+          "AfterRangeUs": [
+            27.831987856982238,
+            28.309096019788623
+          ],
+          "MinimumSampleMs": 247.5377
+        }
+      },
+      {
+        "Id": "unaffected-finite-live",
+        "InputBytes": 813478,
+        "InputSha256": "0F71B81107FE211AB672F853AE4006768CE22B2088F796C081FABB96A2FF3C77",
+        "ExpectedCount": 0,
+        "PublicStrictCount": {
+          "BeforeUs": 34.81687259747392,
+          "AfterUs": 34.631936595451414,
+          "ObservedPercent": -0.5311677592660047,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            34.42504118616145,
+            35.020702910488744
+          ],
+          "AfterRangeUs": [
+            34.18024810475534,
+            35.05724328049621
+          ],
+          "MinimumSampleMs": 247.9777
+        },
+        "PublicTrustedCount": {
+          "BeforeUs": 24.14556783919598,
+          "AfterUs": 23.806567510141008,
+          "ObservedPercent": -1.4039857389672394,
+          "BeforeBytes": 112,
+          "AfterBytes": 112,
+          "BeforeRangeUs": [
+            23.891386934673367,
+            24.419085427135677
+          ],
+          "AfterRangeUs": [
+            23.62199150086923,
+            24.042959242804713
+          ],
+          "MinimumSampleMs": 237.7193
+        }
+      }
+    ],
+    "BeforePlacement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+    "AfterPlacement": "least-contended allowed processor (0x10; Linux efficiency class unknown)",
+    "RawSha256": "534A9EA0D57591EB7C26DF0680D1D69554B36204F9DA79E4F707B04A4552166E",
+    "OffVmVerified": true,
+    "KeeperReleased": true,
+    "UnusedConfirmationAvailableOnlyIfNoisePreventsDecision": true
+  },
+  "WindowsCoreChecksPerTarget": 494,
+  "WindowsPythonChecksPerTarget": 237,
+  "LinuxPython": {
+    "TestsSource": "30a36fe74fd8829c7736861457a79738bc54a906",
+    "MeasuredCoreSource": "09ce19dd",
+    "CoreImagesUnchanged": {
+      "/home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex/bin/Release/net10.0/Lokad.Utf8Regex.pdb": "D05BB4A15C99B580A8ED8406B0A1A51A69581014E2CF6B0CA8863A1B7A02FB7C",
+      "/home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex/bin/Release/net10.0/Lokad.Utf8Regex.dll": "B639FA0EE1C8D682F1AC6F97D7806EE0F2B2A95CBCA6F7625F3BC3AB2E678104",
+      "/home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb": "45EB0590171FA4D3D8FA1C3CFA46FB421E4837E35F9C3E783840007811C7842B",
+      "/home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll": "529223A2ED51857BE6E568085342CA214B5AA05536D48A2304F548E576BE03D5"
+    },
+    "Checks": [
+      {
+        "Framework": "net10.0",
+        "Counts": {
+          "total": "237",
+          "executed": "237",
+          "passed": "237",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      {
+        "Framework": "net11.0",
+        "Counts": {
+          "total": "237",
+          "executed": "237",
+          "passed": "237",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    ],
+    "NoRemeasurement": true
+  },
+  "PythonRawSha256": "49392A58FBC2014AD76AD12DFA51A461B7225EF7F8CC91E89C9935FC73EF6B7A",
+  "ImmutablePackageAndSymbolFilesVerified": 540,
+  "PackagesRepacked": false,
+  "FullRefreshRepeated": false,
+  "NewCanonicalParityClaim": false,
+  "ProductionSource": "09ce19dd962656294d110380e199dd9e352b1844"
+}
