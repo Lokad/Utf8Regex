@@ -1,0 +1,334 @@
+{
+  "Version": "0.5.0-dev.85",
+  "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+  "Complete": true,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Posix"
+  ],
+  "Targets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ExactCorePins": true,
+  "Windows": {
+    "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+    "Version": "0.5.0-dev.85",
+    "WindowsQualified": true,
+    "Fixtures": 10,
+    "Checks": 112422.0,
+    "Seconds": 654.9543383,
+    "Published": false
+  },
+  "Linux": {
+    "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+    "Version": "0.5.0-dev.85",
+    "Sha256": "603010734CB9708A9309D46EF3C130E1997BB289047615D69449FB703B15D775",
+    "Bytes": 46741877,
+    "OffVmVerified": true,
+    "TerminalExit": "0",
+    "Assets": 8,
+    "OriginalChecks": "Awk19/Lython118 perTFM; public probes/root loans0",
+    "DetachedFixtures": 10,
+    "DetachedChecks": 112422.0,
+    "Repacked": false,
+    "Rebuilt": false,
+    "RestoreAudits": 28,
+    "Complete": true,
+    "CheckedTrxFiles": 14
+  },
+  "OriginalWindowsConsumers": {
+    "Version": "0.5.0-dev.85",
+    "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+    "Complete": true,
+    "Scope": "Actual copied Awk adapter, matching committed Lython runtime/provider, and public native/funded producer APIs consume immutable Windows package assets. No producer/consumer checkout edits or package repacking. Compatibility is separate from downstream adoption/POSIX acceptance.",
+    "Checks": [
+      {
+        "Fixture": "Awk",
+        "Framework": "net10.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "6155E0AC01FE06F9820EA7A222BCB51BE01C50F3834137A5B4E12396575FACD3",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1D5DD91C0CB61AC185DACA11F1CF030B52DE123C247772EE4B2FF9E2B15CD149"
+          }
+        ]
+      },
+      {
+        "Fixture": "Awk",
+        "Framework": "net11.0",
+        "Total": 19,
+        "Passed": 19,
+        "TrxSha256": "AD29B7683316253569F3E72CC47764F6CA3CB23A25829C9900B700FFC0DB730B",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1717BF387D09D9991BC5084E2B9CAA73D030192D97C08A6131FC97991BF2D795"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net10.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "B26EB5EF5EC2A0E93D001C18D95EA6F44180786475C4A86FBD158C79595E33EC",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1D5DD91C0CB61AC185DACA11F1CF030B52DE123C247772EE4B2FF9E2B15CD149"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "95663EB44FE2E080928AF5D1C585C833AC37FBFAEA763D10F9FE49C8C30FA77F"
+          }
+        ]
+      },
+      {
+        "Fixture": "Lython",
+        "Framework": "net11.0",
+        "Total": 118,
+        "Passed": 118,
+        "TrxSha256": "CE65C2293354D7F1FB344A9F454D61C24C6583186448A238A1F35E405EB6A84C",
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1717BF387D09D9991BC5084E2B9CAA73D030192D97C08A6131FC97991BF2D795"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "0C435D3572BE92573FC9943EE9BFE13313B2335223F347A96D643499EF6BEE68"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net10.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1D5DD91C0CB61AC185DACA11F1CF030B52DE123C247772EE4B2FF9E2B15CD149"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "95663EB44FE2E080928AF5D1C585C833AC37FBFAEA763D10F9FE49C8C30FA77F"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "AC9D44BC66C89B82839CFA36115A7D48351CD73B09EF99B81227716CA4E87CCF"
+          }
+        ]
+      },
+      {
+        "Fixture": "PublicProducerApis",
+        "Framework": "net11.0",
+        "Passed": true,
+        "Assets": [
+          {
+            "Id": "Lokad.Utf8Regex",
+            "Sha256": "1717BF387D09D9991BC5084E2B9CAA73D030192D97C08A6131FC97991BF2D795"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.PythonRe",
+            "Sha256": "0C435D3572BE92573FC9943EE9BFE13313B2335223F347A96D643499EF6BEE68"
+          },
+          {
+            "Id": "Lokad.Utf8Regex.Pcre2",
+            "Sha256": "91423C616E1E373AD8622F1B3B56064C10A86F7439D4494DD250772A311F2380"
+          }
+        ]
+      }
+    ]
+  },
+  "OriginalSourceAudit": {
+    "OriginalSha256": "CBD35E993774B928D7D8C054F53A3BEABDFBE8C8024C138CF68253D5BA3C41AB",
+    "FilesCompared": 1565,
+    "ChangedFiles": [
+      "producer-apis/Probe.csproj",
+      "lython/src/Lokad.Lython.Utf8Regex/Lokad.Lython.Utf8Regex.csproj",
+      "awk/adapter/Adapter.csproj"
+    ],
+    "OnlyExactPinsChanged": true,
+    "RepinnedArchiveSha256": "76DAE8BFC882F53E7EFF4E3128BC6081CF5CF456B6A88CCBEC119FA3172C11C0",
+    "Qualified": false
+  },
+  "SourceAuditQualifiedFieldIsPreparatory": true,
+  "CurrentCanonicalPython": {
+    "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+    "RawSha256": "22EB179CA757B046668EFD0B1BAA08912697D6A986D6312163C6CEADFE5D9195",
+    "FinalizationSha256": "B238A9B0B4371060B665C1A57E76728C678AD1E89FF2F796F673028239E5F9B8",
+    "OffVmVerified": true,
+    "Rows": [
+      {
+        "Case": "findall/one-capture-strings",
+        "Status": "CpythonFaster",
+        "ManagedUs": 294.56959064327486,
+        "CpythonUs": 210.8935125,
+        "Ratio": 1.3947067221431455,
+        "AllocatedBytes": 94344
+      },
+      {
+        "Case": "findall/many-capture-strings",
+        "Status": "CpythonFaster",
+        "ManagedUs": 440.95840707964607,
+        "CpythonUs": 347.62808843537414,
+        "Ratio": 1.2694342504098983,
+        "AllocatedBytes": 242008
+      },
+      {
+        "Case": "replacement/evaluator-replace-string",
+        "Status": "CpythonFaster",
+        "ManagedUs": 103.42098765432098,
+        "CpythonUs": 69.34456427604871,
+        "Ratio": 1.491713802261512,
+        "AllocatedBytes": 58832
+      },
+      {
+        "Case": "replacement/evaluator-string",
+        "Status": "CpythonFaster",
+        "ManagedUs": 403.47679999999997,
+        "CpythonUs": 272.52662365591397,
+        "Ratio": 1.479800053812226,
+        "AllocatedBytes": 235520
+      },
+      {
+        "Case": "replacement/evaluator-utf8",
+        "Status": "CpythonFaster",
+        "ManagedUs": 390.83384615384614,
+        "CpythonUs": 275.7611016042781,
+        "Ratio": 1.4125855734546087,
+        "AllocatedBytes": 226304
+      }
+    ],
+    "FullRefresh": false,
+    "OtherProfilesMeasured": false,
+    "Confirmations": 0,
+    "Erratum": "The measurement run completed five cases then its task helper compared a12-character SourceCommit with a40-character revision. Full producer identities/source checks match. No build/timing repeated; only existing receipt checks and offline presentation completed."
+  },
+  "Presentation": {
+    "Source": "bf5c18ec092a2ddd4683fd7c0eee0d08039ee717",
+    "OfflineWritersVerified": 4,
+    "BothRuntimeAffectedSourceGuardsPassed": true,
+    "FrozenProducersPreserved": true,
+    "MeasurementsRepeated": false,
+    "PackagesRepacked": false
+  },
+  "PriorImmutableAssetsPreserved": 532,
+  "CurrentCanonicalAssets": 540,
+  "Packages": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.85.nupkg",
+      "PackageSha256": "D5A9BC6F293B39A1E41554252C3F283EC23D2CB8111E41452997E8669DE89EB9",
+      "PackageSha512Base64": "JioMOCtwlBEhemZifYwZiPgbZAG6DNZNtpuK+niAhyEgygXAOGC4WKdgyiNoQrBhPNETg6W9BzG2JwAySEsbIg==",
+      "AssemblySha256": "1D5DD91C0CB61AC185DACA11F1CF030B52DE123C247772EE4B2FF9E2B15CD149",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "738883C0C0C599CE7D8566904E5D85BDB3BCBAE89EE523588935015691DAFE0C",
+      "PdbSha256": "58DED62A0A0E789FDF4AA8938B68BA55AF3863F70A10872D95D3B6C8FD31C924"
+    },
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.85.nupkg",
+      "PackageSha256": "D5A9BC6F293B39A1E41554252C3F283EC23D2CB8111E41452997E8669DE89EB9",
+      "PackageSha512Base64": "JioMOCtwlBEhemZifYwZiPgbZAG6DNZNtpuK+niAhyEgygXAOGC4WKdgyiNoQrBhPNETg6W9BzG2JwAySEsbIg==",
+      "AssemblySha256": "1717BF387D09D9991BC5084E2B9CAA73D030192D97C08A6131FC97991BF2D795",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "738883C0C0C599CE7D8566904E5D85BDB3BCBAE89EE523588935015691DAFE0C",
+      "PdbSha256": "C33D45E44F5BD20D3BD813F6DB41C275A1568E4A725736BC18ECCAC85A134C96"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.85.nupkg",
+      "PackageSha256": "D864B4DB216AD595A9F2D4292D00A4E3C1040CFFC66A86A7B752276A380475DF",
+      "PackageSha512Base64": "Q7YwnbtpQZlbPJSeoOlY3rpBlP5hb+4RYY4p5BUg18Y+dfZzog+L9b1MnlrSnYK9X384jT+UKeEIUFZNmb6W8w==",
+      "AssemblySha256": "95663EB44FE2E080928AF5D1C585C833AC37FBFAEA763D10F9FE49C8C30FA77F",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "DCE3BDA746B395B3975B1F538E32F7D1BE539261C70DCF040F83973A0BE06C04",
+      "PdbSha256": "949C2C53D36E2DDCB02D52533BDE05C0F05B2AF878F88679904D2445706E6F88"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.85.nupkg",
+      "PackageSha256": "D864B4DB216AD595A9F2D4292D00A4E3C1040CFFC66A86A7B752276A380475DF",
+      "PackageSha512Base64": "Q7YwnbtpQZlbPJSeoOlY3rpBlP5hb+4RYY4p5BUg18Y+dfZzog+L9b1MnlrSnYK9X384jT+UKeEIUFZNmb6W8w==",
+      "AssemblySha256": "0C435D3572BE92573FC9943EE9BFE13313B2335223F347A96D643499EF6BEE68",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "DCE3BDA746B395B3975B1F538E32F7D1BE539261C70DCF040F83973A0BE06C04",
+      "PdbSha256": "C8CCB614A928369325C2ED31018138E0D950B820D57B17217CE62626F05D9882"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.85.nupkg",
+      "PackageSha256": "611624ABB56FAC171A79A71CE24CA2998100E4ACB3201C6D8357D92052BCD628",
+      "PackageSha512Base64": "eG+oxDEQvSPtAUXXQWjeqt/tRCQEH012pH1mtTFm89uf7ITYhO6bKwuQEGBtclal8978AD6OS5V/QH2AB5KyMA==",
+      "AssemblySha256": "AC9D44BC66C89B82839CFA36115A7D48351CD73B09EF99B81227716CA4E87CCF",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "0356BD4F1A84CD83BF62745AFE1B527A088CA6153EB4B0A10DDEC706D3FA5F9D",
+      "PdbSha256": "CBC189F2B7C6FAE7EFF817A52FEFD8966EBF935641113C558C0D83701DCADDE7"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.85.nupkg",
+      "PackageSha256": "611624ABB56FAC171A79A71CE24CA2998100E4ACB3201C6D8357D92052BCD628",
+      "PackageSha512Base64": "eG+oxDEQvSPtAUXXQWjeqt/tRCQEH012pH1mtTFm89uf7ITYhO6bKwuQEGBtclal8978AD6OS5V/QH2AB5KyMA==",
+      "AssemblySha256": "91423C616E1E373AD8622F1B3B56064C10A86F7439D4494DD250772A311F2380",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "0356BD4F1A84CD83BF62745AFE1B527A088CA6153EB4B0A10DDEC706D3FA5F9D",
+      "PdbSha256": "C6B52CE457C62B9921D6F199CC615655EC76032251479B41C426E35E9D1B6D27"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net10.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.85.nupkg",
+      "PackageSha256": "9CAC5C5203522C7C3B16ADCDAA331208E39D30D63423C6D8BF3E7206FAC8CE98",
+      "PackageSha512Base64": "zBWAjpEQGg986/rGw1bwnl0FGxyWnNBflp0S1N77Vesx4JFZ1BSLqapmoDHv6et65HcS0sZBSO3V2bqmZe74sg==",
+      "AssemblySha256": "6D8A2D0F6BA292FE6B745C1A464A30A76A3E2E0B2338E6B722953AC593FB58CC",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "9CD5D9F9359125AC0837F21274A95F0FD00756C3B590EEAD5F01F479921E5627",
+      "PdbSha256": "099D6F531F48E0373440721ED43CFF7DEFE6356399818135B3677A27BFF9BD61"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Posix",
+      "Version": "0.5.0-dev.85",
+      "TargetFramework": "net11.0",
+      "RelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.85.nupkg",
+      "PackageSha256": "9CAC5C5203522C7C3B16ADCDAA331208E39D30D63423C6D8BF3E7206FAC8CE98",
+      "PackageSha512Base64": "zBWAjpEQGg986/rGw1bwnl0FGxyWnNBflp0S1N77Vesx4JFZ1BSLqapmoDHv6et65HcS0sZBSO3V2bqmZe74sg==",
+      "AssemblySha256": "21BE37EACFB2746778B869E1C890D95445267A60AB07B8E0A51F7B3E2A77CFE8",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Posix.0.5.0-dev.85.snupkg",
+      "SymbolSha256": "9CD5D9F9359125AC0837F21274A95F0FD00756C3B590EEAD5F01F479921E5627",
+      "PdbSha256": "6BE101DA582E48CCCC92977D226CFC6E758DC832C6C68D117A34A142C1FB6296"
+    }
+  ],
+  "WindowsAndLinuxSameBytes": true,
+  "LinuxProducersRebuilt": false,
+  "Published": false,
+  "Adopted": false,
+  "FullRefreshRepeated": false,
+  "HistoricalFull": "dev84/source834162df:85 steps,2813.6211465 seconds/46m54; not a dev85 Full result",
+  "LocalAcceptanceSha256": "F3C230DD849654E5BA34B3C699171934963F1C31EFD2F20C169637ADC7DD5601",
+  "Followups": [
+    "PythonSingleCallback-20261114",
+    "PythonByteOutputValidation-20261114",
+    "PythonSharedPrefixCandidate-20261114",
+    "PythonLaterAsciiCandidate-20261114"
+  ]
+}

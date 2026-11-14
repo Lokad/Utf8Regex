@@ -210,11 +210,12 @@ Public PythonRe operations over strict UTF-8, compared with official CPython `re
 
 Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.
 
-Snapshot SHA-256: `6FF9998EC11AB9D29DDC41973B6651EFDD4AED422CD4EFBC2B0D1FA30363C419`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
+Snapshot SHA-256: `2B224A7D31F7F61D8E644B41C4993B11A92E9C4044EBED3F4E942A51CC517F08`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
 
 Public Status: `44` managed faster, `1` equivalent, `34` CPython faster, `7` inconclusive, `4` unqualified.
 
 Measured source `834162dffe2d`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
+Measured source `bf5c18ec092a`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
 
 ### Direct matching
 
@@ -269,11 +270,11 @@ Measured source `834162dffe2d`: .NET 11.0.0; CPython 3.13.2. Selective refreshes
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `findall/one-capture-strings` | `FindAllStrings` | 410.726 us | 209.933 us | CPython faster | 1.96x |
-| `findall/many-capture-strings` | `FindAllStrings` | 671.112 us | 358.517 us | CPython faster | 1.87x |
 | `findall/named-capture-strings` | `FindAllStrings` | 136.867 us | 84.310 us | CPython faster | 1.62x |
+| `findall/one-capture-strings` | `FindAllStrings` | 294.570 us | 210.894 us | CPython faster | 1.39x |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | 81.567 us | 59.195 us | CPython faster | 1.38x |
 | `findall/empty-progression-strings` | `FindAllStrings` | 55.689 us | 43.241 us | CPython faster | 1.28x |
+| `findall/many-capture-strings` | `FindAllStrings` | 440.958 us | 347.628 us | CPython faster | 1.27x |
 | `findall/full-strings` | `FindAllStrings` | 441.376 us | 348.062 us | CPython faster | 1.27x |
 | `findall/optional-capture-strings` | `FindAllStrings` | 53.248 us | 46.947 us | CPython faster | 1.13x |
 | `findall/from-offset-strings` | `FindAllStringsFromOffset` | 15.743 us | 15.373 us | Inconclusive | 1.02x |
@@ -300,9 +301,9 @@ Measured source `834162dffe2d`: .NET 11.0.0; CPython 3.13.2. Selective refreshes
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
 | `replacement/limited-string` | `ReplaceStringLimited` | 1.005 us | 0.431 us | Inconclusive | 2.34x |
-| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 123.909 us | 61.902 us | CPython faster | 2.00x |
-| `replacement/evaluator-string` | `SubnEvaluatorString` | 487.809 us | 267.348 us | CPython faster | 1.83x |
-| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 472.351 us | 264.041 us | CPython faster | 1.79x |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 103.421 us | 69.345 us | CPython faster | 1.49x |
+| `replacement/evaluator-string` | `SubnEvaluatorString` | 403.477 us | 272.527 us | CPython faster | 1.48x |
+| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 390.834 us | 275.761 us | CPython faster | 1.41x |
 | `replacement/named-template-string` | `ReplaceString` | 1.082 us | 0.894 us | CPython faster | 1.21x |
 | `replacement/empty-progression-string` | `ReplaceString` | 26.204 us | 22.446 us | CPython faster | 1.17x |
 | `replacement/fixed-string` | `ReplaceString` | 179.221 us | 166.867 us | CPython faster | 1.08x |
