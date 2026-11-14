@@ -6,6 +6,37 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTerminalCaptureRootTests
 {
+    [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(65536)]
+    public void FirstSeparatedRootPreservesLongRunsAndFailedCandidates(int length)
+    {
+        using var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
+        var word = new string('a', length);
+        var text = "é😀bad-! " + word + "-12 tail-345";
+        var input = Encoding.UTF8.GetBytes(text);
+        var values = regex.FindAllToStrings(input).TupleValues;
+        Assert.Equal(2, values.Length);
+        Assert.Equal(new[] { word, "12" }, values[0]);
+        Assert.Equal(new[] { "tail", "345" }, values[1]);
+        Assert.Empty(regex.FindAllToStrings(Encoding.UTF8.GetBytes(word + "!")).TupleValues);
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext());
+        var first = cursor.Current;
+        Assert.Equal(word, first.Groups[1].ValueText);
+        Assert.Equal(Encoding.UTF8.GetByteCount("é😀bad-! "), first.Groups[1].StartOffsetInBytes);
+        Assert.Equal(2, first.LastIndex);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal("tail", cursor.Current.Groups[1].ValueText);
+        Assert.False(cursor.MoveNext());
+        Assert.Equal(word, first.Groups[1].ValueText);
+    }
+
     [Fact]
     public void CompleteRootPreservesStringsBytesLastIndexAndRetainedCursorAliases()
     {

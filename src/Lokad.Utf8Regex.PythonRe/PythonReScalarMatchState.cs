@@ -430,10 +430,12 @@ internal partial struct PythonReScalarMatchState
                         if (((uint)_position >= (uint)input.Length ||
                             (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow)) &&
                             !SeekCandidate(input)) { _finished = true; return false; }
-                        // The excluded delimiter bounds this first class run.
-                        // Long/no-delimiter prefixes keep window discovery.
-                        var prefix = input.Slice(_position, Math.Min(64, input.Length - _position));
-                        bypassWindow = prefix.IndexOf((byte)delimiter) >= 0;
+                        // A proved complete capture root has no rewind: one
+                        // direct attempt scans its first run once, even without
+                        // a nearby delimiter. Failure resumes window discovery.
+                        // Other roots still need the short delimiter preview.
+                        bypassWindow = _program.HasTerminalCaptureRoot ||
+                            input.Slice(_position, Math.Min(64, input.Length - _position)).IndexOf((byte)delimiter) >= 0;
                     }
                     if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
                     {
