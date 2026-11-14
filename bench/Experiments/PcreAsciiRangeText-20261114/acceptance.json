@@ -1,0 +1,388 @@
+{
+  "Decision": "ACCEPT with retained control movement",
+  "Campaign": "CLOSED",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "Before": "d6a9ccc30f96d4d8bc098caf61b80a18e5f41bf3",
+  "After": "30fce913c2cc947109abac2a02f941f5e3cb142e",
+  "Change": "One positive nonnegated ASCII range proves member-byte scalar alignment. Existing complete class-run Count now admits valid mixed UTF8 without a subject ASCII classifier; no fields/cache/helper/new executor.",
+  "Preserved": [
+    "Native UTF start/lookbehind-window checking and trusted bypass",
+    "Same matching options, scalar semantics and complete counts",
+    "Original synchronous token/deadline and shared sticky denials",
+    "Basic bounded block/candidate metering and preallocation admission",
+    "Unicode/negated/multiple-term/caseless/bounded/lazy/anchored/flagged/diagnostic fallbacks"
+  ],
+  "Revised": "Affected mixed-text Count needs no VM workspace/depth/result storage. Lower requirements and no allowance loan are intentional; numerical work is not version-stable.",
+  "Rows": [
+    {
+      "Id": "mixed-dense/Validate",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 311.7551906565657,
+      "AfterUs": 68.53890914051841,
+      "ObservedPercent": -78.01515060706016,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        309.47381313131314,
+        314.67752904040407
+      ],
+      "AfterRangeUs": [
+        67.98740381991814,
+        68.83649113233288
+      ],
+      "MinimumSampleMs": 245.10326
+    },
+    {
+      "Id": "mixed-dense/AssumeValid",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 308.202535669587,
+      "AfterUs": 65.38132739187418,
+      "ObservedPercent": -78.78624611253453,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        304.7951151439299,
+        309.6299299123905
+      ],
+      "AfterRangeUs": [
+        65.08222857142857,
+        65.78461808650066
+      ],
+      "MinimumSampleMs": 243.531297
+    },
+    {
+      "Id": "ascii-dense/Validate",
+      "InputBytes": 11264,
+      "ExpectedValues": 3072,
+      "BeforeUs": 66.82533271177411,
+      "AfterUs": 65.46852959501558,
+      "ObservedPercent": -2.030372407737324,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        66.10932898241876,
+        67.21235881726159
+      ],
+      "AfterRangeUs": [
+        65.19644055036345,
+        66.45892004153687
+      ],
+      "MinimumSampleMs": 248.174421
+    },
+    {
+      "Id": "ascii-dense/AssumeValid",
+      "InputBytes": 11264,
+      "ExpectedValues": 3072,
+      "BeforeUs": 66.41326919004764,
+      "AfterUs": 65.46655661664394,
+      "ObservedPercent": -1.425487082550625,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        65.5415645844362,
+        67.44252514557967
+      ],
+      "AfterRangeUs": [
+        65.06458717598909,
+        65.89993206002728
+      ],
+      "MinimumSampleMs": 238.461712
+    },
+    {
+      "Id": "mixed-long-runs/Validate",
+      "InputBytes": 32776,
+      "ExpectedValues": 2,
+      "BeforeUs": 244.08937907869483,
+      "AfterUs": 1.8107461942620622,
+      "ObservedPercent": -99.25816264472603,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        242.33637236084454,
+        245.97467562380038
+      ],
+      "AfterRangeUs": [
+        1.8036589373811276,
+        1.8267124181101386
+      ],
+      "MinimumSampleMs": 247.510705
+    },
+    {
+      "Id": "mixed-long-runs/AssumeValid",
+      "InputBytes": 32776,
+      "ExpectedValues": 2,
+      "BeforeUs": 253.72307660878445,
+      "AfterUs": 0.8394429057172331,
+      "ObservedPercent": -99.66914995792379,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        252.00449744637385,
+        256.53689274770176
+      ],
+      "AfterRangeUs": [
+        0.8330479829514605,
+        0.8474599508632858
+      ],
+      "MinimumSampleMs": 245.489244
+    },
+    {
+      "Id": "unchanged-unicode-class/Validate",
+      "InputBytes": 17408,
+      "ExpectedValues": 2048,
+      "BeforeUs": 245.90590810276677,
+      "AfterUs": 251.4595745118191,
+      "ObservedPercent": 2.258451800487604,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        244.33032905138342,
+        247.9739456521739
+      ],
+      "AfterRangeUs": [
+        249.0206577595067,
+        284.02264850976366
+      ],
+      "MinimumSampleMs": 242.2971
+    },
+    {
+      "Id": "unchanged-unicode-class/AssumeValid",
+      "InputBytes": 17408,
+      "ExpectedValues": 2048,
+      "BeforeUs": 243.17184356435644,
+      "AfterUs": 247.86536236236233,
+      "ObservedPercent": 1.9301242813351216,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        241.8861524752475,
+        246.05174554455442
+      ],
+      "AfterRangeUs": [
+        246.5172072072072,
+        250.7423883883884
+      ],
+      "MinimumSampleMs": 244.305014
+    },
+    {
+      "Id": "unchanged-bounded/Validate",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 290.7164736225088,
+      "AfterUs": 293.1738055878929,
+      "ObservedPercent": 0.8452675332650594,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        288.20520398593203,
+        293.68070926143025
+      ],
+      "AfterRangeUs": [
+        291.50367054714786,
+        295.5175401629802
+      ],
+      "MinimumSampleMs": 245.839039
+    },
+    {
+      "Id": "unchanged-bounded/AssumeValid",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 291.5554484356894,
+      "AfterUs": 292.1532985948478,
+      "ObservedPercent": 0.20505538907473753,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        290.6776894553882,
+        293.7006384704519
+      ],
+      "AfterRangeUs": [
+        290.9670093676815,
+        293.4084742388759
+      ],
+      "MinimumSampleMs": 248.485826
+    },
+    {
+      "Id": "finite-mixed/Validate",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 2639.0177419354836,
+      "AfterUs": 67.75335424052359,
+      "ObservedPercent": -97.43262983177853,
+      "BeforeBytes": 4546672,
+      "AfterBytes": 112,
+      "BeforeRangeUs": [
+        2597.8572580645164,
+        2851.3309462365596
+      ],
+      "AfterRangeUs": [
+        67.44441396236705,
+        68.66623452413417
+      ],
+      "MinimumSampleMs": 241.600725
+    },
+    {
+      "Id": "finite-mixed/AssumeValid",
+      "InputBytes": 17408,
+      "ExpectedValues": 3072,
+      "BeforeUs": 2660.0470210526314,
+      "AfterUs": 66.6215453583708,
+      "ObservedPercent": -97.49547489833441,
+      "BeforeBytes": 4546672,
+      "AfterBytes": 112,
+      "BeforeRangeUs": [
+        2636.376410526316,
+        2698.244768421053
+      ],
+      "AfterRangeUs": [
+        65.9685043639249,
+        67.55796958476593
+      ],
+      "MinimumSampleMs": 249.426915
+    },
+    {
+      "Id": "unchanged-core-count",
+      "InputBytes": 17408,
+      "ExpectedValues": 1024,
+      "BeforeUs": 12.071766910772789,
+      "AfterUs": 12.147681941632511,
+      "ObservedPercent": 0.6288642865691418,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeRangeUs": [
+        11.986330795914435,
+        12.16785816149547
+      ],
+      "AfterRangeUs": [
+        12.117156782381118,
+        12.19279833094662
+      ],
+      "MinimumSampleMs": 245.384542
+    }
+  ],
+  "LowCapacityPreflight": {
+    "before": [
+      {
+        "Policy": "Validate",
+        "Count": null,
+        "Status": "HeapLimit"
+      },
+      {
+        "Policy": "AssumeValid",
+        "Count": null,
+        "Status": "HeapLimit"
+      }
+    ],
+    "after": [
+      {
+        "Policy": "Validate",
+        "Count": 3,
+        "Status": "Success"
+      },
+      {
+        "Policy": "AssumeValid",
+        "Count": 3,
+        "Status": "Success"
+      }
+    ]
+  },
+  "WindowsFocused": [
+    "Passed!  - Failed:     0, Passed:   288, Skipped:     0, Total:   288, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+    "Passed!  - Failed:     0, Passed:   288, Skipped:     0, Total:   288, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)"
+  ],
+  "LinuxFocused": [
+    {
+      "Profile": "pcre",
+      "Framework": "net10.0",
+      "Counts": {
+        "total": "288",
+        "executed": "288",
+        "passed": "288",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "Profile": "pcre",
+      "Framework": "net11.0",
+      "Counts": {
+        "total": "288",
+        "executed": "288",
+        "passed": "288",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "BeforeProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "44F10113C58EC24272415CCA7B8DD53E0AAF0AB715AAA2A7E7CF44DBC6AE5D48"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "26837BF382337D80A4A53C7602AE5C1C5493525C12736AF8D9FAD47A1934906D"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "65216C9AB88F8AC5AF14D71C8BA36FE186A569D16338102789986EBCDA3CDD76"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "E18E568BCD24C3C73ED42779C7F3292D1D498CAF87C56C6A65CA5FE97EBD4B01"
+    }
+  ],
+  "AfterProducers": [
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "44F10113C58EC24272415CCA7B8DD53E0AAF0AB715AAA2A7E7CF44DBC6AE5D48"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "26837BF382337D80A4A53C7602AE5C1C5493525C12736AF8D9FAD47A1934906D"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "6994AC64461FEC3648F0D79485ACB083434222750477463482F983B2E5914C16"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "8097492B060600C4D36231C68277AFE4C0CD3B2C983A1D7153A48A6E3AA68A97"
+    }
+  ],
+  "CoreProducerUnchanged": true,
+  "CallerUnchanged": true,
+  "OrdinaryProcesses": true,
+  "RawSha256": "79AEEE8E2D43403F8E9466E24D074608E07A7022B308960FB95A469D0349AEAA",
+  "WindowsRawSha256": "F2E341C1E41879C847B37DB4BAE61211F286A7C8331A167D7E5325C0C98BF2CA",
+  "EvidenceOffVmVerified": true,
+  "PackageQualificationRepeated": false,
+  "FullRefreshRepeated": false,
+  "CanonicalParityRefreshed": false,
+  "Scope": "Same valid unchanged text/options/full Count per immutable validation policy. One bounded thirteen-observation producer A/B, not a doubled full catalog or native-parity measurement. No kernel estimates or normalized control subtraction."
+}
