@@ -94,7 +94,10 @@ internal static partial class Utf8SliceRunner
 
         // This complete root cannot rewind. Reuse its initialized workspace,
         // admitted closing journal and the existing bounded repeat algorithm.
-        var breach = invocation.TryChargeInputStep();
+        // Orchestration uses VM step cadence; RunClassRepeat checks the original
+        // deadline per bounded byte block and at each completed repeat. Explicit
+        // original-token checks and caller publication checks remain.
+        var breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, breach, null, null); return true; }
@@ -105,7 +108,7 @@ internal static partial class Utf8SliceRunner
             if (first.EndIndex < 0 || first.Breach != Utf8ExecutionLimitKind.None)
             { outcome = new(false, -1, first.Breach, null, null); return true; }
             firstEnd = first.EndIndex;
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.TryChargeStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None)
             { outcome = new(false, -1, breach, null, null); return true; }
@@ -122,7 +125,7 @@ internal static partial class Utf8SliceRunner
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
              !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
         { outcome = new(false, -1, stacks.Breach, null, null); return true; }
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, breach, null, null); return true; }
