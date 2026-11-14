@@ -41,11 +41,14 @@
   scalar/UTF-16 prefixes across detailed results, cursors and callbacks; distant
   scalar-only queries can need more working capacity. Core Count omits unused
   coordinates and more finite-policy operations use checked span/SIMD paths.
-  Proven POSIX disjoint ASCII runs, including private class-repeat bodies, avoid
-  general capture-history storage. Adjacent captures and forward cursors reuse
-  projected coordinates. Complete boundary roots share the existing predicate
-  while preserving workspace admission and step-based deadline polling. Raw
-  callback output retains its strict completed-stream UTF-8 check.
+  Proven POSIX greedy ASCII runs, including nullable sequences and private
+  class-repeat bodies, avoid general capture-history storage. Adjacent captures
+  and forward cursors reuse projected coordinates. Complete boundary roots keep
+  step-based deadline polling. Repeated capture roots and Python captured-text
+  publication omit redundant orchestration; short string callbacks can encode
+  directly into admitted capacity without a sizing pass. PCRE2 positive ASCII
+  range-union Count needs no VM workspace on mixed text. Raw byte-callback output
+  retains its strict completed-stream UTF-8 check.
   Performance and numerical work/working admission depend on operation, policy
   and input; some workloads use more time or memory. Recheck finite limits.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote

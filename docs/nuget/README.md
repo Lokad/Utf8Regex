@@ -65,9 +65,11 @@ required work without disabling matching admission or interruption.
 Python detailed results and scalar queries share a lazy prefix coordinate index,
 avoiding unused suffix preparation. Distant scalar-only queries can need more
 working capacity because entries store both scalar and UTF-16 counts. Proven
-POSIX disjoint runs, including private class-repeat bodies, omit redundant capture
-history. Adjacent captures and forward cursors reuse projected coordinates.
-Boundary-only matching preserves step-based deadline polling. Recheck numerical
+POSIX greedy ASCII runs, including eligible nullable/private class-repeat bodies,
+omit general capture history. Adjacent captures and forward cursors reuse projected
+coordinates. PCRE2 positive ASCII range-union Count avoids VM workspace on mixed
+text; short Python string callbacks can omit a redundant sizing pass. Matching and
+output preserve original interruption and admission. Recheck numerical
 work/working limits when upgrading; published result charges remain independent.
 
 Keep borrowed input alive and unchanged. Follow each cursor's alias contract and
