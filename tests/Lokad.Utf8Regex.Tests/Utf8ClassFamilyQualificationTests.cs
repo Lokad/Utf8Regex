@@ -160,11 +160,11 @@ public sealed class Utf8ClassFamilyQualificationTests
     public void WordRepeatAliasesPreserveCompleteRunsAndOnlyUseAsciiCountingOnAsciiSubjects()
     {
         const string pattern = @"(?:\b)(?:[\w]){10,}(?:\b)";
-        var plan = Plan(pattern, RegexOptions.None); Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, plan.Kind); Assert.Equal(10, plan.MinCount);
+        var plan = Plan(pattern, RegexOptions.None); Assert.Equal(Utf8FallbackDirectFamilyKind.WordRunCount, plan.Kind); Assert.Equal(10, plan.MinCount);
         Assert.Equal(1, new Utf8Regex(pattern).Count("abcdefghijk"u8));
         Assert.Equal(1, new Utf8Regex(pattern).Count(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("𐐀", 10)))));
         Assert.False(Utf8AsciiDirectFamilyCountExecutor.TryCount("𐐀"u8, false, plan, default, default, out _, out _));
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, Plan(@"[\w-]{10,}", RegexOptions.None).Kind);
+        Assert.NotEqual(Utf8FallbackDirectFamilyKind.WordRunCount, Plan(@"[\w-]{10,}", RegexOptions.None).Kind);
         const string nestedToken = @"[a]+:[b]+(?:[c]{2})+";
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount, Plan(nestedToken, RegexOptions.None).Kind);
         Assert.Equal(0, new Utf8Regex(nestedToken).Count("a:bc"u8));

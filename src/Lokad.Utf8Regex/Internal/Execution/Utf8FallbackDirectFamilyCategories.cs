@@ -72,7 +72,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
     public static bool SupportsThrowIfInvalidOnlyCount(Utf8FallbackDirectFamilyKind kind)
-        => kind is Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount or
+        => kind is Utf8FallbackDirectFamilyKind.WordRunCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or

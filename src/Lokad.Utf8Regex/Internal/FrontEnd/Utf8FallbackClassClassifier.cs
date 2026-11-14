@@ -28,12 +28,12 @@ internal static class Utf8FallbackClassClassifier
             if (!atom.MatchCaseInsensitive && minimum == 1 && maximum == 1 && TryCategory(atom, out var category))
                 return Utf8FallbackDirectFamilyPlan.ForUnicodeCategory(category);
             if (minimum > 0 && maximum == int.MaxValue && IsWordClass(atom))
-                return Utf8FallbackDirectFamilyPlan.ForCountBounds(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, minimum);
+                return Utf8FallbackDirectFamilyPlan.ForCountBounds(Utf8FallbackDirectFamilyKind.WordRunCount, minimum);
         }
         if (body.Kind != Utf8TreeNodeKind.Concatenate) return default;
         if (body.ChildCount == 3 && Unwrap(body.Child(0)).Kind == Utf8TreeNodeKind.Boundary && Unwrap(body.Child(2)).Kind == Utf8TreeNodeKind.Boundary &&
             TryRepeat(body.Child(1), out atom, out minimum, out maximum) && minimum > 0 && maximum == int.MaxValue && IsWordClass(atom))
-            return Utf8FallbackDirectFamilyPlan.ForCountBounds(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, minimum);
+            return Utf8FallbackDirectFamilyPlan.ForCountBounds(Utf8FallbackDirectFamilyKind.WordRunCount, minimum);
 
         var anchored = body.ChildCount > 0 && Unwrap(body.Child(0)).Kind == Utf8TreeNodeKind.Start;
         var offset = anchored ? 1 : 0;

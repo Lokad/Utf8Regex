@@ -98,17 +98,17 @@ public sealed partial class Utf8Regex
             }
             else
             {
-                // Only word eligibility consumes ASCII facts. Other byte
-                // counters need subject authority, without UTF-16 metadata.
+                // Complete word and literal counters need subject authority,
+                // without a whole-input description or ASCII classification.
                 var wordCandidate = !UsesRightToLeft() &&
                     (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
-                    _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, MinCount: > 0 };
-                var asciiWord = wordCandidate && Utf8Validation.SubjectIsAscii(input, ref invocation);
-                if (!wordCandidate) Utf8Validation.CheckSubject(input, ref invocation);
-                if (asciiWord)
+                    _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.WordRunCount, MinCount: > 0 };
+                Utf8Validation.CheckSubject(input, ref invocation);
+                if (wordCandidate)
                 {
-                    var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,
-                        _fallbackDirectFamily.MinCount, ref invocation, out result);
+                    var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidated(input,
+                        _fallbackDirectFamily.MinCount, _ownedSliceProgram.RequiresUnicodeWordBoundary,
+                        ref invocation, out result);
                     if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
                 }
                 else if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))

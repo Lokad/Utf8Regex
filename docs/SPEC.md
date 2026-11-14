@@ -462,8 +462,8 @@ revalidating or allocating unneeded VM capture/continuation storage. Numeric
 work, depth and working requirements can decrease; real allocations remain
 admitted before acquisition. This changes no returned capture or result lifetime.
 Caller-funded Count requests only subject facts consumed by its selected route:
-Unicode category/letter counting classifies each encountered scalar, and ASCII
-word counting retains only ASCII eligibility. Other byte counters check
+Unicode category/letter and complete word-run counting classify encountered
+scalars directly. Other byte counters check
 subject validity under the immutable policy without deriving unused UTF-16
 metadata. They keep one original invocation and synchronous interruption,
 admission and refunds. Avoided metadata work can lower numeric work requirements.
@@ -615,11 +615,18 @@ Nonmember work charges can fall from per-scalar steps to bounded scan units.
 Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
 
 Greedy unbounded word repeats with a positive minimum, optionally enclosed by
-word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
-proof. That counter needs no capture workspace and admits one work unit before
-each bounded 32-byte scan plus publication; the original token/deadline cover
-validation and counting. Mixed UTF-8 retains scalar membership and the same spent
-invocation authority. Lazy/finite-repeat and extended-class shapes, RTL,
+positive word boundaries and ordinary captures, can Count valid UTF-8 through
+their existing whole-pattern proof. One run counter uses the existing ASCII word
+lookup and decodes wider scalars with the shared Core predicate. Unicode scalar
+counts remain distinct from UTF-16 units. U+200C/U+200D participate in boundaries
+without being consumed by `\w`; bounded runs retain both edge conditions.
+No full-subject ASCII classification, coordinate totals or capture/VM scratch is
+needed, including caller-funded Count. The counter admits a work unit before
+each scalar-aligned block of at most32 bytes and before publication; the original
+token/deadline cover validation and counting. Validate still checks the whole
+subject first, and AssumeValid trusts valid unchanged borrowed text. Removing
+VM scratch/steps can lower work/depth/working requirements on mixed subjects.
+Lazy/finite-repeat and extended-class shapes, RTL,
 NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/depth/result policies can
 therefore admit a constant-space count that formerly required VM scratch; this
 changes route-dependent resource costs, not matching semantics.

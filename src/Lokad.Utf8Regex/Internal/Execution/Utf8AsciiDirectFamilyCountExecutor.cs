@@ -1,4 +1,6 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using System.Buffers;
+using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -92,33 +94,59 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         return false;
     }
 
-    // Only the whole-pattern word proof and a fully validated ASCII subject
-    // admit this counter. It keeps the existing run algorithm while carrying
-    // work/interruption through bounded blocks instead of a dormant raw loop.
-    internal static Utf8ExecutionLimitKind TryCountWordRunsValidatedAscii(ReadOnlySpan<byte> input, int minCount,
-        ref Utf8SliceInvocation invocation, out int count)
+    // The complete greedy word proof needs no captures or VM scratch. Keep
+    // the ASCII lookup/run algorithm, decoding only encountered wider scalars.
+    internal static Utf8ExecutionLimitKind TryCountWordRunsValidated(ReadOnlySpan<byte> input, int minCount,
+        bool requireBoundaries, ref Utf8SliceInvocation invocation, out int count)
     {
         var lookup = Utf8SliceScalarClasses.WordCharAsciiLookup;
         count = 0;
         var runLength = 0;
+        var startsAfterJoiner = false;
         for (var offset = 0; offset < input.Length;)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             invocation.Budget.ThrowIfCancellationRequested();
-            var block = input.Slice(offset, Math.Min(32, input.Length - offset));
-            foreach (var value in block)
+            var end = offset + Math.Min(32, input.Length - offset);
+            if (end < input.Length)
             {
-                if (lookup[value] != 0) runLength++;
+                // Valid UTF-8 has at most three continuations at this cut.
+                // Admit complete scalars within the same <=32-byte work unit.
+                for (var adjustment = 0; adjustment < 3 && (input[end] & 0xc0) == 0x80; adjustment++) end--;
+            }
+            var block = input[offset..end];
+            for (var index = 0; index < block.Length;)
+            {
+                var value = block[index];
+                bool member;
+                var joiner = false;
+                if (value < 128)
+                {
+                    member = lookup[value] != 0;
+                    index++;
+                }
                 else
                 {
-                    if (runLength >= minCount) count++;
+                    if (Rune.DecodeFromUtf8(block[index..], out var scalar, out var width) != OperationStatus.Done)
+                        throw Input.Utf8Validation.CreateInvalidUtf8Exception(offset + index);
+                    member = Utf8SliceScalarClasses.IsWord(scalar, false, false);
+                    // Joiners participate in boundaries without being \w.
+                    joiner = scalar.Value is 0x200c or 0x200d;
+                    index += width;
+                }
+                if (member) runLength++;
+                else
+                {
+                    if (runLength >= minCount && (!requireBoundaries || !startsAfterJoiner && !joiner)) count++;
                     runLength = 0;
+                    // Every other nonmember supplies a boundary for the next run.
+                    startsAfterJoiner = joiner;
                 }
             }
-            offset += block.Length;
+            offset = end;
         }
-        if (runLength >= minCount) count++;
+        if (runLength >= minCount && (!requireBoundaries || !startsAfterJoiner)) count++;
         var finalBreach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         return finalBreach;

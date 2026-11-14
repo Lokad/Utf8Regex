@@ -1138,13 +1138,13 @@ public sealed class Utf8RegexConstructionTests
     [Theory]
     [InlineData(@"\w{10,}")]
     [InlineData(@"\b\w{10,}\b")]
-    public void ConstructorClassifiesAsciiWordBoundedCount(string pattern)
+    public void ConstructorClassifiesWordRunCount(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.WordRunCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]

@@ -1101,21 +1101,20 @@ public sealed partial class Utf8Regex
                 categoryInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
             { throw CreateExecutionResourceFailure(ref categoryInvocation); }
         }
-        // The existing whole-pattern proof counts complete word runs on ASCII.
-        // Keep one invocation through validation, native work or wider-scalar
-        // continuation; resource controls never select an unmetered substitute.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount &&
+        // The whole-pattern word proof counts complete scalar runs without VM
+        // capture state. Boundary membership includes the Core joiner rule.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.WordRunCount &&
             _fallbackDirectFamily.MinCount > 0 && !UsesRightToLeft() &&
             (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
         {
             var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation };
             try
             {
-                if (!Utf8Validation.SubjectIsAscii(input, ref wordInvocation))
-                    return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref wordInvocation);
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiWordBounded);
-                var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,
-                    _fallbackDirectFamily.MinCount, ref wordInvocation, out var wordCount);
+                Utf8Validation.CheckSubject(input, ref wordInvocation);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUtf8WordRun);
+                var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidated(input,
+                    _fallbackDirectFamily.MinCount, _ownedSliceProgram.RequiresUnicodeWordBoundary,
+                    ref wordInvocation, out var wordCount);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref wordInvocation);
                 return wordCount;
             }
