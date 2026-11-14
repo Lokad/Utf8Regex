@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -24,8 +23,6 @@ internal ref struct PythonReScalarMatchCursor
     internal int? GetLastIndex() => _state.GetLastIndex();
     internal readonly ulong ReservedBytes => _state.ReservedBytes;
     internal readonly ulong ResultReservation => _state.ResultReservation;
-    internal readonly Utf8ValidationResult? InputDescription => _state.InputDescription;
-    internal readonly bool HasCoordinateMap => _state.HasCoordinateMap;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
     internal T[] AllocateResultArray<T>(int count) => _state.AllocateResultArray<T>(count);
     internal void ReleaseResultsSince(ulong marker) => _state.ReleaseResultsSince(marker);
@@ -41,8 +38,7 @@ internal ref struct PythonReScalarMatchCursor
     internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names) => _state.SnapshotNameEntries(names);
     internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups(_input);
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);
-    internal void EnsureMap() => _state.EnsureMap(_input);
-    internal void PrepareOneShotProjection() => _state.PrepareOneShotProjection(_input);
+    internal void PrepareValueProjection() => _state.PrepareCoordinates(_input, EndOffsetInBytes);
     internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names) => _state.SnapshotDetailed(_input, names);
     internal string GetText(int start, int end) => _state.GetText(_input, start, end, null);
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);

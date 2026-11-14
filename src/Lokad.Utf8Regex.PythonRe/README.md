@@ -97,10 +97,15 @@ Use `cursor.MoveNext(out Utf8PythonRangeMatch match)` for capture byte ranges
 without captured strings or a whole-subject coordinate map. Range metadata stays
 valid after advances/disposal; byte memory remains borrowed and must stay unchanged
 with its manager alive. A range advance clears the text-based `Current`.
+Detailed results and scalar queries share a lazy coordinate index through requested
+captures, including lookarounds. They do not prepare an unused suffix. The index
+uses admitted working storage and is refunded synchronously; published arrays and
+strings retain their separate result charges. Distant scalar-only queries now store
+both scalar and UTF-16 prefix counts, so their working requirements can increase;
+short and ASCII-only projections need no index allocation.
 `SplitRanges` provides ordinary segments and captured separators as byte ranges,
 including unmatched captures, without decoding or copying their text. These paths
-retain finite limits and synchronous cancellation; shared memory funding remains
-separate unfinished work.
+retain finite limits and synchronous cancellation.
 
 The four-argument `CreateMatchCursor` overload accepts a caller-owned
 `IUtf8MemoryAllowance` for shared working admission. Concurrent cursors use that

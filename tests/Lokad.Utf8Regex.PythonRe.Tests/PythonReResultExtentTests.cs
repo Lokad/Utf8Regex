@@ -26,7 +26,7 @@ public sealed class PythonReResultExtentTests
         try
         {
             Assert.True(cursor.MoveNext());
-            cursor.EnsureMap();
+            cursor.PrepareValueProjection();
             var baseline = cursor.ReservedBytes;
             result = cursor.SnapshotDetailed(names);
             var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257)
@@ -57,14 +57,12 @@ public sealed class PythonReResultExtentTests
             null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         try
         {
-            cursor.EnsureMap();
-            var baseline = cursor.ReservedBytes;
             Assert.True(cursor.MoveNext());
-            var positioned = cursor.ReservedBytes;
-            Assert.Equal(baseline, positioned); // No rollback scratch for this linear slot.
             var count = 0;
             do
             {
+                cursor.PrepareValueProjection();
+                var positioned = cursor.ReservedBytes;
                 var marker = cursor.ResultReservation;
                 var groups = cursor.SnapshotGroups();
                 Assert.Equal(positioned + ArrayBytes<PythonReGroupData>(2), cursor.ReservedBytes);
@@ -77,7 +75,7 @@ public sealed class PythonReResultExtentTests
                 count++;
             } while (cursor.MoveNext());
             Assert.Equal(1025, count);
-            Assert.Equal(baseline, cursor.ReservedBytes); // EOF retains the original slots and map.
+            Assert.True(cursor.ReservedBytes < 65536); // Inline discovery retains bounded scratch until disposal.
         }
         finally { cursor.Dispose(); }
         Assert.Equal(0UL, cursor.ReservedBytes);
@@ -100,7 +98,7 @@ public sealed class PythonReResultExtentTests
             null, "(.+)", new(new(0, 0, 1UL << 20), timeout, token.Token));
         try
         {
-            Assert.True(cursor.MoveNext()); cursor.EnsureMap();
+            Assert.True(cursor.MoveNext()); cursor.PrepareValueProjection();
             var baseline = cursor.ReservedBytes;
             ref var invocation = ref cursor.WorkingInvocation;
             while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());

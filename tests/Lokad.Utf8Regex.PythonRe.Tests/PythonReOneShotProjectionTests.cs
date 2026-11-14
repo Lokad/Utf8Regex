@@ -9,8 +9,6 @@ public sealed class PythonReOneShotProjectionTests
 {
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
-    private static bool HasMap(ref PythonReScalarMatchCursor cursor) => cursor.HasCoordinateMap;
-
     [Theory]
     [InlineData(0, "(?P<x>.)", "é😀z", 2, 2, 6, 1, 3, "😀")]
     [InlineData(1, "(?P<x>.)", "é😀z", 2, 2, 6, 1, 3, "😀")]
@@ -95,29 +93,6 @@ public sealed class PythonReOneShotProjectionTests
         }
     }
 
-    [Fact]
-    public void CompletedOneShotProjectionCannotAdvanceAndRefundsItsPrefixMap()
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)(?=(.))");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)(?=(.))", new(new(0, 0, 65536), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-        Utf8PythonDetailedMatchData result;
-        try
-        {
-            Assert.True(cursor.MoveNext());
-            cursor.PrepareOneShotProjection();
-            result = cursor.SnapshotDetailed([]);
-            Assert.Equal("😀", result.Groups[2].ValueText);
-            Assert.True(HasMap(ref cursor)); Assert.False(cursor.MoveNext());
-        }
-        finally { cursor.Dispose(); }
-        Assert.Equal(13UL, cursor.ReservedBytes); cursor.WorkingInvocation.Ledger.Release(13);
-        Assert.Equal("é", result.Value.ValueText); Assert.Equal("😀", result.Groups[2].ValueText);
-    }
-
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void KnownEndpointPublicationKeepsOriginalCancellationAndDeadline(bool expire)
@@ -171,7 +146,7 @@ public sealed class PythonReOneShotProjectionTests
             value = cursor.SnapshotValueData();
             Assert.Equal((2, 6), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             Assert.Equal((1, 3), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
-            Assert.False(HasMap(ref cursor)); Assert.Equal(0UL, cursor.ResultReservation);
+             Assert.Equal(0UL, cursor.ResultReservation);
             Assert.Equal(baseline, cursor.ReservedBytes);
         }
         finally { cursor.Dispose(); }
@@ -208,9 +183,9 @@ public sealed class PythonReOneShotProjectionTests
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 5000).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var groupExtent = ArrayBytes<PythonReGroupData>(2);
-        // This linear single capture needs slots and a boundary map, with no
-        // rollback trail. The group/name roots still require prior admission.
-        var total = 13 + 96 + 96 + groupExtent + extent;
+        // This linear single capture needs two slot arrays and no coordinate
+        // index for its short prefix. Group/name roots require prior admission.
+        var total = 13 + 2 * ArrayBytes<int>(1) + groupExtent + extent;
         var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0, Regex.InfiniteMatchTimeout,
             null, "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

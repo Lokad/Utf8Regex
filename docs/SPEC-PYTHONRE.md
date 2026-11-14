@@ -512,19 +512,20 @@ be lower than general matching. Captures, folding, lazy or nonliteral bodies and
 unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
-Scalar value results reuse existing coordinate facts/maps when available;
+Scalar value results reuse existing coordinate facts when available;
 otherwise they count only the prefix and range requested by that value. String
 output sizes its selected range without describing an unrelated subject suffix.
-One-shot detailed results and capture contexts prepare coordinates only through
+Detailed results and capture contexts prepare coordinates only through
 the furthest participating capture end, including captures inside lookarounds.
-They do not describe or map an unrelated suffix. Callback substitutions limited
-to one replacement use that same final-result projection before invoking the
-callback. They still copy the complete required output and validate assembled
-raw-byte callback output. Repeated detailed iteration, callbacks with other
-replacement counts and durable cursors retain their shared whole-subject map.
-This reduces one-shot work and modeled map capacity; finite requirements can fall.
+They do not describe or map an unrelated suffix. Repeated iteration and callback
+substitutions share the same lazy coordinate index as durable cursors and scalar
+queries; projection does not stop discovery. Substitutions still copy the complete
+required output and validate assembled raw-byte callback output. Removing the
+whole-subject bidirectional map reduces early-result work and capacity; finite
+requirements can fall. Coordinate scratch is working storage, not result traffic;
+returned arrays and strings still consume modeled result capacity independently.
 Borrowed contexts retain their existing unchanged-input lifetime contract, while
-owned detailed text remains independent of the input and temporary map.
+owned detailed text remains independent of the input and temporary index.
 For an unknown string length of at most4096 UTF-8 bytes, admission can use the
 byte-derived upper bound on UTF-16 capacity before a bounded checked decode,
 avoiding a separate character-count pass. Known lengths remain exact; larger
@@ -693,16 +694,19 @@ UTF-16 or byte positions. Existing byte and UTF-16 coordinates retain their mean
 The integers remain valid after advance/disposal; querying a cursor without a
 current match fails explicitly.
 
-Byte-only advances do no extra coordinate preparation. A mixed-input query beyond
-the first 256-byte block lazily admits a compact working array (one prefix count
+Byte-only advances do no extra coordinate preparation. Mixed-input scalar or
+UTF-16 projection beyond the first 256-byte block lazily admits one shared working
+array (scalar and UTF-16 prefix counts
 per 256 UTF-8 bytes), extending initialized counts only through requested positions.
 ASCII proof is confined to the queried prefix, not an unused subject suffix;
 ASCII prefixes and shorter queries need no such allocation. The array counts
 scalar starts over caller-guaranteed valid bytes, including blocks cutting through
 scalars, with bounded scans inside the selected block on later queries.
-No text, unused UTF-16 totals or full UTF-16 coordinate map is created for this
-query. Offsets in the first 256-byte block are counted directly without an index;
-proved prefix facts and existing scalar indexes are reused without describing the
+Scalar queries create no text or full-subject coordinate map. Both counts are
+stored together to avoid separate owners and repeated prefix preparation; compared
+with the former scalar-only index, distant scalar-only queries can require more
+working capacity. Offsets in the first 256-byte block are counted directly without
+an index; proved prefix facts and existing counts are reused without describing the
 whole subject. Capacity grows geometrically up to the subject's possible entry
 count, with old/new capacity admitted before allocation and synchronous release
 of the old array afterward. Peak working requirements can include both arrays,

@@ -10,8 +10,6 @@ public sealed class PythonReSubstitutionOutputTests
     private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + (((ulong)count + 15) & ~15UL);
     private static ulong TextBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
 
-    private static bool HasMap(ref PythonReScalarMatchCursor cursor) => cursor.HasCoordinateMap;
-
     [Fact]
     public void TemplateExpansionBorrowsByteCapturesWithoutMappingOrProjectionArrays()
     {
@@ -27,11 +25,9 @@ public sealed class PythonReSubstitutionOutputTests
         try
         {
             Assert.True(cursor.MoveNext());
-            Assert.False(HasMap(ref cursor));
             var baseline = cursor.ReservedBytes;
             plan.AppendToUtf8(input, ref cursor, ref writer);
             Assert.Equal("<😀>"u8.ToArray(), writer.WrittenBytes.ToArray());
-            Assert.False(HasMap(ref cursor));
             Assert.Equal(baseline, cursor.ReservedBytes);
             Assert.Equal(0UL, cursor.ResultReservation);
         }

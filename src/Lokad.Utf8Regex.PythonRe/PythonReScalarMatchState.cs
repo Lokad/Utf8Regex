@@ -11,9 +11,9 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 // Span and durable cursors borrow this single discovery implementation. Search positions and empty
-// advancement are bytes; the lazy map serves only returned UTF-16 coordinates.
+// advancement are bytes; a lazy prefix index serves requested scalar/UTF-16 coordinates.
 // Python retains the last capture, so discovery does not collect capture history.
-internal struct PythonReScalarMatchState
+internal partial struct PythonReScalarMatchState
 {
     private readonly Utf8SliceProgram _program;
     private readonly Utf8Regex? _candidateRegex;
@@ -30,11 +30,11 @@ internal struct PythonReScalarMatchState
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
-    private Utf8ValidationResult? _validation;
-    private Utf8BoundaryMap _map;
-    private ulong _mapReservation;
+    private (int Scalars, int Utf16)[]? _coordinatePrefixes;
+    private ulong _coordinatePrefixReservation;
+    private int _coordinatePrefixCount;
+    private int _asciiPrefixEnd;
     private readonly bool _leadingAsciiMayMatchUnicode;
-    private bool _hasMap;
     private bool _retryNonEmpty;
     private bool _finished;
     private int _position;
@@ -130,8 +130,6 @@ internal struct PythonReScalarMatchState
     internal int EndOffsetInBytes { get; private set; }
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
-    internal readonly Utf8ValidationResult? InputDescription => _validation;
-    internal readonly bool HasCoordinateMap => _hasMap;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
     internal T[] AllocateResultArray<T>(int count)
@@ -582,7 +580,7 @@ internal struct PythonReScalarMatchState
                 // Only bytes actually skipped need the projected ASCII proof.
                 // A Unicode candidate remains a scalar start: all bytes before
                 // the first non-ASCII byte were ASCII, even at a block edge.
-                var nonAscii = _leadingAsciiMayMatchUnicode && _validation?.IsAscii != true
+                var nonAscii = _leadingAsciiMayMatchUnicode && _position + length > _asciiPrefixEnd
                     ? block.IndexOfAnyInRange((byte)128, byte.MaxValue) : -1;
                 var ascii = nonAscii < 0 ? block : block[..nonAscii];
                 var offset = _leadingAsciiLow == _leadingAsciiHigh
@@ -619,17 +617,12 @@ internal struct PythonReScalarMatchState
         Checkpoint();
         var start = StartOffsetInBytes;
         var end = EndOffsetInBytes;
-        // Collections that publish coordinates reuse their single map. A
-        // one-shot fixed value still needs no whole-subject map allocation.
-        // A previously requested description supplies subject ends. Otherwise,
-        // count only the prefix/range actually requested by this value.
-        var ascii = _validation?.IsAscii == true;
-        var length = _validation?.Utf16Length;
-        var startUtf16 = ascii || start == 0 ? start : start == input.Length && length.HasValue ? length.Value
-            : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
+        // Bulk values reuse coordinates already requested by their collection.
+        // A one-shot value keeps its allocation-free prefix/range counting.
+        var indexed = _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount;
+        var startUtf16 = end <= _asciiPrefixEnd ? start : indexed ? CoordinateOffset(input, start).Utf16
             : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
-        var endUtf16 = ascii ? end : end == input.Length && length.HasValue ? length.Value
-            : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
+        var endUtf16 = end <= _asciiPrefixEnd ? end : indexed ? CoordinateOffset(input, end).Utf16
             : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
         var value = new PythonReGroupData
         {
@@ -653,7 +646,7 @@ internal struct PythonReScalarMatchState
     internal PythonReGroupData[] SnapshotGroups(ReadOnlySpan<byte> input)
     {
         Checkpoint();
-        EnsureMap(input);
+        PrepareCaptureProjection(input);
         var groups = AllocateResultArray<PythonReGroupData>(_program.GroupCount + 1);
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
@@ -664,8 +657,8 @@ internal struct PythonReScalarMatchState
                 {
                     Number = pythonGroup, Success = true,
                     StartOffsetInBytes = start, EndOffsetInBytes = end,
-                    StartOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(start),
-                    EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
+                    StartOffsetInUtf16 = CoordinateOffset(input, start).Utf16,
+                    EndOffsetInUtf16 = CoordinateOffset(input, end).Utf16,
                 };
         }
         Checkpoint();
@@ -685,39 +678,6 @@ internal struct PythonReScalarMatchState
         if (start < 0 || end < 0) return false;
         if (end < start) throw new InvalidOperationException("Forward scalar capture has reversed edges.");
         return true;
-    }
-
-    internal void EnsureMap(ReadOnlySpan<byte> input)
-    {
-        if (!_hasMap)
-        {
-            _map = Utf8BoundaryMap.Create(input, DescribeInput(input), ref _invocation, out _mapReservation);
-            _hasMap = true;
-        }
-    }
-
-    // Completes discovery for one owned/context result. The caller still owns
-    // disposal, but cannot advance this state with a prefix-only coordinate map.
-    internal void PrepareOneShotProjection(ReadOnlySpan<byte> input)
-    {
-        Checkpoint();
-        _finished = true;
-        if (_hasMap) return;
-        var length = EndOffsetInBytes;
-        for (var number = 1; number <= _program.GroupCount; number++)
-        {
-            if ((number & 255) == 0) Checkpoint();
-            if (TryGetCaptureByteRange(number, out _, out var end)) length = Math.Max(length, end);
-        }
-        if (length == input.Length) { EnsureMap(input); return; }
-        var prefix = input[..length];
-        Utf8ValidationResult description;
-        if (_validation is { IsAscii: true }) description = new(length, length, true, false);
-        else if (Utf8Validation.TryDescribeValid(prefix, ref _invocation, out description) != Utf8ExecutionLimitKind.None)
-            throw ResourceFailure();
-        // Prefix facts do not describe the original subject: keep them local.
-        _map = Utf8BoundaryMap.Create(prefix, description, ref _invocation, out _mapReservation);
-        _hasMap = true;
     }
 
     internal int? GetLastIndex()
@@ -762,7 +722,7 @@ internal struct PythonReScalarMatchState
     {
         var lastIndex = GetLastIndex();
         Checkpoint();
-        EnsureMap(input);
+        PrepareCaptureProjection(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
         // still use SnapshotGroups; no temporary range array is needed here.
         var projected = AllocateResultArray<Utf8PythonGroupMatchData>(_program.GroupCount + 1);
@@ -774,8 +734,8 @@ internal struct PythonReScalarMatchState
                 projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
                 continue;
             }
-            var startInUtf16 = _map.GetUtf16OffsetForByteOffset(start);
-            var endInUtf16 = _map.GetUtf16OffsetForByteOffset(end);
+            var startInUtf16 = CoordinateOffset(input, start).Utf16;
+            var endInUtf16 = CoordinateOffset(input, end).Utf16;
             projected[i] = new Utf8PythonGroupMatchData
             {
                 Number = i, Success = true,
@@ -804,22 +764,13 @@ internal struct PythonReScalarMatchState
         // The caller's valid-text contract proves these scalar ranges.
         // Reuse facts already requested by coordinates or matching. Creating
         // one string must not describe an unrelated, possibly enormous suffix.
-        int? count = characterCount ?? (_validation is { IsAscii: true } ? end - start
-            : start == 0 && end == input.Length && _validation is { } known ? known.Utf16Length : _hasMap
-            ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
+        int? count = characterCount ?? (end <= _asciiPrefixEnd ? end - start
+            : _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount
+            ? CoordinateOffset(input, end).Utf16 - CoordinateOffset(input, start).Utf16
             : (int?)null);
         var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
         Checkpoint();
         return text;
-    }
-
-    private Utf8ValidationResult DescribeInput(ReadOnlySpan<byte> input)
-    {
-        if (_validation is { } known) return known;
-        if (Utf8Validation.TryDescribeValid(input, ref _invocation, out var result) != Utf8ExecutionLimitKind.None)
-            throw ResourceFailure();
-        _validation = result;
-        return result;
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)
@@ -891,10 +842,7 @@ internal struct PythonReScalarMatchState
         _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);
-        _invocation.Ledger.Release(_mapReservation);
-        _mapReservation = 0;
-        _map = default;
-        _hasMap = false;
+        ReleaseCoordinatePrefixes();
         _finished = true;
     }
 }

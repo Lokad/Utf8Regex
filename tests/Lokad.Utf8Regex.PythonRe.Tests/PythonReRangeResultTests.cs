@@ -22,7 +22,6 @@ public sealed class PythonReRangeResultTests
         foreach (var match in expected)
         {
             Assert.True(alias.MoveNext(out var ranges)); retained.Add(ranges);
-            Assert.False(cursor.HasCoordinateMap);
             Assert.Throws<InvalidOperationException>(() => cursor.Current);
             Assert.Equal(match.LastIndex, ranges.LastIndex); Assert.Equal(match.LastGroup, ranges.LastGroup);
             Assert.Equal(match.NameEntries, ranges.NameEntries.ToArray());
@@ -84,7 +83,7 @@ public sealed class PythonReRangeResultTests
         _ = split.SplitRanges("é😀"u8);
         var before = GC.GetAllocatedBytesForCurrentThread();
         using var cursor = capture.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext(out var range)); Assert.False(cursor.HasCoordinateMap);
+        Assert.True(cursor.MoveNext(out var range));
         var parts = split.SplitRanges(input);
         Assert.True(GC.GetAllocatedBytesForCurrentThread() - before < 64 << 10);
         Assert.Equal(input.Length, range.GetGroupMemory(1).Length);
@@ -100,7 +99,7 @@ public sealed class PythonReRangeResultTests
         using var cursor = regex.CreateMatchCursor(Enumerable.Repeat((byte)'a', 500000).ToArray());
         var count = 0;
         while (cursor.MoveNext(out var range)) { Assert.Equal(count, range.Value.StartOffsetInBytes); count++; }
-        Assert.Equal(500000, count); Assert.False(cursor.HasCoordinateMap);
+        Assert.Equal(500000, count);
         var capped = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 16 << 10, MaxResultBytes = 4096 });
         using var denied = capped.CreateMatchCursor(Enumerable.Repeat((byte)'a', 128).ToArray());

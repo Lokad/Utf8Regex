@@ -19,7 +19,7 @@ public sealed class PythonReRetainedRangeTests
         using var regex = Compile("(?P<x>.)", account);
         using var cursor = regex.CreateMatchCursor("é😀"u8.ToArray());
         Assert.True(cursor.MoveNextRetained(out var first)); var alias = first; var snapshot = first.Match;
-        Assert.True(first.ChargedBytes > 0); Assert.False(cursor.HasCoordinateMap);
+        Assert.True(first.ChargedBytes > 0);
         Assert.True(cursor.MoveNextRetained(out var second));
         Assert.False(cursor.MoveNextRetained(out var none)); Assert.Null(none);
         cursor.Dispose(); regex.Dispose();

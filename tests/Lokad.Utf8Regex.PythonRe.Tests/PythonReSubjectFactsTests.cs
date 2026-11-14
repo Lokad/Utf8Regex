@@ -133,7 +133,6 @@ public sealed class PythonReSubjectFactsTests
         using var cursor = regex.CreateMatchCursor(input, 0, default, account);
         var alias = cursor;
         Assert.True(cursor.MoveNext(out var retained));
-        Assert.False(cursor.HasCoordinateMap);
         var beforeProjection = account.Used;
         Assert.True(alias.TryGetScalarRange(1, out var start, out var end));
         Assert.Equal((unicode ? 3 : 4) + suffixLength, start);
@@ -147,7 +146,6 @@ public sealed class PythonReSubjectFactsTests
             Assert.Equal((start + 5, start + 9), (numberStart, numberEnd));
             Assert.Equal(afterProjection, account.Used);
         }
-        Assert.False(cursor.HasCoordinateMap);
         Assert.False(cursor.MoveNext(out _));
         Assert.Equal(0UL, account.Used);
         Assert.Equal("item-1234", Encoding.UTF8.GetString(retained.GetValueMemory().Span));

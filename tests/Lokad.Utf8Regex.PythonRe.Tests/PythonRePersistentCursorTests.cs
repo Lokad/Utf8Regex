@@ -82,7 +82,7 @@ public sealed class PythonRePersistentCursorTests
         using var cursor = InternalCursor(input, "(.)", invocation);
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;
-        Assert.True(cursor.HasCoordinateMap); Assert.True(invocation.Ledger.ReservedBytes > 13);
+        Assert.True(invocation.Ledger.ReservedBytes > 13);
         if (exhaust) { Assert.True(cursor.MoveNext()); Assert.False(cursor.MoveNext()); Assert.False(cursor.MoveNext()); }
         else cursor.Dispose();
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
@@ -161,19 +161,20 @@ public sealed class PythonRePersistentCursorTests
     }
 
     [Fact]
-    public void ProjectionCancellationPublishesNoSnapshotAndReleasesItsMapAndArrays()
+    public void ProjectionCancellationPublishesNoSnapshotAndReleasesItsWorkingLoans()
     {
         using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(1000000, 0, 4UL << 20), Regex.InfiniteMatchTimeout, token.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        // Two projected long strings must cross the 64-step diagnostic hook
-        // interval after map creation, independent of the discovery step phase.
-        using var cursor = InternalCursor(Encoding.UTF8.GetBytes(new string('é', 65536)), "(é+)", invocation);
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        Assert.True(account.TryReserve(13));
+        using var cursor = new Utf8PythonRegex("(é)").CreateMatchCursor(
+            Encoding.UTF8.GetBytes("é" + new string('x', 2048) + "é"), 0, token.Token, account);
+        Assert.True(cursor.MoveNext(out var retained));
         var entered = false;
-        cursor.WorkingInvocation.CheckpointHook = _ => { if (cursor.HasCoordinateMap) { entered = true; token.Cancel(); } };
+        account.AfterGrant = () => { entered = true; token.Cancel(); };
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
         Assert.True(entered); Assert.Throws<InvalidOperationException>(() => cursor.Current);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
+        Assert.Equal(13UL, account.Used); account.Release(13);
+        Assert.Equal("é", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Fact]
@@ -241,7 +242,7 @@ public sealed class PythonRePersistentCursorTests
     }
 
     [Fact]
-    public void FactoryValidatesWholeSubjectScalarOffsetAndCancellationBeforePublication()
+    public void FactoryChecksScalarOffsetAndCancellationBeforePublication()
     {
         var regex = new Utf8PythonRegex("a");
 

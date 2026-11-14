@@ -84,18 +84,21 @@ public sealed class PythonReAdvanceTokenTests
     public void AdvanceTokenAlsoInterruptsRequiredProjection()
     {
         using var operation = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex("(é+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        Assert.True(account.TryReserve(13));
+        var regex = new Utf8PythonRegex("(é)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxWorkingBytes = 4 << 20 });
-        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(new string('é', 65536)));
-        var invocation = cursor.WorkingInvocation; var entered = false;
-        Assert.True(invocation.Ledger.TryReserve(13));
-        cursor.WorkingInvocation.CheckpointHook = _ =>
-        {
-            if (cursor.HasCoordinateMap) { entered = true; operation.Cancel(); }
-        };
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("é" + new string('x', 2048) + "é"),
+            0, default, account);
+        Assert.True(cursor.MoveNext(out var retained));
+        var entered = false;
+        // The VM is already prepared. The next detailed result needs a distant
+        // coordinate prefix; cancel immediately after its working admission.
+        account.AfterGrant = () => { entered = true; operation.Cancel(); };
         Assert.Equal(operation.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(operation.Token)).CancellationToken);
         Assert.True(entered); Assert.Throws<InvalidOperationException>(() => cursor.Current);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
+        Assert.Equal(13UL, account.Used); account.Release(13);
+        Assert.Equal("é", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Fact]

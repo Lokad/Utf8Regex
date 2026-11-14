@@ -31,15 +31,11 @@ public sealed partial class Utf8PythonRegex
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
                 cursor.Checkpoint();
-                // This operation returns one string. Size its actual range;
-                // batch output keeps its useful shared subject facts.
+                // This operation returns one string. Size only its actual range.
                 var start = cursor.StartOffsetInBytes;
                 var end = cursor.EndOffsetInBytes;
-                var description = cursor.InputDescription;
-                int? count = description is { IsAscii: true } ? end - start
-                    : start == 0 && end == input.Length ? description?.Utf16Length : null;
                 completed = MaterializeMatchText(input, start, end,
-                    count, ref cursor.WorkingInvocation, ref scalarResults);
+                    null, ref cursor.WorkingInvocation, ref scalarResults);
             }
             cursor.Checkpoint();
             return completed;

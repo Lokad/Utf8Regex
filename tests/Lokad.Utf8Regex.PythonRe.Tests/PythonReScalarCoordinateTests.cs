@@ -31,7 +31,7 @@ public sealed class PythonReScalarCoordinateTests
                 Assert.True(cursor.TryGetScalarRange(number, out var start, out var end));
                 Assert.Equal(ordinal, start); Assert.Equal(ordinal + 1, end);
             }
-            Assert.False(cursor.HasCoordinateMap); ordinal++;
+            ordinal++;
         }
         Assert.Equal(edges.Count - 1, ordinal);
     }
@@ -50,7 +50,9 @@ public sealed class PythonReScalarCoordinateTests
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. bytes, 0xff];
             using var cursor = regex.CreateMatchCursor(storage.AsMemory(borrowedOffset, bytes.Length));
-            Assert.True(cursor.MoveNext(out _));
+            Assert.True(cursor.MoveNext());
+            var value = cursor.Current.Value;
+            Assert.Equal((0, text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
             var expected = text.EnumerateRunes().Count();
             Assert.True(cursor.TryGetScalarRange(0, out var start, out var end));
             Assert.Equal((0, expected), (start, end));
@@ -81,7 +83,7 @@ public sealed class PythonReScalarCoordinateTests
         Assert.Equal(expectedStart >= 0, cursor.TryGetScalarRange(group, out var start, out var end));
         Assert.Equal(expectedStart, start); Assert.Equal(expectedEnd, end);
         Assert.False(cursor.TryGetScalarRange(-1, out start, out end)); Assert.Equal(-1, start); Assert.Equal(-1, end);
-        Assert.False(cursor.TryGetScalarRange(999, out _, out _)); Assert.False(cursor.HasCoordinateMap);
+        Assert.False(cursor.TryGetScalarRange(999, out _, out _));
     }
     [Fact]
     public void EmptySubjectAndCursorPositionGuardsAreExplicit()
@@ -213,17 +215,19 @@ public sealed class PythonReScalarCoordinateTests
     [InlineData(true)]
     public void HalfMillionDiscardedScalarRangesHaveBoundedLiveStorage(bool unicode)
     {
-        var account = new Allowance(32768); var input = unicode ? Encoding.UTF8.GetBytes(new string('é', 500000)) : new byte[500000];
+        // The shared index stores both scalar and UTF-16 counts, admitting old/new
+        // growth overlap. Keep a bounded cap that covers that pair of counts.
+        var account = new Allowance(65536); var input = unicode ? Encoding.UTF8.GetBytes(new string('é', 500000)) : new byte[500000];
         if (!unicode) input.AsSpan().Fill((byte)'a');
         using var cursor = new Utf8PythonRegex(".", default, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 32768 }).CreateMatchCursor(input, 0, default, account);
+            new Utf8ResourcePolicy { MaxWorkingBytes = 65536 }).CreateMatchCursor(input, 0, default, account);
         var count = 0;
         while (cursor.MoveNext(out _))
         {
             Assert.True(cursor.TryGetScalarRange(0, out var start, out var end));
             Assert.Equal(count, start); Assert.Equal(++count, end);
         }
-        Assert.Equal(500000, count); Assert.Equal(0UL, account.Used); Assert.True(account.Peak <= 32768);
+        Assert.Equal(500000, count); Assert.Equal(0UL, account.Used); Assert.True(account.Peak <= 65536);
     }
     [Fact]
     public void CompletedQueryAndAdvanceTokensHaveNoAuthorityOverLaterCalls()

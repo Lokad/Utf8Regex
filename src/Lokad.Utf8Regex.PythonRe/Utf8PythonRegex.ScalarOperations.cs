@@ -178,7 +178,6 @@ public sealed partial class Utf8PythonRegex
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
                 var lastIndex = cursor.GetLastIndex();
-                cursor.PrepareOneShotProjection();
                 var groups = cursor.SnapshotGroups();
                 var names = cursor.SnapshotNameEntries(_nameEntries);
                 result = new Utf8PythonMatchContext(input, groups, names, lastIndex);
@@ -203,7 +202,6 @@ public sealed partial class Utf8PythonRegex
             Utf8PythonDetailedMatchData result = default;
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
-                cursor.PrepareOneShotProjection();
                 result = cursor.SnapshotDetailed(_nameEntries);
             }
             cursor.Checkpoint();
@@ -253,7 +251,7 @@ public sealed partial class Utf8PythonRegex
         {
             while (cursor.MoveNext())
             {
-                cursor.EnsureMap();
+                cursor.PrepareValueProjection();
                 var group = cursor.SnapshotValueData();
                 cursor.AddResult(ref list, new Utf8PythonMatchData
                 {

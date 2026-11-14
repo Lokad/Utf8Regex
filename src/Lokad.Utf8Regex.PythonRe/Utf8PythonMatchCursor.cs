@@ -14,6 +14,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Returned detailed snapshots own their values and remain usable after later advances or disposal.
 /// Work and modeled result capacity remain cumulative through moves and snapshot publication. Working release never refunds result traffic; caller-retained live memory has separate scope.
 /// Exclusive VM scratch is reused and stays charged while positioned, including during projection and host waits. EOF, failure and disposal release it synchronously. Scratch and publication overlap can require a higher working cap.
+/// Scalar and UTF-16 projection share a lazy working index through requested captures, including lookarounds; unused suffixes are not prepared.
 /// </remarks>
 public sealed partial class Utf8PythonMatchCursor : IDisposable
 {
@@ -246,7 +247,6 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
     {
         if (_status is Status.Initial or Status.Positioned or Status.RangePositioned)
         {
-            ReleaseScalarPrefixes();
             _discovery.Dispose();
         }
         var programUse = _programUse;
@@ -260,5 +260,4 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
     }
 
     internal ref Utf8SliceInvocation WorkingInvocation => ref _discovery.WorkingInvocation;
-    internal bool HasCoordinateMap => _discovery.HasCoordinateMap;
 }

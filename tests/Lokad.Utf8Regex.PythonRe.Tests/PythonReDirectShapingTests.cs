@@ -89,7 +89,7 @@ public sealed class PythonReDirectShapingTests
     }
 
     [Fact]
-    public void MappedValueSnapshotsHaveBoundedWorkWithoutPrefixRescans()
+    public void IndexedValueSnapshotsHaveBoundedWorkWithoutPrefixRescans()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
@@ -103,15 +103,16 @@ public sealed class PythonReDirectShapingTests
             var count = 0;
             while (cursor.MoveNext())
             {
-                cursor.EnsureMap();
+                cursor.PrepareValueProjection();
                 var traffic = cursor.WorkingInvocation.Budget.ResultBytes;
                 var storage = cursor.ReservedBytes;
                 var steps = cursor.WorkingInvocation.Budget.Steps;
                 var value = cursor.SnapshotValueData();
-                Assert.True(cursor.HasCoordinateMap);
                 Assert.Equal(traffic, cursor.WorkingInvocation.Budget.ResultBytes);
                 Assert.Equal(storage, cursor.ReservedBytes);
-                Assert.InRange(cursor.WorkingInvocation.Budget.Steps - steps, 1UL, 8UL);
+                // Two bounded index-block tails plus publication checkpoints,
+                // independently of the already indexed prefix length.
+                Assert.InRange(cursor.WorkingInvocation.Budget.Steps - steps, 1UL, 18UL);
                 var pair = count / 2;
                 var second = count % 2 != 0;
                 Assert.Equal(6 * pair + (second ? 4 : 0), value.StartOffsetInBytes);

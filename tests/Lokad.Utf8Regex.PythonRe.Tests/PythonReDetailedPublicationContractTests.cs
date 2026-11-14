@@ -63,37 +63,9 @@ public sealed class PythonReDetailedPublicationContractTests
         try
         {
             Assert.True(measured.MoveNext());
-            measured.EnsureMap();
-            var beforeWork = measured.WorkingInvocation.Budget.Steps;
-            var beforeBytes = measured.ReservedBytes;
             _ = measured.SnapshotDetailed([]);
             work = measured.WorkingInvocation.Budget.Steps;
             extent = measured.WorkingInvocation.Budget.ResultBytes;
-            var detailedWork = work - beforeWork;
-            var detailedWorking = measured.ReservedBytes - beforeBytes;
-            var standalone = new PythonReScalarMatchCursor(input, program, 0,
-                Regex.InfiniteMatchTimeout,
-                null, "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
-            try
-            {
-                Assert.True(standalone.MoveNext()); standalone.EnsureMap();
-                var initialWork = standalone.WorkingInvocation.Budget.Steps;
-                var initialBytes = standalone.ReservedBytes;
-                _ = standalone.GetLastIndex();
-                standalone.Checkpoint();
-                _ = standalone.AllocateResultArray<Utf8PythonGroupMatchData>(3);
-                foreach (var range in new[] { (0, input.Length), (0, 4), (4, input.Length) })
-                {
-                    standalone.Checkpoint();
-                    _ = standalone.GetText(range.Item1, range.Item2);
-                }
-                _ = standalone.SnapshotNameEntries([]);
-                standalone.Checkpoint();
-                Assert.Equal(detailedWork, standalone.WorkingInvocation.Budget.Steps - initialWork);
-                Assert.Equal(extent, standalone.WorkingInvocation.Budget.ResultBytes);
-                Assert.Equal(detailedWorking, standalone.ReservedBytes - initialBytes);
-            }
-            finally { standalone.Dispose(); }
         }
         finally { measured.Dispose(); }
         for (ulong cap = 1; cap <= work; cap++)
@@ -149,7 +121,7 @@ public sealed class PythonReDetailedPublicationContractTests
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try
         {
-            Assert.True(cursor.MoveNext()); cursor.EnsureMap();
+            Assert.True(cursor.MoveNext()); cursor.PrepareValueProjection();
             cursor.WorkingInvocation.ShareStorageForCursor();
             var observer = cursor.WorkingInvocation;
             var initialBytes = cursor.ReservedBytes;

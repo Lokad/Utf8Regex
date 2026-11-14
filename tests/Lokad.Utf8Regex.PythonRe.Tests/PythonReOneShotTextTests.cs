@@ -9,8 +9,6 @@ public sealed class PythonReOneShotTextTests
 {
     private static ulong TextBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
 
-    private static bool HasMap(ref PythonReScalarMatchCursor cursor) => cursor.HasCoordinateMap;
-
     [Theory]
     [InlineData(0, "😀", "é😀z", 0, "😀")]
     [InlineData(1, "😀", "é😀z", 0, null)]
@@ -73,7 +71,6 @@ public sealed class PythonReOneShotTextTests
             Exception? failure = null;
             try { result = cursor.GetText(0, input.Length); }
             catch (InvalidOperationException error) { failure = error; }
-            Assert.False(HasMap(ref cursor));
             if (allow)
             {
                 Assert.Null(failure); Assert.Equal(text, result);
@@ -195,7 +192,6 @@ public sealed class PythonReOneShotTextTests
         try
         {
             Assert.True(cursor.MoveNext());
-            Assert.False(HasMap(ref cursor));
             Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
             var baseline = cursor.ReservedBytes;
             cursor.WorkingInvocation.ShareStorageForCursor();
@@ -213,7 +209,7 @@ public sealed class PythonReOneShotTextTests
             Exception? failure = null;
             try { result = cursor.GetText(cursor.StartOffsetInBytes, cursor.EndOffsetInBytes); }
             catch (Exception error) { failure = error; }
-            Assert.True(entered); Assert.Null(result); Assert.False(HasMap(ref cursor));
+            Assert.True(entered); Assert.Null(result);
             if (expire)
             {
                 Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);

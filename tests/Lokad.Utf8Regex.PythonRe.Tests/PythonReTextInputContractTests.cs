@@ -79,7 +79,6 @@ public sealed class PythonReTextInputContractTests
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out var first));
         Assert.Equal(6, first.GetValueMemory().Length);
-        Assert.False(cursor.HasCoordinateMap);
     }
 
     [Fact]
