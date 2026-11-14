@@ -2529,10 +2529,19 @@ internal static class Pcre2GlobalOperationDriver
             repeat.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
             (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
             repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet &&
-            (input.IsAscii || Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
+            (input.IsAscii ||
+             repeat.Token.CharacterClass is
+             {
+                 Negated: false,
+                 Terms: [{ Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 }],
+             } ||
+             Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
         {
-            // Every scalar is one byte here. A complete greedy root selects
-            // each maximal member run; shorter runs cannot qualify at a suffix.
+            // A positive ASCII range consumes only scalar-aligned ASCII bytes;
+            // every byte of another scalar is excluded, so no ASCII subject
+            // classification is needed. Other classes keep the ASCII proof.
+            // A complete greedy root selects each maximal member run; shorter
+            // runs cannot qualify at a suffix.
             var asciiBudget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
             // This counter acquires no scratch/result storage. Observe existing
             // shared admission failures and original interruption authority;

@@ -7,6 +7,39 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2AsciiClassRunCountTests
 {
     [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void PositiveAsciiRangeNeedsNoScratchOnMixedText(Utf8InputValidation validation)
+    {
+        foreach (var length in new[] { 4095, 4096, 4097 })
+        {
+            var text = "α" + new string('a', length) + "😀shortéabcdefghij中";
+            var input = Encoding.UTF8.GetBytes("pad" + text + "pad");
+            var regex = Utf8Pcre2Regex.Create("[a-z]{10,}", Pcre2CompileOptions.Ucp, default,
+                new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
+                Timeout.InfiniteTimeSpan, validation);
+            using var token = new CancellationTokenSource();
+            var allowance = new RejectStorage();
+            var subject = input.AsSpan(3, input.Length - 6);
+            Assert.Equal(2, regex.Count(subject, 0, default, token.Token, allowance));
+            Assert.Equal(1, regex.Count(subject, 2 + length, default, token.Token, allowance));
+            Assert.Equal(0, regex.Count(subject, subject.Length, default, token.Token, allowance));
+            Assert.Equal(0, allowance.Attempts);
+            if (validation == Utf8InputValidation.Validate)
+                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
+        }
+    }
+
+    [Fact]
+    public void AsciiProjectionDoesNotProveAUnicodeOrNegatedClass()
+    {
+        Assert.Equal(1, new Utf8Pcre2Regex("[a-zé]+").Count("abcédef"u8));
+        Assert.Equal(1, new Utf8Pcre2Regex("[^0-9]+").Count("aé😀b"u8));
+        Assert.Equal(1, new Utf8Pcre2Regex(@"[\w]{2,}", Pcre2CompileOptions.Ucp).Count("ééé"u8));
+        Assert.Equal(1, new Utf8Pcre2Regex("[a-z]+", Pcre2CompileOptions.Caseless).Count("aKb"u8));
+    }
+
+    [Theory]
     [InlineData(@"\w{10,}", "short words only", 0)]
     [InlineData(@"\w{3,}", "ab abc abcd x", 2)]
     [InlineData(@"[a-z]{2,}", "abc!!def!g", 2)]
