@@ -297,6 +297,11 @@ check under that same invocation. Omitting the duplicate final wrapper check can
 reduce numerical work by one step per decoded range; bounded decoding, allocation
 admission and final operation publication remain checked.
 
+Captured splitting reuses the result buffer's interruption check before staging
+each capture, including absent groups, instead of checking again immediately
+afterward. Decoding, capacity admission, next discovery and final publication
+retain their checks; numerical work can decrease by one step per captured value.
+
 One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
 available ASCII/whole-subject character counts; otherwise they count only their
 returned scalar range instead of describing an unrelated suffix.
