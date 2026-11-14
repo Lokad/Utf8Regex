@@ -47,6 +47,10 @@
   its strict completed-stream UTF-8 check without unused coordinate metadata.
   Core Count reuses existing ASCII validity proofs and omits discarded literal
   coordinates; checked folded search compares punctuation anchors exactly.
+  Boolean admission omits unused subject coordinates. Complete Unicode word-run
+  Count can use constant working space, including mixed and supplementary text;
+  this reduces finite-policy admission requirements, with an intentional cost
+  on ASCII-only word counting.
   Short string output handles one-byte ASCII directly. POSIX suffix captures
   reuse the whole match's ending coordinate. PCRE2 positive ASCII-range Count
   can keep its workspace-free byte counter on valid mixed Unicode text, with

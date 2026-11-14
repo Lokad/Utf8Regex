@@ -73,6 +73,10 @@ UTF-16 matching behavior. Version 0.5 adds .NET 11 assets, POSIX and Core's opti
 caller-validity policy while preserving Core's default strict rejection. PythonRe/
 POSIX require existing valid text; PCRE2 follows its UTF checking contract.
 
+Complete Unicode word-run Count can now avoid scalar execution workspace.
+Numerical admission requirements may decrease with the execution route; ASCII
+word counting can cost more time. Recheck finite policies when upgrading.
+
 NuGet's project-website link leads to the repository specifications, migration
 guide, profile examples and benchmark tables. Those tables retain their measured
 source/runtime identities; they are not a speed guarantee for every package.
