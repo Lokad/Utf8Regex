@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
 
-public sealed class PosixDisjointRunTests
+public sealed class PosixGreedyAsciiRunTests
 {
     [Fact]
     public void NewlineAnchorsSelectEachCompleteDisjointRunPair()
@@ -19,14 +19,16 @@ public sealed class PosixDisjointRunTests
     }
 
     [Fact]
-    public void OnlyFlatPositiveDisjointAsciiClassesAdmitUniqueRunBoundaries()
+    public void OnlyProvedFlatAsciiRunsAdmitGreedyBoundaries()
     {
         Assert.True(PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default).FirstAcceptanceIsLongest);
         Assert.True(PosixProgram.Compile("([a-z]{1,3})([0-9]{2,4})([!]{1,2})", default).FirstAcceptanceIsLongest);
         foreach (var pattern in new[] { "([a-z]+)[0-9]+", "[a-z]+([0-9]+)",
-            "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}" })
-            Assert.True(PosixProgram.Compile(pattern, default).DisjointAsciiRuns);
-        foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)", "([a-z]*)([0-9]+)",
+            "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}", "(a*)(a*)",
+            "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)" })
+            Assert.True(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
+        foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)", "(a*)(a+)",
+            "(a*)^(a*)", "(a*)^(b*)", "^([a-z]*)([0-9]+)$",
             "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
             "([a-z])+[0-9]+", "[a-z]+([0-9])+", "[a-z]+([0-9]+)+", "([a-z]+[0-9]+)+" })
             Assert.False(PosixProgram.Compile(pattern, default).FirstAcceptanceIsLongest);
@@ -64,11 +66,21 @@ public sealed class PosixDisjointRunTests
     [InlineData("[a-b]+([0-1]+)")]
     [InlineData("[a-b]+[0-1]+")]
     [InlineData("(([a-b]{1,3}))[0-1]{2,4}[!]{1,2}")]
-    public void UniqueRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)
+    [InlineData("(a*)(a*)")]
+    [InlineData("([a-b]*)([a-b]*)")]
+    [InlineData("([a-b]+)([a-c]*)")]
+    [InlineData("([a-b]*)([0-1]+)")]
+    [InlineData("([a-b]{0,3})([a-c]{0,4})")]
+    [InlineData("a*([a-b]*)")]
+    [InlineData("([a-b]*)[a-c]*")]
+    [InlineData("(([a-b]*))([a-c]*)")]
+    [InlineData("([a-b]*)()([a-c]*)")]
+    [InlineData("(a*)(a*)()(b*)")]
+    public void GreedyRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)
     {
         var regex = new Utf8PosixRegex(pattern);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        foreach (var text in new[] { "", "ab01!", "😀ab011!", "aaab00111!!ab01!", "a0 b1 ab001", "aabb0011!", "ab", "0011", "ab01\nab11!" })
+        foreach (var text in new[] { "", "aaaa", "aabaa", "é😀aaaa!", "ab01!", "😀ab011!", "aaab00111!!ab01!", "a0 b1 ab001", "aabb0011!", "ab", "0011", "ab01\nab11!" })
         {
             var input = Encoding.UTF8.GetBytes(text);
             for (var floor = 0; floor <= text.Length; floor++)

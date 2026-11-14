@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Posix;
 
 // One exclusive call/cursor owns these admitted buffers. Scalar execution finds
 // the earliest longest whole extent; proven first-acceptance programs also keep
-// their capture trace, except flat disjoint runs with unique capture boundaries.
+// their capture trace, except flat ASCII runs with proved greedy capture boundaries.
 // General captures select closed syntax intervals.
 // State belongs to the synchronous stack/heap vector or the cursor's array.
 // Pass this owner by reference; no borrowed span or result aliases its buffers.
@@ -36,7 +36,7 @@ internal partial struct PosixWorkspace
     internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
         _program = program;
-        _openOffset = program.DisjointAsciiRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
+        _openOffset = program.GreedyAsciiRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
         var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
         _lastOffset = checked(_openOffset + tags);
         var count = checked(_lastOffset + tags);
@@ -70,7 +70,7 @@ internal partial struct PosixWorkspace
                     _frames.Release(ref invocation); _undo.Release(ref invocation);
                     SelectChart(input, state, candidate, end, ref invocation);
                 }
-                else if (captureHistory && !_program.DisjointAsciiRuns)
+                else if (captureHistory && !_program.GreedyAsciiRuns)
                 {
                     var trace = _trace.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
@@ -133,23 +133,26 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
-                    if (_program.DisjointAsciiRuns)
+                    if (_program.GreedyAsciiRuns)
                     {
-                        // The existing compiler proof admits only positive,
-                        // pairwise-disjoint ASCII classes with public captures
-                        // outside their bodies. A shorter run cannot help its successor
-                        // or an anchor, so no alternative exit/counter undo is
-                        // useful. Keep ordinary capture events around the run.
+                        // The compiler proves greedy endpoints for ASCII runs:
+                        // required successors are disjoint, overlapping ones are
+                        // nullable, and nullable programs have no anchors. No
+                        // alternative exit/counter undo can improve selection.
+                        // Keep ordinary public capture events around each run.
                         // A single proved private wrapper has no public observer.
                         var atomIndex = pc + (code[pc + 1].Kind == Utf8SliceInstructionKind.CaptureStart ? 2 : 1);
-                        var mask = _program.Scalar.SetMasks[code[atomIndex].A];
+                        var atom = code[atomIndex];
+                        var literal = atom.Kind == Utf8SliceInstructionKind.Literal ? atom.A : -1;
+                        ReadOnlySpan<byte> mask = literal < 0 ? _program.Scalar.SetMasks[atom.A] : [];
                         var limit = at + (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
                         var runStart = at;
                         while (at < limit)
                         {
                             Charge(ref invocation);
                             var value = input[at];
-                            if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) break;
+                            if (value >= 128 || (literal >= 0 ? value != literal :
+                                (mask[value >> 3] & (1 << (value & 7))) == 0)) break;
                             at++;
                         }
                         if (at - runStart < instruction.RepeatMinimum) { failed = true; break; }
@@ -194,7 +197,7 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        if (_program.DisjointAsciiRuns)
+                        if (_program.GreedyAsciiRuns)
                             state[_openOffset + instruction.A] = at;
                         else
                         {
@@ -207,7 +210,7 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
                     {
-                        if (_program.DisjointAsciiRuns)
+                        if (_program.GreedyAsciiRuns)
                             state[_lastOffset + instruction.A] = at;
                         else
                             Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
@@ -421,7 +424,7 @@ internal partial struct PosixWorkspace
         // The existing flat-run proof excludes forks and public captures inside
         // repeat bodies. Each public tag opens/closes once on the successful parse; no
         // occurrence history or parent reconciliation can change these edges.
-        if (_program.DisjointAsciiRuns)
+        if (_program.GreedyAsciiRuns)
         {
             start = state[_openOffset + tag]; end = state[_lastOffset + tag];
             return start >= 0 && end >= 0;

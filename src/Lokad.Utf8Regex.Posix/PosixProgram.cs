@@ -8,11 +8,11 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool disjointAsciiRuns,
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool greedyAsciiRuns,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
-        FirstAcceptanceIsLongest = firstAcceptanceIsLongest; DisjointAsciiRuns = disjointAsciiRuns;
+        FirstAcceptanceIsLongest = firstAcceptanceIsLongest; GreedyAsciiRuns = greedyAsciiRuns;
         Chart = chart; ChartClasses = chartClasses;
     }
 
@@ -20,7 +20,7 @@ internal sealed partial class PosixProgram
     internal int[] Parents { get; }
     internal int[] CaptureTags { get; }
     internal bool FirstAcceptanceIsLongest { get; }
-    internal bool DisjointAsciiRuns { get; }
+    internal bool GreedyAsciiRuns { get; }
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
@@ -118,15 +118,15 @@ internal sealed partial class PosixProgram
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
-        var disjointAsciiRuns = !firstAcceptanceIsLongest && CanSelectDisjointAsciiRuns(scalar, captureTags.AsSpan(1), budget);
+        var greedyAsciiRuns = scalar.RepeatCount >= 2 && CanSelectGreedyAsciiRuns(scalar, captureTags.AsSpan(1), budget);
         if (!firstAcceptanceIsLongest)
-            firstAcceptanceIsLongest = disjointAsciiRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
+            firstAcceptanceIsLongest = greedyAsciiRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, disjointAsciiRuns,
+        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, greedyAsciiRuns,
                 chart.Nodes, chart.Classes),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.disjointAsciiRuns, x.Nodes, x.Classes));
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.greedyAsciiRuns, x.Nodes, x.Classes));
         construction.Complete();
         return result;
     }
@@ -253,32 +253,38 @@ internal sealed partial class PosixProgram
             (outer.RepeatMaximum != long.MaxValue || outer.RepeatMinimum > 0);
     }
 
-    private static bool CanSelectDisjointAsciiRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget)
+    private static bool CanSelectGreedyAsciiRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget)
     {
-        // Mutually disjoint positive classes give each transition one possible
-        // input boundary. Greedy selection maximizes the final run; tags outside
-        // the bodies have no competing occurrence history at that endpoint.
+        // Greedy runs maximize each earlier concatenation part. An overlapping
+        // successor must be nullable: it can still consume the suffix of any
+        // shorter earlier choice. Required overlapping runs may need rewind.
+        // Public tags outside bodies occur once; no history can change the split.
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
+        Span<byte> literalMask = stackalloc byte[16];
         var runs = 0;
+        var hasAnchor = false;
+        var hasNullableRun = false;
         var code = program.Instructions;
         for (var index = 0; index < code.Length; index++)
         {
             budget.ChargeWork(1);
             var instruction = code[index];
-            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
-                Utf8SliceInstructionKind.Anchor) continue;
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (instruction.Kind == Utf8SliceInstructionKind.Anchor) { hasAnchor = true; continue; }
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
-                return runs >= 2 && index == code.Length - 1;
-            if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 1 ||
+                // Nullable pieces can require rewind to satisfy an interior
+                // anchor, e.g. (a*)^(a*). Keep all such anchored programs general.
+                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
+            if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 0 ||
                 index > code.Length - 4) return false;
+            hasNullableRun |= instruction.RepeatMinimum == 0;
             var atomIndex = index + 1;
             var exitIndex = index + 3;
             if (code[atomIndex] is { Kind: Utf8SliceInstructionKind.CaptureStart } open)
             {
-                // Uncaptured class bodies carry a fictive syntax tag. Disjoint
-                // alphabets fix every run's boundary without that history;
-                // a repeated public capture must still keep its last occurrence.
+                // A private single-atom body cannot change the selected greedy
+                // boundary. A repeated public capture still needs its history.
                 if (index > code.Length - 6 ||
                     code[index + 3] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || close.A != open.A)
                     return false;
@@ -289,17 +295,25 @@ internal sealed partial class PosixProgram
             }
             if (instruction.A != exitIndex ||
                 code[exitIndex - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
-                code[exitIndex] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B ||
-                code[atomIndex] is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } atom ||
-                program.CategorySetMembers[atom.D].Length != 0)
+                code[exitIndex] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B)
                 return false;
-            var mask = program.SetMasks[atom.A];
+            var atom = code[atomIndex];
+            scoped ReadOnlySpan<byte> mask;
+            if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)atom.A < 128)
+            {
+                literalMask.Clear();
+                literalMask[atom.A >> 3] = (byte)(1 << (atom.A & 7));
+                mask = literalMask;
+            }
+            else if (atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+                program.CategorySetMembers[atom.D].Length == 0) mask = program.SetMasks[atom.A];
+            else return false;
             if (mask.Length != seen.Length) return false;
             var nonempty = false;
             for (var octet = 0; octet < seen.Length; octet++)
             {
                 budget.ChargeWork(1);
-                if ((seen[octet] & mask[octet]) != 0) return false;
+                if (instruction.RepeatMinimum != 0 && (seen[octet] & mask[octet]) != 0) return false;
                 nonempty |= mask[octet] != 0;
                 seen[octet] |= mask[octet];
             }
