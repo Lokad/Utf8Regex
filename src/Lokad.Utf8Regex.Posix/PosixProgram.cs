@@ -284,12 +284,16 @@ internal sealed partial class PosixProgram
                 continue;
             }
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
+            {
                 // Nullable pieces can require rewind to satisfy an interior
                 // anchor, e.g. (a*)^(a*). Keep all such anchored programs general.
-                // A consuming LF can also need rewind to an earlier line end,
-                // even when every run has a positive minimum.
-                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun) &&
-                    !(hasLineEndAnchor && (seen['\n' >> 3] & (1 << ('\n' & 7))) != 0);
+                // Positive disjoint runs have unique intervening boundaries.
+                // Ordinary greedy rewind tries the longest valid final endpoint
+                // first, including an earlier LF before a line-end anchor. The
+                // direct byte loop cannot rewind, so only that shortcut declines.
+                if (hasLineEndAnchor && (seen['\n' >> 3] & (1 << ('\n' & 7))) != 0) asciiOnly = false;
+                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
+            }
             if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 0 ||
                 index > code.Length - 4) return false;
             hasNullableRun |= instruction.RepeatMinimum == 0;

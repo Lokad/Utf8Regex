@@ -194,10 +194,12 @@ consumption in the scalar executor when greedy boundaries prove the selected
 parse. A required run must be disjoint from all preceding runs; an overlapping
 successor must have minimum zero. Finite maxima remain effective. Any anchor in
 a nullable sequence declines this proof, because an interior anchor can require
-rewinding an earlier run. A multiline end anchor also declines this proof if
-any run can consume LF: even a positive-minimum run may need to rewind to a
-line end before that LF. For example, `^([a-z]+)([[:space:]]+)$` with `Newline`
-on `a \nb` selects `a `; consuming the LF cannot turn that hit into a miss.
+rewinding an earlier run. A multiline end anchor with an LF-consuming run
+declines only direct byte consumption. Positive disjoint runs retain semantic
+first acceptance through ordinary scalar execution and trace projection: their
+intervening boundaries are unique, and greedy rewind tries final endpoints
+longest first. For example, `^([a-z]+)([[:space:]]+)$` with `Newline` on
+`a \nb` selects `a `; consuming the LF cannot turn that hit into a miss.
 Each examined byte
 remains metered; impossible alternative exits, their undo journal and unused
 repeat-counter capacity are omitted. Work, pending depth and working admission

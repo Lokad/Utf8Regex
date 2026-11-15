@@ -49,7 +49,73 @@ public sealed class PosixGreedyAsciiRunTests
         foreach (var pattern in new[] { "([k]+)([K]+)", "([k]*)^([0-9]+)", "([k])+([0-9]+)",
             "([K]+)([0-9]+)", "([^k]+)([0-9]+)", "(k|kk)(k*)" })
             Assert.False(PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline).FirstAcceptanceIsLongest);
+        var rewind = PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
+        Assert.True(rewind.FirstAcceptanceIsLongest);
+        Assert.False(rewind.GreedyAsciiRuns);
+    }
+
+    [Theory]
+    [InlineData("a \nb", 2, 1)]
+    [InlineData("a \n\nb", 3, 2)]
+    [InlineData("a \n", 3, 2)]
+    public void LineEndRewindSelectsTheLatestValidEndpoint(string text, int length, int whitespace)
+    {
+        var regex = new Utf8PosixRegex("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
+        var groups = new Utf8ValueMatch[3];
+        var whole = regex.Match(Encoding.UTF8.GetBytes(text), groups);
+        Assert.True(whole.Success);
+        Assert.Equal((0, length), (whole.IndexInBytes, whole.LengthInBytes));
+        Assert.Equal((0, 1), (groups[1].IndexInBytes, groups[1].LengthInBytes));
+        Assert.Equal((1, whitespace), (groups[2].IndexInBytes, groups[2].LengthInBytes));
+    }
+
+    [Theory]
+    [InlineData("^([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
+    [InlineData("([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
+    [InlineData("^(([a]{1,2}))([[:space:]]{1,3})$", PosixCompileOptions.Newline)]
+    [InlineData("([a]+)$([\n]+)", PosixCompileOptions.Newline)]
+    [InlineData("([a]+)$([\n]+)$", PosixCompileOptions.Newline)]
+    [InlineData("([a]+)([\n]+)^", PosixCompileOptions.Newline)]
+    [InlineData("([\n]+)^([a]+)$", PosixCompileOptions.Newline)]
+    [InlineData("^([k]+)([[:space:]]+)$", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)]
+    public void LineEndScalarRewindAgreesWithGeneralSelectionAtEveryFloorAndOutputWidth(string pattern, PosixCompileOptions options)
+    {
+        // In Newline mode $. cannot consume: $ requires EOF or LF, while dot
+        // rejects LF. This impossible alternative forces the production general
+        // selector without changing the language or any public capture number.
+        var contrast = pattern + "|$.";
+        var program = PosixProgram.Compile(pattern, options);
+        Assert.True(program.FirstAcceptanceIsLongest);
+        Assert.Equal(!pattern.Contains('$') && (options & PosixCompileOptions.IgnoreCase) == 0, program.GreedyAsciiRuns);
+        Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
+        var regex = new Utf8PosixRegex(pattern, options);
+        var general = new Utf8PosixRegex(contrast, options);
+        foreach (var text in Subjects().Concat(new[] { "a \n\nb", "😀a \n\nb", "KK \nb", "a\na\n", "\na\n\na \nb" }))
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            for (var floor = 0; floor <= input.Length; floor++)
+            {
+                if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
+                for (var width = 0; width <= regex.GroupCount + 2; width++)
+                {
+                    var expected = new Utf8ValueMatch[width];
+                    var actual = new Utf8ValueMatch[width];
+                    Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
+                    Assert.Equal(expected, actual);
+                }
+                Assert.Equal(general.Count(input, floor), regex.Count(input, floor));
+            }
+        }
+        static IEnumerable<string> Subjects()
+        {
+            yield return "";
+            var level = new[] { "" };
+            for (var length = 1; length <= 4; length++)
+            {
+                level = level.SelectMany(prefix => new[] { prefix + "a", prefix + " ", prefix + "\n" }).ToArray();
+                foreach (var text in level) yield return text;
+            }
+        }
     }
 
     [Theory]
