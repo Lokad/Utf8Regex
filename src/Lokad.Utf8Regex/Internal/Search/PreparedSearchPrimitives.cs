@@ -493,59 +493,15 @@ internal readonly struct PreparedSubstringSearch
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
         }
 
-        var foldedNeedle = _foldedNeedle ?? Needle;
-        if (Needle.Length >= 4 && TryIndexOfIgnoreCaseFirstLastVector(input, foldedNeedle, _ignoreCasePreferredCompareIndex, out var vectorIndex))
+        // Every longer ignore-case needle leaves construction with folded bytes,
+        // a shift table and a preferred index strictly inside the needle.
+        var foldedNeedle = _foldedNeedle!;
+        if (TryIndexOfIgnoreCaseFirstLastVector(input, foldedNeedle, _ignoreCasePreferredCompareIndex, out var vectorIndex))
         {
             return vectorIndex;
         }
 
-        if (_ignoreCaseShiftTable is not null)
-        {
-            return IndexOfIgnoreCaseHorspool(input, foldedNeedle, _ignoreCaseShiftTable);
-        }
-
-        if (!AsciiSearch.TryGetCaseVariants(Needle[0], out var firstLower, out var firstUpper))
-        {
-            var index = 0;
-            while (index <= input.Length - Needle.Length)
-            {
-                var relative = input[index..].IndexOf(firstLower);
-                if (relative < 0)
-                {
-                    return -1;
-                }
-
-                index += relative;
-                if (MatchesFoldedTail(input, index, foldedNeedle))
-                {
-                    return index;
-                }
-
-                index++;
-            }
-
-            return -1;
-        }
-
-        var start = 0;
-        while (start <= input.Length - Needle.Length)
-        {
-            var relative = input[start..].IndexOfAny(firstLower, firstUpper);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            start += relative;
-            if (MatchesFoldedTail(input, start, foldedNeedle))
-            {
-                return start;
-            }
-
-            start++;
-        }
-
-        return -1;
+        return IndexOfIgnoreCaseHorspool(input, foldedNeedle, _ignoreCaseShiftTable!);
     }
 
     private static bool TryIndexOfIgnoreCaseFirstLastVector(ReadOnlySpan<byte> input, ReadOnlySpan<byte> foldedNeedle, int preferredCompareIndex, out int index)
@@ -560,11 +516,6 @@ internal readonly struct PreparedSubstringSearch
         }
 
         var lastIndex = needleLength - 1;
-        if ((uint)preferredCompareIndex >= (uint)needleLength || preferredCompareIndex == 0)
-        {
-            preferredCompareIndex = GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], lastIndex, null);
-        }
-
         var firstFolded = foldedNeedle[0];
         var compareFolded = foldedNeedle[preferredCompareIndex];
         if (firstFolded > 0x7f || compareFolded > 0x7f)
@@ -742,7 +693,7 @@ internal readonly struct PreparedSubstringSearch
             return AsciiSearch.LastIndexOfIgnoreCase(input, Needle);
         }
 
-        var foldedNeedle = _foldedNeedle ?? Needle;
+        var foldedNeedle = _foldedNeedle!;
         if (!AsciiSearch.TryGetCaseVariants(Needle[0], out var firstLower, out var firstUpper))
         {
             for (var end = input.Length - Needle.Length + 1; end > 0;)
@@ -839,19 +790,19 @@ internal readonly struct PreparedSubstringSearch
     }
 
     private static int GetPreferredCompareIndex(ReadOnlySpan<byte> foldedNeedle, byte firstFolded, int lastIndex,
-        Utf8ConstructionBudget? owner)
+        Utf8ConstructionBudget owner)
     {
-        owner?.ChargeWork(3ul * (ulong)foldedNeedle.Length);
+        owner.ChargeWork(3ul * (ulong)foldedNeedle.Length);
         if (AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(foldedNeedle, ignoreCase: true, out var anchors) &&
             anchors.Anchor2 > 0)
         {
             return anchors.Anchor2;
         }
 
-        owner?.ChargeWork(256);
+        owner.ChargeWork(256);
         Span<int> counts = stackalloc int[256];
         counts.Clear();
-        owner?.ChargeWork((ulong)foldedNeedle.Length);
+        owner.ChargeWork((ulong)foldedNeedle.Length);
         for (var i = 0; i < foldedNeedle.Length; i++)
         {
             counts[foldedNeedle[i]]++;
@@ -860,7 +811,7 @@ internal readonly struct PreparedSubstringSearch
         var compareIndex = -1;
         var rarestCount = int.MaxValue;
         var bestRarityScore = int.MinValue;
-        owner?.ChargeWork((ulong)foldedNeedle.Length - 1);
+        owner.ChargeWork((ulong)foldedNeedle.Length - 1);
         for (var i = 1; i < foldedNeedle.Length; i++)
         {
             if (foldedNeedle[i] == firstFolded)
