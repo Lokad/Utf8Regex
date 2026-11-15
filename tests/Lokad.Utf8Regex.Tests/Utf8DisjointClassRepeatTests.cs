@@ -481,7 +481,7 @@ public sealed class Utf8DisjointClassRepeatTests
         invocation.CheckpointHook = _ =>
         {
             if (entered || !new System.Diagnostics.StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod()?.Name == "RunClassRepeat")) return;
+                frame.GetMethod()?.Name is "RunClassRepeat" or "RunUnboundedAsciiRange")) return;
             entered = true;
             if (deadline) ticks = 25; else token.Cancel();
         };
