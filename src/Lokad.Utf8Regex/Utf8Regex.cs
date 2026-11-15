@@ -572,12 +572,12 @@ public sealed partial class Utf8Regex
             var validation = subjectValidation;
             if (!validation.HasValue)
             {
-                // Trusted discovery needs no description of an unrelated suffix.
-                // Strict input keeps its complete validation facts for projection.
+                // Validate the whole subject when required, without deriving
+                // unused UTF-16 totals. Reuse a proved ASCII identity map.
                 if (InputValidation == Utf8InputValidation.AssumeValid)
                     Utf8Validation.CheckSubject(input, ref invocation);
-                else
-                    validation = Utf8Validation.Subject(input, ref invocation);
+                else if (Utf8Validation.SubjectIsAscii(input, ref invocation))
+                    validation = new Utf8ValidationResult(input.Length, input.Length, true, false);
             }
             return OwnedSliceMatchDetailedFromByte(input, program, fromByte, validation, null, ref invocation);
         }
@@ -2112,10 +2112,10 @@ public sealed partial class Utf8Regex
     private Utf8MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        // Native simple discovery may ignore captures; detailed projection needs
-        // the scalar VM instead of the removed fixed unit-span branch maps.
-        var detailedProgram = GetOwnedSliceProgram(input, cancellationToken) ??
-            (_hasCaptures && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern ? _ownedSliceProgram : null);
+        // Captured simple patterns always need the scalar VM for detailed
+        // results; deciding that needs no subject classification.
+        var detailedProgram = _hasCaptures && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern
+            ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken);
         if (detailedProgram is { } ownedProgram)
         {
             return OwnedSliceMatchDetailed(input, ownedProgram, cancellationToken);

@@ -89,6 +89,9 @@ its aliases still borrow the complete original subject. Avoided suffix maps can
 lower work, working-capacity and result-capacity requirements; needed arrays are
 admitted before allocation. Explicit offset maps and callback maps retain their
 existing scope and lifetime.
+Strict detailed preparation reuses its whole-subject ASCII proof and defers mixed
+UTF-16 metadata to the required capture prefix. A required mixed prefix can add
+description work quanta; numerical work budgets remain route/version dependent.
 
 Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
 and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text

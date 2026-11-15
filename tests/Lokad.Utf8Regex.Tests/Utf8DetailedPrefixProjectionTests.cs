@@ -105,8 +105,14 @@ public sealed class Utf8DetailedPrefixProjectionTests
         var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
         var input = Encoding.UTF8.GetBytes("éaaab" + new string('x', 8192) + "😀");
         using var token = new CancellationTokenSource();
-        var result = regex.MatchDetailed(input, token.Token);
-        Assert.Equal("aaa", result.GetGroup("run").GetValueString());
+        var session = Utf8SearchDiagnosticsSession.Start();
+        try
+        {
+            var result = regex.MatchDetailed(input, token.Token);
+            Assert.Equal("aaa", result.GetGroup("run").GetValueString());
+            Assert.Equal(1, session.SubjectValidations);
+        }
+        finally { session.Complete(); }
         var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => { _ = far.MatchDetailed(input); });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
