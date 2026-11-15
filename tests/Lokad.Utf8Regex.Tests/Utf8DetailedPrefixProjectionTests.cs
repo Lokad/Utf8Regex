@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8DetailedAsciiPrefixProjectionTests
+public sealed class Utf8DetailedPrefixProjectionTests
 {
     [Theory]
     [InlineData(@"(?<run>a+)(?:b|c)", "zaaab rest😀")]
@@ -27,6 +27,11 @@ public sealed class Utf8DetailedAsciiPrefixProjectionTests
         byte[] storage = [0xff, .. bytes, 0xff];
         var actual = regex.MatchDetailed(storage.AsSpan(1, bytes.Length));
         var expected = oracle.Match(text);
+        AssertAllCaptures(expected, actual, oracle, text);
+    }
+
+    private static void AssertAllCaptures(Match expected, Utf8MatchContext actual, Regex oracle, string text)
+    {
         Assert.Equal(expected.Success, actual.Success);
         Assert.Equal(expected.Value, actual.GetValueString());
         if (!expected.Success) return;
@@ -51,6 +56,30 @@ public sealed class Utf8DetailedAsciiPrefixProjectionTests
     }
 
     [Theory]
+    [InlineData(@"(?<x>é)", "é")]
+    [InlineData(@"(?=(?<x>é😀))é", "é😀")]
+    [InlineData(@"(?<x>é)+", "éé")]
+    [InlineData(@"(?<=(?<past>中🙂))é", "é")]
+    public void TrustedEarlyDetailedMatchNeedsOnlyItsCapturePrefix(string pattern, string target)
+    {
+        var text = "x中🙂" + target + new string('!', 1 << 20);
+        var input = Encoding.UTF8.GetBytes(text);
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 128,
+            MaxWorkingBytes = 64 << 10, MaxResultBytes = 8192 };
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options, resourcePolicy: policy,
+                inputValidation: Utf8InputValidation.AssumeValid);
+            var actual = regex.MatchDetailed(input);
+            AssertAllCaptures(oracle.Match(text), actual, oracle, text);
+            var strict = new Utf8Regex(pattern, options, resourcePolicy: policy);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => { _ = strict.MatchDetailed(input); });
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+        }
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     [InlineData(RegexOptions.RightToLeft)]
@@ -58,14 +87,15 @@ public sealed class Utf8DetailedAsciiPrefixProjectionTests
     public void ExistingModesKeepTheirSelectedMatchAndGroups(RegexOptions option)
     {
         const string pattern = @"(?<run>a+)(?:b|c)";
-        const string text = "aaab aac 😀";
+        const string text = "é aaab aac 😀";
         var oracle = new Regex(pattern, option);
-        var regex = new Utf8Regex(pattern, option);
-        var actual = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
         var expected = oracle.Match(text);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Groups["run"].Value, actual.GetGroup("run").GetValueString());
+        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var regex = new Utf8Regex(pattern, option, inputValidation: validation);
+            var actual = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+            AssertAllCaptures(expected, actual, oracle, text);
+        }
     }
 
     [Fact]
@@ -73,7 +103,7 @@ public sealed class Utf8DetailedAsciiPrefixProjectionTests
     {
         var policy = new Utf8ResourcePolicy { MaxResultBytes = 4096, MaxWorkingBytes = 1 << 20, MaxWorkSteps = 1_000_000 };
         var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
-        var input = Encoding.UTF8.GetBytes("aaab" + new string('x', 8192) + "😀");
+        var input = Encoding.UTF8.GetBytes("éaaab" + new string('x', 8192) + "😀");
         using var token = new CancellationTokenSource();
         var result = regex.MatchDetailed(input, token.Token);
         Assert.Equal("aaa", result.GetGroup("run").GetValueString());
@@ -91,18 +121,21 @@ public sealed class Utf8DetailedAsciiPrefixProjectionTests
     [Fact]
     public void BorrowedContextAndCaptureAliasesSurviveLaterCalls()
     {
-        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)");
-        var input = Encoding.UTF8.GetBytes("aaab other😀");
-        var first = regex.MatchDetailed(input);
-        var alias = first;
-        var group = first.GetGroup("run");
-        var capture = group.GetCapture(0);
-        _ = regex.MatchDetailed("éaac"u8);
-        Assert.Equal("aaab", alias.GetValueString());
-        Assert.Equal("aaa", group.GetValueString());
-        Assert.Equal("aaa", capture.GetValueString());
-        Assert.Equal(0, capture.IndexInBytes);
-        Assert.Equal(3, capture.LengthInBytes);
+        var input = Encoding.UTF8.GetBytes("éaaab other😀");
+        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", inputValidation: validation);
+            var first = regex.MatchDetailed(input);
+            var alias = first;
+            var group = first.GetGroup("run");
+            var capture = group.GetCapture(0);
+            _ = regex.MatchDetailed("éaac"u8);
+            Assert.Equal("aaab", alias.GetValueString());
+            Assert.Equal("aaa", group.GetValueString());
+            Assert.Equal("aaa", capture.GetValueString());
+            Assert.Equal(2, capture.IndexInBytes);
+            Assert.Equal(3, capture.LengthInBytes);
+        }
     }
 
     [Fact]

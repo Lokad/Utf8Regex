@@ -1,5 +1,9 @@
 # Detailed capture coordinates in an ASCII prefix
 
+Historical checkpoint: Unicode-prefix behavior is superseded by
+[bounded detailed projection](../DetailedPrefixProjection-20261115/README.md).
+Original measurements and identities below remain unchanged.
+
 **Promoted with local costs.** After owned scalar matching and complete strict
 UTF-8 validation, detailed projection checks every capture-history endpoint,
 including captures beyond the whole match. If the entire required prefix is

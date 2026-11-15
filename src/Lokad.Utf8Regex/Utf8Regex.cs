@@ -569,7 +569,16 @@ public sealed partial class Utf8Regex
             { InputValidation = InputValidation, SubjectValidationCompleted = subjectValidation.HasValue };
         try
         {
-            var validation = subjectValidation ?? Utf8Validation.Subject(input, ref invocation);
+            var validation = subjectValidation;
+            if (!validation.HasValue)
+            {
+                // Trusted discovery needs no description of an unrelated suffix.
+                // Strict input keeps its complete validation facts for projection.
+                if (InputValidation == Utf8InputValidation.AssumeValid)
+                    Utf8Validation.CheckSubject(input, ref invocation);
+                else
+                    validation = Utf8Validation.Subject(input, ref invocation);
+            }
             return OwnedSliceMatchDetailedFromByte(input, program, fromByte, validation, null, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -579,7 +588,7 @@ public sealed partial class Utf8Regex
     }
 
     private Utf8MatchContext OwnedSliceMatchDetailedFromByte(ReadOnlySpan<byte> input,
-        Utf8SliceProgram program, int fromByte, Utf8ValidationResult validation, Utf8BoundaryMap? admittedMap, scoped ref Utf8SliceInvocation invocation)
+        Utf8SliceProgram program, int fromByte, Utf8ValidationResult? validation, Utf8BoundaryMap? admittedMap, scoped ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = fromByte;
         var slots = new Utf8SliceSlots([], []);

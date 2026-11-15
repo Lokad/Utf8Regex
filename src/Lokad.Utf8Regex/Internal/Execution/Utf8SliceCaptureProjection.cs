@@ -15,39 +15,34 @@ internal struct Utf8SliceCaptureProjection
     internal int[][] CaptureLengths;
 
     internal static Utf8BoundaryMap CreateBoundaryMap(Utf8SliceSearchOutcome outcome,
-        ReadOnlySpan<byte> input, Utf8ValidationResult validation,
+        ReadOnlySpan<byte> input, Utf8ValidationResult? validation,
         ref Utf8SliceInvocation invocation, out ulong reservation)
     {
-        if (!validation.IsAscii && validation.ByteLength == input.Length &&
-            outcome.CaptureStarts is { } starts && outcome.CaptureLengths is { } lengths)
+        if (validation is { IsAscii: true } ascii)
+            return Utf8BoundaryMap.Create(input, ascii, ref invocation, out reservation);
+        if (outcome.CaptureStarts is not { } starts || outcome.CaptureLengths is not { } lengths)
+            throw new InvalidOperationException("Owned detailed match is missing its capture histories.");
+        // Only returned capture coordinates need projection. Lookarounds can
+        // capture beyond the whole match, so include every history endpoint.
+        var end = outcome.EndByte;
+        var visited = 0;
+        for (var group = 0; group < starts.Length; group++)
         {
-            // Only returned capture coordinates need projection. Lookarounds can
-            // capture beyond the whole match, so include every history endpoint.
-            var end = outcome.EndByte;
-            var visited = 0;
-            for (var group = 0; group < starts.Length; group++)
+            if ((group & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
+            for (var capture = 0; capture < starts[group].Length; capture++)
             {
-                if ((group & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
-                for (var capture = 0; capture < starts[group].Length; capture++)
-                {
-                    if ((visited++ & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
-                    end = Math.Max(end, checked(starts[group][capture] + lengths[group][capture]));
-                }
+                if ((visited++ & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
+                end = Math.Max(end, checked(starts[group][capture] + lengths[group][capture]));
             }
-            for (var offset = 0; offset < end;)
-            {
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var count = Math.Min(2048, end - offset);
-                if (!Utf8InputAnalyzer.IsAscii(input.Slice(offset, count)))
-                    return Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
-                offset += count;
-            }
-            // A proved ASCII prefix uses the existing identity representation.
-            // The context still borrows the complete, already validated input.
-            return Utf8BoundaryMap.Create(input[..end],
-                new Utf8ValidationResult(end, end, true, false), ref invocation, out reservation);
         }
-        return Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
+        var prefix = input[..end];
+        if (validation is not { } prefixValidation || prefixValidation.ByteLength != end)
+        {
+            var breach = Utf8Validation.TryDescribeValid(prefix, ref invocation, out prefixValidation);
+            if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+        }
+        // Reuse the identity or Unicode map; the context still borrows the full input.
+        return Utf8BoundaryMap.Create(prefix, prefixValidation, ref invocation, out reservation);
     }
 
     internal static Utf8SliceCaptureProjection Create(Utf8SliceSearchOutcome outcome, Utf8BoundaryMap executionMap, scoped ref Utf8SliceInvocation invocation)

@@ -83,6 +83,13 @@ of describing an unrelated suffix. `Validate` still checks the whole subject;
 `AssumeValid` retains bounded search and coordinate-projection charges. Avoided
 description work can lower the required work budget; storage admission is unchanged.
 
+Owned detailed results limit Unicode maps to the prefix ending at the farthest returned
+capture-history endpoint, including captures inside lookarounds. The context and
+its aliases still borrow the complete original subject. Avoided suffix maps can
+lower work, working-capacity and result-capacity requirements; needed arrays are
+admitted before allocation. Explicit offset maps and callback maps retain their
+existing scope and lifetime.
+
 Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
 and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text
 without a subject-validation policy. [PCRE2](SPEC-PCRE2.md#subject-input-validation)
