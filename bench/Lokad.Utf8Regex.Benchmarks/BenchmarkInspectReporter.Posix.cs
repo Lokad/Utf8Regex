@@ -105,6 +105,7 @@ internal static partial class BenchmarkInspectReporter
             var result = new PosixBenchmarkRow
             {
                 Operation = benchmarkCase.Operation.ToString(), Records = benchmarkCase.Records,
+                CompileOptions = benchmarkCase.Options.ToString(),
                 StartOffsetInBytes = benchmarkCase.StartOffsetInBytes,
                 InputSha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(benchmarkCase.Input))),
                 Environment = environment, PosixAssembly = GetAssemblyIdentity(typeof(Utf8PosixRegex).Assembly),
@@ -279,7 +280,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var text = new StringBuilder();
         text.AppendLine("## Benchmarks").AppendLine();
-        text.AppendLine("Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, capture participation and nested/nullable histories. Unicode and nonzero floors are part of a selection case. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require existing valid unchanged UTF-8 text. Native PCRE2 NFA uses UTF mode with NO_UTF_CHECK, a prepared reusable match buffer and equivalent byte/UTF-16 result projection. Its ratios apply only to verified equal-result inputs, not general POSIX semantics. Native allocations below cover CLR traffic, excluding native workspace.").AppendLine();
+        text.AppendLine("Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, captures and nested/nullable histories, including Unicode floors, invariant folding and LF rewind. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require valid unchanged UTF-8. Native PCRE2 NFA uses UTF+NO_UTF_CHECK, matching case/newline options, a reusable match buffer and equivalent byte/UTF-16 projection. Newline rows use positive classes: native negated brackets do not implement POSIX's LF exclusion. Ratios cover verified equal-result inputs only, not general POSIX selection or folding equivalence. Native allocations cover CLR traffic, excluding native workspace.").AppendLine();
         text.AppendLine("| Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |");
         text.AppendLine("|---|---|---:|---:|---:|---|---:|");
         foreach (var (id, row) in summary.Sections["Operations"].OrderByDescending(pair => pair.Value.DisplayRatio ?? double.NegativeInfinity).ThenBy(pair => pair.Key, StringComparer.Ordinal))
@@ -325,7 +326,8 @@ internal static partial class BenchmarkInspectReporter
             if (!snapshot.Cases.TryGetValue(row.Id, out var evidence) || evidence.Status == "Unqualified" ||
                 JsonSerializer.Serialize(evidence.Expected) != JsonSerializer.Serialize(PosixResultJson(PosixBenchmarkCatalog.Expected(row.Id))) ||
                 evidence.InputSha256 != Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(row.Input))) ||
-                evidence.Operation != row.Operation.ToString() || evidence.Records != row.Records || evidence.StartOffsetInBytes != row.StartOffsetInBytes)
+                evidence.Operation != row.Operation.ToString() || evidence.CompileOptions != row.Options.ToString() ||
+                evidence.Records != row.Records || evidence.StartOffsetInBytes != row.StartOffsetInBytes)
                 throw new InvalidOperationException($"POSIX benchmark evidence is incomplete: {row.Id}");
             if (evidence.Environment.CoreAssembly != current.CoreAssembly || evidence.Environment.BenchmarkAssembly != current.BenchmarkAssembly ||
                 evidence.Environment.Runtime != RuntimeInformation.FrameworkDescription ||
@@ -380,6 +382,7 @@ internal static partial class BenchmarkInspectReporter
     private sealed class PosixBenchmarkRow
     {
         public required string Operation { get; init; }
+        public string CompileOptions { get; init; } = nameof(PosixCompileOptions.None);
         public int Records { get; init; }
         public int StartOffsetInBytes { get; init; }
         public required string InputSha256 { get; init; }

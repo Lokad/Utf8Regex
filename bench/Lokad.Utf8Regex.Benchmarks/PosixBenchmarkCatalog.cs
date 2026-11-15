@@ -5,7 +5,8 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal enum PosixBenchmarkOperation { Captures, Count, Cursor }
 
 internal sealed record PosixBenchmarkCase(string Id, string Pattern, string Input,
-    PosixBenchmarkOperation Operation, int Records = 1, int StartOffsetInBytes = 0, bool MeasurePolicies = false);
+    PosixBenchmarkOperation Operation, int Records = 1, int StartOffsetInBytes = 0, bool MeasurePolicies = false,
+    PosixCompileOptions Options = PosixCompileOptions.None);
 
 internal static class PosixBenchmarkCatalog
 {
@@ -20,6 +21,10 @@ internal static class PosixBenchmarkCatalog
         new("capture/nested", "(((a)|(aa))*)", "aaaa", PosixBenchmarkOperation.Captures),
         new("capture/nullable", "(a?){2,4}", "a", PosixBenchmarkOperation.Captures),
         new("capture/unicode-longest", "(é|é😀)(.*)", "😀é😀x", PosixBenchmarkOperation.Captures, StartOffsetInBytes: 4),
+        new("capture/ignorecase-disjoint", "(k+)([0-9]+)", "KK007", PosixBenchmarkOperation.Captures,
+            MeasurePolicies: true, Options: PosixCompileOptions.IgnoreCase),
+        new("capture/newline-rewind", "^([a-z]+)([[:space:]]+)$", "a \nb", PosixBenchmarkOperation.Captures,
+            Options: PosixCompileOptions.Newline),
         // Capture coordinate scaling, not Core's generic search/validation lane.
         // Short controls distinguish tag costs from rescanning a shared prefix.
         new("projection/short-1", "(a)", "a", PosixBenchmarkOperation.Captures),
@@ -50,6 +55,8 @@ internal static class PosixBenchmarkCatalog
             "capture/nested" => new(1, A(0, 4), A(0, 4), A(2, 2), default, A(2, 2)),
             "capture/nullable" => new(1, A(0, 1), A(1, 0), default),
             "capture/unicode-longest" => new(1, U(4, 7, 2, 4), U(4, 6, 2, 3), U(10, 1, 5, 1)),
+            "capture/ignorecase-disjoint" => new(1, U(0, 7, 0, 5), U(0, 4, 0, 2), U(4, 3, 2, 3)),
+            "capture/newline-rewind" => new(1, A(0, 2), A(0, 1), A(1, 1)),
             "projection/short-1" => new(1, A(0, 1), A(0, 1), default),
             "projection/short-4" => new(1, A(0, 1), A(0, 1), A(0, 1), A(0, 1), A(0, 1)),
             "projection/unicode-prefix-1" => new(1, U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), default),

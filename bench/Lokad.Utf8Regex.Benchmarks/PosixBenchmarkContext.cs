@@ -24,17 +24,23 @@ internal sealed class PosixBenchmarkContext : IDisposable
             MaxWorkingBytes = 16 << 20, MaxResultBytes = 1 };
         _managed =
         [
-            new(benchmarkCase.Pattern),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, default, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, default, TimeSpan.FromSeconds(30), finite),
+            new(benchmarkCase.Pattern, benchmarkCase.Options),
+            new(benchmarkCase.Pattern, benchmarkCase.Options, Timeout.InfiniteTimeSpan, finite),
+            new(benchmarkCase.Pattern, benchmarkCase.Options, Timeout.InfiniteTimeSpan, finite),
+            new(benchmarkCase.Pattern, benchmarkCase.Options, TimeSpan.FromSeconds(30), finite),
         ];
         if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
         _groups = new Utf8ValueMatch[_managed[0].GroupCount + 1];
         // Private benchmark-only PCRE2 NFA comparator over the same valid UTF-8 text;
-        // ASCII POSIX classes, dot-all and true-end dollar semantics. Do not
+        // ASCII POSIX classes; match the row's case and newline options. Native
+        // negated brackets do not implement REG_NEWLINE: newline rows here use
+        // positive classes, and every row still needs equal-result preflight. Do not
         // reorder alternatives to imitate longest matching; exclude mismatches.
-        _native = new PcreRegexUtf8(benchmarkCase.Pattern, PcreOptions.Utf | PcreOptions.Singleline | PcreOptions.DollarEndOnly);
+        var nativeOptions = PcreOptions.Utf |
+            ((benchmarkCase.Options & PosixCompileOptions.Newline) != 0
+                ? PcreOptions.MultiLine : PcreOptions.Singleline | PcreOptions.DollarEndOnly);
+        if ((benchmarkCase.Options & PosixCompileOptions.IgnoreCase) != 0) nativeOptions |= PcreOptions.Caseless;
+        _native = new PcreRegexUtf8(benchmarkCase.Pattern, nativeOptions);
         _buffer = _native.CreateMatchBuffer();
     }
 

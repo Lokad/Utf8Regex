@@ -70,17 +70,17 @@ public sealed class PosixBenchmarkSnapshotTests
     [InlineData("projection/short-4")]
     [InlineData("projection/unicode-prefix-1")]
     [InlineData("projection/unicode-prefix-4")]
-    public void ProjectionScalingCasesHaveIndependentExpectedCoordinates(string id)
+    [InlineData("capture/ignorecase-disjoint")]
+    [InlineData("capture/newline-rewind")]
+    public void CatalogCasesHaveIndependentExpectedCoordinates(string id)
     {
         var definition = PosixBenchmarkCatalog.Get(id);
         var expected = PosixBenchmarkCatalog.Expected(id);
-        var regex = new Utf8PosixRegex(definition.Pattern);
+        var regex = new Utf8PosixRegex(definition.Pattern, definition.Options);
         var groups = new Utf8ValueMatch[regex.GroupCount + 1];
         var whole = regex.Match(Encoding.UTF8.GetBytes(definition.Input), groups, definition.StartOffsetInBytes);
         Assert.Equal(expected.Whole, whole);
-        Assert.Equal(expected.Group1, groups[1]);
-        if (groups.Length > 2)
-            Assert.Equal(new[] { expected.Group2, expected.Group3, expected.Group4 }, groups[2..]);
+        Assert.Equal(new[] { expected.Whole, expected.Group1, expected.Group2, expected.Group3, expected.Group4 }[..groups.Length], groups);
     }
 
     private static double? DisplayRatio(JsonElement row) => row.GetProperty("Status").GetString() is "Excluded" or "Unqualified"
