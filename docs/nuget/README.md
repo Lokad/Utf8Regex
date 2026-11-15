@@ -48,36 +48,22 @@ slice-validity rules; check result slice properties before decoding those result
 
 ## Cancellation, limits and ownership
 
-Unknown short Python string lengths can use a conservative UTF-8-byte-derived
-capacity before decoding; finite Unicode working/result budgets can deny earlier.
-Python findall tuples can share owned immutable text for identical capture ranges;
-tuple arrays remain independent. Captured splitting and proven complete roots
-omit redundant staging checks and delimiter preparation.
-
-Synchronous cancellation observes the original token. Absolute deadlines and
+Synchronous cancellation observes the original token. One absolute deadline and
 finite work/depth/working/result policies cover the documented operation stages.
-Explicit compilation factories offer separate construction controls.
-Defaults and static cached conveniences are unlimited.
+Explicit compilation factories offer separate construction controls. Defaults and
+static cached conveniences are unlimited.
 
-Memory limits admit modeled major buffers/capacities, not total heap/RSS,
-callbacks, getters, arbitrary host retention or every helper allocation. Work
-units depend on the engine/version/route. Caller-owned output destinations are
-not producer-owned result allocations. An omitted validation pass can reduce
-required work without disabling matching admission or interruption.
+Memory limits admit modeled major buffers, retained payloads and growth overlap,
+not total heap/RSS, arbitrary callbacks/getters or host retention. Caller-owned
+output destinations are not producer-owned result allocations. Work units and
+capacity charges depend on the engine/version/route: recheck finite policies when
+upgrading. A refusal is distinct from no match; it does not publish truncated
+successful output or retry under a different allowance.
 
-Python detailed results and scalar queries share a lazy prefix coordinate index,
-avoiding unused suffix preparation. Distant scalar-only queries can need more
-working capacity because entries store both scalar and UTF-16 counts. Proven
-POSIX greedy ASCII runs, including eligible nullable/private class-repeat bodies,
-omit general capture history. Adjacent captures and forward cursors reuse projected
-coordinates. PCRE2 positive ASCII range-union Count avoids VM workspace on mixed
-text; short Python string callbacks can omit a redundant sizing pass. Matching and
-output preserve original interruption and admission. Recheck numerical
-work/working limits when upgrading; published result charges remain independent.
-
-Keep borrowed input alive and unchanged. Follow each cursor's alias contract and
-dispose deterministic program/result/cursor owners on early termination. Retained
-results preserve their documented lifetime; the host accounts for its own storage.
+Keep borrowed input alive and unchanged. Follow each cursor's copy/alias contract
+and dispose program/result/cursor owners on early termination. Temporary loans
+refund synchronously. Owned snapshots keep their documented lifetime; continued
+host retention after releasing a receipt is the host's responsibility.
 
 ## Upgrading and further documentation
 
@@ -85,10 +71,6 @@ Version 0.4 introduced scalar matching over strict UTF-8 in place of the older
 UTF-16 matching behavior. Version 0.5 adds .NET 11 assets, POSIX and Core's optional
 caller-validity policy while preserving Core's default strict rejection. PythonRe/
 POSIX require existing valid text; PCRE2 follows its UTF checking contract.
-
-Complete Unicode word-run Count can now avoid scalar execution workspace.
-Numerical admission requirements may decrease with the execution route; ASCII
-word counting can cost more time. Recheck finite policies when upgrading.
 
 NuGet's project-website link leads to the repository specifications, migration
 guide, profile examples and benchmark tables. Those tables retain their measured

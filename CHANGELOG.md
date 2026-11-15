@@ -2,77 +2,43 @@
 
 ## Unreleased — 0.5.0
 
-- PCRE2 follows native UTF-mode checking from the start offset minus maximum
-  lookbehind through the subject end, with the existing explicit trusted bypass.
-  Byte-only discovery no longer prepares whole-subject UTF-16 coordinates.
-
-- Target .NET 10 and .NET 11 in Core and all three adapters. The stable .NET 11
-  runtime is the new benchmark baseline; historical measurements keep their
-  runtime labels. Adapters require the exact matching Core package version.
+- Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
+  primary benchmark baseline. Adapters require the exact matching Core version.
 - Add immutable `inputValidation` and read-only `InputValidation` in Core and
-  PCRE2. Core `Validate` remains the default whole-subject UTF-8 check;
-  `AssumeValid` omits that pass when the caller guarantees valid, unchanged
-  borrowed UTF-8. Operations and cursors inherit the policy. Pattern/replacement
-  checks, managed bounds, scalar matching and resource controls remain active.
-- PythonRe models Python `re` over `str`; PythonRe and POSIX consume already-valid
-  UTF-8 text without regex-operation validity passes. Validate external bytes at
-  the text boundary. The earlier development-only subject-validation options and
-  properties in these adapters are removed; pattern/replacement checks remain.
-- Add Lokad.Utf8Regex.Posix: a case-sensitive scalar ERE subset with
-  leftmost-longest matching and hierarchical subexpression priority. Match into
-  caller-owned capture spans, count, or iterate with a disposable cursor. Named
-  classes are fixed ASCII; locale collation, backreferences and lookarounds are
-  excluded. Proven first-acceptance cases keep their direct execution; general
-  captures select closed subexpression intervals after whole-match discovery.
-  Interval memo capacity can be quadratic and whole-match search can still be
-  expensive. Worst-case linear matching is not promised.
-- Add direct UTF-8 pattern/replacement parsing, byte capture-name lookup and
-  caller-buffer pattern metadata across Core, PythonRe and PCRE2. Explicit text
-  interoperability remains; owned byte keys avoid mandatory whole-pattern strings.
-- Add caller-funded Core/PCRE2 program owners and byte-template replacement into
-  caller-owned destinations. Extend PythonRe hosting with effective flags,
-  structured errors, funded compilation/cache storage and retained substitution
-  output. Program owners and retained outputs support deterministic disposal.
-- Add persistent memory cursors, byte-range captures and retained result receipts.
-  Current-call tokens supplement original cancellation and absolute deadlines;
-  returned results remain valid across cursor advances and program closure.
-- Reduce repeated preparation, candidate verification, scalar-repeat dispatch,
-  capture journaling, coordinate mapping and output copies. PythonRe shares lazy
-  scalar/UTF-16 prefixes across detailed results, cursors and callbacks; distant
-  scalar-only queries can need more working capacity. Core Count omits unused
-  coordinates and more finite-policy operations use checked span/SIMD paths.
-  Proven POSIX greedy ASCII runs, including nullable sequences and private
-  class-repeat bodies, avoid general capture-history storage. Adjacent captures
-  and forward cursors reuse projected coordinates. Complete boundary roots keep
-  step-based deadline polling. Repeated capture roots and Python captured-text
-  publication omit redundant orchestration; short string callbacks can encode
-  directly into admitted capacity without a sizing pass. PCRE2 positive ASCII
-  range-union Count needs no VM workspace on mixed text. Raw byte-callback output
-  retains its strict completed-stream UTF-8 check.
-  Python findall tuples reuse owned text for identical capture ranges while
-  keeping tuple arrays independent. Proven complete capture roots omit redundant
-  delimiter preparation, and captured splitting reuses staging interruption checks.
-  Performance and numerical work/working admission depend on operation, policy
-  and input; some workloads use more time or memory. Recheck finite limits.
-- Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
-  complete scalars in PCRE2 classes, including escaped supplementary characters.
-  Fix literal Count on a trailing partial Unicode needle after a match. Reject
-  null replacement evaluators even on misses; an already-cancelled explicit token
-  retains precedence.
+  PCRE2. Core defaults to strict whole-subject validation; PCRE2 follows native
+  UTF-mode checking from start minus maximum lookbehind through subject end.
+  `AssumeValid` omits subject checking when the host guarantees valid unchanged
+  UTF-8. Pattern/replacement checks and managed bounds remain independent.
+- PythonRe models Python `re` over `str`; PythonRe and POSIX require already-valid
+  UTF-8 text and omit regex-operation validity passes. Validate external bytes at
+  the text boundary. Required coordinates and output may still inspect text.
+- Add Lokad.Utf8Regex.Posix: a case-sensitive scalar ERE subset with leftmost-
+  longest matching and hierarchical capture priority. Match into caller-owned
+  capture spans, count, or use a disposable memory cursor. Named classes are fixed
+  ASCII; locale collation, backreferences and lookarounds are excluded. General
+  capture selection may use quadratic interval storage; linear matching is not
+  promised.
+- Add direct UTF-8 pattern/template APIs, byte capture-name lookup and caller-
+  buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
+  ownership, persistent memory cursors and explicit retained-result/output
+  admission. Existing value cursors keep their documented copy/alias contracts.
+- Reduce repeated preparation, search, capture traversal, coordinate scans and
+  output copies. Results and numerical resource requirements depend on the route;
+  some workloads use more time or storage. Recheck finite policies when upgrading.
+- Preserve scoped Python verbose spaces and Unicode class/folding rules. Correct
+  PCRE2 class quoting of supplementary scalars and literal Count on a trailing
+  partial Unicode needle. Null replacement evaluators reject even on misses;
+  explicit pre-cancellation retains precedence.
 
-Resource limits cover modeled major capacity and growth overlap, not total heap,
-RSS or arbitrary caller retention; execution defaults remain unlimited. Numerical
-work, depth and working/result requirements depend on the execution route and can
-change between versions. POSIX depth now includes explicit interval dependencies;
-its major memo growth is admitted conservatively before allocation. Recheck finite
-policies when upgrading. Temporary loans refund synchronously; original-token
-cancellation, deadlines, captures and conditional whole-input validation remain.
+Resource controls admit modeled major capacity and growth overlap, not total heap,
+RSS, arbitrary callbacks/getters or host retention. Defaults remain unlimited.
+Work/depth/working/result requirements can change between versions; temporary loans
+refund synchronously. Original-token cancellation, absolute deadlines, scalar
+semantics, captures and retained-result lifetimes remain enforced.
 
-No blanket speedup or complete .NET/Python/PCRE2/POSIX equivalence is promised.
-See the [migration guide](docs/MIGRATION.md), [Core](docs/SPEC.md),
-[PythonRe](docs/SPEC-PYTHONRE.md), [PCRE2](docs/SPEC-PCRE2.md) and
-[POSIX](docs/SPEC-POSIX.md) specifications for contracts and limitations.
-Execution remains owned, managed and checked.
+Execution remains owned, managed and checked. No blanket speedup or complete
+.NET/Python/PCRE2/POSIX equivalence is promised. See the
+[migration guide](docs/MIGRATION.md) and [profile contracts](README.md#choose-a-profile).
 
 ## 0.4.0 — 2026-10-27
 

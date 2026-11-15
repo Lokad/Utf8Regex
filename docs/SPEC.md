@@ -1,6 +1,6 @@
 # Core contract
 
-The **0.5.0 development source** targets .NET 10 and .NET 11. See
+The **0.5.0 release candidate** targets .NET 10 and .NET 11. See
 [release notes](../CHANGELOG.md) for release status and [migration](MIGRATION.md)
 for upgrade guidance. This contract describes supported behavior; the
 [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) and executable

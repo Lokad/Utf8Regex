@@ -426,7 +426,7 @@ Global progression uses consumed ranges, preserving `\K`, same-position nonempty
 retry and CRLF/Anchored behavior. Non-monotone iteration remains unsupported.
 Opted-in `\C` may return scalar fragments: inspect `IsUtf8SliceWellFormed` before
 decoding; byte access itself remains available. No full capture history is added.
-Optional reusable scalar-coordinate projection remains unfinished.
+These range results do not provide a reusable scalar-coordinate index.
 
 Range metadata survives later advances and cursor/program close. Subject bytes
 and their memory manager remain borrowed. Ordinary publication ends producer

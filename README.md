@@ -3,7 +3,7 @@
 Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
 enumerate and replace without first decoding the subject to a string.
 Core and the optional adapters are fully managed .NET libraries.
-This README describes 0.5.0 development source. Published 0.4.0 and frozen
+This README describes the 0.5.0 release candidate. Published 0.4.0 and frozen
 development candidates retain the scope recorded in their release evidence.
 
 ## Quick start
@@ -102,7 +102,7 @@ for the 0.4.0 changes.
 
 ## Runtime support
 
-The 0.5.0 development source targets `net10.0` and `net11.0`. .NET 11 currently
+The 0.5.0 release candidate targets `net10.0` and `net11.0`. .NET 11
 uses the stable SDK pinned in [global.json](global.json) and is the
 primary benchmark baseline. .NET 10 remains a compatibility target, with both
 runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.

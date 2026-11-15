@@ -1,212 +1,126 @@
 # Migration guide
 
-## 0.5.0 development: .NET 10 and .NET 11
+## 0.5.0: .NET 10 and .NET 11
 
-Core and all three adapters build `net10.0` and `net11.0` assets. Adapters still require
-exactly the same Core version; NuGet selects the asset matching the application.
-The stable .NET 11 build SDK is pinned in `global.json`. Scalar matching and
-primary byte coordinates remain. The input and ownership contracts below define
-subject checks and additional storage lifetimes.
-Benchmark runs default to .NET 11; use `-Framework net10.0` with
-the test/benchmark scripts for .NET 10 controls. Historical measurements retain
-their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
+Upgrade Core and every selected adapter together: adapters require the exact same
+package version. Version 0.5 supplies `net10.0` and `net11.0` assets; published
+0.4.0 packages target .NET 10 only. The stable SDK is pinned in
+[global.json](../global.json). Benchmarks use .NET 11 as the primary baseline,
+while historical rows retain their actual producer/runtime identities.
 
-Core retains an explicit immutable subject-validation choice:
+### Choose the subject input contract
+
+| Profile | Subject contract in 0.5.0 |
+|---|---|
+| Core | Default `Validate` checks the entire subject at most once per operation/cursor. Immutable `AssumeValid` trusts valid unchanged UTF-8. |
+| PythonRe | Models Python `re` over `str`: pass already-valid unchanged UTF-8 text; regex operations do not validate the whole subject. |
+| PCRE2 | Default UTF checking covers start minus maximum scalar lookbehind through subject end. Immutable `AssumeValid` is the explicit trusted-input bypass. |
+| POSIX | Pass already-valid unchanged UTF-8 text; malformed-suffix rejection is not an extra compatibility requirement. |
+
+For PythonRe/POSIX, validate external bytes where they become text. Neither adapter
+has an input-validation option/property. Core and PCRE2 select their policy once:
 
 ```csharp
+using Lokad.Utf8Regex;
+
 var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
+// regex.InputValidation is read-only; every operation inherits it.
 ```
 
-Core's default `Validate` preserves strict whole-input rejection. `AssumeValid` skips
-that pass because the host guarantees valid UTF-8 and unchanged borrowed storage;
-it does not guarantee rejection of malformed subjects. Choose it once at engine
-construction or a `Compile`/`Create` factory and inspect `InputValidation` afterward.
-Matching, replacement, splitting and cursor APIs inherit the engine policy.
-Both modes retain managed bounds, scalar semantics, byte offsets and cooperative
-interruption/admission. Patterns and replacements keep their separate validation.
-Required coordinates/materialization may still scan input. Validation runs at most
-once per logical operation/cursor lifetime; omitted/redundant passes can reduce
-numeric work requirements. See the [input contract](SPEC.md#subject-input-validation).
+`AssumeValid` requires the caller's validity and borrowed-storage guarantees.
+There is no per-call override or public validation token. Pattern, template,
+capture-name and assembled raw-byte callback output checks remain independent.
+Managed bounds, scalar semantics, byte offsets, cancellation and admission stay
+active. Required coordinate/output work can still inspect input.
 
-PCRE2 retains the same immutable choice, but `Validate` follows native UTF-mode
-checking: start offset minus the maximum scalar lookbehind through subject end.
-It can ignore invalid bytes before that window. `AssumeValid` is the explicit
-subject `PCRE2_NO_UTF_CHECK` equivalent. See its [input contract](SPEC-PCRE2.md#subject-input-validation).
+PCRE2 can ignore malformed bytes before its native validation window. Byte results
+remain usable, but `HasUtf16Projection` can be false if that prefix prevents exact
+coordinates. Its byte-template substitution can preserve ignored prefix bytes;
+text and callback output retain their independent well-formed UTF-8 requirements.
+See the [PCRE2 input contract](SPEC-PCRE2.md#subject-input-validation).
 
-PythonRe models Python `re` over `str`; PythonRe and POSIX instead require existing
-valid UTF-8 text. Their regex operations omit whole-subject validation, and their
-development-only `inputValidation` parameters and `InputValidation` properties
-are removed. Validate/decode external bytes at the text boundary. Borrowed text
-must remain unchanged while in use. Pattern/replacement validation, managed bounds,
-scalar semantics, offsets and interruption/admission remain active; malformed-tail
-rejection is not an additional compatibility guarantee. Recheck finite work limits
-because removed preparation changes route-dependent work requirements.
+### Native patterns, replacements and metadata
 
-String-only Python results with no known UTF-16 length can preadmit a conservative
-byte-derived string capacity for ranges up to4096 UTF-8 bytes, avoiding a separate
-sizing pass. Known lengths and larger bounded decoding retain their existing
-paths. Recheck finite working/result budgets for Unicode output: conservative
-charges can cause earlier denial while preserving admission before allocation.
-
-Core also accepts native UTF-8 patterns, including the funded program overload:
+Core, PythonRe and PCRE2 accept strict UTF-8 pattern/template spans directly:
 
 ```csharp
 var emoji = Utf8Regex.Compile("(?<value>😀)+"u8);
-using var matches = emoji.CreateMatchCursor("a😀😀b"u8.ToArray(), 1);
-matches.MoveNext(out var match); // whole match: byte range [1, 9)
-```
-
-Compilation borrows the source only during the call and owns its retained bytes.
-It uses the existing scalar grammar and execution controls without a whole-pattern
-UTF-16 bridge. Pattern syntax errors identify byte offsets. `Pattern` explicitly
-projects a new string on request; native construction timeouts leave the
-exception's pattern text empty. The added span overloads make a bare `null` at
-some `Compile` call sites ambiguous: use a typed string or named `pattern:` when
-testing text-null errors. Existing string constructors remain available.
-
-PythonRe and PCRE2 likewise compile native source bytes directly. UTF-8 template
-overloads across all three profiles parse/cache bytes and assemble byte output
-without mandatory whole-template strings. Their replacement grammars and error
-timing remain profile-specific. For example, Core can use both native inputs:
-
-```csharp
 byte[] output = emoji.Replace("a😀😀b"u8, "[${value}]"u8); // a[😀]b
 ```
 
-All three profiles expose `CaptureGroupCount` excluding group zero and
-`TryCopyPatternUtf8(destination, out bytesRequired, token)`. A zero-length
-destination obtains the required capacity; `Done` copies exact source bytes.
-The caller owns the destination, including its admission and retained lifetime.
-Funded Core/PCRE2 owners expose these members without revealing program storage.
-See the [metadata contract](SPEC.md#native-pattern-metadata) for capacity,
-unrepresentable legacy text and cancellation outcomes.
-Native named lookup is profile-specific: Core `GroupNumberFromUtf8Name`, PythonRe
-`TryGetGroupNumber`, PCRE2 `CopyNumbersForUtf8Name` (preserving duplicate numbers).
-Each validates strict UTF-8, compares ordinal keys without normalization or
-allocating temporary strings, and accepts a current-call token. Core and PCRE2
-funded owners expose those lookups while retaining program admission.
+Compilation owns retained source bytes; caller reuse cannot mutate the program.
+`Pattern` explicitly projects text. Byte-pattern syntax diagnostics use byte
+positions; text-pattern diagnostics retain their documented coordinate units.
+A bare `null` at some overloaded Compile call sites becomes ambiguous: use a typed
+string or named `pattern:` for text-null calls.
 
-## 0.4.0: Unicode scalars
+`CaptureGroupCount` excludes group zero. `TryCopyPatternUtf8` obtains required
+capacity or copies source into caller-owned storage. Native name lookup is
+profile-specific: Core `GroupNumberFromUtf8Name`, PythonRe `TryGetGroupNumber`,
+PCRE2 `CopyNumbersForUtf8Name` (retaining duplicate numbers). These operations
+validate their own bytes and use ordinal names without normalization.
 
-Version **0.4.0** changes matching from UTF-16 units to Unicode scalars.
-Both adapters require exactly Core **[0.4.0]**: upgrade selected packages together
-rather than overriding dependencies. All target .NET 10.
-See [release notes](../CHANGELOG.md) for the public release history.
-
-## Match scalars; pass byte coordinates
+## Scalar matching and coordinates, introduced in 0.4.0
 
 ```csharp
-using Lokad.Utf8Regex;
-
 var dot = new Utf8Regex(".");
-int count = dot.Count("A😀"u8); // 2
-var emoji = dot.Match("😀"u8); // IndexInBytes == 0; LengthInBytes == 4
+int count = dot.Count("A😀"u8); // 2 scalars
+var emojiMatch = dot.Match("😀"u8); // byte index 0, byte length 4
 ```
 
-Dot/classes, quantifiers, captures/references, lookarounds, RTL and empty progress
-use complete scalars. Combining marks remain separate; text is not normalized.
-Core alternatives retain ordered first success, without POSIX longest selection.
-Replace old surrogate-half expectations with explicit scalar outcomes.
+Matching, classes, quantifiers, captures/references, lookarounds, RTL and empty
+progress use complete Unicode scalars. Combining marks remain separate; text is
+not normalized. Replace old surrogate-half expectations with scalar outcomes.
+In `é😀x`, x starts at byte 6 and UTF-16 index 3. Do not pass UTF-16 positions to
+byte APIs; explicit FromUtf16Offset APIs reject a split scalar.
 
-In `é😀x`, x starts at byte 6 and UTF-16 index 3. Do not pass UTF-16 indices
-to byte APIs; explicit FromUtf16Offset APIs reject a split scalar. PCRE2's opted-in
-`\C` and non-monotone `\K` have separate range/projection flags.
+Version 0.4 required strict whole-subject UTF-8 in all three published packages.
+Version 0.5 uses the profile contracts above. Denial/interruption can precede a
+malformed tail even where validation is required. Opted-in PCRE2 `\C` consumes one
+byte and can split a scalar; `\K` can also produce special ranges. Consult their
+slice/projection flags before decoding or extracting text.
 
-The entire subject must be strict UTF-8, even after an early match.
-Invalid input rejects rather than replacement-decoding. Denial/interruption can
-precede a malformed tail; successful matching cannot bypass it.
-
-## Use explicit limits and handle distinct failures
+## Limits and failures
 
 ```csharp
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex;
 
-var regex = new Utf8Regex(@"(?<word>\w+)", RegexOptions.CultureInvariant,
+var limited = new Utf8Regex(@"(?<word>\w+)", RegexOptions.CultureInvariant,
     TimeSpan.FromMilliseconds(100), new Utf8ResourcePolicy
     {
         MaxWorkSteps = 1_000_000, MaxDepth = 256,
         MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
     });
 using var cancellation = new CancellationTokenSource();
-int count = regex.Count("café tea"u8, cancellation.Token);
+int words = limited.Count("café tea"u8, cancellation.Token);
 ```
 
-These are examples, not recommended universal budgets. Null invocation limits and
-static cached calls are unlimited; zero is invalid. Work/depth/major working and
-result-capacity admission are enforced, but units depend on algorithm/version.
-Result/staging traffic is cumulative without refunds; overlap/shared storage can
-count again. Typed denial is not no-match or truncated success.
+These are examples, not universal recommended budgets. Null invocation limits
+and static cached conveniences are unlimited; zero is invalid. Typed denial is
+separate from no match and never means truncated successful output.
 
-Cancellation is synchronous and carries the original token. One absolute deadline
-covers validation required by the profile/input policy, matching, required shaping
-and cursor waits. Callbacks cannot
-be forcibly interrupted; library copying/encoding of returned output is covered.
-Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decoding.
+Work/depth/working/result controls enforce their documented stages. Memory
+admission models major capacities, growth overlap and retained payloads, not exact
+heap/RSS or every helper allocation. Cumulative result/staging traffic can count
+shared storage again. Work units and capacity requirements vary by route/version;
+recheck representative finite policies when upgrading. Short Unicode output can
+use a conservative byte-derived string charge, and distant Python scalar queries
+can require extra working space for a shared scalar/UTF-16 prefix index.
 
-PythonRe detailed results, capture contexts, callbacks and scalar queries now share
-one lazy coordinate index through participating capture ends, including lookarounds.
-They do not prepare an unused suffix. Substitutions still materialize required
-output and validate assembled raw-byte callback output. Index capacity uses working
-admission; returned arrays/strings still spend result capacity. Early results can
-need less work/storage, while distant scalar-only queries can need more working
-capacity because entries hold both scalar and UTF-16 counts. Owned snapshots and
-original interruption retain their contracts.
+Cancellation is synchronous and retains the original token. One absolute deadline
+covers required validation, matching, shaping and cursor waits. Callbacks cannot
+be forcibly interrupted; library copying/encoding afterward remains covered.
+Byte-capped Core/PythonRe timeout diagnostics omit subject text.
 
-POSIX's proved flat disjoint ASCII runs keep unique capture boundaries in existing
-state slots, omitting an unnecessary history trace. Numerical work/working needs
-can fall. Other proven routes and general POSIX capture histories stay intact.
+Use Compile for separate construction caps/timeout/token. Ordinary constructors
+retain fixed backstops. Compilation tokens are not retained for later matching.
+Program/cache retention, cold preparation, standalone getters, caller callbacks
+and host storage have separate scopes. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
+and [host admission](SPEC.md#host-admission).
 
-Core NonBacktracking preparation now meters groups of at most 64 size-scan bytes,
-64 scalar offsets or64 state cells, with token/deadline checks before every group.
-Scanning prepared candidate starts similarly admits at most 64 scalar-boundary
-lookups per group, with a final token/deadline check before publishing no match.
-Executed atom work retains its direct charges; storage/depth admission is unchanged.
-Packed NonBacktracking rows cover constant rejections of impossible case-sensitive
-literals within their existing cell quantum. Those rejections no longer incur a
-separate failed-predicate work charge; feasible/folded/complex atoms and wider
-rows retain their charges. Token/deadline checks still precede every row quantum.
-Preparation and candidate scanning can consume fewer MaxWorkSteps than earlier versions. Treat work units as route/version
-dependent, and qualify finite policies against representative workloads when upgrading.
+## Program owners, cursors and retained results
 
-Core NonBacktracking Count can now scan a proved complete anchored-line shape
-directly: optional Unicode whitespace, mandatory unfolded ASCII prefix, greedy
-non-newline tail and end anchor. It follows Core's selected input policy and keeps
-bounded token/deadline/work checks, while avoiding the viability table and local
-scratch. Numeric work and working/depth requirements can be lower. Matching,
-captures and retained cursors keep their existing semantics and implementations.
-
-Proven whole-expression Unicode-letter Count now shares the existing category
-counter's scalar-ended 4096-byte admission, including caller-funded Count. This
-reduces work units and can admit tighter storage policies while preserving the
-selected input policy, original-token cancellation and deadlines.
-
-Bounded greedy Dot repeats with a proved terminal ASCII literal can avoid rewind
-storage. Captures and the selected input policy are unchanged; finite work, depth and
-working requirements can be lower for these shapes.
-
-Smaller capture-trail chunks reduce the first reservation for brief captures.
-Long histories can require more headers and growth checkpoints; qualify finite
-working policies on those workloads as well. Capture semantics are unchanged.
-
-Count can reuse a prepared disjoint-class repeat such as
-`(?:[A-Z][a-z]+\s*){10,100}` without VM scratch, including on mixed UTF-8.
-Its original separator predicate preserves Unicode whitespace. Complete-input
-validation follows the selected input policy; bounded work checks and original interruption authority remain;
-route-dependent work/depth/working requirements can be lower. Captured roots
-and unproved shapes retain their existing paths; returned captures/cursors are unchanged.
-
-Use Compile for separate construction caps/timeout/token; ordinary constructors
-retain fixed backstops. Pass execution tokens again later. Cold preparation,
-program/cache retention, standalone getters, callback allocations and host storage
-have separate scope. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
-and [host admission](SPEC.md#host-admission) for the Core/PythonRe W+R recipe.
-
-### Core caller-funded operations and memory cursors
-
-Core's funded Compile overload returns `Utf8RegexProgramOwner`. Close it explicitly;
-compilation remains funded through any active calls. The optional working allowance
-lets a host use different children of one shared reservation for program and work:
+Core's funded Compile returns a disposable `Utf8RegexProgramOwner`:
 
 ```csharp
 using var program = Utf8Regex.Compile(pattern, RegexOptions.None,
@@ -218,9 +132,13 @@ var status = program.TryReplace(subject.Span, "[$0]"u8, destination,
     out int bytesWritten, callToken, workingMemoryAllowance);
 ```
 
-Boolean/count/destination calls refund temporary loans synchronously, retain numeric limits
-and never retry a refusal under another allowance. For repeated captures across
-host calls or awaits, use the separate memory cursor:
+Calls refund temporary loans synchronously and do not retry a refused allowance.
+Core/PCRE2 funded programs conservatively prepay their bounded replacement cache
+maximum (currently 4MiB payload plus metadata), including before first use. This
+is modeled admission, not eager allocation. Cold template work and output stay
+admitted through final copying. Short caller-owned destinations remain unchanged.
+
+Persistent memory cursors can cross calls/awaits:
 
 ```csharp
 using var cursor = program.CreateMatchCursor(subject, startOffsetInBytes: 0,
@@ -235,92 +153,52 @@ while (cursor.MoveNextRetained(out var result, currentCallToken, resultMemoryAll
 }
 ```
 
-Each advance's token ends with that call; the creation token and absolute deadline
-still apply across waits. Dispose abandoned cursors. Closing the program rejects
-new operations but lets its existing cursors finish. Result receipts may outlive
-both; copies stay valid after receipt disposal, with further admission owned by
-the caller. `MoveNext(out Utf8RangeMatch)` omits retained funding when the host takes
-over retention directly. Both paths avoid captured strings and whole-subject
-UTF-16 maps, retaining Core capture histories and sparse slot identities. Existing
-span cursors keep their independent-copy contract. PCRE2 offers its own
-`Utf8Pcre2RegexProgramOwner` through the funded Compile overload, with byte starts,
-match flags and separate working admission. Its `CreateMatchCursor` and
-`MoveNextRetained` follow the same explicit lifetime rule with PCRE2 last-capture
-ranges, duplicate names and consumed-range progression. Opted-in `\C` values may
-be scalar fragments; inspect the range's `IsUtf8SliceWellFormed` before decoding.
-PCRE2 byte pattern constructors and funded Compile now own and parse UTF-8 source
-directly; `Pattern` is an explicit text projection. Selected names/properties can
-still use internal text. Its funded owner also exposes byte-template `TryReplace`
-with substitution/match options, byte starts and separate working admission.
-PCRE2 optional scalar-coordinate projection remains a later improvement.
+The creation token/deadline survives waits; an advance token applies only to that
+call. Aliases of an exclusive memory cursor share position/lifetime. Dispose on
+early abandonment. Closing a program rejects new uses and lets admitted active
+uses finish. Retained metadata survives advances and program/cursor close; subject
+bytes remain borrowed. Releasing a result receipt ends producer retention funding,
+not the validity of copied ranges; subsequent retention is the host's concern.
 
-Core and PCRE2 funded compilation conservatively prepay their bounded replacement
-cache maximum (currently 4MiB payload plus bounded metadata), even before first
-use; this is a modeled loan, not an eager allocation. Cold template preparation
-and output scratch share working admission through final copying. Caller-owned
-destinations stay valid after program close. Short destinations remain unchanged;
-PCRE2 can additionally report required length with SubstituteOverflowLength.
-PythonRe's funded `SubnRetained` instead returns an explicit disposable output
-receipt. Continued retention after releasing a receipt belongs to the host.
-The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
-distinguishes modeled live admission from cumulative work/result traffic.
+PCRE2 supplies its own program owner, flags, last-capture ranges, duplicate names
+and consumed-range progression. PythonRe `SubnRetained` returns a disposable
+output receipt. Existing Core value-cursor copies keep independent positions and
+shared allowance/deadline; copying never creates another budget.
 
-## Respect lifetime and default-result rules
+Owned snapshots survive later calls, failure and disposal. Default Core values
+are empty/zero; a default view has no groups, while an unsuccessful operation
+retains group zero. Python default/missed detailed capture/name arrays and text
+are empty. Successful supplied arrays retain their documented identity. Mutable
+output arrays remain independent even when immutable equal-range strings share.
 
-Borrowed subjects/views require unchanged bytes and a live owner. Owned snapshots
-survive later moves, failure and disposal. Core value-cursor copies have independent
-positions and shared allowance/deadline; copying creates no new budget.
-PythonRe memory-cursor aliases share position/lifetime; dispose when stopping
-early. EOF/failure/disposal release scratch synchronously.
+Evaluators must be non-null even on misses; explicit pre-cancellation wins.
+Scoped writer appends copy/encode local byte/char spans before returning. Keep a
+writer inside its callback. String fragments repair unpaired surrogates separately,
+without joining surrogate halves across appends.
 
-Default Core views expose empty values/zero coordinates; a default view has no
-groups, while an unsuccessful operation retains group zero. Successful manually
-constructed Utf8ValueMatch values reject negative active coordinates.
-PythonRe default match/group text and default/missed detailed capture/name arrays
-are empty. Supplied successful arrays retain identity.
+## Profile scope and other compatibility changes
 
-Evaluators must be non-null even on misses; pre-cancellation still wins.
-Core/PCRE2 scoped writer appends accept local byte/char stack spans and copy/encode
-before return. Keep writers inside the callback. String replacement fragments
-repair unpaired surrogates independently rather than joining fragments.
+| Profile | Supported scope | Important exclusions/differences |
+|---|---|---|
+| Core | .NET-style scalar grammar, captures/history, RTL and supported NonBacktracking | No UTF-16 parity or POSIX selection |
+| PythonRe | CPython 3.13.2 str profile; Unicode 15.1 data; opening-order captures and last-closed metadata | No bytes-regex semantics, LOCALE, Unicode-name lookup or endpos |
+| PCRE2 | Selected 10.47 standard profile, final capture slots and partial Probe | No DFA, callouts, invalid-UTF mode, split or full history; partial decisions have limited scope |
+| POSIX | Case-sensitive ERE, leftmost-longest selection and hierarchical capture priority | Fixed ASCII classes; no locale collation, backreferences, lookarounds, replacement or history API |
 
-## Choose the profile deliberately
+Choose POSIX for longest selection: `(a|aa)(a*)` on `aaa` captures `aa` then `a`.
+It fills caller-owned spans and returns coordinate values, without producer-owned
+result payload. Positive result-byte budgets therefore admit those values; working
+limits cover matching/selection. Ambiguous patterns can require substantial work
+and quadratic interval storage. No linear-time or complete GNU/BSD guarantee.
 
-| Profile | Scope | Key exclusions/differences |
-| --- | --- | --- |
-| Core | .NET-style scalar grammar, captures/history, RTL, supported NonBacktracking subset | No UTF-16 parity or POSIX selection |
-| PythonRe | CPython 3.13.2 str profile; Unicode 15.1 data; opening-order captures and last-closed metadata | No bytes-pattern semantics, LOCALE, Unicode-name lookup or endpos |
-| PCRE2 | Selected managed 10.47 standard profile; final capture slots and explicit partial Probe | No DFA, callouts, invalid-UTF mode, split or full capture history; partial decisions are curated |
-| POSIX (new in 0.5.0) | Case-sensitive ERE subset, leftmost-longest whole match and hierarchical subexpression priority | Fixed ASCII named classes; no locale collation, backreferences, lookarounds, replacement or capture history API |
+Unsupported PCRE2 Hard partial decisions and generic marked partial misses can
+throw `NotSupportedException`; do not treat this as NoMatch. Ordinary None-mode
+matching and supported Soft full matches keep their documented behavior.
+Public `Utf8CountDiagnostics`/`Utf8IsMatchDiagnostics` records were removed; their
+producers were internal diagnostics. Compiled uses owned non-emitted execution
+when dynamic code is unavailable. NativeAOT and trimming remain unqualified.
 
-Choose `Utf8PosixRegex` when longest selection is required: `(a|aa)(a*)` on
-`aaa` captures `aa` then `a`. Ordered Core/PythonRe/PCRE2 alternatives can choose
-different captures. POSIX returns existing byte/UTF-16 coordinate values, fills
-caller-owned capture spans and offers a disposable memory cursor. These outputs
-create no producer-owned result payload, so a positive result-byte cap admits
-them; working limits cover the competing histories. Ambiguous patterns may
-require substantial work: use finite work/depth/working limits for untrusted
-patterns. No worst-case linear-time guarantee or complete GNU/BSD equivalence.
-
-PCRE2 Hard decisions and generic marked partial misses can throw
-NotSupportedException. Treat that as unsupported, not NoMatch. None-mode matching
-and proven Soft full matches retain their documented scope.
-
-Public Utf8CountDiagnostics/Utf8IsMatchDiagnostics records were removed; their
-producers were internal diagnostics, not matching APIs.
-Compiled falls back to existing non-emitted execution when dynamic code is
-disabled; NativeAOT/trimming are not qualified.
-
-Specifications: [Core](SPEC.md),
-[PythonRe](SPEC-PYTHONRE.md),
-[PCRE2](SPEC-PCRE2.md), [POSIX](SPEC-POSIX.md).
-Historical benchmark rows retain their own versions and do not qualify this
-development source or promise complete flavor equivalence.
-
-PCRE2's default subject check now follows its native UTF-mode window: the start
-offset minus the maximum lookbehind, through the subject end. Invalid bytes
-before that window no longer reject a match. Byte ranges and well-formed matched
-values remain available; exact UTF-16 positions are unavailable if an ignored
-prefix cannot be decoded. `AssumeValid` retains the explicit trusted-input bypass.
-Removing unnecessary preparation can lower route-specific work requirements;
-finite work limits remain enforceable rather than promising fixed instruction counts.
+Consult the [Core](SPEC.md), [PythonRe](SPEC-PYTHONRE.md), [PCRE2](SPEC-PCRE2.md)
+and [POSIX](SPEC-POSIX.md) contracts for exact admission and lifetime rules.
+Historical benchmark rows retain their versions; they are not a universal speed
+or full-equivalence promise for a new package.
