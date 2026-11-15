@@ -1,0 +1,21 @@
+{
+  "Source": "28e21aad0c86655f6cc543278339f0f4db427148",
+  "StartedAtUtc": "2026-11-15T22:02:18.7682865+00:00",
+  "UpdatedAtUtc": "2026-11-15T22:03:22.8622310+00:00",
+  "ElapsedSeconds": 64.0940765,
+  "BudgetSeconds": 240,
+  "Scope": "Selected phases",
+  "Phases": [
+    "Posix"
+  ],
+  "Complete": true,
+  "Steps": [
+    {
+      "Name": "posix",
+      "Status": "Passed",
+      "Seconds": 64.0265481,
+      "ExitCode": 0,
+      "Error": null
+    }
+  ]
+}
