@@ -1,0 +1,48 @@
+{
+  "Source": "368e4b4fe91bc2827cb7e9b3be9bbff1a1954499",
+  "BaselineSource": "b50bb5e3f42eacf0936c05ca05018945898c3129",
+  "NoPackageOrFullRefresh": true,
+  "UnchangedPythonAndCaller": true,
+  "DistinctCorePairs": true,
+  "CompilerDocumentsVerified": true,
+  "CheckedManagedInventory": true,
+  "OriginalByteBlockAlgorithmAndCheckpointCadence": true,
+  "OriginalResourceAdmissionAndCaptureOwners": true,
+  "FocusedLinuxNet11": true,
+  "BaselineArchiveSha256": "869F9CF08D02832BC9B3610B773F49B2A1590B19FCE03FAA1050742B31AA0BA5",
+  "RawSha256": "B25505D04EC056FE9A418D561B0642ECA9123B3A94CC35EB455D18CF7178010A",
+  "WindowsRawSha256": "C2003757BD4C012F507F539FE67F335FD6AAF45673FF5DFC08838BAD10B0A2C0",
+  "SetupFailureRawSha256": "9EF99794CE8D1986FDA6ED4BB5599E73D91220730521BBBB9EDEB982FD5847F2",
+  "WindowsChecksPerTarget": {
+    "Core": 951,
+    "PythonRe": 1408,
+    "Pcre2": 891,
+    "Posix": 266
+  },
+  "WindowsTargets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "LinuxChecks": {
+    "Core": 951,
+    "PythonRe": 1408,
+    "Pcre2": 891,
+    "Posix": 266
+  },
+  "WindowsCoreBuiltAt": "bd21caf3; implementation identical to 368e4b4f, which changes the interruption-test witness only",
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "Seconds": 51.721720768138766,
+  "Decision": "Accept many-capture benefit; retain uncertain/adverse observations, source/code growth and first-row variation",
+  "PublicContractChanged": false,
+  "ModeledResourceWorkChanged": false,
+  "CoreSourceLinesNet": 28,
+  "FullOptsCodeBytes": {
+    "RootBefore": 1957,
+    "RootAfter": 2070,
+    "GenericBefore": 2176,
+    "GenericAfter": 2146,
+    "SharedRangeAfter": 950
+  },
+  "PublishedOrStagedAssetsRebuilt": false
+}
