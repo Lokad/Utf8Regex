@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Fix POSIX `Newline` matches before LF when a whitespace run must rewind to
+  `$`; decline the direct-run shortcut when that rewind can be required.
+
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.
 - Add immutable `inputValidation` and read-only `InputValidation` in Core and

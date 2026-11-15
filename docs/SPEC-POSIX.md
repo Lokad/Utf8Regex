@@ -179,17 +179,26 @@ allocate a second execution state.
 
 Fixed sequences without choices or repetitions have one parse. Existing proofs
 also retain first acceptance for homogeneous greedy literal runs, suitable equal
-literal alternatives, eligible flat ASCII runs and repeated literal
+literal alternatives, eligible flat ASCII-origin runs and repeated literal
 captures. Those routes keep one trace and project it directly, except the flat
 run case below. First and
 mandatory empty participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
+For positive ASCII-origin literals/classes, invariant lowercase-fiber keys can
+also prove folded run boundaries. Intersecting scalar closures necessarily share
+an ASCII key. This proof changes selection eligibility only: Unicode partners
+use ordinary scalar consumption and the existing trace, with original byte
+positions. It does not admit a Unicode partner to an ASCII byte shortcut.
 Flat positive ASCII class or unfolded ASCII literal runs also allow direct run
 consumption in the scalar executor when greedy boundaries prove the selected
 parse. A required run must be disjoint from all preceding runs; an overlapping
 successor must have minimum zero. Finite maxima remain effective. Any anchor in
 a nullable sequence declines this proof, because an interior anchor can require
-rewinding an earlier run. Each examined byte
+rewinding an earlier run. A multiline end anchor also declines this proof if
+any run can consume LF: even a positive-minimum run may need to rewind to a
+line end before that LF. For example, `^([a-z]+)([[:space:]]+)$` with `Newline`
+on `a \nb` selects `a `; consuming the LF cannot turn that hit into a miss.
+Each examined byte
 remains metered; impossible alternative exits, their undo journal and unused
 repeat-counter capacity are omitted. Work, pending depth and working admission
 can therefore be lower for these programs; capture selection is unchanged.

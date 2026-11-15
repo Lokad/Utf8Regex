@@ -37,6 +37,21 @@ public sealed class PosixGreedyAsciiRunTests
             Assert.False(PosixProgram.Compile(pattern, default).FirstAcceptanceIsLongest);
     }
 
+    [Fact]
+    public void FoldedRunProofUsesScalarExecutionAndDeclinesUncertainSplits()
+    {
+        foreach (var pattern in new[] { "(k+)([0-9]+)", "([K-M]{1,3})([0-9]{2,4})", "([k]*)()([K]*)" })
+        {
+            var program = PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase);
+            Assert.True(program.FirstAcceptanceIsLongest);
+            Assert.False(program.GreedyAsciiRuns); // Kelvin is not an ASCII byte run.
+        }
+        foreach (var pattern in new[] { "([k]+)([K]+)", "([k]*)^([0-9]+)", "([k])+([0-9]+)",
+            "([K]+)([0-9]+)", "([^k]+)([0-9]+)", "(k|kk)(k*)" })
+            Assert.False(PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstAcceptanceIsLongest);
+        Assert.False(PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline).FirstAcceptanceIsLongest);
+    }
+
     [Theory]
     [InlineData("^([[:alpha:]]+)([0-9]+)$", "sku007", 0, 0, 6, 0, 3, 3, 3)]
     [InlineData("([a-z]+)([0-9]+)", "😀sku007!", 4, 4, 6, 4, 3, 7, 3)]

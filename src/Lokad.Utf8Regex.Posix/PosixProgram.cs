@@ -119,9 +119,11 @@ internal sealed partial class PosixProgram
             (options & PosixCompileOptions.IgnoreCase) != 0, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
-        var greedyAsciiRuns = scalar.RepeatCount >= 2 && CanSelectGreedyAsciiRuns(scalar, captureTags.AsSpan(1), budget);
+        var asciiOnly = true;
+        var greedyRuns = scalar.RepeatCount >= 2 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly);
+        var greedyAsciiRuns = greedyRuns && asciiOnly;
         if (!firstAcceptanceIsLongest)
-            firstAcceptanceIsLongest = greedyAsciiRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
+            firstAcceptanceIsLongest = greedyRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
@@ -254,17 +256,20 @@ internal sealed partial class PosixProgram
             (outer.RepeatMaximum != long.MaxValue || outer.RepeatMinimum > 0);
     }
 
-    private static bool CanSelectGreedyAsciiRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget)
+    private static bool CanSelectGreedyRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget,
+        out bool asciiOnly)
     {
         // Greedy runs maximize each earlier concatenation part. An overlapping
         // successor must be nullable: it can still consume the suffix of any
         // shorter earlier choice. Required overlapping runs may need rewind.
         // Public tags outside bodies occur once; no history can change the split.
+        asciiOnly = true;
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
         Span<byte> literalMask = stackalloc byte[16];
         var runs = 0;
         var hasAnchor = false;
+        var hasLineEndAnchor = false;
         var hasNullableRun = false;
         var code = program.Instructions;
         for (var index = 0; index < code.Length; index++)
@@ -272,11 +277,19 @@ internal sealed partial class PosixProgram
             budget.ChargeWork(1);
             var instruction = code[index];
             if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
-            if (instruction.Kind == Utf8SliceInstructionKind.Anchor) { hasAnchor = true; continue; }
+            if (instruction.Kind == Utf8SliceInstructionKind.Anchor)
+            {
+                hasAnchor = true;
+                hasLineEndAnchor |= instruction.A == (int)Utf8SliceAnchorKind.End && instruction.B != 0;
+                continue;
+            }
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
                 // Nullable pieces can require rewind to satisfy an interior
                 // anchor, e.g. (a*)^(a*). Keep all such anchored programs general.
-                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
+                // A consuming LF can also need rewind to an earlier line end,
+                // even when every run has a positive minimum.
+                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun) &&
+                    !(hasLineEndAnchor && (seen['\n' >> 3] & (1 << ('\n' & 7))) != 0);
             if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 0 ||
                 index > code.Length - 4) return false;
             hasNullableRun |= instruction.RepeatMinimum == 0;
@@ -300,16 +313,37 @@ internal sealed partial class PosixProgram
                 return false;
             var atom = code[atomIndex];
             scoped ReadOnlySpan<byte> mask;
-            if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)atom.A < 128)
+            bool fold;
+            if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 or 1 } && (uint)atom.A < 128)
             {
                 literalMask.Clear();
                 literalMask[atom.A >> 3] = (byte)(1 << (atom.A & 7));
                 mask = literalMask;
+                fold = atom.B != 0;
             }
-            else if (atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-                program.CategorySetMembers[atom.D].Length == 0) mask = program.SetMasks[atom.A];
+            else if (atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0 or 2, C: 0 } &&
+                program.CategorySetMembers[atom.D].Length == 0)
+            { mask = program.SetMasks[atom.A]; fold = atom.B != 0; }
             else return false;
             if (mask.Length != seen.Length) return false;
+            if (fold)
+            {
+                // For ASCII-origin members, invariant lowercase-fiber closures
+                // intersect exactly when these ASCII case keys intersect. Their
+                // Unicode partners still require ordinary scalar consumption.
+                asciiOnly = false;
+                mask.CopyTo(literalMask);
+                budget.ChargeWork(26);
+                for (var upper = (int)'A'; upper <= 'Z'; upper++)
+                {
+                    var lower = upper + ('a' - 'A');
+                    if ((literalMask[upper >> 3] & (1 << (upper & 7))) == 0 &&
+                        (literalMask[lower >> 3] & (1 << (lower & 7))) == 0) continue;
+                    literalMask[upper >> 3] |= (byte)(1 << (upper & 7));
+                    literalMask[lower >> 3] |= (byte)(1 << (lower & 7));
+                }
+                mask = literalMask;
+            }
             var nonempty = false;
             for (var octet = 0; octet < seen.Length; octet++)
             {

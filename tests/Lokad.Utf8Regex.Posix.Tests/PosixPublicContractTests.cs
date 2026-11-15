@@ -136,6 +136,24 @@ public sealed class PosixPublicContractTests
         Assert.Equal(0UL, account.Used);
     }
     [Fact]
+    public void FoldedGreedyCursorRetainsOriginalCoordinatesAcrossAliases()
+    {
+        var account = new Account();
+        var regex = new Utf8PosixRegex("(k+)([0-9]+)", PosixCompileOptions.IgnoreCase,
+            TimeSpan.FromSeconds(5), new() { MaxWorkSteps = 10000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var cursor = regex.CreateMatchCursor("éKK007 k2"u8.ToArray(), 2, workingMemoryAllowance: account);
+        var alias = cursor; var groups = new Utf8ValueMatch[3];
+        Assert.True(cursor.MoveNext(groups, out var first));
+        var retained = groups[1];
+        Assert.Equal(new Utf8ValueMatch(true, true, 1, 5, 2, 7), first);
+        Assert.Equal(new Utf8ValueMatch(true, true, 1, 2, 2, 4), retained);
+        Assert.True(alias.MoveNext(groups, out var second));
+        Assert.Equal(new Utf8ValueMatch(true, true, 7, 2, 10, 2), second);
+        alias.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.Equal(new Utf8ValueMatch(true, true, 1, 2, 2, 4), retained);
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+    }
+    [Fact]
     public void ProvenCaptureCursorReusesHistoriesAcrossAliasesAndOutputSizes()
     {
         var regex = new Utf8PosixRegex("(a?){2,4}"); var account = new Account();
@@ -588,15 +606,25 @@ public sealed class PosixPublicContractTests
     [InlineData("Match", true, PosixCompileOptions.IgnoreCase)]
     [InlineData("Cursor", false, PosixCompileOptions.IgnoreCase)]
     [InlineData("Cursor", true, PosixCompileOptions.IgnoreCase)]
+    [InlineData("FoldedGreedyCapture", false, PosixCompileOptions.IgnoreCase)]
+    [InlineData("FoldedGreedyCapture", true, PosixCompileOptions.IgnoreCase)]
     public void MatchingObservesOriginalInterruptionAndRefundsWorkingLoans(string operation, bool deadline, PosixCompileOptions options)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource(); var account = new Account();
-        var regex = new Utf8PosixRegex("a", options, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+        var foldedGreedy = operation == "FoldedGreedyCapture";
+        var regex = new Utf8PosixRegex(foldedGreedy ? "(k+)([0-9]+)" : "a", options, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000 });
-        var input = Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a"); var triggered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { triggered = true; if (deadline) now = 101; else token.Cancel(); });
+        var input = foldedGreedy ? Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("K", 8192)) + "007") :
+            Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a");
+        var triggered = false;
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (triggered || foldedGreedy && !new StackTrace().GetFrames().Any(frame =>
+                frame.GetMethod() is { Name: "MatchAt", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
+            triggered = true; if (deadline) now = 101; else token.Cancel();
+        });
         try
         {
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(Call);
@@ -611,6 +639,7 @@ public sealed class PosixPublicContractTests
                 case "IsMatch": regex.IsMatch(input, token.Token, account); break;
                 case "Match": regex.Match(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "Count": regex.Count(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "FoldedGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 default: using (var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) cursor.MoveNext(out _); break;
             }
         }
