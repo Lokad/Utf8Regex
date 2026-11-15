@@ -9,13 +9,21 @@ binary or BCL matcher is used by the libraries.
 | Lokad.Utf8Regex | .NET-style grammar, captures/history, backreferences, assertions, RTL and a NonBacktracking subset |
 | Lokad.Utf8Regex.PythonRe | Python re-style grammar, flags, capture numbering and result shaping |
 | Lokad.Utf8Regex.Pcre2 | Selected PCRE2 standard-matcher grammar, substitution, capture slots and partial probes |
-| Lokad.Utf8Regex.Posix | Case-sensitive POSIX ERE subset, leftmost-longest selection and hierarchical capture priority |
+| Lokad.Utf8Regex.Posix | Invariant scalar POSIX ERE subset, leftmost-longest selection and hierarchical capture priority |
 
 Adapters require the exact matching Core version. These profiles have documented
 boundaries; they do not promise full .NET, Python, PCRE2 or locale-aware POSIX
 equivalence. POSIX excludes lookarounds, backreferences and locale collation.
 PCRE2 excludes DFA matching, invalid-UTF subject mode, callouts, split and full
 capture history; partial probing has a limited supported scope.
+
+POSIX is case-sensitive by default. `PosixCompileOptions.IgnoreCase` uses invariant
+Unicode 16.0 simple-lowercase equivalence, retaining longest-match selection and
+original byte offsets. This single-scalar relation has no normalization or
+multi-scalar expansion: I/i pair, dotted/dotless I remain separate, and final
+sigma/long s are not merged with ordinary sigma/s. Brackets accept the case
+closure of their members, including fixed ASCII named classes; `Newline` composes
+with the option. It does not provide locale-aware POSIX classification.
 
 ## Scalar matching and validation
 
