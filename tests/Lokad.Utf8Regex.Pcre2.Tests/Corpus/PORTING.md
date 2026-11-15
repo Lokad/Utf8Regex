@@ -21,6 +21,9 @@ Supplement with upstream docs only when a case needs interpretation:
 * preserve upstream intent rather than rewriting the scenario into a different local shape
 * keep each local case small and normalized to the `Utf8Pcre2Regex` API surface
 * port cases into checked-in local JSON corpus files; do not execute upstream files directly from the test run
+* remove pcre2test's surrounding pattern delimiters; retain the regex body and
+  normalize subject escapes independently. The recursive RFC2822 mailbox fixture
+  previously retained `/.../` and therefore could never match its expected text.
 * when one upstream scenario maps to multiple local API operations, split it into multiple local cases with distinct ids
 * keep `Pattern` textual when possible; use `PatternBytesBase64` with
   `PatternEncoding` set to `Utf8BytesBase64` only when the pattern is not valid
@@ -66,6 +69,10 @@ coverage. Four previously excluded duplicate-name detailed-match cases are now
 active: their whole-match ranges, capture slots and name tables pass the existing
 special-match suite. Case IDs, expectations and upstream provenance are retained.
 Every remaining non-active row has exactly one reasoned backlog disposition.
+The malformed byte-pattern and recursive DEFINE/mailbox cases are active. Pattern
+bytes keep their independent argument-validation errors; no subject policy bypasses
+them. The mailbox body matches the pinned upstream source after removing only its
+enclosing delimiters. These cases need no pattern-specific execution implementation.
 
 The earlier 2026-08-14 inventory (636 rows, 598 active) is historical; it does
 not describe the current corpus or qualify a new package. Maintain execution

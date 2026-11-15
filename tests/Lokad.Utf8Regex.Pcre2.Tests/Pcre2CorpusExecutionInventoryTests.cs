@@ -9,8 +9,7 @@ public sealed class Pcre2CorpusExecutionInventoryTests
     {
         var cases = Pcre2CorpusLoader.LoadAll();
         Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteCompile);
-        Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteManagedMatchSubset);
-        Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteSpecialMatchSubset);
+        Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteMatch);
         Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteProbeSubset);
         Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteReplaceSubset);
         Assert.Contains(cases, Pcre2CorpusExecutionFilter.CanExecuteCountSubset);

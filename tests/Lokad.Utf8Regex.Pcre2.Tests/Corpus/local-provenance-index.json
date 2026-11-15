@@ -1019,77 +1019,77 @@
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.angle-only",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.display-name-angle",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal-quoted-brackets",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.empty-domain-literal",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.missing-angle-no-match",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.quick-brown-fox-no-match",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.quoted-display-name-comment",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.unquoted-display-name-comment",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.x400-relay",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.negative-lookahead-alt.ab",
@@ -3042,20 +3042,20 @@
     "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-lone-continuation",
     "SourceFile": "testdata/testinput8",
     "Operation": "Compile",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.utf8-pattern.invalid-overlong-sequence",
     "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-overlong",
     "SourceFile": "testdata/testinput8",
     "Operation": "Compile",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.utf8-pattern.invalid-truncated-sequence",
     "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-truncated",
     "SourceFile": "testdata/testinput8",
     "Operation": "Compile",
-    "Status": "UnsupportedYet"
+    "Status": "Active"
   }
 ]

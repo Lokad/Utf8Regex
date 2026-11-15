@@ -71,6 +71,8 @@
     "Operation": "MatchDetailed",
     "Expected": {
       "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
       "HasContiguousByteRange": true,
       "Groups": [
         { "Number": 0, "Success": true, "StartOffsetInBytes": 0, "EndOffsetInBytes": 1 },

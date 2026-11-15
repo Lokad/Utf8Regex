@@ -4,11 +4,11 @@ using Lokad.Utf8Regex.Pcre2.Tests.Corpus;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2CorpusManagedMatchExecutionTests
+public sealed class Pcre2CorpusMatchExecutionTests
 {
     [Theory]
-    [MemberData(nameof(Pcre2CorpusExecutionData.ManagedMatchSubsetCases), MemberType = typeof(Pcre2CorpusExecutionData))]
-    public void ManagedSubsetCorpusMatchCasesProduceExpectedResults(Pcre2CorpusCase corpusCase)
+    [MemberData(nameof(Pcre2CorpusExecutionData.MatchCases), MemberType = typeof(Pcre2CorpusExecutionData))]
+    public void ActiveCorpusMatchCasesProduceExpectedResults(Pcre2CorpusCase corpusCase)
     {
         var regex = new Utf8Pcre2Regex(
             corpusCase.Pattern,
@@ -21,6 +21,13 @@ public sealed class Pcre2CorpusManagedMatchExecutionTests
 
         if (corpusCase.Operation == Pcre2CorpusOperationKind.Match)
         {
+            if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
+            {
+                var exception = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, corpusCase.StartOffsetInBytes));
+                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
+                return;
+            }
+
             var match = regex.Match(input, corpusCase.StartOffsetInBytes);
             Assert.Equal(corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.FullMatch, match.Success);
             if (match.Success)
@@ -40,20 +47,28 @@ public sealed class Pcre2CorpusManagedMatchExecutionTests
         }
         else
         {
+            if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
+            {
+                var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(input, corpusCase.StartOffsetInBytes));
+                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
+                return;
+            }
+
             var match = regex.MatchDetailed(input, corpusCase.StartOffsetInBytes);
             Assert.Equal(corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.FullMatch, match.Success);
+            Assert.Equal(corpusCase.Expected.Mark, match.Mark);
+
             if (match.Success)
             {
                 Assert.Equal(corpusCase.Expected.StartOffsetInBytes, match.Value.StartOffsetInBytes);
                 Assert.Equal(corpusCase.Expected.EndOffsetInBytes, match.Value.EndOffsetInBytes);
-                if (corpusCase.Expected.HasContiguousByteRange is bool hasContiguous)
-                {
-                    Assert.Equal(hasContiguous, match.Value.HasContiguousByteRange);
-                }
-
                 if (corpusCase.Expected.ValueText is not null)
                 {
                     Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                }
+                if (corpusCase.Expected.HasContiguousByteRange is bool hasContiguous)
+                {
+                    Assert.Equal(hasContiguous, match.Value.HasContiguousByteRange);
                 }
 
                 foreach (var expectedGroup in corpusCase.Expected.Groups)
@@ -68,6 +83,19 @@ public sealed class Pcre2CorpusManagedMatchExecutionTests
                         {
                             Assert.Equal(expectedGroup.ValueText, actualGroup.GetValueString());
                         }
+                    }
+                }
+
+                if (corpusCase.Expected.NameEntries.Length > 0)
+                {
+                    var entries = new Pcre2NameEntry[8];
+                    var written = match.CopyNameEntries(entries, out var isMore);
+                    Assert.False(isMore);
+                    Assert.Equal(corpusCase.Expected.NameEntries.Length, written);
+                    for (var i = 0; i < written; i++)
+                    {
+                        Assert.Equal(corpusCase.Expected.NameEntries[i].Name, entries[i].Name);
+                        Assert.Equal(corpusCase.Expected.NameEntries[i].Number, entries[i].Number);
                     }
                 }
             }

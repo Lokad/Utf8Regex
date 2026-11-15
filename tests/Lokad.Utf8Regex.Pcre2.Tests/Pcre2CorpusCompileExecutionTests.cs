@@ -27,6 +27,12 @@ public sealed class Pcre2CorpusCompileExecutionTests
 
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.CompileError)
         {
+            if (corpusCase.Expected.ErrorKind == "InvalidUtf8Pattern")
+            {
+                Assert.NotNull(corpusCase.PatternBytesBase64);
+                Assert.Throws<ArgumentException>(action);
+                return;
+            }
             var exception = Assert.Throws<Pcre2CompileException>(action);
             Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
         }

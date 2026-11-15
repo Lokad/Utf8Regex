@@ -15,8 +15,7 @@ public sealed class Utf8Pcre2CompletionLedgerTests
 
     private static bool IsExplicitlyLedgered(Pcre2CorpusCase corpusCase) =>
         Pcre2CorpusExecutionFilter.CanExecuteCompile(corpusCase) ||
-        Pcre2CorpusExecutionFilter.CanExecuteManagedMatchSubset(corpusCase) ||
-        Pcre2CorpusExecutionFilter.CanExecuteSpecialMatchSubset(corpusCase) ||
+        Pcre2CorpusExecutionFilter.CanExecuteMatch(corpusCase) ||
         Pcre2CorpusExecutionFilter.CanExecuteProbeSubset(corpusCase) ||
         Pcre2CorpusExecutionFilter.CanExecuteReplaceSubset(corpusCase) ||
         Pcre2CorpusExecutionFilter.CanExecuteCountSubset(corpusCase) ||

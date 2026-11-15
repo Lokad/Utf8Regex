@@ -16,26 +16,12 @@ public static class Pcre2CorpusExecutionData
         }
     }
 
-    public static TheoryData<Pcre2CorpusCase> ManagedMatchSubsetCases
+    public static TheoryData<Pcre2CorpusCase> MatchCases
     {
         get
         {
             var data = new TheoryData<Pcre2CorpusCase>();
-            foreach (var corpusCase in Pcre2CorpusLoader.LoadAll().Where(Pcre2CorpusExecutionFilter.CanExecuteManagedMatchSubset))
-            {
-                data.Add(corpusCase);
-            }
-
-            return data;
-        }
-    }
-
-    public static TheoryData<Pcre2CorpusCase> SpecialMatchSubsetCases
-    {
-        get
-        {
-            var data = new TheoryData<Pcre2CorpusCase>();
-            foreach (var corpusCase in Pcre2CorpusLoader.LoadAll().Where(Pcre2CorpusExecutionFilter.CanExecuteSpecialMatchSubset))
+            foreach (var corpusCase in Pcre2CorpusLoader.LoadAll().Where(Pcre2CorpusExecutionFilter.CanExecuteMatch))
             {
                 data.Add(corpusCase);
             }
