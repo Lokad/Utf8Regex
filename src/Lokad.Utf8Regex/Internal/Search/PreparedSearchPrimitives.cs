@@ -577,6 +577,49 @@ internal readonly struct PreparedSubstringSearch
         // setting their case bit would also admit aliases such as NUL for space.
         var firstCaseMask = firstFolded is >= (byte)'a' and <= (byte)'z' ? (byte)0x20 : (byte)0;
         var compareCaseMask = compareFolded is >= (byte)'a' and <= (byte)'z' ? (byte)0x20 : (byte)0;
+        if (Vector512.IsHardwareAccelerated && input.Length - lastIndex >= Vector512<byte>.Count)
+        {
+            var firstMask = Vector512.Create(firstCaseMask);
+            var compareMask = Vector512.Create(compareCaseMask);
+            var firstVector = Vector512.Create(firstFolded);
+            var compareVector = Vector512.Create(compareFolded);
+            nint offset = 0;
+            var searchLimit = input.Length - preferredCompareIndex;
+            var finalVectorOffset = searchLimit - Vector512<byte>.Count;
+
+            while (offset <= finalVectorOffset)
+            {
+                var firstCompare = Vector512.Equals(
+                    firstVector,
+                    Vector512.BitwiseOr(MemoryMarshal.Read<Vector512<byte>>(input[(int)offset..]), firstMask));
+                var preferredCompare = Vector512.Equals(
+                    compareVector,
+                    Vector512.BitwiseOr(MemoryMarshal.Read<Vector512<byte>>(input[((int)offset + preferredCompareIndex)..]), compareMask));
+                var candidates = (firstCompare & preferredCompare).ExtractMostSignificantBits();
+                while (candidates != 0)
+                {
+                    var candidateOffset = BitOperations.TrailingZeroCount(candidates);
+                    var candidate = (int)(offset + candidateOffset);
+                    if (candidate <= maxCandidateStart &&
+                        MatchesFoldedTailPreferred(input, candidate, foldedNeedle, preferredCompareIndex))
+                    {
+                        index = candidate;
+                        return true;
+                    }
+
+                    candidates &= candidates - 1;
+                }
+
+                offset += Vector512<byte>.Count;
+                if (offset > finalVectorOffset && offset < searchLimit)
+                {
+                    offset = finalVectorOffset;
+                }
+            }
+
+            return true;
+        }
+
         if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
         {
             var firstMask = Vector256.Create(firstCaseMask);

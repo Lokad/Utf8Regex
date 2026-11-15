@@ -32,14 +32,14 @@ public sealed class Utf8SubstringBoundarySearchTests
         var search = new PreparedSubstringSearch(Encoding.ASCII.GetBytes(literal), ignoreCase: true);
         var reference = new Regex(Regex.Escape(literal), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        foreach (var prefix in new[] { 0, 2, 31, 32, 33 })
+        foreach (var prefix in new[] { 0, 2, 31, 32, 33, 63, 64, 65, 127, 128, 129 })
         foreach (var tail in new[] { 0, 1, length - 1 })
         {
             var text = new string('x', prefix) + literal.ToUpperInvariant() + "!" + literal + "!" + literal[..tail];
             var expected = reference.Count(text);
             Assert.Equal(2, expected);
             var bytes = Encoding.ASCII.GetBytes(text);
-            foreach (var offset in new[] { 0, 1, 31 })
+            foreach (var offset in new[] { 0, 1, 31, 63 })
             {
                 // Matching bytes outside the borrowed span must be ignored.
                 var storage = Enumerable.Repeat((byte)'a', offset + bytes.Length + length).ToArray();
