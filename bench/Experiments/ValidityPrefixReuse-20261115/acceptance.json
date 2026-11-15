@@ -1,0 +1,44 @@
+{
+  "Source": "b7afb0f4f9f22a26f142ef2d1b15ca167f3dd606",
+  "BaselineSource": "fb6a9ebe03e2cb3e62196527c80d172a043f9b1e",
+  "NoPackageOrFullRefresh": true,
+  "UnchangedPythonAndCaller": true,
+  "DistinctCorePairs": true,
+  "CompilerDocumentsVerified": true,
+  "CheckedManagedInventory": true,
+  "AdmissionAndMeteringUnchanged": true,
+  "ScalarFallbackAndErrorOffsetsVerified": true,
+  "FocusedLinuxNet11": true,
+  "Decision": "Accept prefix reuse and explicitly retain finite late-Unicode/email costs; no universal speedup",
+  "MatchingAndUtf8LookupAlgorithmsUnchanged": true,
+  "AsciiClassificationPrimitiveChanged": true,
+  "ValidityPreparationRangeChanged": true,
+  "PublicContractChanged": false,
+  "ModeledResourceWorkChanged": false,
+  "SourceLinesNet": 5,
+  "WindowsChecksPerTarget": {
+    "Core": 1007,
+    "PythonRe": 892,
+    "Pcre2": 396,
+    "Posix": 36
+  },
+  "WindowsTargets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "LinuxChecks": {
+    "Core": 1007,
+    "PythonRe": 892,
+    "Pcre2": 396,
+    "Posix": 36
+  },
+  "LinuxForcedScalarValidationChecks": 106,
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "Seconds": 78.85388872865587,
+  "FullOptsStandaloneAfterBytes": 194,
+  "BeforeStandaloneListing": false,
+  "BaselineArchiveSha256": "35407C568DD891189CF70070BAE630F9C21E3C9A85E0B5F0C2047C86FAE0AEAD",
+  "RawSha256": "09FFC581CB78CB235D25A00E29C29632A026913903436522D829AC51C22EBE77",
+  "WindowsRawSha256": "EC99423A7A5EB401D613D2614272404BBF71C918D28A4638C298C84AAB40B0FB"
+}
