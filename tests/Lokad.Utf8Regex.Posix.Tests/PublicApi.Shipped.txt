@@ -1,4 +1,4 @@
-[Flags] enum Posix.PosixCompileOptions : Int32 { Newline = 1, None = 0 }
+[Flags] enum Posix.PosixCompileOptions : Int32 { IgnoreCase = 2, Newline = 1, None = 0 }
 sealed class Posix.Utf8PosixMatchCursor : IDisposable
   method Boolean MoveNext(Span<Utf8ValueMatch> groups, out Utf8ValueMatch match)
   method Boolean MoveNext(out Utf8ValueMatch match)

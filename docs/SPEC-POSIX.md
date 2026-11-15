@@ -45,7 +45,24 @@ The named classes are `alnum`, `alpha`, `blank`, `cntrl`, `digit`, `graph`, `low
 `print`, `punct`, `space`, `upper` and `xdigit`, with ASCII C-locale membership.
 `space` is HT/LF/VT/FF/CR/space; `blank` is HT/space; `cntrl` includes DEL;
 `graph` is U+0021–U+007E and `print` U+0020–U+007E. Negation can match any other
-Unicode scalar. There is no culture-dependent classification or case folding.
+Unicode scalar. There is no culture-dependent classification.
+
+`PosixCompileOptions.IgnoreCase` applies the invariant Unicode 16.0 simple-
+lowercase relation shared with Core: scalars with the same simple lowercase
+form are equivalent, with invariant `I`/`i` paired and dotted `İ`/dotless `ı`
+independent. This is a single-scalar relation, not full Unicode case folding:
+`Σ`/`σ` pair, final `ς` stays separate; `S`/`s` pair, long `ſ` stays separate.
+It does not normalize text or expand `ß` into `ss`. Construction and execution
+ignore ambient culture. Literals and bracket members, including the ASCII named
+classes, accept this case closure; negation applies after closure. Thus `[k]`
+accepts `K`, and `[[:upper:]]` accepts `a` and `K`, without becoming a general
+Unicode category or locale class. Supplementary pairs use complete scalars.
+
+Folding preserves the original subject and byte coordinates, even when partners
+have different UTF-8 widths. `(k|kk)` on `KK` selects all four original bytes.
+Whole-match longest selection and hierarchical capture priority remain unchanged;
+an ordered alternation is not a substitute for folded POSIX selection. The option
+composes with `Newline` and byte search floors for all operations and cursors.
 
 `PosixCompileOptions.Newline` makes `^`/`$` recognize edges after/before LF as
 well as absolute edges, and excludes LF from dot and negated bracket expressions.
@@ -90,7 +107,7 @@ and ordered Core/.NET are not universal capture oracles.
 Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
 
 - Constructors: pattern only; or pattern, `PosixCompileOptions`, timeout and
-  `Utf8ResourcePolicy`. Options initially contain `None` and `Newline` only.
+  `Utf8ResourcePolicy`. Options contain `None`, `Newline` and `IgnoreCase`.
   Properties expose `Pattern`, `Options`, `MatchTimeout` and `GroupCount`
   (capturing parentheses, excluding zero).
 - `Compile` additionally accepts `Utf8ConstructionPolicy`, a construction timeout

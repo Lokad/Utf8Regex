@@ -24,8 +24,14 @@ work/depth/working/result policies and a timeout. Values and caller-owned captur
 spans survive later calls/disposal. Keep borrowed cursor input alive and unchanged;
 dispose on early termination to refund workspace. No finalizer is required.
 
-The initial subset is case-sensitive, with scalar ranges and fixed ASCII named
-classes. `Newline` enables LF line anchors and excludes LF from dot/negated
+The default is case-sensitive, with scalar ranges and fixed ASCII named
+classes. `IgnoreCase` uses invariant Unicode 16.0 simple-lowercase equivalence
+without changing longest-match or capture priority. For example, `(a|aa)(a*)`
+on `AAA` captures `AA` then `A`; `(k|kk)` on `KK` selects four original bytes.
+The relation is single-scalar, with no normalization or multi-scalar folds;
+see the [exact relation and class behavior](../../docs/SPEC-POSIX.md#input-and-syntax).
+This option postdates the frozen 0.5.0 candidate and requires a subsequent package.
+`Newline` enables LF line anchors and excludes LF from dot/negated
 brackets. Locale collation, backreferences, lookarounds and non-ERE extensions
 are rejected. Matching is resource-metered; worst-case linear time is not promised.
 Result-byte policy does not cap caller-owned destinations; these APIs return

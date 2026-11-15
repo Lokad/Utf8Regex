@@ -110,7 +110,7 @@ internal partial struct PosixWorkspace
                     { failed = true; break; }
                     var hit = instruction.Kind switch
                     {
-                        Utf8SliceInstructionKind.Literal => scalar.Value == instruction.A,
+                        Utf8SliceInstructionKind.Literal => MatchesLiteral(scalar, instruction.A),
                         Utf8SliceInstructionKind.Dot => instruction.A != 0 || scalar.Value != '\n',
                         _ => MatchesClass(scalar, instruction, ref invocation),
                     };
@@ -257,7 +257,7 @@ internal partial struct PosixWorkspace
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    if (instruction.A == boundary.Value)
+                    if (MatchesLiteral(boundary, instruction.A))
                         return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
                     break;
                 case Utf8SliceInstructionKind.Dot:
@@ -321,7 +321,7 @@ internal partial struct PosixWorkspace
                     case Utf8SliceInstructionKind.CategorySet:
                         var hit = instruction.Kind switch
                         {
-                            Utf8SliceInstructionKind.Literal => scalar.Value == instruction.A,
+                            Utf8SliceInstructionKind.Literal => MatchesLiteral(scalar, instruction.A),
                             Utf8SliceInstructionKind.Dot => instruction.A != 0 || scalar.Value != '\n',
                             _ => MatchesClass(scalar, instruction, ref invocation),
                         };
@@ -368,15 +368,20 @@ internal partial struct PosixWorkspace
         }
     }
 
+    private bool MatchesLiteral(Rune scalar, int value)
+        => scalar.Value == value || _program.Scalar.IgnoreCase &&
+            Utf8SliceCaseEquivalences.ScalarsEquivalent(scalar, new Rune(value), _program.Scalar.CaseBehavior);
+
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)
     {
         var program = _program.Scalar;
-        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], false, program.CaseBehavior) ||
+        var fold = (instruction.B & 2) != 0;
+        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
             Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);
         if (!hit)
         {
             hit = Utf8SliceScalarClasses.MatchesTables(scalar, program.CategorySetMembers[instruction.D],
-                false, program.CaseBehavior, ref invocation, out var breach);
+                fold, program.CaseBehavior, ref invocation, out var breach);
             Check(breach, ref invocation);
         }
         return hit != ((instruction.B & 1) != 0);

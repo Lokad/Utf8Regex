@@ -97,13 +97,13 @@ internal partial struct PosixWorkspace
             });
         if (Rune.DecodeFromUtf8(input.Slice(key.Start, key.End - key.Start), out var scalar, out var width) != OperationStatus.Done ||
             width != key.End - key.Start) return false;
-        if (node.Kind == ChartKind.Literal) return scalar.Value == node.A;
+        if (node.Kind == ChartKind.Literal) return MatchesLiteral(scalar, node.A);
         if (node.Kind == ChartKind.Dot) return node.A != 0 || scalar.Value != '\n';
         var set = _program.ChartClasses[node.A];
-        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, set.Mask16, false, _program.Scalar.CaseBehavior);
+        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, set.Mask16, set.FoldCase, _program.Scalar.CaseBehavior);
         if (!hit)
         {
-            hit = Utf8SliceScalarClasses.MatchesTables(scalar, set.Categories, false, _program.Scalar.CaseBehavior,
+            hit = Utf8SliceScalarClasses.MatchesTables(scalar, set.Categories, set.FoldCase, _program.Scalar.CaseBehavior,
                 ref invocation, out var breach);
             Check(breach, ref invocation);
         }

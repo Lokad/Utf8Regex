@@ -115,7 +115,8 @@ internal sealed partial class PosixProgram
             completed = budget.AllocateObject((frame.Tag, body), static x => new Utf8SliceNode.CaptureNode(x.Tag, x.body));
             frames.Pop();
         }
-        var scalar = Utf8SliceLowerer.Lower(completed!, null, false, false, false)
+        var scalar = Utf8SliceLowerer.Lower(completed!, null, false,
+            (options & PosixCompileOptions.IgnoreCase) != 0, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
         var greedyAsciiRuns = scalar.RepeatCount >= 2 && CanSelectGreedyAsciiRuns(scalar, captureTags.AsSpan(1), budget);

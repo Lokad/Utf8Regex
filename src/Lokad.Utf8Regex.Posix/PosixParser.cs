@@ -11,17 +11,21 @@ internal sealed class PosixParser
 {
     private readonly string _pattern;
     private readonly bool _newline;
+    private readonly bool _ignoreCase;
     private readonly Utf8ConstructionBudget _budget;
     private int _position;
     private int _groups;
 
     private PosixParser(string pattern, PosixCompileOptions options, Utf8ConstructionBudget budget)
-    { _pattern = pattern; _newline = (options & PosixCompileOptions.Newline) != 0; _budget = budget; }
+    {
+        _pattern = pattern; _newline = (options & PosixCompileOptions.Newline) != 0;
+        _ignoreCase = (options & PosixCompileOptions.IgnoreCase) != 0; _budget = budget;
+    }
 
     internal static Utf8SliceNode Parse(string pattern, PosixCompileOptions options, out int groupCount)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        if ((options & ~PosixCompileOptions.Newline) != 0) throw new ArgumentOutOfRangeException(nameof(options));
+        if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)) != 0) throw new ArgumentOutOfRangeException(nameof(options));
         using var construction = Utf8ConstructionScope.Enter();
         var parser = new PosixParser(pattern, options, construction.Budget);
         var root = parser.ParseExpression();
@@ -257,8 +261,8 @@ internal sealed class PosixParser
             members = _budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
             members[0] = Utf8SliceNode.CategorySetMember.Create(table, false);
         }
-        return _budget.AllocateObject((mask, negated, members),
-            static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, false));
+        return _budget.AllocateObject((mask, negated, members, _ignoreCase),
+            static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, x._ignoreCase));
     }
 
     private void ReadNamedClass(Utf8ConstructionBuffer<(int Start, int End)> ranges)
@@ -312,6 +316,7 @@ internal sealed class PosixParser
     }
 
     private Utf8SliceNode NewEmpty() => _budget.AllocateObject(0, static _ => new Utf8SliceNode.EmptyNode());
-    private Utf8SliceNode NewLiteral(int value) => _budget.AllocateObject(value, static x => new Utf8SliceNode.LiteralNode(x, false));
+    private Utf8SliceNode NewLiteral(int value) => _budget.AllocateObject((value, _ignoreCase),
+        static x => new Utf8SliceNode.LiteralNode(x.value, x._ignoreCase));
     private ArgumentException Error(string reason) => new($"{reason} at UTF-16 pattern offset {_position}.", "pattern");
 }

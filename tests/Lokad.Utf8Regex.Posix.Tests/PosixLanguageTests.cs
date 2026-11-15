@@ -1,9 +1,35 @@
+using System.Globalization;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixLanguageTests
 {
+    [Theory]
+    [InlineData("i", "I", true)]
+    [InlineData("i", "İ", false)]
+    [InlineData("I", "ı", false)]
+    [InlineData("[i]", "I", true)]
+    [InlineData("[I]", "ı", false)]
+    [InlineData("[İ]", "i", false)]
+    [InlineData("σ", "Σ", true)]
+    [InlineData("σ", "ς", false)]
+    [InlineData("s", "ſ", false)]
+    public void IgnoreCaseUsesInvariantLowercaseFibersRatherThanLocaleOrFullFolding(string pattern, string input, bool expected)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+            var regex = Utf8PosixRegex.Compile(pattern, PosixCompileOptions.IgnoreCase, Timeout.InfiniteTimeSpan,
+                default, default, Timeout.InfiniteTimeSpan, default);
+            Assert.Equal(PosixCompileOptions.IgnoreCase, regex.Options);
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        }
+        finally { CultureInfo.CurrentCulture = previous; }
+    }
+
     // Exercise the adapter's own class/anchor dispatch, not Core's ordered runner.
     [Theory]
     [InlineData("[a-z]+", "abc", false, true)]

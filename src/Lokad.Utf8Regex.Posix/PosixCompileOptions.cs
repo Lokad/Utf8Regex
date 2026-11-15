@@ -8,4 +8,6 @@ public enum PosixCompileOptions
     None = 0,
     /// <summary>Anchors also recognize LF edges; dot and negated brackets exclude LF.</summary>
     Newline = 1,
+    /// <summary>Use the invariant Unicode scalar case relation without changing POSIX selection or original byte coordinates.</summary>
+    IgnoreCase = 2,
 }

@@ -33,7 +33,8 @@ internal sealed partial class PosixProgram
                 case Utf8SliceNode.EmptyNode: kind = ChartKind.Empty; break;
                 case Utf8SliceNode.LiteralNode literal:
                     kind = ChartKind.Literal; a = literal.Value;
-                    maximum = new System.Text.Rune(a).Utf8SequenceLength; break;
+                    // A fold partner can have a different original byte width.
+                    maximum = literal.FoldCase ? 4 : new System.Text.Rune(a).Utf8SequenceLength; break;
                 case Utf8SliceNode.DotNode dot:
                     kind = ChartKind.Dot; a = dot.MatchNewline ? 1 : 0; maximum = 4; break;
                 case Utf8SliceNode.AnchorNode anchor:

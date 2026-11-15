@@ -12,12 +12,15 @@
 - PythonRe models Python `re` over `str`; PythonRe and POSIX require already-valid
   UTF-8 text and omit regex-operation validity passes. Validate external bytes at
   the text boundary. Required coordinates and output may still inspect text.
-- Add Lokad.Utf8Regex.Posix: a case-sensitive scalar ERE subset with leftmost-
+- Add Lokad.Utf8Regex.Posix: a scalar ERE subset with leftmost-
   longest matching and hierarchical capture priority. Match into caller-owned
   capture spans, count, or use a disposable memory cursor. Named classes are fixed
   ASCII; locale collation, backreferences and lookarounds are excluded. General
   capture selection may use quadratic interval storage; linear matching is not
   promised.
+- Add `PosixCompileOptions.IgnoreCase`: invariant scalar case equivalence with
+  leftmost-longest matching, hierarchical captures and original byte offsets.
+  This source addition postdates the immutable staged 0.5.0 candidate.
 - Add direct UTF-8 pattern/template APIs, byte capture-name lookup and caller-
   buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
   ownership, persistent memory cursors and explicit retained-result/output

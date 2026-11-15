@@ -27,7 +27,7 @@ public sealed class Utf8PosixRegex
     public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        if ((options & ~PosixCompileOptions.Newline) != 0) throw new ArgumentOutOfRangeException(nameof(options));
+        if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)) != 0) throw new ArgumentOutOfRangeException(nameof(options));
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         resourcePolicy.Validate(nameof(resourcePolicy));
         Pattern = pattern; Options = options;

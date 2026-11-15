@@ -48,13 +48,39 @@
     { "id": "absolute-dollar", "pattern": "a$", "input": "a\n", "groups": null },
     { "id": "newline-dollar", "pattern": "a$", "input": "a\n", "options": "Newline", "groups": [[0,1,0,1]] },
     { "id": "ascii-class", "pattern": "[[:alpha:]]+", "input": "éAb", "groups": [[2,2,1,2]] },
-    { "id": "nul-scalar", "pattern": "(.)", "input": "\u0000", "groups": [[0,1,0,1],[0,1,0,1]] }
+    { "id": "nul-scalar", "pattern": "(.)", "input": "\u0000", "groups": [[0,1,0,1],[0,1,0,1]] },
+    { "id": "fold-longest-alternative", "pattern": "(a|aa)", "input": "AA", "options": "IgnoreCase", "groups": [[0,2,0,2],[0,2,0,2]] },
+    { "id": "fold-capture-priority", "pattern": "(a|aa)(a*)", "input": "AAA", "options": "IgnoreCase", "groups": [[0,3,0,3],[0,2,0,2],[2,1,2,1]] },
+    { "id": "fold-unicode-floor", "pattern": "(a|aa)", "input": "éAA", "startOffsetInBytes": 2, "options": "IgnoreCase", "groups": [[2,2,1,2],[2,2,1,2]] },
+    { "id": "fold-literal-wider-subject", "pattern": "(k|kk)", "input": "KK", "options": "IgnoreCase", "groups": [[0,4,0,2],[0,4,0,2]] },
+    { "id": "fold-literal-narrower-subject", "pattern": "(K|KK)", "input": "kk", "options": "IgnoreCase", "groups": [[0,2,0,2],[0,2,0,2]] },
+    { "id": "fold-variable-width-capture-priority", "pattern": "(k|kk)(k*)", "input": "KKk", "options": "IgnoreCase", "groups": [[0,5,0,3],[0,4,0,2],[4,1,2,1]] },
+    { "id": "fold-angstrom-width", "pattern": "(å|åå)", "input": "ÅÅ", "options": "IgnoreCase", "groups": [[0,5,0,2],[0,5,0,2]] },
+    { "id": "fold-class-wider-subject", "pattern": "([k]|[k][k])", "input": "KK", "options": "IgnoreCase", "groups": [[0,4,0,2],[0,4,0,2]] },
+    { "id": "fold-class-narrower-subject", "pattern": "([K]|[K][K])", "input": "kk", "options": "IgnoreCase", "groups": [[0,2,0,2],[0,2,0,2]] },
+    { "id": "fold-negated-class", "pattern": "([^k])", "input": "Kx", "options": "IgnoreCase", "groups": [[3,1,1,1],[3,1,1,1]] },
+    { "id": "fold-range", "pattern": "([K-M]+)", "input": "KLm", "options": "IgnoreCase", "groups": [[0,5,0,3],[0,5,0,3]] },
+    { "id": "fold-ascii-named-class-closure", "pattern": "([[:upper:]]+)", "input": "Ka", "options": "IgnoreCase", "groups": [[0,4,0,2],[0,4,0,2]] },
+    { "id": "fold-supplementary-literal", "pattern": "(𐐀|𐐀𐐀)", "input": "𐐨𐐀", "options": "IgnoreCase", "groups": [[0,8,0,4],[0,8,0,4]] },
+    { "id": "fold-supplementary-range", "pattern": "([𐐀-𐐁]+)", "input": "𐐨𐐩", "options": "IgnoreCase", "groups": [[0,8,0,4],[0,8,0,4]] },
+    { "id": "fold-empty-versus-absent", "pattern": "(a|aa)(b)?(c*)", "input": "AA", "options": "IgnoreCase", "groups": [[0,2,0,2],[0,2,0,2],null,[2,0,2,0]] },
+    { "id": "fold-last-iteration-reset", "pattern": "(a(b)?)*", "input": "ABA", "options": "IgnoreCase", "groups": [[0,3,0,3],[2,1,2,1],null] },
+    { "id": "fold-newline-anchors", "pattern": "^(a|aa)$", "input": "x\nAA\nx", "options": "IgnoreCase, Newline", "groups": [[2,2,2,2],[2,2,2,2]] },
+    { "id": "fold-newline-negated-class", "pattern": "([^k]+)", "input": "K\nX", "options": "IgnoreCase, Newline", "groups": [[4,1,2,1],[4,1,2,1]] },
+    { "id": "fold-default-dot-includes-newline", "pattern": "(k.)", "input": "K\n", "options": "IgnoreCase", "groups": [[0,4,0,2],[0,4,0,2]] },
+    { "id": "fold-newline-dot-excludes-newline", "pattern": "(k.)", "input": "K\n", "options": "IgnoreCase, Newline", "groups": null },
+    { "id": "fold-no-multi-scalar-expansion", "pattern": "(ß)", "input": "SS", "options": "IgnoreCase", "groups": null },
+    { "id": "fold-no-normalization", "pattern": "(é)", "input": "é", "options": "IgnoreCase", "groups": null }
   ],
   "iterationCases": [
     { "id": "empty-scalar-progress", "pattern": "()", "input": "😀x", "matches": [[0,0,0,0],[4,0,2,0],[5,0,3,0]] },
     { "id": "empty-around-nonempty", "pattern": "a*", "input": "ba", "matches": [[0,0,0,0],[1,1,1,1],[2,0,2,0]] },
     { "id": "whole-winner-progress", "pattern": "a|aa", "input": "aaa", "matches": [[0,2,0,2],[2,1,2,1]] },
-    { "id": "nonzero-progress", "pattern": "()|a", "input": "😀za", "startOffsetInBytes": 4, "matches": [[4,0,2,0],[5,1,3,1],[6,0,4,0]] }
+    { "id": "nonzero-progress", "pattern": "()|a", "input": "😀za", "startOffsetInBytes": 4, "matches": [[4,0,2,0],[5,1,3,1],[6,0,4,0]] },
+    { "id": "fold-whole-winner-progress", "pattern": "(a|aa)", "input": "AAA", "options": "IgnoreCase", "matches": [[0,2,0,2],[2,1,2,1]] },
+    { "id": "fold-variable-width-progress", "pattern": "(k|kk)", "input": "éKKK", "startOffsetInBytes": 2, "options": "IgnoreCase", "matches": [[2,4,1,2],[6,3,3,1]] },
+    { "id": "fold-empty-progress", "pattern": "k*", "input": "Kx", "options": "IgnoreCase", "matches": [[0,3,0,1],[3,0,1,0],[4,0,2,0]] },
+    { "id": "fold-newline-progress", "pattern": "^k+$", "input": "K\nK", "options": "IgnoreCase, Newline", "matches": [[0,3,0,1],[4,1,2,1]] }
   ],
   "rejectedPatterns": ["\\d", "\\w", "\\1", "(?=a)", "(?<=a)", "(?:a)", "(?<x>a)", "(?i:a)", "a*?", "a++", "(?>a)", "(?(1)a|b)", "[[.ch.]]", "[[=a=]]", "[[:unknown:]]", "a{256}", "a{3,2}", "a{foo}", "[z-a]", "^*", "(", "[", "\\"]
 }
