@@ -1,0 +1,304 @@
+{
+  "Rows": [
+    {
+      "Id": "actual-email",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "ExpectedValues": 92,
+      "Before": {
+        "MedianUs": 939.6586717791411,
+        "RangeUs": [
+          931.8088527607362,
+          955.3038650306748
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          944.5514430379746,
+          937.6767791411044
+        ]
+      },
+      "After": {
+        "MedianUs": 910.0890782402337,
+        "RangeUs": [
+          888.9333915662651,
+          915.679406060606
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          906.4219156626506,
+          912.7225696969696
+        ]
+      },
+      "ObservedPercent": -3.1468441070118147,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "finite-live-email",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "ExpectedValues": 92,
+      "Before": {
+        "MedianUs": 1257.9846362594626,
+        "RangeUs": [
+          1237.3322892561982,
+          1285.3978403361343
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          1258.629512605042,
+          1254.0684462809916
+        ]
+      },
+      "After": {
+        "MedianUs": 1234.9537333333333,
+        "RangeUs": [
+          1226.4593983739837,
+          1249.6515083333331
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          1229.244512195122,
+          1242.213166666667
+        ]
+      },
+      "ObservedPercent": -1.8307777585114482,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "ascii-heavy-unicode",
+      "InputBytes": 261504,
+      "InputSha256": "4A29F5F6AB1630B9973D34F2AF8183A3DFEA4E5F6F0F2F99156B3374333A20D4",
+      "ExpectedValues": 0,
+      "Before": {
+        "MedianUs": 15.932166208253097,
+        "RangeUs": [
+          15.760075873827791,
+          15.998830968280467
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          15.919459398976981,
+          15.944873017529215
+        ]
+      },
+      "After": {
+        "MedianUs": 14.41022532767926,
+        "RangeUs": [
+          14.10678561287269,
+          14.531494121048572
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          14.201699858021767,
+          14.421510408635312
+        ]
+      },
+      "ObservedPercent": -9.55262994799445,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "finite-live-ascii-heavy-unicode",
+      "InputBytes": 261504,
+      "InputSha256": "4A29F5F6AB1630B9973D34F2AF8183A3DFEA4E5F6F0F2F99156B3374333A20D4",
+      "ExpectedValues": 0,
+      "Before": {
+        "MedianUs": 16.822360186642676,
+        "RangeUs": [
+          16.459283340867994,
+          17.019721518987343
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          16.851817292556778,
+          16.787461121157325
+        ]
+      },
+      "After": {
+        "MedianUs": 15.131620613488039,
+        "RangeUs": [
+          14.989179745814,
+          15.338541739577973
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          15.14449989913254,
+          15.118741327843539
+        ]
+      },
+      "ObservedPercent": -10.050549116747131,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "chinese-literal",
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "ExpectedValues": 30,
+      "Before": {
+        "MedianUs": 69.30498880934661,
+        "RangeUs": [
+          68.70732370472261,
+          69.68922650160476
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          69.00158596973866,
+          69.36926842837275
+        ]
+      },
+      "After": {
+        "MedianUs": 69.72528958333334,
+        "RangeUs": [
+          69.27156310679612,
+          70.40243611111111
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          69.63260933888118,
+          70.18247731481482
+        ]
+      },
+      "ObservedPercent": 0.6064509658070039,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-whole-ascii",
+      "InputBytes": 294912,
+      "InputSha256": "1AA4FA5BEAA2072EFC0168F8E993653DFA409DF08D8A7547CCA12038544C16C9",
+      "ExpectedValues": 32768,
+      "Before": {
+        "MedianUs": 388.4123770595169,
+        "RangeUs": [
+          384.822208994709,
+          392.7359682539682
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          387.4998148148148,
+          390.1414222797928
+        ]
+      },
+      "After": {
+        "MedianUs": 391.5201751763451,
+        "RangeUs": [
+          387.8988307291666,
+          429.5864453125
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          390.3376328125,
+          392.1648320209974
+        ]
+      },
+      "ObservedPercent": 0.8001284975406309,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-trusted-email",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "ExpectedValues": 92,
+      "Before": {
+        "MedianUs": 276.6250848708487,
+        "RangeUs": [
+          274.1033591160221,
+          279.71884714548804
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          276.1446132596685,
+          276.7920129151292
+        ]
+      },
+      "After": {
+        "MedianUs": 279.9683696461825,
+        "RangeUs": [
+          278.68765921787707,
+          282.3370260707635
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          279.66364990689016,
+          281.6734525139665
+        ]
+      },
+      "ObservedPercent": 1.2085978308491896,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-email",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "ExpectedValues": 92,
+      "Before": {
+        "MedianUs": 456.4286545454545,
+        "RangeUs": [
+          455.5938090909091,
+          458.8229787878788
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          456.4578909090909,
+          456.14037878787883
+        ]
+      },
+      "After": {
+        "MedianUs": 467.7612244001548,
+        "RangeUs": [
+          463.2898080495356,
+          469.91940937500004
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          468.00798749999996,
+          467.5144613003096
+        ]
+      },
+      "ObservedPercent": 2.4828787022554755,
+      "RangesDisjoint": true
+    }
+  ],
+  "Measurement": {
+    "Seconds": 63.43346102256328,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0
+  },
+  "Runs": [
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.94+7f3895caa58c6d0687a61265d759cfb45f6a78b5 sha256=B8FFAA63E7826BB421E2FA9AA0C008BA55CB96CC3D9E11FF638BE8674256A3E9",
+        "PdbSha256": "B44319715746DE7AD4D87986358EFAB35323956AB66CFEAAAA36FADEC126CC22",
+        "Documents": 343
+      },
+      "Placement": "least-contended allowed processor (0x1; Linux efficiency class unknown)",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.94+5d15e2a07d5f48ac0f895fafc82d7c11de24b331 sha256=A410371E3727AFCEFA8ED9252282CCE13A53839FB76A1170CB39CC7504135B4B",
+        "PdbSha256": "F2D2487235B74B50439E393AB68136E0EF6BFA9A3202DAC96F3E27AE1AAA0C8A",
+        "Documents": 343
+      },
+      "Placement": "least-contended allowed processor (0x40; Linux efficiency class unknown)",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.94+5d15e2a07d5f48ac0f895fafc82d7c11de24b331 sha256=A410371E3727AFCEFA8ED9252282CCE13A53839FB76A1170CB39CC7504135B4B",
+        "PdbSha256": "F2D2487235B74B50439E393AB68136E0EF6BFA9A3202DAC96F3E27AE1AAA0C8A",
+        "Documents": 343
+      },
+      "Placement": "least-contended allowed processor (0x80; Linux efficiency class unknown)",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.94+7f3895caa58c6d0687a61265d759cfb45f6a78b5 sha256=B8FFAA63E7826BB421E2FA9AA0C008BA55CB96CC3D9E11FF638BE8674256A3E9",
+        "PdbSha256": "B44319715746DE7AD4D87986358EFAB35323956AB66CFEAAAA36FADEC126CC22",
+        "Documents": 343
+      },
+      "Placement": "least-contended allowed processor (0x8; Linux efficiency class unknown)",
+      "StartupProcessors": 8
+    }
+  ]
+}
