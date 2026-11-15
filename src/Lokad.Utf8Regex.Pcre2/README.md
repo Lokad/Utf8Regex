@@ -122,8 +122,8 @@ still takes precedence. Return-value rules for valid callbacks are unchanged.
 
 ## Delivery evidence
 
-Core, PythonRe and PCRE2 0.4.0 are published. The current development boundary
-is the [four-package dev96 candidate](../../bench/Experiments/DeliveryDev96-20261115/README.md).
+Core, PythonRe and PCRE2 0.4.0 are published. All four 0.5.0 packages form the
+[qualified candidate](../../bench/Experiments/Release050-20261115/README.md).
 PCRE2 retains its immutable UTF validation/trusted-input choice. Frozen packages
 and measurements retain their own identities.
 

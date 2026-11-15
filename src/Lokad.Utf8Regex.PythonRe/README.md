@@ -19,7 +19,7 @@ text. See the [profile contract](../../docs/SPEC-PYTHONRE.md#subject-text-contra
 
 The tables below compare existing valid UTF-8 text with CPython str, with equal
 requested output materialization. Compilation, input decoding and worker startup
-are excluded. See the [current delivery](../../bench/Experiments/DeliveryDev96-20261115/README.md).
+are excluded. See the [current delivery](../../bench/Experiments/Release050-20261115/README.md).
 
 ## Supported scope
 
