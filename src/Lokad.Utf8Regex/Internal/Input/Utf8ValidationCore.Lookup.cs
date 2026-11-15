@@ -44,7 +44,7 @@ internal static partial class Utf8ValidationCore
             var current = MemoryMarshal.Read<Vector256<byte>>(window[3..]);
             if (current.ExtractMostSignificantBits() == 0)
             {
-                if (LookupPending(input, offset)) return false;
+                if (LookupPending(window)) return false;
             }
             else
             {
@@ -83,7 +83,7 @@ internal static partial class Utf8ValidationCore
             var current = MemoryMarshal.Read<Vector512<byte>>(window[3..]);
             if (current.ExtractMostSignificantBits() == 0)
             {
-                if (LookupPending(input, offset)) return false;
+                if (LookupPending(window)) return false;
             }
             else
             {
@@ -115,8 +115,8 @@ internal static partial class Utf8ValidationCore
         return offset;
     }
 
-    private static bool LookupPending(ReadOnlySpan<byte> input, int offset)
-        => input[offset - 1] >= 0xC0 || input[offset - 2] >= 0xE0 || input[offset - 3] >= 0xF0;
+    private static bool LookupPending(ReadOnlySpan<byte> window)
+        => window[2] >= 0xC0 || window[1] >= 0xE0 || window[0] >= 0xF0;
 
     private static bool LookupTail(ReadOnlySpan<byte> input, int offset)
     {
