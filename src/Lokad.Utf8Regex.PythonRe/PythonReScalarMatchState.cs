@@ -732,7 +732,6 @@ internal partial struct PythonReScalarMatchState
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
         var lastIndex = GetLastIndex();
-        Checkpoint();
         PrepareCaptureProjection(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
         // still use SnapshotGroups; no temporary range array is needed here.
