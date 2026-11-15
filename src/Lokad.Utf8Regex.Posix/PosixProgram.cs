@@ -8,11 +8,12 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool greedyAsciiRuns,
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool greedyAsciiRuns, int firstRequiredRunAtom,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
         FirstAcceptanceIsLongest = firstAcceptanceIsLongest; GreedyAsciiRuns = greedyAsciiRuns;
+        FirstRequiredRunAtom = firstRequiredRunAtom;
         Chart = chart; ChartClasses = chartClasses;
     }
 
@@ -21,6 +22,7 @@ internal sealed partial class PosixProgram
     internal int[] CaptureTags { get; }
     internal bool FirstAcceptanceIsLongest { get; }
     internal bool GreedyAsciiRuns { get; }
+    internal int FirstRequiredRunAtom { get; }
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
@@ -120,16 +122,18 @@ internal sealed partial class PosixProgram
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
         var asciiOnly = true;
-        var greedyRuns = scalar.RepeatCount >= 2 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly);
+        var firstRunAtom = -1;
+        var greedyRuns = scalar.RepeatCount >= 2 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly, out firstRunAtom);
         var greedyAsciiRuns = greedyRuns && asciiOnly;
+        var firstRequiredRunAtom = greedyRuns && !greedyAsciiRuns ? firstRunAtom : -1;
         if (!firstAcceptanceIsLongest)
             firstAcceptanceIsLongest = greedyRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, greedyAsciiRuns,
+        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, greedyAsciiRuns, firstRequiredRunAtom,
                 chart.Nodes, chart.Classes),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.greedyAsciiRuns, x.Nodes, x.Classes));
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.greedyAsciiRuns, x.firstRequiredRunAtom, x.Nodes, x.Classes));
         construction.Complete();
         return result;
     }
@@ -257,13 +261,14 @@ internal sealed partial class PosixProgram
     }
 
     private static bool CanSelectGreedyRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget,
-        out bool asciiOnly)
+        out bool asciiOnly, out int firstRequiredRunAtom)
     {
         // Greedy runs maximize each earlier concatenation part. An overlapping
         // successor must be nullable: it can still consume the suffix of any
         // shorter earlier choice. Required overlapping runs may need rewind.
         // Public tags outside bodies occur once; no history can change the split.
         asciiOnly = true;
+        firstRequiredRunAtom = -1;
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
         Span<byte> literalMask = stackalloc byte[16];
@@ -357,6 +362,7 @@ internal sealed partial class PosixProgram
                 seen[octet] |= mask[octet];
             }
             if (!nonempty) return false;
+            if (runs == 0 && instruction.RepeatMinimum > 0) firstRequiredRunAtom = atomIndex;
             runs++;
             index = exitIndex;
         }

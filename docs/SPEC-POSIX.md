@@ -189,6 +189,11 @@ also prove folded run boundaries. Intersecting scalar closures necessarily share
 an ASCII key. This proof changes selection eligibility only: Unicode partners
 use ordinary scalar consumption and the existing trace, with original byte
 positions. It does not admit a Unicode partner to an ASCII byte shortcut.
+When the first proved run has a positive minimum, its existing scalar predicate
+can reject an impossible start before capture events or repeat counters execute.
+Nullable or unproved prefixes decline this check. State reset, scalar-aligned
+candidate order and the original work/interruption authority remain; numeric
+work requirements can decrease without introducing another executor or replay.
 Flat positive ASCII class or unfolded ASCII literal runs also allow direct run
 consumption in the scalar executor when greedy boundaries prove the selected
 parse. A required run must be disjoint from all preceding runs; an overlapping

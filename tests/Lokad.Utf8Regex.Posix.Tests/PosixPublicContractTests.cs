@@ -628,23 +628,28 @@ public sealed class PosixPublicContractTests
     [InlineData("FoldedGreedyCapture", true, PosixCompileOptions.IgnoreCase)]
     [InlineData("NewlineRewindCapture", false, PosixCompileOptions.Newline)]
     [InlineData("NewlineRewindCapture", true, PosixCompileOptions.Newline)]
+    [InlineData("SparseGreedyCapture", false, PosixCompileOptions.IgnoreCase)]
+    [InlineData("SparseGreedyCapture", true, PosixCompileOptions.IgnoreCase)]
     public void MatchingObservesOriginalInterruptionAndRefundsWorkingLoans(string operation, bool deadline, PosixCompileOptions options)
     {
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource(); var account = new Account();
-        var foldedGreedy = operation == "FoldedGreedyCapture";
+        var sparseGreedy = operation == "SparseGreedyCapture";
+        var foldedGreedy = operation == "FoldedGreedyCapture" || sparseGreedy;
         var rewind = operation == "NewlineRewindCapture";
         var regex = new Utf8PosixRegex(foldedGreedy ? "(k+)([0-9]+)" : rewind ? "^([a-z]+)([[:space:]]+)$" : "a", options, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000 });
-        var input = foldedGreedy ? Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("K", 8192)) + "007") :
+        var input = sparseGreedy ? Encoding.UTF8.GetBytes(new string('!', 8192) + "K007") :
+            foldedGreedy ? Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("K", 8192)) + "007") :
             rewind ? Encoding.UTF8.GetBytes(new string('a', 8192) + " \nb") :
             Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a");
         var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             if (triggered || (foldedGreedy || rewind) && !new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod() is { Name: "MatchAt", DeclaringType: { } type } && type == typeof(PosixWorkspace))) return;
+                frame.GetMethod() is { Name: var name, DeclaringType: { } type } &&
+                name == (sparseGreedy ? "Find" : "MatchAt") && type == typeof(PosixWorkspace))) return;
             triggered = true; if (deadline) now = 101; else token.Cancel();
         });
         try
@@ -662,6 +667,7 @@ public sealed class PosixPublicContractTests
                 case "Match": regex.Match(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "Count": regex.Count(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "FoldedGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "SparseGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "NewlineRewindCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 default: using (var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) cursor.MoveNext(out _); break;
             }

@@ -119,6 +119,47 @@ public sealed class PosixGreedyAsciiRunTests
     }
 
     [Theory]
+    [InlineData("(k+)([0-9]+)")]
+    [InlineData("([k]+)([0-9]+)")]
+    [InlineData("(([k]{1,2}))([0-9]+)")]
+    public void RequiredRunPredicateKeepsFoldedStartsAndCaptureFloors(string pattern)
+    {
+        var options = PosixCompileOptions.IgnoreCase;
+        var program = PosixProgram.Compile(pattern, options);
+        Assert.True(program.FirstRequiredRunAtom >= 0);
+        // Consuming a cannot satisfy an immediately following beginning anchor,
+        // even in Newline mode. This impossible branch keeps the same language
+        // and capture numbers while forcing production general selection.
+        var contrast = pattern + "|a^";
+        Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
+        var regex = new Utf8PosixRegex(pattern, options);
+        var general = new Utf8PosixRegex(contrast, options);
+        foreach (var text in new[] { "", "!", "123", "k", "k12", "KK12", "😀!KK12 k2", "KKK123", "\nK12\n", new string('!', 512) + "KK12" })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            for (var floor = 0; floor <= input.Length; floor++)
+            {
+                if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
+                for (var width = 0; width <= regex.GroupCount + 2; width++)
+                {
+                    var expected = new Utf8ValueMatch[width]; var actual = new Utf8ValueMatch[width];
+                    Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
+                    Assert.Equal(expected, actual);
+                }
+                Assert.Equal(general.Count(input, floor), regex.Count(input, floor));
+            }
+        }
+    }
+
+    [Fact]
+    public void RequiredRunPredicateDeclinesNullableOrUnprovedPrefixes()
+    {
+        foreach (var pattern in new[] { "(k*)([0-9]+)", "(k*)([K]*)", "([k]+)([K]+)", "(k|kk)(k*)", "(k)+([0-9]+)" })
+            Assert.Equal(-1, PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstRequiredRunAtom);
+        Assert.Equal(-1, PosixProgram.Compile("([a-z]+)([0-9]+)", default).FirstRequiredRunAtom);
+    }
+
+    [Theory]
     [InlineData("^([[:alpha:]]+)([0-9]+)$", "sku007", 0, 0, 6, 0, 3, 3, 3)]
     [InlineData("([a-z]+)([0-9]+)", "😀sku007!", 4, 4, 6, 4, 3, 7, 3)]
     [InlineData("([a-z]{1,3})([0-9]{2,4})", "abcd12345", 0, 1, 7, 1, 3, 4, 4)]

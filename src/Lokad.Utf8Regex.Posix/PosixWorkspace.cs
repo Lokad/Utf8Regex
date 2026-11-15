@@ -56,11 +56,20 @@ internal partial struct PosixWorkspace
     {
         captureHistory &= !existenceOnly && _program.CaptureTags.Length > 1;
         var generalCaptures = captureHistory && !_program.FirstAcceptanceIsLongest;
+        var firstAtomIndex = _program.FirstRequiredRunAtom;
+        var firstAtom = firstAtomIndex >= 0 ? _program.Scalar.Instructions[firstAtomIndex] : default;
         for (var candidate = fromByte; candidate <= input.Length;)
         {
             Charge(ref invocation);
             Reset(state, ref invocation);
-            if (MatchAt(input, state, candidate, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
+            // The proved first run cannot be empty. Reject its scalar before
+            // recording capture opens or counters at an impossible start. Keep
+            // the original reset, scalar progression and invocation authority.
+            var possible = firstAtomIndex < 0 ||
+                Rune.DecodeFromUtf8(input[candidate..], out var firstScalar, out _) == OperationStatus.Done &&
+                (firstAtom.Kind == Utf8SliceInstructionKind.Literal ? MatchesLiteral(firstScalar, firstAtom.A) :
+                    MatchesClass(firstScalar, firstAtom, ref invocation));
+            if (possible && MatchAt(input, state, candidate, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
             {
                 start = candidate;
                 if (generalCaptures)
