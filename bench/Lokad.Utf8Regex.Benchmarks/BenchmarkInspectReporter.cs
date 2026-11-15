@@ -825,16 +825,7 @@ internal static partial class BenchmarkInspectReporter
                 Measure("PrimitiveCount", iterations, () => ExecuteIgnoreCaseLiteralPrimitiveCount(regex.Inspection.SearchPlan.LiteralUtf8 ?? [], benchmarkCase.InputBytes));
                 if (regex.Inspection.SearchPlan.LiteralSearch is { } ignoreCaseSearch)
                 {
-                    Console.WriteLine($"IgnoreCaseTier    : {ignoreCaseSearch.IgnoreCaseTier}");
                     Measure("PreparedCount", iterations, () => ExecutePreparedSubstringCount(ignoreCaseSearch, benchmarkCase.InputBytes));
-                    Measure("PreparedCandidates", iterations, () => ExecutePreparedSubstringCandidateCount(ignoreCaseSearch, benchmarkCase.InputBytes));
-                    Measure("PreparedVerifications", iterations, () => ExecutePreparedSubstringVerificationCount(ignoreCaseSearch, benchmarkCase.InputBytes));
-                    if (ignoreCaseSearch.Length > 10)
-                    {
-                        Measure("VectorAnchoredCount", iterations, () => ExecutePreparedSubstringCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                        Measure("VectorAnchoredCandidates", iterations, () => ExecutePreparedSubstringCandidateCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                        Measure("VectorAnchoredVerifications", iterations, () => ExecutePreparedSubstringVerificationCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                    }
                 }
                 break;
 
@@ -3237,74 +3228,6 @@ internal static partial class BenchmarkInspectReporter
         Measure("DecodeThenCompiledRegex", iterations, context.ExecuteDecodeThenCompiledRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
         Measure("PredecodedCompiledRegex", iterations, context.ExecutePredecodedCompiledRegex);
-        return 0;
-    }
-
-    public static int RunInspectIgnoreCaseLiteralReplicaCase(string caseId)
-    {
-        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var regex = benchmarkCase.Utf8Regex;
-        if (regex.Inspection.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || regex.Inspection.SearchPlan.LiteralSearch is not { } ignoreCaseSearch)
-        {
-            Console.Error.WriteLine($"Case '{caseId}' is not on NativeExecutionKind.AsciiLiteralIgnoreCase.");
-            return 1;
-        }
-
-        var count = ignoreCaseSearch.CountWithMetrics(benchmarkCase.InputBytes, out var candidateCount, out var verifyCount);
-
-        WriteReplicaCaseHeader(benchmarkCase, iterations: null);
-        Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine("PreparedSearcher  : IgnoreCaseLiteral");
-        Console.WriteLine($"MatchCount        : {count}");
-        Console.WriteLine($"CandidateCount    : {candidateCount}");
-        Console.WriteLine($"VerificationCount : {verifyCount}");
-        return 0;
-    }
-
-    public static int RunMeasureIgnoreCaseLiteralCompareSweepReplicaCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var regex = benchmarkCase.Utf8Regex;
-        if (regex.Inspection.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || regex.Inspection.SearchPlan.LiteralSearch is not { } search)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-            Console.WriteLine("IgnoreCaseCompare : case is not on AsciiLiteralIgnoreCase");
-            return 1;
-        }
-
-        var iterations = ParseIterations(iterationsText);
-        WriteReplicaCaseHeader(benchmarkCase, iterations);
-        Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
-        Console.WriteLine($"LiteralLength     : {search.Length}");
-        Console.WriteLine($"CurrentCompare    : {(search.IgnoreCase && search.Length > 8 ? search._ignoreCasePreferredCompareIndex : -1)}");
-
-        Measure("PreparedCount", iterations, () => ExecutePreparedSubstringCount(search, benchmarkCase.InputBytes));
-        Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
-        Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
-        Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
-
-        if (!search.IgnoreCase || search.Length <= 10)
-        {
-            Console.WriteLine("CompareSweep      : not applicable to short or exact literals");
-            return 0;
-        }
-
-        var expectedCount = search.CountWithMetrics(benchmarkCase.InputBytes, out _, out _);
-        for (var compareIndex = 1; compareIndex < search.Length; compareIndex++)
-        {
-            var count = search.CountIgnoreCaseWithPreferredCompareIndex(benchmarkCase.InputBytes, compareIndex, out var candidateCount, out var verifyCount);
-            Console.WriteLine($"CompareDiag[{compareIndex,2}]: count={count} candidates={candidateCount} verifies={verifyCount}");
-            if (count != expectedCount)
-            {
-                Console.WriteLine($"Compare[{compareIndex}] skipped: count {count} differs from prepared Count {expectedCount}.");
-                continue;
-            }
-            Measure($"Compare[{compareIndex}]", iterations, () =>
-                ExecutePreparedSubstringCountWithPreferredCompare(search, benchmarkCase.InputBytes, compareIndex));
-        }
-
         return 0;
     }
 
@@ -7305,58 +7228,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static int ExecutePreparedSubstringCount(PreparedSubstringSearch search, byte[] input)
-    {
-        var count = 0;
-        var index = 0;
-        var span = input.AsSpan();
-        while (index <= span.Length - search.Length)
-        {
-            var found = search.IndexOf(span[index..]);
-            if (found < 0)
-            {
-                return count;
-            }
-
-            count++;
-            index += found + search.Length;
-        }
-
-        return count;
-    }
-
-    private static int ExecutePreparedSubstringCountWithPreferredCompare(PreparedSubstringSearch search, byte[] input, int compareIndex)
-    {
-        return search.CountIgnoreCaseWithPreferredCompareIndex(input, compareIndex, out _, out _);
-    }
-
-    private static int ExecutePreparedSubstringCountWithTier(PreparedSubstringSearch search, byte[] input, PreparedIgnoreCaseSearchTier tier)
-    {
-        return search.CountIgnoreCaseWithTier(input, tier, out _, out _);
-    }
-
-    private static int ExecutePreparedSubstringCandidateCount(PreparedSubstringSearch search, byte[] input)
-    {
-        _ = search.CountWithMetrics(input, out var candidateCount, out _);
-        return candidateCount;
-    }
-
-    private static int ExecutePreparedSubstringCandidateCountWithTier(PreparedSubstringSearch search, byte[] input, PreparedIgnoreCaseSearchTier tier)
-    {
-        _ = search.CountIgnoreCaseWithTier(input, tier, out var candidateCount, out _);
-        return candidateCount;
-    }
-
-    private static int ExecutePreparedSubstringVerificationCount(PreparedSubstringSearch search, byte[] input)
-    {
-        _ = search.CountWithMetrics(input, out _, out var verificationCount);
-        return verificationCount;
-    }
-
-    private static int ExecutePreparedSubstringVerificationCountWithTier(PreparedSubstringSearch search, byte[] input, PreparedIgnoreCaseSearchTier tier)
-    {
-        _ = search.CountIgnoreCaseWithTier(input, tier, out _, out var verificationCount);
-        return verificationCount;
-    }
+        => search.Count(input);
 
     private static int SumUtf8Matches(Utf8RegexBenchmarkContext context)
     {

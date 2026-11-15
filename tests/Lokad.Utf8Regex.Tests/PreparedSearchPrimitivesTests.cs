@@ -169,10 +169,9 @@ public sealed class PreparedSearchPrimitivesTests
         var firstIndex = "prefix-".Length;
         var secondIndex = text.LastIndexOf(secondMatch, StringComparison.Ordinal);
 
-        Assert.Equal(PreparedIgnoreCaseSearchTier.VectorAnchored, search.IgnoreCaseTier);
         Assert.Equal(firstIndex, search.IndexOf(input));
         Assert.Equal(secondIndex, search.LastIndexOf(input));
-        Assert.Equal(2, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+        Assert.Equal(2, search.Count(input));
     }
 
     [Fact]
@@ -195,7 +194,7 @@ public sealed class PreparedSearchPrimitivesTests
                     var input = storage.AsSpan(offset, bytes.Length);
                     Assert.Equal(expected, search.IndexOf(input));
                     Assert.Equal(expected, search.LastIndexOf(input));
-                    Assert.Equal(1, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+                    Assert.Equal(1, search.Count(input));
                 }
             }
         }

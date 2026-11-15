@@ -322,16 +322,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-ignore-case-primitive-case", S
     return BenchmarkInspectReporter.RunMeasureIgnoreCasePrimitiveReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--inspect-ignore-case-literal-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunInspectIgnoreCaseLiteralReplicaCase(args[1]);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-ignore-case-compare-sweep-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureIgnoreCaseLiteralCompareSweepReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-utf8-validation-profile", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureUtf8ValidationProfile(args[1], args.Length >= 3 ? args[2] : null);

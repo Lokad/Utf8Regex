@@ -26,8 +26,6 @@
     <Compile Include="..\Common\AssemblyDependencyInventory.cs" Link="Common\AssemblyDependencyInventory.cs" />
     <Compile Include="..\Common\PublicApiSnapshot.cs" Link="Common\PublicApiSnapshot.cs" />
     <None Update="TestData\supplementary-simple-case-16.json" CopyToOutputDirectory="PreserveNewest" />
-    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8SubstringPreferredCompareReplay.cs"
-             Link="BenchmarkTooling\Utf8SubstringPreferredCompareReplay.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8MatchInspection.cs"
              Link="BenchmarkTooling\Utf8MatchInspection.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8SearchDiagnosticReports.cs"

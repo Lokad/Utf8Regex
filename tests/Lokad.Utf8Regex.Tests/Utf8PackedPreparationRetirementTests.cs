@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
@@ -9,30 +8,14 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PackedPreparationRetirementTests
 {
     [Fact]
-    public void ProductionSearchRetainsOnlyConsumedStateAndNoPackedExperiment()
-    {
-        var type = typeof(PreparedSubstringSearch);
-        var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.Equal(7, fields.Length);
-        Assert.DoesNotContain(fields, f => f.Name is "_ignoreCasePackedPair" or "<IgnoreCaseTier>k__BackingField");
-        Assert.Null(type.Assembly.GetType("Lokad.Utf8Regex.Internal.Search.PreparedIgnoreCasePackedPair"));
-        Assert.DoesNotContain("PackedPair", Enum.GetNames<PreparedIgnoreCaseSearchTier>());
-        var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-        Assert.DoesNotContain(methods, m => m.Name is "DetermineIgnoreCaseTier" or "ShouldUsePackedPairTier"
-            or "TryCreateIgnoreCasePackedPair" or "IndexOfIgnoreCasePackedPair" or "IndexOfIgnoreCasePackedPairWithMetrics"
-            or "MatchesFoldedTailSkippingIndexes");
-    }
-
-    [Fact]
     public void LongFoldedSearchFitsItsUsefulPreparationBudgetAndBorrowsCanonicalBytes()
     {
         foreach (var needle in new[] { "abcdefghijklmnop"u8.ToArray(), "ABCDEFGHIJKLMNOP"u8.ToArray() })
         {
             using var owner = new Utf8ConstructionScope(0, 1104, 640, 1);
             var search = new PreparedSubstringSearch(needle, true);
-            Assert.Equal(PreparedIgnoreCaseSearchTier.VectorAnchored, search.IgnoreCaseTier);
             Assert.Equal(1, search.IndexOf("!AbCdEfGhIjKlMnOp?"u8));
-            Assert.Equal(1, search.CountWithMetrics("!AbCdEfGhIjKlMnOp?"u8, out _, out _));
+            Assert.Equal(1, search.Count("!AbCdEfGhIjKlMnOp?"u8));
             Assert.InRange(owner.Budget.WorkSteps, 1ul, 640ul);
             var expected = Utf8ConstructionBudget.ArrayBytes<int>(256);
             if (needle[0] == (byte)'A') expected += Utf8ConstructionBudget.ArrayBytes<byte>(16);
@@ -42,7 +25,7 @@ public sealed class Utf8PackedPreparationRetirementTests
     }
 
     [Fact]
-    public void DerivedTierKeepsAllAsciiBytesAndLengthTransitionsOnTheOwnedKernels()
+    public void OwnedSearchKeepsAllAsciiBytesAndLengthTransitions()
     {
         foreach (var length in new[] { 1, 2, 8, 9, 10, 11, 16, 32 })
         foreach (var value in Enumerable.Range(0, 128))
@@ -50,13 +33,9 @@ public sealed class Utf8PackedPreparationRetirementTests
         {
             var needle = Enumerable.Repeat((byte)value, length).ToArray();
             var search = new PreparedSubstringSearch(needle, ignore);
-            Assert.Equal(!ignore ? PreparedIgnoreCaseSearchTier.None :
-                length <= 8 ? PreparedIgnoreCaseSearchTier.ShortLiteral : PreparedIgnoreCaseSearchTier.VectorAnchored,
-                search.IgnoreCaseTier);
             var input = Enumerable.Repeat((byte)value, length * 3).ToArray();
             Assert.Equal(0, search.IndexOf(input)); Assert.Equal(2 * length, search.LastIndexOf(input));
-            Assert.Equal(3, search.CountWithMetrics(input, out _, out _));
-            Assert.Equal(3, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+            Assert.Equal(3, search.Count(input));
         }
     }
 

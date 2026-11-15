@@ -161,7 +161,7 @@ internal static class Utf8MatchInspection
         if (inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily &&
             inspection.SearchPlan.LiteralSearch is { } search)
         {
-            count = search.CountWithMetrics(input, out _, out _);
+            count = search.Count(input);
             return true;
         }
         count = 0;

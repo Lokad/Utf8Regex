@@ -1,11 +1,10 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Benchmarks;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SubstringPreferredCompareReplayTests
+public sealed class Utf8SubstringBoundarySearchTests
 {
     [Fact]
     public void RejectedAnchorDoesNotSkipLaterCandidateStarts()
@@ -14,10 +13,8 @@ public sealed class Utf8SubstringPreferredCompareReplayTests
         var search = new PreparedSubstringSearch(Encoding.ASCII.GetBytes(literal), ignoreCase: true);
         var input = Encoding.ASCII.GetBytes("xx" + literal);
 
-        Assert.Equal(1, search.CountWithMetrics(input, out _, out _));
-        // The first anchor at byte 14 rejects start 0. Advancing past the
-        // anchor, rather than the candidate, would skip the match at byte 2.
-        Assert.Equal(1, search.CountIgnoreCaseWithPreferredCompareIndex(input, 14, out _, out _));
+        Assert.Equal(1, search.Count(input));
+        Assert.Equal(2, search.IndexOf(input));
     }
 
     [Theory]
@@ -29,7 +26,7 @@ public sealed class Utf8SubstringPreferredCompareReplayTests
     [InlineData(17)]
     [InlineData(32)]
     [InlineData(33)]
-    public void AlternativesAgreeAtBorrowedOffsetsAndIncompleteTails(int length)
+    public void ProductionCountAgreesAtBorrowedOffsetsAndIncompleteTails(int length)
     {
         var literal = new string(Enumerable.Range(0, length).Select(i => i % 2 == 0 ? 'a' : 'b').ToArray());
         var search = new PreparedSubstringSearch(Encoding.ASCII.GetBytes(literal), ignoreCase: true);
@@ -48,9 +45,7 @@ public sealed class Utf8SubstringPreferredCompareReplayTests
                 var storage = Enumerable.Repeat((byte)'a', offset + bytes.Length + length).ToArray();
                 bytes.CopyTo(storage.AsSpan(offset));
                 var input = storage.AsSpan(offset, bytes.Length);
-                Assert.Equal(expected, search.CountWithMetrics(input, out _, out _));
-                for (var compareIndex = 1; compareIndex < length; compareIndex++)
-                    Assert.Equal(expected, search.CountIgnoreCaseWithPreferredCompareIndex(input, compareIndex, out _, out _));
+                Assert.Equal(expected, search.Count(input));
             }
         }
     }

@@ -54,7 +54,7 @@ internal sealed class Pcre2LiteralProgram
         !EndAnchored;
 
     internal int CountNonOverlapping(ReadOnlySpan<byte> input) =>
-        Search.CountWithMetrics(input, out _, out _);
+        Search.Count(input);
 
     internal Utf8ExecutionLimitKind TryCountNonOverlapping(ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out int count)

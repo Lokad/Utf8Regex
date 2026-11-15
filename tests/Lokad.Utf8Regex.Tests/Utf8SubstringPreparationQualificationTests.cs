@@ -169,16 +169,14 @@ public sealed class Utf8SubstringPreparationQualificationTests
                 var actualLast = search.LastIndexOf(input);
                 Assert.True(expectedLast == actualLast,
                     $"Last: length={length}, binary={binary}, ignore={ignore}, input={Convert.ToHexString(input)}, expected={expectedLast}, actual={actualLast}");
-                if (length == 0) continue;
+                if (length == 0)
+                {
+                    Assert.Throws<InvalidOperationException>(() => search.Count(input));
+                    continue;
+                }
                 var count = 0; var next = 0;
                 foreach (var hit in hits) if (hit >= next) { count++; next = hit + length; }
-                Assert.Equal(count, search.CountWithMetrics(input, out _, out _));
-                if (ignore) foreach (var tier in Enum.GetValues<PreparedIgnoreCaseSearchTier>().Where(t => t != PreparedIgnoreCaseSearchTier.None))
-                {
-                    var actualCount = search.CountIgnoreCaseWithTier(input, tier, out _, out _);
-                    Assert.True(count == actualCount,
-                        $"Count: length={length}, binary={binary}, tier={tier}, input={Convert.ToHexString(input)}, expected={count}, actual={actualCount}");
-                }
+                Assert.Equal(count, search.Count(input));
             }
         }
         static byte Fold(byte b) => b is >= (byte)'A' and <= (byte)'Z' ? (byte)(b + 32) : b;

@@ -33,9 +33,6 @@ public sealed class Utf8FoldedPunctuationSearchTests
                 var input = storage.AsSpan(offset, value.Length);
                 var expected = Find(input, needle);
                 Assert.Equal(expected, search.IndexOf(input));
-                var candidates = 0;
-                var verifies = 0;
-                Assert.Equal(expected, search.IndexOfIgnoreCaseWithMetrics(input, compareIndex, ref candidates, ref verifies));
                 var expectedCount = 0;
                 for (var start = 0; start <= input.Length - needle.Length;)
                 {
@@ -44,7 +41,7 @@ public sealed class Utf8FoldedPunctuationSearchTests
                     expectedCount++;
                     start += found + needle.Length;
                 }
-                Assert.Equal(expectedCount, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+                Assert.Equal(expectedCount, search.Count(input));
             }
         }
 
@@ -56,9 +53,7 @@ public sealed class Utf8FoldedPunctuationSearchTests
         {
             upper.CopyTo(raw.AsSpan(64));
             raw[64 + position] = (byte)value;
-            var candidates = 0;
-            var verifies = 0;
-            Assert.Equal(Find(raw, needle), search.IndexOfIgnoreCaseWithMetrics(raw, compareIndex, ref candidates, ref verifies));
+            Assert.Equal(Find(raw, needle), search.IndexOf(raw));
         }
         Assert.Equal(-1, search.IndexOf([]));
         Assert.Equal(-1, search.IndexOf(needle.AsSpan(0, needle.Length - 1)));

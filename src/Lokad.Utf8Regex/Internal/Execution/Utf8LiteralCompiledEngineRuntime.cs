@@ -481,7 +481,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             TryGetLeadingUtf8SegmentLength(literal, out _))
         {
             if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
-                return prepared.CountWithMetrics(input, out _, out _);
+                return prepared.Count(input);
             // Reuse complete-sequence search instead of restarting a scalar
             // anchor and rechecking each prefix. Earlier fused strategies keep
             // their priority; controlled invocations use their metered paths.
@@ -501,7 +501,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
         if (budget.IsInfinite && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)
         {
-            return literalSearch.CountWithMetrics(input, out _, out _);
+            return literalSearch.Count(input);
         }
 
         if (budget.IsInfinite &&
@@ -852,7 +852,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var literalSearch = _regexPlan.SearchPlan.LiteralSearch ?? throw UnexpectedExecutionKind();
         if (budget.IsInfinite)
         {
-            return literalSearch.CountIgnoreCaseWithTier(input, literalSearch.IgnoreCaseTier, out _, out _);
+            return literalSearch.Count(input);
         }
 
         var count = 0;
