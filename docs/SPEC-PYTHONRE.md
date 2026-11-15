@@ -308,11 +308,13 @@ afterward. Decoding, capacity admission, next discovery and final publication
 retain their checks; numerical work can decrease by one step per captured value.
 
 One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
-available ASCII/whole-subject character counts; otherwise they count only their
-returned scalar range instead of describing an unrelated suffix.
+already-proved ASCII-prefix lengths or requested coordinate facts when available.
+Otherwise they size only the returned scalar range, without describing an
+unrelated suffix or requiring whole-subject character counts.
 Native one-shot discovery returns byte endpoints over caller-guaranteed valid text.
-Text output sizes only its selected range; value output derives prefix/range
-coordinates after a hit. Batch output retains its consumed shared subject facts.
+Text output sizes its selected range; value output derives prefix/range
+coordinates after a hit. Batch output reuses facts requested by discovery or
+projection within the same operation.
 Counting/decoding use bounded blocks and the original
 invocation, with string capacity admitted before allocation and held through
 publication. Numerical work requirements can change. The caller supplies valid unchanged UTF-8 text; matching and output work retain
