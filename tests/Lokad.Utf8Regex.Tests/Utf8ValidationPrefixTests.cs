@@ -20,8 +20,9 @@ public sealed class Utf8ValidationPrefixTests
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. bytes, 0xff];
             var result = Utf8InputAnalyzer.ValidateOnly(storage.AsSpan(offset, bytes.Length), out var kelvin);
-            Assert.True(Utf8InputAnalyzer.TryValidateOnly(storage.AsSpan(offset, bytes.Length), out var error));
+            Assert.True(Utf8InputAnalyzer.TryValidateOnly(storage.AsSpan(offset, bytes.Length), out var error, out var isAscii));
             Assert.Equal(-1, error);
+            Assert.Equal(suffix.Length == 0, isAscii);
             Assert.Equal(bytes.Length, result.ByteLength);
             Assert.Equal(text.Length, result.Utf16Length);
             Assert.Equal(suffix.Length == 0, result.IsAscii);
@@ -49,7 +50,8 @@ public sealed class Utf8ValidationPrefixTests
             var failure = Assert.Throws<ArgumentException>(() =>
                 Utf8InputAnalyzer.ValidateOnly(storage.AsSpan(offset, prefix.Length + malformed.Length)));
             Assert.False(Utf8InputAnalyzer.TryValidateOnly(
-                storage.AsSpan(offset, prefix.Length + malformed.Length), out var error));
+                storage.AsSpan(offset, prefix.Length + malformed.Length), out var error, out var isAscii));
+            Assert.False(isAscii);
             Assert.Equal(prefix.Length, error);
             Assert.Equal("byteOffset", failure.ParamName);
             Assert.Contains($"byte offset {prefix.Length}.", failure.Message);

@@ -59,19 +59,24 @@ internal static class Utf8InputAnalyzer
 
     internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset, out bool isAscii)
     {
-        // ASCII is a complete validity proof; avoid sampling and draining it again.
+        // The discovered ASCII prefix is already valid. Start the ordinary UTF-8
+        // checker at its first non-ASCII byte rather than scanning that prefix twice.
         // Non-ASCII validity needs no UTF-16 counts or density classification.
-        // Only invalid inputs fall back to the metadata decoder for first-error offsets.
-        isAscii = IsAscii(input);
+        var firstNonAscii = input.IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F);
+        isAscii = firstNonAscii < 0;
+        var remaining = isAscii ? ReadOnlySpan<byte>.Empty : input[firstNonAscii..];
         if (isAscii ||
             (Avx2.IsSupported || Vector512.IsHardwareAccelerated && Avx512BW.IsSupported
-                ? Utf8ValidationCore.IsValidLookup(input)
-                : Utf8.IsValid(input)))
+                ? Utf8ValidationCore.IsValidLookup(remaining)
+                : Utf8.IsValid(remaining)))
         {
             errorOffset = -1;
             return true;
         }
-        return Utf8ValidationCore.TryValidate(input, out _, out errorOffset);
+        // Only invalid inputs need the scalar decoder's first-error authority.
+        var valid = Utf8ValidationCore.TryValidate(remaining, out _, out errorOffset);
+        if (!valid) errorOffset += firstNonAscii;
+        return valid;
     }
 
 }
