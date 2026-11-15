@@ -123,10 +123,13 @@ public sealed class Pcre2InputValidationTests
         Assert.Equal(1, regex.MatchMany(input, buffer, out var more, 2, Pcre2MatchOptions.None));
         Assert.False(more);
         Assert.False(buffer[0].HasUtf16Projection);
+        Assert.Equal(new byte[] { 0xff, (byte)' ', (byte)'X' }, regex.Replace(input, "X"u8, 2));
+        Assert.Equal("X"u8.ToArray(), regex.Replace(input, "X"u8, 2, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
         Assert.Throws<ArgumentException>(() => regex.IsMatch(input, 0));
         byte[] badTail = [.. input, 0xff];
         var error = Assert.Throws<ArgumentException>(() => regex.Count(badTail, 2));
         Assert.Contains($"byte offset {input.Length}.", error.Message);
+        Assert.Throws<ArgumentException>(() => regex.Replace(badTail, "X"u8, 2));
     }
 
     [Theory]

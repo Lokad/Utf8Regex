@@ -33,6 +33,12 @@ coordinates are projected over the necessary prefix; when an ignored prefix is
 invalid, byte results remain available and `HasUtf16Projection` is false.
 The match's own well-formed UTF-8 slice remains independently identifiable.
 
+Byte-template `Replace`/`TryReplace` preserve an ignored malformed prefix as raw
+bytes; `SubstituteReplacementOnly` can omit it. Text output and completed callback
+writer output still require well-formed UTF-8 under the independent output
+contract. Rejection of a malformed assembled result does not widen the subject
+validation window. Use byte-template output when those original bytes must survive.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,
