@@ -2,9 +2,6 @@
 
 ## Unreleased — 0.5.0
 
-- Fix POSIX `Newline` matches before LF when a whitespace run must rewind to
-  `$`; decline the direct-run shortcut when that rewind can be required.
-
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.
 - Add immutable `inputValidation` and read-only `InputValidation` in Core and
@@ -23,7 +20,9 @@
   promised.
 - Add `PosixCompileOptions.IgnoreCase`: invariant scalar case equivalence with
   leftmost-longest matching, hierarchical captures and original byte offsets.
-  This source addition postdates the immutable staged 0.5.0 candidate.
+- Preserve POSIX `Newline` matches when a whitespace run must rewind before LF
+  to satisfy `$`. Proved flat runs reuse scalar capture selection and reject
+  impossible starts before recording capture events.
 - Add direct UTF-8 pattern/template APIs, byte capture-name lookup and caller-
   buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
   ownership, persistent memory cursors and explicit retained-result/output
