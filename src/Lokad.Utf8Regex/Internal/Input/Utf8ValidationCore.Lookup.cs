@@ -45,6 +45,13 @@ internal static partial class Utf8ValidationCore
             if (current.ExtractMostSignificantBits() == 0)
             {
                 if (LookupPending(window)) return false;
+                // The complete ASCII vector closes any incoming scalar. Skip
+                // the rest of this ASCII run without repeating predecessor
+                // checks; the caller retains its bounded input checkpoints.
+                var next = input[(offset + Vector256<byte>.Count)..].IndexOfAnyInRange((byte)0x80, byte.MaxValue);
+                if (next < 0) return true;
+                offset += Vector256<byte>.Count + next;
+                continue;
             }
             else
             {
@@ -84,6 +91,10 @@ internal static partial class Utf8ValidationCore
             if (current.ExtractMostSignificantBits() == 0)
             {
                 if (LookupPending(window)) return false;
+                var next = input[(offset + Vector512<byte>.Count)..].IndexOfAnyInRange((byte)0x80, byte.MaxValue);
+                if (next < 0) return true;
+                offset += Vector512<byte>.Count + next;
+                continue;
             }
             else
             {

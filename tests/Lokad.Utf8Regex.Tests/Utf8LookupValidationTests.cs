@@ -48,6 +48,31 @@ public sealed class Utf8LookupValidationTests
     }
 
     [Fact]
+    public void AsciiRunsReenterLookupWithOriginalTailsAndFirstErrors()
+    {
+        byte[][] endings = [ [0xC2, 0x80], [0xE0, 0xA0, 0x80], [0xF4, 0x8F, 0xBF, 0xBF],
+            [0x80], [0xC2], [0xE0, 0x9F, 0xBF], [0xED, 0xA0, 0x80], [0xF0, 0x90, 0x80], [0xFF] ];
+        foreach (var borrowed in new[] { 0, 1, 7 })
+        foreach (var length in new[] { 0, 1, 31, 32, 33, 63, 64, 65, 127, 128, 129, 2047, 2048, 4097 })
+        foreach (var tail in new[] { 0, 1, 63, 64 })
+        foreach (var ending in endings)
+        {
+            // Start with Unicode so the public validity entry really reaches
+            // lookup. Include every ASCII value across each long island.
+            byte[] bytes = [0xC3, 0xA9, .. Enumerable.Range(0, length).Select(i => (byte)(i & 127)),
+                .. ending, .. Enumerable.Repeat((byte)'z', tail)];
+            byte[] storage = [.. Enumerable.Repeat((byte)0xFF, borrowed), .. bytes, 0xFF];
+            var input = storage.AsSpan(borrowed, bytes.Length);
+            var expected = Utf8.IsValid(input);
+            CheckKernels(input, expected);
+            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
+            Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var actualError, out var ascii));
+            Assert.Equal(scalarError, actualError);
+            Assert.False(ascii);
+        }
+    }
+
+    [Fact]
     public void MixedAsciiAndUnicodeAcrossBlocksKeepsStrictPublicSuffixRejection()
     {
         var valid = Encoding.UTF8.GetBytes("needle " + string.Concat(Enumerable.Repeat("é中😀 " + new string('a', 129), 128)));
