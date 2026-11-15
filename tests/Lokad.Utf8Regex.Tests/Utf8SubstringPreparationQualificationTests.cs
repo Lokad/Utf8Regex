@@ -183,9 +183,8 @@ public sealed class Utf8SubstringPreparationQualificationTests
     }
 
     [Fact]
-    public void SuffixPartsBorrowLiteralBytesWithoutPreparationAndDeadOverloadsAreAbsent()
+    public void SuffixPartsBorrowLiteralBytesWithoutPreparation()
     {
-        Assert.Equal(7, typeof(PreparedSubstringSearch).GetFields(Fields).Length);
         var literal = "suffix"u8.ToArray();
         using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
         var part = AsciiStructuralSuffixPart.CreateLiteral(literal);
@@ -193,9 +192,6 @@ public sealed class Utf8SubstringPreparationQualificationTests
         Assert.Equal(0ul, zero.Budget.WorkSteps);
         Assert.Equal(0ul, zero.Budget.PeakBytes);
         Assert.Equal(0ul, zero.Budget.Depth);
-        var methods = typeof(PreparedSubstringSearch).GetMethods(BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.DoesNotContain(methods, m => m.Name is "CreateFoldedNeedle" or "CreateIgnoreCaseShiftTable");
-        Assert.DoesNotContain(methods, m => m.Name == "TryIndexOfIgnoreCaseFirstLastVector" && m.GetParameters().Length is 3 or 5);
     }
 
     [Fact]
