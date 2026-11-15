@@ -1,0 +1,305 @@
+{
+  "Rows": [
+    {
+      "Id": "folded-english-corpus",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "ExpectedValues": 522,
+      "Before": {
+        "MedianUs": 153.93244233208344,
+        "RangeUs": [
+          119.32547710843372,
+          190.6621823979592
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          188.93652295918366,
+          119.9477767068273
+        ]
+      },
+      "After": {
+        "MedianUs": 135.0528991773977,
+        "RangeUs": [
+          130.36175441696113,
+          141.42009150326797
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          130.94896466431095,
+          140.66838748832865
+        ]
+      },
+      "ObservedPercent": -12.264824015431575,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "trusted-folded-english",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "ExpectedValues": 522,
+      "Before": {
+        "MedianUs": 103.1750281642529,
+        "RangeUs": [
+          101.9329036476256,
+          103.88575498967651
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          103.3407632484515,
+          103.00929308005428
+        ]
+      },
+      "After": {
+        "MedianUs": 99.18902670968639,
+        "RangeUs": [
+          92.68988888888889,
+          103.09954750512645
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          102.93900000000001,
+          93.72844444444445
+        ]
+      },
+      "ObservedPercent": -3.8633393423657347,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "finite-live-folded-english",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "ExpectedValues": 522,
+      "Before": {
+        "MedianUs": 1034.9837196268304,
+        "RangeUs": [
+          1031.8584965517243,
+          1051.2400547945203
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          1038.0527465753426,
+          1033.3028965517242
+        ]
+      },
+      "After": {
+        "MedianUs": 1036.5988027119586,
+        "RangeUs": [
+          1017.861527027027,
+          1048.7497602739725
+        ],
+        "Bytes": 112.0,
+        "ProcessMediansUs": [
+          1021.9626621621621,
+          1043.2956780821917
+        ]
+      },
+      "ObservedPercent": 0.15604912951776573,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "false-head-folded",
+      "InputBytes": 34816,
+      "InputSha256": "2A6C5B785F1B8416A39CF898B8AFF02852A3201AE24B722E7E5558D2F36D4D4E",
+      "ExpectedValues": 1024,
+      "Before": {
+        "MedianUs": 18.64160920184286,
+        "RangeUs": [
+          18.513734871031748,
+          18.76055543154762
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          18.650494458971483,
+          18.609001860119047
+        ]
+      },
+      "After": {
+        "MedianUs": 17.95791682510964,
+        "RangeUs": [
+          17.72326097215668,
+          18.2477655272027
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          17.827966965549788,
+          18.07208774675012
+        ]
+      },
+      "ObservedPercent": -3.6675609349520855,
+      "RangesDisjoint": true
+    },
+    {
+      "Id": "dense-folded",
+      "InputBytes": 22528,
+      "InputSha256": "5E33DD12D7DE4F1B5817465827BE26DD0DF8352AFF094DE320555FE50BE44FE8",
+      "ExpectedValues": 2048,
+      "Before": {
+        "MedianUs": 248.16951895360785,
+        "RangeUs": [
+          245.79213455149505,
+          252.92407014388493
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          246.4575,
+          250.34296942446042
+        ]
+      },
+      "After": {
+        "MedianUs": 249.80650666666668,
+        "RangeUs": [
+          247.12894824707845,
+          286.2071502504174
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          247.48811519198668,
+          251.01503833333337
+        ]
+      },
+      "ObservedPercent": 0.6596248080590561,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unicode-kelvin",
+      "InputBytes": 10240,
+      "InputSha256": "352126525206D6BC847AD2CC55C63B3D828108A4C35C0B0917228D6E89D0988F",
+      "ExpectedValues": 512,
+      "Before": {
+        "MedianUs": 97.79724401289424,
+        "RangeUs": [
+          96.5613748353096,
+          98.43784123847166
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          97.86430884265279,
+          97.73017918313569
+        ]
+      },
+      "After": {
+        "MedianUs": 97.90975396148337,
+        "RangeUs": [
+          96.9629715210356,
+          99.31686622950821
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          97.32648025889968,
+          98.82892918032786
+        ]
+      },
+      "ObservedPercent": 0.11504408915070652,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "short-folded-contrast",
+      "InputBytes": 18432,
+      "InputSha256": "86469AE7A4EDD83C964E9E16F4352741389241EC60ECD3462AD32A0FEAFCB115",
+      "ExpectedValues": 2048,
+      "Before": {
+        "MedianUs": 28.02365509317611,
+        "RangeUs": [
+          27.85772105556588,
+          28.229637330399704
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          27.98048764170229,
+          28.10066831683168
+        ]
+      },
+      "After": {
+        "MedianUs": 27.777510017615146,
+        "RangeUs": [
+          27.52035240022071,
+          28.00521013029914
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          27.595594629391208,
+          27.88148339144797
+        ]
+      },
+      "ObservedPercent": -0.878347505857302,
+      "RangesDisjoint": false
+    },
+    {
+      "Id": "unchanged-dotnet-folded",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "ExpectedValues": 522,
+      "Before": {
+        "MedianUs": 76.39211701113487,
+        "RangeUs": [
+          74.921756428918,
+          77.98624591836735
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          75.01896458030082,
+          77.8651413265306
+        ]
+      },
+      "After": {
+        "MedianUs": 76.28328677554224,
+        "RangeUs": [
+          73.84296997578693,
+          78.30974131857072
+        ],
+        "Bytes": 0.0,
+        "ProcessMediansUs": [
+          74.49573801452784,
+          77.7059698037242
+        ]
+      },
+      "ObservedPercent": -0.14246265171152794,
+      "RangesDisjoint": false
+    }
+  ],
+  "Measurement": {
+    "Seconds": 63.32293530087918,
+    "Processes": 4,
+    "Comparisons": 1,
+    "Confirmations": 0,
+    "OuterSeconds": 150
+  },
+  "Runs": [
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.95+368e4b4fe91bc2827cb7e9b3be9bbff1a1954499 sha256=93D6CAB2715408A2CF0FC876201793EC7C9F81780442AF018C8E0F567289CD1A",
+        "PdbSha256": "AA59BD5085FA1750BA8204876DBA67F30448C4166461FDC8F89A1F3CA9E4CE4E",
+        "Documents": 343
+      },
+      "Placement": "Private fixed processor2 after normal runtime startup; same processor in every producer process",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.95+fb6a9ebe03e2cb3e62196527c80d172a043f9b1e sha256=A4AAB7F87D989FD01C86ABBE886FCD2C7060F4E2923F9744B2BD77EC881EEBC5",
+        "PdbSha256": "21EE8A7595FE76A9CA427D807514CC0F09FA52D09B88601404C84D710DA71954",
+        "Documents": 343
+      },
+      "Placement": "Private fixed processor2 after normal runtime startup; same processor in every producer process",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.95+fb6a9ebe03e2cb3e62196527c80d172a043f9b1e sha256=A4AAB7F87D989FD01C86ABBE886FCD2C7060F4E2923F9744B2BD77EC881EEBC5",
+        "PdbSha256": "21EE8A7595FE76A9CA427D807514CC0F09FA52D09B88601404C84D710DA71954",
+        "Documents": 343
+      },
+      "Placement": "Private fixed processor2 after normal runtime startup; same processor in every producer process",
+      "StartupProcessors": 8
+    },
+    {
+      "Core": {
+        "Assembly": "0.5.0-dev.95+368e4b4fe91bc2827cb7e9b3be9bbff1a1954499 sha256=93D6CAB2715408A2CF0FC876201793EC7C9F81780442AF018C8E0F567289CD1A",
+        "PdbSha256": "AA59BD5085FA1750BA8204876DBA67F30448C4166461FDC8F89A1F3CA9E4CE4E",
+        "Documents": 343
+      },
+      "Placement": "Private fixed processor2 after normal runtime startup; same processor in every producer process",
+      "StartupProcessors": 8
+    }
+  ]
+}
