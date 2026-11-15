@@ -61,6 +61,31 @@ public sealed class Utf8InputValidationTests
     }
 
     [Theory]
+    [InlineData("needle")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    public void TrustedFiniteLiteralMatchNeedsNoUnrelatedSuffixDescription(string pattern)
+    {
+        var input = Encoding.UTF8.GetBytes("x中🙂" + pattern + " é🙂" + new string('!', 1 << 20));
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 4096,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var trusted = new Utf8Regex(pattern, options, resourcePolicy: policy,
+                inputValidation: Utf8InputValidation.AssumeValid);
+            var match = trusted.Match(input);
+            Assert.True(match.Success);
+            Assert.Equal(8, match.IndexInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(pattern), match.LengthInBytes);
+            Assert.Equal(4, match.IndexInUtf16);
+            Assert.Equal(pattern.Length, match.LengthInUtf16);
+            var strict = new Utf8Regex(pattern, options, resourcePolicy: policy);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.Match(input));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+        }
+    }
+
+    [Theory]
     [InlineData("needle", "needle é😀 needle")]
     [InlineData("café|😀", "z😀 café!")]
     [InlineData("(a+)(b*)", "é😀 aabb aa")]

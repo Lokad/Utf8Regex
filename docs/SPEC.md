@@ -78,6 +78,11 @@ ASCII classification over trusted or already-checked text stops at its first
 non-ASCII block. Avoided classification work spends no further steps; default
 `Validate` still checks the complete subject before using that eligibility fact.
 
+Finite literal value matching derives coordinates for the selected range instead
+of describing an unrelated suffix. `Validate` still checks the whole subject;
+`AssumeValid` retains bounded search and coordinate-projection charges. Avoided
+description work can lower the required work budget; storage admission is unchanged.
+
 Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
 and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text
 without a subject-validation policy. [PCRE2](SPEC-PCRE2.md#subject-input-validation)

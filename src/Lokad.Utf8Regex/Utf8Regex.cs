@@ -1986,7 +1986,15 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
+            // The finite native literal branch below projects only its selected
+            // range; it never consumes whole-subject coordinate/ASCII metadata.
+            // Keep strict validity under the same invocation without describing
+            // an unrelated suffix, especially for trusted early matches.
+            Utf8ValidationResult validation = default;
+            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+                Utf8Validation.CheckSubject(input, ref invocation);
+            else
+                validation = Utf8Validation.Subject(input, ref invocation);
             return OwnedSliceMatchFromByte(input, program, startByte, validation, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
