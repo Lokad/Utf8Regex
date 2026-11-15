@@ -1,0 +1,70 @@
+{
+  "Core": "0.5.0-dev.95+b7afb0f4f9f22a26f142ef2d1b15ca167f3dd606",
+  "CoreSha256": "82020DE9DA8E17CD6A7A1C7A9E471CB71D1C2CFE20220C652D4C02805D39B815",
+  "InputBytes": 899232,
+  "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+  "RawSha256": "269C8F246E08FBAF565F73728D59E46685B68009150C40230C5C59833E181CC2",
+  "Scope": "Read-only prepared-field inspection plus independent nonoverlap byte-candidate replay. Not executed production-branch counts, timing or a speedup.",
+  "Rows": [
+    {
+      "Pattern": "Sherlock Holmes",
+      "Current": {
+        "Index": 7,
+        "Byte": 107,
+        "Heads": 38778,
+        "Candidates": 815,
+        "FalseCandidates": 293,
+        "Matches": 522
+      },
+      "FewestReplayedCandidates": {
+        "Index": 7,
+        "Byte": 107,
+        "Heads": 38778,
+        "Candidates": 815,
+        "FalseCandidates": 293,
+        "Matches": 522
+      }
+    },
+    {
+      "Pattern": "John Watson",
+      "Current": {
+        "Index": 4,
+        "Byte": 32,
+        "Heads": 1648,
+        "Candidates": 817,
+        "FalseCandidates": 806,
+        "Matches": 11
+      },
+      "FewestReplayedCandidates": {
+        "Index": 5,
+        "Byte": 119,
+        "Heads": 1648,
+        "Candidates": 66,
+        "FalseCandidates": 55,
+        "Matches": 11
+      }
+    },
+    {
+      "Pattern": "hello world",
+      "Current": {
+        "Index": 5,
+        "Byte": 32,
+        "Heads": 38920,
+        "Candidates": 4007,
+        "FalseCandidates": 4007,
+        "Matches": 0
+      },
+      "FewestReplayedCandidates": {
+        "Index": 6,
+        "Byte": 119,
+        "Heads": 38920,
+        "Candidates": 795,
+        "FalseCandidates": 795,
+        "Matches": 0
+      }
+    }
+  ],
+  "ProducerUnchanged": true,
+  "Timed": false,
+  "ImplementationChanged": false
+}
