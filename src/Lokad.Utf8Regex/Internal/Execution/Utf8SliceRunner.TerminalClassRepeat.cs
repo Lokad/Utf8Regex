@@ -104,8 +104,12 @@ internal static partial class Utf8SliceRunner
         var firstEnd = start;
         if (slot != 0)
         {
-            var first = RunClassRepeat(program, 1, input, start, ref invocation);
-            if (first.EndIndex < 0 || first.Breach != Utf8ExecutionLimitKind.None)
+            // The complete-root proof already establishes unbounded positive
+            // ASCII intervals with minimum one. Share the bounded scan without
+            // rediscovering generic repeat/atom eligibility for each capture.
+            var firstLow = GetUnfoldedAsciiRange(code[2], out var firstHigh);
+            var first = RunUnboundedAsciiRange(input, start, (byte)firstLow, firstHigh, ref invocation);
+            if (first.EndIndex <= start || first.Breach != Utf8ExecutionLimitKind.None)
             { outcome = new(false, -1, first.Breach, null, null); return true; }
             firstEnd = first.EndIndex;
             breach = invocation.TryChargeStep();
@@ -118,8 +122,9 @@ internal static partial class Utf8SliceRunner
         for (var index = 0; index < literalLength; index++)
             if (input[firstEnd + index] != code[literalStart + index].A) return true;
         var captureStart = firstEnd + literalLength;
-        var last = RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation);
-        if (last.EndIndex < 0 || last.Breach != Utf8ExecutionLimitKind.None)
+        var lastLow = GetUnfoldedAsciiRange(code[repeatIndex + 1], out var lastHigh);
+        var last = RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
+        if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, last.Breach, null, null); return true; }
         if (slot != 0 && captureStarts.Length != 0 &&
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
@@ -668,6 +673,25 @@ internal static partial class Utf8SliceRunner
         return false;
     }
 
+    // Shared by generic repeats and complete capture roots. Scalar alignment is
+    // preserved because every consuming byte belongs to the proved ASCII range.
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedAsciiRange(
+        ReadOnlySpan<byte> input, int start, byte first, byte last, ref Utf8SliceInvocation invocation)
+    {
+        var position = start;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            var block = input.Slice(position, Math.Min(2048, input.Length - position));
+            var stop = block.IndexOfAnyExceptInRange(first, last);
+            if (stop >= 0) { position += stop; break; }
+            position += block.Length;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
+    }
+
     // A side-effect-free atom repeat has only an endpoint and resource status.
     // Capture/history owners stay at the caller; a negative endpoint is a miss.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
@@ -684,21 +708,25 @@ internal static partial class Utf8SliceRunner
         byte asciiLast = 0;
         var asciiFirst = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }
             ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
+        if (asciiFirst >= 0)
+        {
+            var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation);
+            return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
+        }
         byte first = (byte)'\n', second = (byte)'\n';
         if (unbounded &&
-            (dot || asciiFirst >= 0 || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
+            (dot || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
                 TryGetAsciiMaskPair(program.SetMasks[atom.A], out first, out second)))
         {
-            // The caller establishes validity. An ASCII interval stops before
-            // a wider scalar. Other fused atoms may cross a block boundary
-            // inside one, but their ASCII stops keep the endpoint aligned.
+            // The caller establishes validity. These fused atoms may cross a
+            // block boundary inside a scalar, but their ASCII stops keep the
+            // final endpoint aligned.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
                 var stop = dot ? atom.A == 0 ? block.IndexOf((byte)'\n') : -1
-                    : asciiFirst >= 0 ? block.IndexOfAnyExceptInRange((byte)asciiFirst, asciiLast)
                     : block.IndexOfAny(first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
