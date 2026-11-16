@@ -38,6 +38,6 @@ public sealed class Utf8AdversarialAlternationDiffTests
     [InlineData("(cat|horse)", "horsecat", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForAdversarialAlternation(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 }

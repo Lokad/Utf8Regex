@@ -34,6 +34,6 @@ public sealed class Utf8SuffixAnchorDiffTests
     [InlineData(@"[a-z]+$", "ABC", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForSuffixAnchors(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 }

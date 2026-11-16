@@ -84,34 +84,44 @@ internal sealed class RegexParityContext
         Assert.Equal(expected, actualCompiled);
     }
 
-    public void AssertDetailedMatchGroupParity()
+    public void AssertCaptureMatchParity()
     {
         var bytes = Case.Utf8Input;
-
-        var expected = DotNet.Match(Case.Input);
-        var expectedCompiled = DotNetCompiled.Match(Case.Input);
-        var actual = Utf8.MatchDetailed(bytes);
-        var actualCompiled = Utf8Compiled.MatchDetailed(bytes);
-
-        AssertEquivalentDetailedMatch(expected, actual);
-        AssertEquivalentDetailedMatch(expectedCompiled, actualCompiled);
-        AssertEquivalentDetailedMatch(expected, actualCompiled);
+        Utf8RangeMatch actual, actualCompiled;
+        using (var cursor = Utf8.CreateMatchCursor(bytes)) cursor.MoveNext(out actual);
+        using (var cursor = Utf8Compiled.CreateMatchCursor(bytes)) cursor.MoveNext(out actualCompiled);
+        AssertEquivalentCaptureMatch(DotNet, DotNet.Match(Case.Input), actual);
+        AssertEquivalentCaptureMatch(DotNetCompiled, DotNetCompiled.Match(Case.Input), actualCompiled);
     }
 
-    public void AssertDetailedMatchGroupParityFromOffset(int offset)
+    public void AssertCaptureMatchParityFromOracleOffset(int offset)
     {
         var bytes = Case.Utf8Input;
 
         var expected = DotNet.Match(Case.Input, offset);
         var expectedCompiled = DotNetCompiled.Match(Case.Input, offset);
-        var actual = Utf8.MatchDetailedFromUtf16Offset(bytes, offset);
-        var actualCompiled = Utf8Compiled.MatchDetailedFromUtf16Offset(bytes, offset);
-
-        AssertEquivalentDetailedMatch(expected, actual);
-        AssertEquivalentDetailedMatch(expectedCompiled, actualCompiled);
-        AssertEquivalentDetailedMatch(expected, actualCompiled);
+        var startByte = Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, offset));
+        Utf8RangeMatch actual, actualCompiled;
+        using (var cursor = Utf8.CreateMatchCursor(bytes, startByte)) cursor.MoveNext(out actual);
+        using (var cursor = Utf8Compiled.CreateMatchCursor(bytes, startByte)) cursor.MoveNext(out actualCompiled);
+        AssertEquivalentCaptureMatch(DotNet, expected, actual);
+        AssertEquivalentCaptureMatch(DotNetCompiled, expectedCompiled, actualCompiled);
     }
 
+    public void AssertEnumeratedCaptureParity()
+    {
+        var bytes = Case.Utf8Input;
+        foreach (var (oracle, regex) in new[] { (DotNet, Utf8), (DotNetCompiled, Utf8Compiled) })
+        {
+            using var cursor = regex.CreateMatchCursor(bytes);
+            foreach (Match expected in oracle.Matches(Case.Input))
+            {
+                Assert.True(cursor.MoveNext(out var actual));
+                AssertEquivalentCaptureMatch(oracle, expected, actual);
+            }
+            Assert.False(cursor.MoveNext(out _));
+        }
+    }
 
     private static int CountMatches(Utf8ValueMatchEnumerator matches)
     {
@@ -127,48 +137,41 @@ internal sealed class RegexParityContext
         Assert.Equal(expected.Length, actual.LengthInUtf16);
     }
 
-    private static void AssertEquivalentDetailedMatch(Match expected, Utf8MatchContext actual)
+    private void AssertEquivalentCaptureMatch(Regex oracle, Match expected, Utf8RangeMatch actual)
     {
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        AssertRange(expected, actual.Value);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected.Value), actual.GetValueMemory().ToArray());
+        if (!expected.Success) return;
+        var numbers = oracle.GetGroupNumbers();
+        Assert.Equal(numbers, actual.GroupNumbers.ToArray());
+        Assert.Equal(oracle.GetGroupNames(), actual.GroupNames.ToArray());
 
-        for (var groupIndex = 0; groupIndex < expected.Groups.Count; groupIndex++)
+        foreach (var number in numbers)
         {
-            var expectedGroup = expected.Groups[groupIndex];
-            var actualGroup = actual.GetGroup(groupIndex);
-
-            Assert.Equal(expectedGroup.Success, actualGroup.Success);
-            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
-
-            for (var captureIndex = 0; captureIndex < expectedGroup.Captures.Count; captureIndex++)
+            var expectedGroup = expected.Groups[number];
+            Assert.True(actual.TryGetGroup(number, out var group));
+            Assert.Equal(expectedGroup.Success, group.Success);
+            AssertRange(expectedGroup, group);
+            Assert.Equal(Encoding.UTF8.GetBytes(expectedGroup.Value), actual.GetGroupMemory(number).ToArray());
+            Assert.True(actual.TryGetGroup(oracle.GroupNameFromNumber(number), out var named));
+            Assert.Equal(group, named);
+            var captures = actual.GetCaptures(number);
+            Assert.Equal(expectedGroup.Captures.Count, captures.Length);
+            for (var index = 0; index < captures.Length; index++)
             {
-                var expectedCapture = expectedGroup.Captures[captureIndex];
-                var actualCapture = actualGroup.GetCapture(captureIndex);
-
-                Assert.Equal(expectedCapture.Index, actualCapture.IndexInUtf16);
-                Assert.Equal(expectedCapture.Length, actualCapture.LengthInUtf16);
-                Assert.Equal(expectedCapture.Value, actualCapture.GetValueString());
+                Assert.True(captures[index].Success);
+                AssertRange(expectedGroup.Captures[index], captures[index]);
             }
         }
-
-        for (var groupIndex = 0; groupIndex < expected.Groups.Count; groupIndex++)
-        {
-            Assert.True(actual.TryGetGroup(groupIndex, out var tryGroup));
-            Assert.Equal(expected.Groups[groupIndex].Success, tryGroup.Success);
-            var groupName = expected.Groups[groupIndex].Name;
-            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
-            Assert.Equal(expected.Groups[groupIndex].Success, tryNamedGroup.Success);
-        }
-
-        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup(numbers[^1] + 1, out _));
         Assert.False(actual.TryGetGroup("missing-group-name", out _));
-        Assert.False(actual.GetGroup(expected.Groups.Count).Success);
-        Assert.False(actual.GetGroup("missing-group-name").Success);
+        Assert.Throws<ArgumentOutOfRangeException>(() => actual.GetCaptures(numbers[^1] + 1).Length);
+    }
+
+    private void AssertRange(Capture expected, Utf8CaptureRange actual)
+    {
+        Assert.Equal(Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, expected.Index + expected.Length)), actual.EndOffsetInBytes);
     }
 }

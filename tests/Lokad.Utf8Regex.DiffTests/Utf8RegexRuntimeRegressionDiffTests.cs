@@ -27,7 +27,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
     {
         // Adapted from dotnet/runtime 50f4fecf875 (iterative subtraction traversal):
         // nested subtraction must match iteratively with identical membership.
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -42,7 +42,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         // Adapted from dotnet/runtime 5d62ba2e928: iterations that need not be
         // returned do not imply internal alternatives can be discarded.
         // Atomic bodies must not give backtracking back into the group.
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -61,7 +61,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         // Adapted from dotnet/runtime 4bd0bf40d82 + dc803e0af2d: conditional
         // resume state and capture rollback must survive loop iterations,
         // including the missing-no-branch path.
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -76,7 +76,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         // Adapted from dotnet/runtime 04c21ab8734: abandoning a lazy loop at
         // maximum iterations must unwind every iteration frame with correct
         // capture rollback.
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -212,7 +212,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
     {
         // Adapted from dotnet/runtime f25f0e24d03: candidate discovery and
         // verification must agree on the advanced beginning-of-line position.
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -220,6 +220,6 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
     [InlineData(@"^abc", "xx\nabc", 3, RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     public void MatchDetailedFromOffsetMatchesRuntimeForMultilineCandidates(string pattern, string input, int offset, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParityFromOffset(offset);
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParityFromOracleOffset(offset);
     }
 }

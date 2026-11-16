@@ -16,7 +16,7 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData(@"(?<=a)(b)", "xby", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForCuratedGroupCases(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData("(cat)|(horse)", "no match here", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -64,7 +64,7 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData("(cat|horse)", "CAT horse", 1, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public void MatchDetailedFromOffsetMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int offset, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParityFromOffset(offset);
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParityFromOracleOffset(offset);
     }
 
     [Theory]
@@ -76,7 +76,7 @@ public sealed class Utf8RegexMatchGroupDiffTests
         // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
         // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Match.Tests.cs
         // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Groups.Tests.cs
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -106,7 +106,7 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData("(cat)|(horse)", "caf\u00E9 cat \U0001F600horse", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForBranchedLiteralFamily(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 
     [Theory]
@@ -119,6 +119,6 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData("(cat)|horse", "horsecat", 5, RegexOptions.CultureInvariant)]
     public void MatchDetailedFromOffsetMatchesRuntimeForBranchedLiteralFamily(string pattern, string input, int offset, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParityFromOffset(offset);
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParityFromOracleOffset(offset);
     }
 }

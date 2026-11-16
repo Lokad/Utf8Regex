@@ -35,6 +35,6 @@ public sealed class Utf8OnePassCaptureDiffTests
     [InlineData(@"(xy|xz)", "xyz", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForOnePassCaptures(string pattern, string input, RegexOptions options)
     {
-        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+        RegexParityContext.Create(pattern, input, options).AssertCaptureMatchParity();
     }
 }
