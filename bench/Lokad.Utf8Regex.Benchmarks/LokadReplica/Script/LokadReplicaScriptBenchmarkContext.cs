@@ -453,33 +453,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteAnchoredValidatorEmittedOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var plan = CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan;
-        if (!plan.HasValue ||
-            !Utf8EmittedWholeMatcher.TryCreate(
-                plan,
-                allowTrailingNewline: BenchmarkCase.Pattern.EndsWith('$'),
-                out var matcher) ||
-            matcher is null)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            var matchedLength = matcher.MatchWhole(sample);
-            if (matchedLength >= 0)
-            {
-                total += matchedLength;
-            }
-        }
-
-        return total;
-    }
-
     public int ExecuteLinePrefixModel()
     {
         EnsureCountModel();

@@ -17,10 +17,8 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     None = 0,
     LeadingAnyRunTrailingAsciiLiteral = 1,
     AnchoredBoundedDate = 2,
-    CompiledAnchoredOptionalField = 3,
     AsciiBoundedDateToken = 4,
     AnchoredAsciiLeadingDigitsTail = 5,
-    CompiledRepeatedDigitGroup = 6,
     AnchoredAsciiSignedDecimalWhole = 7,
     AnchoredAsciiOptionalFieldWhole = 8,
     AsciiUriToken = 9,
@@ -240,19 +238,6 @@ public sealed partial class Utf8Regex
             if (preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
             {
                 return Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate;
-            }
-
-            if ((options & RegexOptions.Compiled) != 0)
-            {
-                if (preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue)
-                {
-                    return Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField;
-                }
-
-                if (preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue)
-                {
-                    return Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup;
-                }
             }
 
             if (preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.CanUseShortAsciiWholeMatcher)

@@ -164,9 +164,6 @@ public sealed class LokadPublicRouteGuardrailTests
         var regex = new Utf8Regex(pattern, options);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-        Assert.Equal(
-            (options & RegexOptions.Compiled) != 0,
-            regex.Inspection.DebugUsesEmittedWholeMatcher);
         Assert.True(regex.TryIsMatchDirectWithoutValidation("12/12/2001"u8, out var directMatch));
         Assert.True(directMatch);
 
@@ -529,9 +526,6 @@ public sealed class LokadPublicRouteGuardrailTests
         const string pattern = "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$";
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
-        Assert.Equal(
-            (options & RegexOptions.Compiled) != 0,
-            regex.Inspection.DebugUsesEmittedWholeMatcher);
 
         string[] inputs =
         [
@@ -598,9 +592,6 @@ public sealed class LokadPublicRouteGuardrailTests
         var regex = new Utf8Regex(pattern, options);
 
         Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
-        Assert.Equal(
-            (options & RegexOptions.Compiled) != 0,
-            regex.Inspection.DebugUsesEmittedWholeMatcher);
 
         string[] inputs =
         [

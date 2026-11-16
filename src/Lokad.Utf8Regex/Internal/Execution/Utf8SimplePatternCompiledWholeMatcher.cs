@@ -51,7 +51,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
 
     public static bool TryMatchAnchoredValidator(
         Utf8PreparedRegex regexPlan,
-        Utf8EmittedWholeMatcher? emittedWholeMatcher,
         bool allowTrailingNewline,
         ReadOnlySpan<byte> input,
         out int matchedLength)
@@ -90,12 +89,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         }
 
         var plan = regexPlan.SimplePatternPlan.AnchoredValidatorPlan;
-
-        if (emittedWholeMatcher is not null)
-        {
-            matchedLength = emittedWholeMatcher.MatchWhole(input);
-            return matchedLength >= 0;
-        }
 
         return Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(input, plan, allowTrailingNewline, out matchedLength);
     }

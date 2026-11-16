@@ -60,7 +60,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         SupportsThrowIfInvalidOnlyCount: true,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: true,
-        UsesEmittedWholeMatcher: false,
         UsesEmittedKernelMatcher: false);
 
     internal bool TryGetSmallAsciiLiteralFamilyPrimitive(

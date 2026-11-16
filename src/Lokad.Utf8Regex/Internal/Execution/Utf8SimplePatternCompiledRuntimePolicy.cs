@@ -5,40 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8SimplePatternCompiledRuntimePolicy
 {
-    public static bool ShouldUseEmittedAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan)
-    {
-        if (!plan.HasValue)
-        {
-            return false;
-        }
-
-        foreach (var segment in plan.Segments)
-        {
-            if (!segment.IsLiteral &&
-                segment.MaxLength != int.MaxValue &&
-                segment.MinLength != segment.MaxLength)
-            {
-                return false;
-            }
-
-            if (segment.IsLiteral)
-            {
-                return true;
-            }
-
-            if (plan.IgnoreCase &&
-                segment.CharClass is { Negated: false } charClass &&
-                segment.MinLength == 1 &&
-                segment.MaxLength == 1 &&
-                charClass.Count is > 0 and <= 8)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public static bool ShouldFallbackAfterAnchoredValidatorMiss(ReadOnlySpan<byte> input, Utf8ValidationResult validation, bool allowTrailingNewline)
     {
         return validation.IsAscii &&

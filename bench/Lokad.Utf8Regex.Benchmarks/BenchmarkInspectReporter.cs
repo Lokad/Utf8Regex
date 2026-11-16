@@ -2144,7 +2144,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("SimplePatternBoolOnly", iterations, context.ExecuteAsciiSimplePatternDirectBoolOnly);
             Measure("SimplePatternMatchOnly", iterations, context.ExecuteAsciiSimplePatternDirectMatchOnly);
             Measure("WholeMatchProjectionOnly", iterations, context.ExecuteWholeMatchProjectionOnly);
-            Measure("AnchoredValidatorEmitted", iterations, context.ExecuteAnchoredValidatorEmittedOnly);
         }
         Measure("DirectUrlMatcher", iterations, context.ExecuteLokadScriptDirectUrlMatcher);
         Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
@@ -2796,10 +2795,6 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("AnchoredValidatorBoolOnly", iterations, context.ExecuteUtf8DirectBoolOnly);
                     }
-                    if (context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher)
-                    {
-                        Measure("CompiledWholeMatcherEmittedDirect", iterations, context.ExecuteEmittedWholeDirectOnly);
-                    }
                     if (context.CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
                     {
                         Measure("DateTokenWhole", iterations, context.ExecuteDateTokenWholeOnly);
@@ -3016,7 +3011,6 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"HasRepeatedDigitGroup: {simplePatternPlan.RepeatedDigitGroupPlan.HasValue}");
                 Console.WriteLine($"CanDirectFixedLength : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
                 Console.WriteLine($"CanDirectFixedAlt    : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
-                Console.WriteLine($"CompiledUsesEmittedWhole     : {context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher}");
             }
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);

@@ -96,9 +96,6 @@ public sealed partial class Utf8Regex
         public bool DebugSupportsThrowIfInvalidOnlyCount =>
             CompiledRuntime?.SupportsThrowIfInvalidOnlyCount ?? false;
 
-        public bool DebugUsesEmittedWholeMatcher =>
-            CompiledRuntime?.UsesEmittedWholeMatcher ?? false;
-
         public bool DebugCanGuideFallbackVerification => _owner.CanGuideFallbackVerification();
 
         public int DebugReplacementCacheEntryCount => _owner._replacementCache.Count;

@@ -204,14 +204,6 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if ((Options & RegexOptions.Compiled) != 0 &&
-            _compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
-            compiledRuntime.TryMatchEmittedWhole(input, out _))
-        {
-            isMatch = true;
-            return true;
-        }
-
         var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
             input,
             _anchoredBoundedDatePlan,
@@ -424,32 +416,12 @@ public sealed partial class Utf8Regex
             case Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate:
                 return TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch);
 
-            case Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField:
-                if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
-                    compiledRuntime.TryMatchEmittedWhole(input, out _))
-                {
-                    isMatch = true;
-                    return true;
-                }
-
-                return false;
-
             case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail:
                 if (Utf8AsciiLeadingDigitsTailExecutor.TryMatchPrintableAsciiWhole(
                     input,
                     _fallbackDirectFamily.LiteralUtf8,
                     out isMatch))
                 {
-                    return true;
-                }
-
-                return false;
-
-            case Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup:
-                if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime repeatedGroupRuntime &&
-                    repeatedGroupRuntime.TryMatchEmittedWhole(input, out _))
-                {
-                    isMatch = true;
                     return true;
                 }
 

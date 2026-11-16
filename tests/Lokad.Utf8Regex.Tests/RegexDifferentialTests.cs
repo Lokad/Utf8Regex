@@ -20,6 +20,11 @@ public sealed class RegexDifferentialTests
         @"[^\n]*", @"(?:ab|a)+?", @"(?>a+)a|a+", @"\G[a-z]+",
         @"START(?:(?<open>START)|(?<-open>STOP)|(?:(?!START|STOP)[\s\S]))*STOP(?(open)(?!))",
         @"BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))",
+        @"^[a-f0-9]{3}$", @"^ab[0-9]{2}$", @"^[A-Z][A-Za-z0-9_]{2}$",
+        @"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$",
+        @"([0-9]{4}[- ]){3}[0-9]{3,4}", @"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$",
+        @"^\d{1,2}/\d{1,2}/\d{4}$", @"^[a-z][a-z0-9_]*\z",
+        @"^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$",
     };
 
     private static readonly string[] Tokens =
@@ -38,6 +43,13 @@ public sealed class RegexDifferentialTests
     {
         var random = new Random(0x5ca1a);
         string[] subjects = ["", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP", "BEGINBEGINENDEND",
+            "a0f", "A0f", "A0f\n", "A0g", "A0ff", "A0f1c2", "A0f1c2\n", "A0f1cg", "A0f1c2x",
+            "Ab0", "Ab0\n", "ab0", "A_0", "Ab01", "ab01", "ab01\n", "AB01", "ab0x", "ab001",
+            "A01ZZ", "A0 1ZZ", "A0Z1ZZ", "A0Z 1ZZ", "AB01ZZ", "AB0 1ZZ", "AB0Z1ZZ", "AB0Z 1ZZ",
+            "AB0Z 1ZZ\n", "ABC0Z 1ZZ", "AB0Z 1Z9", "éB0Z 1ZZ", "١/٢/٢٠٠١",
+            "1/2/01", "1/12/012", "12/1/0123", "12/12/0123", "12/12/0123\n", "1/2/0", "123/1/0123", "12-12-0123", "12/xx/0123",
+            "1234-5678-1234-456", "1234 5678 1234 4567", "1234-5678 1234-456", "1234-5678-1234-45",
+            "1234-5678-1234-45678", "1234-5678_1234-456", "1234-5678-123x-456", "x1234-5678-1234-456",
             .. Enumerable.Range(0, 96).Select(_ => string.Concat(Enumerable.Range(0, random.Next(1, 13))
                 .Select(_ => Tokens[random.Next(Tokens.Length)])))];
         using var cancellation = new CancellationTokenSource();

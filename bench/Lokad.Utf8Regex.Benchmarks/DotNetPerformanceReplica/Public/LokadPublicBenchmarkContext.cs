@@ -235,14 +235,6 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
-    public int ExecuteEmittedWholeDirectOnly()
-    {
-        return CompiledUtf8Regex.Inspection.CompiledRuntime is Utf8SimplePatternCompiledEngineRuntime runtime &&
-            runtime.TryMatchEmittedWhole(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
     public int ExecuteDateTokenWholeOnly()
     {
         if (Operation != LokadPublicBenchmarkOperation.IsMatch)
