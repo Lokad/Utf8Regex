@@ -147,9 +147,9 @@ public sealed class Utf8CompiledScalarConsumerTests
         var input = "é😀x😀z"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var cursor = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(prepared, input,
-            validation, validation.Utf16Length, int.MaxValue, Utf8ExecutionDeadline.Infinite);
+            validation, int.MaxValue, Utf8ExecutionDeadline.Infinite);
         var pieces = new List<string>();
-        while (cursor.MoveNext()) { Assert.True(cursor.Current.IsByteAligned); pieces.Add(cursor.Current.GetValueString()); }
+        while (cursor.MoveNext()) pieces.Add(cursor.Current.GetValueString());
         Assert.Equal(rtl ? new[] { "z", "x", "é" } : ["é", "x", "z"], pieces);
     }
 

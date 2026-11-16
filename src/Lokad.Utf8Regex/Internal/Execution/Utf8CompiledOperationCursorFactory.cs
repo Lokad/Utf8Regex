@@ -80,12 +80,11 @@ internal static partial class Utf8CompiledOperationCursorFactory
         Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        int totalUtf16Length,
         int count,
         Utf8ExecutionDeadline budget)
     {
         if (regexPlan.ScalarProgram is { RightToLeft: true } or { IsNonBacktracking: true })
-            return CreateOwnedSplitEnumerator(regexPlan, input, validation, count, budget);
+            return CreateOwnedSplitEnumerator(regexPlan, input, count, budget);
         // R05: single ASCII literals (exact and folded) split through the owned
         // incremental-projection cursor on every input. Kelvin, culture, and RTL
         // stay fenced in the split router upstream of this factory.
@@ -98,14 +97,12 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8ValueSplitEnumerator(
                     input,
                     CreateLiteralMatchCursor(input, regexPlan, literal, validation.IsAscii, budget),
-                    count,
-                    totalUtf16Length),
+                    count),
             NativeExecutionKind.ExactUtf8Literals
                 => new Utf8ValueSplitEnumerator(
                     input,
                     new Utf8OperationMatchCursor(input, regexPlan, budget),
-                    count,
-                    totalUtf16Length),
+                    count),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8ValueSplitEnumerator(
                     input,
@@ -113,35 +110,31 @@ internal static partial class Utf8CompiledOperationCursorFactory
                         input,
                         regexPlan,
                         regexPlan.ExecutionKind,
-                        totalUtf16Length == input.Length,
+                        validation.IsAscii,
                         budget),
-                    count,
-                    totalUtf16Length),
+                    count),
             NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
                 => new Utf8ValueSplitEnumerator(
                     input,
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, asciiInput: true),
-                    count,
-                    totalUtf16Length),
+                    count),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when regexPlan.Features.CaptureCount <= 1 &&
                 CanUseStructuralFamilyCursor(regexPlan, validation)
                 => new Utf8ValueSplitEnumerator(input, new Utf8OperationMatchCursor(input, regexPlan,
-                    new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)), count, totalUtf16Length),
+                    new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)), count),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
                 => new Utf8ValueSplitEnumerator(
                     input,
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, validation.IsAscii),
-                    count,
-                    totalUtf16Length),
+                    count),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => new Utf8ValueSplitEnumerator(
                     input,
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget, validation.IsAscii),
-                    count,
-                    totalUtf16Length),
-            _ => CreateOwnedSplitEnumerator(regexPlan, input, validation, count, budget),
+                    count),
+            _ => CreateOwnedSplitEnumerator(regexPlan, input, count, budget),
         };
     }
 
@@ -192,10 +185,11 @@ internal static partial class Utf8CompiledOperationCursorFactory
     }
 
     private static Utf8ValueSplitEnumerator CreateOwnedSplitEnumerator(Utf8PreparedRegex prepared,
-        ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline deadline)
+        ReadOnlySpan<byte> input, int count, Utf8ExecutionDeadline deadline)
     {
-        var cursor = CreateOwnedMatchCursor(prepared, input, validation, deadline, true, out var map);
-        return new Utf8ValueSplitEnumerator(input, cursor, map, count, map.Utf16Length,
-            prepared.ScalarProgram is { RightToLeft: true });
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default)
+            { SubjectValidationCompleted = true };
+        var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Split preparation requires its admitted scalar program.");
+        return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation);
     }
 }

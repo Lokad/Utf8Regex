@@ -9,33 +9,18 @@ internal static class Utf8OwnedSplitPreparation
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         var effectiveCount = count == 0 ? int.MaxValue : count;
-        ulong mapBytes = 0;
-        var cursor = default(Utf8OperationMatchCursor);
-        var cursorCreated = false;
-        var transferred = false;
-        var map = default(Utf8BoundaryMap);
+        invocation.ShareStorageForCursor();
+        Utf8Validation.CheckSubject(input, ref invocation);
+        var cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, invocation, effectiveCount == 1);
         try
         {
-            invocation.ShareStorageForCursor();
-            var validation = Utf8Validation.Subject(input, ref invocation);
-            map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapBytes);
-            // Published maps stay charged for this shared invocation. Views own
-            // ordinary managed references; getters decode only their UTF-8 slice.
-            cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, map, invocation, effectiveCount == 1);
-            cursorCreated = true;
             cursor.CheckOwnedSliceCursorBoundary();
-            var enumerator = new Utf8ValueSplitEnumerator(input, cursor, map,
-                effectiveCount, validation.Utf16Length, program.RightToLeft);
-            transferred = true;
-            return enumerator;
+            return new Utf8ValueSplitEnumerator(input, cursor, effectiveCount, program.RightToLeft);
         }
-        finally
+        catch
         {
-            if (!transferred)
-            {
-                if (cursorCreated) cursor.AbortOwnedSplitSetup(ref mapBytes);
-                else invocation.Ledger.Release(mapBytes);
-            }
+            cursor.AbortOwnedSplitSetup();
+            throw;
         }
     }
 }

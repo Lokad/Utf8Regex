@@ -413,12 +413,12 @@ public sealed class Utf8SliceConditionalOperationTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((inputText[start..end], start, end - start));
+            expected.Add((inputText[start..end],global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(inputText[start..end])));
         }
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, actual);

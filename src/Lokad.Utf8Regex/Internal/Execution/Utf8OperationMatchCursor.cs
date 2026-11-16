@@ -256,7 +256,7 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map, Utf8SliceInvocation invocation, int startByte)
+        Utf8BoundaryMap? map, Utf8SliceInvocation invocation, int startByte)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
@@ -361,16 +361,18 @@ internal ref partial struct Utf8OperationMatchCursor
     {
     }
 
-    private bool MoveNextOwnedSlice()
+    private bool MoveNextOwnedSlice() => MoveNextOwnedSliceBytes(out _);
+
+    private bool MoveNextOwnedSliceBytes(out Utf8CaptureRange range)
     {
+        range = default;
         var slots = new Utf8SliceSlots([], []);
         try
         {
             // A new MoveNext and result publication are operation boundaries,
             // even when a short VM attempt never reaches its polling cadence.
             CheckOwnedSliceCursorBoundary();
-            if (_sliceProgram is null || _boundaryMap is null) return false;
-            var projectionMap = _boundaryMap.Value;
+            if (_sliceProgram is null) return false;
             slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
             _sliceInvocation.AnchorOriginByte = _sliceOriginByte;
             var outcome = _nonBacktrackingState is { } batch
@@ -380,12 +382,19 @@ internal ref partial struct Utf8OperationMatchCursor
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
             if (outcome.Found)
             {
-                var startUnit = projectionMap.GetUtf16OffsetForByteOffset(outcome.StartByte);
-                var endUnit = projectionMap.GetUtf16OffsetForByteOffset(outcome.EndByte);
-                var projected = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit,
-                    outcome.StartByte, outcome.EndByte - outcome.StartByte);
+                // Legacy match enumeration still requests this projection;
+                // byte-only splits never construct or retain its map.
+                var projected = Utf8ValueMatch.NoMatch;
+                if (_boundaryMap is { } map)
+                {
+                    var start = map.GetUtf16OffsetForByteOffset(outcome.StartByte);
+                    var end = map.GetUtf16OffsetForByteOffset(outcome.EndByte);
+                    projected = new Utf8ValueMatch(true, true, start, end - start,
+                        outcome.StartByte, outcome.EndByte - outcome.StartByte);
+                }
                 CheckOwnedSliceCursorBoundary();
-                _current = projected;
+                if (_boundaryMap is not null) _current = projected;
+                range = new Utf8CaptureRange(outcome.StartByte, outcome.EndByte);
                 var edge = _sliceProgram.RightToLeft ? outcome.StartByte : outcome.EndByte;
                 if (outcome.EndByte > outcome.StartByte)
                 {

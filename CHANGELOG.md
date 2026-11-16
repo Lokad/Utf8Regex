@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Core split results expose only byte start and length. Controlled scalar splits
+  no longer prepare or retain UTF-16 coordinate maps. Empty/count/RTL ordering,
+  borrowed-view lifetimes and cumulative interruption/resource controls remain.
+
 - PCRE2 results now expose byte endpoints only. Delete UTF-16 projection tables,
   sorting, scans and cursor caches. Preserve `\C` byte fragments, `\K` ranges,
   captures, lifetimes and bounded publication; existing finite budgets may change.

@@ -24,7 +24,7 @@ public class Utf8RegexEnumerateSplitsBenchmarks
         var sum = 0;
         foreach (var split in _context.Utf8Regex.EnumerateSplits(_context.InputBytes))
         {
-            sum += split.IndexInUtf16 + split.LengthInUtf16;
+            sum += split.IndexInBytes + split.LengthInBytes;
         }
 
         return sum;
@@ -37,7 +37,7 @@ public class Utf8RegexEnumerateSplitsBenchmarks
         foreach (var split in _context.Regex.EnumerateSplits(System.Text.Encoding.UTF8.GetString(_context.InputBytes)))
         {
             var (offset, length) = ResolveRange(split, _context.InputString.Length);
-            sum += offset + length;
+            sum += System.Text.Encoding.UTF8.GetByteCount(_context.InputString.AsSpan(0, offset + length));
         }
 
         return sum;
@@ -50,7 +50,7 @@ public class Utf8RegexEnumerateSplitsBenchmarks
         foreach (var split in _context.Regex.EnumerateSplits(_context.InputString))
         {
             var (offset, length) = ResolveRange(split, _context.InputString.Length);
-            sum += offset + length;
+            sum += System.Text.Encoding.UTF8.GetByteCount(_context.InputString.AsSpan(0, offset + length));
         }
 
         return sum;

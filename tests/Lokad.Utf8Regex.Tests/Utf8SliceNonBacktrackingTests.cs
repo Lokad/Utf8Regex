@@ -302,12 +302,12 @@ public sealed class Utf8SliceNonBacktrackingTests
             {
                 var start = range.Start.Value;
                 var end = range.End.Value;
-                expectedSplits.Add((text[start..end], start, end - start));
+                expectedSplits.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
             }
             var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
             {
-                actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+                actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
             }
             Assert.Equal(expectedSplits, actualSplits);
             Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);

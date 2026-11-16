@@ -141,8 +141,9 @@ public sealed class Utf8SliceClassAdmissionTests
         while (expectedSplits.MoveNext())
         {
             Assert.True(splits.MoveNext());
-            Assert.Equal(expectedSplits.Current.Start.Value, splits.Current.IndexInUtf16);
-            Assert.Equal(expectedSplits.Current.End.Value - expectedSplits.Current.Start.Value, splits.Current.LengthInUtf16);
+            var (start, length) = expectedSplits.Current.GetOffsetAndLength(text.Length);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), splits.Current.IndexInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(start, length)), splits.Current.LengthInBytes);
             Assert.Equal(text[expectedSplits.Current], splits.Current.GetValueString());
         }
         Assert.False(splits.MoveNext());

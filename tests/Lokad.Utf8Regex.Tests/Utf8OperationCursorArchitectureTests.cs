@@ -76,17 +76,14 @@ public sealed class Utf8OperationCursorArchitectureTests
         return matches;
     }
 
-    private static List<(bool IsByteAligned, int IndexInUtf16, int LengthInUtf16, int IndexInBytes, int LengthInBytes, string Value)> CollectSplits(
+    private static List<(int IndexInBytes, int LengthInBytes, string Value)> CollectSplits(
         Utf8Regex regex,
         byte[] input)
     {
-        var splits = new List<(bool, int, int, int, int, string)>();
+        var splits = new List<(int, int, string)>();
         foreach (var split in regex.EnumerateSplits(input))
         {
             splits.Add((
-                split.IsByteAligned,
-                split.IndexInUtf16,
-                split.LengthInUtf16,
                 split.IndexInBytes,
                 split.LengthInBytes,
                 split.GetValueString()));

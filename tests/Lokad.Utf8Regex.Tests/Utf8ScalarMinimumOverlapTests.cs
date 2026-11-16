@@ -125,12 +125,12 @@ public sealed class Utf8ScalarMinimumOverlapTests
                 foreach (var range in oracle.EnumerateSplits(text, count))
                 {
                     var (start, length) = range.GetOffsetAndLength(text.Length);
-                    expectedSplits.Add((text.Substring(start, length), start, length));
+                    expectedSplits.Add((text.Substring(start, length),global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text.Substring(start, length))));
                 }
                 var actualSplits = new List<(string, int, int)>();
                 foreach (var split in regex.EnumerateSplits(input, count))
                 {
-                    actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+                    actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
                 }
                 Assert.Equal(expectedSplits, actualSplits);
             }

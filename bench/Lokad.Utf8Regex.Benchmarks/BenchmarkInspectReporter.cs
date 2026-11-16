@@ -7019,7 +7019,7 @@ internal static partial class BenchmarkInspectReporter
         var sum = 0;
         foreach (var split in regex.EnumerateSplits(input))
         {
-            sum += split.LengthInUtf16;
+            sum += split.LengthInBytes;
         }
 
         return sum;
@@ -7031,7 +7031,7 @@ internal static partial class BenchmarkInspectReporter
         var enumerator = regex.EnumerateSplits(input);
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.LengthInUtf16;
+            sum += enumerator.Current.LengthInBytes;
         }
 
         return sum;
@@ -7083,7 +7083,7 @@ internal static partial class BenchmarkInspectReporter
         var sum = 0;
         foreach (var split in regex.EnumerateSplits(input))
         {
-            sum += split.GetOffsetAndLength(input.Length).Length;
+            sum += Encoding.UTF8.GetByteCount(input.AsSpan(split));
         }
 
         return sum;

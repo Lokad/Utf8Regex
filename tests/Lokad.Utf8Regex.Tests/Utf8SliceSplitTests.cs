@@ -77,7 +77,7 @@ public sealed class Utf8SliceSplitTests
         {
             var offset = range.Start.GetOffset(inputText.Length);
             var value = inputText[range];
-            expected.Add((value, offset, value.Length));
+            expected.Add((value, global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), global::System.Text.Encoding.UTF8.GetByteCount(value)));
         }
 
         foreach (var options in new[]
@@ -91,7 +91,7 @@ public sealed class Utf8SliceSplitTests
             var actual = new List<(string Value, int Index, int Length)>();
             foreach (var split in regex.EnumerateSplits(input, count))
             {
-                actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+                actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
             }
 
             Assert.Equal(expected, actual);
@@ -120,14 +120,14 @@ public sealed class Utf8SliceSplitTests
         {
             var offset = range.Start.GetOffset(inputText.Length);
             var value = inputText[range];
-            expected.Add((value, offset, value.Length));
+            expected.Add((value, global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), global::System.Text.Encoding.UTF8.GetByteCount(value)));
         }
 
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -151,7 +151,7 @@ public sealed class Utf8SliceSplitTests
         var segments = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, 1))
         {
-            segments.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            segments.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal([(inputText, 0, inputText.Length)], segments);
@@ -171,7 +171,7 @@ public sealed class Utf8SliceSplitTests
             foreach (var range in oracle.EnumerateSplits(inputText, count))
             {
                 var (offset, length) = range.GetOffsetAndLength(inputText.Length);
-                expected.Add((inputText.Substring(offset, length), offset, length));
+                expected.Add((inputText.Substring(offset, length),global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), global::System.Text.Encoding.UTF8.GetByteCount(inputText.Substring(offset, length))));
             }
         }
         catch (Exception ex)
@@ -195,7 +195,7 @@ public sealed class Utf8SliceSplitTests
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);

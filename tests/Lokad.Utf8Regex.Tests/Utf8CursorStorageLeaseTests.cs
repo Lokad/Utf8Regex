@@ -167,9 +167,7 @@ public sealed class Utf8CursorStorageLeaseTests
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8Validation.Validate(input);
-        var held = 7UL + 64UL + ((ulong)(validation.Utf16Length + 1) * 4 + 15) / 16 * 16
-            + ((ulong)(validation.Utf16Length + 32) / 32 * 4 + 15) / 16 * 16;
+        const ulong held = 7;
         ReadViewAfterCollection(regex, input, count, held, source, ref invocation);
         CollectLeases();
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
@@ -185,7 +183,6 @@ public sealed class Utf8CursorStorageLeaseTests
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         source.Cancel();
         Assert.Equal(expected, view.GetValueString());
-        Assert.True(view.IsByteAligned);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), view.GetValueBytes().ToArray());
     }
 

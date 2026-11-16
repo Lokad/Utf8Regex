@@ -567,20 +567,20 @@ public sealed class Utf8SliceRtlOperationTests
         var subject = new Utf8AsciiScalarOperationAssertions.Subject(text);
         var oracle = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
         var regex = new Utf8Regex(pattern, options);
-        var expected = new List<(string Value, int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(string Value, int ByteIndex, int ByteLength)>();
         foreach (var range in oracle.EnumerateSplits(subject.Projected, count))
         {
             var (start, length) = range.GetOffsetAndLength(subject.Projected.Length);
             var (unitStart, unitLength) = subject.Units(start, length);
             var (byteStart, byteLength) = subject.Bytes(start, length);
-            expected.Add((subject.Value(start, length), unitStart, unitLength, byteStart, byteLength));
+            expected.Add((subject.Value(start, length), byteStart, byteLength));
         }
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var actual = new List<(string Value, int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(string Value, int ByteIndex, int ByteLength)>();
         foreach (var split in regex.EnumerateSplits(subject.Input, count))
         {
-            Assert.True(split.IsByteAligned);
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16, split.IndexInBytes, split.LengthInBytes));
+            Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -665,12 +665,12 @@ public sealed class Utf8SliceRtlOperationTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expectedSplits.Add((text[start..end], start, end - start));
+            expectedSplits.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
         var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
         {
-            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(!splitFallback, splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);

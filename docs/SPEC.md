@@ -369,7 +369,18 @@ failed proofs can add time and work. Capture arrays remain admitted before alloc
 Borrowed views require unchanged subject bytes and a live owner. Returned
 histories and owned snapshots remain valid after later discovery, denial or cursor
 closure. Split preserves count/empty/RTL ordering and does not insert delimiter
-captures as extra elements.
+captures as extra elements. `Utf8ValueSplit` stores only byte start and length;
+it has no UTF-16 coordinates or alignment flag. Its bytes form complete scalar
+segments. Controlled scalar splitting consumes the existing match cursor's byte
+outcomes without a subject coordinate map or UTF-16 totals. Count one retains
+only the original invocation and returns the whole subject. Legacy native match
+cursors can still derive coordinates internally until their separate migration.
+Removing split maps lowers modeled working admission; match-state buffers and
+bounded work, cancellation and deadline checks remain. Views stay valid after
+EOF or interruption while their original input remains unchanged and alive.
+Publishing a borrowed split view allocates no result payload and therefore spends
+no result-byte capacity. A host's explicit `GetValueString` decoding is outside
+that capacity, like other borrowed-view getters.
 
 Replacement uses .NET-style `$1`, `${name}`, `$&`, prefix/suffix, `$+`,
 `$_` and `$$` forms with the supported numeric parsing rules. RTL discovery

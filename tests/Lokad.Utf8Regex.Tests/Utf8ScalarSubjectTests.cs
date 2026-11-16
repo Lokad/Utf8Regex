@@ -206,7 +206,7 @@ public sealed class Utf8ScalarSubjectTests
             }
             output.AddRange(input.AsSpan(edge).ToArray());
             Assert.Equal(output, regex.Replace(input, "X", token));
-            foreach (var split in regex.EnumerateSplits(input, token)) Assert.True(split.IsByteAligned);
+            foreach (var split in regex.EnumerateSplits(input, token)) Assert.Equal(split.GetValueBytes().ToArray(), Encoding.UTF8.GetBytes(split.GetValueString()));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

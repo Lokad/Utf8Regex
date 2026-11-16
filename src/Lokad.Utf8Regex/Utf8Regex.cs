@@ -2542,14 +2542,12 @@ public sealed partial class Utf8Regex
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
         {
-            var rtlAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
+            Utf8Validation.CheckSubject(input, InputValidation);
             var rtlBudget = CreateExecutionBudget();
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, _preparedRegex, rtlSplitLiteral, _preparedRegex.ExecutionKind, rtlBudget, Utf8InputAnalyzer.IsAscii(input), rightToLeft: true),
-                rtlAnalysis.BoundaryMap,
                 count == 0 ? int.MaxValue : count,
-                rtlAnalysis.Utf16Length,
                 rightToLeft: true)
                 .WithTimeoutMapping(this);
         }
@@ -2572,9 +2570,6 @@ public sealed partial class Utf8Regex
         var validation = usesAsciiValidationShortcut
             ? new Utf8ValidationResult(input.Length, input.Length, true, false)
             : Utf8Validation.Subject(input, InputValidation);
-        var totalUtf16Length = usesAsciiValidationShortcut
-            ? input.Length
-            : validation.Utf16Length;
         // R05: anchored ASCII literal families split through the anchor-enforcing
         // owned cursors (at most one match at a fixed position), like enumeration.
         var isAnchoredDirectSplitFamily = _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
@@ -2586,7 +2581,7 @@ public sealed partial class Utf8Regex
         if ((count > 0 || count == 0 && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow) &&
             (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input)))
         {
-            return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count == 0 ? int.MaxValue : count, budget)
+            return CreateSplitEnumeratorViaCompiledEngine(input, validation, count == 0 ? int.MaxValue : count, budget)
                 .WithTimeoutMapping(this);
         }
 
@@ -2600,8 +2595,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, caretSplitPrefix, CreateExecutionBudget()),
-                count,
-                totalUtf16Length)
+                count)
                 .WithTimeoutMapping(this);
         }
 
@@ -2623,7 +2617,6 @@ public sealed partial class Utf8Regex
                 _preparedRegex,
                 input,
                 validation,
-                totalUtf16Length,
                 count,
                 budget)
                 .WithTimeoutMapping(this);
@@ -2637,9 +2630,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget),
-                analysis.BoundaryMap,
                 count,
-                analysis.Utf16Length,
                 rightToLeft: false)
                 .WithTimeoutMapping(this);
         }

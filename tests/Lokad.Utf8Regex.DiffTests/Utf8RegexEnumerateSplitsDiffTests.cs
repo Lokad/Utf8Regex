@@ -32,13 +32,13 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         foreach (var range in oracle.EnumerateSplits(subject.Projected, count))
         {
             var (index, length) = range.GetOffsetAndLength(subject.Projected.Length);
-            var (start, units) = subject.Units(index, length);
+            var (start, units) = subject.Bytes(index, length);
             expected.Add((subject.Value(index, length), start, units));
         }
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, count));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), count))
-            Assert.True(split.IsByteAligned);
+            Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -197,7 +197,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            values.Add((input[start..end], start, end - start));
+            values.Add((input[start..end], global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(input[start..end])));
         }
 
         return values;
@@ -209,7 +209,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
 
         foreach (var split in utf8Regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), count))
         {
-            values.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            values.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         return values;

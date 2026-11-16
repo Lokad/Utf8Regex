@@ -81,7 +81,7 @@ public sealed class Utf8CursorInvocationReservationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void LinearSplitSetupInterruptionReleasesUnpublishedMapAndTable(bool deadline)
+    public void LinearSplitSetupInterruptionReleasesUnpublishedTable(bool deadline)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -90,18 +90,17 @@ public sealed class Utf8CursorInvocationReservationTests
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096),
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8Validation.Validate("😀é😀"u8, ref invocation);
-        var map = Utf8BoundaryMap.Create("😀é😀"u8, validation, ref invocation, out var mapBytes);
-        var cursor = Utf8OperationMatchCursor.CreateSplitCursor(Program(regex), "😀é😀"u8, map, invocation, false);
-        Assert.True(invocation.Ledger.ReservedBytes > 7 + mapBytes);
+        Utf8Validation.CheckSubject("😀é😀"u8, ref invocation);
+        var cursor = Utf8OperationMatchCursor.CreateSplitCursor(Program(regex), "😀é😀"u8, invocation, false);
+        Assert.True(invocation.Ledger.ReservedBytes > 7);
         if (deadline) ticks = 250;
         else source.Cancel();
         try { cursor.CheckOwnedSliceCursorBoundary(); Assert.Fail("The original interruption must stop setup."); }
         catch (Utf8ExecutionDeadlineExpiredException) { Assert.True(deadline); }
         catch (OperationCanceledException error) { Assert.False(deadline); Assert.Equal(source.Token, error.CancellationToken); }
-        finally { cursor.AbortOwnedSplitSetup(ref mapBytes); }
+        finally { cursor.AbortOwnedSplitSetup(); }
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        cursor.AbortOwnedSplitSetup(ref mapBytes);
+        cursor.AbortOwnedSplitSetup();
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 

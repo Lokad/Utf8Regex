@@ -33,9 +33,9 @@ capture-name and compatibility-profile callback output checks remain independent
 Managed bounds, scalar semantics, byte offsets, cancellation and admission stay
 active. Required coordinate/output work can still inspect input.
 
-PCRE2 can ignore malformed bytes before its native validation window. Byte results
-remain usable, but `HasUtf16Projection` can be false if that prefix prevents exact
-coordinates. Its byte-template substitution can preserve ignored prefix bytes;
+PCRE2 can ignore malformed bytes before its native validation window. Its results
+now expose only byte endpoints, without UTF-16 offsets or `HasUtf16Projection`.
+Its byte-template substitution can preserve ignored prefix bytes;
 text and callback output retain their independent well-formed UTF-8 requirements.
 See the [PCRE2 input contract](SPEC-PCRE2.md#subject-input-validation).
 
@@ -78,6 +78,13 @@ as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
 resource limits throughout enumeration. This change does not yet remove the
 remaining UTF-16 result properties on legacy whole-subject results.
+
+Split results now expose only `IndexInBytes` and `LengthInBytes`. Remove uses of
+`IndexInUtf16`, `LengthInUtf16` and `IsByteAligned` on `Utf8ValueSplit`; Core split
+segments already follow scalar boundaries. Controlled splits no longer allocate
+subject coordinate maps, so their modeled working requirements can decrease.
+Count/empty/RTL order, borrowed-view lifetimes and cumulative interruption remain.
+Decode a requested segment explicitly with `GetValueString` when needed.
 
 Core also removes `CountFromUtf16Offset`. Keep using `Count` for the whole subject;
 for a partial count, aggregate one byte-start enumeration:
@@ -196,7 +203,7 @@ heap/RSS or every helper allocation. Cumulative result/staging traffic can count
 shared storage again. Work units and capacity requirements vary by route/version;
 recheck representative finite policies when upgrading. Short Unicode output can
 use a conservative byte-derived string charge, and distant Python scalar queries
-can require extra working space for a shared scalar/UTF-16 prefix index.
+can require extra working space for a scalar prefix index.
 
 Cancellation is synchronous and retains the original token. One absolute deadline
 covers required validation, matching, shaping and cursor waits. Compatibility

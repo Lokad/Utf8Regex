@@ -325,21 +325,18 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
 
         Assert.Equal(expectedMatches, actualMatches);
 
-        var expectedSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        var expectedSplits = new List<(int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in expected.EnumerateSplits(subject.Projected))
         {
             var (index, length) = split.GetOffsetAndLength(subject.Projected.Length);
-            var (unitIndex, unitLength) = subject.Units(index, length);
             var (byteIndex, byteLength) = subject.Bytes(index, length);
-            expectedSplits.Add((unitIndex, unitLength, byteIndex, byteLength, subject.Value(index, length)));
+            expectedSplits.Add((byteIndex, byteLength, subject.Value(index, length)));
         }
 
-        var actualSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        var actualSplits = new List<(int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in actual.EnumerateSplits(bytes))
         {
             actualSplits.Add((
-                split.IndexInUtf16,
-                split.LengthInUtf16,
                 split.IndexInBytes,
                 split.LengthInBytes,
                 split.GetValueString()));

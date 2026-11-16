@@ -267,7 +267,6 @@ public sealed partial class Utf8Regex
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        int totalUtf16Length,
         int count,
         Utf8ExecutionDeadline budget)
     {
@@ -280,8 +279,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, anchoredSplitLiteral, budget),
-                count,
-                totalUtf16Length);
+                count);
         }
 
         // Folded anchored prefixes split the same single anchored hit with per-byte
@@ -293,8 +291,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, foldedSplitLiteral, budget, _fallbackDirectFamily.Kind),
-                count,
-                totalUtf16Length);
+                count);
         }
 
         // Folded anchored suffixes split the same single tail hit with per-byte invariant
@@ -306,8 +303,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, anchoredSplitSuffix, budget, _fallbackDirectFamily.Kind),
-                count,
-                totalUtf16Length);
+                count);
         }
 
 
@@ -315,7 +311,6 @@ public sealed partial class Utf8Regex
             _preparedRegex,
             input,
             validation,
-            totalUtf16Length,
             count,
             budget);
     }

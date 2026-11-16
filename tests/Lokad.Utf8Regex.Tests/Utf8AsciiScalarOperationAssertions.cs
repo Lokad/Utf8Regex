@@ -116,7 +116,6 @@ internal static class Utf8AsciiScalarOperationAssertions
                 // empty input. The scalar contract returns the entire subject.
                 var cursor = split.EnumerateSplits(subject.Input, maximum);
                 Assert.True(cursor.MoveNext());
-                Assert.True(cursor.Current.IsByteAligned);
                 Assert.Equal((0, subject.Input.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
                 Assert.Equal(text, cursor.Current.GetValueString());
                 Assert.False(cursor.MoveNext());
@@ -235,7 +234,6 @@ internal static class Utf8AsciiScalarOperationAssertions
         {
             Assert.True(actual.MoveNext());
             var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
-            Assert.True(actual.Current.IsByteAligned);
             Assert.Equal(subject.Bytes(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
             Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
         }

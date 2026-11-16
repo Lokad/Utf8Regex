@@ -1,29 +1,33 @@
-using Lokad.Utf8Regex.Internal.Input;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal ref partial struct Utf8OperationMatchCursor
 {
     internal ulong DebugPeakWorkingBytes => _sliceInvocation.Budget.PeakWorkingBytes;
 
-    // The split's coordinate map outlives match EOF: Current and copied
-    // views still refer to it. Keep it charged for the shared invocation.
-    // Count one needs only this invocation holder, without match discovery.
+    // Count one retains the invocation alone. Other splits consume actual byte
+    // outcomes from the same scalar discovery as legacy match enumeration.
     internal static Utf8OperationMatchCursor CreateSplitCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map, Utf8SliceInvocation invocation, bool tailOnly)
-    {
-        var cursor = tailOnly
-            ? new Utf8OperationMatchCursor(input, map, invocation)
-            : new Utf8OperationMatchCursor(program, input, map, invocation);
-        cursor._retainBoundaryMap = true;
-        return cursor;
-    }
+        Utf8SliceInvocation invocation, bool tailOnly)
+        => tailOnly ? new Utf8OperationMatchCursor(input, invocation)
+            : new Utf8OperationMatchCursor(program, input, null, invocation, program.RightToLeft ? input.Length : 0);
 
-    private Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceInvocation invocation)
-        : this(input, map, invocation.Budget.Deadline)
+    private Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
     {
+        _input = input;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _mode = EnumeratorMode.Exhausted;
+    }
+
+    internal bool MoveNextSplit(out Utf8CaptureRange range)
+    {
+        if (_mode == EnumeratorMode.OwnedSlice) return MoveNextOwnedSliceBytes(out range);
+        range = default;
+        if (!MoveNext()) return false;
+        var match = CurrentValueMatch;
+        range = new Utf8CaptureRange(match.IndexInBytes, match.IndexInBytes + match.LengthInBytes);
+        return true;
     }
 
     internal void AbortOwnedSplitMatches()
@@ -32,13 +36,9 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = null;
     }
 
-    internal void AbortOwnedSplitSetup(ref ulong mapBytes)
+    internal void AbortOwnedSplitSetup()
     {
         _nonBacktrackingState?.Release(ref _sliceInvocation);
-        _nonBacktrackingState = null;
-        _sliceInvocation.Ledger.Release(mapBytes);
-        mapBytes = 0;
-        _boundaryMap = null;
-        _sliceProgram = null;
+        AbortOwnedSplitMatches();
     }
 }

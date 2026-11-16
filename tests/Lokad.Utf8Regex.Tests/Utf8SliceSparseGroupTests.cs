@@ -147,7 +147,6 @@ public sealed class Utf8SliceSparseGroupTests
                     // single whole-input result; do not copy the enumerator bug.
                     Assert.Equal(new[] { subject.Projected }, oracle.Split(subject.Projected, count));
                     Assert.True(actual.MoveNext());
-                    Assert.True(actual.Current.IsByteAligned);
                     Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
                     Assert.Equal(text, actual.Current.GetValueString());
                     Assert.False(actual.MoveNext());
@@ -158,7 +157,6 @@ public sealed class Utf8SliceSparseGroupTests
                 {
                     Assert.True(actual.MoveNext());
                     var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
-                    Assert.True(actual.Current.IsByteAligned);
                     Assert.Equal(subject.ByteRange(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
                     Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
                 }

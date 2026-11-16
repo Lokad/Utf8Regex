@@ -304,27 +304,22 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             actual.Inspection.PreparedRegex,
             input,
             validation,
-            validation.Utf16Length,
             int.MaxValue,
             Utf8ExecutionDeadline.Infinite);
 
-        var expectedSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        var expectedSplits = new List<(int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in expected.EnumerateSplits(subject))
         {
             var (index, length) = split.GetOffsetAndLength(subject.Length);
             expectedSplits.Add((
-                index,
-                length,
                 Encoding.UTF8.GetByteCount(subject.AsSpan(0, index)),
                 Encoding.UTF8.GetByteCount(subject.AsSpan(index, length)),
                 subject.Substring(index, length)));
         }
-        var actualSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        var actualSplits = new List<(int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in splits)
         {
             actualSplits.Add((
-                split.IndexInUtf16,
-                split.LengthInUtf16,
                 split.IndexInBytes,
                 split.LengthInBytes,
                 split.GetValueString()));
@@ -447,13 +442,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -485,13 +480,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);

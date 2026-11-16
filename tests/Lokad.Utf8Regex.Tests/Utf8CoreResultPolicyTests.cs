@@ -109,7 +109,7 @@ public sealed class Utf8CoreResultPolicyTests
         var expected = Run(new Utf8Regex(pattern, options), operation, input, token);
         Assert.Equal(expected, Run(Create(pattern, 1000000, options), operation, input, token));
         Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, options), operation, input, token));
-        if (operation is "is" or "count" or "match" or "slot-match")
+        if (operation is "is" or "count" or "match" or "slot-match" or "split" or "split-count")
             Assert.Equal(expected, Run(Create(pattern, 1, options), operation, input, token));
         else AssertResultFailure(() => Run(Create(pattern, 1, options), operation, input, token), 1);
     }

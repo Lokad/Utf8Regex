@@ -74,7 +74,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
         var checksum = 0;
         foreach (var split in _utf8.EnumerateSplits(_input))
         {
-            checksum += split.IndexInUtf16 + split.LengthInUtf16;
+            checksum += split.IndexInBytes + split.LengthInBytes;
         }
         return checksum;
     }
@@ -92,7 +92,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
         var checksum = 0;
         foreach (var split in _oracle.EnumerateSplits(text))
         {
-            checksum += split.End.Value;
+            checksum += Encoding.UTF8.GetByteCount(text.AsSpan(0, split.End.GetOffset(text.Length)));
         }
         return checksum;
     }

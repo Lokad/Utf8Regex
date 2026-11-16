@@ -186,11 +186,8 @@ ref struct Utf8ValueMatchEnumerator
   method Boolean MoveNext()
   method Utf8ValueMatchEnumerator GetEnumerator()
 readonly ref struct Utf8ValueSplit
-  property Boolean IsByteAligned { get; }
   property Int32 IndexInBytes { get; }
-  property Int32 IndexInUtf16 { get; }
   property Int32 LengthInBytes { get; }
-  property Int32 LengthInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
 ref struct Utf8ValueSplitEnumerator

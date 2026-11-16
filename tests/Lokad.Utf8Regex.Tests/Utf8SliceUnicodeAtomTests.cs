@@ -533,10 +533,8 @@ public sealed class Utf8SliceUnicodeAtomTests
             Assert.True(actual.MoveNext());
             var (start, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
             var range = subject.Coordinates(start, length);
-            Assert.Equal((range.Start, range.Length), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
             Assert.Equal((range.ByteStart, range.ByteLength), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
             Assert.Equal(subject.Value(start, length), actual.Current.GetValueString());
-            Assert.True(actual.Current.IsByteAligned);
         }
         Assert.False(actual.MoveNext());
     }

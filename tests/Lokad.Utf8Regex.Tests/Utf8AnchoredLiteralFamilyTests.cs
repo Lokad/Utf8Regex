@@ -33,13 +33,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -89,13 +89,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -133,13 +133,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -487,13 +487,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         {
             var start = range.Start.Value;
             var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
         }
 
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -519,13 +519,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             {
                 var start = range.Start.Value;
                 var end = range.End.Value;
-                expected.Add((text[start..end], start, end - start));
+                expected.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
             }
 
             var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var split in regex.EnumerateSplits(input, count))
             {
-                actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+                actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
             }
 
             Assert.Equal(expected, actual);
