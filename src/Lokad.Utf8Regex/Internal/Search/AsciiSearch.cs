@@ -8,6 +8,41 @@ internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3);
 
 internal static partial class AsciiSearch
 {
+    internal static int GetAsciiFrequencyRank(byte value)
+    {
+        return value switch
+        {
+            (byte)' ' => 255,
+            (byte)'e' or (byte)'E' => 240,
+            (byte)'t' or (byte)'T' => 230,
+            (byte)'a' or (byte)'A' => 220,
+            (byte)'o' or (byte)'O' => 210,
+            (byte)'i' or (byte)'I' => 200,
+            (byte)'n' or (byte)'N' => 190,
+            (byte)'s' or (byte)'S' => 180,
+            (byte)'h' or (byte)'H' => 170,
+            (byte)'r' or (byte)'R' => 160,
+            (byte)'d' or (byte)'D' => 150,
+            (byte)'l' or (byte)'L' => 140,
+            (byte)'c' or (byte)'C' => 130,
+            (byte)'u' or (byte)'U' => 120,
+            (byte)'m' or (byte)'M' => 110,
+            (byte)'w' or (byte)'W' => 100,
+            (byte)'f' or (byte)'F' => 90,
+            (byte)'g' or (byte)'G' => 80,
+            (byte)'y' or (byte)'Y' => 70,
+            (byte)'p' or (byte)'P' => 60,
+            (byte)'b' or (byte)'B' => 50,
+            (byte)'v' or (byte)'V' => 40,
+            (byte)'k' or (byte)'K' => 30,
+            (byte)'j' or (byte)'J' => 20,
+            (byte)'x' or (byte)'X' => 10,
+            (byte)'q' or (byte)'Q' => 5,
+            (byte)'z' or (byte)'Z' => 0,
+            _ => 15,
+        };
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static Vector512<byte> CorrelateExactPairs(Vector512<byte> heads, Vector512<byte> tails,
         Vector512<byte> head0, Vector512<byte> tail0, Vector512<byte> head1, Vector512<byte> tail1)

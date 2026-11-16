@@ -638,66 +638,10 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
     }
 }
 
-internal readonly struct PreparedMultiLiteralRootByteFamilySearch
-{
-    public PreparedMultiLiteralRootByteFamilySearch(byte[][] literals)
-    {
-        ExactSearch = new PreparedLiteralSetSearch(literals);
-        ShortestLength = ExactSearch.SearchData.ShortestLength;
-    }
-
-    public PreparedLiteralSetSearch ExactSearch { get; }
-
-    public int ShortestLength { get; }
-
-    public bool TryFindNextNonOverlappingLength(
-        ReadOnlySpan<byte> input,
-        ref PreparedMultiLiteralScanState state,
-        out int index,
-        out int matchedLength)
-    {
-        index = -1;
-        matchedLength = 0;
-
-        if ((uint)state.NextStart > (uint)input.Length || ShortestLength == int.MaxValue)
-        {
-            return false;
-        }
-
-        if (!ExactSearch.TryFindFirstMatchWithLength(input[state.NextStart..], out var relativeIndex, out matchedLength))
-        {
-            state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-            return false;
-        }
-
-        index = state.NextStart + relativeIndex;
-        state = new PreparedMultiLiteralScanState(index + matchedLength, index + matchedLength, 0);
-        return true;
-    }
-    public bool TryFindNextCandidate(
-        ReadOnlySpan<byte> input,
-        ref PreparedMultiLiteralScanState state,
-        out int candidateIndex)
-    {
-        candidateIndex = -1;
-        if (!TryFindNextNonOverlappingLength(input, ref state, out var index, out _))
-        {
-            return false;
-        }
-
-        candidateIndex = index;
-        return true;
-    }
-}
-
 internal enum PreparedMultiLiteralCandidatePrefilterKind : byte
 {
     None = 0,
-    RootByte = 1,
     Earliest = 2,
-    RareByte = 3,
-    OffsetMask = 4,
-    NibbleMask = 5,
     PackedNibbleSimd = 6,
     LeadingUtf8Segment = 7,
 }
@@ -709,11 +653,7 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
         byte[][] literals,
         int shortestLength,
         int longestLength,
-        PreparedMultiLiteralRootByteFamilySearch rootByte,
         PreparedMultiLiteralEarliestExactSearch earliest,
-        PreparedMultiLiteralRareBytePrefilter rareByte,
-        PreparedMultiLiteralOffsetMaskPrefilter offsetMask,
-        PreparedMultiLiteralNibbleMaskPrefilter nibbleMask,
         PreparedMultiLiteralPackedNibbleSimdPrefilter packedNibbleSimd,
         PreparedMultiLiteralLeadingUtf8SegmentPrefilter leadingUtf8Segment)
     {
@@ -721,11 +661,7 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
         Literals = literals;
         ShortestLength = shortestLength;
         LongestLength = longestLength;
-        RootByte = rootByte;
         Earliest = earliest;
-        RareByte = rareByte;
-        OffsetMask = offsetMask;
-        NibbleMask = nibbleMask;
         PackedNibbleSimd = packedNibbleSimd;
         LeadingUtf8Segment = leadingUtf8Segment;
     }
@@ -738,37 +674,13 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public int LongestLength { get; }
 
-    public PreparedMultiLiteralRootByteFamilySearch RootByte { get; }
-
     public PreparedMultiLiteralEarliestExactSearch Earliest { get; }
-
-    public PreparedMultiLiteralRareBytePrefilter RareByte { get; }
-
-    public PreparedMultiLiteralOffsetMaskPrefilter OffsetMask { get; }
-
-    public PreparedMultiLiteralNibbleMaskPrefilter NibbleMask { get; }
 
     public PreparedMultiLiteralPackedNibbleSimdPrefilter PackedNibbleSimd { get; }
 
     public PreparedMultiLiteralLeadingUtf8SegmentPrefilter LeadingUtf8Segment { get; }
 
     public bool HasValue => Kind != PreparedMultiLiteralCandidatePrefilterKind.None;
-
-    public static PreparedMultiLiteralCandidatePrefilter CreateRootByte(byte[][] literals)
-    {
-        return new PreparedMultiLiteralCandidatePrefilter(
-            PreparedMultiLiteralCandidatePrefilterKind.RootByte,
-            literals,
-            GetShortestLength(literals),
-            GetLongestLength(literals),
-            new PreparedMultiLiteralRootByteFamilySearch(literals),
-            default,
-            default,
-            default,
-            default,
-            default,
-            default);
-    }
 
     public static PreparedMultiLiteralCandidatePrefilter CreateEarliest(byte[][] literals)
     {
@@ -777,62 +689,7 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
             literals,
             GetShortestLength(literals),
             GetLongestLength(literals),
-            default,
             new PreparedMultiLiteralEarliestExactSearch(literals),
-            default,
-            default,
-            default,
-            default,
-            default);
-    }
-
-    public static PreparedMultiLiteralCandidatePrefilter CreateRareByte(byte[][] literals)
-    {
-        var rareByte = new PreparedMultiLiteralRareBytePrefilter(literals);
-        return new PreparedMultiLiteralCandidatePrefilter(
-            rareByte.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.RareByte : PreparedMultiLiteralCandidatePrefilterKind.None,
-            literals,
-            rareByte.ShortestLength,
-            GetLongestLength(literals),
-            default,
-            default,
-            rareByte,
-            default,
-            default,
-            default,
-            default);
-    }
-
-    public static PreparedMultiLiteralCandidatePrefilter CreateOffsetMask(byte[][] literals)
-    {
-        var offsetMask = new PreparedMultiLiteralOffsetMaskPrefilter(literals);
-        return new PreparedMultiLiteralCandidatePrefilter(
-            offsetMask.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.OffsetMask : PreparedMultiLiteralCandidatePrefilterKind.None,
-            literals,
-            offsetMask.ShortestLength,
-            GetLongestLength(literals),
-            default,
-            default,
-            default,
-            offsetMask,
-            default,
-            default,
-            default);
-    }
-
-    public static PreparedMultiLiteralCandidatePrefilter CreateNibbleMask(byte[][] literals)
-    {
-        var nibbleMask = new PreparedMultiLiteralNibbleMaskPrefilter(literals);
-        return new PreparedMultiLiteralCandidatePrefilter(
-            nibbleMask.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.NibbleMask : PreparedMultiLiteralCandidatePrefilterKind.None,
-            literals,
-            nibbleMask.ShortestLength,
-            GetLongestLength(literals),
-            default,
-            default,
-            default,
-            default,
-            nibbleMask,
             default,
             default);
     }
@@ -845,10 +702,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
             literals,
             packedNibbleSimd.ShortestLength,
             GetLongestLength(literals),
-            default,
-            default,
-            default,
-            default,
             default,
             packedNibbleSimd,
             default);
@@ -864,10 +717,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
             GetLongestLength(literals),
             default,
             default,
-            default,
-            default,
-            default,
-            default,
             leadingUtf8Segment);
     }
 
@@ -879,11 +728,7 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
         candidateIndex = -1;
         return Kind switch
         {
-            PreparedMultiLiteralCandidatePrefilterKind.RootByte => RootByte.TryFindNextCandidate(input, ref state, out candidateIndex),
             PreparedMultiLiteralCandidatePrefilterKind.Earliest => Earliest.TryFindNextCandidate(input, ref state, out candidateIndex),
-            PreparedMultiLiteralCandidatePrefilterKind.RareByte => RareByte.TryFindNextCandidate(input, ref state, out candidateIndex),
-            PreparedMultiLiteralCandidatePrefilterKind.OffsetMask => OffsetMask.TryFindNextCandidate(input, ref state, out candidateIndex),
-            PreparedMultiLiteralCandidatePrefilterKind.NibbleMask => NibbleMask.TryFindNextCandidate(input, ref state, out candidateIndex),
             PreparedMultiLiteralCandidatePrefilterKind.PackedNibbleSimd => PackedNibbleSimd.TryFindNextCandidate(input, ref state, out candidateIndex),
             PreparedMultiLiteralCandidatePrefilterKind.LeadingUtf8Segment => LeadingUtf8Segment.TryFindNextCandidate(input, ref state, out candidateIndex),
             _ => false,
@@ -895,13 +740,8 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
         matchedLength = 0;
         switch (Kind)
         {
-            case PreparedMultiLiteralCandidatePrefilterKind.RootByte:
-                return RootByte.ExactSearch.TryGetMatchedLiteralLength(input, candidateIndex, out matchedLength);
             case PreparedMultiLiteralCandidatePrefilterKind.Earliest:
                 return Earliest.TryGetMatchedLiteralLength(input, candidateIndex, out matchedLength);
-            case PreparedMultiLiteralCandidatePrefilterKind.RareByte:
-            case PreparedMultiLiteralCandidatePrefilterKind.OffsetMask:
-            case PreparedMultiLiteralCandidatePrefilterKind.NibbleMask:
             case PreparedMultiLiteralCandidatePrefilterKind.PackedNibbleSimd:
             case PreparedMultiLiteralCandidatePrefilterKind.LeadingUtf8Segment:
                 for (var i = 0; i < Literals.Length; i++)
@@ -1342,230 +1182,6 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         var lowMask = Avx2.Shuffle(lowMaskVector, low);
         var highMask = Avx2.Shuffle(highMaskVector, high);
         return Avx2.And(lowMask, highMask);
-    }
-}
-
-internal readonly partial struct PreparedMultiLiteralNibbleMaskPrefilter
-{
-    private const int MaxMaskLen = 4;
-
-    public int ShortestLength { get; }
-
-    public int MaskLength { get; }
-
-    public ulong[][] LowMasks { get; }
-
-    public ulong[][] HighMasks { get; }
-
-    public PreparedByteSearch Search { get; }
-
-    public bool HasValue => Search.Count > 0;
-
-    public bool TryFindNextCandidate(
-        ReadOnlySpan<byte> input,
-        ref PreparedMultiLiteralScanState state,
-        out int candidateIndex)
-    {
-        candidateIndex = -1;
-        if (!HasValue || (uint)state.NextStart > (uint)input.Length || ShortestLength == int.MaxValue)
-        {
-            return false;
-        }
-
-        var searchFrom = state.NextStart;
-        while (searchFrom <= input.Length - ShortestLength)
-        {
-            var relative = Search.IndexOf(input[searchFrom..]);
-            if (relative < 0)
-            {
-                state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-                return false;
-            }
-
-            var start = searchFrom + relative;
-            if ((uint)start > (uint)(input.Length - ShortestLength))
-            {
-                state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-                return false;
-            }
-
-            ulong candidates = ulong.MaxValue;
-            for (var offset = 0; offset < MaskLength; offset++)
-            {
-                var value = input[start + offset];
-                candidates &= LowMasks[offset][value & 0xF] & HighMasks[offset][value >> 4];
-                if (candidates == 0)
-                {
-                    break;
-                }
-            }
-
-            if (candidates != 0)
-            {
-                candidateIndex = start;
-                state = new PreparedMultiLiteralScanState(start + 1, start + 1, 0);
-                return true;
-            }
-
-            searchFrom = start + 1;
-        }
-
-        state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-        return false;
-    }
-}
-
-internal readonly partial struct PreparedMultiLiteralOffsetMaskPrefilter
-{
-    private const int MaxOffsets = 3;
-
-    private readonly record struct OffsetScore(int Offset, int Cardinality, int FrequencyScore);
-
-    public int ShortestLength { get; }
-
-    public int[] Offsets { get; }
-
-    public byte[][] Masks { get; }
-
-    public PreparedByteSearch Search { get; }
-
-    public bool HasValue => Search.Count > 0;
-
-    public bool TryFindNextCandidate(
-        ReadOnlySpan<byte> input,
-        ref PreparedMultiLiteralScanState state,
-        out int candidateIndex)
-    {
-        candidateIndex = -1;
-        if (!HasValue || (uint)state.NextStart > (uint)input.Length || ShortestLength == int.MaxValue)
-        {
-            return false;
-        }
-
-        var searchFrom = state.NextStart + Offsets[0];
-        while (searchFrom < input.Length)
-        {
-            var relative = Search.IndexOf(input[searchFrom..]);
-            if (relative < 0)
-            {
-                state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-                return false;
-            }
-
-            var foundIndex = searchFrom + relative;
-            var start = foundIndex - Offsets[0];
-            if ((uint)start <= (uint)(input.Length - ShortestLength))
-            {
-                var matches = true;
-                for (var i = 1; i < Offsets.Length; i++)
-                {
-                    if (Masks[i][input[start + Offsets[i]]] == 0)
-                    {
-                        matches = false;
-                        break;
-                    }
-                }
-
-                if (matches)
-                {
-                    candidateIndex = start;
-                    state = new PreparedMultiLiteralScanState(foundIndex + 1, foundIndex + 1, 0);
-                    return true;
-                }
-            }
-
-            searchFrom = foundIndex + 1;
-        }
-
-        state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-        return false;
-    }
-}
-
-internal readonly partial struct PreparedMultiLiteralRareBytePrefilter
-{
-    public PreparedByteSearch Search { get; }
-
-    public int[] OffsetByValue { get; }
-
-    public int ShortestLength { get; }
-
-    public bool HasValue => Search.Count > 0;
-
-    public bool TryFindNextCandidate(
-        ReadOnlySpan<byte> input,
-        ref PreparedMultiLiteralScanState state,
-        out int candidateIndex)
-    {
-        candidateIndex = -1;
-
-        if (!HasValue || (uint)state.NextStart > (uint)input.Length || ShortestLength == int.MaxValue)
-        {
-            return false;
-        }
-
-        var searchFrom = state.NextStart;
-        while (searchFrom < input.Length)
-        {
-            var relative = Search.IndexOf(input[searchFrom..]);
-            if (relative < 0)
-            {
-                state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-                return false;
-            }
-
-            var foundIndex = searchFrom + relative;
-            var shift = OffsetByValue[input[foundIndex]];
-            if (shift < 0)
-            {
-                searchFrom = foundIndex + 1;
-                continue;
-            }
-
-            candidateIndex = Math.Max(0, foundIndex - shift);
-            // Advance past the triggering discriminator byte, not the backshifted
-            // candidate start, otherwise the same hit can be rediscovered forever.
-            state = new PreparedMultiLiteralScanState(foundIndex + 1, foundIndex + 1, 0);
-            return true;
-        }
-
-        state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
-        return false;
-    }
-
-    internal static int GetAsciiFrequencyRank(byte value)
-    {
-        return value switch
-        {
-            (byte)' ' => 255,
-            (byte)'e' or (byte)'E' => 240,
-            (byte)'t' or (byte)'T' => 230,
-            (byte)'a' or (byte)'A' => 220,
-            (byte)'o' or (byte)'O' => 210,
-            (byte)'i' or (byte)'I' => 200,
-            (byte)'n' or (byte)'N' => 190,
-            (byte)'s' or (byte)'S' => 180,
-            (byte)'h' or (byte)'H' => 170,
-            (byte)'r' or (byte)'R' => 160,
-            (byte)'d' or (byte)'D' => 150,
-            (byte)'l' or (byte)'L' => 140,
-            (byte)'c' or (byte)'C' => 130,
-            (byte)'u' or (byte)'U' => 120,
-            (byte)'m' or (byte)'M' => 110,
-            (byte)'w' or (byte)'W' => 100,
-            (byte)'f' or (byte)'F' => 90,
-            (byte)'g' or (byte)'G' => 80,
-            (byte)'y' or (byte)'Y' => 70,
-            (byte)'p' or (byte)'P' => 60,
-            (byte)'b' or (byte)'B' => 50,
-            (byte)'v' or (byte)'V' => 40,
-            (byte)'k' or (byte)'K' => 30,
-            (byte)'j' or (byte)'J' => 20,
-            (byte)'x' or (byte)'X' => 10,
-            (byte)'q' or (byte)'Q' => 5,
-            (byte)'z' or (byte)'Z' => 0,
-            _ => 15,
-        };
     }
 }
 

@@ -49,7 +49,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
     }
     private static int[] Ranking(byte[][] values) => Enumerable.Range(0, values.Min(v => v.Length))
         .Select(offset => new { offset, bytes = values.Select(v => v[offset]).Distinct().ToArray() })
-        .Where(v => v.bytes.Length > 1).Select(v => new { v.offset, score = v.bytes.Sum(b => PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(b)) * 8 + v.bytes.Length })
+        .Where(v => v.bytes.Length > 1).Select(v => new { v.offset, score = v.bytes.Sum(b => AsciiSearch.GetAsciiFrequencyRank(b)) * 8 + v.bytes.Length })
         .OrderBy(v => v.score).ThenByDescending(v => v.offset).Take(4).Select(v => v.offset).ToArray();
     private static int Secondary(byte[][] values, int primary) => Enumerable.Range(0, values.Min(v => v.Length))
         .FirstOrDefault(offset => offset != primary && values.Select(v => (v[primary], v[offset])).Distinct().Count() == values.Length, -1);

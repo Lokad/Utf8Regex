@@ -657,32 +657,6 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.False(search.TryFindNextNonOverlappingMatch(input, ref state, out _, out _, out _));
     }
 
-    [Fact]
-    public void PreparedMultiLiteralRootByteFamilySearchCanScanNonOverlappingLengths()
-    {
-        var search = new PreparedMultiLiteralRootByteFamilySearch(
-        [
-            Encoding.UTF8.GetBytes("Sherlock Holmes"),
-            Encoding.UTF8.GetBytes("John Watson"),
-            Encoding.UTF8.GetBytes("Irene Adler"),
-            Encoding.UTF8.GetBytes("Inspector Lestrade"),
-            Encoding.UTF8.GetBytes("Professor Moriarty"),
-        ]);
-        var input = Encoding.UTF8.GetBytes("Sherlock Holmes and John Watson met Irene Adler.");
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-
-        Assert.True(search.TryFindNextNonOverlappingLength(input, ref state, out var firstIndex, out var firstLength));
-        Assert.Equal(0, firstIndex);
-        Assert.Equal("Sherlock Holmes".Length, firstLength);
-
-        Assert.True(search.TryFindNextNonOverlappingLength(input, ref state, out var secondIndex, out var secondLength));
-        Assert.Equal(20, secondIndex);
-        Assert.Equal("John Watson".Length, secondLength);
-
-        Assert.True(search.TryFindNextNonOverlappingLength(input, ref state, out var thirdIndex, out var thirdLength));
-        Assert.Equal(36, thirdIndex);
-        Assert.Equal("Irene Adler".Length, thirdLength);
-    }
 
     [Fact]
     public void PreparedMultiLiteralEarliestExactSearchCanScanNonOverlappingLengths()

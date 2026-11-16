@@ -126,9 +126,6 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
     public void MultiLiteralSearchProducersUseTheSameByteOwnerAndRecoverAfterDenial(int route)
     {
         byte[][] literals = ["ABCD"u8.ToArray(), "EFGH"u8.ToArray(), "IJKL"u8.ToArray(), "MNOP"u8.ToArray()];
@@ -138,9 +135,6 @@ public sealed class Utf8SharedByteSearchAdmissionTests
             {
                 0 => PreparedMultiLiteralPackedSearch.Create(literals).DiscriminatorSearch,
                 1 => new PreparedMultiLiteralPackedNibbleSimdPrefilter(literals).Search,
-                2 => new PreparedMultiLiteralNibbleMaskPrefilter(literals).Search,
-                3 => new PreparedMultiLiteralOffsetMaskPrefilter(literals).Search,
-                4 => new PreparedMultiLiteralRareBytePrefilter(literals).Search,
                 _ => PreparedMultiLiteralTrieSearch.Create(literals).RootSearch,
             };
         }

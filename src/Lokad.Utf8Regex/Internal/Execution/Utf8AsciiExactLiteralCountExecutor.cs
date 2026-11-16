@@ -27,7 +27,7 @@ internal static class Utf8AsciiExactLiteralCountExecutor
                 return -1;
             }
 
-            var rank = PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(literal[offset]);
+            var rank = AsciiSearch.GetAsciiFrequencyRank(literal[offset]);
             if (rank < bestRank)
             {
                 bestOffset = offset;

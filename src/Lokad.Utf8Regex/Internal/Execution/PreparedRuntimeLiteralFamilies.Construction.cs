@@ -170,7 +170,7 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
     {
         var commonness = 0;
         foreach (var value in values)
-        { budget.ChargeWork(1); commonness += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(value); }
+        { budget.ChargeWork(1); commonness += AsciiSearch.GetAsciiFrequencyRank(value); }
         return commonness * 8 + values.Length;
     }
 }

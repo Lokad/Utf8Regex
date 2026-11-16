@@ -75,7 +75,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             var commonness = 0;
             budget.ChargeWork((ulong)count);
             for (var index = 0; index < count; index++)
-                commonness += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(values[index]);
+                commonness += AsciiSearch.GetAsciiFrequencyRank(values[index]);
             var candidate = new RankedOffset(offset, commonness * 8 + count);
             // At most four comparisons and shifts. This is the original
             // ascending score, descending offset order, without discarded arrays.

@@ -3567,7 +3567,6 @@ internal static partial class BenchmarkInspectReporter
 
         var literals = regex.Inspection.SearchPlan.MultiLiteralSearch.Literals;
         var direct = new PreparedLiteralSetSearch(literals);
-        var rootByte = PreparedMultiLiteralCandidatePrefilter.CreateRootByte(literals);
         var earliest = PreparedMultiLiteralCandidatePrefilter.CreateEarliest(literals);
         var packed = PreparedMultiLiteralPackedSearch.TryCreate(literals, out var packedSearch) ? packedSearch : default;
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
@@ -3599,7 +3598,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"AutomatonOutputs  : {automaton.OutputStateCount}");
 
         Measure("ExactDirect", iterations, () => ExecuteExactLiteralSetCount(direct, input));
-        Measure("RootByte", iterations, () => ExecuteCandidatePrefilterCount(rootByte, input));
         Measure("EarliestExact", iterations, () => ExecuteCandidatePrefilterCount(earliest, input));
         if (packed.ShortestLength != 0)
         {
@@ -3621,7 +3619,6 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("ExactDirectIsMatch", iterations, () =>
             direct.TryFindFirstMatchWithLength(input, out _, out _) ? 1 : 0);
-        Measure("RootByteIsMatch", iterations, () => ExecuteCandidatePrefilterIsMatch(rootByte, input));
         Measure("Utf8IsMatch", iterations, () => regex.IsMatch(input) ? 1 : 0);
         Measure("DotNetIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(decoded) ? 1 : 0);
         return 0;
@@ -3643,14 +3640,8 @@ internal static partial class BenchmarkInspectReporter
         var literals = regex.Inspection.SearchPlan.MultiLiteralSearch.Literals;
         var searchPlan = regex.Inspection.SearchPlan;
         var direct = new PreparedLiteralSetSearch(literals);
-        var rootByte = PreparedMultiLiteralCandidatePrefilter.CreateRootByte(literals);
         var earliest = PreparedMultiLiteralCandidatePrefilter.CreateEarliest(literals);
-        var rareByte = PreparedMultiLiteralCandidatePrefilter.CreateRareByte(literals);
         var leadingUtf8Segment = PreparedMultiLiteralCandidatePrefilter.CreateLeadingUtf8Segment(literals);
-        var offsetMask = PreparedMultiLiteralCandidatePrefilter.CreateOffsetMask(literals);
-        var nibbleMask = literals.Length <= 64
-            ? PreparedMultiLiteralCandidatePrefilter.CreateNibbleMask(literals)
-            : default;
         var packedNibbleSimd = literals.Length <= 8
             ? PreparedMultiLiteralCandidatePrefilter.CreatePackedNibbleSimd(literals)
             : default;
@@ -3660,12 +3651,6 @@ internal static partial class BenchmarkInspectReporter
         var diagnostics = regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
         var leadingUtf8SegmentHybrid512 = leadingUtf8Segment.HasValue ? DiagnoseHybridChunkedLiteralSetCount(leadingUtf8Segment, automaton, benchmarkCase.InputBytes, 512) : default;
         var leadingUtf8SegmentHybrid2048 = leadingUtf8Segment.HasValue ? DiagnoseHybridChunkedLiteralSetCount(leadingUtf8Segment, automaton, benchmarkCase.InputBytes, 2048) : default;
-        var rareHybrid512 = rareByte.HasValue ? DiagnoseHybridChunkedLiteralSetCount(rareByte, automaton, benchmarkCase.InputBytes, 512) : default;
-        var rareHybrid2048 = rareByte.HasValue ? DiagnoseHybridChunkedLiteralSetCount(rareByte, automaton, benchmarkCase.InputBytes, 2048) : default;
-        var offsetMaskHybrid512 = offsetMask.HasValue ? DiagnoseHybridChunkedLiteralSetCount(offsetMask, automaton, benchmarkCase.InputBytes, 512) : default;
-        var offsetMaskHybrid2048 = offsetMask.HasValue ? DiagnoseHybridChunkedLiteralSetCount(offsetMask, automaton, benchmarkCase.InputBytes, 2048) : default;
-        var nibbleMaskHybrid512 = nibbleMask.HasValue ? DiagnoseHybridChunkedLiteralSetCount(nibbleMask, automaton, benchmarkCase.InputBytes, 512) : default;
-        var nibbleMaskHybrid2048 = nibbleMask.HasValue ? DiagnoseHybridChunkedLiteralSetCount(nibbleMask, automaton, benchmarkCase.InputBytes, 2048) : default;
         var packedNibbleSimdHybrid512 = packedNibbleSimd.HasValue ? DiagnoseHybridChunkedLiteralSetCount(packedNibbleSimd, automaton, benchmarkCase.InputBytes, 512) : default;
         var packedNibbleSimdHybrid2048 = packedNibbleSimd.HasValue ? DiagnoseHybridChunkedLiteralSetCount(packedNibbleSimd, automaton, benchmarkCase.InputBytes, 2048) : default;
 
@@ -3678,9 +3663,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"TrailingBoundary  : {searchPlan.TrailingBoundary}");
         Console.WriteLine($"PackedAvailable   : {hasPacked}");
         Console.WriteLine($"LeadingUtf8SegmentAvail: {leadingUtf8Segment.HasValue}");
-        Console.WriteLine($"RareByteAvail     : {rareByte.HasValue}");
-        Console.WriteLine($"OffsetMaskAvail   : {offsetMask.HasValue}");
-        Console.WriteLine($"NibbleMaskAvail   : {nibbleMask.HasValue}");
         Console.WriteLine($"PackedNibbleSimdAvail: {packedNibbleSimd.HasValue}");
         Console.WriteLine($"AutomatonStates   : {automaton.StateCount}");
         Console.WriteLine($"AutomatonRootFanout: {automaton.RootFanout}");
@@ -3691,21 +3673,6 @@ internal static partial class BenchmarkInspectReporter
             WriteHybridMetrics("LeadingUtf8Seg512", leadingUtf8SegmentHybrid512);
             WriteHybridMetrics("LeadingUtf8Seg2048", leadingUtf8SegmentHybrid2048);
         }
-        if (rareByte.HasValue)
-        {
-            WriteHybridMetrics("RareHybrid512", rareHybrid512);
-            WriteHybridMetrics("RareHybrid2048", rareHybrid2048);
-        }
-        if (offsetMask.HasValue)
-        {
-            WriteHybridMetrics("OffsetMask512", offsetMaskHybrid512);
-            WriteHybridMetrics("OffsetMask2048", offsetMaskHybrid2048);
-        }
-        if (nibbleMask.HasValue)
-        {
-            WriteHybridMetrics("NibbleMask512", nibbleMaskHybrid512);
-            WriteHybridMetrics("NibbleMask2048", nibbleMaskHybrid2048);
-        }
         if (packedNibbleSimd.HasValue)
         {
             WriteHybridMetrics("PackedNibbleSimd512", packedNibbleSimdHybrid512);
@@ -3714,8 +3681,6 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("ExactDirectCandidates", iterations, () => ExecuteExactLiteralSetCount(direct, benchmarkCase.InputBytes));
         Measure("ExactDirectBoundaryCount", iterations, () => ExecuteExactLiteralSetCountWithBoundaries(direct, searchPlan, benchmarkCase.InputBytes));
-        Measure("RootByteCandidates", iterations, () => ExecuteCandidatePrefilterCount(rootByte, benchmarkCase.InputBytes));
-        Measure("RootByteBoundaryCount", iterations, () => ExecuteCandidatePrefilterCountWithBoundaries(rootByte, searchPlan, benchmarkCase.InputBytes));
         if (leadingUtf8Segment.HasValue)
         {
             Measure("LeadingUtf8SegmentCandidates", iterations, () => ExecuteCandidatePrefilterCount(leadingUtf8Segment, benchmarkCase.InputBytes));
@@ -3724,30 +3689,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("LeadingUtf8SegmentHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(leadingUtf8Segment, automaton, benchmarkCase.InputBytes, 512));
             Measure("LeadingUtf8SegmentHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(leadingUtf8Segment, automaton, benchmarkCase.InputBytes, 2048));
             Measure("LeadingUtf8SegmentBoundaryCount", iterations, () => ExecuteCandidatePrefilterCountWithBoundaries(leadingUtf8Segment, searchPlan, benchmarkCase.InputBytes));
-        }
-        if (rareByte.HasValue)
-        {
-            Measure("RareByteCandidates", iterations, () => ExecuteCandidatePrefilterCount(rareByte, benchmarkCase.InputBytes));
-            Measure("RareByteProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(rareByte, automaton, benchmarkCase.InputBytes, 512));
-            Measure("RareByteProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(rareByte, automaton, benchmarkCase.InputBytes, 2048));
-            Measure("RareByteHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(rareByte, automaton, benchmarkCase.InputBytes, 512));
-            Measure("RareByteHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(rareByte, automaton, benchmarkCase.InputBytes, 2048));
-        }
-        if (offsetMask.HasValue)
-        {
-            Measure("OffsetMaskCandidates", iterations, () => ExecuteCandidatePrefilterCount(offsetMask, benchmarkCase.InputBytes));
-            Measure("OffsetMaskProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(offsetMask, automaton, benchmarkCase.InputBytes, 512));
-            Measure("OffsetMaskProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(offsetMask, automaton, benchmarkCase.InputBytes, 2048));
-            Measure("OffsetMaskHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(offsetMask, automaton, benchmarkCase.InputBytes, 512));
-            Measure("OffsetMaskHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(offsetMask, automaton, benchmarkCase.InputBytes, 2048));
-        }
-        if (nibbleMask.HasValue)
-        {
-            Measure("NibbleMaskCandidates", iterations, () => ExecuteCandidatePrefilterCount(nibbleMask, benchmarkCase.InputBytes));
-            Measure("NibbleMaskProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(nibbleMask, automaton, benchmarkCase.InputBytes, 512));
-            Measure("NibbleMaskProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(nibbleMask, automaton, benchmarkCase.InputBytes, 2048));
-            Measure("NibbleMaskHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(nibbleMask, automaton, benchmarkCase.InputBytes, 512));
-            Measure("NibbleMaskHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(nibbleMask, automaton, benchmarkCase.InputBytes, 2048));
         }
         if (packedNibbleSimd.HasValue)
         {
@@ -3909,7 +3850,6 @@ internal static partial class BenchmarkInspectReporter
 
         var literals = searchPlan.MultiLiteralSearch.Literals;
         var direct = new PreparedLiteralSetSearch(literals);
-        var rootByte = PreparedMultiLiteralCandidatePrefilter.CreateRootByte(literals);
         var earliest = PreparedMultiLiteralCandidatePrefilter.CreateEarliest(literals);
         var automaton = PreparedMultiLiteralAutomatonSearch.Create(literals);
         var span = benchmarkCase.InputBytes.AsSpan();
@@ -3917,8 +3857,6 @@ internal static partial class BenchmarkInspectReporter
         var hybrid512 = DiagnoseHybridChunkedLiteralSetCount(direct, automaton, span, 512);
         var hybrid2048 = DiagnoseHybridChunkedLiteralSetCount(direct, automaton, span, 2048);
         var hybrid8192 = DiagnoseHybridChunkedLiteralSetCount(direct, automaton, span, 8192);
-        var rootByteHybrid512 = DiagnoseHybridChunkedLiteralSetCount(rootByte, automaton, span, 512);
-        var rootByteHybrid2048 = DiagnoseHybridChunkedLiteralSetCount(rootByte, automaton, span, 2048);
         var earliestHybrid512 = DiagnoseHybridChunkedLiteralSetCount(earliest, automaton, span, 512);
         var earliestHybrid2048 = DiagnoseHybridChunkedLiteralSetCount(earliest, automaton, span, 2048);
 
@@ -3933,25 +3871,18 @@ internal static partial class BenchmarkInspectReporter
         WriteHybridMetrics("Hybrid512", hybrid512);
         WriteHybridMetrics("Hybrid2048", hybrid2048);
         WriteHybridMetrics("Hybrid8192", hybrid8192);
-        WriteHybridMetrics("RootByteHybrid512", rootByteHybrid512);
-        WriteHybridMetrics("RootByteHybrid2048", rootByteHybrid2048);
         WriteHybridMetrics("EarliestHybrid512", earliestHybrid512);
         WriteHybridMetrics("EarliestHybrid2048", earliestHybrid2048);
 
         Measure("ExactDirect", iterations, () => ExecuteExactLiteralSetCount(direct, benchmarkCase.InputBytes));
-        Measure("RootByte", iterations, () => ExecuteCandidatePrefilterCount(rootByte, benchmarkCase.InputBytes));
         Measure("EarliestExact", iterations, () => ExecuteCandidatePrefilterCount(earliest, benchmarkCase.InputBytes));
         Measure("Automaton", iterations, () => ExecuteAutomatonLiteralSetCount(automaton, benchmarkCase.InputBytes));
         Measure("HybridProbe128", iterations, () => ExecuteHybridChunkedLiteralSetProbe(direct, automaton, benchmarkCase.InputBytes, 128));
         Measure("HybridProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(direct, automaton, benchmarkCase.InputBytes, 512));
         Measure("HybridProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(direct, automaton, benchmarkCase.InputBytes, 2048));
         Measure("HybridProbe8192", iterations, () => ExecuteHybridChunkedLiteralSetProbe(direct, automaton, benchmarkCase.InputBytes, 8192));
-        Measure("RootByteProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(rootByte, automaton, benchmarkCase.InputBytes, 512));
-        Measure("RootByteProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(rootByte, automaton, benchmarkCase.InputBytes, 2048));
         Measure("EarliestProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(earliest, automaton, benchmarkCase.InputBytes, 512));
         Measure("EarliestProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(earliest, automaton, benchmarkCase.InputBytes, 2048));
-        Measure("RootByteHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(rootByte, automaton, benchmarkCase.InputBytes, 512));
-        Measure("RootByteHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(rootByte, automaton, benchmarkCase.InputBytes, 2048));
         Measure("EarliestHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(earliest, automaton, benchmarkCase.InputBytes, 512));
         Measure("EarliestHybrid2048", iterations, () => ExecuteHybridChunkedLiteralSetCount(earliest, automaton, benchmarkCase.InputBytes, 2048));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
