@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
     <Compile Include="..\Common\AssemblyDependencyInventory.cs" Link="Common\AssemblyDependencyInventory.cs" />
     <Compile Include="..\Common\PublicApiSnapshot.cs" Link="Common\PublicApiSnapshot.cs" />
+    <Compile Include="..\Common\ProfileDifferential.cs" Link="Common\ProfileDifferential.cs" />
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex.Pcre2\Lokad.Utf8Regex.Pcre2.csproj" />
   </ItemGroup>
 
