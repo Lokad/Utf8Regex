@@ -188,9 +188,15 @@ One greedy single-scalar repeat after a fixed scalar prefix, followed only by
 capture operations, also has one longest parse. Its ordinary scalar interpreter
 keeps counters, decoding, predicates and checkpoints but omits impossible shorter
 exit frames. A failing optional atom selects that exit directly. Body captures,
-forks, preceding repeats and consuming or anchored tails retain their existing
-rules. This can lower pending-depth/working requirements without weakening work
+forks and preceding repeats retain their existing rules. This can lower
+pending-depth/working requirements without weakening work
 or interruption enforcement; scalar values and finite repeat bounds are unchanged.
+Fixed scalar suffixes and anchors around one such repeat still require ordinary
+endpoint rewind and its frames. First successful greedy acceptance nevertheless
+maximizes the total scalar count and determines every non-repeated capture edge.
+It can reuse the native trace without general capture-chart construction. These
+tails do not receive the terminal-exit annotation; pending depth stays bounded by
+the actual scalar alternatives, and numerical working/work requirements may change.
 For positive ASCII-origin literals/classes, invariant lowercase-fiber keys can
 also prove folded run boundaries. Intersecting scalar closures necessarily share
 an ASCII key. This proof changes selection eligibility only: Unicode partners

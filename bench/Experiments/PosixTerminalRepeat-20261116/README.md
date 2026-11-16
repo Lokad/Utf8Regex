@@ -50,6 +50,7 @@ All700 staged/published feed assets rehash unchanged, including dev.104. No pack
 Full/catalog/native qualification or confirmation. Raw verified offVM, actual VM
 worker/keeper and original collector terminal0. Owned VM scratch retired after
 accepted hash and zero process/cwd/FD/map references.
+Source7bc8333a CI43835598444 is GREEN Windows/Linux, saved/closed.
 
 Artifacts: artifacts/experiments/posix-terminal-repeat-20261116/.
 Raw SHA256 D0E9874B5F0F2D22362CD7B4731F33809CCFAA152FDA83CDBDE507BC862423AA.

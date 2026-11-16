@@ -636,6 +636,8 @@ public sealed class PosixPublicContractTests
     [InlineData("FixedFoldedCapture", true, PosixCompileOptions.IgnoreCase)]
     [InlineData("TerminalUnicodeCapture", false, PosixCompileOptions.None)]
     [InlineData("TerminalUnicodeCapture", true, PosixCompileOptions.None)]
+    [InlineData("RequiredUnicodeCapture", false, PosixCompileOptions.None)]
+    [InlineData("RequiredUnicodeCapture", true, PosixCompileOptions.None)]
     public void MatchingObservesOriginalInterruptionAndRefundsWorkingLoans(string operation, bool deadline, PosixCompileOptions options)
     {
         long now = 0;
@@ -647,9 +649,10 @@ public sealed class PosixPublicContractTests
         var flat = operation == "SingleFlatCapture";
         var fixedFolded = operation == "FixedFoldedCapture";
         var terminalUnicode = operation == "TerminalUnicodeCapture";
-        var regex = new Utf8PosixRegex(terminalUnicode ? "Z(é+)()" : flat ? "Z(a+)()" : fixedFolded ? "Z(k+)()" : foldedGreedy ? "(k+)([0-9]+)" : rewind ? "^([a-z]+)([[:space:]]+)$" : "a", options, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+        var requiredUnicode = operation == "RequiredUnicodeCapture";
+        var regex = new Utf8PosixRegex(requiredUnicode ? "Z(é+)é()" : terminalUnicode ? "Z(é+)()" : flat ? "Z(a+)()" : fixedFolded ? "Z(k+)()" : foldedGreedy ? "(k+)([0-9]+)" : rewind ? "^([a-z]+)([[:space:]]+)$" : "a", options, deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000 });
-        var input = terminalUnicode ? Encoding.UTF8.GetBytes("Z" + new string('é', 8192)) :
+        var input = terminalUnicode || requiredUnicode ? Encoding.UTF8.GetBytes("Z" + new string('é', 8192)) :
             flat ? Encoding.ASCII.GetBytes("Z" + new string('a', 8192)) :
             fixedFolded ? Encoding.UTF8.GetBytes("Z" + string.Concat(Enumerable.Repeat("K", 8192))) :
             sparseGreedy ? Encoding.UTF8.GetBytes(new string('!', 8192) + "K007") :
@@ -683,6 +686,7 @@ public sealed class PosixPublicContractTests
                 case "SingleFlatCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "FixedFoldedCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "TerminalUnicodeCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "RequiredUnicodeCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "SparseGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "NewlineRewindCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 default: using (var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) cursor.MoveNext(out _); break;

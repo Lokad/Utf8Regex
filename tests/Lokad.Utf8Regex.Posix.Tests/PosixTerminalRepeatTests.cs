@@ -21,6 +21,18 @@ public sealed class PosixTerminalRepeatTests
     [InlineData("Z(é+)$()", PosixCompileOptions.Newline)]
     [InlineData("Z((é)+)()", PosixCompileOptions.None)]
     [InlineData("Z(é|中)+()", PosixCompileOptions.None)]
+    [InlineData("Z(a+)a()", PosixCompileOptions.None)]
+    [InlineData("Z([é中😀]+)(.)()", PosixCompileOptions.None)]
+    [InlineData("((Z))((é+)é)()", PosixCompileOptions.None)]
+    [InlineData("Z(é*)é()", PosixCompileOptions.None)]
+    [InlineData("Z(é{0,3})éé()", PosixCompileOptions.None)]
+    [InlineData("Z(.{0,4})([é中😀])()", PosixCompileOptions.None)]
+    [InlineData("Z(.{0,4})([é中😀])()", PosixCompileOptions.Newline)]
+    [InlineData("^Z(é*)é$()", PosixCompileOptions.None)]
+    [InlineData("^Z(é*)é$()", PosixCompileOptions.Newline)]
+    [InlineData("Z([kK]+)k()", PosixCompileOptions.IgnoreCase)]
+    [InlineData("Z(😀+)😀()", PosixCompileOptions.None)]
+    [InlineData("Z([é中]*)中()", PosixCompileOptions.None)]
     public void ScalarTerminalSelectionAgreesWithGeneralExecutionAtEveryFloor(string pattern, PosixCompileOptions options)
     {
         var regex = new Utf8PosixRegex(pattern, options);
@@ -90,5 +102,27 @@ public sealed class PosixTerminalRepeatTests
             (groups[2].IndexInBytes, groups[2].LengthInBytes, groups[2].IndexInUtf16, groups[2].LengthInUtf16));
         var limited = new Utf8PosixRegex("Z(" + scalar + "+)()", resourcePolicy: new() { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    public void RequiredSuffixKeepsEndpointRewindDepthAndFiniteAdmission(string scalar)
+    {
+        var text = "Z" + string.Concat(Enumerable.Repeat(scalar, 128));
+        var input = Encoding.UTF8.GetBytes(text);
+        var pattern = "Z(" + scalar + "+)" + scalar + "()";
+        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
+            { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var groups = new Utf8ValueMatch[3];
+        var whole = regex.Match(input, groups);
+        Assert.Equal((0, input.Length), (whole.IndexInBytes, whole.LengthInBytes));
+        var width = Encoding.UTF8.GetByteCount(scalar);
+        Assert.Equal((1, input.Length - 1 - width, 1, text.Length - 1 - scalar.Length),
+            (groups[1].IndexInBytes, groups[1].LengthInBytes, groups[1].IndexInUtf16, groups[1].LengthInUtf16));
+        Assert.Equal((input.Length, 0), (groups[2].IndexInBytes, groups[2].LengthInBytes));
+        var shallow = new Utf8PosixRegex(pattern, resourcePolicy: new() { MaxDepth = 1 });
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => shallow.Match(input, groups));
     }
 }
