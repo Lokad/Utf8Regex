@@ -118,8 +118,9 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal((5, 4), (group.IndexInBytes, group.LengthInBytes));
         Assert.Equal("😀", group.GetValueString());
         Assert.Equal("aQb", regex.ReplaceToString(input, "Q"));
-        var fromOffset = regex.MatchDetailedFromUtf16Offset(input, 3);
-        Assert.Equal((5, 4), (fromOffset.IndexInBytes, fromOffset.LengthInBytes));
+        using var cursor = regex.CreateMatchCursor(input, 5);
+        Assert.True(cursor.MoveNext(out var fromOffset));
+        Assert.Equal((5, 9), (fromOffset.Value.StartOffsetInBytes, fromOffset.Value.EndOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(new Utf8Regex("^.$", options).IsMatch("😀"u8));
         Assert.False(new Utf8Regex("^..$", options).IsMatch("😀"u8));

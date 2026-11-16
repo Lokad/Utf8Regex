@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreWorkingPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
-        "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
+        "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
 
     private static Utf8Regex Create(string pattern, ulong bytes, RegexOptions options)

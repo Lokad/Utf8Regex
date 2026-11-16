@@ -419,14 +419,9 @@ public sealed class Utf8SliceConditionalOperationTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var expected = oracle.Match(inputText, startAt);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, startAt);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt))));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected.Success, actual.Success);
-        if (expected.Success)
-        {
-            Assert.Equal(expected.Groups[0].Index, actual.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expected.Groups[0].Length, actual.GetGroup(0).LengthInUtf16);
-        }
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, inputText);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

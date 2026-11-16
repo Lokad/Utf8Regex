@@ -32,13 +32,8 @@ public sealed class Utf8AnchoredLinePairTests
             foreach (var floor in new[] { 0, prefixLength + 1, prefixLength + 2, text.Length })
             {
                 var expected = oracle.Match(text, floor);
-                var actual = regex.MatchDetailedFromUtf16Offset(input, floor, live.Token);
-                Assert.Equal(expected.Success, actual.Success);
-                if (!expected.Success) continue;
-                Assert.Equal(expected.Index, actual.IndexInUtf16);
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
-                Assert.Equal(expected.Length, actual.LengthInBytes);
-                Assert.Equal(expected.Groups["x"].Value, actual.GetGroup("x").GetValueString());
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), live.Token));
+                Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
             }
         }
     }

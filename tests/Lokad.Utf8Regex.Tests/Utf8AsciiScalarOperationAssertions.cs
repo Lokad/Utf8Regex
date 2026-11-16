@@ -167,16 +167,12 @@ internal static class Utf8AsciiScalarOperationAssertions
             var regex = new Utf8Regex(pattern, options);
             if (floor < 0)
             {
-                Action[] operations =
-                [
-                    () => { _ = regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token); },
-                ];
-                foreach (var operation in operations)
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(operation).ParamName);
                 var byteOffset = offset < 0 ? -1 : offset > text.Length ? subject.Input.Length + 1 :
                     subject.ByteBoundaries[~floor - 1] + 1;
                 Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
                     regex.EnumerateMatches(subject.Input, byteOffset, token)).ParamName);
+                Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
+                { using var cursor = regex.CreateMatchCursor(subject.Input, byteOffset, token); }).ParamName);
                 Owned(regex);
                 continue;
             }
@@ -191,7 +187,9 @@ internal static class Utf8AsciiScalarOperationAssertions
             Value(subject, oracle.Match(subject.Projected, floor), regex.Match(subject.Input, subject.ByteBoundaries[floor], [], token));
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
-            Detailed(subject, oracle.Match(subject.Projected, floor), regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token));
+            Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected, floor),
+                Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input, subject.ByteBoundaries[floor], token)),
+                subject.Input, index => subject.ByteBoundaries[index]);
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
             Sequence(subject, expected, regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token));

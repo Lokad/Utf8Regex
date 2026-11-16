@@ -31,8 +31,8 @@ internal static class Utf8ScalarNullableOperationAssertions
             var offsetValue = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, row.Origin)), [], source.Token);
             Assert.True(offsetValue.Success);
             Assert.Equal((row.Byte, row.Byte + row.Length), (offsetValue.StartOffsetInBytes, offsetValue.EndOffsetInBytes));
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected,
-                regex.MatchDetailedFromUtf16Offset(input, row.Origin, source.Token));
+            Utf8MatchSequence.AssertCaptures(expected,
+                Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, row.Origin)), source.Token)), input, text);
             Assert.Equal(rows.Length - index, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, row.Origin)), source.Token)));
             var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, row.Origin)), source.Token);
             for (var next = index; next < rows.Length; next++)

@@ -145,16 +145,14 @@ public sealed class Utf8DetailedPrefixProjectionTests
     }
 
     [Fact]
-    public void ExplicitUtf16OffsetsRetainTheirAdmittedMapAndWholeContext()
+    public void ByteCaptureCursorRetainsWholeContext()
     {
         var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)");
         var text = "é aaab 😀 aac";
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Regex(regex.Pattern).Match(text, 6);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, 6);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        Assert.Equal(expected.Groups["run"].Value, actual.GetGroup("run").GetValueString());
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, 6))));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     [Theory]

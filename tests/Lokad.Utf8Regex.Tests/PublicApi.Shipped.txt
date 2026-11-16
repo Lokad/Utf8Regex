@@ -115,8 +115,6 @@ sealed class Utf8Regex
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
   method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input)
   method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
-  method Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
-  method Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)

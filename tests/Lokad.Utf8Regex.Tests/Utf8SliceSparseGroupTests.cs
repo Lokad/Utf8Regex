@@ -112,14 +112,16 @@ public sealed class Utf8SliceSparseGroupTests
                 if (scalarOffset < 0)
                 {
                     Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, subject.Bytes[~scalarOffset - 1] + 1, [], source.Token).Success).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset, source.Token)).ParamName);
+                    Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input, subject.Bytes[~scalarOffset - 1] + 1, source.Token))).ParamName);
                     Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, subject.Bytes[~scalarOffset - 1] + 1)).ParamName);
                     continue;
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.Match(input, subject.Bytes[scalarOffset], [], source.Token).Success);
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), Utf8MatchSequence.Count(regex.EnumerateMatches(input, subject.Bytes[scalarOffset], source.Token)));
                 AssertValue(oracle.Match(subject.Projected, scalarOffset), regex.Match(input, subject.Bytes[scalarOffset], [], source.Token), subject);
-                AssertDetailed(oracle, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token), subject);
+                Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected, scalarOffset),
+                    Utf8MatchSequence.First(regex.CreateMatchCursor(input, subject.Bytes[scalarOffset], source.Token)),
+                    input, index => subject.Bytes[index]);
                 var expected = oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset);
                 var actual = regex.EnumerateMatches(input, subject.Bytes[scalarOffset]);
                 while (expected.MoveNext())

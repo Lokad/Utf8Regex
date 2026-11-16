@@ -119,18 +119,19 @@ public sealed class Utf8ScalarDiscoveryTests
         var regex = new Utf8Regex("(?<=x)(.)", RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "x😀y"u8.ToArray();
-        var start = reverse ? 3 : 1;
+        var start = reverse ? 5 : 1;
         using var source = new CancellationTokenSource();
         foreach (var live in new[] { false, true })
         {
             var token = live ? source.Token : default;
-            Assert.True(regex.Match(input, reverse ? 5 : 1, [], token).Success);
-            var value = regex.Match(input, reverse ? 5 : 1, [], token);
+            var value = regex.Match(input, start, [], token);
+            Assert.True(value.Success);
             Assert.Equal((1, 4), (value.StartOffsetInBytes, value.EndOffsetInBytes - value.StartOffsetInBytes));
-            var detail = regex.MatchDetailedFromUtf16Offset(input, start, token);
-            Assert.Equal((1, 4), (detail.IndexInBytes, detail.LengthInBytes));
-            Assert.Equal("😀", detail.GetGroup(1).GetValueString());
-            var cursor = regex.EnumerateMatches(input, reverse ? 5 : 1, token);
+            using var captureCursor = regex.CreateMatchCursor(input, start, token);
+            Assert.True(captureCursor.MoveNext(out var detail));
+            Assert.Equal((1, 5), (detail.Value.StartOffsetInBytes, detail.Value.EndOffsetInBytes));
+            Assert.Equal("😀"u8.ToArray(), detail.GetGroupMemory(1).ToArray());
+            var cursor = regex.EnumerateMatches(input, start, token);
             Assert.True(cursor.MoveNext());
             Assert.Equal((1, 4), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
             Assert.False(cursor.MoveNext());

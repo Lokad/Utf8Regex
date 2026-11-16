@@ -79,9 +79,10 @@ public sealed class Utf8BeginningSearchTests
         var scalarMatch = scalar.MatchDetailed("xx\n😀x"u8);
         Assert.Equal(2, scalar.Count("xx\n😀x"u8));
         Assert.Equal(1, scalarMatch.LengthInBytes);
-        var afterFirst = scalar.MatchDetailedFromUtf16Offset("xx\n😀x"u8, 2);
-        Assert.Equal(4, afterFirst.LengthInBytes);
-        Assert.Equal("😀", afterFirst.GetGroup(1).GetValueString());
+        using var cursor = scalar.CreateMatchCursor("xx\n😀x"u8.ToArray(), 2);
+        Assert.True(cursor.MoveNext(out var afterFirst));
+        Assert.Equal((3, 7), (afterFirst.Value.StartOffsetInBytes, afterFirst.Value.EndOffsetInBytes));
+        Assert.Equal("😀"u8.ToArray(), afterFirst.GetGroupMemory(1).ToArray());
     }
 
     [Theory]

@@ -8,20 +8,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Retains one invocation through owned offset entry and enumeration.</summary>
 public sealed partial class Utf8Regex
 {
-    private static Utf8BoundaryMap PrepareOffsetInput(ReadOnlySpan<byte> input, int utf16Offset,
-        ref Utf8SliceInvocation invocation, out Utf8ValidationResult validation, out int startByte, out ulong reservation)
-    {
-        validation = Utf8Validation.Subject(input, ref invocation);
-        var start = Utf16Position.CreateChecked(validation, utf16Offset, nameof(utf16Offset));
-        var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
-        var boundary = map.Resolve(start.Value);
-        if (!boundary.IsScalarBoundary)
-            throw new ArgumentOutOfRangeException(nameof(utf16Offset), utf16Offset,
-                "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
-        startByte = boundary.ByteOffset;
-        return map;
-    }
-
     private Utf8ValueMatchEnumerator CreateOwnedByteOffsetEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken token)
     {
         var program = _ownedSliceProgram;
@@ -82,22 +68,6 @@ public sealed partial class Utf8Regex
         var native = eligible && !program.IgnoreCase &&
             Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
         return anchored || native;
-    }
-
-    // One-shot compatibility entries borrow the same controlled anchored cursor
-    // as enumeration. Raw shortcuts below remain for genuinely unmetered calls.
-    private bool TryMatchControlledAnchoredOffset(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
-        int startByte, int utf16Offset, scoped ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
-    {
-        match = Utf8ValueMatch.NoMatch;
-        if (HasFiniteExecutionLimits || !CanUseNativeOffsetCursor(validation, ref invocation, out var anchored) || !anchored)
-            return false;
-        var literal = _fallbackDirectFamily.LiteralUtf8
-            ?? throw new InvalidOperationException("An anchored plan needs its literal.");
-        var cursor = new Utf8OperationMatchCursor(input, literal, _fallbackDirectFamily.Kind, validation, invocation)
-            .WithStartFloor(startByte, utf16Offset);
-        if (cursor.MoveNext()) match = cursor.CurrentValueMatch;
-        return true;
     }
 
     // Python bulk collection borrows this invocation through validation, byte-floor

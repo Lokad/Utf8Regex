@@ -36,24 +36,31 @@ public sealed class Utf8NonBacktrackingBatchTests
             Assert.Equal(matches.Count, regex.Count(input));
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
             Assert.Equal(oracle.Replace(text, "<$0:$1>"), regex.ReplaceToString(input, "<$0:$1>"));
-            var cursor = regex.EnumerateMatches(input).GetEnumerator();
+            using var cursor = regex.CreateMatchCursor(input);
             foreach (Match expected in matches)
             {
-                Assert.True(cursor.MoveNext());
-                Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
-                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
-                    (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
-                var found = regex.MatchDetailedFromUtf16Offset(input, expected.Index);
+                Assert.True(cursor.MoveNext(out var found));
+                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)),
+                    Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length))),
+                    (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
                 foreach (var number in oracle.GetGroupNumbers())
                 {
                     var wanted = expected.Groups[number];
-                    var actual = found.GetGroup(number);
+                    Assert.True(found.TryGetGroup(number, out var actual));
                     Assert.Equal(wanted.Success, actual.Success);
-                    Assert.Equal(wanted.Captures.Count, actual.CaptureCount);
-                    if (wanted.Success) Assert.Equal(wanted.Value, actual.GetValueString());
+                    var captures = found.GetCaptures(number);
+                    Assert.Equal(wanted.Captures.Count, captures.Length);
+                    Assert.Equal(Encoding.UTF8.GetBytes(wanted.Value), found.GetGroupMemory(number).ToArray());
+                    for (var index = 0; index < captures.Length; index++)
+                    {
+                        var capture = wanted.Captures[index];
+                        Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)),
+                            Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length))),
+                            (captures[index].StartOffsetInBytes, captures[index].EndOffsetInBytes));
+                    }
                 }
             }
-            Assert.False(cursor.MoveNext());
+            Assert.False(cursor.MoveNext(out _));
         }
     }
 
@@ -78,28 +85,21 @@ public sealed class Utf8NonBacktrackingBatchTests
             Assert.Equal(ordinary.Count(input), regex.Count(input));
             Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
             Assert.Equal(ordinary.ReplaceToString(input, "<$0>"), regex.ReplaceToString(input, "<$0>"));
-            var expected = ordinary.EnumerateMatches(input).GetEnumerator();
-            var actual = regex.EnumerateMatches(input).GetEnumerator();
-            while (expected.MoveNext())
+            using var expected = ordinary.CreateMatchCursor(input);
+            using var actual = regex.CreateMatchCursor(input);
+            while (expected.MoveNext(out var wanted))
             {
-                Assert.True(actual.MoveNext());
-                var wanted = expected.Current;
-                var found = actual.Current;
-                Assert.Equal((wanted.IndexInBytes, wanted.LengthInBytes, wanted.IndexInUtf16, wanted.LengthInUtf16),
-                    (found.IndexInBytes, found.LengthInBytes, found.IndexInUtf16, found.LengthInUtf16));
-                var detailedExpected = ordinary.MatchDetailedFromUtf16Offset(input, wanted.IndexInUtf16);
-                var detailedActual = regex.MatchDetailedFromUtf16Offset(input, wanted.IndexInUtf16);
+                Assert.True(actual.MoveNext(out var found));
+                Assert.Equal(wanted.Value, found.Value);
                 foreach (var group in ordinary.GetGroupNumbers())
                 {
-                    var left = detailedExpected.GetGroup(group);
-                    var right = detailedActual.GetGroup(group);
-                    Assert.Equal(left.Success, right.Success);
-                    if (left.Success)
-                        Assert.Equal((left.IndexInBytes, left.LengthInBytes, left.GetValueString()),
-                            (right.IndexInBytes, right.LengthInBytes, right.GetValueString()));
+                    Assert.True(wanted.TryGetGroup(group, out var left));
+                    Assert.True(found.TryGetGroup(group, out var right));
+                    Assert.Equal(left, right);
+                    Assert.Equal(wanted.GetGroupMemory(group).ToArray(), found.GetGroupMemory(group).ToArray());
                 }
             }
-            Assert.False(actual.MoveNext());
+            Assert.False(actual.MoveNext(out _));
         }
     }
 

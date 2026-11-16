@@ -70,14 +70,14 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), [], source.Token).Success);
         Assert.Equal(expected ? 1 : 0, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), source.Token)));
         var value = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), [], source.Token);
-        var detailed = regex.MatchDetailedFromUtf16Offset(input, floor, source.Token);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), source.Token));
         Assert.Equal(expected, value.Success);
         Assert.Equal(expected, detailed.Success);
         if (expected)
         {
             Assert.Equal((start, length), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
-            Assert.Equal((start, length), (detailed.IndexInBytes, detailed.LengthInBytes));
-            if (pattern == "^(abc)") Assert.Equal("abc", detailed.GetGroup(1).GetValueString());
+            Assert.Equal((start, start + length), (detailed.Value.StartOffsetInBytes, detailed.Value.EndOffsetInBytes));
+            if (pattern == "^(abc)") Assert.Equal("abc"u8.ToArray(), detailed.GetGroupMemory(1).ToArray());
         }
     }
 
@@ -143,7 +143,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         {
             0 => regex.Match(input, 0, [], token).Success,
             1 => regex.Match(input, 0, [], token).Success,
-            2 => regex.MatchDetailedFromUtf16Offset(input, 0, token).Success,
+            2 => Utf8MatchSequence.First(regex.CreateMatchCursor(input, 0, token)).Success,
             _ => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0, token)) == 1,
         };
 }

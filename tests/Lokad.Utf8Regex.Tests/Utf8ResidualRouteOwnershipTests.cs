@@ -18,20 +18,18 @@ public sealed class Utf8ResidualRouteOwnershipTests
     public void CommentPatternsKeepOwnedOffsetDiscovery(string pattern, bool compiled)
     {
         var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(1));
-        var bytes = "😀xab 😀ab"u8;
+        var bytes = "😀xab 😀ab"u8.ToArray();
         var subject = Utf8ValidatedInput.Create(bytes);
         var start = subject.GetBytePosition(7, "startOffsetInBytes");
-        var startUtf16 = subject.Project(start).Value;
         var match = regex.Match(bytes, start.Value, []);
         Assert.True(match.Success);
         // The fourth comment terminates at the first closing parenthesis,
         // leaving "a" as its literal; the other three leave "ab".
         var length = pattern == "(?#(?<100>a)a" ? 1 : 2;
         Assert.Equal((12, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        Assert.True(regex.Match(bytes, start.Value, []).Success);
-        var detailed = regex.MatchDetailedFromUtf16Offset(bytes, startUtf16);
-        Assert.True(detailed.Success);
-        Assert.Equal((12, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+        using var captureCursor = regex.CreateMatchCursor(bytes, start.Value);
+        Assert.True(captureCursor.MoveNext(out var detailed));
+        Assert.Equal((12, 12 + length), (detailed.Value.StartOffsetInBytes, detailed.Value.EndOffsetInBytes));
         Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches(bytes, start.Value)));
         var enumerated = new List<(int, int)>();
         foreach (var value in regex.ByteOffsetExecution.EnumerateMatches(subject, start))

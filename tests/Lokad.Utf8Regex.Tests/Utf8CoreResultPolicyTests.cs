@@ -168,7 +168,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀😀 aaabb 😀");
-        foreach (var operation in new[] { "detail", "detail-offset", "matches", "split", "replace", "replace-text", "callback-bytes", "callback-text" })
+        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace", "replace-text", "callback-bytes", "callback-text" })
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);

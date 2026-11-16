@@ -224,7 +224,7 @@ public sealed class Utf8InputValidationTests
         var strict = new Utf8Regex(pattern);
         var assumed = new Utf8Regex(pattern, inputValidation: Utf8InputValidation.AssumeValid);
         Assert.Equal(Observe(strict, () => strict.Match(bytes, 6, []).Success), Observe(assumed, () => assumed.Match(bytes, 6, []).Success));
-        Assert.Equal(Observe(strict, () => strict.MatchDetailedFromUtf16Offset(bytes, 3).Success), Observe(assumed, () => assumed.MatchDetailedFromUtf16Offset(bytes, 3).Success));
+        Assert.Equal(Observe(strict, () => Utf8MatchSequence.First(strict.CreateMatchCursor(bytes, 6)).Success), Observe(assumed, () => Utf8MatchSequence.First(assumed.CreateMatchCursor(bytes, 6)).Success));
     }
 
     private static T Observe<T>(Utf8Regex regex, Func<T> operation)

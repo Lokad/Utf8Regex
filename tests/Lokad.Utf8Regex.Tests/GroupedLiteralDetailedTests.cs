@@ -114,24 +114,9 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Match(text, offset);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
 
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (!expected.Success)
-        {
-            return;
-        }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        for (var i = 0; i < expected.Groups.Count; i++)
-        {
-            Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
-            Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
-            Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
-            Assert.Equal(expected.Groups[i].Value, actual.GetGroup(i).GetValueString());
-        }
     }
     public static IEnumerable<object?[]> OptionalGroupedLiteralHitCases()
     {
@@ -1162,20 +1147,8 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Match(text, offset);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
-
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (expected.Success)
-        {
-            for (var i = 0; i < expected.Groups.Count; i++)
-            {
-                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
-                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
-                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
-            }
-        }
-
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
@@ -1375,20 +1348,8 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Match(text, offset);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
-
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (expected.Success)
-        {
-            for (var i = 0; i < expected.Groups.Count; i++)
-            {
-                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
-                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
-                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
-            }
-        }
-
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }

@@ -80,7 +80,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         var regex = CreateRegex(compiled);
 
         Assert.Throws<ArgumentException>(() => regex.Match(s_invalidUtf8, 0, []).Success);
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailedFromUtf16Offset(s_invalidUtf8, 0));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(s_invalidUtf8, 0)));
         Assert.Throws<ArgumentException>(() =>
         {
             var enumerator = regex.EnumerateMatches(s_invalidUtf8, 0);
@@ -144,7 +144,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         byte[] input = [0xFF, .. "abc"u8];
 
         Assert.Throws<ArgumentException>(() => regex.Match(input, 1, []).Success);
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailedFromUtf16Offset(input, 1));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input, 1)));
         Assert.Throws<ArgumentException>(() =>
         {
             var enumerator = regex.EnumerateMatches(input, 1);

@@ -103,13 +103,15 @@ public sealed class Utf8SliceUnicodeAtomTests
                 var scalarOffset = Array.BinarySearch(subject.Utf16Boundaries, offset);
                 if (scalarOffset < 0)
                 {
-                    AssertInteriorStartRejected(regex, input, offset, subject.ByteBoundaries[~scalarOffset - 1] + 1, source.Token);
+                    AssertInteriorStartRejected(regex, input, subject.ByteBoundaries[~scalarOffset - 1] + 1, source.Token);
                     continue;
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.Match(input, subject.ByteBoundaries[scalarOffset], [], source.Token).Success);
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), Utf8MatchSequence.Count(regex.EnumerateMatches(input, subject.ByteBoundaries[scalarOffset], source.Token)));
                 AssertMatch(subject, oracle.Match(subject.Projected, scalarOffset), regex.Match(input, subject.ByteBoundaries[scalarOffset], [], source.Token));
-                AssertDetailed(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
+                Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected, scalarOffset),
+                    Utf8MatchSequence.First(regex.CreateMatchCursor(input, subject.ByteBoundaries[scalarOffset], source.Token)),
+                    input, index => subject.ByteBoundaries[index]);
                 AssertSequence(subject, oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset), regex.EnumerateMatches(input, subject.ByteBoundaries[scalarOffset]));
             }
             foreach (var template in new[] { "Q", "$&", "<${x}>|${x}${x}", "<$1>|$2|${\u00e9}", "\ud83d$&\ude00", "$`|$'|$_|$+" })
@@ -525,14 +527,10 @@ public sealed class Utf8SliceUnicodeAtomTests
             .Replace("\u0391", "\U00010400", StringComparison.Ordinal);
     }
 
-    private static void AssertInteriorStartRejected(Utf8Regex regex, byte[] input, int offset, int byteOffset, CancellationToken token)
+    private static void AssertInteriorStartRejected(Utf8Regex regex, byte[] input, int byteOffset, CancellationToken token)
     {
-        Action[] operations =
-        [
-            () => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, token); },
-        ];
-        foreach (var operation in operations)
-            Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(operation).ParamName);
+        Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
+        { using var cursor = regex.CreateMatchCursor(input, byteOffset, token); }).ParamName);
         Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
             regex.EnumerateMatches(input, byteOffset, token)).ParamName);
     }

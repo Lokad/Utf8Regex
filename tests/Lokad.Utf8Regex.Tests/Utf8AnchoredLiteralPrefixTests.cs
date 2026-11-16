@@ -204,7 +204,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
                 Assert.Equal(oracle.IsMatch(inputText, offset), regex2.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
                 Assert.True(regex2.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex3 = new Utf8Regex(pattern, options);
-                Assert.Equal(expectedMatch.Success, regex3.MatchDetailedFromUtf16Offset(input, offset).Success);
+                Assert.Equal(expectedMatch.Success, Utf8MatchSequence.First(regex3.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))).Success);
                 Assert.True(regex3.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex4 = new Utf8Regex(pattern, options);
                 var actualEnum = 0;

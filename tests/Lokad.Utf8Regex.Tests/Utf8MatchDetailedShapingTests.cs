@@ -57,15 +57,9 @@ public sealed class Utf8MatchDetailedShapingTests
         var input = Encoding.UTF8.GetBytes(text);
         var utf8 = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text, offset);
-        var actual = utf8.MatchDetailedFromUtf16Offset(input, offset);
+        var actual = Utf8MatchSequence.First(utf8.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
 
-        Assert.Equal(expected.Success, actual.Success);
-        if (expected.Success)
-        {
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Value, actual.GetValueString());
-            Assert.Equal(1, actual.GroupCount);
-        }
     }
 
     [Fact]

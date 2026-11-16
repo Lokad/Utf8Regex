@@ -77,7 +77,7 @@ Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
 as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
 resource limits throughout enumeration. This change does not yet remove the
-remaining UTF-16 result properties or detailed offset APIs.
+remaining UTF-16 result properties on legacy whole-subject results.
 
 Core also removes `CountFromUtf16Offset`. Keep using `Count` for the whole subject;
 for a partial count, aggregate one byte-start enumeration:
@@ -113,7 +113,21 @@ to actual group numbers, including sparse numbers. Short spans do not change the
 selected match. The optional end is a scalar boundary and the matching end, with
 byte offsets relative to the original subject. Pass the token and working-memory
 allowance to this one signature; funded program owners expose it too.
-Use `CreateMatchCursor` for capture history.
+`MatchDetailedFromUtf16Offset` is also removed. Use the memory cursor for capture
+history, with a scalar-aligned byte start:
+
+```csharp
+var subject = "é😀x"u8.ToArray();
+Utf8RangeMatch retained;
+using (var cursor = regex.CreateMatchCursor(subject, startOffsetInBytes: 2))
+    cursor.MoveNext(out retained);
+// retained.Value and retained.GetCaptures(1) remain valid after disposal.
+```
+
+Keep the borrowed subject valid and unchanged while using retained results.
+The cursor shares the original token, deadline and cumulative limits through
+its lifetime. Its scratch and capture snapshots remain subject to working and
+result admission; numeric needs can differ from the removed detailed API.
 
 The operation creates no UTF16 map, captured strings or result-storage snapshot.
 Existing output storage belongs to the caller and is not charged as engine-owned
@@ -134,7 +148,7 @@ Matching, classes, quantifiers, captures/references, lookarounds, RTL and empty
 progress use complete Unicode scalars. Combining marks remain separate; text is
 not normalized. Replace old surrogate-half expectations with scalar outcomes.
 In `é😀x`, x starts at byte 6 and UTF-16 index 3. Do not pass UTF-16 positions to
-byte APIs; explicit FromUtf16Offset APIs reject a split scalar.
+byte APIs. The former FromUtf16Offset APIs are removed in 0.5 development.
 
 Version 0.4 required strict whole-subject UTF-8 in all three published packages.
 Version 0.5 uses the profile contracts above. Denial/interruption can precede a

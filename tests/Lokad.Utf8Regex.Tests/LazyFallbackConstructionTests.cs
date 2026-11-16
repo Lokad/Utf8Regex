@@ -119,7 +119,7 @@ public sealed class LazyFallbackConstructionTests
         foreach (var item in regex.EnumerateMatches(input)) { _ = item; }
         foreach (var item in regex.EnumerateSplits(input)) { _ = item; }
         Touch(regex.MatchDetailed(input));
-        Touch(regex.MatchDetailedFromUtf16Offset(input, 0));
+        _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 0))));
 
         _ = regex.Replace(input, "X");
         _ = regex.Replace(input, Encoding.UTF8.GetBytes("X"));
@@ -157,7 +157,7 @@ public sealed class LazyFallbackConstructionTests
     {
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Touch(regex.MatchDetailedFromUtf16Offset(input, offset));
+        _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))));
         foreach (var item in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))) { _ = item; }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern + " offset=" + offset.ToString());
     }
@@ -169,7 +169,7 @@ public sealed class LazyFallbackConstructionTests
         // Boundaries resume on the original owned unit subject.
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Touch(regex.MatchDetailedFromUtf16Offset(input, 1));
+        _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 1))));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -186,23 +186,11 @@ public sealed class LazyFallbackConstructionTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match(inputText, offset);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
-        Assert.Equal(oracle.Success, actual.Success);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(oracle, actual, input, inputText);
         Assert.Equal(expectedSuccess, actual.Success);
-        if (expectedSuccess)
-        {
-            Assert.Equal(expectedIndex, actual.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expectedEnd, actual.GetGroup(0).IndexInUtf16 + actual.GetGroup(0).LengthInUtf16);
-            for (var group = 1; group <= 2; group++)
-            {
-                Assert.Equal(oracle.Groups[group].Success, actual.GetGroup(group).Success);
-                if (oracle.Groups[group].Success)
-                {
-                    Assert.Equal(oracle.Groups[group].Value, actual.GetGroup(group).GetValueString());
-                }
-            }
-        }
-
+        if (expectedSuccess) Assert.Equal((expectedIndex, expectedEnd),
+            (actual.Value.StartOffsetInBytes, actual.Value.EndOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -594,15 +582,8 @@ public sealed class LazyFallbackConstructionTests
             Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
         }
 
-        var detailed = regex.MatchDetailedFromUtf16Offset(input, offset);
-        Assert.Equal(expected.Success, detailed.Success);
-        if (expected.Success)
-        {
-            Assert.Equal(expected.Index, detailed.IndexInUtf16);
-            Assert.Equal(expected.Length, detailed.LengthInUtf16);
-        }
-
-        Touch(detailed);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))));
+        Utf8MatchSequence.AssertCaptures(expected, detailed, input, inputText);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern + " options=" + options.ToString() + " offset=" + offset.ToString());
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog), "pattern=" + pattern + " options=" + options.ToString() + " offset=" + offset.ToString());
     }

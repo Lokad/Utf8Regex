@@ -11,6 +11,8 @@
   `GroupNumberFromCaptureSlot`; funded program owners expose both operations.
   Replace `IsMatchFromUtf16Offset` and `MatchFromUtf16Offset` with byte-start
   `Match`. Eligible literal families retain bounded search through eight alternatives.
+- Replace `MatchDetailedFromUtf16Offset` with the byte-start memory capture cursor.
+  Its byte ranges and capture histories survive disposal, without a coordinate map.
 - Replace Core `EnumerateMatchesFromUtf16Offset` with byte-start
   `EnumerateMatches(input, startOffsetInBytes, cancellationToken)`. Starts must
   be scalar boundaries; anchors/lookbehind retain original-subject context,

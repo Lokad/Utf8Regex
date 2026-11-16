@@ -155,7 +155,7 @@ public sealed class Utf8RegexTimeoutTests
     {
         var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         var input = CreateCatastrophicInput();
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailedFromUtf16Offset(input, 0));
+        Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input, 0)));
     }
     [Fact]
     public void FiniteTimeoutPreservesFastPathResultsWithinBudget()

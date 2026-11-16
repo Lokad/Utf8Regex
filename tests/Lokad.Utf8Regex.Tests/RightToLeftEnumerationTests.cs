@@ -65,7 +65,7 @@ public sealed class RightToLeftEnumerationTests
     [InlineData(4)]
     [InlineData(10)]
     [InlineData(21)]
-    public void EnumerationFromUtf16OffsetMatchesDotNet(int utf16Offset)
+    public void ByteStartEnumerationMatchesRuntime(int utf16Offset)
     {
         const string pattern = @"(?:café|niño|résumé)";
         const string input = "café niño résumé café";

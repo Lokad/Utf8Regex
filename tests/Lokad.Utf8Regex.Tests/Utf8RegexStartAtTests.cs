@@ -33,16 +33,15 @@ public sealed class Utf8RegexStartAtTests
     }
 
     [Fact]
-    public void MatchDetailedStartAtExposesDetailedContextFromRequestedUtf16Position()
+    public void CaptureCursorStartsAtTheRequestedBytePosition()
     {
         var regex = new Utf8Regex("(abc)", RegexOptions.CultureInvariant);
 
-        var match = regex.MatchDetailedFromUtf16Offset("xxabcxxabc"u8, 5);
-
-        Assert.True(match.Success);
-        Assert.Equal("abc", match.GetValueString());
-        Assert.Equal("abc", match.GetGroup(1).GetValueString());
-        Assert.Equal(7, match.IndexInUtf16);
+        using var cursor = regex.CreateMatchCursor("xxabcxxabc"u8.ToArray(), 5);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal("abc"u8.ToArray(), match.GetValueMemory().ToArray());
+        Assert.Equal("abc"u8.ToArray(), match.GetGroupMemory(1).ToArray());
+        Assert.Equal((7, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
     }
 
     [Theory]
@@ -113,7 +112,7 @@ public sealed class Utf8RegexStartAtTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 4, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches("abc"u8, 4)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset("abc"u8, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray(), 4)));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches("abc"u8, 4));
     }
 }

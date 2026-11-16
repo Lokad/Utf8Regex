@@ -281,7 +281,7 @@ public sealed class Utf8ScalarSubjectTests
         var input = Encoding.UTF8.GetBytes("\U0001f600a");
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 1)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input, 1)));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, 1));
         var selected = regex.Match(input, 4, []);
         Assert.True(selected.Success);
@@ -307,7 +307,7 @@ public sealed class Utf8ScalarSubjectTests
     [InlineData("enumerate")]
     [InlineData("split")]
     [InlineData("offset-bool")]
-    [InlineData("offset-detailed")]
+    [InlineData("offset-captures")]
     [InlineData("offset-enumerate")]
     [InlineData("split-count")]
     public void CancellationDuringScalarVmReachesEveryOwnedOperation(string operation)
@@ -350,7 +350,7 @@ public sealed class Utf8ScalarSubjectTests
             case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
             case "split": _ = regex.EnumerateSplits(input, token).MoveNext(); break;
             case "offset-bool": _ = regex.Match(input, 4, [], token).Success; break;
-            case "offset-detailed": _ = regex.MatchDetailedFromUtf16Offset(input, 2, token); break;
+            case "offset-captures": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, 4, token)); break;
             case "offset-enumerate": _ = regex.EnumerateMatches(input, 4, token).MoveNext(); break;
             case "split-count": _ = regex.EnumerateSplits(input, 4, token).MoveNext(); break;
             default: throw new InvalidOperationException(operation);
