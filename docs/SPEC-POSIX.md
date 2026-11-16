@@ -196,9 +196,13 @@ candidate order and the original work/interruption authority remain; numeric
 work requirements can decrease without introducing another executor or replay.
 Flat positive ASCII class or unfolded ASCII literal runs also allow direct run
 consumption in the scalar executor when greedy boundaries prove the selected
-parse. A required run must be disjoint from all preceding runs; an overlapping
-successor must have minimum zero. Finite maxima remain effective. Any anchor in
-a nullable sequence declines this proof, because an interior anchor can require
+parse. A required piece must be disjoint from all preceding variable runs; an
+overlapping repeated successor must have minimum zero. Finite maxima remain effective.
+The same proof covers a single run and mandatory fixed ASCII-origin literals or
+classes between runs. Each required piece is disjoint from earlier variable
+runs; fixed pieces do not create rewind choices. This can omit frames, undo and
+counter capacity for patterns such as `Z(a+)()`, without a second executor.
+Any anchor in a nullable sequence declines this proof, because an interior anchor can require
 rewinding an earlier run. A multiline end anchor with an LF-consuming run
 declines only direct byte consumption. Positive disjoint runs retain semantic
 first acceptance through ordinary scalar execution and trace projection: their

@@ -123,7 +123,7 @@ internal sealed partial class PosixProgram
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
         var asciiOnly = true;
         var firstRunAtom = -1;
-        var greedyRuns = scalar.RepeatCount >= 2 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly, out firstRunAtom);
+        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly, out firstRunAtom);
         var greedyAsciiRuns = greedyRuns && asciiOnly;
         var firstRequiredRunAtom = greedyRuns && !greedyAsciiRuns ? firstRunAtom : -1;
         if (!firstAcceptanceIsLongest)
@@ -265,14 +265,16 @@ internal sealed partial class PosixProgram
     {
         // Greedy runs maximize each earlier concatenation part. An overlapping
         // successor must be nullable: it can still consume the suffix of any
-        // shorter earlier choice. Required overlapping runs may need rewind.
+        // shorter earlier choice. Required overlapping pieces may need rewind.
+        // Fixed scalar pieces introduce no choice; compare them with earlier
+        // variable runs, but do not make them sources of possible rewind.
         // Public tags outside bodies occur once; no history can change the split.
         asciiOnly = true;
         firstRequiredRunAtom = -1;
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
         Span<byte> literalMask = stackalloc byte[16];
-        var runs = 0;
+        var pieces = 0;
         var hasAnchor = false;
         var hasLineEndAnchor = false;
         var hasNullableRun = false;
@@ -297,29 +299,35 @@ internal sealed partial class PosixProgram
                 // first, including an earlier LF before a line-end anchor. The
                 // direct byte loop cannot rewind, so only that shortcut declines.
                 if (hasLineEndAnchor && (seen['\n' >> 3] & (1 << ('\n' & 7))) != 0) asciiOnly = false;
-                return runs >= 2 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
+                return pieces > 0 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
             }
-            if (instruction.Kind != Utf8SliceInstructionKind.RepeatGreedy || instruction.RepeatMinimum < 0 ||
-                index > code.Length - 4) return false;
-            hasNullableRun |= instruction.RepeatMinimum == 0;
-            var atomIndex = index + 1;
-            var exitIndex = index + 3;
-            if (code[atomIndex] is { Kind: Utf8SliceInstructionKind.CaptureStart } open)
+            var repeated = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy;
+            var required = !repeated || instruction.RepeatMinimum != 0;
+            var atomIndex = index;
+            var exitIndex = index;
+            if (repeated)
             {
-                // A private single-atom body cannot change the selected greedy
-                // boundary. A repeated public capture still needs its history.
-                if (index > code.Length - 6 ||
-                    code[index + 3] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || close.A != open.A)
-                    return false;
-                budget.ChargeWork((ulong)publicTags.Length);
-                if (publicTags.Contains(open.A)) return false;
+                if (instruction.RepeatMinimum < 0 || index > code.Length - 4) return false;
+                hasNullableRun |= !required;
                 atomIndex++;
-                exitIndex += 2;
+                exitIndex += 3;
+                if (code[atomIndex] is { Kind: Utf8SliceInstructionKind.CaptureStart } open)
+                {
+                    // A private single-atom body cannot change the selected greedy
+                    // boundary. A repeated public capture still needs its history.
+                    if (index > code.Length - 6 ||
+                        code[index + 3] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || close.A != open.A)
+                        return false;
+                    budget.ChargeWork((ulong)publicTags.Length);
+                    if (publicTags.Contains(open.A)) return false;
+                    atomIndex++;
+                    exitIndex += 2;
+                }
+                if (instruction.A != exitIndex ||
+                    code[exitIndex - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
+                    code[exitIndex] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B)
+                    return false;
             }
-            if (instruction.A != exitIndex ||
-                code[exitIndex - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != index ||
-                code[exitIndex] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != instruction.B)
-                return false;
             var atom = code[atomIndex];
             scoped ReadOnlySpan<byte> mask;
             bool fold;
@@ -357,13 +365,13 @@ internal sealed partial class PosixProgram
             for (var octet = 0; octet < seen.Length; octet++)
             {
                 budget.ChargeWork(1);
-                if (instruction.RepeatMinimum != 0 && (seen[octet] & mask[octet]) != 0) return false;
+                if (required && (seen[octet] & mask[octet]) != 0) return false;
                 nonempty |= mask[octet] != 0;
-                seen[octet] |= mask[octet];
+                if (repeated) seen[octet] |= mask[octet];
             }
             if (!nonempty) return false;
-            if (runs == 0 && instruction.RepeatMinimum > 0) firstRequiredRunAtom = atomIndex;
-            runs++;
+            if (pieces == 0 && required) firstRequiredRunAtom = atomIndex;
+            pieces++;
             index = exitIndex;
         }
         return false;

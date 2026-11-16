@@ -46,6 +46,7 @@ All692 published/staged feed assets rehash unchanged. No package, catalog, Full,
 native comparison or confirmation is repeated. Stop this sizing trial. Raw verified
 offVM, original worker/keeper and collector terminal0; owned VM scratch retired
 after accepted hash and zero process/cwd/FD/map references.
+Source2499f13a CI43826102268 is GREEN Windows/Linux; saved/closed.
 
 Artifacts: artifacts/experiments/posix-valid-text-sizing-20261116/.
 Raw SHA256 C984E82BE3FF381F5C45A932F1DBB21E5E86D2523BF675B9C5E90882008364BC.

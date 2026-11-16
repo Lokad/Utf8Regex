@@ -25,11 +25,15 @@ public sealed class PosixGreedyAsciiRunTests
         Assert.True(PosixProgram.Compile("([a-z]{1,3})([0-9]{2,4})([!]{1,2})", default).FirstAcceptanceIsLongest);
         foreach (var pattern in new[] { "([a-z]+)[0-9]+", "[a-z]+([0-9]+)",
             "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}", "(a*)(a*)",
-            "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)" })
+            "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)",
+            "(a+)()", "Z(a+)()", "ZZ(a+)ZZ()", "[Z](a{1,3})[Z]()", "(a+)Z()" })
             Assert.True(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
         // The older homogeneous-literal proof can still accept (a*)(a+),
         // but its required overlapping tail cannot use the direct run loop.
         Assert.False(PosixProgram.Compile("(a*)(a+)", default).GreedyAsciiRuns);
+        foreach (var pattern in new[] { "Z(a+)a()", "Z([a-b]*)a()", "Z(a)+()", "^Z(a*)$" })
+            Assert.False(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
+        Assert.False(PosixProgram.Compile("Z(k+)K()", PosixCompileOptions.IgnoreCase).GreedyAsciiRuns);
         foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)",
             "(a*)^(a*)", "(a*)^(b*)", "^([a-z]*)([0-9]+)$",
             "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
@@ -201,11 +205,24 @@ public sealed class PosixGreedyAsciiRunTests
     [InlineData("(([a-b]*))([a-c]*)")]
     [InlineData("([a-b]*)()([a-c]*)")]
     [InlineData("(a*)(a*)()(b*)")]
+    [InlineData("(a+)()")]
+    [InlineData("(a*)()")]
+    [InlineData("Z(a+)()")]
+    [InlineData("ZZ(a+)ZZ()")]
+    [InlineData("Z([a-b]*)()")]
+    [InlineData("[Z](a{1,3})[Z]()")]
+    [InlineData("(a+)Z()")]
+    [InlineData("Z([a-b]+)([a-c]*)()")]
+    [InlineData("Z([a-b]{0,3})([a-c]{0,4})()")]
+    [InlineData("Z()([0-1]+)")]
+    [InlineData("Z(a+)a()")]
+    [InlineData("Z([a-b]*)a()")]
     public void GreedyRunsKeepPublicSelectionAtEveryFloorAndOutputWidth(string pattern)
     {
         var regex = new Utf8PosixRegex(pattern);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        foreach (var text in new[] { "", "aaaa", "aabaa", "é😀aaaa!", "ab01!", "😀ab011!", "aaab00111!!ab01!", "a0 b1 ab001", "aabb0011!", "ab", "0011", "ab01\nab11!" })
+        foreach (var text in new[] { "", "aaaa", "aabaa", "é😀aaaa!", "ab01!", "😀ab011!", "aaab00111!!ab01!", "a0 b1 ab001", "aabb0011!", "ab", "0011", "ab01\nab11!",
+            "Z", "ZZ", "Zaaa", "ZaaaZ", "ZZaaaZZ", "😀Zab001ZZ!", "ZaaabZ01", "Zab", "Z001", "ZaaabcZZ", "ZZZ" })
         {
             var input = Encoding.UTF8.GetBytes(text);
             for (var floor = 0; floor <= text.Length; floor++)
@@ -251,5 +268,52 @@ public sealed class PosixGreedyAsciiRunTests
                     (actual.IndexInBytes, actual.LengthInBytes));
             }
         }
+    }
+    [Theory]
+    [InlineData("Z(k+)()", PosixCompileOptions.IgnoreCase)]
+    [InlineData("(k+)Z()", PosixCompileOptions.IgnoreCase)]
+    [InlineData("[Z](k{1,3})Z()", PosixCompileOptions.IgnoreCase)]
+    [InlineData("^Z([a-z]+)()$", PosixCompileOptions.Newline)]
+    [InlineData("Z([a]+)\n^([0-9]+)", PosixCompileOptions.Newline)]
+    [InlineData("Z([\n]+)$()", PosixCompileOptions.Newline)]
+    public void FixedPiecesKeepFoldedAndAnchorSelectionAgainstGeneralExecution(string pattern, PosixCompileOptions options)
+    {
+        var regex = new Utf8PosixRegex(pattern, options);
+        // $. cannot match with either absolute EOF or Newline's LF boundary:
+        // dot cannot consume after EOF, and rejects LF in Newline mode.
+        var contrast = pattern + "|$.";
+        Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
+        var general = new Utf8PosixRegex(contrast, options);
+        foreach (var text in new[] { "", "Z", "ZKK", "KKZ", "ZKKZ", "😀!ZKKZ", "Zaaaa\nZaa", "Za\n12", "Z\n\nb", "Z\n\n" })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            for (var floor = 0; floor <= input.Length; floor++)
+            {
+                if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
+                for (var width = 0; width <= regex.GroupCount + 2; width++)
+                {
+                    var expected = new Utf8ValueMatch[width];
+                    var actual = new Utf8ValueMatch[width];
+                    Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
+                    Assert.Equal(expected, actual);
+                }
+                Assert.Equal(general.Count(input, floor), regex.Count(input, floor));
+            }
+        }
+    }
+
+    [Fact]
+    public void SingleRunAndFixedPiecesKeepUsefulFiniteAdmission()
+    {
+        var regex = new Utf8PosixRegex("Z(a+)()", resourcePolicy: new()
+            { MaxWorkSteps = 40_000, MaxDepth = 1, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
+        var input = Encoding.ASCII.GetBytes("Z" + new string('a', 8192));
+        var output = new Utf8ValueMatch[3];
+        var whole = regex.Match(input, output);
+        Assert.Equal((0, 8193), (whole.IndexInBytes, whole.LengthInBytes));
+        Assert.Equal((1, 8192), (output[1].IndexInBytes, output[1].LengthInBytes));
+        Assert.Equal((8193, 0), (output[2].IndexInBytes, output[2].LengthInBytes));
+        var limited = new Utf8PosixRegex("Z(a+)()", resourcePolicy: new() { MaxWorkSteps = 1 });
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
     }
 }
