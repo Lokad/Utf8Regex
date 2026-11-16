@@ -33,7 +33,7 @@ internal static class Utf8ScalarNullableOperationAssertions
                 regex.MatchDetailedFromUtf16Offset(input, row.Origin, source.Token));
             Assert.True(regex.IsMatchFromUtf16Offset(input, row.Origin, source.Token));
             Assert.Equal(rows.Length - index, regex.CountFromUtf16Offset(input, row.Origin, source.Token));
-            var cursor = regex.EnumerateMatchesFromUtf16Offset(input, row.Origin, source.Token);
+            var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, row.Origin)), source.Token);
             for (var next = index; next < rows.Length; next++)
             {
                 Assert.True(cursor.MoveNext());

@@ -130,7 +130,7 @@ public sealed class Utf8ScalarDiscoveryTests
             var detail = regex.MatchDetailedFromUtf16Offset(input, start, token);
             Assert.Equal((1, 4), (detail.IndexInBytes, detail.LengthInBytes));
             Assert.Equal("😀", detail.GetGroup(1).GetValueString());
-            var cursor = regex.EnumerateMatchesFromUtf16Offset(input, start, token);
+            var cursor = regex.EnumerateMatches(input, reverse ? 5 : 1, token);
             Assert.True(cursor.MoveNext());
             Assert.Equal((1, 4), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
             Assert.False(cursor.MoveNext());

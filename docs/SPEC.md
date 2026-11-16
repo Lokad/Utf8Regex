@@ -25,11 +25,14 @@ respect scalar boundaries. Greedy/lazy and alternative order apply at each
 viable start. RTL changes search direction, not alternative priority.
 POSIX leftmost-longest and POSIX subcapture selection are not implemented.
 
-Byte offsets and lengths are primary. UTF-16 coordinates and string APIs are
-derived interoperability. Explicit `FromUtf16Offset` entry points reject an
-offset inside a supplementary scalar with `ArgumentOutOfRangeException`.
-Offset resolution retains the complete subject's assertion context and the same
-invocation controls.
+Byte offsets and lengths are primary. `EnumerateMatches(input, startOffsetInBytes,
+cancellationToken)` starts at a scalar-aligned byte position, retaining the original
+subject for anchors, boundaries and lookbehind. Starts outside the subject or in a
+UTF-8 continuation byte throw `ArgumentOutOfRangeException` for `startOffsetInBytes`.
+The original token, deadline and cumulative limits apply through every advance.
+This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. The remaining
+one-shot `FromUtf16Offset` APIs and derived UTF-16 result coordinates have not yet
+been removed.
 
 ## Input and pattern language
 

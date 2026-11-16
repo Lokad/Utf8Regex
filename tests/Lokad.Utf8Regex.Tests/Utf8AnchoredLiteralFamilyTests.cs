@@ -1019,7 +1019,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             expected.Add(m.Index + ":" + m.Length);
         }
         var actual = new System.Collections.Generic.List<string>();
-        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+        foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset))))
         {
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
@@ -1053,7 +1053,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             expected.Add(m.Index + ":" + m.Length);
         }
         var actual = new System.Collections.Generic.List<string>();
-        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+        foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset))))
         {
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
@@ -1182,7 +1182,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             expected.Add(m.Index + ":" + m.Length);
         }
         var actual = new System.Collections.Generic.List<string>();
-        foreach (var m in enumerateRegex.EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+        foreach (var m in enumerateRegex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset))))
         {
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }

@@ -158,7 +158,7 @@ public sealed class LazyFallbackConstructionTests
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailedFromUtf16Offset(input, offset));
-        foreach (var item in regex.EnumerateMatchesFromUtf16Offset(input, offset)) { _ = item; }
+        foreach (var item in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))) { _ = item; }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern + " offset=" + offset.ToString());
     }
 

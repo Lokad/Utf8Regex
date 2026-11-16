@@ -39,7 +39,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     }
 
     [Fact]
-    public void EnumerateMatchesFromUtf16OffsetProjectsLikeRuntime()
+    public void EnumerateMatchesProjectsLikeRuntime()
     {
         const string text = "x\U0001F600abxcd";
         var input = Encoding.UTF8.GetBytes(text);
@@ -49,7 +49,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         foreach (var offset in new[] { 0, 1, 3, 4 })
         {
             var collected = new List<(int Index, int Length)>();
-            foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+            foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 collected.Add((match.IndexInUtf16, match.LengthInUtf16));
             }

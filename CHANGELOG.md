@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Replace Core `EnumerateMatchesFromUtf16Offset` with byte-start
+  `EnumerateMatches(input, startOffsetInBytes, cancellationToken)`. Starts must
+  be scalar boundaries; anchors/lookbehind retain original-subject context,
+  with the same cumulative cancellation, deadline and resource controls.
 - Fix an out-of-range read in `Count` for bounded suffix patterns when a
   non-ASCII subject ends with the searched literal, such as `é\ting`.
 - Use the general matcher for balancing-group counts, removing a BEGIN/END-specific

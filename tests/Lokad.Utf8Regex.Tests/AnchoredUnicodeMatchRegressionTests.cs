@@ -53,7 +53,7 @@ public sealed class AnchoredUnicodeMatchRegressionTests
             Assert.Equal(expectedValues, actualValues);
 
             var actualOffsetValues = new List<string>();
-            foreach (var match in actual.EnumerateMatchesFromUtf16Offset(utf8, 0))
+            foreach (var match in actual.EnumerateMatches(utf8, 0))
             {
                 actualOffsetValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
             }

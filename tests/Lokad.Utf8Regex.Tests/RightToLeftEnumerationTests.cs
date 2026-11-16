@@ -84,7 +84,7 @@ public sealed class RightToLeftEnumerationTests
                 expectedMatches.Add((match.Index, match.Length));
             }
 
-            foreach (var match in actual.EnumerateMatchesFromUtf16Offset(bytes, utf16Offset))
+            foreach (var match in actual.EnumerateMatches(bytes, Encoding.UTF8.GetByteCount(input.AsSpan(0, utf16Offset))))
             {
                 actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
             }

@@ -209,9 +209,9 @@ public sealed class Utf8NonBacktrackingBatchTests
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         Assert.Equal(new[] { (0, 0), (4, 0), (8, 0) }, ranges);
         var fromOffset = new List<int>();
-        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, 2)) fromOffset.Add(match.IndexInBytes);
+        foreach (var match in regex.EnumerateMatches(input, 4)) fromOffset.Add(match.IndexInBytes);
         Assert.Equal(new[] { 4, 8 }, fromOffset);
-        Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatchesFromUtf16Offset(input, 1); cursor.MoveNext(); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatches(input, 1); cursor.MoveNext(); });
         Assert.Equal("Q😀Q😀Q", regex.ReplaceToString(input, "Q"));
         Assert.Equal("Q😀Q😀Q", regex.ReplaceToString(input, 0,
             static (in Utf8MatchContext match, ref int state) => "Q"));

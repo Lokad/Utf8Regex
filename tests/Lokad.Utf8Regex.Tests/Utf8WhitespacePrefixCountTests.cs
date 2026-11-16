@@ -90,7 +90,7 @@ public sealed class Utf8WhitespacePrefixCountTests
             for (var start = 2040; start <= text.Length; start++)
             {
                 if (start < text.Length && char.IsLowSurrogate(text[start])) continue;
-                var cursor = regex.EnumerateMatchesFromUtf16Offset(input, start);
+                var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)));
                 var expected = 0;
                 while (cursor.MoveNext()) expected++;
                 Assert.Equal(expected, regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start));

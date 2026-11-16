@@ -115,7 +115,7 @@ public sealed class Utf8SliceSparseGroupTests
                     Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset, source.Token)).ParamName);
                     Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset, source.Token)).ParamName);
                     Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset, source.Token)).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatchesFromUtf16Offset(input, offset)).ParamName);
+                    Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, subject.Bytes[~scalarOffset - 1] + 1)).ParamName);
                     continue;
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.IsMatchFromUtf16Offset(input, offset, source.Token));
@@ -123,7 +123,7 @@ public sealed class Utf8SliceSparseGroupTests
                 AssertValue(oracle.Match(subject.Projected, scalarOffset), regex.MatchFromUtf16Offset(input, offset, source.Token), subject);
                 AssertDetailed(oracle, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token), subject);
                 var expected = oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset);
-                var actual = regex.EnumerateMatchesFromUtf16Offset(input, offset);
+                var actual = regex.EnumerateMatches(input, subject.Bytes[scalarOffset]);
                 while (expected.MoveNext())
                 {
                     Assert.True(actual.MoveNext());

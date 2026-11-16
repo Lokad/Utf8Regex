@@ -318,7 +318,7 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(timeout, enumerateException.MatchTimeout);
         var fromOffsetException = Assert.Throws<RegexMatchTimeoutException>(() =>
         {
-            var enumerator = regex.EnumerateMatchesFromUtf16Offset(input, 0);
+            var enumerator = regex.EnumerateMatches(input, 0);
             _ = enumerator.MoveNext();
         });
         Assert.Equal(text, fromOffsetException.Input);

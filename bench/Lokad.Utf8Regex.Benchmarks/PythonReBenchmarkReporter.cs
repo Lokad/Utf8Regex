@@ -4089,7 +4089,7 @@ internal sealed class PythonReBenchmarkContext
     {
         var regex = GetCoreFindAllRegex();
         return _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
-            ? regex.EnumerateMatchesFromUtf16Offset(InputBytes, _startOffsetInUtf16)
+            ? regex.EnumerateMatches(InputBytes, _case.Coverage.StartOffsetInBytes)
             : regex.EnumerateMatches(InputBytes);
     }
 

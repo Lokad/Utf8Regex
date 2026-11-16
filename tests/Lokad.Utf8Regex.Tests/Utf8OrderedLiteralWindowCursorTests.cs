@@ -119,7 +119,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
                 expected.Add((match.Index, match.Length));
             }
             var actual = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+            foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 actual.Add((match.IndexInUtf16, match.LengthInUtf16));
             }

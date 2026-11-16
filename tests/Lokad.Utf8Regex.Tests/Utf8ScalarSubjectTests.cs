@@ -283,7 +283,7 @@ public sealed class Utf8ScalarSubjectTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatchesFromUtf16Offset(input, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, 1));
         Assert.Equal((4, 1), (regex.MatchFromUtf16Offset(input, 2).IndexInBytes,
             regex.MatchFromUtf16Offset(input, 2).LengthInBytes));
     }
@@ -355,7 +355,7 @@ public sealed class Utf8ScalarSubjectTests
             case "offset-count": _ = regex.CountFromUtf16Offset(input, 2, token); break;
             case "offset-value": _ = regex.MatchFromUtf16Offset(input, 2, token); break;
             case "offset-detailed": _ = regex.MatchDetailedFromUtf16Offset(input, 2, token); break;
-            case "offset-enumerate": _ = regex.EnumerateMatchesFromUtf16Offset(input, 2, token).MoveNext(); break;
+            case "offset-enumerate": _ = regex.EnumerateMatches(input, 4, token).MoveNext(); break;
             case "split-count": _ = regex.EnumerateSplits(input, 4, token).MoveNext(); break;
             default: throw new InvalidOperationException(operation);
         }

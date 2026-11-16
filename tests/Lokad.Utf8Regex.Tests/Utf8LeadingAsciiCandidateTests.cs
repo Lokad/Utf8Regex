@@ -164,7 +164,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 using var live = new CancellationTokenSource();
                 foreach (var start in new[] { 0, 1, 3, 4, text.Length })
                 {
-                    var cursor = regex.EnumerateMatchesFromUtf16Offset(input, start);
+                    var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)));
                     var expected = 0;
                     while (cursor.MoveNext()) expected++;
                     Assert.Equal(expected, regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start));

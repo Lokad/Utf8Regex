@@ -425,8 +425,8 @@ internal static partial class BenchmarkInspectReporter
         var decoded = context.InputString;
         var expected = ExecuteRegexOffset(context.Regex, decoded, utf16Offset, benchmarkCase.Operation);
         var compiledExpected = ExecuteRegexOffset(context.CompiledRegex, decoded, utf16Offset, benchmarkCase.Operation);
-        var publicResult = ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
-        var compiledPublicResult = ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
+        var publicResult = ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, boundary.ByteOffset, benchmarkCase.Operation);
+        var compiledPublicResult = ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, boundary.ByteOffset, benchmarkCase.Operation);
         if (publicResult != expected ||
             compiledPublicResult != compiledExpected)
         {
@@ -443,9 +443,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Samples           : {samples}");
 
         MeasureUtf8CaseLane("Utf8Offset", samples, iterations, () =>
-            ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+            ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, boundary.ByteOffset, benchmarkCase.Operation));
         MeasureUtf8CaseLane("CompiledUtf8Offset", samples, iterations, () =>
-            ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+            ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, boundary.ByteOffset, benchmarkCase.Operation));
         MeasureUtf8CaseLane("DecodeThenRegexOffset", samples, iterations, () =>
             ExecuteRegexOffset(
                 context.Regex,
@@ -6046,6 +6046,7 @@ internal static partial class BenchmarkInspectReporter
         Utf8Regex regex,
         byte[] input,
         int utf16Offset,
+        int byteOffset,
         Utf8RegexBenchmarkOperation operation)
     {
         return operation switch
@@ -6054,7 +6055,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(regex.MatchFromUtf16Offset(input, utf16Offset)),
             Utf8RegexBenchmarkOperation.Count => regex.CountFromUtf16Offset(input, utf16Offset),
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(
-                regex.EnumerateMatchesFromUtf16Offset(input, utf16Offset)),
+                regex.EnumerateMatches(input, byteOffset)),
             _ => throw new InvalidOperationException($"Operation '{operation}' does not support an offset diagnostic."),
         };
     }

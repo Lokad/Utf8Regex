@@ -24,7 +24,8 @@ byte[] redacted = regex.Replace(input, "[order]");
 
 Use `EnumerateMatches` to visit matches and `MatchDetailed` for groups and
 capture history. Match byte offsets and lengths can be used directly with UTF-8
-slices.
+slices. `EnumerateMatches(input, startOffsetInBytes, cancellationToken)` searches
+from a scalar-aligned byte position while retaining full context for assertions.
 
 ## Choose a profile
 

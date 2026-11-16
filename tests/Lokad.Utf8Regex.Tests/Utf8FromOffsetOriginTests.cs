@@ -22,7 +22,7 @@ public sealed class Utf8FromOffsetOriginTests
         {
             var expected = runtime.Match(text, offset);
             Utf8ValueMatch? first = null;
-            foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+            foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 first = match;
                 break;
@@ -42,7 +42,7 @@ public sealed class Utf8FromOffsetOriginTests
 
         var expected = runtime.Match(text, 1);
         Utf8ValueMatch? first = null;
-        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, 1))
+        foreach (var match in regex.EnumerateMatches(input, 1))
         {
             first = match;
             break;
@@ -61,7 +61,7 @@ public sealed class Utf8FromOffsetOriginTests
 
         var expected = runtime.Match(text, 2);
         Utf8ValueMatch? first = null;
-        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, 2))
+        foreach (var match in regex.EnumerateMatches(input, 2))
         {
             first = match;
             break;
@@ -102,7 +102,7 @@ public sealed class Utf8FromOffsetOriginTests
         {
             var expected = runtime.Match(text, offset);
             Utf8ValueMatch? first = null;
-            foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+            foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 first = match;
                 break;

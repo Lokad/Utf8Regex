@@ -2845,20 +2845,14 @@ public sealed partial class Utf8Regex
         return EnumerateMatches(input);
     }
 
-    /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
-    public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
-    {
-        return CreateOwnedOffsetEnumerator(input, utf16Offset, CancellationToken.None);
-    }
-
-    /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset, observing cancellation when enumeration begins.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
+    /// <summary>Enumerates non-overlapping matches from a scalar-aligned byte offset in the original input.</summary>
+    /// <remarks>The complete subject remains available to anchors, boundaries and lookbehind. The original token, deadline and resource limits apply throughout enumeration. Keep borrowed input unchanged.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The start is outside the subject or inside a UTF-8 scalar.</exception>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken = default)
     {
-        return CreateOwnedOffsetEnumerator(input, utf16Offset, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return CreateOwnedByteOffsetEnumerator(input, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Enumerates all split segments, including the final tail.</summary>

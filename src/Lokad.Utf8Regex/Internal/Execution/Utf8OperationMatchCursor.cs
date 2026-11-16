@@ -319,13 +319,14 @@ internal ref partial struct Utf8OperationMatchCursor
         }
     }
 
-    internal static Utf8OperationMatchCursor CreateMappedFromUnit(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        scoped ref Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startUnit)
+    internal static Utf8OperationMatchCursor CreateMappedFromByte(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        scoped ref Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startByte)
     {
         invocation.ShareStorageForCursor();
         try
         {
-            var startByte = map.Resolve(startUnit).ByteOffset;
+            if ((uint)startByte > (uint)input.Length || startByte < input.Length && (input[startByte] & 0xc0) == 0x80)
+                throw new ArgumentOutOfRangeException(nameof(startByte));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation, startByte);
             return cursor;
         }

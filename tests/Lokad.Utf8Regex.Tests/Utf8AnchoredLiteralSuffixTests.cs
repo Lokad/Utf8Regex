@@ -223,7 +223,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
                 Assert.True(regex3.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex4 = new Utf8Regex(pattern, options);
                 var actualEnum = 0;
-                var enumerator = regex4.EnumerateMatchesFromUtf16Offset(input, offset);
+                var enumerator = regex4.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)));
                 while (enumerator.MoveNext())
                 {
                     actualEnum++;

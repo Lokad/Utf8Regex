@@ -527,7 +527,7 @@ public sealed class AsciiSimplePatternTests
                 }
 
                 var actualOffsetPositions = new List<string>();
-                foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+                foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))))
                 {
                     actualOffsetPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
                 }
@@ -694,7 +694,7 @@ public sealed class AsciiSimplePatternTests
                 }
 
                 var actualOffsetPositions = new List<string>();
-                foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+                foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))))
                 {
                     actualOffsetPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
                 }
@@ -3050,7 +3050,7 @@ public sealed class AsciiSimplePatternTests
             expectedPositions.Add(m.Index + ":" + m.Length);
         }
         var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+        foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
         {
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
@@ -3086,7 +3086,7 @@ public sealed class AsciiSimplePatternTests
             expectedPositions.Add(m.Index + ":" + m.Length);
         }
         var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+        foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
         {
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
@@ -3119,12 +3119,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset); });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(input, offset); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1); });
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, offset, source.Token));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset, source.Token));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset, source.Token); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, source.Token); });
-        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(input, offset, source.Token); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1, source.Token); });
         Utf8AsciiScalarOperationAssertions.Owned(regex);
         return true;
     }

@@ -60,7 +60,7 @@ public sealed class Utf8CursorStorageLeaseTests
         var reference = new WeakReference(typeof(Utf8BoundaryMap).GetField("_byteOffsets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(map)!);
         try
         {
-            _ = Utf8OperationMatchCursor.CreateMappedFromUnit(Program(regex), input, ref map, ref invocation, bytes, 3);
+            _ = Utf8OperationMatchCursor.CreateMappedFromByte(Program(regex), input, ref map, ref invocation, bytes, 3);
             Assert.Fail("The invalid offset must abort unpublished setup.");
         }
         catch (ArgumentOutOfRangeException) { Assert.Equal(0, map.ByteLength); }

@@ -783,7 +783,7 @@ public sealed class Utf8SliceRtlOperationTests
             return;
         }
         var flat = new List<int>();
-        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(subject.Input, startAt))
+        foreach (var match in regex.EnumerateMatches(subject.Input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt))))
         {
             Assert.True(match.IsByteAligned);
             flat.Add(match.IndexInUtf16);

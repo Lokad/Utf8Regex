@@ -22,31 +22,35 @@ public sealed partial class Utf8Regex
         return map;
     }
 
-    private Utf8ValueMatchEnumerator CreateOwnedOffsetEnumerator(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken token)
+    private Utf8ValueMatchEnumerator CreateOwnedByteOffsetEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken token)
     {
         var program = _ownedSliceProgram;
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
         ulong reservation = 0;
         try
         {
-            var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
-                out var validation, out var startByte, out reservation);
+            var validation = Utf8Validation.Subject(input, ref invocation);
+            _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
+            if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
+                throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
             if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
             {
-                map = default;
-                invocation.Ledger.Release(reservation);
-                reservation = 0;
+                // Only legacy value coordinates require this projection; start
+                // authority and search context are always the original bytes.
+                var startUnit = validation.IsAscii ? startOffsetInBytes :
+                    Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
                 cursor = anchored
                     ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."),
-                        _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startByte, utf16Offset)
-                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startByte, utf16Offset);
+                        _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startOffsetInBytes, startUnit)
+                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes, startUnit);
             }
             else
             {
+                var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
                 var ownedReservation = reservation;
                 reservation = 0;
-                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, utf16Offset);
+                cursor = Utf8OperationMatchCursor.CreateMappedFromByte(program, input, ref map, ref invocation, ownedReservation, startOffsetInBytes);
             }
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
@@ -108,21 +112,23 @@ public sealed partial class Utf8Regex
             _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
             if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
-            var startUnit = validation.IsAscii ? startOffsetInBytes : startOffsetInBytes == 0 ? 0 :
-                Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
             Utf8OperationMatchCursor cursor;
             if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
+            {
+                var startUnit = validation.IsAscii ? startOffsetInBytes : startOffsetInBytes == 0 ? 0 :
+                    Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
                 cursor = anchored
                     ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."),
                         _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startOffsetInBytes, startUnit)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes, startUnit);
+            }
             else
             {
                 var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
                 var ownedReservation = reservation;
                 reservation = 0;
-                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(_ownedSliceProgram, input,
-                    ref map, ref invocation, ownedReservation, startUnit);
+                cursor = Utf8OperationMatchCursor.CreateMappedFromByte(_ownedSliceProgram, input,
+                    ref map, ref invocation, ownedReservation, startOffsetInBytes);
             }
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }

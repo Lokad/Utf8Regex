@@ -60,6 +60,25 @@ profile-specific: Core `GroupNumberFromUtf8Name`, PythonRe `TryGetGroupNumber`,
 PCRE2 `CopyNumbersForUtf8Name` (retaining duplicate numbers). These operations
 validate their own bytes and use ordinal names without normalization.
 
+### Byte-start enumeration
+
+Core replaces `EnumerateMatchesFromUtf16Offset` with a byte-start overload:
+
+```csharp
+var regex = new Utf8Regex("x");
+foreach (var match in regex.EnumerateMatches("é😀x"u8, startOffsetInBytes: 6))
+{
+    // match.IndexInBytes == 6; match.LengthInBytes == 1
+}
+```
+
+Pass a scalar boundary in the original input, not a position in a sliced suffix.
+Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
+as its right-hand search boundary. Empty progress advances by complete scalars.
+An optional cancellation token remains active with the same deadline and cumulative
+resource limits throughout enumeration. This change does not yet remove the
+remaining UTF-16 result properties or one-shot offset APIs.
+
 ## Scalar matching and coordinates, introduced in 0.4.0
 
 ```csharp

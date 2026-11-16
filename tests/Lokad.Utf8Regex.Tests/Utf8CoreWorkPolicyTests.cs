@@ -341,7 +341,7 @@ public sealed class Utf8CoreWorkPolicyTests
             case "matches":
             case "matches-offset":
                 var matches = operation == "matches-offset"
-                    ? (live ? regex.EnumerateMatchesFromUtf16Offset(input, offset, token) : regex.EnumerateMatchesFromUtf16Offset(input, offset))
+                    ? (live ? regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), token) : regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset))))
                     : (live ? regex.EnumerateMatches(input, token) : regex.EnumerateMatches(input));
                 var ranges = new List<string>();
                 while (matches.MoveNext()) ranges.Add(Range(matches.Current));

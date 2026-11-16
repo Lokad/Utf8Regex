@@ -56,7 +56,7 @@ public sealed class Utf8RegexStartAtTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex("abc", options);
 
-        var enumerator = regex.EnumerateMatchesFromUtf16Offset("xxabcxxabc"u8, 6);
+        var enumerator = regex.EnumerateMatches("xxabcxxabc"u8, 6);
         Assert.True(enumerator.MoveNext());
 
         var match = enumerator.Current;
@@ -70,7 +70,7 @@ public sealed class Utf8RegexStartAtTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
-        var enumerator = regex.EnumerateMatchesFromUtf16Offset("éabcéabc"u8, 1);
+        var enumerator = regex.EnumerateMatches("éabcéabc"u8, 2);
         Assert.True(enumerator.MoveNext());
 
         var match = enumerator.Current;
@@ -89,7 +89,7 @@ public sealed class Utf8RegexStartAtTests
             @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var enumerator = regex.EnumerateMatchesFromUtf16Offset("é LogError( xx LogWarning ("u8, 12);
+        var enumerator = regex.EnumerateMatches("é LogError( xx LogWarning ("u8, 13);
         Assert.True(enumerator.MoveNext());
 
         var match = enumerator.Current;
@@ -117,6 +117,6 @@ public sealed class Utf8RegexStartAtTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset("abc"u8, 4));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatchesFromUtf16Offset("abc"u8, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches("abc"u8, 4));
     }
 }

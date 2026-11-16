@@ -173,10 +173,13 @@ internal static class Utf8AsciiScalarOperationAssertions
                     () => { _ = regex.CountFromUtf16Offset(subject.Input, offset, token); },
                     () => { _ = regex.MatchFromUtf16Offset(subject.Input, offset, token); },
                     () => { _ = regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token); },
-                    () => { _ = regex.EnumerateMatchesFromUtf16Offset(subject.Input, offset, token); },
                 ];
                 foreach (var operation in operations)
                     Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(operation).ParamName);
+                var byteOffset = offset < 0 ? -1 : offset > text.Length ? subject.Input.Length + 1 :
+                    subject.ByteBoundaries[~floor - 1] + 1;
+                Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
+                    regex.EnumerateMatches(subject.Input, byteOffset, token)).ParamName);
                 Owned(regex);
                 continue;
             }
@@ -194,7 +197,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             Detailed(subject, oracle.Match(subject.Projected, floor), regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token));
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
-            Sequence(subject, expected, regex.EnumerateMatchesFromUtf16Offset(subject.Input, offset, token));
+            Sequence(subject, expected, regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token));
             Owned(regex);
         }
     }

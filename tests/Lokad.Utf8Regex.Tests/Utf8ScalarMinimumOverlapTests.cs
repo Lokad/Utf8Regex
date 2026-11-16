@@ -180,7 +180,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
                     expected.Add((match.Index, match.Length));
                 }
                 var actual = new List<(int, int)>();
-                foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, start))
+                foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start))))
                 {
                     actual.Add((match.IndexInUtf16, match.LengthInUtf16));
                 }

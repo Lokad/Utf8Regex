@@ -103,14 +103,14 @@ public sealed class Utf8SliceUnicodeAtomTests
                 var scalarOffset = Array.BinarySearch(subject.Utf16Boundaries, offset);
                 if (scalarOffset < 0)
                 {
-                    AssertInteriorStartRejected(regex, input, offset, source.Token);
+                    AssertInteriorStartRejected(regex, input, offset, subject.ByteBoundaries[~scalarOffset - 1] + 1, source.Token);
                     continue;
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.IsMatchFromUtf16Offset(input, offset, source.Token));
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), regex.CountFromUtf16Offset(input, offset, source.Token));
                 AssertMatch(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchFromUtf16Offset(input, offset, source.Token));
                 AssertDetailed(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
-                AssertSequence(subject, oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset), regex.EnumerateMatchesFromUtf16Offset(input, offset));
+                AssertSequence(subject, oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset), regex.EnumerateMatches(input, subject.ByteBoundaries[scalarOffset]));
             }
             foreach (var template in new[] { "Q", "$&", "<${x}>|${x}${x}", "<$1>|$2|${\u00e9}", "\ud83d$&\ude00", "$`|$'|$_|$+" })
             {
@@ -525,7 +525,7 @@ public sealed class Utf8SliceUnicodeAtomTests
             .Replace("\u0391", "\U00010400", StringComparison.Ordinal);
     }
 
-    private static void AssertInteriorStartRejected(Utf8Regex regex, byte[] input, int offset, CancellationToken token)
+    private static void AssertInteriorStartRejected(Utf8Regex regex, byte[] input, int offset, int byteOffset, CancellationToken token)
     {
         Action[] operations =
         [
@@ -533,10 +533,11 @@ public sealed class Utf8SliceUnicodeAtomTests
             () => { _ = regex.CountFromUtf16Offset(input, offset, token); },
             () => { _ = regex.MatchFromUtf16Offset(input, offset, token); },
             () => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, token); },
-            () => { _ = regex.EnumerateMatchesFromUtf16Offset(input, offset, token); },
         ];
         foreach (var operation in operations)
             Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(operation).ParamName);
+        Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
+            regex.EnumerateMatches(input, byteOffset, token)).ParamName);
     }
 
     private static void AssertMatch(string text, Match expected, Utf8ValueMatch actual) =>

@@ -85,7 +85,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         Assert.Throws<ArgumentException>(() => regex.CountFromUtf16Offset(s_invalidUtf8, 0));
         Assert.Throws<ArgumentException>(() =>
         {
-            var enumerator = regex.EnumerateMatchesFromUtf16Offset(s_invalidUtf8, 0);
+            var enumerator = regex.EnumerateMatches(s_invalidUtf8, 0);
             _ = enumerator.MoveNext();
         });
     }
@@ -151,7 +151,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         Assert.Throws<ArgumentException>(() => regex.MatchDetailedFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentException>(() =>
         {
-            var enumerator = regex.EnumerateMatchesFromUtf16Offset(input, 1);
+            var enumerator = regex.EnumerateMatches(input, 1);
             _ = enumerator.MoveNext();
         });
     }
