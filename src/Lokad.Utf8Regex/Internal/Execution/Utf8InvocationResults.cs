@@ -83,7 +83,7 @@ internal struct Utf8InvocationResultLedger
         if (charCount is null && bytes.Length > 4096)
         {
             // Ledger consumers supply valid scalar ranges or completed valid
-            // output. Keep general decoding (notably PCRE2's UTF window) separate.
+            // output. General decoding keeps its independent validation/fallback rules.
             var chars = 0;
             for (var offset = 0; offset < bytes.Length;)
             {
