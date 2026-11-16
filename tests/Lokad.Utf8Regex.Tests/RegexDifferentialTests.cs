@@ -70,6 +70,7 @@ public sealed class RegexDifferentialTests
                     MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
             var token = mode == "token" ? cancellation.Token : default;
+            var captures = new Utf8CaptureRange[regex.GetGroupNumbers().Length];
             foreach (var text in subjects)
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -77,19 +78,23 @@ public sealed class RegexDifferentialTests
                 Assert.True(oracle.IsMatch(text) == regex.IsMatch(input, token), context);
                 Assert.True(oracle.Count(text) == regex.Count(input, token), context);
                 var expected = oracle.Match(text);
-                var actual = regex.MatchDetailed(input, token);
+                var actual = regex.Match(input, 0, captures, token);
                 Assert.True(expected.Success == actual.Success, context);
                 if (expected.Success)
                 {
-                    AssertRange(expected, actual.IndexInBytes, actual.LengthInBytes, text, context);
-                    foreach (var number in oracle.GetGroupNumbers())
+                    AssertRange(expected, actual.StartOffsetInBytes,
+                        actual.EndOffsetInBytes - actual.StartOffsetInBytes, text, context);
+                    for (var slot = 0; slot < captures.Length; slot++)
                     {
-                        var group = actual.GetGroup(number);
+                        var number = regex.GroupNumberFromCaptureSlot(slot);
+                        var group = captures[slot];
                         Assert.True(expected.Groups[number].Success == group.Success, context);
                         if (group.Success)
-                            AssertRange(expected.Groups[number], group.IndexInBytes, group.LengthInBytes, text, context);
+                            AssertRange(expected.Groups[number], group.StartOffsetInBytes,
+                                group.EndOffsetInBytes - group.StartOffsetInBytes, text, context);
                     }
                 }
+                else Assert.All(captures, capture => Assert.False(capture.Success, context));
                 // Exercise original-prefix context and EOF, rather than slicing off the prefix.
                 foreach (var start in new[] { 0, text.Length / 2, text.Length }.Distinct())
                     AssertCursor(regex, oracle, text, text, start, token, context);

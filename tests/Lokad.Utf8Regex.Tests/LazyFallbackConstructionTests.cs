@@ -495,7 +495,7 @@ public sealed class LazyFallbackConstructionTests
         // Single-maximum lazies (??) serve Detailed owned on the compiled lane too
         // (probe-mapped lane agreement); capture-writing finite lazy ranges use
         // stable interpreter unwind too. Greedy six-loop shapes graduate to owned shaping in
-        // GroupedLiteralDetailedTests, and lazy shapes stay owned on the ordinary
+        // GroupedLiteralCaptureTests, and lazy shapes stay owned on the ordinary
         // lane through the slice.
         var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);

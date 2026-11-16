@@ -491,7 +491,7 @@ public sealed class AsciiSimplePatternTests
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
             }
 
-            Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+            Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
 
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
@@ -603,7 +603,7 @@ public sealed class AsciiSimplePatternTests
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
             }
 
-            Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+            Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
 
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
@@ -657,7 +657,7 @@ public sealed class AsciiSimplePatternTests
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
             }
 
-            Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+            Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
 
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
@@ -737,10 +737,7 @@ public sealed class AsciiSimplePatternTests
 
     public static IEnumerable<object?[]> GrouplessSimpleDetailedCases()
     {
-        // Groupless simple patterns shape group 0 from the shared value path,
-        // so detailed matches never construct the fallback engine where the value
-        // path itself is owned. `a.c` keeps parity while its value path stays
-        // BCL-backed; only ASCII-star-free rows below assert zero construction.
+
         yield return new object?[] { "\\d{2,4}", "xx12yy", true };
         yield return new object?[] { "[0-9]{3}", "ab123", true };
         yield return new object?[] { "ab[0-9]d", "xab2dxx", true };
@@ -759,17 +756,10 @@ public sealed class AsciiSimplePatternTests
             var regex = new Utf8Regex(pattern, options);
             var expected = oracle.Match(inputText);
 
-            var actual = regex.MatchDetailed(input);
-            Assert.Equal(expected.Success, actual.Success);
-            if (expected.Success)
-            {
-                Assert.Equal(expected.Index, actual.GetGroup(0).IndexInUtf16);
-                Assert.Equal(expected.Length, actual.GetGroup(0).LengthInUtf16);
-            }
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(expected, actual, input, inputText);
 
-            // Owned discovery stays construction-free on the ordinary
-            // lane; the compiled lane keeps parity while its value path stays
-            // BCL-backed, and `a.c` keeps parity on both lanes.
+
             if (expectOwned && (options & RegexOptions.Compiled) == 0)
             {
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -795,9 +785,7 @@ public sealed class AsciiSimplePatternTests
 
     public static IEnumerable<object?[]> OwnedRouteZeroConstructionCases()
     {
-        // Routing must never construct the fallback engine just to decide a route:
-        // every predicate below answers from owned analysis state. Rows cover all
-        // five operations on shapes whose values are served owned end to end.
+
         yield return new object?[] { "ab[0-9]d", RegexOptions.CultureInvariant, "xab2dxx" };
         yield return new object?[] { "a[^x]d", RegexOptions.CultureInvariant, "xabd" };
         yield return new object?[] { "\\d{2,4}", RegexOptions.CultureInvariant, "xx12yy" };
@@ -828,7 +816,7 @@ public sealed class AsciiSimplePatternTests
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var detailedRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.Match(inputText).Success, detailedRegex.MatchDetailed(input).Success);
+        Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input)).Success);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var enumerateRegex = new Utf8Regex(pattern, options);
@@ -1046,11 +1034,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarDiscoveryOwnedCases))]
     public void ScalarDiscoveryOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: fixed-token non-byte-safe simple patterns verify scalar-aware on
-        // astral-free non-ASCII input: ASCII search literals stay sound candidates
-        // through UTF-8 self-synchronization while dots and ASCII-closed classes
-        // consume whole scalars, so IsMatch and Count never construct the fallback
-        // engine. Enumeration and shaping keep their existing BCL routes.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1094,11 +1078,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedScalarDiscoveryOwnedCases))]
     public void ScalarDiscoveryOwnsFoldedNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: IgnoreCase scalar verification folds through the owned invariant
-        // table (ASCII bytes fold inline, other BMP scalars meet the folded ASCII
-        // mask through their fold pair, Kelvin included; shorthands and dots are
-        // fold-neutral), so folded IsMatch and Count never construct the fallback
-        // engine on astral-free non-ASCII input. Astral inputs keep BCL routing.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1144,8 +1124,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarMatchOwnedCases))]
     public void ScalarMatchLightOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: light Match projects the scalar-verified first hit through the
-        // boundary map, so group-0 coordinates never construct the fallback engine.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1193,21 +1172,13 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarDetailedOwnedCases))]
     public void ScalarDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: groupless detailed matches shape group 0 from the owned MatchCore
-        // hit, so the anchored verification route is bypassed entirely.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
-
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (expected.Success)
-        {
-            Assert.Equal(expected.Groups[0].Index, actual.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expected.Groups[0].Length, actual.GetGroup(0).LengthInUtf16);
-        }
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
 
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
@@ -1300,8 +1271,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarGrouplessTemplateOwnedCases))]
     public void ScalarGrouplessTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: groupless templates expand from the owned enumeration above through
-        // the shared groupless worker, with no group machinery involved.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1334,9 +1304,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedScalarTemplateOwnedCases))]
     public void FoldedScalarTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: folded groupless templates expand from the owned enumeration above
-        // through the shared groupless worker; expansion copies matched text and
-        // is fold-neutral.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1378,9 +1346,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DigitDiscoveryMatchDetailedCases))]
     public void DigitDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: decimal-digit shorthands verify through the owned Nd table on
-        // astral-free non-ASCII input, so IsMatch, Count, light Match, and
-        // groupless Detailed never construct the fallback engine.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1403,14 +1369,8 @@ public sealed class AsciiSimplePatternTests
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups[0].Index, actualDetailed.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expectedDetailed.Groups[0].Length, actualDetailed.GetGroup(0).LengthInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
 
     }
 
@@ -1456,8 +1416,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DigitTemplateCases))]
     public void DigitTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: groupless Nd templates expand owned on the string core through the
-        // shared groupless worker over the scalar enumeration.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1488,7 +1447,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DigitTemplateCases))]
     public void DigitTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: the destination core serves the same groupless Nd templates owned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1537,9 +1496,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
     public void WordSpaceDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: whitespace and word shorthands verify through the owned tables on
-        // astral-free non-ASCII input, so IsMatch, Count, light Match, and
-        // groupless Detailed never construct the fallback engine.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1562,14 +1519,8 @@ public sealed class AsciiSimplePatternTests
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups[0].Index, actualDetailed.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expectedDetailed.Groups[0].Length, actualDetailed.GetGroup(0).LengthInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
 
     }
 
@@ -1615,7 +1566,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordSpaceTemplateCases))]
     public void WordSpaceTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: groupless shorthand templates expand owned on the string core.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1645,7 +1596,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordSpaceTemplateCases))]
     public void WordSpaceTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: the destination core serves the same groupless templates owned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1692,9 +1643,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
     public void NegatedShorthandDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: negated shorthands complement exactly through their table on
-        // astral-free non-ASCII input, so IsMatch, Count, light Match, and
-        // groupless Detailed never construct the fallback engine.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1717,14 +1666,8 @@ public sealed class AsciiSimplePatternTests
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups[0].Index, actualDetailed.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expectedDetailed.Groups[0].Length, actualDetailed.GetGroup(0).LengthInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
 
     }
 
@@ -1770,7 +1713,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NegatedShorthandTemplateCases))]
     public void NegatedShorthandTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: groupless complemented templates expand owned on the string core.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1800,7 +1743,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NegatedShorthandTemplateCases))]
     public void NegatedShorthandTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: the destination core serves the same complemented templates owned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1839,10 +1782,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DoublyNegatedShorthandOwnedCases))]
     public void DoublyNegatedShorthandOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: pure doubly-negated shorthands lower as their positive category, so
-        // IsMatch and Count never construct the fallback engine on astral-free
-        // non-ASCII input; the existing digit/word/whitespace arms serve them.
-        // Mixed payloads keep BCL routing; astral discovery is unit-owned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1879,9 +1819,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
     public void SinglelineDotDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // R05: singleline dots match any scalar including line feeds on astral-free
-        // non-ASCII input, so IsMatch, Count, light Match, and groupless Detailed
-        // never construct the fallback engine.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1904,14 +1842,8 @@ public sealed class AsciiSimplePatternTests
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups[0].Index, actualDetailed.GetGroup(0).IndexInUtf16);
-            Assert.Equal(expectedDetailed.Groups[0].Length, actualDetailed.GetGroup(0).LengthInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
 
     }
 
@@ -1954,7 +1886,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineDotTemplateCases))]
     public void SinglelineDotTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: groupless singleline templates expand owned on the string core.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1984,7 +1916,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineDotTemplateCases))]
     public void SinglelineDotTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
     {
-        // R05: the destination core serves the same templates owned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -2031,9 +1963,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarLiteralTemplateOwnedCases))]
     public void ScalarLiteralTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: scalar-verifiable shapes expand literal templates through the scalar cursor
-        // on these non-ASCII inputs. Supplementary inputs use complete scalar boundaries
-        // through the owned engine as well.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
@@ -2070,9 +2000,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NegatedCategoryOwnedCases))]
     public void NegatedCategoryOwnsAllOperations(string pattern, RegexOptions options, string text)
     {
-        // R05: negated Unicode categories behave exactly as their positive-category counterparts,
-        // so discovery, projection, enumeration,
-        // splits, templates, and evaluators never construct the fallback engine here.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -2091,12 +2019,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -2224,12 +2148,8 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(matchRegex);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarEnumerationOwnedCases()
     {
@@ -2428,12 +2348,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups[1].Value, actualDetailed.GetGroup(1).GetValueString());
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarBranchOwnedCases()
@@ -2490,24 +2406,8 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(matchRegex);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
-            {
-                var expectedGroup = expectedDetailed.Groups[number];
-                var actualGroup = actualDetailed.GetGroup(number);
-                Assert.Equal(expectedGroup.Success, actualGroup.Success);
-                if (expectedGroup.Success)
-                {
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                }
-            }
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -3158,12 +3058,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -3433,12 +3329,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -3602,11 +3494,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredLoopAstralOwnedCases))]
     public void AnchoredLoopAstralOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: doubly-anchored halves-closed star loops serve fully owned on
-        // astral input across all nine lanes of both lanes (the existing
-        // AnchoredLoopDecline pin keeps IsMatch plus string replacement for the
-        // right-to-left row). Empties only ever arise at ASCII positions, so
-        // tiling agrees unit-for-unit. Parity holds and construction is pinned.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -3622,8 +3510,8 @@ public sealed class AsciiSimplePatternTests
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -3743,10 +3631,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WholeLoopStarFromOffsetOwnedCases))]
     public void WholeLoopStarFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05: halves-closed greedy star loops serve owned FromOffset lanes on
-        // astral input from boundary and scalar starts alike (IsMatch, Count, Match,
-        // and Detailed build no fallback on either lane). Tailless lazy,
-        // inner-capture, and right-to-left shapes keep the decline battery below.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -3884,12 +3769,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(EmptyCapableHalvesClosedOwnedCases))]
     public void EmptyCapableHalvesClosedOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: greedy minimum-zero slice loops over halves-closed atoms (dots and
-        // member-free unfolded negated sets) tile astral input unit-for-unit with
-        // the oracle: empties only ever arise at ASCII positions, so the bytes,
-        // string, destination, UTF-8, and split lanes never construct the fallback
-        // engine here. Lazy minimum-zero loops, higher minimums, and divergent
-        // bodies keep their existing BCL routes.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
@@ -4067,13 +3947,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BoundedNonEmptyAstralOwnedCases))]
     public void BoundedNonEmptyAstralOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: bounded repetitions with nonzero minima step scalarwise exactly
-        // like BCL units on astral input (bounds only cap iterations of the
-        // same unit-closed atoms, shorthand tables included: halves miss every
-        // positive table on both sides), so discovery, shaping, splits, and
-        // all four replacement cores never construct the fallback engine here.
-        // Byte-level lanes compare encoded bytes because lone halves substitute
-        // identically through the encoder on both sides.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         // Bounded repeats with nonzero minima route to dedicated owned families
@@ -4095,24 +3969,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
-            {
-                var expectedGroup = expectedDetailed.Groups[number];
-                var actualGroup = actualDetailed.GetGroup(number);
-                Assert.Equal(expectedGroup.Success, actualGroup.Success);
-                if (expectedGroup.Success)
-                {
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                }
-            }
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -4513,12 +4371,8 @@ public sealed class AsciiSimplePatternTests
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -4625,12 +4479,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -4721,12 +4571,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -4842,12 +4688,8 @@ public sealed class AsciiSimplePatternTests
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -4946,12 +4788,8 @@ public sealed class AsciiSimplePatternTests
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedDetailed = oracle.Match(text);
-            var actualDetailed = detailedRegex.MatchDetailed(input);
-            Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-            if (expectedDetailed.Success)
-            {
-                Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-            }
+            var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
             Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var enumerateRegex = new Utf8Regex(pattern, options);
             var expectedPositions = new System.Collections.Generic.List<string>();
@@ -5041,11 +4879,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(RtlFoldedLiteralShapingOwnedCases))]
     public void RtlFoldedLiteralShapingOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: right-to-left folded literals serve owned on every lane (both lanes):
-        // discovery, Match, Detailed, enumeration, splits, and all three replacement
-        // cores verify with no fallback construction (splits project descending oracle
-        // encounter order through the reverse-search cursor). Parity holds and
-        // construction is pinned per lane.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -5064,12 +4898,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -13034,10 +12864,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BoundedSplitOwnedCases))]
     public void BoundedSplitOwnsInput(string pattern, RegexOptions options, string text, int count)
     {
-        // R05: bounded-count splits (plain, grouped, lookahead, and boundary
-        // shapes at counts 2 and 3) serve fully owned on both lanes with oracle
-        // value parity. (The .NET oracle itself rejects count 1 with
-        // ArgumentOutOfRange, so no pin is needed there.)
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -14838,13 +14665,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(MinBoundHeadedStarOwnedCases))]
     public void MinBoundHeadedStarServesOwnedDiscovery(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: greedy minimum-zero stars over halves-closed atoms serve owned
-        // discovery on astral input (IsMatch needs no anchored verifier on the
-        // ordinary lane; compiled Match builds no fallback), while Count keeps
-        // the anchored verifier on the ordinary lane and shaping plus
-        // materialization keep BCL routing; parity holds and construction is
-        // pinned per lane. Lazy stars, higher minimums, and divergent bodies
-        // keep the MinBoundHeadedAstral routing.
+
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -14864,12 +14685,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -15036,12 +14853,8 @@ public sealed class AsciiSimplePatternTests
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -15107,16 +14920,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BoundedExactDivergentOwnedCases))]
     public void BoundedExactDivergentOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: exact-count divergent loops serve literal-route discovery,
-        // enumeration, splits, Detailed shaping, and all three replacement cores
-        // with oracle parity and zero fallback construction on both lanes: the
-        // exact-count branch map expands per-iteration combinations leftmost-major
-        // with loop-body captures taking their span from the last iteration.
-        // Ranged counts ({m,n} with
-        // n>m) are excluded: the literal route returns longest-match spans where
-        // the oracle stops at first success (probed: (a|ab){2,3} light [1:4] vs
-        // oracle [1:2] with internal Match/Detailed disagreement), which stays
-        // diagnosed engine debt, not a pinned contract.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -15161,13 +14965,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedSplits, actualSplits);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
-            Assert.Equal(expectedDetailed.Length, actualDetailed.LengthInUtf16);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
@@ -15290,7 +15089,7 @@ public sealed class AsciiSimplePatternTests
         var matchRegex = new Utf8Regex(pattern, options);
         Assert.False(matchRegex.Match(input).Success);
         var detailedRegex = new Utf8Regex(pattern, options);
-        Assert.False(detailedRegex.MatchDetailed(input).Success);
+        Assert.False(Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input)).Success);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -15356,12 +15155,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(HeadedUnboundedGreedyRangeAsciiOwnedCases))]
     public void HeadedUnboundedGreedyRangeAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: headed unbounded greedy ranges over unit-divergent category tables
-        // serve fully owned on ASCII input across all nine lanes of both lanes.
-        // Units and scalars coincide here, so the min-two-plus fence never
-        // triggers: no verifier is built and no fallback is constructed, hits
-        // and misses alike. The astral miss keeps owned discovery with fallback
-        // shaping (see the miss battery below).
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var sliceRegex = new Utf8Regex(pattern, options);
@@ -15382,12 +15176,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -15446,9 +15236,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(HeadedUnboundedGreedyRangeAstralMissCases))]
     public void HeadedUnboundedGreedyRangeAstralMissOwnsEveryOperation(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: the owned UTF-16 minimum counter admits this whole greedy loop
-        // on astral subjects. Its miss projects directly on every operation,
-        // including the unchanged replacement and single split tail.
+
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var oracleHit = oracle.IsMatch(text);
@@ -15463,7 +15251,7 @@ public sealed class AsciiSimplePatternTests
         var matchRegex = new Utf8Regex(pattern, options);
         Assert.False(matchRegex.Match(input).Success);
         var detailedRegex = new Utf8Regex(pattern, options);
-        Assert.False(detailedRegex.MatchDetailed(input).Success);
+        Assert.False(Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input)).Success);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -15646,12 +15434,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -15713,24 +15497,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
-            {
-                var expectedGroup = expectedDetailed.Groups[number];
-                var actualGroup = actualDetailed.GetGroup(number);
-                Assert.Equal(expectedGroup.Success, actualGroup.Success);
-                if (expectedGroup.Success)
-                {
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                }
-            }
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -15845,24 +15613,8 @@ public sealed class AsciiSimplePatternTests
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
-        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
-            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
-            {
-                var expectedGroup = expectedDetailed.Groups[number];
-                var actualGroup = actualDetailed.GetGroup(number);
-                Assert.Equal(expectedGroup.Success, actualGroup.Success);
-                if (expectedGroup.Success)
-                {
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                }
-            }
-        }
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
