@@ -8,6 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Shared bounded-buffer checkpoint and copy mechanics for owned shaping.</summary>
 internal static class Utf8SliceBufferWork
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void ChargeResultBytes(ulong bytes, ref Utf8SliceInvocation invocation)
     {
         var breach = invocation.Budget.TryChargeResultBytes(bytes);

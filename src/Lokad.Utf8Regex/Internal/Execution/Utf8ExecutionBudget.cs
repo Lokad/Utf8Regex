@@ -85,6 +85,7 @@ internal struct Utf8ExecutionBudget
         return LimitBreach;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Utf8ExecutionLimitKind TryChargeResultBytes(ulong bytes)
     {
         if (Limits.MaxResultBytes == 0) return LimitBreach;
