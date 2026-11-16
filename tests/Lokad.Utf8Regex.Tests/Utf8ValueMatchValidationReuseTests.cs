@@ -40,6 +40,14 @@ public sealed class Utf8ValueMatchValidationReuseTests
     [InlineData("alpha|bravo|charlie", "charlieéalpha")]
     [InlineData("alpha|alphabet|bravo", "alphabeté😀")]
     [InlineData("alphabet|alpha|bravo", "alphabeté😀")]
+    [InlineData("中文|日本人", "é😀日本人中")]
+    [InlineData("中|中文|😀", "é中文😀")]
+    [InlineData("中文|中|😀", "é中文😀")]
+    [InlineData("😀|😃", "é😃😀")]
+    [InlineData("café|caffè", "é😀caffè中")]
+    [InlineData("cat|dog", "é😀dog中")]
+    [InlineData("alpha|bravo|charlie|delta|echo|foxtrot|golf", "é😀foxtrot中")]
+    [InlineData("中文|日本人", "é😀no match中")]
     public void LiteralValueMatchUsesOneSubjectPolicyAuthority(string pattern, string text)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
@@ -63,15 +71,18 @@ public sealed class Utf8ValueMatchValidationReuseTests
     }
 
     [Theory]
-    [InlineData("alpha")]
-    [InlineData("é😀bravo")]
-    [InlineData("no match")]
-    public void LiteralFamilyRejectsMalformedSuffixBeforeReturningAHitOrMiss(string text)
+    [InlineData("alpha|bravo|charlie", "alpha")]
+    [InlineData("alpha|bravo|charlie", "é😀bravo")]
+    [InlineData("alpha|bravo|charlie", "no match")]
+    [InlineData("中文|日本人", "é😀日本人")]
+    [InlineData("中|中文|😀", "é中文")]
+    [InlineData("中文|日本人", "no match")]
+    public void LiteralFamilyRejectsMalformedSuffixBeforeReturningAHitOrMiss(string pattern, string text)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex("alpha|bravo|charlie", mode | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
             byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
             Assert.Throws<ArgumentException>(() => regex.Match(bytes));
             using var source = new CancellationTokenSource();

@@ -54,8 +54,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
         SupportsAsciiWellFormedOnlyMatch: _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch,
-        SupportsWellFormedOnlyMatch: _smallAsciiLiteralFamilyPrimitive is not null || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
-        WellFormedOnlyMatchMissIsDefinitive: _smallAsciiLiteralFamilyPrimitive is not null || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
+        SupportsWellFormedOnlyMatch: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
+        WellFormedOnlyMatchMissIsDefinitive: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
         SupportsWellFormedOnlyCount: true,
         SupportsThrowIfInvalidOnlyCount: true,
         SkipRequiredPrefilterForMatch: false,
@@ -321,7 +321,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
     public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
-        if (_smallAsciiLiteralFamilyPrimitive is not null)
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
         {
             // The family cursor derives coordinates from the consumed prefix;
             // it does not consume whole-input validation metadata.

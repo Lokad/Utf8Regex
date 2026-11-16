@@ -27,6 +27,10 @@
   buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
   ownership, persistent memory cursors and explicit retained-result/output
   admission. Existing value cursors keep their documented copy/alias contracts.
+- Core value `Match` paths reuse subject validation and avoid discarded whole-
+  input UTF-16 metadata for exact literals and literal families. Returned byte/
+  UTF-16 coordinates remain relative to the original input; `Validate` still
+  rejects malformed tails.
 - Reduce repeated preparation, search, capture traversal, coordinate scans and
   output copies. Results and numerical resource requirements depend on the route;
   some workloads use more time or storage. Recheck finite policies when upgrading.
