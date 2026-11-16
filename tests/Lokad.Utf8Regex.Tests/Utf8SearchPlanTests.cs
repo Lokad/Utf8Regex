@@ -915,9 +915,9 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
         var regex = new Utf8Regex("(foo)\\1", RegexOptions.CultureInvariant);
         var first = regex.Match(input);
-        var second = regex.MatchFromUtf16Offset(input, first.IndexInUtf16 + first.LengthInUtf16);
+        var second = regex.Match(input, first.IndexInBytes + first.LengthInBytes, []);
         Assert.Equal((2, 6), (first.IndexInBytes, first.LengthInBytes));
-        Assert.Equal((10, 6), (second.IndexInBytes, second.LengthInBytes));
+        Assert.Equal((10, 6), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
     }
 
 

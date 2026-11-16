@@ -30,9 +30,16 @@ public sealed partial class Utf8Regex
             var program = _ownedSliceProgram;
             invocation.AnchorOriginByte = startOffsetInBytes;
             Utf8CaptureRange result;
-            if (program.GroupCount == 0 && TryFindNativeLiteralForResult(subject, startOffsetInBytes,
-                    ref invocation, out var found, out var start, out var stop))
-                result = found ? new(start, stop) : default;
+            if (program.GroupCount == 0 && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
+            {
+                // Preserve the existing value matcher’s bounded literal-family
+                // search when callers migrate from its UTF16-start entry.
+                var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
+                    subject, startOffsetInBytes, subject.Length, false, ref invocation, out var selected, out var found);
+                if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+                result = found ? new(selected.Index, selected.Index + selected.Length) : default;
+            }
             else
             {
                 slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);

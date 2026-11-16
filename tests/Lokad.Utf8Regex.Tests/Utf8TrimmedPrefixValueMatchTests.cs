@@ -101,8 +101,8 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         var retained = regex.MatchDetailed(input);
         var value = regex.Match(input);
         Assert.Equal("text", retained.GetGroup("doc").GetValueString());
-        Assert.Equal(value, regex.MatchFromUtf16Offset(input, 0));
-        Assert.False(regex.MatchFromUtf16Offset(input, 1).Success);
+        Utf8MatchSequence.EqualValue(value, regex.Match(input, 0, []));
+        Assert.False(regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, 1)), []).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal("text", retained.GetGroup("doc").GetValueString());
         byte[] malformed = [.. input, 0xff];

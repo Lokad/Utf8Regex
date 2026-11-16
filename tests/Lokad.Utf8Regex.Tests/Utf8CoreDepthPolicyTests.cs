@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreDepthPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
-        "match-offset", "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
+        "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
     private static Utf8Regex Create(string pattern, uint cap, RegexOptions options)
         => new(pattern, options, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxDepth = cap });
@@ -174,8 +174,8 @@ public sealed class Utf8CoreDepthPolicyTests
     {
         var regex = Create("ab", 1, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         Assert.Throws<ArgumentException>(() => regex.IsMatch([97, 98, 255]));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("😀ab"u8, 1));
-        var match = regex.MatchFromUtf16Offset("😀ab"u8, 2);
-        Assert.Equal((4, 2), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));
+        var match = regex.Match("😀ab"u8, 4, []);
+        Assert.Equal((4, 2), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
     }
 }

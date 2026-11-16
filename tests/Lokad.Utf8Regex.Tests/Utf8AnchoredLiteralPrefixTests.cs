@@ -197,7 +197,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
 
                 var expectedMatch = oracle.Match(inputText, offset);
                 var regex = new Utf8Regex(pattern, options);
-                var actualMatch = regex.MatchFromUtf16Offset(input, offset);
+                var actualMatch = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
                 Assert.Equal(expectedMatch.Success, actualMatch.Success);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex2 = new Utf8Regex(pattern, options);

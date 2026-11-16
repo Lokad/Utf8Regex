@@ -50,9 +50,9 @@ public sealed class Utf8LiteralAssertionTests
     {
         var prefix = new string('a', length); var regex = new Utf8Regex("(?<=" + prefix + ")bar");
         var input = Encoding.UTF8.GetBytes("😀" + prefix + "bar");
-        var match = regex.MatchFromUtf16Offset(input, 2 + length);
-        Assert.True(match.Success); Assert.Equal(4 + length, match.IndexInBytes);
-        Assert.False(regex.MatchFromUtf16Offset(input, 3 + length).Success);
+        var match = regex.Match(input, 4 + length, []);
+        Assert.True(match.Success); Assert.Equal(4 + length, match.StartOffsetInBytes);
+        Assert.False(regex.Match(input, 5 + length, []).Success);
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("😀" + prefix[..^1] + "bar")));
     }
 

@@ -124,16 +124,15 @@ public sealed class Utf8SliceClassAdmissionTests
             if (offset == 1)
             {
                 Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success).ParamName);
-                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset)).ParamName);
                 Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset)).ParamName);
                 Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, 1)).ParamName);
                 continue;
             }
             var match = oracle.Match(text, offset);
-            var value = regex.MatchFromUtf16Offset(input, offset);
+            var value = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), []);
             Assert.Equal(match.Success, value.Success);
-            Assert.Equal(match.Index, value.IndexInUtf16);
-            Assert.Equal(match.Length, value.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), value.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length)), value.EndOffsetInBytes - value.StartOffsetInBytes);
             var detailed = regex.MatchDetailedFromUtf16Offset(input, offset);
             Assert.Equal(match.Success, detailed.Success);
             Assert.Equal(match.Index, detailed.IndexInUtf16);

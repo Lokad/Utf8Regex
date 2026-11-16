@@ -120,8 +120,6 @@ sealed class Utf8Regex
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
-  method Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
-  method Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken = default)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)

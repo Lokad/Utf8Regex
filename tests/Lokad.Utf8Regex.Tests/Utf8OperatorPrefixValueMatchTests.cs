@@ -69,9 +69,9 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         }
         var offsetRegex = new Utf8Regex(Pattern);
         var offsetInput = "😀x+=rest"u8.ToArray();
-        var selected = offsetRegex.MatchFromUtf16Offset(offsetInput, 3);
-        Assert.Equal((5, 2, 3, 2), (selected.IndexInBytes, selected.LengthInBytes, selected.IndexInUtf16, selected.LengthInUtf16));
-        Assert.False(offsetRegex.MatchFromUtf16Offset(offsetInput, 2).Success);
+        var selected = offsetRegex.Match(offsetInput, 5, []);
+        Assert.Equal((5, 2), (selected.StartOffsetInBytes, selected.EndOffsetInBytes - selected.StartOffsetInBytes));
+        Assert.False(offsetRegex.Match(offsetInput, 4, []).Success);
         var captured = new Utf8Regex(@"\G(?<op>[=+\-^*/.*<>~!&|?]+)");
         var bytes = "+=-x"u8.ToArray(); var value = captured.Match(bytes); var detailed = captured.MatchDetailed(bytes);
         var cursor = captured.EnumerateMatches(bytes); var alias = cursor;

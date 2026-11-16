@@ -55,7 +55,7 @@ public sealed class Utf8CancellationTests
     {
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchFromUtf16Offset(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(s_input).AsSpan(0, 4)), [], token));
         Assert.Equal(token, exception.CancellationToken);
     }
 

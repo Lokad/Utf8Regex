@@ -9,7 +9,7 @@ public sealed class Utf8CaptureSlotMatchTests
 {
     public static IEnumerable<object[]> Cases()
     {
-        string[] regular = ["", "ab", "é", "(a)+(b)?", @"(?<10>a)(?<2>b)?(?<word>c)*",
+        string[] regular = ["", "ab", "é", "ab|a|bc|b", "ab|a|bc|b|é|d|ef|f", "(a)+(b)?", @"(?<10>a)(?<2>b)?(?<word>c)*",
             @"(?<x>a)(?<x>b)", @"(?<word>\w+)", @"(a|ab)+", @"(?:(?<x>a)|b)+"];
         string[] backtracking = [@"(?<x>a+)\k<x>", @"(?<=é)(?<x>a+)", @"(?=(?<ahead>ab))a",
             @"\G(?<x>ab)", @"(?<x>a)+(?<-x>b)+(?(x)(?!))", @"(?<x>a)+(?<y-x>b)(?(x)c|d)"];

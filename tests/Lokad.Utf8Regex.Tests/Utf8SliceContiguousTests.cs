@@ -161,12 +161,12 @@ public sealed class Utf8SliceContiguousTests
         var expected = oracle.Match(inputText, offset);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
-        var actual = regex.MatchFromUtf16Offset(input, offset);
+        var actual = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)
         {
-            Assert.Equal(expectedIndex, actual.IndexInUtf16);
-            Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedIndex)), actual.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), actual.EndOffsetInBytes);
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

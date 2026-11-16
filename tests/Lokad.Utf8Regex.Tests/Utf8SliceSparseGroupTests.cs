@@ -112,14 +112,13 @@ public sealed class Utf8SliceSparseGroupTests
                 if (scalarOffset < 0)
                 {
                     Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, subject.Bytes[~scalarOffset - 1] + 1, [], source.Token).Success).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset, source.Token)).ParamName);
                     Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset, source.Token)).ParamName);
                     Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, subject.Bytes[~scalarOffset - 1] + 1)).ParamName);
                     continue;
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.Match(input, subject.Bytes[scalarOffset], [], source.Token).Success);
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), Utf8MatchSequence.Count(regex.EnumerateMatches(input, subject.Bytes[scalarOffset], source.Token)));
-                AssertValue(oracle.Match(subject.Projected, scalarOffset), regex.MatchFromUtf16Offset(input, offset, source.Token), subject);
+                AssertValue(oracle.Match(subject.Projected, scalarOffset), regex.Match(input, subject.Bytes[scalarOffset], [], source.Token), subject);
                 AssertDetailed(oracle, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token), subject);
                 var expected = oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset);
                 var actual = regex.EnumerateMatches(input, subject.Bytes[scalarOffset]);
@@ -289,6 +288,13 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }
+    }
+
+    internal static void AssertValue(Match expected, Utf8CaptureRange actual, Utf8ScalarCaptureFixture.Subject subject)
+    {
+        Assert.Equal(expected.Success, actual.Success);
+        var (start, length) = subject.ByteRange(expected.Index, expected.Length);
+        Assert.Equal((start, start + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
 
     internal static void AssertValue(Match expected, Utf8ValueMatch actual, Utf8ScalarCaptureFixture.Subject? subject = null)

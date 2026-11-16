@@ -9,7 +9,8 @@
   optional end bound, cancellation and working-memory admission. It creates no
   coordinate map or captured-text snapshot. Compact slots resolve through
   `GroupNumberFromCaptureSlot`; funded program owners expose both operations.
-  Replace `IsMatchFromUtf16Offset` with byte-start `Match(...).Success`.
+  Replace `IsMatchFromUtf16Offset` and `MatchFromUtf16Offset` with byte-start
+  `Match`. Eligible literal families retain bounded search through eight alternatives.
 - Replace Core `EnumerateMatchesFromUtf16Offset` with byte-start
   `EnumerateMatches(input, startOffsetInBytes, cancellationToken)`. Starts must
   be scalar boundaries; anchors/lookbehind retain original-subject context,

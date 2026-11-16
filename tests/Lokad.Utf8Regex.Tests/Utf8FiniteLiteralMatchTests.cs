@@ -71,6 +71,9 @@ public sealed class Utf8FiniteLiteralMatchTests
         Assert.Equal("dog", retained.GetGroup("animal").GetValueString());
     }
 
+    private static void AssertRange(Utf8CaptureRange actual, string text, int start, int length)
+        => Utf8MatchSequence.AssertRange(actual, text, start, length);
+
     private static void AssertRange(Utf8ValueMatch actual, string text, int start, int length)
     {
         Assert.True(actual.Success);
@@ -153,7 +156,7 @@ public sealed class Utf8FiniteLiteralMatchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OffsetMapsRemainFundedAndDetailedCapturesKeepTheirOwnAdmission(bool compiled)
+    public void ByteStartRangesAndDetailedCapturesHaveSeparateAdmission(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var regex = new Utf8Regex("(nee)(?<suffix>dle)", options, Regex.InfiniteMatchTimeout,
@@ -164,13 +167,11 @@ public sealed class Utf8FiniteLiteralMatchTests
         foreach (var offset in new[] { 0, 1, 3, 4, 9, 10, text.Length })
         {
             var expected = new Regex(regex.Pattern, options).Match(text, offset);
-            var actual = regex.MatchFromUtf16Offset(input, offset, source.Token);
+            var actual = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), [], source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success) AssertRange(actual, text, expected.Index, expected.Length);
-            Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), [], source.Token).Success);
         }
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 3, []).Success);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 3, []));
         var detailed = regex.MatchDetailed(input, source.Token);
         Assert.Equal("nee", detailed.GetGroup(1).GetValueString());
         Assert.Equal("dle", detailed.GetGroup("suffix").GetValueString());
@@ -185,7 +186,6 @@ public sealed class Utf8FiniteLiteralMatchTests
                     MaxResultBytes = working ? 1UL << 20 : 1UL });
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchDetailed(input)).ResourceKind);
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchFromUtf16Offset(input, 0)).ResourceKind);
             if (working)
                 Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 0, []).Success).ResourceKind);
             else

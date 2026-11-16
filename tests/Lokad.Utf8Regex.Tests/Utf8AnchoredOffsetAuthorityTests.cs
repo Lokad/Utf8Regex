@@ -37,10 +37,10 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
             var regex = new Utf8Regex("(?i:^I)", RegexOptions.None, TimeSpan.FromSeconds(20));
             using var source = new CancellationTokenSource();
-            Assert.False(regex.MatchFromUtf16Offset("i"u8, 0, source.Token).Success);
-            var dotless = regex.MatchFromUtf16Offset("ı"u8, 0, source.Token);
+            Assert.False(regex.Match("i"u8, 0, [], source.Token).Success);
+            var dotless = regex.Match("ı"u8, 0, [], source.Token);
             Assert.True(dotless.Success);
-            Assert.Equal((0, 2), (dotless.IndexInBytes, dotless.LengthInBytes));
+            Assert.Equal((0, 2), (dotless.StartOffsetInBytes, (dotless.EndOffsetInBytes - dotless.StartOffsetInBytes)));
         }
         finally { CultureInfo.CurrentCulture = previous; }
     }
@@ -69,13 +69,13 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         var expected = start >= 0;
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), [], source.Token).Success);
         Assert.Equal(expected ? 1 : 0, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), source.Token)));
-        var value = regex.MatchFromUtf16Offset(input, floor, source.Token);
+        var value = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), [], source.Token);
         var detailed = regex.MatchDetailedFromUtf16Offset(input, floor, source.Token);
         Assert.Equal(expected, value.Success);
         Assert.Equal(expected, detailed.Success);
         if (expected)
         {
-            Assert.Equal((start, length), (value.IndexInBytes, value.LengthInBytes));
+            Assert.Equal((start, length), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
             Assert.Equal((start, length), (detailed.IndexInBytes, detailed.LengthInBytes));
             if (pattern == "^(abc)") Assert.Equal("abc", detailed.GetGroup(1).GetValueString());
         }
@@ -142,7 +142,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         => operation switch
         {
             0 => regex.Match(input, 0, [], token).Success,
-            1 => regex.MatchFromUtf16Offset(input, 0, token).Success,
+            1 => regex.Match(input, 0, [], token).Success,
             2 => regex.MatchDetailedFromUtf16Offset(input, 0, token).Success,
             _ => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0, token)) == 1,
         };

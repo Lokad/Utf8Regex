@@ -52,13 +52,13 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         var regex = new Utf8Regex(Pattern);
         var bytes = "😀///é\n///next\n"u8.ToArray();
         Assert.False(regex.Match(bytes).Success);
-        var offset = regex.MatchFromUtf16Offset(bytes, 2);
-        Assert.Equal((4, 6, 2, 5), (offset.IndexInBytes, offset.LengthInBytes, offset.IndexInUtf16, offset.LengthInUtf16));
+        var offset = regex.Match(bytes, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(bytes).AsSpan(0, 2)), []);
+        Assert.Equal((4, 6), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var captured = new Utf8Regex(@"\G(?<prefix>///)(?<body>[^\n]*)\n");
         var input = "///value\n///next\n"u8.ToArray();
         var value = captured.Match(input); var detailed = captured.MatchDetailed(input);
         Assert.Equal("value", detailed.GetGroup("body").GetValueString());
-        Assert.Equal(value, captured.MatchFromUtf16Offset(input, 0));
+        Utf8MatchSequence.EqualValue(value, captured.Match(input, 0, []));
         var cursor = captured.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);

@@ -169,7 +169,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             {
                 Action[] operations =
                 [
-                    () => { _ = regex.MatchFromUtf16Offset(subject.Input, offset, token); },
                     () => { _ = regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token); },
                 ];
                 foreach (var operation in operations)
@@ -189,7 +188,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             Assert.Equal(expected.Length, Utf8MatchSequence.Count(regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token)));
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
-            Value(subject, oracle.Match(subject.Projected, floor), regex.MatchFromUtf16Offset(subject.Input, offset, token));
+            Value(subject, oracle.Match(subject.Projected, floor), regex.Match(subject.Input, subject.ByteBoundaries[floor], [], token));
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
             Detailed(subject, oracle.Match(subject.Projected, floor), regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token));
@@ -241,6 +240,13 @@ internal static class Utf8AsciiScalarOperationAssertions
     {
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+    }
+
+    private static void Value(Subject subject, Match expected, Utf8CaptureRange actual)
+    {
+        Assert.Equal(expected.Success, actual.Success);
+        var (start, length) = subject.Bytes(expected.Index, expected.Length);
+        Assert.Equal((start, start + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
 
     private static void Value(Subject subject, Match expected, Utf8ValueMatch actual)

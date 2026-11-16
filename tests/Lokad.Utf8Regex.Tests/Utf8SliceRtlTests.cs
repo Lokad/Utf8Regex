@@ -740,12 +740,12 @@ public sealed class Utf8SliceRtlOperationTests
         Utf8AsciiScalarOperationAssertions.Offset(pattern, options, inputText, startAt);
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var found = regex.MatchFromUtf16Offset(Encoding.UTF8.GetBytes(inputText), startAt);
+        var found = regex.Match(Encoding.UTF8.GetBytes(inputText), Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []);
         Assert.Equal(expectedSuccess, found.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, found.IndexInUtf16);
-            Assert.Equal(expectedLength, found.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), found.EndOffsetInBytes - found.StartOffsetInBytes);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }

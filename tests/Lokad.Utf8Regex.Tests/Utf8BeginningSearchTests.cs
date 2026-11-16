@@ -131,7 +131,7 @@ public sealed class Utf8BeginningSearchTests
             var oracle = new Regex("^(a*)", RegexOptions.Multiline);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             Assert.Equal(oracle.Matches(text, padding).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, padding)))));
-            Assert.Equal(oracle.Match(text, padding).Success, regex.MatchFromUtf16Offset(input, padding).Success);
+            Assert.Equal(oracle.Match(text, padding).Success, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, padding)), []).Success);
         }
     }
 

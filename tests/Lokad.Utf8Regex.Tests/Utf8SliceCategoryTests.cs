@@ -464,7 +464,7 @@ public sealed class Utf8SliceCategoryTests
         Assert.Equal(expectedSuccess, wanted.Success);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var found = regex.MatchFromUtf16Offset(input, startAt);
+        var found = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []);
         Assert.Equal(expectedSuccess, found.Success);
         Assert.Equal(oracle.IsMatch(inputText, startAt), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []).Success);
         Assert.Equal(oracle.Matches(inputText, startAt).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)))));
@@ -472,8 +472,8 @@ public sealed class Utf8SliceCategoryTests
         {
             Assert.Equal(expectedStart, wanted.Index);
             Assert.Equal(expectedLength, wanted.Length);
-            Assert.Equal(expectedStart, found.IndexInUtf16);
-            Assert.Equal(expectedLength, found.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), found.EndOffsetInBytes - found.StartOffsetInBytes);
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

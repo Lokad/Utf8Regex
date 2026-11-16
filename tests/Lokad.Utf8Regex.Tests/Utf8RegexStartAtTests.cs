@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8RegexStartAtTests
 {
     [Fact]
-    public void IsMatchStartAtUsesUtf16PositionInsteadOfSlicingSemantics()
+    public void ByteStartMatchPreservesOriginalAnchorContext()
     {
         var regex = new Utf8Regex(@"\Aabc", RegexOptions.CultureInvariant);
 
@@ -21,17 +21,15 @@ public sealed class Utf8RegexStartAtTests
     }
 
     [Fact]
-    public void MatchStartAtReturnsFirstMatchFromRequestedUtf16Position()
+    public void ByteStartMatchReturnsFirstSelectedRange()
     {
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
-        var match = regex.MatchFromUtf16Offset("xxabcxxabc"u8, 5);
+        var match = regex.Match("xxabcxxabc"u8, 5, []);
 
         Assert.True(match.Success);
-        Assert.Equal(7, match.IndexInUtf16);
-        Assert.Equal(3, match.LengthInUtf16);
-        Assert.Equal(7, match.IndexInBytes);
-        Assert.Equal(3, match.LengthInBytes);
+        Assert.Equal(7, match.StartOffsetInBytes);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -109,13 +107,12 @@ public sealed class Utf8RegexStartAtTests
     }
 
     [Fact]
-    public void StartAtThrowsWhenBeyondUtf16Length()
+    public void StartAtThrowsWhenBeyondSubjectLength()
     {
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 4, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches("abc"u8, 4)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches("abc"u8, 4));
     }

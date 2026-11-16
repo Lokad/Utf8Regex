@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreWorkingPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
-        "match-offset", "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
+        "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
 
     private static Utf8Regex Create(string pattern, ulong bytes, RegexOptions options)
@@ -203,7 +203,7 @@ public sealed class Utf8CoreWorkingPolicyTests
     {
         var regex = Create("ab", 1_048_576, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         Assert.Throws<ArgumentException>(() => regex.IsMatch([97, 98, 255]));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("😀ab"u8, 1));
-        Assert.Equal(4, regex.MatchFromUtf16Offset("😀ab"u8, 2).IndexInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));
+        Assert.Equal(4, regex.Match("😀ab"u8, 4, []).StartOffsetInBytes);
     }
 }

@@ -210,12 +210,12 @@ public sealed class Utf8SliceDotTests
         var expected = oracle.Match(inputText, offset);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
-        var actual = regex.MatchFromUtf16Offset(input, offset);
+        var actual = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

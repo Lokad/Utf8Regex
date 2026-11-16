@@ -897,7 +897,6 @@ internal static partial class PythonReBenchmarkReporter
 
         var expected = context.ExecutePythonReOneShot();
         var direct = context.ExecuteCoreDirectOneShot();
-        var offset = context.ExecuteCoreOffsetZeroOneShot();
         var rawExact = context.SupportsExactLiteralOneShotReplay
             ? context.ExecuteCoreRawOneShot()
             : expected;
@@ -918,7 +917,6 @@ internal static partial class PythonReBenchmarkReporter
             : expected;
         var predecoded = context.ExecutePredecodedOneShot();
         if (expected != direct ||
-            expected != offset ||
             expected != rawExact ||
             expected != validatedExact ||
             expected != rawPrefixDigits ||
@@ -929,7 +927,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             throw new InvalidOperationException(
                 $"PythonRe one-shot phase diagnostic '{id}' produced incomparable results: " +
-                $"public={expected}, direct={direct}, offset={offset}, raw-exact={rawExact}, " +
+                $"public={expected}, direct={direct}, raw-exact={rawExact}, " +
                 $"validated-exact={validatedExact}, " +
                 $"raw-prefix-digits={rawPrefixDigits}, validated-prefix-digits={validatedPrefixDigits}, " +
                 $"raw-dotall-fullmatch={rawDotAllFullMatch}, " +
@@ -972,7 +970,6 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         PrintOperation("CoreDirect", MeasurePhase(context.ExecuteCoreDirectOneShot));
-        PrintOperation("CoreOffsetZero", MeasurePhase(context.ExecuteCoreOffsetZeroOneShot));
         PrintOperation("PredecodedRegex", MeasurePhase(context.ExecutePredecodedOneShot));
         PrintOperation("PythonRePublic", MeasurePhase(context.ExecutePythonReOneShot));
         return 0;
@@ -3444,12 +3441,6 @@ internal sealed class PythonReBenchmarkContext
     {
         EnsureOneShotPhases();
         return ProjectCoreOneShot(GetOneShotCoreRegex().Match(InputBytes));
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteCoreOffsetZeroOneShot()
-    {
-        EnsureOneShotPhases();
-        return ProjectCoreOneShot(GetOneShotCoreRegex().MatchFromUtf16Offset(InputBytes, 0));
     }
 
     internal PythonReBenchmarkValueResult ExecutePythonReOneShot()

@@ -66,8 +66,8 @@ public sealed class Utf8IdentifierValueMatchTests
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext()); var first = alias.Current;
         Assert.Equal(first, cursor.Current); Assert.True(cursor.MoveNext()); Assert.Equal(first, alias.Current);
         _ = regex.Match("other"u8); Assert.Equal("abc12", retained.GetGroup("id").GetValueString());
-        var offset = new Utf8Regex(Pattern).MatchFromUtf16Offset("😀!abc!de"u8, 2);
-        Assert.Equal((5, 3, 3, 3), (offset.IndexInBytes, offset.LengthInBytes, offset.IndexInUtf16, offset.LengthInUtf16));
+        var offset = new Utf8Regex(Pattern).Match("😀!abc!de"u8, 4, []);
+        Assert.Equal((5, 3), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
     }
 
     [Fact]

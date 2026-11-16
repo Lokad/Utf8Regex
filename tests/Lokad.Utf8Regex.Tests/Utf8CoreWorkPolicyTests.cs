@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreWorkPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
-        "match-offset", "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
+        "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
 
     private static Utf8Regex Create(string pattern, ulong cap, RegexOptions options = RegexOptions.CultureInvariant,
@@ -335,7 +335,6 @@ public sealed class Utf8CoreWorkPolicyTests
             case "match": return Range(live ? regex.Match(input, token) : regex.Match(input));
             case "detail": return Detail(live ? regex.MatchDetailed(input, token) : regex.MatchDetailed(input));
             case "slot-match": return (live ? regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), [], token).Success : regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), []).Success).ToString();
-            case "match-offset": return Range(live ? regex.MatchFromUtf16Offset(input, offset, token) : regex.MatchFromUtf16Offset(input, offset));
             case "detail-offset": return Detail(live ? regex.MatchDetailedFromUtf16Offset(input, offset, token) : regex.MatchDetailedFromUtf16Offset(input, offset));
             case "matches":
             case "matches-offset":

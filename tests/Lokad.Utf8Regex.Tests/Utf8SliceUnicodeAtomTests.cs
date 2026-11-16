@@ -108,7 +108,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                 }
                 Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.Match(input, subject.ByteBoundaries[scalarOffset], [], source.Token).Success);
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), Utf8MatchSequence.Count(regex.EnumerateMatches(input, subject.ByteBoundaries[scalarOffset], source.Token)));
-                AssertMatch(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchFromUtf16Offset(input, offset, source.Token));
+                AssertMatch(subject, oracle.Match(subject.Projected, scalarOffset), regex.Match(input, subject.ByteBoundaries[scalarOffset], [], source.Token));
                 AssertDetailed(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
                 AssertSequence(subject, oracle.EnumerateMatches(subject.Projected.AsSpan(), scalarOffset), regex.EnumerateMatches(input, subject.ByteBoundaries[scalarOffset]));
             }
@@ -529,7 +529,6 @@ public sealed class Utf8SliceUnicodeAtomTests
     {
         Action[] operations =
         [
-            () => { _ = regex.MatchFromUtf16Offset(input, offset, token); },
             () => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, token); },
         ];
         foreach (var operation in operations)
@@ -540,6 +539,14 @@ public sealed class Utf8SliceUnicodeAtomTests
 
     private static void AssertMatch(string text, Match expected, Utf8ValueMatch actual) =>
         AssertMatch(new FixtureSubject(text, projectSupplementary: false), expected, actual);
+
+    private static void AssertMatch(FixtureSubject subject, Match expected, Utf8CaptureRange actual)
+    {
+        Assert.Equal(expected.Success, actual.Success);
+        var range = subject.Coordinates(expected.Index, expected.Length);
+        Assert.Equal((range.ByteStart, range.ByteStart + range.ByteLength),
+            (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
+    }
 
     private static void AssertMatch(FixtureSubject subject, Match expected, Utf8ValueMatch actual) =>
         AssertRange(subject, expected.Success, expected.Index, expected.Length, actual);

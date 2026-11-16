@@ -22,12 +22,12 @@ public sealed class Utf8ResidualRouteOwnershipTests
         var subject = Utf8ValidatedInput.Create(bytes);
         var start = subject.GetBytePosition(7, "startOffsetInBytes");
         var startUtf16 = subject.Project(start).Value;
-        var match = regex.MatchFromUtf16Offset(bytes, startUtf16);
+        var match = regex.Match(bytes, start.Value, []);
         Assert.True(match.Success);
         // The fourth comment terminates at the first closing parenthesis,
         // leaving "a" as its literal; the other three leave "ab".
         var length = pattern == "(?#(?<100>a)a" ? 1 : 2;
-        Assert.Equal((12, length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((12, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.True(regex.Match(bytes, start.Value, []).Success);
         var detailed = regex.MatchDetailedFromUtf16Offset(bytes, startUtf16);
         Assert.True(detailed.Success);
@@ -37,7 +37,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         foreach (var value in regex.ByteOffsetExecution.EnumerateMatches(subject, start))
             enumerated.Add((value.IndexInBytes, value.LengthInBytes));
         Assert.Equal([(12, length)], enumerated);
-        Assert.False(regex.MatchFromUtf16Offset(bytes, subject.Utf16Length).Success);
+        Assert.False(regex.Match(bytes, bytes.Length, []).Success);
         AssertNoBclEngine(regex);
     }
 

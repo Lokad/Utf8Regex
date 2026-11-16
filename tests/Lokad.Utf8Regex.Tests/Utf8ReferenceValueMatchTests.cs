@@ -103,7 +103,7 @@ public sealed class Utf8ReferenceValueMatchTests
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         _ = regex.Match("b456"u8); Assert.Equal("123", detailed.GetGroup("row").GetValueString());
-        Assert.False(regex.MatchFromUtf16Offset(bytes, 1).Success);
+        Assert.False(regex.Match(bytes, 1, []).Success);
         foreach (var mode in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var subject = "a123"; var expected = new Regex(Cell, mode | RegexOptions.IgnoreCase).Match(subject);

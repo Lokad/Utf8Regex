@@ -149,7 +149,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         foreach (var finite in new[] { false, true })
         {
             var regex = Create("a+(b*)", mode, finite ? 1000000UL : null);
-            AssertRange(regex.MatchFromUtf16Offset(bytes, from, source.Token), text, index, length);
+            AssertRange(regex.Match(bytes, Encoding.UTF8.GetByteCount(text.AsSpan(0, from)), [], source.Token), text, index, length);
         }
     }
 
@@ -212,6 +212,9 @@ public sealed class Utf8ValueMatchValidationReuseTests
         new(pattern, mode | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
             work is null ? Utf8ResourcePolicy.Unlimited : new()
             { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+
+    private static void AssertRange(Utf8CaptureRange match, string text, int index, int length)
+        => Utf8MatchSequence.AssertRange(match, text, index, length);
 
     private static void AssertRange(Utf8ValueMatch match, string text, int index, int length)
     {

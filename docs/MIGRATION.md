@@ -77,7 +77,7 @@ Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
 as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
 resource limits throughout enumeration. This change does not yet remove the
-remaining UTF-16 result properties or value/detailed offset APIs.
+remaining UTF-16 result properties or detailed offset APIs.
 
 Core also removes `CountFromUtf16Offset`. Keep using `Count` for the whole subject;
 for a partial count, aggregate one byte-start enumeration:
@@ -96,7 +96,7 @@ is unchanged by this API removal.
 
 ### Byte-start matching with captures
 
-Core removes both `IsMatchFromUtf16Offset` overloads. Use the byte-start match
+Core removes the `IsMatchFromUtf16Offset` and `MatchFromUtf16Offset` overloads. Use the byte-start match
 operation, passing an empty capture span when only existence is needed:
 
 ```csharp

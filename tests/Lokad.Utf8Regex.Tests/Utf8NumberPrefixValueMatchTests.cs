@@ -96,8 +96,8 @@ public sealed class Utf8NumberPrefixValueMatchTests
         }
         var offsetRegex = new Utf8Regex(Pattern);
         var offsetInput = "😀x-12.34e-5!"u8.ToArray();
-        Assert.Equal(Scalar(offsetRegex, offsetInput, 5), offsetRegex.MatchFromUtf16Offset(offsetInput, 3));
-        Assert.False(offsetRegex.MatchFromUtf16Offset(offsetInput, 2).Success);
+        Utf8MatchSequence.EqualValue(Scalar(offsetRegex, offsetInput, 5), offsetRegex.Match(offsetInput, 5, []));
+        Assert.False(offsetRegex.Match(offsetInput, 4, []).Success);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
         var detailed = regex.MatchDetailed(input);
         Assert.Equal(".34", detailed.GetGroup(1).GetValueString());
         Assert.Equal("e-5", detailed.GetGroup(2).GetValueString());
-        Assert.Equal(value, regex.MatchFromUtf16Offset(input, 0));
+        Utf8MatchSequence.EqualValue(value, regex.Match(input, 0, []));
         Assert.Equal(1, regex.Count(input));
         var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());

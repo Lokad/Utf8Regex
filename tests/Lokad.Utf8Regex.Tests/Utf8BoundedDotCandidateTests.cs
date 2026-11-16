@@ -241,10 +241,10 @@ public sealed class Utf8BoundedDotCandidateTests
             var regex = new Utf8Regex("A.{0,25}Z", options, Timeout.InfiniteTimeSpan, Funded);
             Assert.Equal(1, regex.Count(input)); // Greedy selection reaches the final Z.
             Assert.Equal(5, regex.Match(input).IndexInBytes);
-            Assert.Equal(5, regex.MatchFromUtf16Offset(input, 3).IndexInBytes);
-            var next = regex.MatchFromUtf16Offset(input, 8);
+            Assert.Equal(5, regex.Match(input, 5, []).StartOffsetInBytes);
+            var next = regex.Match(input, 14, []);
             Assert.True(next.Success);
-            Assert.Equal("AxxxxZ", Encoding.UTF8.GetString(input.AsSpan(next.IndexInBytes, next.LengthInBytes)));
+            Assert.Equal("AxxxxZ", Encoding.UTF8.GetString(input.AsSpan(next.StartOffsetInBytes, (next.EndOffsetInBytes - next.StartOffsetInBytes))));
         }
     }
 

@@ -24,8 +24,8 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal((1, 6), (first.IndexInBytes, first.LengthInBytes));
         Assert.Equal("😀ab", first.GetGroup(1).GetValueString());
         Assert.Equal("😀ab", first.GetGroup(2).GetValueString());
-        var next = regex.MatchFromUtf16Offset(input, 6);
-        Assert.Equal((9, 6), (next.IndexInBytes, next.LengthInBytes));
+        var next = regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, 6)), []);
+        Assert.Equal((9, 6), (next.StartOffsetInBytes, (next.EndOffsetInBytes - next.StartOffsetInBytes)));
         Assert.Equal("z<😀ab:😀ab> z<中def:中def>", regex.ReplaceToString(input, "<${2}:${1}>"));
         var parts = new List<string>();
         foreach (var part in regex.EnumerateSplits(input)) parts.Add(part.GetValueString());

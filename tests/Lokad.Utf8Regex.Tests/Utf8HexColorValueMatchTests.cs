@@ -68,8 +68,8 @@ public sealed class Utf8HexColorValueMatchTests
             }
         }
         var offset = new Utf8Regex(Color, Fold); var bytes = "#abc"u8.ToArray();
-        Assert.True(offset.MatchFromUtf16Offset(bytes, 0).Success);
-        Assert.False(offset.MatchFromUtf16Offset(bytes, 1).Success);
+        Assert.True(offset.Match(bytes, 0, []).Success);
+        Assert.False(offset.Match(bytes, 1, []).Success);
         Assert.False(offset.Match(new byte[2049]).Success);
         var original = CultureInfo.CurrentCulture;
         try

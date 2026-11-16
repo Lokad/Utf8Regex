@@ -91,8 +91,8 @@ public sealed class Utf8QueryValueMatchTests
         }
         finally { CultureInfo.CurrentCulture = original; }
         var offset = new Utf8Regex(Digits, Fold); var bytes = "x~/d/1?t=x"u8.ToArray();
-        Assert.True(offset.MatchFromUtf16Offset(bytes, 0).Success);
-        Assert.False(offset.MatchFromUtf16Offset(bytes, 1).Success);
+        Assert.True(offset.Match(bytes, 0, []).Success);
+        Assert.False(offset.Match(bytes, 1, []).Success);
         var scoped = new Utf8Regex(Digits.Replace("https", "(?-i:https)"), Fold);
         Assert.False(scoped.Match("HTTPS://go.lokad.com/d/1?t=x"u8).Success);
     }
