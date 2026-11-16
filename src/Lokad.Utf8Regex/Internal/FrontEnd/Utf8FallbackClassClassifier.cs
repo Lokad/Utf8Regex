@@ -59,8 +59,6 @@ internal static class Utf8FallbackClassClassifier
     private static bool TryExcludedByte(Utf8TreeNode atom, out byte excluded)
     {
         Utf8ConstructionScope.ChargeWork(1); excluded = 0;
-        if (atom.Kind is Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Notoneloop)
-        { if (atom.Ch >= 128) return false; excluded = (byte)atom.Ch; return true; }
         if (atom.ScalarClass is not { } scalarClass) return false;
         var data = scalarClass.Data.AsSpan(); Utf8ConstructionScope.ChargeWork((ulong)data.Length);
         if (data.Length != 5 || data[0] != 1 || data[1] != 2 || data[2] != 0 || data[3] is < 0 or >= 128 || data[4] != data[3] + 1) return false;

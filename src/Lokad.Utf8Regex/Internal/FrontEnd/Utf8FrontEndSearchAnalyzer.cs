@@ -390,7 +390,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         asciiSet = null;
         runLength = 0;
 
-        if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic &&
+        if (node.Kind is Utf8TreeNodeKind.Setloop &&
             node.M > 0 &&
             !node.IsUnboundedRepeat &&
             node.M == node.N &&
@@ -1044,7 +1044,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool IsWhitespaceLoop(Utf8TreeNode node)
     {
-        if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Set))
+        if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set))
         {
             return false;
         }
@@ -1206,7 +1206,6 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 case Utf8TreeNodeKind.Oneloop:
                 case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
                     if (node.N >= 0 && node.N != int.MaxValue)
                     {
                         maxLineBreaks = node.Ch is '\r' or '\n' ? node.N : 0;
@@ -1217,7 +1216,6 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 case Utf8TreeNodeKind.Setloop:
                 case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Setloopatomic:
                     if (node.N >= 0 &&
                         node.N != int.MaxValue &&
                         ExcludesLineBreaks(node.ScalarClass))
@@ -1241,7 +1239,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         // bytes. Unicode \s also includes wider scalars; that definition cannot
         // certify distances relative to this transform's requirement base.
         node = UnwrapStructuralNode(node) ?? node;
-        return node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Set &&
+        return node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set &&
             Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var mask) &&
             mask.ActualLowMask == 0x100003e00UL && mask.ActualHighMask == 0;
     }

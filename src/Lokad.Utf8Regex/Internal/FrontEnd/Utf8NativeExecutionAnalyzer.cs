@@ -91,7 +91,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 // by a native shortcut. Pattern UTF-16 text is interoperability
                 // input; every decoded literal must represent a complete scalar.
                 if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
-                if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic)
+                if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy)
                 {
                     if (char.IsSurrogate(node.Ch)) return true;
                 }
@@ -2083,8 +2083,8 @@ internal static class Utf8NativeExecutionAnalyzer
             var segment = UnwrapRuntimeNode(node.Child(0), frames);
             if (segment.Kind != Utf8TreeNodeKind.Concatenate ||
                 segment.ChildCount != 3 ||
-                segment.Child(1).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Loop) ||
-                segment.Child(2).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Loop) ||
+                segment.Child(1).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Loop) ||
+                segment.Child(2).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Loop) ||
                 !TryGetExactAsciiSetAtom(segment.Child(0), out var leadingCharClass, out var leadingLength) ||
                 leadingLength != 1 ||
                 !TryGetSetLoop(segment.Child(1), out var trailingSetNode, out var trailingMin, out var trailingMax) ||
@@ -2664,7 +2664,7 @@ internal static class Utf8NativeExecutionAnalyzer
             }
             if (node.Kind != Utf8TreeNodeKind.Set) return false;
         }
-        else if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)) return false;
+        else if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)) return false;
         if (min < 0 || !unbounded ||
             !TryGetAsciiSeparatorSet(node.ScalarClass, out var separatorSet)) return false;
         runtimeSet = separatorSet; minCount = min; return true;
@@ -2779,8 +2779,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     case Utf8TreeNodeKind.Lazyloop:
                     case Utf8TreeNodeKind.Setloop:
                     case Utf8TreeNodeKind.Setlazy:
-                    case Utf8TreeNodeKind.Setloopatomic:
-                        if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic &&
+                        if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy &&
                             node.ScalarClass is { } loopSet && !HasNewline(loopSet))
                         { value = 0; frames.Pop(); continue; }
                         if (node.ChildCount != 1) return false;
@@ -2803,7 +2802,7 @@ internal static class Utf8NativeExecutionAnalyzer
             }
             if (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)
             { frames.Pop(); continue; }
-            if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+            if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)
             {
                 if (node.N == int.MaxValue && value != 0) return false;
                 value = checked(value * node.N); frames.Pop(); continue;
@@ -2946,7 +2945,6 @@ internal static class Utf8NativeExecutionAnalyzer
         {
             case Utf8TreeNodeKind.Setloop:
             case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Setloopatomic:
                 min = node.M;
                 max = node.N;
                 return true;
@@ -3060,7 +3058,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     TryGetInvariantIgnoreCaseAsciiLiteralText(node, out literal)) { }
                 else if (!foldCase && node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi &&
                     TryGetLiteralText(node, out literal)) { }
-                else if (!foldCase && node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Setlazy &&
+                else if (!foldCase && node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy &&
                     node.ScalarClass is { } set && node.M >= 1 && node.IsUnboundedRepeat)
                 {
                     if (!IsAsciiWhitespaceOnlySet(set)) return false;

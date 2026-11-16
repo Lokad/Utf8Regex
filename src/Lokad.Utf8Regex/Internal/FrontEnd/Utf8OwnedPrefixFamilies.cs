@@ -401,14 +401,14 @@ internal static class Utf8OwnedPrefixFamilies
             Utf8TreeNodeKind.One => Literal(node.Ch, node.MatchCaseInsensitive, node.Options),
             Utf8TreeNodeKind.Multi => Text(node),
             Utf8TreeNodeKind.Set => Class(node),
-            Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic =>
+            Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy =>
                 node.M == 0 && node.N == 0 ? empty : Repeat(Literal(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N, preceding),
-            Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic =>
+            Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy =>
                 node.M == 0 && node.N == 0 ? empty : Repeat(Class(node), node.M, node.N, preceding),
             Utf8TreeNodeKind.Empty or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Start or
             Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or
             Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.ECMABoundary or Utf8TreeNodeKind.NonECMABoundary or
-            Utf8TreeNodeKind.PositiveLookaround or Utf8TreeNodeKind.NegativeLookaround or Utf8TreeNodeKind.UpdateBumpalong => empty,
+            Utf8TreeNodeKind.PositiveLookaround or Utf8TreeNodeKind.NegativeLookaround => empty,
             _ => empty with { Complete = false },
         };
 

@@ -204,7 +204,7 @@ internal static class Utf8FallbackTreeQuery
     internal static bool TryRepeat(Utf8TreeNode source, out Utf8TreeNode atom, out int minimum, out int maximum)
     {
         Utf8ConstructionScope.ChargeWork(1); atom = Unwrap(source); minimum = maximum = 1;
-        if (atom.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set) return true;
+        if (atom.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Set) return true;
         minimum = atom.M; maximum = atom.N;
         if (minimum < 0 || maximum < minimum) return false;
         // These direct families use int.MaxValue as infinity. An explicit finite
@@ -215,9 +215,9 @@ internal static class Utf8FallbackTreeQuery
             atom = Unwrap(atom.Child(0));
             // Nested repetitions need their own composition proof. Do not lose
             // the inner bounds while borrowing its class payload.
-            return atom.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set;
+            return atom.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Set;
         }
-        return atom.Kind is Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Notoneloop or Utf8TreeNodeKind.Setloop;
+        return atom.Kind is Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop;
     }
 
     internal static bool TryMask(Utf8TreeNode atom, out AsciiCharClass mask)

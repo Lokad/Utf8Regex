@@ -17,7 +17,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
         Utf8TreeNode node;
-        if (kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+        if (kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)
         {
             Assert.Equal(Digits, text);
             using var scope = Utf8ConstructionScope.Enter();

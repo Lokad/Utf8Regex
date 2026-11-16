@@ -75,14 +75,11 @@ internal static class Utf8OwnedTreeSliceLowerer
             switch (node.Kind)
             {
                 case Utf8TreeNodeKind.Empty:
-                case Utf8TreeNodeKind.UpdateBumpalong:
                     return new Utf8SliceNode.EmptyNode();
                 case Utf8TreeNodeKind.Nothing:
                     return new Utf8SliceNode.FailNode();
                 case Utf8TreeNodeKind.One:
                     return new Utf8SliceNode.LiteralNode(node.Ch, foldCase);
-                case Utf8TreeNodeKind.Notone:
-                    return NotOne(node.Ch, foldCase, arena);
                 case Utf8TreeNodeKind.Set:
                     return node.ScalarClass is { } set ? DecodeClass(set, foldCase, arena) : null;
                 case Utf8TreeNodeKind.Multi:
@@ -148,26 +145,17 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return new Utf8SliceNode.AlternationNode(branches);
                 case Utf8TreeNodeKind.Oneloop:
                 case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Notoneloopatomic:
                 case Utf8TreeNodeKind.Setloop:
                 case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Setloopatomic:
                     var atom = node.Kind switch
                     {
-                        Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic =>
+                        Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy =>
                             new Utf8SliceNode.LiteralNode(node.Ch, foldCase),
-                        Utf8TreeNodeKind.Notoneloop or Utf8TreeNodeKind.Notonelazy or Utf8TreeNodeKind.Notoneloopatomic =>
-                            NotOne(node.Ch, foldCase, arena),
                         _ => node.ScalarClass is { } loopSet ? DecodeClass(loopSet, foldCase, arena) : null,
                     };
                     if (atom is null) return null;
-                    var compactRepeat = new Utf8SliceNode.RepeatNode(atom, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
-                        node.Kind is Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Notonelazy or Utf8TreeNodeKind.Setlazy);
-                    return node.Kind is Utf8TreeNodeKind.Oneloopatomic or Utf8TreeNodeKind.Notoneloopatomic or Utf8TreeNodeKind.Setloopatomic
-                        ? new Utf8SliceNode.AtomicNode(compactRepeat) : compactRepeat;
+                    return new Utf8SliceNode.RepeatNode(atom, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
+                        node.Kind is Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Setlazy);
                 case Utf8TreeNodeKind.Loop:
                 case Utf8TreeNodeKind.Lazyloop:
                     if (node.ChildCount != 1) return null;
@@ -242,23 +230,6 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return null;
             }
         }
-
-        static Utf8SliceNode NotOne(char unit, bool foldCase, Utf8ConstructionArena arena)
-        {
-            if (unit < 128)
-            {
-                var mask = arena.Allocate<byte>(16, true);
-                mask[unit >> 3] = (byte)(1 << (unit & 7));
-                return new Utf8SliceNode.SetNode(mask, true, [], foldCase);
-            }
-            var ranges = arena.Allocate<int>(2, true);
-            ranges[0] = unit;
-            ranges[1] = (int)unit + 1;
-            var categories = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
-            categories[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarRanges(ranges), false);
-            return new Utf8SliceNode.CategorySetNode(arena.Allocate<byte>(16, true), true, [], categories, foldCase);
-        }
-
         static Utf8SliceNode? DecodeClass(Utf8ScalarClass scalarClass, bool foldCase, Utf8ConstructionArena arena)
         {
             var data = scalarClass.Data.AsSpan();

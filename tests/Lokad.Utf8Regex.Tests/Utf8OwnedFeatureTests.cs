@@ -149,11 +149,9 @@ public sealed class Utf8OwnedFeatureTests
 
     [Theory]
     [InlineData((int)Utf8TreeNodeKind.Loop)] [InlineData((int)Utf8TreeNodeKind.Lazyloop)]
-    [InlineData((int)Utf8TreeNodeKind.Oneloop)] [InlineData((int)Utf8TreeNodeKind.Notoneloop)]
+    [InlineData((int)Utf8TreeNodeKind.Oneloop)]
     [InlineData((int)Utf8TreeNodeKind.Setloop)] [InlineData((int)Utf8TreeNodeKind.Onelazy)]
-    [InlineData((int)Utf8TreeNodeKind.Notonelazy)] [InlineData((int)Utf8TreeNodeKind.Setlazy)]
-    [InlineData((int)Utf8TreeNodeKind.Oneloopatomic)] [InlineData((int)Utf8TreeNodeKind.Notoneloopatomic)]
-    [InlineData((int)Utf8TreeNodeKind.Setloopatomic)]
+    [InlineData((int)Utf8TreeNodeKind.Setlazy)]
     public void LoopKindsNeedNoAncestorFactSet(int kind)
     {
         var root = Utf8TreeNode.Create((Utf8TreeNodeKind)kind, RegexOptions.None);

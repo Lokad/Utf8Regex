@@ -48,7 +48,7 @@ internal static class Utf8SliceParser
                 var node = frame.Node;
                 if (!frame.Entered)
                 {
-                    if (node.Kind is not (Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set or
+                    if (node.Kind is not (Utf8TreeNodeKind.One or Utf8TreeNodeKind.Set or
                         Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty or Utf8TreeNodeKind.Nothing or
                         Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
                         Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End or

@@ -1,20 +1,15 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Owned structural node-kind vocabulary for regex parse trees. Members and
-// numeric values mirror the fork wire encoding exactly (including the
-// opcode-aliased loop kinds and the lowercase-L lazy spelling) so trees keep
-// identical shape identity across the migration; no behavior lives here.
+// Owned regex parse-tree vocabulary. Explicit values preserve diagnostic
+// identities; unreachable kinds from the former fork vocabulary are omitted.
 internal enum Utf8TreeNodeKind : byte
 {
     Unknown = 0,
     Oneloop = 3,
-    Notoneloop = 4,
     Setloop = 5,
     Onelazy = 6,
-    Notonelazy = 7,
     Setlazy = 8,
     One = 9,
-    Notone = 10,
     Set = 11,
     Multi = 12,
     Backreference = 13,
@@ -41,8 +36,4 @@ internal enum Utf8TreeNodeKind : byte
     ExpressionConditional = 34,
     ECMABoundary = 41,
     NonECMABoundary = 42,
-    Oneloopatomic = 43,
-    Notoneloopatomic = 44,
-    Setloopatomic = 45,
-    UpdateBumpalong = 46,
 }

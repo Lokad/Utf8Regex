@@ -101,13 +101,8 @@ internal static class Utf8OwnedRequiredLiterals
                             break;
                         case Utf8TreeNodeKind.Oneloop:
                         case Utf8TreeNodeKind.Onelazy:
-                        case Utf8TreeNodeKind.Oneloopatomic:
-                        case Utf8TreeNodeKind.Notoneloop:
-                        case Utf8TreeNodeKind.Notonelazy:
-                        case Utf8TreeNodeKind.Notoneloopatomic:
                         case Utf8TreeNodeKind.Setloop:
                         case Utf8TreeNodeKind.Setlazy:
-                        case Utf8TreeNodeKind.Setloopatomic:
                             if (!branch && node.N > 1 && (!node.IsUnboundedRepeat || node.M > 1)) families.Clear();
                             break;
                     }

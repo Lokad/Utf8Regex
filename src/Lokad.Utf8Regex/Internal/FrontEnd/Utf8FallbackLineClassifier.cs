@@ -108,8 +108,6 @@ internal static class Utf8FallbackLineClassifier
     private static bool TryExcludedByte(Utf8TreeNode atom, out byte excluded)
     {
         excluded = 0;
-        if (atom.Kind is Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Notoneloop)
-        { if (atom.Ch >= 128) return false; excluded = (byte)atom.Ch; return true; }
         if (atom.ScalarClass is not { } scalarClass) return false;
         var data = scalarClass.Data.AsSpan(); Utf8ConstructionScope.ChargeWork((ulong)data.Length);
         if (data.Length != 5 || data[0] != 1 || data[1] != 2 || data[2] != 0 || data[3] >= 128 || data[4] != data[3] + 1) return false;

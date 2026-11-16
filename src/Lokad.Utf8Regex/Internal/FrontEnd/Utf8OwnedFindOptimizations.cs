@@ -52,21 +52,13 @@ internal static class Utf8OwnedFindOptimizations
                     low += atom.Minimum; high += atom.Maximum.GetValueOrDefault(); offset += consumed;
                 }
                 return Bounds(low, high);
-            case Utf8TreeNodeKind.Notone:
-                return new(1, 4);
             case Utf8TreeNodeKind.Set:
                 return Class(node);
             case Utf8TreeNodeKind.Oneloop:
             case Utf8TreeNodeKind.Onelazy:
-            case Utf8TreeNodeKind.Oneloopatomic:
                 return Repeat(ComputeScalarByteWidth(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N);
-            case Utf8TreeNodeKind.Notoneloop:
-            case Utf8TreeNodeKind.Notonelazy:
-            case Utf8TreeNodeKind.Notoneloopatomic:
-                return Repeat(new(1, 4), node.M, node.N);
             case Utf8TreeNodeKind.Setloop:
             case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Setloopatomic:
                 return Repeat(Class(node), node.M, node.N);
             case Utf8TreeNodeKind.Loop:
             case Utf8TreeNodeKind.Lazyloop:
@@ -114,7 +106,6 @@ internal static class Utf8OwnedFindOptimizations
             case Utf8TreeNodeKind.NegativeLookaround:
             case Utf8TreeNodeKind.ECMABoundary:
             case Utf8TreeNodeKind.NonECMABoundary:
-            case Utf8TreeNodeKind.UpdateBumpalong:
                 return new(0, 0);
             default:
                 return new(0, null);

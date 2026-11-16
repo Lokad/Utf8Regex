@@ -81,14 +81,9 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
                     case Utf8TreeNodeKind.Loop:
                     case Utf8TreeNodeKind.Lazyloop:
                     case Utf8TreeNodeKind.Oneloop:
-                    case Utf8TreeNodeKind.Notoneloop:
                     case Utf8TreeNodeKind.Setloop:
                     case Utf8TreeNodeKind.Onelazy:
-                    case Utf8TreeNodeKind.Notonelazy:
                     case Utf8TreeNodeKind.Setlazy:
-                    case Utf8TreeNodeKind.Oneloopatomic:
-                    case Utf8TreeNodeKind.Notoneloopatomic:
-                    case Utf8TreeNodeKind.Setloopatomic:
                         state.HasLoops = true;
                         break;
 

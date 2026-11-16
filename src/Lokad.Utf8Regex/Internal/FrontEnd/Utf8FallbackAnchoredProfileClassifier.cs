@@ -106,7 +106,6 @@ internal static class Utf8FallbackAnchoredProfileClassifier
         var pair = Unwrap(source);
         if (pair.Kind != Utf8TreeNodeKind.Concatenate || pair.ChildCount != 2 || !TryLiteral(pair.Child(0), out var literal) || LiteralLength(literal) != 1 || FirstByte(literal) != (byte)'\\') return false;
         var atom = Unwrap(pair.Child(1));
-        if (atom.Kind == Utf8TreeNodeKind.Notone) return atom.Ch == '\n';
         if (atom.Kind != Utf8TreeNodeKind.Set || atom.ScalarClass is not { } scalarClass) return false;
         Utf8ConstructionScope.ChargeWork((ulong)scalarClass.Data.Length);
         return scalarClass.Data.AsSpan().SequenceEqual([1, 2, 0, 10, 11]);

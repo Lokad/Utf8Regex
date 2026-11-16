@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove seven parser node kinds that no production parser generates and their
+  redundant lowering/analysis branches; real atomic, lazy and negated-class
+  semantics remain on the existing scalar nodes.
+
 - Omit unused execution-tree preparation for capture-free native literals and
   redundant capture-predicate walks for programs without capture slots, reducing
   construction allocations while preserving literal search and resource bounds.

@@ -46,7 +46,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             var pending = new Stack<Utf8TreeNode>(); pending.Push(tree.Root);
             while (pending.TryPop(out var node))
             {
-                if (node.Kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+                if (node.Kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)
                 {
                     Assert.NotNull(node.ScalarClass);
                     Assert.Null(node.Str);

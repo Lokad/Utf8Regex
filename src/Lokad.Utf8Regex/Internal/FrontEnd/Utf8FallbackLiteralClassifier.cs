@@ -37,7 +37,6 @@ internal static class Utf8FallbackLiteralClassifier
     private static bool IsDotStar(Utf8TreeNode source)
     {
         if (!TryRepeat(source, out var atom, out var minimum, out var maximum) || minimum != 0 || maximum != int.MaxValue) return false;
-        if (atom.Kind is Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Notoneloop) return atom.Ch == '\n';
         if (atom.ScalarClass is not { } scalarClass) return false;
         Utf8ConstructionScope.ChargeWork((ulong)scalarClass.Data.Length);
         return scalarClass.Data.AsSpan().SequenceEqual([1, 2, 0, 10, 11]);

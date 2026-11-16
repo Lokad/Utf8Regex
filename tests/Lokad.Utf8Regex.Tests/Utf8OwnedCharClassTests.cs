@@ -99,7 +99,7 @@ public sealed class Utf8OwnedCharClassTests
         while (stack.Count > 0)
         {
             var node = stack.Pop();
-            if (node.Kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+            if (node.Kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)
             {
                 Assert.NotNull(node.ScalarClass);
                 Assert.Null(node.Str);
