@@ -210,7 +210,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         Assert.Equal(wanted.Success, found.Success);
         Assert.Equal(wanted.Index, found.IndexInUtf16);
         Assert.Equal(wanted.Length, found.LengthInUtf16);
-        Assert.Equal(oracle.Matches(inputText, 1).Count, regex.CountFromUtf16Offset(input, 1));
+        Assert.Equal(oracle.Matches(inputText, 1).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 1)))));
         var expectedSplits = new List<string>();
         foreach (var split in oracle.Split("baab", 0))
         {

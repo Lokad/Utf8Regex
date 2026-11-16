@@ -50,11 +50,11 @@ public sealed class Utf8RtlStrictEndCountTests
             Assert.Equal(oracle.Count(text), regex.Count(input, token.Token));
             for (var offset = 0; offset <= text.Length; offset++)
             {
-                // UTF-16 interoperability offsets must still name scalar boundaries.
+                // Convert oracle positions only at complete scalar boundaries.
                 if (offset < text.Length && char.IsLowSurrogate(text[offset])) continue;
                 var count = oracle.Matches(text, offset).Count;
-                Assert.Equal(count, regex.CountFromUtf16Offset(input, offset));
-                Assert.Equal(count, regex.CountFromUtf16Offset(input, offset, token.Token));
+                Assert.Equal(count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
+                Assert.Equal(count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), token.Token)));
             }
             if (expected.Success)
             {
@@ -64,7 +64,7 @@ public sealed class Utf8RtlStrictEndCountTests
                     Assert.Equal(expected.Groups["g"].Value, retained.GetGroup("g").GetValueString());
             }
             Assert.Throws<ArgumentException>(() => regex.Count([.. bytes, 255]));
-            Assert.Throws<ArgumentException>(() => regex.CountFromUtf16Offset([.. bytes, 255], 0));
+            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches([.. bytes, 255], Encoding.UTF8.GetByteCount(text.AsSpan(0, 0)))));
         }
     }
 

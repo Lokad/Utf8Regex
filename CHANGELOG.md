@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core `CountFromUtf16Offset`. Partial counts aggregate byte-start
+  `EnumerateMatches` under one invocation; whole-subject `Count` remains.
+  Iterator coordinate/result work can increase partial-count costs and budget needs.
 - Add byte-start Core `Match` into caller-owned capture slots, including an
   optional end bound, cancellation and working-memory admission. It creates no
   coordinate map or captured-text snapshot. Compact slots resolve through

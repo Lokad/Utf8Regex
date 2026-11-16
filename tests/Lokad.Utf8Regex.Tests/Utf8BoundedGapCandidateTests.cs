@@ -53,8 +53,8 @@ public sealed class Utf8BoundedGapCandidateTests
                 if (start < text.Length && char.IsLowSurrogate(text[start])) continue;
                 var fromByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, start));
                 var expected = ScalarCount(regex, input, fromByte);
-                Assert.Equal(expected, regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start));
-                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start, token.Token));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(storage.AsSpan(1, input.Length), fromByte)));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, fromByte, token.Token)));
             }
         }
     }

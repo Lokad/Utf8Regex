@@ -49,22 +49,22 @@ public sealed class Utf8ScalarCountTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
-    public void EmptyCountFromUtf16StartAcceptsOnlyScalarBoundaries(bool compiled, bool reverse)
+    public void EmptyEnumerationFromByteStartAcceptsOnlyScalarBoundaries(bool compiled, bool reverse)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0)
             | (reverse ? RegexOptions.RightToLeft : 0);
         var regex = new Utf8Regex("", options);
         var input = Encoding.UTF8.GetBytes("x😀𐐀y");
-        int[] starts = [0, 1, 3, 5, 6];
+        int[] starts = [0, 1, 5, 9, 10];
         using var source = new CancellationTokenSource();
         for (var index = 0; index < starts.Length; index++)
         {
             var expected = reverse ? index + 1 : starts.Length - index;
-            Assert.Equal(expected, regex.CountFromUtf16Offset(input, starts[index]));
-            Assert.Equal(expected, regex.CountFromUtf16Offset(input, starts[index], source.Token));
+            Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, starts[index])));
+            Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, starts[index], source.Token)));
         }
-        foreach (var interior in new[] { 2, 4 })
-            Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, interior));
+        foreach (var interior in new[] { 2, 3, 4, 6, 7, 8 })
+            Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, interior)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

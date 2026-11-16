@@ -32,8 +32,15 @@ UTF-8 continuation byte throw `ArgumentOutOfRangeException` for `startOffsetInBy
 The original token, deadline and cumulative limits apply through every advance.
 This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. Offset
 existence uses `Match(input, startOffsetInBytes, captures, cancellationToken).Success`;
-`IsMatchFromUtf16Offset` is removed. The remaining Count/value/detailed UTF16-start
+`IsMatchFromUtf16Offset` is removed. The remaining value/detailed UTF16-start
 APIs and derived UTF-16 result coordinates have not yet been removed.
+
+`CountFromUtf16Offset` is also removed. Whole-subject `Count` remains. To count from
+a byte start, consume one `EnumerateMatches(input, startOffsetInBytes, token)`
+enumerator. Its original subject context, scalar progress, deadline and resource
+budget remain cumulative. Partial counts now pay that iterator's existing result-
+coordinate work/storage, which can cost more than the former counter; the general
+counter and iterator have not yet been consolidated.
 
 ### Caller-owned capture slots
 

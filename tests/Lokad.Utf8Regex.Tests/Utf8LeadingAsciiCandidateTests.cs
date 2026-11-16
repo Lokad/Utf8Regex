@@ -54,7 +54,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
             using var cancellation = new CancellationTokenSource();
             foreach (var start in new[] { 0, 3, 4, text.Length })
                 Assert.Equal(oracle.Matches(text, start).Count,
-                    regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start, cancellation.Token));
+                    Utf8MatchSequence.Count(regex.EnumerateMatches(storage.AsSpan(1, input.Length), Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), cancellation.Token)));
             Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
             Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
         }
@@ -117,13 +117,13 @@ public sealed class Utf8LeadingAsciiCandidateTests
             {
                 if (start > 0 && start < text.Length && char.IsSurrogatePair(text, start - 1))
                 {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, start));
-                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, start, live.Token));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start - 1)) + 1)));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start - 1)) + 1, live.Token)));
                     continue;
                 }
                 var expected = oracle.Matches(text, start).Count;
-                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start));
-                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start, live.Token));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)))));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), live.Token)));
             }
             Assert.Equal(oracle.Count(text), regex.Count(input, live.Token));
             Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
@@ -150,25 +150,25 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(@"(?:[A-Z](?:[a-z]|[0-9])){2,4}")]
     [InlineData(@"(?<x>[A-Z])(?<y>[a-z]+)\k<y>")]
     [InlineData(@"(?:(?i:[A-Z])[a-z]+){2,4}")]
-    public void CountsPreserveScalarEnumerationCapturesAndNonzeroFloors(string pattern)
+    public void ByteStartEnumerationPreservesScalarOracleCapturesAndFloors(string pattern)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
+            var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
             foreach (var tail in new[] { "", "Ab", "Ab Cd", "Ab Cd Ef Gh Ij Kl", "Ab\u2003Cd", "Éa Βa",
                 "ABaB", "xAa", "A1 A2 A3", "aab", "DAa XBza", "Aa😀Bb Cc\u00a0Dd" })
             {
                 var text = "é😀x" + tail + "😀é";
                 var input = Encoding.UTF8.GetBytes(text);
+                var projected = new Utf8ScalarCaptureFixture.Subject(text);
                 byte[] storage = [0xff, .. input, 0xff];
                 using var live = new CancellationTokenSource();
                 foreach (var start in new[] { 0, 1, 3, 4, text.Length })
                 {
-                    var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)));
-                    var expected = 0;
-                    while (cursor.MoveNext()) expected++;
-                    Assert.Equal(expected, regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start));
-                    Assert.Equal(expected, regex.CountFromUtf16Offset(input, start, live.Token));
+                    var expected = oracle.Count(projected.Projected, Array.IndexOf(projected.Units, start));
+                    Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(storage.AsSpan(1, input.Length), Encoding.UTF8.GetByteCount(text.AsSpan(0, start)))));
+                    Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), live.Token)));
                 }
             }
         }

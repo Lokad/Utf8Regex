@@ -32,7 +32,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         var detailed = regex.MatchDetailedFromUtf16Offset(bytes, startUtf16);
         Assert.True(detailed.Success);
         Assert.Equal((12, length), (detailed.IndexInBytes, detailed.LengthInBytes));
-        Assert.Equal(1, regex.CountFromUtf16Offset(bytes, startUtf16));
+        Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches(bytes, start.Value)));
         var enumerated = new List<(int, int)>();
         foreach (var value in regex.ByteOffsetExecution.EnumerateMatches(subject, start))
             enumerated.Add((value.IndexInBytes, value.LengthInBytes));

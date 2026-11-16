@@ -158,7 +158,6 @@ public sealed class Utf8RegexTimeoutTests
 
         Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchFromUtf16Offset(input, 0));
         Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailedFromUtf16Offset(input, 0));
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
     }
     [Fact]
     public void FiniteTimeoutPreservesFastPathResultsWithinBudget()
@@ -269,7 +268,6 @@ public sealed class Utf8RegexTimeoutTests
             }
         });
         Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchFromUtf16Offset(input, 0));
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

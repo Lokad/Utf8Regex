@@ -226,13 +226,13 @@ public sealed class Utf8SliceNumericEscapeTests
                     while (pieces.MoveNext()) { }
                 }
                 else
-                    _ = regex.CountFromUtf16Offset(input, 0, source.Token);
+                    _ = Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0, source.Token));
             });
             Assert.Equal(source.Token, failure.CancellationToken);
             Assert.Equal(64UL, checkpoint);
         }
         finally { session.Complete(); }
-        Assert.Equal(2000, regex.CountFromUtf16Offset(input, 0));
+        Assert.Equal(2000, Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

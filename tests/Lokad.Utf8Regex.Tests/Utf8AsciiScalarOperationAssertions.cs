@@ -169,7 +169,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             {
                 Action[] operations =
                 [
-                    () => { _ = regex.CountFromUtf16Offset(subject.Input, offset, token); },
                     () => { _ = regex.MatchFromUtf16Offset(subject.Input, offset, token); },
                     () => { _ = regex.MatchDetailedFromUtf16Offset(subject.Input, offset, token); },
                 ];
@@ -187,7 +186,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             Assert.Equal(expected.Length != 0, regex.Match(subject.Input, subject.ByteBoundaries[floor], [], token).Success);
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
-            Assert.Equal(expected.Length, regex.CountFromUtf16Offset(subject.Input, offset, token));
+            Assert.Equal(expected.Length, Utf8MatchSequence.Count(regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token)));
             Owned(regex);
             regex = new Utf8Regex(pattern, options);
             Value(subject, oracle.Match(subject.Projected, floor), regex.MatchFromUtf16Offset(subject.Input, offset, token));

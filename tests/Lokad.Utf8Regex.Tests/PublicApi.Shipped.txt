@@ -102,8 +102,6 @@ sealed class Utf8Regex
   method Int32 Count(ReadOnlySpan<Byte> input)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
-  method Int32 CountFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
-  method Int32 CountFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
   method Int32 GroupNumberFromCaptureSlot(Int32 captureSlot)
   method Int32 GroupNumberFromName(String name)
   method Int32 GroupNumberFromUtf8Name(ReadOnlySpan<Byte> nameUtf8, Threading.CancellationToken cancellationToken = default)

@@ -516,7 +516,7 @@ public sealed class AsciiSimplePatternTests
                 }
 
                 Assert.Equal(oracle.IsMatch(inputText, offset), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
-                Assert.Equal(oracle.Matches(inputText, offset).Count, regex.CountFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.Matches(inputText, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))));
                 Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchFromUtf16Offset(input, offset).Success);
                 Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchDetailedFromUtf16Offset(input, offset).Success);
 
@@ -683,7 +683,7 @@ public sealed class AsciiSimplePatternTests
                 }
 
                 Assert.Equal(oracle.IsMatch(inputText, offset), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
-                Assert.Equal(oracle.Matches(inputText, offset).Count, regex.CountFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.Matches(inputText, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))));
                 Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchFromUtf16Offset(input, offset).Success);
                 Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchDetailedFromUtf16Offset(input, offset).Success);
 
@@ -2923,7 +2923,7 @@ public sealed class AsciiSimplePatternTests
         {
             expectedCount++;
         }
-        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.Equal(expectedCount, Utf8MatchSequence.Count(countRegex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, offset);
         var actualMatch = matchRegex.MatchFromUtf16Offset(input, offset);
@@ -2986,7 +2986,7 @@ public sealed class AsciiSimplePatternTests
         {
             expectedCount++;
         }
-        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.Equal(expectedCount, Utf8MatchSequence.Count(countRegex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, offset);
@@ -3116,12 +3116,10 @@ public sealed class AsciiSimplePatternTests
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1, []).Success);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1); });
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1, [], source.Token).Success);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset, source.Token));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset, source.Token); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, source.Token); });
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1, source.Token); });
@@ -4101,7 +4099,7 @@ public sealed class AsciiSimplePatternTests
         {
             expectedCount++;
         }
-        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.Equal(expectedCount, Utf8MatchSequence.Count(countRegex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, offset);

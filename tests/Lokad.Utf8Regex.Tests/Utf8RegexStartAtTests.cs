@@ -17,7 +17,7 @@ public sealed class Utf8RegexStartAtTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
-        Assert.Equal(1, regex.CountFromUtf16Offset("abcabc"u8, 3));
+        Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches("abcabc"u8, 3)));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class Utf8RegexStartAtTests
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 4, []).Success);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset("abc"u8, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches("abc"u8, 4)));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches("abc"u8, 4));

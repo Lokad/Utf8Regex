@@ -124,7 +124,6 @@ public sealed class Utf8SliceClassAdmissionTests
             if (offset == 1)
             {
                 Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success).ParamName);
-                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset)).ParamName);
                 Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset)).ParamName);
                 Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset)).ParamName);
                 Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatches(input, 1)).ParamName);

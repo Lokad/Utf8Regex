@@ -224,7 +224,7 @@ public sealed class Utf8FiniteLiteralCountTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void OffsetEntryKeepsScalarCoordinatesAndFundedMap(bool compiled)
+    public void OffsetEnumerationKeepsScalarBoundariesAndFundedCoordinates(bool compiled)
     {
         var input = "é😀ababxabab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
@@ -232,13 +232,13 @@ public sealed class Utf8FiniteLiteralCountTests
             new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
         var baseline = new Utf8Regex("(a)(b)", options);
         foreach (var offset in new[] { 0, 1, 3, 4, 5, 7, 9 })
-            Assert.Equal(baseline.CountFromUtf16Offset(input, offset), regex.CountFromUtf16Offset(input, offset));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, 2));
+            Assert.Equal(Utf8MatchSequence.Count(baseline.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))), Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 3)));
         var tight = new Utf8Regex("(a)(b)", options, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1_048_576 });
         Assert.Equal(4, tight.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.CountFromUtf16Offset(input, 0)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.Count(tight.EnumerateMatches(input, 0))).ResourceKind);
     }
 
     [Theory]
@@ -280,7 +280,7 @@ public sealed class Utf8FiniteLiteralCountTests
         var regex = Create("(a)(b)", 100000, RegexOptions.None);
         byte[] input = [.. "ab ab"u8, 0xF0, 0x9F];
         Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.CountFromUtf16Offset(input, 0));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0)));
     }
 
     [Theory]
@@ -313,6 +313,6 @@ public sealed class Utf8FiniteLiteralCountTests
             new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
         Assert.Equal(baseline.Count(input), limited.Count(input));
         var offset = text.StartsWith("😀", StringComparison.Ordinal) ? 2 : 1;
-        Assert.Equal(baseline.CountFromUtf16Offset(input, offset), limited.CountFromUtf16Offset(input, offset));
+        Assert.Equal(Utf8MatchSequence.Count(baseline.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))), Utf8MatchSequence.Count(limited.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));
     }
 }

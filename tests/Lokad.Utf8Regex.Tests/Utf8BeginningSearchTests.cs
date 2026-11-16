@@ -30,7 +30,7 @@ public sealed class Utf8BeginningSearchTests
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, actual.IndexInUtf16)), actual.IndexInBytes);
             Assert.Equal("aaa", actual.GetGroup(1).GetValueString());
             foreach (var offset in new[] { 0, padding, padding + 3, padding + 5, padding + 6, text.Length })
-                Assert.Equal(oracle.Matches(text, offset).Count, regex.CountFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.Matches(text, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
             var positions = new List<int>();
             foreach (var match in regex.EnumerateMatches(input)) positions.Add(match.IndexInUtf16);
             Assert.Equal(oracle.Matches(text).Select(match => match.Index).ToArray(), positions);
@@ -130,7 +130,7 @@ public sealed class Utf8BeginningSearchTests
             var input = Encoding.UTF8.GetBytes(text);
             var oracle = new Regex("^(a*)", RegexOptions.Multiline);
             Assert.Equal(oracle.Count(text), regex.Count(input));
-            Assert.Equal(oracle.Matches(text, padding).Count, regex.CountFromUtf16Offset(input, padding));
+            Assert.Equal(oracle.Matches(text, padding).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, padding)))));
             Assert.Equal(oracle.Match(text, padding).Success, regex.MatchFromUtf16Offset(input, padding).Success);
         }
     }

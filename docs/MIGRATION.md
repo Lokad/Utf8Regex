@@ -77,7 +77,22 @@ Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
 as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
 resource limits throughout enumeration. This change does not yet remove the
-remaining UTF-16 result properties or Count/value/detailed offset APIs.
+remaining UTF-16 result properties or value/detailed offset APIs.
+
+Core also removes `CountFromUtf16Offset`. Keep using `Count` for the whole subject;
+for a partial count, aggregate one byte-start enumeration:
+
+```csharp
+var regex = new Utf8Regex("x");
+var count = 0;
+foreach (var match in regex.EnumerateMatches("é😀x x"u8, startOffsetInBytes: 6))
+    count++; // 2
+```
+
+One enumeration preserves cumulative work, deadline, cancellation and resource
+admission. Its current coordinate/result preparation can require more work or
+storage than the removed offset counter. The whole-subject Count implementation
+is unchanged by this API removal.
 
 ### Byte-start matching with captures
 

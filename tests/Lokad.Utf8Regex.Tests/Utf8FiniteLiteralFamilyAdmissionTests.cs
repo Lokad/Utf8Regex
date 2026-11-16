@@ -70,19 +70,19 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
     }
 
     [Fact]
-    public void Utf16OffsetRemainsDerivedFromTheOriginalSubject()
+    public void ByteStartEnumerationRetainsOriginalSubjectAndIteratorAdmission()
     {
         const string pattern = "猫猫猫|狗狗狗|猴猴猴|兔兔兔|马马马";
         const string text = "😀猫猫猫 狗狗狗 猴猴猴";
         var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         using var token = new CancellationTokenSource();
-        Assert.Equal(3, regex.CountFromUtf16Offset(Encoding.UTF8.GetBytes(text), 2, token.Token));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(Encoding.UTF8.GetBytes(text), 1, token.Token));
+        Assert.Equal(3, Utf8MatchSequence.Count(regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4, token.Token)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), 1, token.Token)));
         var denied = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.CountFromUtf16Offset(Encoding.UTF8.GetBytes(text), 2)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.Count(denied.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4))).ResourceKind);
     }
 
     [Fact]

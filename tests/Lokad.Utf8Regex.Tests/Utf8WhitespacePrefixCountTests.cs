@@ -81,20 +81,20 @@ public sealed class Utf8WhitespacePrefixCountTests
         var text = new string('z', 2046) + " #aZbc \u2003\u00a0#abc X #Abc! #ébc #😀bc #bbb #abc";
         var input = Encoding.UTF8.GetBytes(text);
         byte[] storage = [0xff, .. input, 0xff];
+        var projected = new Utf8ScalarCaptureFixture.Subject(text);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
         {
             if (mode == RegexOptions.NonBacktracking && pattern.Contains(@"\k<s>")) continue;
             if (mode == RegexOptions.NonBacktracking && pattern.Contains("(?=!")) continue;
             var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, mode));
             using var token = new CancellationTokenSource();
             for (var start = 2040; start <= text.Length; start++)
             {
                 if (start < text.Length && char.IsLowSurrogate(text[start])) continue;
-                var cursor = regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)));
-                var expected = 0;
-                while (cursor.MoveNext()) expected++;
-                Assert.Equal(expected, regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start));
-                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start, token.Token));
+                var expected = oracle.Count(projected.Projected, Array.IndexOf(projected.Units, start));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(storage.AsSpan(1, input.Length), Encoding.UTF8.GetByteCount(text.AsSpan(0, start)))));
+                Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), token.Token)));
             }
         }
     }

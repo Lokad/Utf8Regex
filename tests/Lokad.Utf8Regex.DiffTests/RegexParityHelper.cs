@@ -76,8 +76,8 @@ internal sealed class RegexParityContext
 
         var expected = DotNet.Count(Case.Input, startAt);
         var expectedCompiled = DotNetCompiled.Count(Case.Input, startAt);
-        var actual = Utf8.CountFromUtf16Offset(bytes, startAt);
-        var actualCompiled = Utf8Compiled.CountFromUtf16Offset(bytes, startAt);
+        var actual = CountMatches(Utf8.EnumerateMatches(bytes, Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, startAt))));
+        var actualCompiled = CountMatches(Utf8Compiled.EnumerateMatches(bytes, Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, startAt))));
 
         Assert.Equal(expected, expectedCompiled);
         Assert.Equal(expected, actual);
@@ -112,6 +112,13 @@ internal sealed class RegexParityContext
         AssertEquivalentDetailedMatch(expected, actualCompiled);
     }
 
+
+    private static int CountMatches(Utf8ValueMatchEnumerator matches)
+    {
+        var count = 0;
+        while (matches.MoveNext()) count = checked(count + 1);
+        return count;
+    }
 
     private static void AssertEquivalentMatch(Match expected, Utf8ValueMatch actual)
     {

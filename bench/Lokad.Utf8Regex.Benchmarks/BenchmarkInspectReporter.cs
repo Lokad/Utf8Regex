@@ -6053,11 +6053,18 @@ internal static partial class BenchmarkInspectReporter
         {
             Utf8RegexBenchmarkOperation.IsMatch => regex.Match(input, byteOffset, []).Success ? 1 : 0,
             Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(regex.MatchFromUtf16Offset(input, utf16Offset)),
-            Utf8RegexBenchmarkOperation.Count => regex.CountFromUtf16Offset(input, utf16Offset),
+            Utf8RegexBenchmarkOperation.Count => CountMatches(regex.EnumerateMatches(input, byteOffset)),
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(
                 regex.EnumerateMatches(input, byteOffset)),
             _ => throw new InvalidOperationException($"Operation '{operation}' does not support an offset diagnostic."),
         };
+    }
+
+    private static int CountMatches(Utf8ValueMatchEnumerator matches)
+    {
+        var count = 0;
+        while (matches.MoveNext()) count = checked(count + 1);
+        return count;
     }
 
     private static int ExecuteRegexOffset(

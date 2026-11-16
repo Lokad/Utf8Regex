@@ -73,7 +73,7 @@ public sealed class Utf8PublicScalarFallbackTests
         foreach (var token in new[] { CancellationToken.None, tokenSource.Token })
         {
             Assert.Equal(expected, regex.Match(input, offset, [], token).Success);
-            Assert.Equal(expected ? 1 : 0, regex.CountFromUtf16Offset(input, offset, token));
+            Assert.Equal(expected ? 1 : 0, Utf8MatchSequence.Count(regex.EnumerateMatches(input, offset, token)));
             var match = regex.MatchFromUtf16Offset(input, offset, token);
             var detailed = regex.MatchDetailedFromUtf16Offset(input, offset, token);
             Assert.Equal(expected, match.Success);
@@ -99,7 +99,7 @@ public sealed class Utf8PublicScalarFallbackTests
         var regex = new Utf8Regex("(?<x>.)", Options(compiled, rtl));
         var input = "😀a"u8.ToArray();
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 1)));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, 1); });
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

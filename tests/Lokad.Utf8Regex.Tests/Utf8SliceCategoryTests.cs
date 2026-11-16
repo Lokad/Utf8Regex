@@ -467,7 +467,7 @@ public sealed class Utf8SliceCategoryTests
         var found = regex.MatchFromUtf16Offset(input, startAt);
         Assert.Equal(expectedSuccess, found.Success);
         Assert.Equal(oracle.IsMatch(inputText, startAt), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []).Success);
-        Assert.Equal(oracle.Matches(inputText, startAt).Count, regex.CountFromUtf16Offset(input, startAt));
+        Assert.Equal(oracle.Matches(inputText, startAt).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)))));
         if (expectedSuccess)
         {
             Assert.Equal(expectedStart, wanted.Index);
