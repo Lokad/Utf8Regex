@@ -12,8 +12,7 @@ internal readonly record struct Utf8CompiledRuntimeCapabilities(
     bool SupportsWellFormedOnlyCount,
     bool SupportsThrowIfInvalidOnlyCount,
     bool SkipRequiredPrefilterForMatch,
-    bool SkipRequiredPrefilterForCount,
-    bool UsesEmittedKernelMatcher);
+    bool SkipRequiredPrefilterForCount);
 
 internal interface IUtf8AsciiWellFormedMatchRuntime
 {
@@ -70,17 +69,6 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool SupportsThrowIfInvalidOnlyCount => Capabilities.SupportsThrowIfInvalidOnlyCount;
     public bool SkipRequiredPrefilterForMatch => Capabilities.SkipRequiredPrefilterForMatch;
     public bool SkipRequiredPrefilterForCount => Capabilities.SkipRequiredPrefilterForCount;
-    public bool UsesEmittedKernelMatcher => Capabilities.UsesEmittedKernelMatcher;
-
-    /// <summary>
-    /// Returns an emitted kernel only when it implements complete global-match
-    /// semantics for the supplied validated subject and deadline. Implementors
-    /// return <see langword="null"/> whenever their kernel cannot preserve the
-    /// validation, capture, or timeout contract for this invocation.
-    /// </summary>
-    internal virtual Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget) => null;
 
     public bool TryMatchAsciiWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
@@ -184,8 +172,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         SupportsWellFormedOnlyCount: false,
         SupportsThrowIfInvalidOnlyCount: false,
         SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch || _repeatedDigitGroupPlan.HasValue,
-        SkipRequiredPrefilterForCount: false,
-        UsesEmittedKernelMatcher: false);
+        SkipRequiredPrefilterForCount: false);
 
     public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
@@ -466,7 +453,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly bool _emitEnabled;
     private readonly Utf8EmittedDeterministicMatcher? _emittedDeterministicMatcher;
-    private readonly Utf8EmittedKernelMatcher? _emittedKernelMatcher;
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
     private readonly PreparedAsciiFindPlan _orderedWindowTrailingFindPlan;
 
@@ -478,9 +464,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         _emitEnabled = emit;
         _emittedDeterministicMatcher = emit && Utf8EmittedDeterministicMatcher.TryCreate(_regexPlan.StructuralLinearProgram, out var matcher)
             ? matcher
-            : null;
-        _emittedKernelMatcher = emit && Utf8EmittedKernelMatcher.TryCreate(_regexPlan, out var preparedKernelMatcher)
-            ? preparedKernelMatcher
             : null;
         _emittedBoundaryLiteralFamily = emit &&
             (_regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) == 0 &&
@@ -501,25 +484,10 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         SupportsWellFormedOnlyCount: false,
         SupportsThrowIfInvalidOnlyCount: false,
         SkipRequiredPrefilterForMatch: false,
-        SkipRequiredPrefilterForCount: false,
-        UsesEmittedKernelMatcher: _emittedKernelMatcher is not null);
+        SkipRequiredPrefilterForCount: false);
 
     internal Utf8EmittedLiteralFamilyCounter? EmittedBoundaryLiteralFamily =>
         _emittedBoundaryLiteralFamily;
-
-    internal Utf8EmittedKernelMatcher? PreparedKernelMatcher => _emittedKernelMatcher;
-
-    internal override Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget)
-    {
-        return _regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            _regexPlan.Features.CaptureCount <= 1 &&
-            validation.IsAscii &&
-            budget.IsInfinite
-                ? _emittedKernelMatcher
-                : null;
-    }
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
@@ -544,7 +512,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
                 _verifierRuntime,
                 _emitEnabled,
                 _emittedDeterministicMatcher,
-                _emittedKernelMatcher,
                 input,
                 validation,
                 budget,
@@ -580,7 +547,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
                 _verifierRuntime,
                 _emitEnabled,
                 _emittedDeterministicMatcher,
-                _emittedKernelMatcher,
                 _orderedWindowTrailingFindPlan,
                 input,
                 validation,
@@ -626,7 +592,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
                 _verifierRuntime,
                 _emitEnabled,
                 _emittedDeterministicMatcher,
-                _emittedKernelMatcher,
                 input,
                 validation,
                 budget,
@@ -674,8 +639,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
                 SupportsWellFormedOnlyCount: true,
                 SupportsThrowIfInvalidOnlyCount: Utf8FallbackDirectFamilyRuntimePolicy.SupportsThrowIfInvalidOnlyCount(_directFamily),
                 SkipRequiredPrefilterForMatch: Utf8FallbackDirectFamilyRuntimePolicy.SkipRequiredPrefilterForMatch(_directFamily),
-                SkipRequiredPrefilterForCount: Utf8FallbackDirectFamilyRuntimePolicy.SkipRequiredPrefilterForCount(_directFamily),
-                UsesEmittedKernelMatcher: false);
+                SkipRequiredPrefilterForCount: Utf8FallbackDirectFamilyRuntimePolicy.SkipRequiredPrefilterForCount(_directFamily));
         }
     }
 

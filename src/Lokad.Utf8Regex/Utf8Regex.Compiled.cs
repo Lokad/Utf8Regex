@@ -260,12 +260,8 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
 
-        return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(
-            _compiledEngineRuntime,
-            _preparedRegex,
-            input,
-            validation,
-            budget);
+        return new Utf8ValueMatchEnumerator(Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+            _preparedRegex, input, validation, budget));
     }
 
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(

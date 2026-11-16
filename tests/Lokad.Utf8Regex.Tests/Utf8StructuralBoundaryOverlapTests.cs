@@ -71,22 +71,7 @@ public sealed class Utf8StructuralBoundaryOverlapTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AsciiCountUsesTheExistingStructuralRoute(bool compiled)
-    {
-        var regex = new Utf8Regex(Declaration, compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.Equal(3, regex.Count("class Alpha struct Beta record Gamma"u8));
-            Assert.Equal(RuntimeFeature.IsDynamicCodeSupported
-                ? Utf8ExecutionRoute.NativeStructuralFamilyEmitUpperWordIdentifier
-                : Utf8ExecutionRoute.NativeStructuralFamilyLinear, session.ExecutionRoute);
-        }
-        finally { session.Complete(); }
-    }
+
 
     [Theory]
     [InlineData(@"\b(?:call|tell)\s+[A-Z][A-Za-z0-9_]+", "call A tell Bee call Z")]

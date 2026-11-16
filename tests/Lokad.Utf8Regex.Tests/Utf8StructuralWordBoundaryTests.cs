@@ -1,11 +1,10 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8EmittedWordBoundaryTests
+public sealed class Utf8StructuralWordBoundaryTests
 {
     [Theory]
     [InlineData("class|struct", "class", "struct")]
@@ -22,12 +21,6 @@ public sealed class Utf8EmittedWordBoundaryTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options);
-            Utf8EmittedKernelMatcher? emitted = null;
-            if (RuntimeFeature.IsDynamicCodeSupported)
-            {
-                Assert.True(Utf8EmittedKernelMatcher.TryCreate(regex.Inspection.PreparedRegex, out emitted));
-                Assert.NotNull(emitted);
-            }
             foreach (var padding in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 2047, 2048 })
             foreach (var body in new[]
             {
@@ -64,17 +57,6 @@ public sealed class Utf8EmittedWordBoundaryTests
                     index++;
                 }
                 Assert.Equal(expected.Length, index);
-                if (emitted is null) continue;
-                Assert.Equal(expected.Length, emitted.Count(subject));
-                for (var start = Math.Max(0, padding - 1); start <= subject.Length; start++)
-                {
-                    var expectedMatch = oracle.Match(text, start);
-                    // The primitive accepts an anchor origin. Public callers
-                    // translate their candidate origin by this prepared offset.
-                    var found = emitted.FindNext(subject, start + emitted.Plan.FindOptimization.AnchorOffset, out var length);
-                    Assert.Equal(expectedMatch.Success ? expectedMatch.Index : -1, found);
-                    if (expectedMatch.Success) Assert.Equal(expectedMatch.Length, length);
-                }
             }
         }
     }

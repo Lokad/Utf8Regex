@@ -21,7 +21,7 @@ public sealed class Utf8PatternByteSetQualificationTests
     [Fact]
     public void PatternDependentCoreByteSetsHaveOwnedFieldState()
     {
-        foreach (var type in new[] { typeof(Utf8EmittedKernelMatcher), typeof(Utf8InvariantCyrillicLiteralCountStrategy) })
+        foreach (var type in new[] { typeof(Utf8InvariantCyrillicLiteralCountStrategy) })
         {
             var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.DoesNotContain(fields, field => field.FieldType.FullName?.StartsWith("System.Buffers.SearchValues") == true);
@@ -113,26 +113,5 @@ public sealed class Utf8PatternByteSetQualificationTests
         }
     }
 
-    [Fact]
-    public void EmittedAnchorAdmissionRejectsBeforePublicationAndKeepsFindCountResults()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var prepared = regex.Inspection.PreparedRegex;
-        using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue))
-        {
-            var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Utf8EmittedKernelMatcher.TryCreate(prepared, out _));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(0xa5, parent[0]);
-        }
-        Assert.True(Utf8EmittedKernelMatcher.TryCreate(prepared, out var matcher));
-        Assert.Equal(2, matcher.Count("!record Customer struct Worker class lower"u8));
-        Assert.Equal(1, matcher.FindNext("!record Customer struct Worker"u8, 0, out var length));
-        Assert.Equal(15, length);
-        Assert.True(Utf8EmittedKernelMatcher.TryCreate(prepared.StructuralIdentifierFamilyPlan,
-            prepared.SearchPlan, out var direct));
-        Assert.Equal(2, direct.Count("!record Customer struct Worker class lower"u8));
-    }
+
 }

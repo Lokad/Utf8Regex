@@ -25,6 +25,9 @@ public sealed class RegexDifferentialTests
         @"([0-9]{4}[- ]){3}[0-9]{3,4}", @"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$",
         @"^\d{1,2}/\d{1,2}/\d{4}$", @"^[a-z][a-z0-9_]*\z",
         @"^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$",
+        @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+",
+        @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
+        @"\bpublic\s+async\b", @"\bawait\b\s+.{0,60}\bConfigureAwait\b",
     };
 
     private static readonly string[] Tokens =
@@ -50,6 +53,8 @@ public sealed class RegexDifferentialTests
             "1/2/01", "1/12/012", "12/1/0123", "12/12/0123", "12/12/0123\n", "1/2/0", "123/1/0123", "12-12-0123", "12/xx/0123",
             "1234-5678-1234-456", "1234 5678 1234 4567", "1234-5678 1234-456", "1234-5678-1234-45",
             "1234-5678-1234-45678", "1234-5678_1234-456", "1234-5678-123x-456", "x1234-5678-1234-456",
+            "class Alpha struct Beta record Gamma", "éclass Nope class Goodé", "public\tasync", "xpublic async",
+            "LogError( LogWarning \t( LogInformation\n(", "xLogError( LogErrorx(", "await x.ConfigureAwait", "await\nConfigureAwait",
             .. Enumerable.Range(0, 96).Select(_ => string.Concat(Enumerable.Range(0, random.Next(1, 13))
                 .Select(_ => Tokens[random.Next(Tokens.Length)])))];
         using var cancellation = new CancellationTokenSource();

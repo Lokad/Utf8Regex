@@ -46,12 +46,4 @@ public sealed class Utf8DynamicCodeCapabilityTests
         }
     }
 
-    [Fact]
-    public void OptionalStructuralPreparationFollowsHostCapability()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+");
-        var program = (Utf8RegexProgram)typeof(Utf8Regex)
-            .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported, program.DirectStructuralFamilyKernelMatcher is not null);
-    }
 }

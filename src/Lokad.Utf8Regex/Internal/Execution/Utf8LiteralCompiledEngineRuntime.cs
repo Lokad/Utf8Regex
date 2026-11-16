@@ -59,8 +59,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         SupportsWellFormedOnlyCount: true,
         SupportsThrowIfInvalidOnlyCount: true,
         SkipRequiredPrefilterForMatch: false,
-        SkipRequiredPrefilterForCount: true,
-        UsesEmittedKernelMatcher: false);
+        SkipRequiredPrefilterForCount: true);
 
     internal bool TryGetSmallAsciiLiteralFamilyPrimitive(
         ReadOnlySpan<byte> input,

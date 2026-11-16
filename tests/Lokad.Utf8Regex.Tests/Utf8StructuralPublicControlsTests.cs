@@ -6,14 +6,14 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SharedCompiledKernelTests
+public sealed class Utf8StructuralPublicControlsTests
 {
     [Theory]
     [InlineData(false, @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "class Bravo")]
     [InlineData(true, @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "class Bravo")]
     [InlineData(false, @"\b(?:LogError|LogWarning|LogInformation)\s*\(", "LogInformation (")]
     [InlineData(true, @"\b(?:LogError|LogWarning|LogInformation)\s*\(", "LogInformation (")]
-    public void OneKernelServesItsOwnersWithoutChangingScalarResultsOrInvocationControls(bool compiled, string pattern, string value)
+    public void StructuralPatternsPreserveScalarResultsAndInvocationControls(bool compiled, string pattern, string value)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
@@ -23,21 +23,6 @@ public sealed class Utf8SharedCompiledKernelTests
             var regex = limits is { } finite
                 ? new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, finite)
                 : new Utf8Regex(pattern, options);
-            var program = (Utf8RegexProgram)typeof(Utf8Regex).GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-            if (limits is not null)
-            {
-                Assert.Null(program.VerifierRuntime);
-                Assert.Null(program.CompiledEngineRuntime);
-                Assert.Null(program.DirectStructuralFamilyKernelMatcher);
-            }
-            else
-            {
-                var runtime = Assert.IsType<Utf8StructuralLinearAutomatonCompiledEngineRuntime>(program.CompiledEngineRuntime);
-                Assert.NotNull(program.DirectStructuralFamilyKernelMatcher);
-                if (compiled) Assert.Same(program.DirectStructuralFamilyKernelMatcher, runtime.PreparedKernelMatcher);
-                else Assert.Null(runtime.PreparedKernelMatcher);
-            }
-
             var input = Encoding.UTF8.GetBytes("é😀 " + value);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));

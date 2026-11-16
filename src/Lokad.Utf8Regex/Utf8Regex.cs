@@ -325,9 +325,6 @@ public sealed partial class Utf8Regex
     private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
         throw new InvalidOperationException("A fixed-budget expression has no unmetered runtime.");
 
-    private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
-        _program.DirectStructuralFamilyKernelMatcher;
-
     private int[] _groupNumbers => _program.CaptureCatalog.GroupNumbers;
 
     private string[] _groupNames => _program.CaptureCatalog.GroupNames;
@@ -1369,13 +1366,6 @@ public sealed partial class Utf8Regex
             }
 
             var fastBudget = CreateExecutionBudget();
-            if (fastBudget.IsInfinite &&
-                _directStructuralFamilyKernelMatcher is not null)
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(_directStructuralFamilyKernelMatcher.Plan.Route);
-                return _directStructuralFamilyKernelMatcher.Count(input);
-            }
-
             return CountViaCompiledEngine(input, default, fastBudget);
         }
 

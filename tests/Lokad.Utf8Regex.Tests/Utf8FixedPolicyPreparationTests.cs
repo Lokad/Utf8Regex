@@ -34,7 +34,6 @@ public sealed class Utf8FixedPolicyPreparationTests
                     .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
                 Assert.Null(program.VerifierRuntime);
                 Assert.Null(program.CompiledEngineRuntime);
-                Assert.Null(program.DirectStructuralFamilyKernelMatcher);
                 Assert.NotNull(program.PreparedRegex.ScalarProgram);
                 Assert.Equal(options, regex.Options);
                 Assert.True(regex.IsMatch(input));

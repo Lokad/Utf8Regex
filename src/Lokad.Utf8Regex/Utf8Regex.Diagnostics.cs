@@ -48,7 +48,6 @@ public sealed partial class Utf8Regex
 
         public string DebugCompiledEngineRuntimeType => CompiledRuntime?.GetType().Name ?? "None";
 
-        public bool DebugUsesEmittedKernelMatcher => CompiledRuntime?.UsesEmittedKernelMatcher ?? false;
 
         public string DebugFallbackDirectFamilyKind => _owner._preparedRegex.FallbackDirectFamily.Kind.ToString();
 

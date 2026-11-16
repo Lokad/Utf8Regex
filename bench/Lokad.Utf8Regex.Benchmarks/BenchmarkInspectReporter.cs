@@ -2843,7 +2843,6 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
             Console.WriteLine($"CompiledBackend   : {context.CompiledUtf8Regex.Inspection.CompiledExecutionBackend}");
             Console.WriteLine($"CompiledRuntime   : {context.CompiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
-            Console.WriteLine($"CompiledUsesEmit  : {context.CompiledUtf8Regex.Inspection.DebugUsesEmittedKernelMatcher}");
 
             if (lokadScriptCase.Model == LokadReplicaScriptBenchmarkModel.Count)
             {
@@ -2879,7 +2878,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"CompiledBackend   : {compiledUtf8Regex.Inspection.CompiledExecutionBackend}");
         Console.WriteLine($"CompiledRuntime   : {compiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
-        Console.WriteLine($"CompiledUsesEmit  : {compiledUtf8Regex.Inspection.DebugUsesEmittedKernelMatcher}");
         WriteCountDiagnostics("Compiled", compiledUtf8Regex.CollectCountDiagnostics(replicaCase.InputBytes));
         Console.WriteLine($"CompiledGateUtf8Literal      : {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralCount}");
         Console.WriteLine($"CompiledGateUtf8LiteralFamily: {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralFamilyCount}");
@@ -4208,7 +4206,6 @@ internal static partial class BenchmarkInspectReporter
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
-        _ = Utf8EmittedKernelMatcher.TryCreate(analysis, out var emittedKernelMatcher);
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -4217,12 +4214,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"ProgramKind       : {program.Kind}");
 
-        if (emittedKernelMatcher is not null)
-        {
-            Measure("EmittedCount", iterations, () => emittedKernelMatcher.Count(input));
-            Measure("EmittedFindNextCount", iterations, () => ExecuteEmittedKernelFindNextCount(emittedKernelMatcher, input));
-            Measure("EmittedFindNextSum", iterations, () => ExecuteEmittedKernelFindNextIndexSum(emittedKernelMatcher, input));
-        }
         Measure("NativeCount", iterations, () => ExecuteStructuralFamilyNativeCount(linearRuntime, verifierRuntime, input, validation));
         Measure("NativeFindNextCount", iterations, () => ExecuteStructuralFamilyFindNextCount(linearRuntime, verifierRuntime, input, validation));
         Measure("NativeFindNextSum", iterations, () => ExecuteStructuralFamilyFindNextIndexSum(linearRuntime, verifierRuntime, input, validation));
@@ -7830,31 +7821,7 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteEmittedKernelFindNextCount(Utf8EmittedKernelMatcher matcher, byte[] input)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (matcher.FindNext(input, startIndex, out var matchedLength) is var matchIndex && matchIndex >= 0)
-        {
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
 
-        return count;
-    }
-
-    private static int ExecuteEmittedKernelFindNextIndexSum(Utf8EmittedKernelMatcher matcher, byte[] input)
-    {
-        var sum = 0;
-        var startIndex = 0;
-        while (matcher.FindNext(input, startIndex, out var matchedLength) is var matchIndex && matchIndex >= 0)
-        {
-            sum += matchIndex;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return sum;
-    }
 
     private static int ExecuteValidatedAsciiDirectEnumeration(Regex regex, byte[] input)
     {

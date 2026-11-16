@@ -5,23 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8CompiledOperationCursorFactory
 {
-    public static Utf8ValueMatchEnumerator CreateMatchEnumerator(
-        Utf8CompiledEngineRuntime compiledRuntime,
-        Utf8PreparedRegex regexPlan,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget)
-    {
-        if (compiledRuntime.GetGlobalMatchKernel(validation, budget) is { } kernelMatcher)
-        {
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, kernelMatcher, budget));
-        }
-
-        return new Utf8ValueMatchEnumerator(
-            CreateMatchCursor(regexPlan, input, validation, budget));
-    }
-
     // R05: offset enumeration floors the owned cursor scan at the start unit; arm
     // selection mirrors CreateMatchCursor.
     public static Utf8OperationMatchCursor CreateMatchCursorFromOffset(

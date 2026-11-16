@@ -62,7 +62,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private readonly EnumeratorMode _mode;
     private readonly Utf8OperationMatchCursorPlans _plans;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
-    private readonly Utf8EmittedKernelMatcher? _emittedKernelMatcher;
     private readonly int[]? _alternateLiteralUtf16Lengths;
     private readonly bool _asciiInput;
     private readonly byte[]? _literal;
@@ -440,7 +439,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = null;
         _slicePositionByte = 0;
         _sliceOriginByte = 0;
-        _emittedKernelMatcher = null;
         _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
@@ -474,7 +472,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = null;
         _slicePositionByte = 0;
         _sliceOriginByte = 0;
-        _emittedKernelMatcher = null;
         _mode = EnumeratorMode.AsciiSimplePatternScalar;
     }
 
@@ -692,7 +689,6 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiFixedTokenPattern or EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
-            EnumeratorMode.EmittedKernelPattern => MoveNextEmittedKernelPattern(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
             EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
             _ => false,
@@ -876,21 +872,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
     }
 
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        Utf8EmittedKernelMatcher emittedKernelMatcher,
-        Utf8ExecutionDeadline budget)
-    {
-        this = default;
-        _plans = Utf8OperationMatchCursorPlans.Empty;
-        _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _emittedKernelMatcher = emittedKernelMatcher;
-        _current = Utf8ValueMatch.NoMatch;
-        _mode = EnumeratorMode.EmittedKernelPattern;
-    }
-
     // R05: offset enumeration starts the scan at the floor unit over the full input so
     // line anchors keep their true left context; at floor zero this is the default state.
     public Utf8OperationMatchCursor WithStartFloor(int startByteOffset, int startUtf16Offset)
@@ -999,31 +980,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _lastLiteralFamilyBranchId = 0;
         found = true;
         return Utf8ExecutionLimitKind.None;
-    }
-
-    private bool MoveNextEmittedKernelPattern()
-    {
-        var matcher = _emittedKernelMatcher;
-        if (matcher is null || _consumed > _input.Length)
-        {
-            return false;
-        }
-
-        var matchIndex = matcher.FindNext(_input, _consumed, out var matchedLength);
-        if (matchIndex < 0)
-        {
-            return false;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: matchIndex,
-            lengthInUtf16: matchedLength,
-            indexInBytes: matchIndex,
-            lengthInBytes: matchedLength);
-        _consumed = matchIndex + Math.Max(matchedLength, 1);
-        return true;
     }
 
     private bool MoveNextExactUtf8Literals()
@@ -1275,7 +1231,6 @@ internal ref partial struct Utf8OperationMatchCursor
         AsciiDeterministicPattern = 9,
         EmptyLiteral = 10,
         SmallAsciiLiteralFamily = 11,
-        EmittedKernelPattern = 12,
         OwnedSlice = 14,
         AnchoredAsciiLiteralPrefix = 15,
         AnchoredAsciiLiteralSuffix = 16,

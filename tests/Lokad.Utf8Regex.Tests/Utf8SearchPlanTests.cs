@@ -339,84 +339,19 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, identifier.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, window.Inspection.CompiledEngineKind);
-        Assert.True(identifier.Inspection.DebugUsesEmittedKernelMatcher);
-        Assert.True(window.Inspection.DebugUsesEmittedKernelMatcher);
         Assert.Equal(1, literal.Count("Task"u8));
         Assert.Equal(1, fallback.Count("axb"u8));
         Assert.Equal(1, identifier.Count("class Bravo"u8));
         Assert.Equal(1, window.Count("public async"u8));
     }
 
-    [Fact]
-    public void EmittedKernelLowererProducesExplicitBlocksForIdentifierFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedKernelLowerer.TryLower(regex.Inspection.PreparedRegex, out var kernelPlan));
-        Assert.Equal(Utf8EmittedKernelKind.UpperWordIdentifierFamily, kernelPlan.Kind);
-        Assert.Equal(3, kernelPlan.FindOptimization.AnchorOffset);
-        Assert.Equal([(byte)'o', (byte)'s', (byte)'u'], kernelPlan.FindOptimization.AnchorBytes);
-        Assert.Equal(
-            [
-                Utf8EmittedKernelBlockKind.FindAnchorSet,
-                Utf8EmittedKernelBlockKind.DispatchPrefixesAtAnchor,
-                Utf8EmittedKernelBlockKind.ConsumeAsciiWhitespace,
-                Utf8EmittedKernelBlockKind.RequireAsciiUpper,
-                Utf8EmittedKernelBlockKind.ConsumeAsciiWordTail,
-                Utf8EmittedKernelBlockKind.AcceptAndAdvance,
-            ],
-            kernelPlan.Blocks.Select(static block => block.Kind));
-    }
 
-    [Fact]
-    public void EmittedKernelLowererProducesExplicitBlocksForSharedPrefixSuffixFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedKernelLowerer.TryLower(regex.Inspection.PreparedRegex, out var kernelPlan));
-        Assert.Equal(Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix, kernelPlan.Kind);
-        Assert.Equal(
-            [
-                Utf8EmittedKernelBlockKind.FindCommonPrefix,
-                Utf8EmittedKernelBlockKind.MatchSharedPrefixSuffix,
-                Utf8EmittedKernelBlockKind.AcceptAndAdvance,
-            ],
-            kernelPlan.Blocks.Select(static block => block.Kind));
-    }
 
-    [Fact]
-    public void EmittedKernelLowererProducesExplicitBlocksForOrderedLiteralWindow()
-    {
-        var regex = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedKernelLowerer.TryLower(regex.Inspection.PreparedRegex, out var kernelPlan));
-        Assert.Equal(Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow, kernelPlan.Kind);
-        Assert.Equal(
-            [
-                Utf8EmittedKernelBlockKind.FindTrailingLiteral,
-                Utf8EmittedKernelBlockKind.ConsumeReverseAsciiWhitespace,
-                Utf8EmittedKernelBlockKind.MatchLeadingLiteralBeforeSeparator,
-                Utf8EmittedKernelBlockKind.AcceptAndAdvance,
-            ],
-            kernelPlan.Blocks.Select(static block => block.Kind));
-    }
 
-    [Fact]
-    public void EmittedKernelLowererProducesExplicitBlocksForBoundedOrderedLiteralWindow()
-    {
-        var regex = new Utf8Regex(@"\bawait\b\s+.{0,60}\bConfigureAwait\b", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedKernelLowerer.TryLower(regex.Inspection.PreparedRegex, out var kernelPlan));
-        Assert.Equal(Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow, kernelPlan.Kind);
-        Assert.Equal(
-            [
-                Utf8EmittedKernelBlockKind.FindTrailingLiteral,
-                Utf8EmittedKernelBlockKind.ConsumeReverseAsciiWhitespace,
-                Utf8EmittedKernelBlockKind.MatchLeadingLiteralBeforeSeparator,
-                Utf8EmittedKernelBlockKind.AcceptAndAdvance,
-            ],
-            kernelPlan.Blocks.Select(static block => block.Kind));
-    }
 
     [Fact]
     public void RegexPlanCarriesExplicitPrimaryExecutionEngineKinds()

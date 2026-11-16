@@ -33,25 +33,11 @@ internal static class Utf8StructuralLinearCompiledRouter
             regexPlan.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily;
     }
 
-    public static bool CanUseEmittedKernelMatcher(
-        Utf8PreparedRegex regexPlan,
-        bool emitEnabled,
-        Utf8EmittedKernelMatcher? emittedKernelMatcher,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget)
-    {
-        return budget.IsInfinite &&
-            emitEnabled &&
-            emittedKernelMatcher is not null &&
-            regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily or NativeExecutionKind.AsciiOrderedLiteralWindow;
-    }
-
     public static bool TryIsMatch(
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
-        Utf8EmittedKernelMatcher? emittedKernelMatcher,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -79,13 +65,6 @@ internal static class Utf8StructuralLinearCompiledRouter
                 0,
                 budget,
                 out _) >= 0;
-            return true;
-        }
-
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
-            emittedKernelMatcher is { } kernelMatcher)
-        {
-            isMatch = kernelMatcher.FindNext(input, 0, out _) >= 0;
             return true;
         }
 
@@ -119,7 +98,6 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
-        Utf8EmittedKernelMatcher? emittedKernelMatcher,
         PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
@@ -148,14 +126,6 @@ internal static class Utf8StructuralLinearCompiledRouter
                 regexPlan.SearchPlan,
                 orderedWindowTrailingFindPlan,
                 budget);
-            return true;
-        }
-
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
-            emittedKernelMatcher is { } kernelMatcher)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(kernelMatcher.Plan.Route);
-            count = kernelMatcher.Count(input);
             return true;
         }
 
@@ -210,7 +180,6 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
-        Utf8EmittedKernelMatcher? emittedKernelMatcher,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -241,16 +210,6 @@ internal static class Utf8StructuralLinearCompiledRouter
             match = index < 0
                 ? Utf8ValueMatch.NoMatch
                 : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-            return true;
-        }
-
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
-            emittedKernelMatcher is { } kernelMatcher)
-        {
-            var emittedIndex = kernelMatcher.FindNext(input, 0, out var emittedMatchedLength);
-            match = emittedIndex < 0
-                ? Utf8ValueMatch.NoMatch
-                : new Utf8ValueMatch(true, true, emittedIndex, emittedMatchedLength, emittedIndex, emittedMatchedLength);
             return true;
         }
 

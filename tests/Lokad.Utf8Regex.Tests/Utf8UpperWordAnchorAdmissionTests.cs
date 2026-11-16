@@ -86,42 +86,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
         Assert.True(owner.Budget.WorkSteps > 0);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EmittedPlanAdmitsOnlyItsFinalOwnedArraysAndRollsBackEveryWorkCutoff(bool bytes)
-    {
-        var family = Family(["aa"u8.ToArray(), "bb"u8.ToArray()]);
-        var extent = Bytes<byte>(2) + Bytes<Utf8EmittedKernelBlock>(6);
-        ulong work;
-        using (var probe = Utf8ConstructionScope.Enter())
-        {
-            Assert.True(Utf8EmittedKernelLowerer.TryLower(family, default, out var lowered));
-            Assert.Equal(extent, probe.Budget.ReservedBytes); work = probe.Budget.WorkSteps;
-            Assert.Equal(new byte[] { (byte)'a', (byte)'b' }, lowered.FindOptimization.AnchorBytes);
-            Assert.Equal(1, lowered.FindOptimization.AnchorOffset); Assert.Same(family.Prefixes, lowered.Prefixes);
-        }
-        var cutoffs = bytes ? new[] { extent - 1, extent } : Enumerable.Range(0, checked((int)work + 1)).Select(i => (ulong)i);
-        foreach (var cutoff in cutoffs)
-        {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 7 + cutoff : ulong.MaxValue,
-                bytes ? ulong.MaxValue : cutoff, ulong.MaxValue);
-            owner.Budget.ReserveBytes(7);
-            Utf8EmittedKernelPlan result = default;
-            var failure = Record.Exception(() => Utf8EmittedKernelLowerer.TryLower(family, default, out result));
-            if (cutoff == (bytes ? extent : work))
-            {
-                Assert.Null(failure); Assert.True(result.HasValue); Assert.Equal(7 + extent, owner.Budget.ReservedBytes);
-                Assert.Equal(Utf8EmittedKernelKind.UpperWordIdentifierFamily, result.Kind);
-            }
-            else
-            {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                Assert.False(result.HasValue); Assert.Equal(7UL, owner.Budget.ReservedBytes);
-            }
-            Assert.Equal(0UL, owner.Budget.Reserved); Assert.Equal(0UL, owner.Budget.Depth);
-        }
-    }
+
 
     [Fact]
     public void LongBorrowedPrefixesDenySelectionBeforeAnyLengthSizedAllocation()
@@ -159,36 +124,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
         Assert.Equal(3, reads); Assert.False(Utf8ConstructionScope.IsActive);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EveryEmissionCheckpointInheritsTokenAndDeadlineAndRestoresParent(bool timeout)
-    {
-        var family = Family(["aa"u8.ToArray(), "bb"u8.ToArray()]);
-        var count = 0;
-        using (var probe = Utf8ConstructionScope.Enter())
-        {
-            probe.Budget.CheckpointHook = _ => count++;
-            Assert.True(Utf8EmittedKernelLowerer.TryLower(family, default, out _));
-        }
-        for (var target = 1; target <= count; target++)
-        {
-            using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
-            using var token = new CancellationTokenSource(); long ticks = 0;
-            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-            var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(50));
-            owner.Budget.CancellationToken = token.Token; owner.Budget.Deadline = deadline;
-            var checkpoints = 0;
-            owner.Budget.CheckpointHook = _ => { if (++checkpoints == target) { if (timeout) ticks = 50; else token.Cancel(); } };
-            var failure = Record.Exception(() => Utf8EmittedKernelLowerer.TryLower(family, default, out _));
-            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Same(deadline, owner.Budget.Deadline); Assert.Equal(7UL, owner.Budget.ReservedBytes);
-            Assert.Equal(0UL, owner.Budget.Depth); Assert.Equal(0UL, owner.Budget.Reserved);
-            owner.Budget.CheckpointHook = null; owner.Budget.CancellationToken = default; owner.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
-            using (var recovered = Utf8ConstructionScope.Enter()) Assert.True(Utf8EmittedKernelLowerer.TryLower(family, default, out _));
-            Assert.Equal(7UL, owner.Budget.ReservedBytes);
-        }
-    }
+
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -200,10 +136,5 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
         Assert.Equal(2, regex.Count(input));
         var first = regex.Match(input); Assert.Equal(5, first.IndexInBytes);
         Assert.Equal("class Worker_State"u8.ToArray(), input.AsSpan(first.IndexInBytes, first.LengthInBytes).ToArray());
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        Assert.True(Utf8EmittedKernelLowerer.TryLower(prepared, out var kernel));
-        Assert.Equal(Utf8EmittedKernelKind.UpperWordIdentifierFamily, kernel.Kind);
-        var expected = Oracle(prepared.StructuralIdentifierFamilyPlan.Prefixes)!.Value;
-        Assert.Equal(expected.Offset, kernel.FindOptimization.AnchorOffset); Assert.Equal(expected.Bytes, kernel.FindOptimization.AnchorBytes);
     }
 }

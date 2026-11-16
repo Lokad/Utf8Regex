@@ -10,13 +10,12 @@ internal sealed class Utf8RegexProgram
 
     private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine,
         Utf8VerifierRuntime? verifierRuntime, Utf8CompiledEngineRuntime? compiledEngineRuntime,
-        Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher, Utf8CaptureCatalog captureCatalog)
+        Utf8CaptureCatalog captureCatalog)
     {
         PreparedRegex = preparedRegex;
         CompiledEngine = compiledEngine;
         VerifierRuntime = verifierRuntime;
         CompiledEngineRuntime = compiledEngineRuntime;
-        DirectStructuralFamilyKernelMatcher = directStructuralFamilyKernelMatcher;
         CaptureCatalog = captureCatalog;
     }
 
@@ -27,8 +26,6 @@ internal sealed class Utf8RegexProgram
     public Utf8VerifierRuntime? VerifierRuntime { get; }
 
     public Utf8CompiledEngineRuntime? CompiledEngineRuntime { get; }
-
-    public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
     public Utf8CaptureCatalog CaptureCatalog { get; }
 
@@ -60,25 +57,11 @@ internal sealed class Utf8RegexProgram
             var captureCatalog = preparedRegex.SemanticRegex.CaptureCatalog;
             if (captureCatalog is null)
                 throw new InvalidOperationException("Owned preparation must produce capture metadata.");
-            Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher = null;
-            if (prepareRuntime && preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
-            {
-                // The compiled runtime already attempted preparation, including
-                // a legitimate decline. Borrow its immutable kernel for Count.
-                // Ordinary construction still prepares the direct native route.
-                if ((options & RegexOptions.Compiled) != 0 &&
-                    compiledEngineRuntime is Utf8StructuralLinearAutomatonCompiledEngineRuntime linear)
-                    directStructuralFamilyKernelMatcher = linear.PreparedKernelMatcher;
-                else if (Utf8EmittedKernelMatcher.TryCreate(preparedRegex.StructuralIdentifierFamilyPlan,
-                    preparedRegex.SearchPlan, out var structuralFamilyKernelMatcher))
-                    directStructuralFamilyKernelMatcher = structuralFamilyKernelMatcher;
-            }
-
             budget.CheckBytes(ObjectBytes);
             budget.ChargeWork(2);
             budget.ReserveBytes(ObjectBytes);
             var result = new Utf8RegexProgram(preparedRegex, compiledEngine, verifierRuntime,
-                compiledEngineRuntime, directStructuralFamilyKernelMatcher, captureCatalog);
+                compiledEngineRuntime, captureCatalog);
             scope.Complete();
             return result;
         }
