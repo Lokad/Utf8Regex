@@ -30,11 +30,10 @@ public sealed class Utf8ClassFamilyQualificationTests
         Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
         Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
     }
-    private static void UnknownValidationCount(string pattern, ReadOnlySpan<byte> input, int expected)
+    private static void TrustedPublicCount(string pattern, ReadOnlySpan<byte> input, int expected)
     {
-        var plan = Plan(pattern, RegexOptions.CultureInvariant);
-        Assert.True(Utf8FallbackDirectFamilyCountRouter.TryCount(input, default, plan, null, default, default, out var count));
-        Assert.Equal(expected, count);
+        Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.CultureInvariant,
+            inputValidation: Utf8InputValidation.AssumeValid).Count(input));
     }
 
     [Fact]
@@ -125,7 +124,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         }
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, Plan(@"(?i:\p{Lu})", RegexOptions.CultureInvariant).Kind);
         Assert.Equal(2, new Utf8Regex(@"(?i:\p{Lu})", RegexOptions.CultureInvariant).Count("aA"u8));
-        UnknownValidationCount(@"[\p{Lu}]", "𐐀A😀é"u8, 2);
+        TrustedPublicCount(@"[\p{Lu}]", "𐐀A😀é"u8, 2);
     }
 
     [Fact]
@@ -140,7 +139,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         }
         Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeLetterCount, Plan(@"[\p{L}]", RegexOptions.None).Kind);
         Assert.Equal(3, new Utf8Regex(@"[\p{L}]").Count("𐐀Aé😀"u8));
-        UnknownValidationCount(@"[\p{L}]", "𐐀Aé😀"u8, 3);
+        TrustedPublicCount(@"[\p{L}]", "𐐀Aé😀"u8, 3);
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.UnicodeLetterBoundedCount, Plan(@"(?:[\p{L}]{2}){2,3}", RegexOptions.None).Kind);
         Assert.Equal(0, new Utf8Regex(@"(?:[\p{L}]{2}){2,3}").Count("𐐀𐐀𐐀"u8));
     }

@@ -501,10 +501,7 @@ public sealed partial class Utf8Regex
         // The ASCII relation finder already seeks quotes and verifies operands.
         // Its new necessary-family filter serves owned scalar calls instead;
         // adding another scan to this native route only duplicates discovery.
-        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
-            _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            !CanGuideFallbackVerification() &&
-            _compiledEngineRuntime.SkipRequiredPrefilterForCount;
+        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue;
     }
 
     private bool ShouldSkipRequiredPrefilterForMatch()

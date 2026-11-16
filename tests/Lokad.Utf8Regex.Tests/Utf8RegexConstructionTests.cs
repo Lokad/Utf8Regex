@@ -1257,25 +1257,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
 
-    [Fact]
-    public void CompiledHintPrefersDirectFallbackRegexForWeakEmailPrefilterLoop()
-    {
-        const string pattern = "[\\w\\.+-]+@[\\w\\.-]+\\.[\\w\\.-]+";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.Inspection.DebugCompiledEngineRuntimeType);
-    }
-
-    [Fact]
-    public void CompiledHintPrefersDirectFallbackRegexForWeakUriPrefilterLoop()
-    {
-        const string pattern = "[\\w]+://[^/\\s?#]+[^\\s?#]+(?:\\?[^\\s#]*)?(?:#[^\\s]*)?";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.Inspection.DebugCompiledEngineRuntimeType);
-    }
 
     [Fact]
     public void CompiledWeakEmailPrefilterLoopCountMatchesDotNet()

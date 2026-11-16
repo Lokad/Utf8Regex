@@ -39,7 +39,11 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        return _compiledEngineRuntime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
+        if (_program.CompiledEngineRuntime is { } runtime)
+            return runtime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
+
+        match = Utf8ValueMatch.NoMatch;
+        return false;
     }
 
     internal bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
@@ -223,7 +227,7 @@ public sealed partial class Utf8Regex
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
+        if (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
         {
             return CountAtByteOffset(input, start);
         }
@@ -450,7 +454,7 @@ public sealed partial class Utf8Regex
         // PCRE2-INTEGRATION-POINT: flavor-neutral definitive prepared boolean kernels.
         public bool IsMatchPrepared(ReadOnlySpan<byte> bytes)
         {
-            if (_owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
+            if (_owner._compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex)
             {
                 return _owner.IsMatchAtByteOffset(Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0));
             }

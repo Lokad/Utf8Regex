@@ -33,6 +33,11 @@ emission remains; the live fixed-width SIMD counter is shared by interpreter and
 facade paths. General patterns currently use the owned scalar interpreter,
 including when `Compiled` is requested. A general compiled backend remains future
 work. Invocation budgets and result ownership are separate from prepared programs.
+Programs selecting the general engine retain no specialized runtime or verifier.
+Core and prepared adapter entries dispatch on that selected engine, including
+constrained literals whose lower-level classification still says literal. The
+secondary fallback runtime and its count/match router chain have been removed.
+Shared candidate helpers with facade or adapter consumers remain.
 
 Search dispositions derive from canonical candidate sources, confirmation and
 projection. Count, first-match and enumeration control their actual exit and

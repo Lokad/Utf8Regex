@@ -522,11 +522,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return CompiledUtf8Regex.Count(InputBytes);
     }
 
-    public int ExecuteUtf8CountCompiledDirect()
-    {
-        EnsureCountModel();
-        return CompiledUtf8Regex.CountViaCompiledEngine(InputBytes, default, Utf8ExecutionDeadline.Infinite);
-    }
 
     public int ExecuteUtf8CountFallbackCandidates()
     {

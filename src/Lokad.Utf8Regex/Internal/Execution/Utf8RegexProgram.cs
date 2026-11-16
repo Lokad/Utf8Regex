@@ -45,10 +45,11 @@ internal sealed class Utf8RegexProgram
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
             var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options);
             var compiledEngine = Utf8CompiledEngineSelector.Select(preparedRegex);
-            // Fixed numeric policies select metered execution for the entire
-            // instance lifetime. Keep its scalar/search payloads, but acquire no
-            // unreachable verifier, unmetered runtime or emitted delegates.
-            var verifierRuntime = prepareRuntime ? Utf8VerifierRuntime.Create(preparedRegex) : null;
+            // General patterns execute the scalar program. Fixed numeric policies
+            // also keep scalar/search payloads without an unmetered runtime.
+            // Neither path consumes a specialized verifier or emitted delegates.
+            var verifierRuntime = prepareRuntime && compiledEngine.Kind != Utf8CompiledEngineKind.FallbackRegex
+                ? Utf8VerifierRuntime.Create(preparedRegex) : null;
             var compiledEngineRuntime = verifierRuntime is null ? null :
                 Utf8CompiledEngineRuntime.Create(compiledEngine, preparedRegex, verifierRuntime, options);
             // Successful owned parsing always finishes capture numbering before

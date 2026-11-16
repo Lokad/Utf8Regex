@@ -23,66 +23,31 @@ public sealed class Utf8CompiledScalarConsumerTests
     }
 
     [Theory]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, ".+", "é😀a", false, 1, 0, 7, 0, 4)]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, "(?<=é).(?=z)", "é😀z", false, 1, 2, 4, 1, 2)]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, "\\p{L}{1,2}", "𐐀é", false, 1, 0, 6, 0, 3)]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, "\\p{L}", "𐐀é", false, 2, 0, 4, 0, 2)]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, "\\p{L}{0,2}", "𐐀é", false, 2, 0, 6, 0, 3)]
-    [InlineData((int)Utf8CompiledEngineKind.SimplePatternInterpreter, "a[0-9]{2}", "é😀 a12", false, 1, 7, 3, 4, 3)]
-    [InlineData((int)Utf8CompiledEngineKind.SimplePatternInterpreter, "a.b", "é a😀b", false, 1, 3, 6, 2, 4)]
-    [InlineData((int)Utf8CompiledEngineKind.StructuralLinearAutomaton, "a.{0,4}b", "xa😀b tail", false, 1, 1, 6, 1, 4)]
-    [InlineData(-1, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
-    [InlineData((int)Utf8CompiledEngineKind.StructuralLinearAutomaton, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
-    [InlineData(-1, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11, 4, 11)]
-    public void InternalCompiledConsumersKeepScalarByteRangesAndDerivedCoordinates(int kind, string pattern,
+    [InlineData(".+", "é😀a", false, 1, 0, 7, 0, 4)]
+    [InlineData("(?<=é).(?=z)", "é😀z", false, 1, 2, 4, 1, 2)]
+    [InlineData("\\p{L}{1,2}", "𐐀é", false, 1, 0, 6, 0, 3)]
+    [InlineData("\\p{L}", "𐐀é", false, 2, 0, 4, 0, 2)]
+    [InlineData("\\p{L}{0,2}", "𐐀é", false, 2, 0, 6, 0, 3)]
+    [InlineData("a[0-9]{2}", "é😀 a12", false, 1, 7, 3, 4, 3)]
+    [InlineData("a.b", "é a😀b", false, 1, 3, 6, 2, 4)]
+    [InlineData("a.{0,4}b", "xa😀b tail", false, 1, 1, 6, 1, 4)]
+    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
+    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11, 4, 11)]
+    public void PublicOperationsKeepScalarByteRangesAndDerivedCoordinates(string pattern,
         string text, bool rtl, int count, int indexBytes, int lengthBytes, int indexUnits, int lengthUnits)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
-        var prepared = Prepare(pattern, options);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
-        var engine = kind < 0 ? Utf8CompiledEngineSelector.Select(prepared) : new Utf8CompiledEngine((Utf8CompiledEngineKind)kind);
-        var runtime = Utf8CompiledRuntimeFactory.Create(engine, prepared, verifier, options);
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var validation in new[] { Utf8Validation.Validate(input), default })
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            Assert.True(runtime.IsMatch(input, validation, Utf8ExecutionDeadline.Infinite));
-            Assert.Equal(count, runtime.Count(input, validation, Utf8ExecutionDeadline.Infinite));
-            var match = runtime.Match(input, validation, Utf8ExecutionDeadline.Infinite);
+            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(count, regex.Count(input));
+            var match = regex.Match(input);
             Assert.True(match.Success); Assert.True(match.IsByteAligned);
             Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
                 (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
         }
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        if (pattern == @"\p{L}{1,2}")
-        {
-            Assert.True(Utf8UnicodeLetterBoundedRepeatExecutor.TryCountLetters(input, 1, 2, out var letters));
-            Assert.Equal(count, letters);
-        }
-        if (pattern == @"\p{L}{0,2}")
-            Assert.False(Utf8UnicodeLetterBoundedRepeatExecutor.TryCountLetters(input, 0, 2, out _));
-        var actualValidation = Utf8Validation.Validate(input);
-        if (prepared.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !rtl)
-        {
-            Assert.True(Utf8StructuralLinearCompiledRouter.TryIsMatch(prepared, verifier,
-                input, actualValidation, Utf8ExecutionDeadline.Infinite, out var found));
-            Assert.True(found);
-            Assert.True(Utf8StructuralLinearCompiledRouter.TryCount(prepared, verifier,
-                default, input, actualValidation, Utf8ExecutionDeadline.Infinite, out var routedCount));
-            Assert.Equal(count, routedCount);
-            Assert.True(Utf8StructuralLinearCompiledRouter.TryMatch(prepared, verifier,
-                input, actualValidation, Utf8ExecutionDeadline.Infinite, out var routedMatch));
-            Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
-                (routedMatch.IndexInBytes, routedMatch.LengthInBytes, routedMatch.IndexInUtf16, routedMatch.LengthInUtf16));
-        }
-        if (kind < 0 && rtl)
-        {
-            var linear = new Utf8AsciiStructuralFamilyLinearRuntime(prepared);
-            Assert.True(linear.IsMatch(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite));
-            Assert.Equal(count, linear.Count(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite));
-            Assert.Equal(lengthBytes, linear.Match(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite).LengthInBytes);
-        }
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Theory]
@@ -231,23 +196,20 @@ public sealed class Utf8CompiledScalarConsumerTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void CompiledOperationsUseThePassedEntryDeadline(int operation)
+    public void ScalarOperationsUseThePassedEntryDeadline(int operation)
     {
         const string pattern = @"(?<=é).";
         var prepared = Prepare(pattern);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
-        var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.FallbackRegex), prepared, verifier, RegexOptions.CultureInvariant);
         var input = "é😀"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
         Thread.Sleep(20);
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
         {
-            if (operation == 0) _ = runtime.IsMatch(input, validation, deadline);
-            else if (operation == 1) _ = runtime.Count(input, validation, deadline);
-            else _ = runtime.Match(input, validation, deadline);
+            if (operation == 0) _ = Utf8PreparedScalarExecutor.IsMatch(prepared, input, validation, deadline);
+            else if (operation == 1) _ = Utf8PreparedScalarExecutor.Count(prepared, input, validation, deadline);
+            else _ = Utf8PreparedScalarExecutor.Match(prepared, input, validation, deadline);
         });
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     private static Utf8ExecutionLimitKind Run(int operation, Utf8PreparedRegex prepared, byte[] input,

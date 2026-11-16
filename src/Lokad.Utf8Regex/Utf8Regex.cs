@@ -323,7 +323,7 @@ public sealed partial class Utf8Regex
     private Utf8CompiledEngine _compiledEngine => _program.CompiledEngine;
 
     private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
-        throw new InvalidOperationException("A fixed-budget expression has no unmetered runtime.");
+        throw new InvalidOperationException("This expression executes without an unmetered specialized runtime.");
 
     private int[] _groupNumbers => _program.CaptureCatalog.GroupNumbers;
 
@@ -493,7 +493,7 @@ public sealed partial class Utf8Regex
         // Qualified native invocation routes run before this selector. Other
         // shortcuts must not bypass a finite deadline or restart it after work.
         if (HasFiniteExecutionLimits || MatchTimeout != Regex.InfiniteMatchTimeout) return _ownedSliceProgram;
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex) return _ownedSliceProgram;
+        if (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex) return _ownedSliceProgram;
         // ASCII folded literals cannot start or end inside a UTF-8 scalar.
         // Their non-ASCII fold partner (Kelvin sign) is checked below; unrelated
         // Unicode elsewhere in the subject does not require scalar discovery.

@@ -79,7 +79,7 @@ internal static class Utf8GraphQualification
         if (state is not null) return StateBytes(state);
         return type.Name switch
         {
-            nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime) or nameof(Utf8FallbackRegexCompiledEngineRuntime)
+            nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime)
                 => Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes,
             "CompositeTrailingLiteralSearch" => Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch, int, int)>(),
             nameof(PreparedByteSet) => Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>(),

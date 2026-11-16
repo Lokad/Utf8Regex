@@ -9,12 +9,16 @@ internal static class Utf8MatchInspection
 {
     public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
         => !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
-           regex.IsMatchViaCompiledEngine(input, validation, Utf8ExecutionDeadline.Infinite);
+           (regex.Inspection.CompiledRuntime is { } runtime
+               ? runtime.IsMatch(input, validation, Utf8ExecutionDeadline.Infinite)
+               : Utf8PreparedScalarExecutor.IsMatch(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite));
 
     public static Utf8ValueMatch MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
         => Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
             ? Utf8ValueMatch.NoMatch
-            : regex.MatchViaCompiledEngine(input, validation, Utf8ExecutionDeadline.Infinite);
+            : regex.Inspection.CompiledRuntime is { } runtime
+                ? runtime.Match(input, validation, Utf8ExecutionDeadline.Infinite)
+                : Utf8PreparedScalarExecutor.Match(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite);
 
     public static bool TryCountSelectedKernelWithoutValidation(Utf8Regex regex, ReadOnlySpan<byte> input, out int count)
     {
@@ -23,11 +27,9 @@ internal static class Utf8MatchInspection
             count = packed.Count(input);
             return true;
         }
-        if (regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind is
-                Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken ||
-            regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+        if (regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
         {
-            count = regex.CountViaCompiledEngine(input, default, Utf8ExecutionDeadline.Infinite);
+            count = regex.Inspection.CompiledRuntime!.Count(input, default, Utf8ExecutionDeadline.Infinite);
             return true;
         }
         count = 0;
@@ -36,10 +38,7 @@ internal static class Utf8MatchInspection
 
     public static string SelectedCountKernelKind(Utf8Regex regex)
         => regex._packedNibbleLiteralFamilyCountStrategy is not null ? "PackedNibbleLiteralFamily"
-            : regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind is
-                Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken
-                ? $"FallbackDirect/{regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind}"
-                : regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
+            : regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
                     ? $"{regex.Inspection.CompiledEngineKind}/{regex.Inspection.DebugCompiledEngineRuntimeType}" : "Unsupported";
 
     public static bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(

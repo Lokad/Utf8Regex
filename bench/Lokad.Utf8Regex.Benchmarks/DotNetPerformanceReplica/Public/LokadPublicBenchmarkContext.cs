@@ -228,12 +228,6 @@ internal sealed class LokadPublicBenchmarkContext
         return Utf8MatchInspection.ProjectByteAlignedMatchOnly(_compiledLiteralFamilyRawIndex, _compiledLiteralFamilyRawLength);
     }
 
-    public int ExecuteUtf8CompiledDirectCountOnly()
-    {
-        return Operation == LokadPublicBenchmarkOperation.Count
-            ? CompiledUtf8Regex.CountViaCompiledEngine(InputBytes, default, Utf8ExecutionDeadline.Infinite)
-            : 0;
-    }
 
     public int ExecuteDateTokenWholeOnly()
     {

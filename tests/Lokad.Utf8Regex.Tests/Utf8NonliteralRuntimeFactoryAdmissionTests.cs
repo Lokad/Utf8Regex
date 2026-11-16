@@ -15,7 +15,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         .GetValue(new Utf8Regex(pattern, RegexOptions.CultureInvariant))!;
 
     public static IEnumerable<object[]> Roots() => from kind in Enum.GetValues<Utf8CompiledEngineKind>()
-        where kind is not (Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+        where kind is Utf8CompiledEngineKind.SimplePatternInterpreter or Utf8CompiledEngineKind.StructuralLinearAutomaton
         from limit in new[] { "bytes", "work", "depth" } select new object[] { (int)kind, limit };
 
     [Fact]

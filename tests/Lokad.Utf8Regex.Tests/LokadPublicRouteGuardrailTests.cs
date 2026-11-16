@@ -120,7 +120,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount) => Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
 
         string[] inputs =
         [
@@ -200,7 +199,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.Utf8UriToken) => Utf8FallbackDirectFamilyKind.Utf8UriToken,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
         Assert.True(regex.TryIsMatchDirectWithoutValidation(
             "https://example.com/path?q=1"u8,
             out var isMatch));
@@ -250,7 +248,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -263,7 +260,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns) => Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
         Assert.True(regex.TryIsMatchDirectWithoutValidation("bbb.ccc"u8, out var asciiMatch));
         Assert.True(asciiMatch);
         Assert.True(regex.TryIsMatchDirectWithoutValidation("no literal"u8, out var asciiMiss));
@@ -283,7 +279,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral) => Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
         Assert.True(regex.TryIsMatchDirectWithoutValidation(
             "Essential services are provided by regular exprs."u8,
             out var isMatch));
@@ -310,7 +305,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix) => Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -323,7 +317,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AsciiIdentifierToken) => Utf8FallbackDirectFamilyKind.AsciiIdentifierToken,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -336,7 +329,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -349,7 +341,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -374,7 +365,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -387,7 +377,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
     [Fact]
@@ -400,33 +389,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole) => Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
-    }
-
-    [Fact]
-    public void MariomkaEmailCountUsesThrowIfInvalidOnlyForCompiledCount()
-    {
-        var regex = new Utf8Regex(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.Compiled);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, regex.Inspection.DebugFallbackDirectFamilyKind switch
-        {
-            nameof(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount) => Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount,
-            _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
-        });
-        Assert.True(regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount);
-    }
-
-    [Fact]
-    public void MariomkaUriCountUsesThrowIfInvalidOnlyForCompiledCount()
-    {
-        var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
-        {
-            nameof(Utf8FallbackDirectFamilyKind.Utf8UriToken) => Utf8FallbackDirectFamilyKind.Utf8UriToken,
-            _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
-        });
-        Assert.True(regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount);
     }
 
     [Theory]
@@ -442,7 +404,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken) => Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
         Assert.True(regex.TryMatchDirectWithoutValidation(
             "Today is 11/18/2019."u8,
             out var match));
@@ -630,7 +591,6 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail) => Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
 
         string[] inputs =
         [
@@ -769,6 +729,5 @@ public sealed class LokadPublicRouteGuardrailTests
             nameof(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount) => Utf8FallbackDirectFamilyKind.UnicodeCategoryCount,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
-        Assert.False(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 }

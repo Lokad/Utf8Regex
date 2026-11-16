@@ -10,7 +10,7 @@ internal static class Utf8OwnedVerifierAssertions
     {
         var program = Assert.IsType<Utf8RegexProgram>(typeof(Utf8Regex)
             .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex));
-        RetainsPreparedOwner(Assert.IsType<Utf8VerifierRuntime>(program.VerifierRuntime));
+        if (program.VerifierRuntime is { } verifier) RetainsPreparedOwner(verifier);
     }
 
     private static readonly FieldInfo StructuralOwner = typeof(Utf8StructuralVerifierRuntime)

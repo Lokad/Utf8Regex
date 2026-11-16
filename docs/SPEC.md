@@ -934,6 +934,10 @@ interpreter; the removed shape-specific IL emitters are not a general compiled
 backend. Literal-family emission remains. Disabled dynamic code uses existing
 non-emitted execution. NativeAOT/trimming are not qualified.
 
+General-engine programs do not construct a second specialized runtime or verifier.
+Removing that unused preparation can lower modeled construction requirements;
+pattern/state/buffer admission and execution limits retain their existing scope.
+
 Native search is an optimization of the same scalar semantics. Eligibility must
 prove full grammar/options/capture/branch order, scalar widths, assertion context,
 case fibers and progress. Failure declines the optimization, not the grammar.
