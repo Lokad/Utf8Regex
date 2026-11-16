@@ -68,25 +68,13 @@ public sealed class Utf8ScalarDiscoveryTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
-    public void DetailedAndEvaluatorHistoriesUseCompleteScalars(bool compiled, bool reverse)
+    public void DetailedHistoriesUseCompleteScalars(bool compiled, bool reverse)
     {
         var regex = new Utf8Regex("(?<word>(?<scalar>.)+)", RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "é😀𐐀a"u8.ToArray();
         var match = regex.MatchDetailed(input);
         AssertHistory(match, reverse);
-        var seen = 0;
-        var actual = regex.Replace(input, reverse, (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref bool direction) =>
-        {
-            seen++;
-            AssertHistory(context, direction);
-            writer.Append("["u8);
-            Assert.True(context.TryGetValueBytes(out var value));
-            writer.Append(value);
-            writer.Append("]"u8);
-        });
-        Assert.Equal(1, seen);
-        Assert.Equal("[é😀𐐀a]", Encoding.UTF8.GetString(actual));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

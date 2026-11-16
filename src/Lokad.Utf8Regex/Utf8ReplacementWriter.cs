@@ -3,28 +3,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Represents a callback that appends a replacement directly as UTF-8.</summary>
-/// <typeparam name="TState">The caller-defined state carried between evaluations.</typeparam>
-/// <param name="match">The current match over the original UTF-8 input.</param>
-/// <param name="writer">The destination for the replacement value.</param>
-/// <param name="state">The caller-defined mutable state.</param>
-public delegate void Utf8MatchEvaluator<TState>(
-    in Utf8MatchContext match,
-    ref Utf8ReplacementWriter writer,
-    ref TState state);
-
-/// <summary>Represents a callback that creates a UTF-16 replacement string.</summary>
-/// <typeparam name="TState">The caller-defined state carried between evaluations.</typeparam>
-/// <param name="match">The current match over the original UTF-8 input.</param>
-/// <param name="state">The caller-defined mutable state.</param>
-/// <returns>The replacement value for the current match.</returns>
-/// <remarks>Each returned string is encoded independently as UTF-8. Unpaired
-/// surrogates become U+FFFD; valid pairs within that string remain one scalar.</remarks>
-public delegate string Utf16MatchEvaluator<TState>(
-    in Utf8MatchContext match,
-    ref TState state);
-
-/// <summary>Accumulates UTF-8 replacement output produced by a <see cref="Utf8MatchEvaluator{TState}"/>.</summary>
+/// <summary>Accumulates UTF-8 replacement output for the PCRE2 adapter's byte callbacks.</summary>
 /// <remarks>The writer supplied to an evaluator is valid only during that callback.
 /// Copies of an initialized writer share its buffer. Resetting it to default clears
 /// accumulated output. Default/reset writers join the active callback's invocation.

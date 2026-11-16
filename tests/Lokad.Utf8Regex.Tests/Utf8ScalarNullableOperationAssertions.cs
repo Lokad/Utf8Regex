@@ -73,19 +73,6 @@ internal static class Utf8ScalarNullableOperationAssertions
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out written, token));
                 Assert.Equal(bytes, destination.AsSpan(0, written).ToArray());
             }
-            Assert.Equal(reverse ? "<>😀<><a>😀<>" : "<>😀<a><>😀<>", regex.ReplaceToString(input, 0,
-                static (in Utf8MatchContext match, ref int state) => "<" + match.GetValueString() + ">", token));
-            var calls = new List<(int, int)>();
-            Assert.Equal(reverse ? "[]😀[][a]😀[]" : "[]😀[a][]😀[]", Encoding.UTF8.GetString(regex.Replace(input, calls,
-                static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref List<(int, int)> state) =>
-                {
-                    state.Add((match.IndexInBytes, match.LengthInBytes));
-                    writer.Append("["u8);
-                    Assert.True(match.TryGetValueBytes(out var value));
-                    writer.Append(value);
-                    writer.Append("]"u8);
-                }, token)));
-            Assert.Equal(rows.Select(row => (row.Byte, row.Length)), calls);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

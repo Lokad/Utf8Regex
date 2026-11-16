@@ -45,34 +45,25 @@ public sealed class Utf8ReplacementWorkspaceReuseTests
     public void CaptureHistoriesSurviveNestedOperationsAndSubsequentMatches()
     {
         var regex = Create("(a)+");
-        var retained = new List<string>();
-        var state = (Regex: regex, Captures: retained);
-        var result = regex.ReplaceToString("aaa xaa aa"u8, state,
-            static (in Utf8MatchContext match, ref (Utf8Regex Regex, List<string> Captures) state) =>
+        var input = "aaa xaa aa"u8.ToArray();
+        var retained = new List<Utf8RangeMatch>();
+        using (var cursor = regex.CreateMatchCursor(input))
+            while (cursor.MoveNext(out var match))
             {
-                Assert.Equal("a", state.Regex.ReplaceToString("aa"u8, "$1"));
-                var group = match.GetGroup(1);
-                var values = new string[group.CaptureCount];
-                for (var i = 0; i < values.Length; i++) values[i] = group.GetCapture(i).GetValueString();
-                state.Captures.Add(string.Concat(values));
-                return "[" + match.GetValueString() + "]";
-            });
-        Assert.Equal("[aaa] x[aa] [aa]", result);
-        Assert.Equal(new[] { "aaa", "aa", "aa" }, retained);
+                Assert.Equal("a", regex.ReplaceToString("aa"u8, "$1"));
+                retained.Add(match);
+            }
         Assert.Equal("a", regex.ReplaceToString("aaaa"u8, "$1"));
-        Assert.Equal(new[] { "aaa", "aa", "aa" }, retained);
+        Assert.Equal(new[] { "aaa", "aa", "aa" },
+            retained.Select(match => Encoding.UTF8.GetString(match.GetValueMemory().Span)));
+        for (var index = 0; index < retained.Count; index++)
+        {
+            var captures = retained[index].GetCaptures(1);
+            Assert.Equal(index == 0 ? 3 : 2, captures.Length);
+            foreach (var capture in captures)
+                Assert.Equal("a"u8.ToArray(), input.AsSpan(capture.StartOffsetInBytes,
+                    capture.EndOffsetInBytes - capture.StartOffsetInBytes).ToArray());
+        }
     }
 
-    [Fact]
-    public void CallbackFailureUnwindsAndTheExpressionCanBeReused()
-    {
-        var regex = Create("(a)+");
-        Assert.Throws<InvalidOperationException>(() => regex.ReplaceToString("aa aa aa"u8, 0,
-            static (in Utf8MatchContext match, ref int count) =>
-            {
-                if (++count == 2) throw new InvalidOperationException("Expected callback failure.");
-                return match.GetValueString();
-            }));
-        Assert.Equal("[a] [a] [a]", regex.ReplaceToString("aa aa aa"u8, "[$1]"));
-    }
 }

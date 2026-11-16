@@ -137,8 +137,8 @@ Owned detailed results limit Unicode maps to the prefix ending at the farthest r
 capture-history endpoint, including captures inside lookarounds. The context and
 its aliases still borrow the complete original subject. Avoided suffix maps can
 lower work, working-capacity and result-capacity requirements; needed arrays are
-admitted before allocation. Explicit offset maps and callback maps retain their
-existing scope and lifetime.
+admitted before allocation. Explicit offset maps retain their existing scope and
+lifetime.
 Strict detailed preparation reuses its whole-subject ASCII proof and defers mixed
 UTF-16 metadata to the required capture prefix. A required mixed prefix can add
 description work quanta; numerical work budgets remain route/version dependent.
@@ -377,9 +377,9 @@ assembles output in subject order. UTF-8 template overloads parse/cache source
 bytes directly; no whole-template string is required. Selected capture-name
 lexemes may project text under the existing name grammar. Prepared instructions
 retain byte literals and original syntax flags, without retaining parser tokens,
-literal text or a duplicate source. Each string literal/callback return is encoded independently: an unpaired
+literal text or a duplicate source. Each string literal is encoded independently: an unpaired
 surrogate becomes U+FFFD and cannot join a fragment from another substitution.
-Subject/template bytes and completed byte-callback output remain strict.
+Subject validation follows the instance policy; template bytes remain strict.
 
 Native discovery/capture-map eligibility is preserved. Grouped template expansion
 splices original byte views through the admitted output writer; text results
@@ -387,12 +387,13 @@ decode only the final output. Scalar fall-throughs likewise emit the requested
 byte/destination form directly. Existing derived coordinate maps remain where
 native capture shaping requires them; this does not make UTF-16 the matching unit.
 
-Evaluators must be non-null even on misses; failure names `evaluator`.
-Pre-cancellation takes precedence. `Utf8ReplacementWriter` is callback-scoped;
-copies share output, and resetting to default clears output before joining the
-active invocation on append. Outside a callback, append throws even for empty
-fragments; `AppendAsciiByte` validates its argument first. Scoped byte/char
-span appends copy/encode before returning, so local stack buffers are supported.
+Core's evaluator replacement overloads and evaluator delegates are removed in
+0.5 development. Hosts compute custom substitutions over the byte capture cursor.
+Templates use last-capture byte ranges without callback history or subject maps.
+Byte/destination output does not request whole-input UTF-16 totals. Legacy string
+output counts only when needed to materialize an unchanged subject after a miss.
+The shared `Utf8ReplacementWriter` remains for the PCRE2 adapter's live callbacks;
+its contract is described by that profile.
 
 `TryReplace` returns `Done` or `DestinationTooSmall`. Shortage writes zero
 bytes and leaves the destination unchanged. Input/template overlap is supported;
@@ -411,8 +412,8 @@ One absolute deadline covers an invocation and its lazy advances, including wait
 between moves and controlled cold preparation. Timeout throws
 `RegexMatchTimeoutException`. A finite working or result byte cap makes its
 `Input` empty, avoiding an unadmitted diagnostic decode. Work/depth-only and
-unlimited calls retain their existing diagnostic input. Scheduling, GC/JIT and
-arbitrary caller callbacks cannot be preempted; checks surround callbacks.
+unlimited calls retain their existing diagnostic input. Scheduling and GC/JIT
+cannot be preempted.
 
 Core/PythonRe accept positive nullable `Utf8ResourcePolicy` values; null is
 unlimited and zero is invalid. Defaults are unlimited.
@@ -613,8 +614,7 @@ is charged; successful admission can require less working capacity and depth,
 while declined proofs can increase work. Zero-minimum and uncertain runs keep
 their existing continuations.
 Template replacement reads final completed captures without materializing capture
-histories. Evaluator callbacks retain their profile's histories. Avoiding those
-temporary snapshots can lower work and covered working/result charges; execution,
+histories. Avoiding temporary snapshots can lower work and covered working/result charges; execution,
 output staging and final output remain under their original admission and
 interruption controls.
 Validated ASCII literal-family cursors reuse byte coordinates for UTF-16

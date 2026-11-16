@@ -132,29 +132,11 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceEvaluator()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { writer.Append("pet"u8); }, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeReplaceToString()
     {
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();
         var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(s_input, "pet", token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceToStringEvaluator()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(s_input, 0, static (in Utf8MatchContext context, ref int state) => "pet", token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -199,139 +181,4 @@ public sealed class Utf8CancellationTests
         Assert.Equal(regex.ReplaceToString(s_input, "pet"), regex.ReplaceToString(s_input, "pet", token));
     }
 
-    [Fact]
-    public void CancelInsideEvaluatorAbortsReplace()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        using var canceled = new CancellationTokenSource();
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            s_input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void CancelInsideMappedBranchEvaluatorAbortsReplace()
-    {
-        var regex = new Utf8Regex("(cat)|(horse)");
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("cat horse");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void CancelInsideGroupedSpanEvaluatorAbortsReplace()
-    {
-        var regex = new Utf8Regex("(a)(b)");
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("ab ab");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Fact]
-    public void CancelInsideDivergentBranchEvaluatorAbortsReplace()
-    {
-        var regex = new Utf8Regex("(ab|c)(d)");
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("abd cd");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Fact]
-    public void CancelInsideCapturedFiniteLazyEvaluatorAbortsReplace()
-    {
-        // Captured finite lazy ranges now execute owned interpreter unwind on
-        // the compiled lane; cancellation inside the callback still aborts output.
-        var regex = new Utf8Regex("(([0-9]){1,2}?x)?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("12x 12x");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.Equal(new Regex(regex.Pattern, RegexOptions.CultureInvariant).Replace("12x", "Q"),
-            regex.ReplaceToString("12x"u8, "Q"));
-    }
-
-    [Theory]
-    [InlineData(RegexOptions.CultureInvariant)]
-    [InlineData(RegexOptions.Compiled | RegexOptions.CultureInvariant)]
-    public void CancelInsideSliceEvaluatorAbortsReplace(RegexOptions options)
-    {
-        // Seven-loop shapes evaluate owned through the slice arm, which polls the
-        // caller token between matches exactly like the map arms above.
-        var regex = new Utf8Regex("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", options);
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("abcdefghijklm abcdefghijklm");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-    }
-
-    [Fact]
-    public void CancelInsideEvaluatorAbortsReplaceToString()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        using var canceled = new CancellationTokenSource();
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(
-            s_input,
-            0,
-            (in Utf8MatchContext context, ref int state) => { if (++calls == 1) { canceled.Cancel(); } return "pet"; },
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void UncanceledEvaluatorParity()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CancellationToken.None;
-        var plainCalls = 0;
-        var tokenCalls = 0;
-        var plain = regex.Replace(s_input, 0, (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { plainCalls++; writer.Append("pet"u8); });
-        var withToken = regex.Replace(s_input, 0, (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { tokenCalls++; writer.Append("pet"u8); }, token);
-        Assert.Equal(plain, withToken);
-        Assert.Equal(plainCalls, tokenCalls);
-    }
 }

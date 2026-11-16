@@ -2814,35 +2814,6 @@ public sealed partial class Utf8Regex
         return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
-    /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content.</summary>
-    /// <typeparam name="TState">The caller-defined state type.</typeparam>
-    /// <exception cref="InvalidOperationException">A match splits a UTF-8 scalar.</exception>
-    /// <exception cref="ArgumentException">The evaluator produces malformed UTF-8.</exception>
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator)
-    {
-        return ReplaceEvaluatorCore(input, state, evaluator, default);
-    }
-
-    private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(evaluator);
-        try { return OwnedSliceReplaceEvaluator(input, _ownedSliceProgram, state, evaluator, cancellationToken); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
-    }
-
-    /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content, observing cancellation during validation, matching and required result processing.</summary>
-    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="state">Additional state passed to the evaluator.</param>
-    /// <param name="evaluator">The callback invoked for each match to append replacement content.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceEvaluatorCore(input, state, evaluator, cancellationToken);
-    }
-
     /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
     {
@@ -2872,37 +2843,6 @@ public sealed partial class Utf8Regex
         var deadline = CreateExecutionBudget();
         var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
         return ReplaceToStringCore(input, analyzed, cancellationToken, deadline);
-    }
-
-    /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text.</summary>
-    /// <typeparam name="TState">The caller-defined state type.</typeparam>
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
-    {
-        return ReplaceToStringEvaluatorCore(input, state, evaluator, default);
-    }
-
-    private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(evaluator);
-        try
-        {
-            return OwnedSliceReplace(input, _ownedSliceProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _program.CaptureCatalog),
-                ref state, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
-    }
-
-    /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text, observing cancellation during validation, matching and required result processing.</summary>
-    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="state">Additional state passed to the evaluator.</param>
-    /// <param name="evaluator">The callback invoked for each match to produce replacement text.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToStringEvaluatorCore(input, state, evaluator, cancellationToken);
     }
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>

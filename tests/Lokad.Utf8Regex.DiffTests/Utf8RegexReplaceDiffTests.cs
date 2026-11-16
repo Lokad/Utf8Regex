@@ -429,55 +429,9 @@ public sealed class Utf8RegexReplaceDiffTests
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void ReplaceEvaluatorMatchesRuntime()
-    {
-        const string input = "foo bar";
-        const string pattern = "(\\w+)";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var state = 0;
 
-        var actual = utf8Regex.Replace(
-            Encoding.UTF8.GetBytes(input),
-            state,
-            static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int count) =>
-            {
-                count++;
-                writer.Append(match.GetGroup(1).GetValueString().AsSpan());
-                writer.AppendAsciiByte((byte)'!');
-            });
 
-        var expected = Encoding.UTF8.GetBytes(
-            Regex.Replace(input, pattern, static match => match.Groups[1].Value + "!"));
 
-        Assert.Equal(expected, actual);
-    }
-
-    [Fact]
-    public void ReplaceToStringEvaluatorMatchesRuntime()
-    {
-        const string input = "aa bb aaa";
-        const string pattern = "(a)+";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var state = 0;
-
-        var actual = utf8Regex.ReplaceToString(
-            Encoding.UTF8.GetBytes(input),
-            state,
-            static (in Utf8MatchContext match, ref int count) =>
-            {
-                count += match.GetGroup(1).CaptureCount;
-                return match.GetGroup(1).CaptureCount.ToString();
-            });
-
-        var expected = Regex.Replace(
-            input,
-            pattern,
-            static match => match.Groups[1].Captures.Count.ToString(),
-            RegexOptions.CultureInvariant);
-
-        Assert.Equal(expected, actual);
-    }
 
     [Fact]
     public void ReplaceMatchesRuntimeForEmptyNativeLiteral()

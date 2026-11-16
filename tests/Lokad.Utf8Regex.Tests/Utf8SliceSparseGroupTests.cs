@@ -193,42 +193,6 @@ public sealed class Utf8SliceSparseGroupTests
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "UTF-8 destination template");
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Templates");
-            var expectedCalls = new List<string>();
-            var expectedString = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, match => { expectedCalls.Add(Signature(oracle, match, subject)); return "[" + match.Groups[numbers[^1]].Value + "]"; }));
-            var state = (Numbers: numbers, Calls: new List<string>(), Subject: subject, Oracle: oracle,
-                Matches: oracle.Matches(subject.Projected).Cast<Match>().ToArray());
-            var actualString = regex.ReplaceToString(input, state,
-                static (in Utf8MatchContext context, ref (int[] Numbers, List<string> Calls, Utf8ScalarCaptureFixture.Subject Subject, Regex Oracle, Match[] Matches) callback) =>
-                {
-                    AssertDetailed(callback.Oracle, callback.Matches[callback.Calls.Count], context, callback.Subject);
-                    callback.Calls.Add(Signature(in context, callback.Numbers));
-                    return "[" + context.GetGroup(callback.Numbers[^1]).GetValueString() + "]";
-                }, source.Token);
-            Assert.Equal(expectedString, actualString);
-            Assert.Equal(expectedCalls, state.Calls);
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "String callback");
-            var expectedByteCalls = new List<string>();
-            var expectedByteText = oracle.Replace(subject.Projected, match =>
-            {
-                var range = subject.UnitRange(match.Index, match.Length);
-                Assert.True(IsBoundary(text, range.Index) && IsBoundary(text, range.Index + range.Length),
-                    "The caller must provide a comparator whose match boundaries overlap scalar semantics.");
-                expectedByteCalls.Add(Signature(oracle, match, subject));
-                return "[" + match.Groups[numbers[^1]].Value + "]";
-            });
-            var byteState = (Numbers: numbers, Calls: new List<string>(), Subject: subject, Oracle: oracle,
-                Matches: oracle.Matches(subject.Projected).Cast<Match>().ToArray());
-            var actualBytes = regex.Replace(input, byteState,
-                static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer,
-                    ref (int[] Numbers, List<string> Calls, Utf8ScalarCaptureFixture.Subject Subject, Regex Oracle, Match[] Matches) callback) =>
-                {
-                    AssertDetailed(callback.Oracle, callback.Matches[callback.Calls.Count], context, callback.Subject);
-                    callback.Calls.Add(Signature(in context, callback.Numbers));
-                    writer.Append(("[" + context.GetGroup(callback.Numbers[^1]).GetValueString() + "]").AsSpan());
-                }, source.Token);
-            Assert.Equal(Encoding.UTF8.GetBytes(Utf8ScalarCaptureFixture.Subject.Restore(expectedByteText)), actualBytes);
-            Assert.Equal(expectedByteCalls, byteState.Calls);
-            Assert.Null(Utf8SliceByteOutputScope.Current);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
@@ -358,35 +322,4 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.Equal(subject is null ? expected.Groups[name].Value : Utf8ScalarCaptureFixture.Subject.Restore(expected.Groups[name].Value), actual.GetGroup(name).GetValueString());
     }
 
-    private static string Signature(Regex oracle, Match match, Utf8ScalarCaptureFixture.Subject subject)
-    {
-        var range = subject.UnitRange(match.Index, match.Length);
-        var result = new StringBuilder($"{range.Index}:{range.Length};");
-        foreach (var number in oracle.GetGroupNumbers())
-        {
-            result.Append(number).Append('=');
-            foreach (Capture capture in match.Groups[number].Captures)
-            {
-                var mapped = subject.UnitRange(capture.Index, capture.Length);
-                result.Append($"{mapped.Index}:{mapped.Length}:{subject.Value(capture.Index, capture.Length)};");
-            }
-        }
-        return result.ToString();
-    }
-
-    private static string Signature(in Utf8MatchContext context, int[] numbers)
-    {
-        var result = new StringBuilder($"{context.IndexInUtf16}:{context.LengthInUtf16};");
-        foreach (var number in numbers)
-        {
-            result.Append(number).Append('=');
-            var group = context.GetGroup(number);
-            for (var capture = 0; capture < group.CaptureCount; capture++)
-            {
-                var item = group.GetCapture(capture);
-                result.Append($"{item.IndexInUtf16}:{item.LengthInUtf16}:{item.GetValueString()};");
-            }
-        }
-        return result.ToString();
-    }
 }

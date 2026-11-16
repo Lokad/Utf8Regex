@@ -1,7 +1,6 @@
 interface IUtf8MemoryAllowance
   method abstract Boolean TryReserve(UInt64 bytes)
   method abstract Void Release(UInt64 bytes)
-delegate String Utf16MatchEvaluator<TState>(in Utf8MatchContext match, ref TState state)
 readonly ref struct Utf8CaptureContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }
@@ -58,7 +57,6 @@ readonly ref struct Utf8MatchContext
   method String GetValueString()
   method Utf8GroupContext GetGroup(Int32 number)
   method Utf8GroupContext GetGroup(String name)
-delegate Void Utf8MatchEvaluator<TState>(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
 sealed class Utf8MemoryAdmissionException : Exception, Runtime.Serialization.ISerializable
   ctor Utf8MemoryAdmissionException(UInt64 requestedBytes)
   property UInt64 RequestedBytes { get; }
@@ -97,8 +95,6 @@ sealed class Utf8Regex
   method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Threading.CancellationToken cancellationToken)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Threading.CancellationToken cancellationToken)
-  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Utf8MatchEvaluator<TState> evaluator)
-  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, Threading.CancellationToken cancellationToken)
   method Int32 Count(ReadOnlySpan<Byte> input)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
@@ -109,8 +105,6 @@ sealed class Utf8Regex
   method String GroupNameFromNumber(Int32 i)
   method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement)
   method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Threading.CancellationToken cancellationToken)
-  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
-  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, Threading.CancellationToken cancellationToken)
   method String[] GetGroupNames()
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
   method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input)

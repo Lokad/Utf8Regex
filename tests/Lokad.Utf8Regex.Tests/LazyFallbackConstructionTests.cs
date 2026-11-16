@@ -124,13 +124,6 @@ public sealed class LazyFallbackConstructionTests
         _ = regex.Replace(input, "X");
         _ = regex.Replace(input, Encoding.UTF8.GetBytes("X"));
         _ = regex.ReplaceToString(input, "X");
-        if (inputText.Length > 0)
-        {
-            // Empty-input evaluator cases are covered by scalar replacement fixtures.
-            _ = regex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { writer.Append(Encoding.UTF8.GetBytes("X")); });
-            _ = regex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "X");
-        }
-
         var destination = new byte[Math.Max(input.Length * 4, 16)];
         _ = regex.TryReplace(input, "X", destination, out _);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern + " options=" + options.ToString() + " input=" + inputText);
@@ -527,7 +520,6 @@ public sealed class LazyFallbackConstructionTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog), "pattern=" + pattern);
     }
-
 
     public static IEnumerable<object?[]> OwnedSliceFromOffsetCases()
     {

@@ -184,45 +184,6 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredEvaluatorCases()
-    {
-        string[] patterns = ["^ab", "\\Aab", "ab$", "ab\\z"];
-        string[] texts = ["abxx", "xxab", "ab", "ab\n", "éab", "abé", ""];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchoredEvaluatorCases))]
-    public void AnchoredEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "<" + match.Value + ">");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("<"u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append(">"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldedAnchoredCases()
     {
         string[] patterns = ["(?i:^ab)", "(?i:ab$)"];
@@ -644,32 +605,6 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedDetailedEvaluatorCases))]
-    public void FoldedEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "<" + match.Value + ">");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("<"u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append(">"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]

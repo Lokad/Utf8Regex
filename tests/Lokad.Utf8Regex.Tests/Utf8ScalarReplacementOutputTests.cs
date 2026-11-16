@@ -67,27 +67,6 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void StringEvaluatorFragmentsCannotPairAcrossMatches(bool compiled, bool rtl)
-    {
-        var regex = new Utf8Regex("(.)", Options(compiled, rtl));
-        var calls = new List<int>();
-        Assert.Equal("\ufffd\ufffd", regex.ReplaceToString("ab"u8, calls,
-            static (in Utf8MatchContext context, ref List<int> state) =>
-            {
-                state.Add(context.IndexInUtf16);
-                return context.IndexInUtf16 == 0 ? "\ud83d" : "\ude00";
-            }));
-        Assert.Equal(rtl ? new[] { 1, 0 } : new[] { 0, 1 }, calls);
-        Assert.Equal("\U0001f600\U0001f600", regex.ReplaceToString("ab"u8, 0,
-            static (in Utf8MatchContext context, ref int state) => "\ud83d\ude00"));
-        AssertOwned(regex);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
     public void EmptySubstitutionsCannotCompleteLiteralSurrogates(bool compiled, bool rtl)
     {
         var regex = new Utf8Regex("()", Options(compiled, rtl));

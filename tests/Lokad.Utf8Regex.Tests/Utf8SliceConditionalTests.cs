@@ -379,35 +379,6 @@ public sealed class Utf8SliceConditionalOperationTests
     }
 
     [Theory]
-    [InlineData("(?(?=a)a|b)+", "xaab")]
-    [InlineData("(?(?=a)a|b)+", "xaab\U0001F600")]
-    [InlineData("(?(a)a|b)+", "xaab")]
-    [InlineData("(?(a)a|b)+", "xaab\U0001F600")]
-    public void OwnedConditionalEvaluatorMatchesOracle(string pattern, string inputText)
-    {
-        // R05: conditional shapes project every callback argument from the
-        // deterministic owned re-query at each enumerated hit start, so both
-        // evaluator cores serve owned with zero fallback construction.
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(inputText, static match => "[" + match.Value + "]");
-        var byteRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.True(byteRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-        var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]"));
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-    }
-
-    [Theory]
     [InlineData("(?(?=a)a|b)+", "xaab\U0001F600", 0)]
     [InlineData("(?(?=a)a|b)+", "xaab\U0001F600", 2)]
     [InlineData("(a)?(?(1)b|c)", "aab", 1)]

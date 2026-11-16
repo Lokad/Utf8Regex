@@ -143,7 +143,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             Assert.Equal(bytes, destination.AsSpan(0, written).ToArray());
             Owned(destinationRegex);
         }
-        Evaluators(pattern, options, subject, oracle, expected);
 
         using var source = new CancellationTokenSource();
         var live = new Utf8Regex(pattern, options);
@@ -195,43 +194,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             Sequence(subject, expected, regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token));
             Owned(regex);
         }
-    }
-
-    private sealed class CallbackState(Subject subject, Match[] matches)
-    {
-        internal readonly Subject Subject = subject;
-        internal readonly Match[] Matches = matches;
-        internal int Seen;
-    }
-
-    private static void Evaluators(string pattern, RegexOptions options, Subject subject, Regex oracle, Match[] matches)
-    {
-        var expected = subject.Restore(oracle.Replace(subject.Projected, static match => "[" + match.Value + "]"));
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteState = new CallbackState(subject, matches);
-        var bytes = byteRegex.Replace(subject.Input, byteState,
-            static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref CallbackState state) =>
-            {
-                Assert.True(state.Seen < state.Matches.Length);
-                Detailed(state.Subject, state.Matches[state.Seen++], context);
-                writer.Append("["u8);
-                Assert.True(context.TryGetValueBytes(out var value));
-                writer.Append(value);
-                writer.Append("]"u8);
-            });
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes);
-        Assert.Equal(matches.Length, byteState.Seen);
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringState = new CallbackState(subject, matches);
-        var result = stringRegex.ReplaceToString(subject.Input, stringState,
-            static (in Utf8MatchContext context, ref CallbackState state) =>
-            {
-                Assert.True(state.Seen < state.Matches.Length);
-                Detailed(state.Subject, state.Matches[state.Seen++], context);
-                return "[" + context.GetValueString() + "]";
-            });
-        Assert.Equal(expected, result);
-        Assert.Equal(matches.Length, stringState.Seen);
     }
 
     internal static void Owned(Utf8Regex regex)

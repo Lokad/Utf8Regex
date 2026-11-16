@@ -9,7 +9,7 @@ public sealed class Utf8CoreDepthPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
+        "replace-bytes", "replace-text", "destination", "destination-bytes"];
     private static Utf8Regex Create(string pattern, uint cap, RegexOptions options)
         => new(pattern, options, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxDepth = cap });
     public static IEnumerable<object[]> Modes()

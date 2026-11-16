@@ -10,7 +10,7 @@ public sealed class Utf8CoreWorkPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
+        "replace-bytes", "replace-text", "destination", "destination-bytes"];
 
     private static Utf8Regex Create(string pattern, ulong cap, RegexOptions options = RegexOptions.CultureInvariant,
         TimeSpan? timeout = null) => new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
@@ -282,26 +282,6 @@ public sealed class Utf8CoreWorkPolicyTests
         Assert.True(ordinary.IsMatch("ab"u8));
     }
 
-    [Fact]
-    public void CallbackFailuresAreNotRelabeledAndNestedScopesRestoreTheOuterMeter()
-    {
-        var regex = Create("ab", 100000);
-        var sentinel = new InvalidOperationException("caller failure");
-        Assert.Same(sentinel, Assert.Throws<InvalidOperationException>(() => regex.ReplaceToString("ab"u8, 0,
-            (in Utf8MatchContext match, ref int state) => throw sentinel)));
-        Assert.Equal("ZZ", regex.ReplaceToString("abab"u8, regex,
-            static (in Utf8MatchContext match, ref Utf8Regex nested) =>
-            {
-                Assert.True(nested.IsMatch("ab"u8));
-                return "Z";
-            }));
-        Assert.Equal("<ab>", regex.ReplaceToString("ab"u8, "<$&>"));
-        var expanded = Create("ab", 200);
-        AssertWorkFailure(() => expanded.ReplaceToString("ab"u8, 0,
-            static (in Utf8MatchContext match, ref int state) => new string('é', 1000000)), 200);
-        Assert.Equal("ab", regex.MatchDetailed("ab"u8).GetValueString());
-    }
-
     private static void AssertWorkFailure(Action action, ulong cap) => CheckFailure(Assert.Throws<Utf8ResourceLimitExceededException>(action), cap);
     private static void CheckFailure(Utf8ResourceLimitExceededException error, ulong cap)
     {
@@ -377,18 +357,7 @@ public sealed class Utf8CoreWorkPolicyTests
                 else status = live ? regex.TryReplace(input, "<$&>"u8, destination, out written, token) : regex.TryReplace(input, "<$&>"u8, destination, out written);
                 Assert.Equal(OperationStatus.Done, status);
                 return Encoding.UTF8.GetString(destination.AsSpan(0, written));
-            case "callback-bytes":
-                return Encoding.UTF8.GetString(live ? regex.Replace(input, 0, AppendMatch, token) : regex.Replace(input, 0, AppendMatch));
-            case "callback-text": return live ? regex.ReplaceToString(input, 0, ExpandMatch, token) : regex.ReplaceToString(input, 0, ExpandMatch);
             default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
     }
-    private static void AppendMatch(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state)
-    {
-        writer.Append("<"u8);
-        Assert.True(match.TryGetValueBytes(out var bytes));
-        writer.Append(bytes);
-        writer.Append(">"u8);
-    }
-    private static string ExpandMatch(in Utf8MatchContext match, ref int state) => "<" + match.GetValueString() + ">";
 }

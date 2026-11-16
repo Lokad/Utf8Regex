@@ -114,9 +114,6 @@ public sealed class Utf8ScalarCultureTests
                 var replacement = "<" + value + ">" + (all ? "" : "\U0001f600");
                 Assert.Equal(replacement, regex.ReplaceToString(input, "<$&>", source.Token));
                 Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>", source.Token));
-                Assert.Equal((body.Contains('+') ? "\U0001f600\U0001f600" : "\U0001f600") + (all ? "" : "\U0001f600"),
-                    regex.ReplaceToString(input, 0,
-                        static (in Utf8MatchContext m, ref int state) => m.GetGroup(1).GetValueString(), source.Token));
                 var splits = new List<string>();
                 foreach (var split in regex.EnumerateSplits(input, int.MaxValue, source.Token)) splits.Add(split.GetValueString());
                 Assert.Equal(rtl ? new[] { all ? "" : "\U0001f600", "" } : new[] { "", all ? "" : "\U0001f600" }, splits);

@@ -1,24 +1,13 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-/// <summary>Expands one scalar match into bytes without transferring invocation ownership.</summary>
-internal interface IUtf8SliceReplacementExpansion<TState>
-{
-    bool RequiresContext { get; }
-    void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation);
-}
-
+/// <summary>Expands a template directly from scalar match/capture byte ranges.</summary>
 internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, Utf8CaptureCatalog captureCatalog)
-    : IUtf8SliceReplacementExpansion<int>
 {
-    public bool RequiresContext => false;
-
-    public void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref int state, ref Utf8SliceInvocation invocation)
+    public void Append(ReadOnlySpan<byte> input, Utf8SliceSearchOutcome outcome,
+        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref Utf8SliceInvocation invocation)
     {
         foreach (var instruction in replacement.Plan.Instructions)
         {
@@ -66,26 +55,6 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
         var end = slots.Ends[slot];
         if (start < 0 || end < 0) return;
         writer.Append(input.Slice(Math.Min(start, end), Math.Abs(end - start)));
-    }
-}
-
-internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator<TState> evaluator, Utf8CaptureCatalog captureCatalog)
-    : IUtf8SliceReplacementExpansion<TState>
-{
-    public bool RequiresContext => true;
-
-    public void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation)
-    {
-        var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
-        try
-        {
-            var context = projection.CreateContext(input, map, captureCatalog);
-            var result = evaluator(in context, ref state);
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            writer.Append(result.AsSpan());
-        }
-        finally { projection.Release(ref invocation); }
     }
 }
 

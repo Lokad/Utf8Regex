@@ -27,11 +27,9 @@ public sealed partial class Utf8Regex
             var control = new ReplacementPreparationControl(deadline, token);
             ValidateReplacementTemplateUtf8(replacementUtf8, control);
             var replacement = GetParsedReplacement(replacementUtf8, control);
-            var state = 0;
             // Funded calls use the existing controlled scalar replacement route,
             // including its native literal candidate discovery and NB/RTL rules.
-            var result = OwnedSliceReplace(input, _ownedSliceProgram,
-                new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog), ref state,
+            var result = OwnedSliceReplace(input, _ownedSliceProgram, replacement,
                 Utf8SliceReplacementResultKind.Destination, destination, invocation);
             FinishFundedInvocation(ref invocation);
             bytesWritten = result.BytesWritten;

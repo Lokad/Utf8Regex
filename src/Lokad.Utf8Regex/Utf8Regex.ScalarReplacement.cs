@@ -8,9 +8,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Owned replacement over original scalar-aligned UTF-8 byte ranges.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8SliceByteOutputScope CreateOwnedOutputScope(CancellationToken token)
-        => CreateOwnedOutputScope(new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation });
-
     private Utf8SliceByteOutputScope CreateOwnedOutputScope(Utf8SliceInvocation invocation)
     {
         try { return Utf8SliceByteOutputScope.Enter(invocation); }
@@ -36,40 +33,29 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination, CancellationToken token,
         Utf8ExecutionDeadline deadline)
     {
-        var state = 0;
-        return OwnedSliceReplace(input, program, new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog),
-            ref state, resultKind, destination, new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation });
+        var initialInvocation = new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation };
+        return OwnedSliceReplace(input, program, replacement, resultKind, destination, initialInvocation);
     }
 
-    private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
-        Utf8SliceProgram program, TExpansion expansion, ref TState state, Utf8SliceReplacementResultKind resultKind,
-        Span<byte> destination, CancellationToken token)
-        where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
-        => OwnedSliceReplace(input, program, expansion, ref state, resultKind, destination,
-            new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation });
-
-    private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
-        Utf8SliceProgram program, TExpansion expansion, ref TState state, Utf8SliceReplacementResultKind resultKind,
-        Span<byte> destination, Utf8SliceInvocation initialInvocation)
-        where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
+    private Utf8SliceReplacementResult OwnedSliceReplace(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination,
+        Utf8SliceInvocation initialInvocation)
     {
+        var expansion = new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog);
         var scope = CreateOwnedOutputScope(initialInvocation);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
-        ulong mapReservation = 0;
         Utf8NonBacktrackingSearchState? batch = null;
         var boundary = 0;
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
+            Utf8Validation.CheckSubject(input, ref invocation);
             if (program.IsNonBacktracking)
             {
                 var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
                 if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned replacement preparation exceeded {breach}.");
             }
-            var map = default(Utf8BoundaryMap);
-            var mapCreated = false;
             var writer = scope.CreateBuffer();
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var position = program.RightToLeft ? input.Length : 0;
@@ -90,25 +76,16 @@ public sealed partial class Utf8Regex
                     position = candidateStart;
                 }
                 var outcome = batch is null
-                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, expansion.RequiresContext, ref workspace, ref invocation)
-                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, expansion.RequiresContext, ref invocation);
+                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, false, ref workspace, ref invocation)
+                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, false, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
                     if (!outcome.Found) break;
                     anyMatch = true;
-                    if (expansion.RequiresContext && (outcome.CaptureStarts is null || outcome.CaptureLengths is null))
-                        throw new InvalidOperationException("Owned replacement match is missing capture histories.");
-                    // Only callbacks need derived UTF-16 coordinates. Templates
-                    // splice original byte ranges and never build a subject map.
-                    if (expansion.RequiresContext && !mapCreated)
-                    {
-                        map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
-                        mapCreated = true;
-                    }
                     if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
-                    expansion.Append(input, map, outcome, slots, writer, ref state, ref invocation);
+                    expansion.Append(input, outcome, slots, writer, ref invocation);
                     scope.Retain(writer);
                     if (program.RightToLeft)
                     {
@@ -123,10 +100,12 @@ public sealed partial class Utf8Regex
                 finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
             }
             // Discovery has finished. Avoid retaining scratch into final-output
-            // overlap; finally also covers failures and interrupted callbacks.
+            // overlap; finally also covers failures and interruption.
             workspace.Release(ref invocation);
             if (!anyMatch)
-                return CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind, destination, ref invocation);
+                return CompleteUnchangedOwnedReplacement(input,
+                    resultKind == Utf8SliceReplacementResultKind.Text ? Utf8SliceBufferWork.CountUtf16(input, ref invocation) : 0,
+                    resultKind, destination, ref invocation);
             if (program.RightToLeft)
             {
                 writer.Append(input.Slice(0, edgeByte));
@@ -156,7 +135,6 @@ public sealed partial class Utf8Regex
             workspace.Release(ref invocation);
             batch?.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            invocation.Ledger.Release(mapReservation);
             scope.Release();
         }
     }
@@ -191,84 +169,4 @@ public sealed partial class Utf8Regex
         finally { results.Release(ref invocation); }
     }
 
-    private byte[] OwnedSliceReplaceEvaluator<TState>(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken token)
-    {
-        var scope = CreateOwnedOutputScope(token);
-        ref var invocation = ref scope.Invocation;
-        var slots = new Utf8SliceSlots([], []);
-        ulong mapReservation = 0;
-        Utf8NonBacktrackingSearchState? batch = null;
-        var boundary = 0;
-        try
-        {
-            var validation = Utf8Validation.Subject(input, ref invocation);
-            if (program.IsNonBacktracking)
-            {
-                var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
-                if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned evaluator preparation exceeded {breach}.");
-            }
-            var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
-            slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var writer = new Utf8ReplacementWriter(scope.CreateBuffer());
-            var position = program.RightToLeft ? input.Length : 0;
-            var edgeByte = position;
-            var anchor = position;
-            while (position >= 0)
-            {
-                invocation.AnchorOriginByte = anchor;
-                var outcome = batch is null
-                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref invocation)
-                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);
-                try
-                {
-                    if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                        throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
-                    if (!outcome.Found) break;
-                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
-                    var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
-                    try
-                    {
-                        var context = projection.CreateContext(input, map, _program.CaptureCatalog);
-                        evaluator(in context, ref writer, ref state);
-                        Utf8SliceBufferWork.Checkpoint(ref invocation);
-                    }
-                    finally { projection.Release(ref invocation); }
-                    scope.Retain(writer.OwnedOutput);
-                    if (program.RightToLeft)
-                    {
-                        writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
-                        writer.GetOwnedOutput(scope).MarkPiece();
-                        edgeByte = outcome.StartByte;
-                    }
-                    else
-                    {
-                        edgeByte = outcome.EndByte;
-                    }
-                    position = outcome.EndByte > outcome.StartByte ? edgeByte : Utf8SliceRunner.AdvancePastScalar(input, edgeByte, program.RightToLeft);
-                    if (outcome.EndByte > outcome.StartByte) anchor = edgeByte;
-                }
-                finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
-            }
-            if (program.RightToLeft)
-            {
-                writer.Append(input.Slice(0, edgeByte));
-                writer.GetOwnedOutput(scope).MarkPiece();
-                writer.GetOwnedOutput(scope).ReversePieces();
-            }
-            else writer.Append(input[edgeByte..]);
-            return writer.GetOwnedOutput(scope).ToArray();
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            throw CreateExecutionResourceFailure(ref invocation);
-        }
-        finally
-        {
-            batch?.Release(ref invocation);
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            invocation.Ledger.Release(mapReservation);
-            scope.Release();
-        }
-    }
 }

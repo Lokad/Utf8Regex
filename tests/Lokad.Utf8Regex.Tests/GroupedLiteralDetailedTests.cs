@@ -457,56 +457,6 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    public static IEnumerable<object?[]> GroupedEvaluatorCases()
-    {
-        string[] patterns =
-        [
-            "(a)(b)",
-            "(a)?b",
-            "(ab|c)(d)",
-            "(?<x>ab|(?<y>c))d",
-            "(ab|cd)e",
-            "((a|b)(c|d))",
-            "(?<x>(?<y>a))",
-            "(a)?",
-            "(a)?b(c)?",
-            "(a)?(b)?c",
-        ];
-        string[] texts = ["xabx", "abd", "xxabdex", "ac", "xyz", "a", "b"];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GroupedEvaluatorCases))]
-    public void GroupedEvaluatorMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(1).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
     public static IEnumerable<object?[]> GroupedTemplateCases()
     {
         string[] patterns =
@@ -877,100 +827,6 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorOwnedCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("((a)?b)?", "ab"),
-            ("((a)?b)?", "xyz"),
-            ("((a)?b)?", "éabé"),
-            ("(a|b)?(c)?", "ac"),
-            ("(a|b)?(c)?", "xyz"),
-            ("(a|b)?(c)?", "éaé"),
-            ("(a|b)?(c)?(d)?(e)?(f)?", "ace"),
-            ("(a|b)?(c)?(d)?(e)?(f)?", "xyz"),
-            ("(a|b)?(c)?(d)?(e)?(f)?", "éaé"),
-            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "abcdefghijklm"),
-            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "xyz"),
-            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "éabcdefghijklmé"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceComboEvaluatorOwnedCases))]
-    public void SliceComboEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: evaluator callbacks over slice shapes project every callback
-        // argument from a deterministic detailed re-query at the enumerated hit,
-        // without constructing the fallback engine.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(1).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorTimeoutCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("((a)?b)?", "ab"),
-            ("(a|b)?(c)?(d)?(e)?(f)?", "ace"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceComboEvaluatorTimeoutCases))]
-    public void SliceComboEvaluatorFiniteTimeoutOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        // Finite timeouts keep the owned slice routing with deadline mapping;
-        // the evaluator worker carries the invocation deadline, unlike the
-        // group-reference template worker which diverts to BCL.
-        var timeout = System.TimeSpan.FromSeconds(5);
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options, timeout);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(1).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-        var stringRegex = new Utf8Regex(pattern, options, timeout);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> FiniteTimeoutTemplateCases()
     {
         string[] patterns = ["(a)(b)", "(a)?b(c)?", "(?<w>a)(b)", "((a)(b))", "(a)(b)(c)"];
@@ -1196,51 +1052,6 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentEvaluatorCases()
-    {
-        string[] patterns =
-        [
-            "((a|b)|(c|d))",
-            "((a)?b|c)",
-            "(((a|b)|c)|d)",
-        ];
-        string[] texts = ["xacx", "xabx", "xyz", "xac\U0001F600", "\U0001F600acx", "x\U0001F600cx"];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NestedDivergentEvaluatorCases))]
-    public void NestedDivergentEvaluatorMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        // Evaluator callbacks observe the same nested entry spans.
-        // Astral-adjacent texts project the same spans on both evaluator cores.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(1).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentInteriorOffsetCases()
     {
         (string pattern, string text, int offset)[] rows =
@@ -1352,53 +1163,6 @@ public sealed class GroupedLiteralDetailedTests
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapEvaluatorCases()
-    {
-        string[] patterns =
-        [
-            "(a.c)",
-            "(ab|cd)",
-            "([0-9]+)",
-            "(?<x>a.c)",
-        ];
-        string[] texts = ["xacx", "xxabxx", "éabcé", "xyz"];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SingleWrapEvaluatorCases))]
-    public void SingleWrapEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        // Evaluator callbacks observe the same single-wrap spans on both cores.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(1).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapTemplateAllCoresCases()

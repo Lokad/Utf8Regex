@@ -956,43 +956,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected, stringActual);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NonAsciiEvaluatorCases()
-    {
-        string[] patterns = ["ab[0-9]d", "[0-9]{3}", "[0-9]{2,4}"];
-        string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere", ""];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NonAsciiEvaluatorCases))]
-    public void EvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "<" + match.Value + ">");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("<"u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append(">"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
-        Assert.Equal(expected, stringActual);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldingCases()
     {
         (string Pattern, string[] Texts)[] shapes =
@@ -1147,8 +1110,6 @@ public sealed class AsciiSimplePatternTests
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
     }
-
-
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarMatchOwnedCases()
     {
@@ -1387,84 +1348,6 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ScalarGrouplessEvaluatorOwnedCases()
-    {
-        string[] patterns = ["a.c", "a[^x]d", ".[0-9]"];
-        string[] texts = ["éabcé", "xyz"];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScalarGrouplessEvaluatorOwnedCases))]
-    public void ScalarGrouplessEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: groupless evaluator callbacks observe the same owned enumeration
-        // through the shared groupless arm on both cores.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarEvaluatorOwnedCases()
-    {
-        string[] patterns = ["(?i)a.c", "(?i)a[^x]d"];
-        string[] texts = ["éABCé", "xyz"];
-        foreach (var pattern in patterns)
-        {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedScalarEvaluatorOwnedCases))]
-    public void FoldedScalarEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: folded groupless evaluator callbacks observe the same owned
-        // enumeration through the shared groupless arm on both cores.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> DigitDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -1518,7 +1401,6 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -1620,48 +1502,6 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> DigitEvaluatorCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("\\d{2,4}", "é12é"),
-            ("\\d{2,4}", "xyz"),
-            ("a\\db", "éa1bé"),
-            ("a\\db", "xyz"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DigitEvaluatorCases))]
-    public void DigitEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: groupless evaluator callbacks observe the scalar enumeration on
-        // both cores without fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
-
-
     public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -1720,7 +1560,6 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -1820,46 +1659,6 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceEvaluatorCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("a\\sb", "xa bx"),
-            ("a\\sb", "xyz"),
-            ("a\\wb", "xaébx"),
-            ("a\\wb", "xyz"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordSpaceEvaluatorCases))]
-    public void WordSpaceEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: groupless evaluator callbacks observe the scalar enumeration on
-        // both cores without fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -1916,7 +1715,6 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -2016,47 +1814,6 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandEvaluatorCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("[^\\d]", "éabé"),
-            ("[^\\d]", "١٢٣"),
-            ("\\D", "éabé"),
-            ("\\D", "١٢٣"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegatedShorthandEvaluatorCases))]
-    public void NegatedShorthandEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: groupless evaluator callbacks observe the complemented enumeration
-        // on both cores without fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> DoublyNegatedShorthandOwnedCases()
     {
         (string pattern, string text)[] rows =
@@ -2145,7 +1902,6 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-
 
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -2240,45 +1996,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
         Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineDotEvaluatorCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("(?s:a.c)", "éaécé"),
-            ("(?s:a.c)", "xyz"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotEvaluatorCases))]
-    public void SinglelineDotEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: groupless evaluator callbacks observe the dot enumeration on both
-        // cores without fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
     }
 
     [Theory]
@@ -2407,9 +2124,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedSplits, actualSplits);
         var templateRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "<$1>"), templateRegex.ReplaceToString(input, "<$1>"));
-        var evaluatorRegex = new Utf8Regex(pattern, options);
-        var evaluatorActual = evaluatorRegex.ReplaceToString(input, 0, (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
-        Assert.Equal(oracle.Replace(text, static match => "<" + match.Value + ">"), evaluatorActual);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarDiscoveryOwnedCases()
     {
@@ -2848,35 +2562,6 @@ public sealed class AsciiSimplePatternTests
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarBranchEvaluatorOwnedCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("((a|.)c)", "a\U0001F600c"),
-            ("((a|.)c)", "xabc"),
-            ("((x)|(.))", "x"),
-            ("((x)|(.))", "y"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SupplementaryScalarBranchEvaluatorOwnedCases))]
-    public void SupplementaryScalarBranchEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        // Compare complete scalars through explicit overlapping BCL atoms.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
-        var evaluatorRegex = new Utf8Regex(pattern, options);
-        var evaluatorActual = evaluatorRegex.ReplaceToString(input, 0, (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(1).GetValueString() + ">");
-        Assert.Equal(oracle.Replace(text, static match => "<" + match.Groups[1].Value + ">"), evaluatorActual);
-        Utf8AsciiScalarOperationAssertions.Owned(evaluatorRegex);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetOwnedCases()
     {
         (string pattern, string text, int offset)[] rows =
@@ -2986,7 +2671,6 @@ public sealed class AsciiSimplePatternTests
         Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
-
 
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetEnumOwnedCases()
     {
@@ -4147,109 +3831,6 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Offset(pattern, options, text, offset);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> CrossFamilyEvaluatorOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text)[] rows =
-        [
-            ("a[^x]{2,}b", RegexOptions.CultureInvariant, "xayzb"),
-            (".a[0-9]+b", RegexOptions.CultureInvariant, "xca12b"),
-            ("^a[^x]*b$", RegexOptions.CultureInvariant, "ab"),
-            ("(a)\\1", RegexOptions.CultureInvariant, "xaax"),
-            ("(?i)a\\D+?b", RegexOptions.CultureInvariant, "xayZb"),
-            ("a\\p{L}{2,}b", RegexOptions.CultureInvariant, "xayzb"),
-            ("a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xayzb"),
-            ("a\\W{2,}b", RegexOptions.CultureInvariant, "xa, b"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CrossFamilyEvaluatorOwnedCases))]
-    public void CrossFamilyEvaluatorsServeOwned(string pattern, RegexOptions options, string text)
-    {
-        // R05: evaluator callbacks serve owned on ASCII input across recently
-        // graduated families (ranges, directed runs, anchored loops, backrefs,
-        // folded atoms, categories, right-to-left, word groups) on both lanes:
-        // string and bytes evaluators project oracle-identical replacements
-        // with zero fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static m => "[" + m.Value + "]");
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-        Utf8AsciiScalarOperationAssertions.Owned(stringRegex);
-        var bytesRegex = new Utf8Regex(pattern, options);
-        var bytesActual = bytesRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expectedBytes, bytesActual);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WholeLoopEvaluatorOwnedCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("[^x]+", "x\U0001F600y"),
-            ("a[^x]+b", "xa\U0001F600bxb"),
-            (".+b", "\U0001F600b"),
-            ("^a[^x]+b$", "a\U0001F600b"),
-            ("(?i)[^x]+B", "x\U0001F600B"),
-            ("(a[^x]+b)", "xa\U0001F600b"),
-            ("[\\p{L}_]+", "a_b\U0001F600c"),
-            ("(?>[^x]+)", "a\U0001F600b"),
-            ("a.+b", "xa\U0001F600b"),
-            ("a.+?b", "xa\U0001F600b"),
-            ("\\ba[^x]+b\\b", "x a\U0001F600b!"),
-            ("\\Ga[^x]+b", "a\U0001F600b"),
-            ("(a|ab)+", "xaab\U0001F600ab"),
-            ("(a+?)", "xaay\U0001F600"),
-            ("([0-9]{2,})", "x12\U0001F600"),
-            ("(?>a+?)", "xaay\U0001F600"),
-            ("\\ba+\\b", "xaay\U0001F600"),
-            ("((a|b)c)+", "xacbc\U0001F600"),
-            ("\\d+", "x12\U0001F600"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WholeLoopEvaluatorOwnedCases))]
-    public void WholeLoopEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        // R05: whole-pattern, tailed, and anchored loops project every
-        // callback argument from the deterministic owned re-query at each
-        // enumerated hit start on astral input, so both evaluator cores serve
-        // owned with zero fallback construction on both lanes.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
-        var byteRegex = new Utf8Regex(pattern, options);
-        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
-        {
-            writer.Append("["u8);
-            writer.Append(context.GetGroup(0).GetValueBytes());
-            writer.Append("]"u8);
-        });
-        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Utf8AsciiScalarOperationAssertions.Owned(byteRegex);
-        var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
-        Assert.Equal(expected, stringActual);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableReplaceOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
@@ -4344,7 +3925,6 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedSplits, actualSplits);
     }
-
 
     public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableExtraOwnedCases()
     {
@@ -14160,8 +13740,6 @@ public sealed class AsciiSimplePatternTests
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
             ("^(a.+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabb\nzz", "Q"),             ("^(a.+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\naxx\nzz", "Q"),             ("^(a.+)(b+)$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabbb\nzz", "Q"),             ("^(a.+)(b+)$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nab\nzz", "Q"),
-
-
 
         ];
         foreach (var row in rows)

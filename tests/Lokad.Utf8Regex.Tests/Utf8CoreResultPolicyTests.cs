@@ -30,7 +30,6 @@ public sealed class Utf8CoreResultPolicyTests
     [InlineData("matches")]
     [InlineData("split")]
     [InlineData("replace")]
-    [InlineData("callback-text")]
     public void ByteLimitsOmitTimeoutInputAcrossFailureOwners(string operation)
     {
         var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
@@ -149,7 +148,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        foreach (var operation in new[] { "detail", "replace", "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text" })
+        foreach (var operation in new[] { "detail", "replace", "replace-bytes", "replace-text", "destination", "destination-bytes" })
         {
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
@@ -168,7 +167,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀😀 aaabb 😀");
-        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace", "replace-text", "callback-bytes", "callback-text" })
+        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace", "replace-text" })
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);
@@ -287,22 +286,6 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal("é😀 ", view.GetValueString());
     }
 
-    [Fact]
-    public void OutputGrowthAndResetControlsConsumeTheOriginalAllowance()
-    {
-        var content = new string('é', 1000000);
-        var regex = Create("ab", 4096);
-        AssertResultFailure(() => regex.ReplaceToString("ab"u8, content,
-            static (in Utf8MatchContext match, ref string value) => value), 4096);
-        AssertResultFailure(() => regex.Replace("ab"u8, 0,
-            static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int resets) =>
-            {
-                for (var i = 0; i < 1000; i++) { writer = default; writer.Append(ReadOnlySpan<byte>.Empty); resets++; }
-            }), 4096);
-        // Failure restores the synchronous scope; an independent operation gets a fresh allowance.
-        Assert.Equal("<ab>", Create("ab", 1000000).ReplaceToString("ab"u8, "<$&>"));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -331,26 +314,6 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Same(previous, Utf8SliceByteOutputScope.Current);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         Assert.True(invocation.Budget.ResultBytes > 512);
-    }
-
-    [Fact]
-    public void NestedCallbacksRestoreTheParentResultAllowance()
-    {
-        var child = Create("ab", 1000000);
-        var rejectedChild = Create("ab", 1);
-        var parent = Create("ab", 4096);
-        var text = new string('x', 10000);
-        AssertResultFailure(() => parent.Replace("ab"u8, (child, rejectedChild, text),
-            static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer,
-                ref (Utf8Regex child, Utf8Regex rejectedChild, string text) state) =>
-            {
-                Assert.Equal("child", state.child.ReplaceToString("ab"u8, "child"));
-                var rejected = state.rejectedChild;
-                AssertResultFailure(() => rejected.ReplaceToString("ab"u8, "child"), 1);
-                writer = default;
-                writer.Append(state.text);
-            }), 4096);
-        Assert.Equal("child", child.ReplaceToString("ab"u8, "child"));
     }
 
     [Fact]

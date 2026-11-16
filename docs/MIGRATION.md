@@ -29,7 +29,7 @@ var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeV
 
 `AssumeValid` requires the caller's validity and borrowed-storage guarantees.
 There is no per-call override or public validation token. Pattern, template,
-capture-name and assembled raw-byte callback output checks remain independent.
+capture-name and compatibility-profile callback output checks remain independent.
 Managed bounds, scalar semantics, byte offsets, cancellation and admission stay
 active. Required coordinate/output work can still inspect input.
 
@@ -199,8 +199,9 @@ use a conservative byte-derived string charge, and distant Python scalar queries
 can require extra working space for a shared scalar/UTF-16 prefix index.
 
 Cancellation is synchronous and retains the original token. One absolute deadline
-covers required validation, matching, shaping and cursor waits. Callbacks cannot
-be forcibly interrupted; library copying/encoding afterward remains covered.
+covers required validation, matching, shaping and cursor waits. Compatibility
+profile callbacks cannot be forcibly interrupted; library copying/encoding
+afterward remains covered.
 Byte-capped Core/PythonRe timeout diagnostics omit subject text.
 
 Use Compile for separate construction caps/timeout/token. Ordinary constructors
@@ -262,10 +263,12 @@ retains group zero. Python default/missed detailed capture/name arrays and text
 are empty. Successful supplied arrays retain their documented identity. Mutable
 output arrays remain independent even when immutable equal-range strings share.
 
-Evaluators must be non-null even on misses; explicit pre-cancellation wins.
-Scoped writer appends copy/encode local byte/char spans before returning. Keep a
-writer inside its callback. String fragments repair unpaired surrogates separately,
-without joining surrogate halves across appends.
+Core removes callback `Replace`/`ReplaceToString` and both evaluator delegates.
+Use `CreateMatchCursor` to read byte ranges and capture histories, then assemble
+custom output in the host. Byte-template replacement and destination output keep
+their resource controls and original cancellation/deadline. Their scalar worker
+no longer derives input UTF-16 coordinates. PCRE2 and PythonRe callbacks remain
+available pending their separate surface cleanup.
 
 ## Profile scope and other compatibility changes
 

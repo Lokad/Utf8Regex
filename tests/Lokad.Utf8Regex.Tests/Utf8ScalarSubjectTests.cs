@@ -212,31 +212,6 @@ public sealed class Utf8ScalarSubjectTests
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
-    [Fact]
-    public void ScalarByteEvaluatorReceivesCompleteGroupValues()
-    {
-        var input = Encoding.UTF8.GetBytes("a\U0001f600\u00e9");
-        foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-        {
-            var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
-                (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-            var regex = new Utf8Regex("(.)", options);
-            var seen = new List<string>();
-            var output = regex.Replace(input, seen,
-                static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<string> state) =>
-                {
-                    var group = context.GetGroup(1);
-                    Assert.True(group.IsByteAligned);
-                    state.Add(group.GetValueString());
-                    writer.Append(group.GetValueBytes());
-                });
-            Assert.Equal(input, output);
-            Assert.Equal(rtl ? new[] { "\u00e9", "\U0001f600", "a" } : new[] { "a", "\U0001f600", "\u00e9" }, seen);
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        }
-    }
-
     [Theory]
     [InlineData(".")]
     [InlineData(@"\B")]

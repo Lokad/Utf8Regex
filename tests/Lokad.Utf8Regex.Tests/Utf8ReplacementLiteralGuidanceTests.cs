@@ -58,24 +58,6 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
         Assert.Equal(gap + "[😀]" + gap, regex.ReplaceToString(Encoding.UTF8.GetBytes(gap + "😀" + gap), "[$1]"));
     }
 
-    [Fact]
-    public void CallbackStillReceivesVerifiedCapturesAtOriginalByteOffsets()
-    {
-        var gap = new string('x', 2048);
-        var text = gap + "écat" + gap + "cat";
-        var input = Encoding.UTF8.GetBytes(text);
-        var seen = new List<(int Start, string Value)>();
-        var regex = Create("(cat)");
-        var result = regex.ReplaceToString(input, seen,
-            static (in Utf8MatchContext match, ref List<(int Start, string Value)> state) =>
-            {
-                state.Add((match.IndexInBytes, match.GetValueString()));
-                return "[" + match.GetValueString() + "]";
-            });
-        Assert.Equal(gap + "é[cat]" + gap + "[cat]", result);
-        Assert.Equal(new[] { (2050, "cat"), (4101, "cat") }, seen);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

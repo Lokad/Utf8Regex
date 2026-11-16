@@ -82,27 +82,14 @@ public sealed class Utf8RegexInvalidInputApiTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void InstanceEvaluatorAndCountedSplitApisRejectInvalidUtf8(bool compiled)
+    public void CountedSplitsRejectInvalidUtf8(bool compiled)
     {
-        // user callbacks run inside replacement machinery that rents
-        // pooled buffers; malformed input must be rejected before any callback runs.
         var regex = CreateRegex(compiled);
-        var calls = 0;
-
         Assert.Throws<ArgumentException>(() =>
         {
             var enumerator = regex.EnumerateSplits(s_invalidUtf8, 10);
             _ = enumerator.MoveNext();
         });
-        Assert.Throws<ArgumentException>(() => regex.Replace(
-            s_invalidUtf8,
-            0,
-            (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { calls++; }));
-        Assert.Throws<ArgumentException>(() => regex.ReplaceToString(
-            s_invalidUtf8,
-            0,
-            (in Utf8MatchContext match, ref int state) => { calls++; return string.Empty; }));
-        Assert.Equal(0, calls);
     }
 
     [Theory]

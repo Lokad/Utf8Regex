@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core callback replacement overloads and evaluator delegates. Custom
+  substitutions use the byte capture cursor; byte templates avoid input UTF-16
+  preparation. Shared PCRE2 writer support remains.
+
 - Remove Core's static cached operation families and global pattern cache. Retain
   a compiled instance in the caller; replacement preparation stays bounded.
 

@@ -9,7 +9,7 @@ public sealed class Utf8CoreWorkingPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
+        "replace-bytes", "replace-text", "destination", "destination-bytes"];
 
     private static Utf8Regex Create(string pattern, ulong bytes, RegexOptions options)
         => new(pattern, options, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkingBytes = bytes });

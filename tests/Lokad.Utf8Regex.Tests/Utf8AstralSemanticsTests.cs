@@ -156,47 +156,6 @@ public sealed class Utf8AstralSemanticsTests
         AssertOwned(regex);
     }
 
-    [Theory]
-    [MemberData(nameof(AstralCases))]
-    public void AstralEvaluatorsReceiveCompleteScalarMatchesAndCaptures(string pattern, string text, int[] coordinates, RegexOptions options)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var ranges = Ranges(coordinates);
-        var expected = ReplaceExpected(input, ranges, (options & RegexOptions.RightToLeft) != 0,
-            range => "[" + Value(input, range) + "]");
-        var regex = new Utf8Regex(pattern, options);
-        using var source = new CancellationTokenSource();
-        foreach (var token in new[] { CancellationToken.None, source.Token })
-        {
-            var byteCalls = new List<(int, int)>();
-            var replaced = regex.Replace(input, byteCalls,
-                static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<(int, int)> calls) =>
-                {
-                    Assert.NotNull(Utf8SliceByteOutputScope.Current);
-                    AssertAlignedCaptures(in context);
-                    calls.Add((context.IndexInBytes, context.LengthInBytes));
-                    writer.Append("["u8);
-                    writer.Append(context.GetGroup(0).GetValueBytes());
-                    writer.Append("]"u8);
-                }, token);
-            Assert.Equal(Encoding.UTF8.GetBytes(expected), replaced);
-            Assert.Equal(ranges, byteCalls);
-            Assert.Null(Utf8SliceByteOutputScope.Current);
-
-            var stringCalls = new List<(int, int)>();
-            var result = regex.ReplaceToString(input, stringCalls,
-                static (in Utf8MatchContext context, ref List<(int, int)> calls) =>
-                {
-                    AssertAlignedCaptures(in context);
-                    calls.Add((context.IndexInBytes, context.LengthInBytes));
-                    return "[" + context.GetGroup(0).GetValueString() + "]";
-                }, token);
-            Assert.Equal(expected, result);
-            Assert.Equal(ranges, stringCalls);
-        }
-        AssertOwned(regex);
-    }
-
     private static (int Index, int Length)[] Ranges(int[] coordinates) => Enumerable.Range(0, coordinates.Length / 2)
         .Select(index => (coordinates[index * 2], coordinates[index * 2 + 1])).ToArray();
 

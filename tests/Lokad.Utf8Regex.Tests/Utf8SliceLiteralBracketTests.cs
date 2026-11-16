@@ -82,27 +82,4 @@ public sealed class Utf8SliceLiteralBracketTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void NativeReverseStringCallbacksObserveVmCancellationAndRecover(bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("]", options, Regex.InfiniteMatchTimeout);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var input = Encoding.UTF8.GetBytes(new string(']', 4096));
-        using var source = new CancellationTokenSource();
-        var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
-        try
-        {
-            var failure = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(input, 0,
-                static (in Utf8MatchContext match, ref int calls) => { calls++; return "."; }, source.Token));
-            Assert.Equal(source.Token, failure.CancellationToken);
-        }
-        finally { session.Complete(); }
-        Assert.Equal(new string('.', 4096), regex.ReplaceToString(input, 0,
-            static (in Utf8MatchContext match, ref int calls) => { calls++; return "."; }, CancellationToken.None));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
 }

@@ -213,15 +213,11 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(new[] { 4, 8 }, fromOffset);
         Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatches(input, 1); cursor.MoveNext(); });
         Assert.Equal("Q😀Q😀Q", regex.ReplaceToString(input, "Q"));
-        Assert.Equal("Q😀Q😀Q", regex.ReplaceToString(input, 0,
-            static (in Utf8MatchContext match, ref int state) => "Q"));
         var pieces = new List<string>();
         foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(piece.GetValueString());
         Assert.Equal(new[] { "", "😀", "😀", "" }, pieces);
         var shared = new Utf8Regex("(?<x>a(?<x>b)c)", options);
         Assert.Equal("<abc>", shared.ReplaceToString("abc"u8, "<${x}>"));
-        Assert.Equal("<abc>", shared.ReplaceToString("abc"u8, 0,
-            static (in Utf8MatchContext match, ref int state) => "<" + match.GetGroup("x").GetValueString() + ">"));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(shared.Inspection.PreparedRegex.ScalarProgram is not null);
     }

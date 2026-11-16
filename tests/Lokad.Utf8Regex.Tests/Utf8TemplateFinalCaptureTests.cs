@@ -40,22 +40,4 @@ public sealed class Utf8TemplateFinalCaptureTests
         Assert.Throws<ArgumentException>(() => regex.Replace([.. input, 0xff], template));
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EvaluatorsStillReceiveTheirCompleteProfileHistory(bool nonBacktracking)
-    {
-        var regex = new Utf8Regex("(a)+", nonBacktracking ? RegexOptions.NonBacktracking : RegexOptions.None);
-        var observed = new List<int>();
-        var output = regex.ReplaceToString("éaaaa中"u8, observed,
-            static (in Utf8MatchContext match, ref List<int> counts) => {
-                var group = match.GetGroup(1);
-                counts.Add(group.CaptureCount);
-                for (var index = 0; index < group.CaptureCount; index++)
-                    Assert.Equal("a", group.GetCapture(index).GetValueString());
-                return group.GetValueString();
-            });
-        Assert.Equal("éa中", output);
-        Assert.Equal(new[] { nonBacktracking ? 1 : 4 }, observed);
-        Assert.Equal(output, regex.ReplaceToString("éaaaa中"u8, "$1"));
-    }
 }

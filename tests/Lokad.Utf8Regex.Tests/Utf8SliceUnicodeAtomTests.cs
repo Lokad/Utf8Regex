@@ -137,73 +137,6 @@ public sealed class Utf8SliceUnicodeAtomTests
     }
 
     [Theory]
-    [MemberData(nameof(Patterns))]
-    public void UnicodeCallbacksKeepCaptureHistoriesAndByteAlignment(int patternId, RegexOptions options)
-    {
-        var oracle = CreateFixtureOracle(patternId, options);
-        var regex = new Utf8Regex(AtomPatterns[patternId], options, TimeSpan.FromSeconds(10));
-        using var source = new CancellationTokenSource();
-        foreach (var text in Texts)
-        {
-            var subject = new FixtureSubject(text);
-            var expectedCalls = new List<string>();
-            var expected = subject.Restore(oracle.Replace(subject.Projected, match =>
-            {
-                expectedCalls.Add(Signature(subject, match));
-                return match.Groups[^1].Value + "<" + match.Value + ">";
-            }));
-            var calls = new List<string>();
-            var input = Encoding.UTF8.GetBytes(text);
-            var actual = regex.ReplaceToString(input, calls,
-                static (in Utf8MatchContext context, ref List<string> state) =>
-                {
-                    state.Add(Signature(in context));
-                    return context.GetGroup(context.GroupCount - 1).GetValueString() + "<" + context.GetValueString() + ">";
-                }, source.Token);
-            Assert.Equal(expected, actual);
-            Assert.Equal(expectedCalls, calls);
-            expectedCalls.Clear();
-            calls.Clear();
-            var expectedByteString = subject.Restore(oracle.Replace(subject.Projected, match =>
-            {
-                expectedCalls.Add(Signature(subject, match));
-                return "[" + match.Groups[^1].Value + "]";
-            }));
-            var actualBytes = regex.Replace(input, calls,
-                static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<string> state) =>
-                {
-                    Assert.NotNull(Utf8SliceByteOutputScope.Current);
-                    state.Add(Signature(in context));
-                    writer.AppendAsciiByte((byte)'[');
-                    writer.Append(context.GetGroup(context.GroupCount - 1).GetValueString().AsSpan());
-                    writer.AppendAsciiByte((byte)']');
-                }, source.Token);
-            Assert.Equal(Encoding.UTF8.GetBytes(expectedByteString), actualBytes);
-            Assert.Equal(expectedCalls, calls);
-            AssertOwned(regex);
-            Assert.Null(Utf8SliceByteOutputScope.Current);
-        }
-    }
-
-    private static string Signature(FixtureSubject subject, Match match)
-    {
-        var (start, length, byteStart, byteLength) = subject.Coordinates(match.Index, match.Length);
-        var result = new StringBuilder($"{byteStart}:{byteLength}:{start}:{length}|");
-        foreach (Group group in match.Groups)
-        {
-            (start, length, byteStart, byteLength) = subject.Coordinates(group.Index, group.Length);
-            result.Append($"{group.Success}:{byteStart}:{byteLength}:{start}:{length}:{subject.Value(group.Index, group.Length)}:");
-            foreach (Capture capture in group.Captures)
-            {
-                (start, length, byteStart, byteLength) = subject.Coordinates(capture.Index, capture.Length);
-                result.Append($"{byteStart}:{byteLength}:{start}:{length}:{subject.Value(capture.Index, capture.Length)};");
-            }
-            result.Append('|');
-        }
-        return result.ToString();
-    }
-
-    [Theory]
     [InlineData("([\\uFFFF]+)", "\uffff")]
     [InlineData("([^\\uFFFF]+)", "a")]
     [InlineData("([\\uFFFE-\\uFFFF]+)", "\ufffe\uffff")]
@@ -247,7 +180,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 256)));
         foreach (var compiled in new[] { false, true })
         foreach (var rtl in new[] { false, true })
-        foreach (var operation in new[] { 0, 1, 2, 3, 4 })
+        foreach (var operation in new[] { 0, 1, 2, 3 })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -269,8 +202,6 @@ public sealed class Utf8SliceUnicodeAtomTests
                         case 1: _ = regex.MatchDetailed(input, source.Token); break;
                         case 2: _ = regex.EnumerateMatches(input, source.Token).MoveNext(); break;
                         case 3: _ = regex.ReplaceToString(input, "Q", source.Token); break;
-                        case 4: _ = regex.Replace(input, 0,
-                            static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => writer.AppendAsciiByte((byte)'Q'), source.Token); break;
                     }
                 });
                 Assert.True(entered);
@@ -281,26 +212,6 @@ public sealed class Utf8SliceUnicodeAtomTests
             AssertOwned(regex);
             Assert.Null(Utf8SliceByteOutputScope.Current);
         }
-    }
-
-    private static string Signature(in Utf8MatchContext context)
-    {
-        Assert.True(context.IsByteAligned);
-        var result = new StringBuilder($"{context.IndexInBytes}:{context.LengthInBytes}:{context.IndexInUtf16}:{context.LengthInUtf16}|");
-        for (var number = 0; number < context.GroupCount; number++)
-        {
-            var group = context.GetGroup(number);
-            if (group.Success) Assert.True(group.IsByteAligned);
-            result.Append($"{group.Success}:{(group.Success ? group.IndexInBytes : 0)}:{(group.Success ? group.LengthInBytes : 0)}:{group.IndexInUtf16}:{group.LengthInUtf16}:{group.GetValueString()}:");
-            for (var index = 0; index < group.CaptureCount; index++)
-            {
-                var capture = group.GetCapture(index);
-                Assert.True(capture.IsByteAligned);
-                result.Append($"{capture.IndexInBytes}:{capture.LengthInBytes}:{capture.IndexInUtf16}:{capture.LengthInUtf16}:{capture.GetValueString()};");
-            }
-            result.Append('|');
-        }
-        return result.ToString();
     }
 
     [Theory]

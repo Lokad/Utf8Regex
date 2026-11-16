@@ -49,53 +49,6 @@ public sealed class Utf8OwnedReplacementInteropTests
         AssertOwned(regex);
     }
 
-    [Theory]
-    [MemberData(nameof(Utf8BmpGrammarPatternCatalog.Patterns), MemberType = typeof(Utf8BmpGrammarPatternCatalog))]
-    public void EvaluatorsRetainCaptureHistoriesAndDirectionSensitiveCallOrder(string pattern, RegexOptions options)
-    {
-        var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(30));
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(30));
-        using var source = new CancellationTokenSource();
-        foreach (var text in Texts)
-        {
-            var expectedCalls = new List<string>();
-            var expected = oracle.Replace(text, match =>
-            {
-                var signature = new StringBuilder($"{match.Index}:{match.Length}|");
-                foreach (Group group in match.Groups)
-                {
-                    signature.Append($"{group.Success}:{group.Index}:{group.Length}:{group.Value}:");
-                    foreach (Capture capture in group.Captures) signature.Append($"{capture.Index}:{capture.Length}:{capture.Value};");
-                    signature.Append('|');
-                }
-                expectedCalls.Add(signature.ToString());
-                return Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(match.Groups[^1].Value + "\ud83d" + match.Value + "\ude00"));
-            });
-            var calls = new List<string>();
-            var actual = regex.ReplaceToString(Encoding.UTF8.GetBytes(text), calls,
-                static (in Utf8MatchContext context, ref List<string> state) =>
-                {
-                    var signature = new StringBuilder($"{context.IndexInUtf16}:{context.LengthInUtf16}|");
-                    for (var number = 0; number < context.GroupCount; number++)
-                    {
-                        var group = context.GetGroup(number);
-                        signature.Append($"{group.Success}:{group.IndexInUtf16}:{group.LengthInUtf16}:{group.GetValueString()}:");
-                        for (var index = 0; index < group.CaptureCount; index++)
-                        {
-                            var capture = group.GetCapture(index);
-                            signature.Append($"{capture.IndexInUtf16}:{capture.LengthInUtf16}:{capture.GetValueString()};");
-                        }
-                        signature.Append('|');
-                    }
-                    state.Add(signature.ToString());
-                    return context.GetGroup(context.GroupCount - 1).GetValueString() + "\ud83d" + context.GetValueString() + "\ude00";
-                }, source.Token);
-            Assert.Equal(expected, actual);
-            Assert.Equal(expectedCalls, calls);
-        }
-        AssertOwned(regex);
-    }
-
     private static void AssertOwned(Utf8Regex regex)
     {
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -280,26 +233,6 @@ public sealed class Utf8OwnedReplacementInteropTests
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
     }
 
-    [Fact]
-    public void CallbackCancellationIsObservedBeforeItsOutputIsCopiedAndRecoveryWorks()
-    {
-        var regex = new Utf8Regex("((.)+?)", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(30));
-        using var source = new CancellationTokenSource();
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString("\U0001f600a"u8,
-            source, (in Utf8MatchContext context, ref CancellationTokenSource state) =>
-            {
-                calls++;
-                state.Cancel();
-                return "large ignored output";
-            }, source.Token));
-        Assert.Equal(source.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-        Assert.Equal("\U0001f600a", regex.ReplaceToString("\U0001f600a"u8, 0,
-            static (in Utf8MatchContext context, ref int state) => context.GetValueString()));
-        AssertOwned(regex);
-    }
-
     [Theory]
     [InlineData("string")]
     [InlineData("bytes-string")]
@@ -345,27 +278,4 @@ public sealed class Utf8OwnedReplacementInteropTests
         }
     }
 
-    [Fact]
-    public void CallbackFailuresAndExpiredDeadlinesReleaseTheOperationForReuse()
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
-        var input = "\U0001f600x"u8.ToArray();
-        var failure = new ApplicationException("evaluator failure");
-        Assert.Same(failure, Assert.Throws<ApplicationException>(() => regex.ReplaceToString(input, failure,
-            static (in Utf8MatchContext context, ref ApplicationException state) => throw state)));
-        var calls = new List<int>();
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.ReplaceToString(input, calls,
-            (in Utf8MatchContext context, ref List<int> state) =>
-            {
-                state.Add(context.IndexInUtf16);
-                clock.Advance(300);
-                return "Q";
-            }));
-        Assert.Single(calls);
-        Assert.Equal("", regex.ReplaceToString(input, 0,
-            static (in Utf8MatchContext context, ref int state) => null));
-        Assert.Equal("QQ", regex.ReplaceToString(input, "Q"));
-        AssertOwned(regex);
-    }
 }
