@@ -123,7 +123,7 @@ still takes precedence. Return-value rules for valid callbacks are unchanged.
 ## Delivery evidence
 
 Core, PythonRe and PCRE2 0.4.0 are published. All four 0.5.0 packages form the
-[qualified candidate](../../bench/Experiments/Release050-20261115/README.md).
+qualified candidate.
 PCRE2 retains its immutable UTF validation/trusted-input choice. Frozen packages
 and measurements retain their own identities.
 
@@ -132,9 +132,7 @@ coherent boundary with a fresh common version and exact Core pins. It checks
 package/symbol provenance, APIs, restore identities and isolated consumers.
 Windows/Linux correctness, original consumer acceptance and current performance
 remain separate checks. Publication does not establish downstream adoption or
-complete profile equivalence. Historical [RC1 rejection](../../bench/Experiments/ReleaseCandidate-20261020/ERRATA.md)
-and [RC2 performance uncertainty](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md)
-stay with their original receipts.
+complete profile equivalence.
 
 ## Resource controls and ownership
 

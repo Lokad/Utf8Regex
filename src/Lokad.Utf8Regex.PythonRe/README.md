@@ -19,7 +19,7 @@ text. See the [profile contract](../../docs/SPEC-PYTHONRE.md#subject-text-contra
 
 The tables below compare existing valid UTF-8 text with CPython str, with equal
 requested output materialization. Compilation, input decoding and worker startup
-are excluded. See the [current delivery](../../bench/Experiments/Release050-20261115/README.md).
+are excluded.
 
 ## Supported scope
 
@@ -207,16 +207,14 @@ without changing the recorded tables. There is no validation-policy matrix.
 The recorded callback replacement rows time returning a prepared constant
 replacement, including each API's required argument/output construction. Rich
 callback capture checks and digests run in a separate untimed verification pass.
-See the [timing correction](../../bench/Experiments/PythonCallbackTiming-20261113/README.md);
-earlier instrumented callback ratios are not bare replacement-throughput claims.
+Earlier instrumented callback ratios are not bare replacement-throughput claims.
 
 The canonical comparison uses preexisting valid text on both sides. Value rows
 include byte/UTF-16 range projection; detailed and structural rows include their
 requested ranges, captures and text. CPython performs that conversion within
 each timed operation, sharing work across bulk results. These are public-output
 costs, rather than bare `re.Match` discovery timings. Boolean, count, string,
-callback and split rows keep their existing timing contract. See the
-[comparison correction](../../bench/Experiments/PythonCoordinateFairness-20261114/README.md).
+callback and split rows keep their existing timing contract.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;

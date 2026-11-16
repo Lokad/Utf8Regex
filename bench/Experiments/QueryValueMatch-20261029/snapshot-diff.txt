@@ -1,5 +1,0 @@
-lokad/lokad/langserv/url-dashboard
-lokad/lokad/langserv/url-download
-lokad-compiled/lokad/langserv/url-dashboard
-lokad-compiled/lokad/langserv/url-download
-Only dashboard/download ordinary/compiled measurements and parity rows changed; unselected evidence and identities remain intact.

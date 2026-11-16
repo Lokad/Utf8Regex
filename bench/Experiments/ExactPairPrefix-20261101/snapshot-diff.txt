@@ -1,3 +1,0 @@
-dotnet-performance/industry/rust-sherlock-holmes-window-count
-dotnet-performance-compiled/industry/rust-sherlock-holmes-window-count
-Every unselected measurement and identity is unchanged.

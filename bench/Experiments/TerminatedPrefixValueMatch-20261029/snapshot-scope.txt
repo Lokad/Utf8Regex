@@ -1,1 +1,0 @@
-Changed benchmark rows: lokad:lokad/lexer/doc-line, lokad-compiled:lokad/lexer/doc-line

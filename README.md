@@ -69,8 +69,6 @@ Pattern/replacement
 validation, checked memory access, scalar semantics and cooperative cancellation
 remain. Coordinate/result work may still scan input. Read the
 [contract](docs/SPEC.md#subject-input-validation) before choosing AssumeValid.
-Historical [policy measurements](bench/Experiments/InputValidation-20261110/README.md)
-report both input contracts separately, including finite-limit and output costs.
 
 ## Cancellation and limits
 
@@ -118,8 +116,8 @@ measurements have a separate caller-validity contract. Values come from
 recorded source identities and snapshot hashes remain in that summary. Unqualified rows
 retain their observations without establishing parity. The complete Release
 build, .NET 10/11 tests, all-profile catalogs, paired comparators, lifecycle/scaling
-and resource checks completed in **47m02s**. The [run receipt](bench/Experiments/DeliveryDev97-20261115/full-refresh.json)
-records the scope and timings; package and consumer qualification are separate.
+and resource checks completed in **47m02s**. Package and consumer qualification
+are separate.
 Each row retains its recorded implementation. Selective updates do not imply a
 new complete run; the full-run receipt applies to its recorded revision.
 
