@@ -16,18 +16,7 @@ internal readonly record struct Utf8BytePosition(int Value)
     }
 }
 
-internal readonly record struct Utf16Position(int Value)
-{
-    public static Utf16Position CreateChecked(Utf8ValidationResult validation, int value, string parameterName)
-    {
-        if ((uint)value > (uint)validation.Utf16Length)
-        {
-            throw new ArgumentOutOfRangeException(parameterName);
-        }
-
-        return new Utf16Position(value);
-    }
-}
+internal readonly record struct Utf16Position(int Value);
 
 internal readonly record struct Utf8ByteRange(Utf8BytePosition Start, Utf8BytePosition End)
 {
