@@ -8,6 +8,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8AsciiClassSearchAdmissionTests
 {
     private static AsciiCharClass Class(int count, bool negated = false)
