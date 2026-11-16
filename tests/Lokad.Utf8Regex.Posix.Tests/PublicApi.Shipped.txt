@@ -1,7 +1,7 @@
 [Flags] enum Posix.PosixCompileOptions : Int32 { IgnoreCase = 2, Newline = 1, None = 0 }
 sealed class Posix.Utf8PosixMatchCursor : IDisposable
-  method Boolean MoveNext(Span<Utf8ValueMatch> groups, out Utf8ValueMatch match)
-  method Boolean MoveNext(out Utf8ValueMatch match)
+  method Boolean MoveNext(Span<Utf8CaptureRange> groups, out Utf8CaptureRange match)
+  method Boolean MoveNext(out Utf8CaptureRange match)
   method Void Dispose()
 sealed class Posix.Utf8PosixRegex
   ctor Utf8PosixRegex(String pattern)
@@ -14,6 +14,6 @@ sealed class Posix.Utf8PosixRegex
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Posix.Utf8PosixMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Span<Utf8ValueMatch> groups, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Span<Utf8CaptureRange> groups, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method static Posix.Utf8PosixRegex Compile(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
 
-public sealed class PosixCoordinateProjectionTests
+public sealed class PosixByteCaptureRangeTests
 {
     [Theory]
     [InlineData("")]
@@ -13,10 +13,10 @@ public sealed class PosixCoordinateProjectionTests
         const string prefix = "中😀";
         var input = Encoding.UTF8.GetBytes(prefix + "ab" + suffix);
         var start = Encoding.UTF8.GetByteCount(prefix);
-        var whole = Value(start, input.Length - start, prefix.Length, 2 + suffix.Length);
-        var expected = new[] { whole, Value(start, 2, prefix.Length, 2),
-            Value(start + 2, input.Length - start - 2, prefix.Length + 2, suffix.Length),
-            Value(input.Length, 0, prefix.Length + 2 + suffix.Length, 0) };
+        var whole = Value(start, input.Length - start);
+        var expected = new[] { whole, Value(start, 2),
+            Value(start + 2, input.Length - start - 2),
+            Value(input.Length, 0) };
         foreach (var finite in new[] { false, true })
         {
             var regex = new Utf8PosixRegex("(ab)([é😀]*)()", resourcePolicy: finite
@@ -24,7 +24,7 @@ public sealed class PosixCoordinateProjectionTests
                 : default);
             foreach (var count in new[] { 1, 2, 4, 6 })
             {
-                var output = new Utf8ValueMatch[count];
+                var output = new Utf8CaptureRange[count];
                 Assert.Equal(whole, regex.Match(input, output, start));
                 Assert.Equal(expected.Take(count), output.Take(expected.Length));
                 Assert.All(output.Skip(expected.Length), value => Assert.False(value.Success));
@@ -43,10 +43,10 @@ public sealed class PosixCoordinateProjectionTests
             var input = Encoding.UTF8.GetBytes(prefix+text);
             var start = Encoding.UTF8.GetByteCount(prefix);
             var regex = new Utf8PosixRegex(empty ? "((é😀)())|(absent)" : "((é😀)(x*))|(absent)");
-            var whole = Value(start,Encoding.UTF8.GetByteCount(text),prefix.Length,text.Length);
-            var retained = Value(0,1,0,1);
-            var expected = new[] {whole,whole,Value(start,6,prefix.Length,3),
-                Value(start+6,empty?0:2,prefix.Length+3,empty?0:2),default(Utf8ValueMatch)};
+            var whole = Value(start, Encoding.UTF8.GetByteCount(text));
+            var retained = Value(0, 1);
+            var expected = new[] {whole,whole,Value(start, 6),
+                Value(start+6, empty?0:2),default(Utf8CaptureRange)};
             foreach (var count in new[]{0,1,3,5,7})
             {
                 var output = Enumerable.Repeat(retained,count).ToArray();
@@ -69,7 +69,7 @@ public sealed class PosixCoordinateProjectionTests
         var expected = nested
             ? new[] { whole, At(0, 5), At(0, 3), At(4, 1), At(6, 3), At(9, 0), default }
             : new[] { whole, At(0, 3), At(4, 1), At(6, 3), At(9, 0), default };
-        var sentinel = Value(1, 2, 3, 4);
+        var sentinel = Value(1, 2);
         foreach (var finite in new[] { false, true })
         {
             var regex = new Utf8PosixRegex(nested
@@ -85,7 +85,7 @@ public sealed class PosixCoordinateProjectionTests
                 Assert.All(output.Skip(expected.Length), value => Assert.Equal(sentinel, value));
             }
             using var cursor = regex.CreateMatchCursor(input, floor);
-            var groups = new Utf8ValueMatch[expected.Length];
+            var groups = new Utf8CaptureRange[expected.Length];
             Assert.True(cursor.MoveNext(groups, out var selected));
             Assert.Equal(whole, selected);
             Assert.Equal(expected, groups);
@@ -95,9 +95,7 @@ public sealed class PosixCoordinateProjectionTests
             Assert.Equal(expected, retained);
         }
 
-        Utf8ValueMatch At(int offset, int length) => Value(
-            floor + Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)),
-            Encoding.UTF8.GetByteCount(text.AsSpan(offset, length)), prefix.Length + offset, length);
+        Utf8CaptureRange At(int offset, int length) => Value(floor + Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), Encoding.UTF8.GetByteCount(text.AsSpan(offset, length)));
     }
 
     [Fact]
@@ -108,19 +106,19 @@ public sealed class PosixCoordinateProjectionTests
         var start=Encoding.UTF8.GetByteCount(prefix);
         var regex=new Utf8PosixRegex("((é😀)(x*))");
         using var cursor=regex.CreateMatchCursor(input,start);
-        var alias=cursor; var groups=new Utf8ValueMatch[4];
+        var alias=cursor; var groups=new Utf8CaptureRange[4];
         Assert.True(cursor.MoveNext(groups,out var first));
-        Assert.Equal(Value(start,8,prefix.Length,5),first);
+        Assert.Equal(Value(start, 8),first);
         Assert.Equal(first,groups[1]);
         var retained=groups[2];
-        Assert.Equal(Value(start,6,prefix.Length,3),retained);
-        var shortOutput=new Utf8ValueMatch[2];
+        Assert.Equal(Value(start, 6),retained);
+        var shortOutput=new Utf8CaptureRange[2];
         Assert.True(alias.MoveNext(shortOutput,out var second));
-        Assert.Equal(Value(start+9,6,prefix.Length+6,3),second);
+        Assert.Equal(Value(start+9, 6),second);
         Assert.Equal(second,shortOutput[1]);
         Assert.False(cursor.MoveNext(groups,out _));
         Assert.All(groups,value => Assert.False(value.Success));
-        Assert.Equal(Value(start,6,prefix.Length,3),retained);
+        Assert.Equal(Value(start, 6),retained);
     }
 
     [Theory]
@@ -136,26 +134,23 @@ public sealed class PosixCoordinateProjectionTests
         var storage = Enumerable.Repeat((byte)255, bytes.Length + 12).ToArray();
         bytes.CopyTo(storage, 5);
         var floor = Encoding.UTF8.GetByteCount(prefix);
-        var expected = new List<Utf8ValueMatch[]>();
+        var expected = new List<Utf8CaptureRange[]>();
         var bytePosition = floor;
-        var utf16Position = prefix.Length;
         foreach (var rune in suffix.EnumerateRunes())
         {
             var consumes = rune.Value is 'é' or 0x1f600;
-            if (consumes || nullable) AddExpected(consumes ? rune.Utf8SequenceLength : 0,
-                consumes ? rune.Utf16SequenceLength : 0, consumes);
+            if (consumes || nullable) AddExpected(consumes ? rune.Utf8SequenceLength : 0, consumes);
             bytePosition += rune.Utf8SequenceLength;
-            utf16Position += rune.Utf16SequenceLength;
         }
-        if (nullable) AddExpected(0, 0, false);
+        if (nullable) AddExpected(0, false);
 
         var regex = new Utf8PosixRegex(nullable ? "((é|😀)?)()" : "((é|😀))()", resourcePolicy: finite
             ? new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
             : default);
         using var cursor = regex.CreateMatchCursor(storage.AsMemory(5, bytes.Length), floor);
         var alias = cursor;
-        var sentinel = Value(1, 2, 3, 4);
-        Utf8ValueMatch retained = default;
+        var sentinel = Value(1, 2);
+        Utf8CaptureRange retained = default;
         for (var i = 0; i < expected.Count; i++)
         {
             var output = Enumerable.Repeat(sentinel, i % 3 == 0 ? 0 : i % 3 == 1 ? 2 : 5).ToArray();
@@ -173,11 +168,11 @@ public sealed class PosixCoordinateProjectionTests
         Assert.Equal(expected[0][0], retained);
         Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
 
-        void AddExpected(int byteLength, int utf16Length, bool participates)
+        void AddExpected(int byteLength, bool participates)
         {
-            var whole = Value(bytePosition, byteLength, utf16Position, utf16Length);
+            var whole = Value(bytePosition, byteLength);
             expected.Add([whole, whole, participates ? whole : default,
-                Value(bytePosition + byteLength, 0, utf16Position + utf16Length, 0)]);
+                Value(bytePosition + byteLength, 0)]);
         }
     }
 
@@ -196,16 +191,16 @@ public sealed class PosixCoordinateProjectionTests
         bytes.CopyTo(storage, 5);
         var input = storage.AsMemory(5, bytes.Length);
         var floor = Encoding.UTF8.GetByteCount(prefix);
-        var whole = Value(floor, bytes.Length - floor, prefix.Length, content.Length + 1);
+        var whole = Value(floor, bytes.Length - floor);
         var expected = new[] { whole,
-            Value(floor + 1, bytes.Length - floor - 1, prefix.Length + 1, content.Length),
-            Value(bytes.Length, 0, text.Length, 0) };
+            Value(floor + 1, bytes.Length - floor - 1),
+            Value(bytes.Length, 0) };
         foreach (var finite in new[] { false, true })
         {
             var regex = new Utf8PosixRegex("Z(" + scalar + "+)()", resourcePolicy: finite
                 ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 32768, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 }
                 : default);
-            var output = new Utf8ValueMatch[3];
+            var output = new Utf8CaptureRange[3];
             Assert.Equal(whole, regex.Match(input.Span, output, floor));
             Assert.Equal(expected, output);
             using var cursor = regex.CreateMatchCursor(input, floor);
@@ -220,6 +215,6 @@ public sealed class PosixCoordinateProjectionTests
         }
     }
 
-    private static Utf8ValueMatch Value(int bytes,int byteLength,int utf16,int utf16Length)
-        => new(true,true,utf16,utf16Length,bytes,byteLength);
+    private static Utf8CaptureRange Value(int bytes, int byteLength)
+        => new(bytes, bytes + byteLength);
 }

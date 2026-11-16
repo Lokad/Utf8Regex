@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- POSIX `Match`, capture destinations and cursor advances now use
+  `Utf8CaptureRange` with byte start/end offsets. Remove UTF-16 projection and
+  its cursor cache; selected captures and resource controls remain unchanged,
+  while modeled work requirements can decrease.
+
 - Remove seven parser node kinds that no production parser generates and their
   redundant lowering/analysis branches; real atomic, lazy and negated-class
   semantics remain on the existing scalar nodes.

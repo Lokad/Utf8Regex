@@ -62,7 +62,7 @@ internal static partial class BenchmarkInspectReporter
         {
             var trace = new List<(int Start, int End)>();
             using (var cursor = regex.CreateMatchCursor(input, cancellationToken: cancellation.Token, workingMemoryAllowance: account))
-                while (cursor.MoveNext(out var match)) trace.Add((match.IndexInBytes, match.IndexInBytes + match.LengthInBytes));
+                while (cursor.MoveNext(out var match)) trace.Add((match.StartOffsetInBytes, match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             if (!trace.SequenceEqual(expected)) throw new InvalidOperationException("POSIX and native DFA whole-match extents disagree.");
         }
         if (id == "extent/ambiguous-haystack" && (expected.Count != 128 || expected.Any(range => range.End - range.Start != 2)))
@@ -72,7 +72,7 @@ internal static partial class BenchmarkInspectReporter
         {
             var checksum = 0;
             using var cursor = regex.CreateMatchCursor(input, cancellationToken: token, workingMemoryAllowance: allowance);
-            while (cursor.MoveNext(out var match)) checksum = unchecked(checksum * 31 + match.IndexInBytes * 7 + match.LengthInBytes);
+            while (cursor.MoveNext(out var match)) checksum = unchecked(checksum * 31 + match.StartOffsetInBytes * 7 + (match.EndOffsetInBytes - match.StartOffsetInBytes));
             return checksum;
         }
         int Native(bool count)

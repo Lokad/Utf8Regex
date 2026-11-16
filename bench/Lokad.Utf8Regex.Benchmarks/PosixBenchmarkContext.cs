@@ -11,7 +11,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
     private readonly PosixBenchmarkCase _case;
     private readonly byte[] _input;
     private readonly Utf8PosixRegex[] _managed;
-    private readonly Utf8ValueMatch[] _groups;
+    private readonly Utf8CaptureRange[] _groups;
     private readonly CancellationTokenSource _token = new();
     private readonly Account _account = new();
     private readonly PcreRegexUtf8 _native;
@@ -30,7 +30,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
             new(benchmarkCase.Pattern, benchmarkCase.Options, TimeSpan.FromSeconds(30), finite),
         ];
         if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
-        _groups = new Utf8ValueMatch[_managed[0].GroupCount + 1];
+        _groups = new Utf8CaptureRange[_managed[0].GroupCount + 1];
         // Private benchmark-only PCRE2 NFA comparator over the same valid UTF-8 text;
         // ASCII POSIX classes; match the row's case and newline options. Native
         // negated brackets do not implement REG_NEWLINE: newline rows here use
@@ -59,7 +59,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
                 return new(regex.Count(_input, _case.StartOffsetInBytes, token, account), default, default, default);
             case PosixBenchmarkOperation.Captures:
             {
-                Utf8ValueMatch whole = default;
+                Utf8CaptureRange whole = default;
                 for (var record = 0; record < _case.Records; record++)
                     whole = regex.Match(_input, _groups, _case.StartOffsetInBytes, token, account);
                 return Result(whole.Success ? _case.Records : 0, whole);
@@ -143,7 +143,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
         }
     }
 
-    private PosixBenchmarkResult Result(int count, Utf8ValueMatch whole)
+    private PosixBenchmarkResult Result(int count, Utf8CaptureRange whole)
         => new(count, whole, _groups.Length > 1 ? _groups[1] : default, _groups.Length > 2 ? _groups[2] : default,
             _groups.Length > 3 ? _groups[3] : default, _groups.Length > 4 ? _groups[4] : default);
 
@@ -152,26 +152,14 @@ internal sealed class PosixBenchmarkContext : IDisposable
         if (!match.Success) return default;
         var whole = Project(true, match.Index, match.Length);
         return new(count, whole,
-            _groups.Length > 1 ? Project(match[1].Success, match[1].Index, match[1].Length, whole) : default,
-            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length, whole) : default,
-            _groups.Length > 3 ? Project(match[3].Success, match[3].Index, match[3].Length, whole) : default,
-            _groups.Length > 4 ? Project(match[4].Success, match[4].Index, match[4].Length, whole) : default);
+            _groups.Length > 1 ? Project(match[1].Success, match[1].Index, match[1].Length) : default,
+            _groups.Length > 2 ? Project(match[2].Success, match[2].Index, match[2].Length) : default,
+            _groups.Length > 3 ? Project(match[3].Success, match[3].Index, match[3].Length) : default,
+            _groups.Length > 4 ? Project(match[4].Success, match[4].Index, match[4].Length) : default);
     }
 
-    private Utf8ValueMatch Project(bool success, int start, int length, Utf8ValueMatch whole = default)
-    {
-        if (!success) return default;
-        if (whole.Success && start == whole.IndexInBytes && length == whole.LengthInBytes) return whole;
-        // ERE captures are within the whole match. Give the native comparator
-        // the same available origins, without a prepared map or extra scan.
-        var characters = Encoding.UTF8.GetCharCount(_input.AsSpan(start, length));
-        var origin = whole.Success ? whole.IndexInBytes : 0;
-        var utf16 = whole.Success && start + length == whole.IndexInBytes + whole.LengthInBytes
-            ? whole.IndexInUtf16 + whole.LengthInUtf16 - characters
-            : (whole.Success ? whole.IndexInUtf16 : 0) +
-                Encoding.UTF8.GetCharCount(_input.AsSpan(origin, start - origin));
-        return new(true, true, utf16, characters, start, length);
-    }
+    private static Utf8CaptureRange Project(bool success, int start, int length)
+        => success ? new(start, start + length) : default;
 
     internal (TimeSpan Elapsed, long AllocatedBytes, PosixBenchmarkResult Result) Measure(int lane, int iterations)
     {

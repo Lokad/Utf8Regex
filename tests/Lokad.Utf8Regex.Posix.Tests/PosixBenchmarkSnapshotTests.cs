@@ -77,7 +77,7 @@ public sealed class PosixBenchmarkSnapshotTests
         var definition = PosixBenchmarkCatalog.Get(id);
         var expected = PosixBenchmarkCatalog.Expected(id);
         var regex = new Utf8PosixRegex(definition.Pattern, definition.Options);
-        var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+        var groups = new Utf8CaptureRange[regex.GroupCount + 1];
         var whole = regex.Match(Encoding.UTF8.GetBytes(definition.Input), groups, definition.StartOffsetInBytes);
         Assert.Equal(expected.Whole, whole);
         Assert.Equal(new[] { expected.Whole, expected.Group1, expected.Group2, expected.Group3, expected.Group4 }[..groups.Length], groups);

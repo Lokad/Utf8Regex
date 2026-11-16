@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Posix;
 
@@ -83,13 +82,13 @@ public sealed class Utf8PosixRegex
     }
 
     /// <summary>Finds the selected whole match at or after a scalar-aligned byte floor.</summary>
-    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
-        => Match(input, Span<Utf8ValueMatch>.Empty, startOffsetInBytes, cancellationToken, workingMemoryAllowance);
+        => Match(input, Span<Utf8CaptureRange>.Empty, startOffsetInBytes, cancellationToken, workingMemoryAllowance);
 
     /// <summary>Finds the selected match and writes available capture slots zero onward into caller-owned storage.</summary>
     /// <remarks>Short output cannot change selection. Excess slots are untouched. Written slots clear on no match or interrupted publication; retained values need no producer lifetime.</remarks>
-    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, Span<Utf8ValueMatch> groups, int startOffsetInBytes = 0,
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> groups, int startOffsetInBytes = 0,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
@@ -103,7 +102,7 @@ public sealed class Utf8PosixRegex
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             if (!workspace.Find(input, state, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
-            return Project(input, start, end, in workspace, state, output, ref invocation);
+            return Publish(start, end, in workspace, state, output, ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { output.Clear(); throw CreateTimeout(); }
         catch { output.Clear(); throw; }
@@ -158,65 +157,27 @@ public sealed class Utf8PosixRegex
         PosixWorkspace.Finish(ref invocation);
     }
 
-    internal Span<Utf8ValueMatch> OutputWindow(Span<Utf8ValueMatch> output) => output[..Math.Min(output.Length, GroupCount + 1)];
+    internal Span<Utf8CaptureRange> OutputWindow(Span<Utf8CaptureRange> output) => output[..Math.Min(output.Length, GroupCount + 1)];
 
-    internal Utf8ValueMatch Project(ReadOnlySpan<byte> input, int start, int end,
-        in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation,
-        int originByte = 0, int originUtf16 = 0)
+    internal Utf8CaptureRange Publish(int start, int end,
+        in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8CaptureRange> output, ref Utf8SliceInvocation invocation)
     {
         ClearOutput(output, ref invocation);
-        var whole = ProjectRange(input, start, end, ref invocation, originByte, originUtf16);
+        var whole = new Utf8CaptureRange(start, end);
         if (!output.IsEmpty) output[0] = whole;
-        var captureOriginByte = start;
-        var captureOriginUtf16 = whole.IndexInUtf16;
         for (var slot = 1; slot < output.Length; slot++)
         {
             PosixWorkspace.Charge(ref invocation);
             if (workspace.GetCapture(state, slot, ref invocation, out var from, out var to))
             {
-                // ERE captures are inside the selected whole match. Share its
-                // known end for suffix captures, or its start for interior ones.
-                // Advancing siblings can reuse the preceding capture end;
-                // nested/reordered ranges keep the whole-match origin.
-                var projected = from == start && to == end ? whole
-                    : to == end
-                        ? ProjectRange(input, from, to, ref invocation, end, whole.IndexInUtf16 + whole.LengthInUtf16)
-                        : from >= captureOriginByte
-                            ? ProjectRange(input, from, to, ref invocation, captureOriginByte, captureOriginUtf16)
-                            : ProjectRange(input, from, to, ref invocation, start, whole.IndexInUtf16);
-                output[slot] = projected;
-                captureOriginByte = to;
-                captureOriginUtf16 = projected.IndexInUtf16 + projected.LengthInUtf16;
+                output[slot] = new Utf8CaptureRange(from, to);
             }
         }
         PosixWorkspace.Finish(ref invocation);
         return whole;
     }
 
-    private static Utf8ValueMatch ProjectRange(ReadOnlySpan<byte> input, int from, int to,
-        ref Utf8SliceInvocation invocation, int originByte = 0, int originUtf16 = 0)
-    {
-        // The valid-text contract and scalar interpreter
-        // produced complete ranges. Count coordinates without validating again.
-        try
-        {
-            if (originByte == to)
-            {
-                // A known ending coordinate needs only the selected content,
-                // including zero bytes for an empty capture at the whole end.
-                var length = Utf8SliceBufferWork.CountValidUtf16(input[from..to], ref invocation);
-                return new(true, true, originUtf16 - length, length, from, to - from);
-            }
-            var prefix = originUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[originByte..from], ref invocation);
-            var content = Utf8SliceBufferWork.CountValidUtf16(input[from..to], ref invocation);
-            return new(true, true, prefix, content, from, to - from);
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw invocation.Budget.CreateResourceFailure(); }
-    }
-
-    internal static void ClearOutput(Span<Utf8ValueMatch> output, ref Utf8SliceInvocation invocation)
+    internal static void ClearOutput(Span<Utf8CaptureRange> output, ref Utf8SliceInvocation invocation)
     {
         for (var offset = 0; offset < output.Length;)
         {

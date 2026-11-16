@@ -64,7 +64,7 @@ internal static partial class BenchmarkInspectReporter
                 if (records.Length != row.Records || records.Any(actual => actual != expected))
                     throw new InvalidOperationException($"POSIX {row.Id}/{PosixLanes[lane]} repeated captures changed.");
                 if (row.Id == "capture/sku007" && records.Sum(actual =>
-                    1 + actual.Group1.LengthInBytes + actual.Group2.IndexInBytes + actual.Group2.LengthInBytes) != 40960)
+                    1 + (actual.Group1.EndOffsetInBytes - actual.Group1.StartOffsetInBytes) + actual.Group2.StartOffsetInBytes + (actual.Group2.EndOffsetInBytes - actual.Group2.StartOffsetInBytes)) != 40960)
                     throw new InvalidOperationException("The observed sku007 capture checksum changed.");
             }
         }
@@ -212,8 +212,8 @@ internal static partial class BenchmarkInspectReporter
 
     private static JsonElement PosixResultJson(PosixBenchmarkResult result)
     {
-        static object? Range(Utf8ValueMatch value) => value.Success ? new
-        { value.IndexInBytes, value.LengthInBytes, value.IndexInUtf16, value.LengthInUtf16 } : null;
+        static object? Range(Utf8CaptureRange value) => value.Success ? new
+        { value.StartOffsetInBytes, value.EndOffsetInBytes } : null;
         return JsonSerializer.SerializeToElement(new { result.Count, Whole = Range(result.Whole),
             Group1 = Range(result.Group1), Group2 = Range(result.Group2), Group3 = Range(result.Group3), Group4 = Range(result.Group4) });
     }
@@ -285,7 +285,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var text = new StringBuilder();
         text.AppendLine("## Benchmarks").AppendLine();
-        text.AppendLine("Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, captures and nested/nullable histories, including Unicode floors, invariant folding and LF rewind. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require valid unchanged UTF-8. Native PCRE2 NFA uses UTF+NO_UTF_CHECK, matching case/newline options, a reusable match buffer and equivalent byte/UTF-16 projection. Newline rows use positive classes: native negated brackets do not implement POSIX's LF exclusion. Ratios cover verified equal-result inputs only, not general POSIX selection or folding equivalence. Native allocations cover CLR traffic, excluding native workspace.").AppendLine();
+        text.AppendLine("Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, captures and nested/nullable histories, including Unicode floors, invariant folding and LF rewind. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require valid unchanged UTF-8. Native PCRE2 NFA uses UTF+NO_UTF_CHECK, matching case/newline options, a reusable match buffer and equivalent requested capture output. Newline rows use positive classes: native negated brackets do not implement POSIX's LF exclusion. Ratios cover verified equal-result inputs only, not general POSIX selection or folding equivalence. Native allocations cover CLR traffic, excluding native workspace.").AppendLine();
         text.AppendLine("| Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |");
         text.AppendLine("|---|---|---:|---:|---:|---|---:|");
         foreach (var (id, row) in summary.Sections["Operations"].OrderByDescending(pair => pair.Value.DisplayRatio ?? double.NegativeInfinity).ThenBy(pair => pair.Key, StringComparer.Ordinal))

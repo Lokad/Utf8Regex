@@ -14,7 +14,7 @@ public sealed class PosixTextInputContractTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = Utf8PosixRegex.Compile(pattern, default, Timeout.InfiniteTimeSpan, default,
             default, Timeout.InfiniteTimeSpan, default);
-        var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+        var groups = new Utf8CaptureRange[regex.GroupCount + 1];
         var session = Utf8SearchDiagnosticsSession.Start();
         try
         {
@@ -39,6 +39,35 @@ public sealed class PosixTextInputContractTests
         var regex = new Utf8PosixRegex("needle", resourcePolicy: new()
         { MaxWorkSteps = 64, MaxWorkingBytes = 1 << 20 });
         Assert.True(regex.IsMatch(input));
-        Assert.Equal(6, regex.Match(input, new Utf8ValueMatch[1]).LengthInBytes);
+        Assert.Equal(6, regex.Match(input, new Utf8CaptureRange[1]).EndOffsetInBytes);
+    }
+
+    [Theory]
+    [InlineData("x")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    public void FarByteStartPublishesCapturesWithoutScanningThePrefix(string scalar)
+    {
+        var prefix = string.Concat(Enumerable.Repeat(scalar, 8192));
+        var input = Encoding.UTF8.GetBytes(prefix + "é😀");
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var regex = new Utf8PosixRegex("(é😀)()", resourcePolicy: new()
+        { MaxWorkSteps = 512, MaxDepth = 64, MaxWorkingBytes = 1 << 16, MaxResultBytes = 1 });
+        using var token = new CancellationTokenSource();
+        var groups = new Utf8CaptureRange[3];
+        var whole = regex.Match(input, groups, floor, token.Token);
+        Assert.Equal((floor, input.Length), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
+        Assert.Equal(whole, groups[1]);
+        Assert.Equal((input.Length, input.Length), (groups[2].StartOffsetInBytes, groups[2].EndOffsetInBytes));
+        Assert.True(groups[2].Success);
+        var retained = groups.ToArray();
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(groups, out var selected));
+        Assert.Equal(whole, selected);
+        Assert.Equal(retained, groups);
+        Assert.False(cursor.MoveNext(groups, out _));
+        Assert.All(groups, range => Assert.False(range.Success));
+        cursor.Dispose();
+        Assert.Equal(whole, retained[1]);
     }
 }

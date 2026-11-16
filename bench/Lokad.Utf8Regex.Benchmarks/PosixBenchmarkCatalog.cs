@@ -25,7 +25,7 @@ internal static class PosixBenchmarkCatalog
             MeasurePolicies: true, Options: PosixCompileOptions.IgnoreCase),
         new("capture/newline-rewind", "^([a-z]+)([[:space:]]+)$", "a \nb", PosixBenchmarkOperation.Captures,
             Options: PosixCompileOptions.Newline),
-        // Capture coordinate scaling, not Core's generic search/validation lane.
+        // Byte capture publication scaling, not Core's generic search/validation lane.
         // Short controls distinguish tag costs from rescanning a shared prefix.
         new("projection/short-1", "(a)", "a", PosixBenchmarkOperation.Captures),
         new("projection/short-4", "((((a))))", "a", PosixBenchmarkOperation.Captures),
@@ -44,8 +44,7 @@ internal static class PosixBenchmarkCatalog
 
     internal static PosixBenchmarkResult Expected(string id)
     {
-        static Utf8ValueMatch A(int start, int length) => new(true, true, start, length, start, length);
-        static Utf8ValueMatch U(int start, int length, int utf16, int utf16Length) => new(true, true, utf16, utf16Length, start, length);
+        static Utf8CaptureRange A(int start, int length) => new(start, start + length);
         return id switch
         {
             "capture/sku007" => new(4096, A(0, 6), A(0, 3), A(3, 3)),
@@ -54,13 +53,13 @@ internal static class PosixBenchmarkCatalog
             "capture/empty" => new(1, A(0, 3), A(0, 3), A(3, 0)),
             "capture/nested" => new(1, A(0, 4), A(0, 4), A(2, 2), default, A(2, 2)),
             "capture/nullable" => new(1, A(0, 1), A(1, 0), default),
-            "capture/unicode-longest" => new(1, U(4, 7, 2, 4), U(4, 6, 2, 3), U(10, 1, 5, 1)),
-            "capture/ignorecase-disjoint" => new(1, U(0, 7, 0, 5), U(0, 4, 0, 2), U(4, 3, 2, 3)),
+            "capture/unicode-longest" => new(1, A(4, 7), A(4, 6), A(10, 1)),
+            "capture/ignorecase-disjoint" => new(1, A(0, 7), A(0, 4), A(4, 3)),
             "capture/newline-rewind" => new(1, A(0, 2), A(0, 1), A(1, 1)),
             "projection/short-1" => new(1, A(0, 1), A(0, 1), default),
             "projection/short-4" => new(1, A(0, 1), A(0, 1), A(0, 1), A(0, 1), A(0, 1)),
-            "projection/unicode-prefix-1" => new(1, U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), default),
-            "projection/unicode-prefix-4" => new(1, U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1), U(98304, 1, 49152, 1)),
+            "projection/unicode-prefix-1" => new(1, A(98304, 1), A(98304, 1), default),
+            "projection/unicode-prefix-4" => new(1, A(98304, 1), A(98304, 1), A(98304, 1), A(98304, 1), A(98304, 1)),
             "history/length-4" => new(1, A(0, 4), A(2, 2), default),
             "history/length-8" => new(1, A(0, 8), A(6, 2), default),
             "history/length-12" => new(1, A(0, 12), A(10, 2), default),
@@ -72,8 +71,8 @@ internal static class PosixBenchmarkCatalog
 }
 
 // The fixed caller-owned destinations cover every catalog capture slot. Native
-// projection includes the same byte and derived UTF-16 coordinates. Consume the
+// results include the same byte ranges. Consume the
 // returned values after the measurement clock, like the existing Python batches.
 // Four captures cover the one selected nested case; no variable result allocation.
-internal readonly record struct PosixBenchmarkResult(int Count, Utf8ValueMatch Whole,
-    Utf8ValueMatch Group1, Utf8ValueMatch Group2, Utf8ValueMatch Group3 = default, Utf8ValueMatch Group4 = default);
+internal readonly record struct PosixBenchmarkResult(int Count, Utf8CaptureRange Whole,
+    Utf8CaptureRange Group1, Utf8CaptureRange Group2, Utf8CaptureRange Group3 = default, Utf8CaptureRange Group4 = default);

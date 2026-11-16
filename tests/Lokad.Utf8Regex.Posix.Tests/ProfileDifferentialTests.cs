@@ -21,7 +21,7 @@ public sealed class ProfileDifferentialTests
             {
                 var exists = regex.IsMatch(input, token);
                 var count = regex.Count(input, cancellationToken: token);
-                var captures = new Utf8ValueMatch[groups];
+                var captures = new Utf8CaptureRange[groups];
                 var first = regex.Match(input, captures, start, token);
                 var firstRange = Range(first);
                 var matches = new List<ByteRange[]>();
@@ -31,6 +31,6 @@ public sealed class ProfileDifferentialTests
             };
         });
 
-    private static ByteRange Range(Utf8ValueMatch value) => value.Success
-        ? new(true, value.IndexInBytes, value.IndexInBytes + value.LengthInBytes) : default;
+    private static ByteRange Range(Utf8CaptureRange value) => value.Success
+        ? new(true, value.StartOffsetInBytes, value.StartOffsetInBytes + (value.EndOffsetInBytes - value.StartOffsetInBytes)) : default;
 }

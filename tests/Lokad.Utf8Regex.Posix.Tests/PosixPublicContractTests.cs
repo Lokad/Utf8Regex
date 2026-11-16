@@ -61,7 +61,7 @@ public sealed class PosixPublicContractTests
         Check(value, expected.ValueKind == JsonValueKind.Null ? default : expected[0]);
         for (var size = 0; size <= regex.GroupCount + 2; size++)
         {
-            var sentinel = new Utf8ValueMatch(true, true, 99, 2, 99, 2);
+            var sentinel = new Utf8CaptureRange(99, (99) + (2));
             var output = Enumerable.Repeat(sentinel, size).ToArray();
             var actual = regex.Match(input, output, start, token.Token, account);
             Assert.Equal(value, actual);
@@ -88,7 +88,7 @@ public sealed class PosixPublicContractTests
         var account = new Account();
         Assert.Equal(expected.GetArrayLength(), regex.Count(input, start, workingMemoryAllowance: account));
         using var cursor = regex.CreateMatchCursor(input, start, workingMemoryAllowance: account);
-        var output = new Utf8ValueMatch[regex.GroupCount + 1];
+        var output = new Utf8CaptureRange[regex.GroupCount + 1];
         while (cursor.MoveNext(output, out var match))
         {
             Assert.True(count < expected.GetArrayLength(), "Cursor produced an extra match.");
@@ -106,10 +106,10 @@ public sealed class PosixPublicContractTests
     {
         var regex = new Utf8PosixRegex("(a|aa)", options); var account = new Account();
         var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), workingMemoryAllowance: account);
-        var alias = cursor; var groups = new Utf8ValueMatch[2];
+        var alias = cursor; var groups = new Utf8CaptureRange[2];
         Assert.True(cursor.MoveNext(groups, out var first));
-        var retainedGroup = groups[1]; Assert.Equal(2, first.LengthInBytes);
-        Assert.True(alias.MoveNext(out var second)); Assert.Equal(2, second.IndexInBytes);
+        var retainedGroup = groups[1]; Assert.Equal(2, (first.EndOffsetInBytes - first.StartOffsetInBytes));
+        Assert.True(alias.MoveNext(out var second)); Assert.Equal(2, second.StartOffsetInBytes);
         Assert.True(account.Used > 0);
         alias.Dispose(); Assert.Equal(0UL, account.Used);
         Assert.Equal(first, retainedGroup); Assert.Equal(first, groups[0]);
@@ -122,17 +122,17 @@ public sealed class PosixPublicContractTests
         var regex = new Utf8PosixRegex("(a|aa)(a*)b"); var account = new Account();
         using var cursor = regex.CreateMatchCursor("aaabaaabaaab"u8.ToArray(), workingMemoryAllowance: account);
         var alias = cursor;
-        Assert.True(cursor.MoveNext(out var first)); Assert.Equal(4, first.LengthInBytes);
-        var groups = new Utf8ValueMatch[3];
+        Assert.True(cursor.MoveNext(out var first)); Assert.Equal(4, (first.EndOffsetInBytes - first.StartOffsetInBytes));
+        var groups = new Utf8CaptureRange[3];
         Assert.True(alias.MoveNext(groups, out var second));
-        Assert.Equal(new Utf8ValueMatch(true, true, 4, 2, 4, 2), groups[1]);
-        Assert.Equal(new Utf8ValueMatch(true, true, 6, 1, 6, 1), groups[2]);
-        var retained = groups[1]; var whole = new Utf8ValueMatch[1];
+        Assert.Equal(new Utf8CaptureRange(4, (4) + (2)), groups[1]);
+        Assert.Equal(new Utf8CaptureRange(6, (6) + (1)), groups[2]);
+        var retained = groups[1]; var whole = new Utf8CaptureRange[1];
         Assert.True(cursor.MoveNext(whole, out var third));
-        Assert.Equal(8, third.IndexInBytes); Assert.Equal(third, whole[0]);
+        Assert.Equal(8, third.StartOffsetInBytes); Assert.Equal(third, whole[0]);
         Assert.False(alias.MoveNext(groups, out _));
         Assert.All(groups, value => Assert.False(value.Success));
-        Assert.Equal(2, retained.LengthInBytes); Assert.Equal(4, second.IndexInBytes);
+        Assert.Equal(2, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)); Assert.Equal(4, second.StartOffsetInBytes);
         Assert.Equal(0UL, account.Used);
     }
     [Fact]
@@ -142,15 +142,15 @@ public sealed class PosixPublicContractTests
         var regex = new Utf8PosixRegex("(k+)([0-9]+)", PosixCompileOptions.IgnoreCase,
             TimeSpan.FromSeconds(5), new() { MaxWorkSteps = 10000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         var cursor = regex.CreateMatchCursor("éKK007 k2"u8.ToArray(), 2, workingMemoryAllowance: account);
-        var alias = cursor; var groups = new Utf8ValueMatch[3];
+        var alias = cursor; var groups = new Utf8CaptureRange[3];
         Assert.True(cursor.MoveNext(groups, out var first));
         var retained = groups[1];
-        Assert.Equal(new Utf8ValueMatch(true, true, 1, 5, 2, 7), first);
-        Assert.Equal(new Utf8ValueMatch(true, true, 1, 2, 2, 4), retained);
+        Assert.Equal(new Utf8CaptureRange(2, (2) + (7)), first);
+        Assert.Equal(new Utf8CaptureRange(2, (2) + (4)), retained);
         Assert.True(alias.MoveNext(groups, out var second));
-        Assert.Equal(new Utf8ValueMatch(true, true, 7, 2, 10, 2), second);
+        Assert.Equal(new Utf8CaptureRange(10, (10) + (2)), second);
         alias.Dispose(); Assert.Equal(0UL, account.Used);
-        Assert.Equal(new Utf8ValueMatch(true, true, 1, 2, 2, 4), retained);
+        Assert.Equal(new Utf8CaptureRange(2, (2) + (4)), retained);
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
     }
     [Fact]
@@ -160,15 +160,15 @@ public sealed class PosixPublicContractTests
         var regex = new Utf8PosixRegex("^([k]+)([[:space:]]+)$", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase,
             TimeSpan.FromSeconds(5), new() { MaxWorkSteps = 10000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         var cursor = regex.CreateMatchCursor("é\nKK \nb\nk \nx"u8.ToArray(), 3, workingMemoryAllowance: account);
-        var alias = cursor; var groups = new Utf8ValueMatch[3];
+        var alias = cursor; var groups = new Utf8CaptureRange[3];
         Assert.True(cursor.MoveNext(groups, out var first));
-        Assert.Equal(new Utf8ValueMatch(true, true, 2, 3, 3, 5), first);
+        Assert.Equal(new Utf8CaptureRange(3, (3) + (5)), first);
         var retained = groups[1];
-        Assert.Equal(new Utf8ValueMatch(true, true, 2, 2, 3, 4), retained);
+        Assert.Equal(new Utf8CaptureRange(3, (3) + (4)), retained);
         Assert.True(alias.MoveNext(groups, out var second));
-        Assert.Equal(new Utf8ValueMatch(true, true, 8, 2, 11, 2), second);
+        Assert.Equal(new Utf8CaptureRange(11, (11) + (2)), second);
         alias.Dispose(); Assert.Equal(0UL, account.Used);
-        Assert.Equal(new Utf8ValueMatch(true, true, 2, 2, 3, 4), retained);
+        Assert.Equal(new Utf8CaptureRange(3, (3) + (4)), retained);
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
     }
     [Fact]
@@ -176,24 +176,24 @@ public sealed class PosixPublicContractTests
     {
         var regex = new Utf8PosixRegex("(a?){2,4}"); var account = new Account();
         using var cursor = regex.CreateMatchCursor("aa!a"u8.ToArray(), workingMemoryAllowance: account);
-        var alias = cursor; var groups = new Utf8ValueMatch[2];
+        var alias = cursor; var groups = new Utf8CaptureRange[2];
         Assert.True(cursor.MoveNext(groups, out var first));
-        Assert.Equal(new Utf8ValueMatch(true, true, 0, 2, 0, 2), first);
+        Assert.Equal(new Utf8CaptureRange(0, (0) + (2)), first);
         var retained = groups[1];
-        Assert.Equal(new Utf8ValueMatch(true, true, 1, 1, 1, 1), retained);
-        var whole = new Utf8ValueMatch[1];
+        Assert.Equal(new Utf8CaptureRange(1, (1) + (1)), retained);
+        var whole = new Utf8CaptureRange[1];
         Assert.True(alias.MoveNext(whole, out var empty));
-        Assert.Equal(new Utf8ValueMatch(true, true, 2, 0, 2, 0), empty);
+        Assert.Equal(new Utf8CaptureRange(2, (2) + (0)), empty);
         Assert.Equal(empty, whole[0]);
         Assert.True(cursor.MoveNext(groups, out var third));
-        Assert.Equal(new Utf8ValueMatch(true, true, 3, 1, 3, 1), third);
-        Assert.Equal(new Utf8ValueMatch(true, true, 4, 0, 4, 0), groups[1]);
+        Assert.Equal(new Utf8CaptureRange(3, (3) + (1)), third);
+        Assert.Equal(new Utf8CaptureRange(4, (4) + (0)), groups[1]);
         Assert.True(alias.MoveNext(groups, out var last));
-        Assert.Equal(new Utf8ValueMatch(true, true, 4, 0, 4, 0), last);
+        Assert.Equal(new Utf8CaptureRange(4, (4) + (0)), last);
         Assert.Equal(last, groups[1]);
         Assert.False(cursor.MoveNext(groups, out _));
         Assert.All(groups, value => Assert.False(value.Success));
-        Assert.Equal(new Utf8ValueMatch(true, true, 1, 1, 1, 1), retained);
+        Assert.Equal(new Utf8CaptureRange(1, (1) + (1)), retained);
         Assert.Equal(4, regex.Count("aa!a"u8));
         alias.Dispose(); Assert.Equal(0UL, account.Used);
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
@@ -209,50 +209,23 @@ public sealed class PosixPublicContractTests
         Assert.Equal(2, regex.Count("aa"u8, workingMemoryAllowance: account));
         // Requesting captures needs the tag buffers and still admits before
         // acquiring them. Fixed workspace owner metadata is outside this policy.
-        var groups = new Utf8ValueMatch[2];
+        var groups = new Utf8CaptureRange[2];
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("aa"u8, groups, workingMemoryAllowance: account)).ResourceKind);
         Assert.Equal(0, account.Attempts); Assert.Equal(0UL, account.Used);
     }
 
     [Fact]
-    public void ValidatedCoordinateProjectionKeepsScalarsAcrossCountingBlocks()
+    public void ByteRangesKeepScalarsAcrossLongInputs()
     {
         const int prefix = 4093, repeats = 2048;
         var input = Encoding.UTF8.GetBytes(new string('x', prefix) + "😀" + new string('é', repeats));
-        var regex = new Utf8PosixRegex("(😀)(é+)"); var groups = new Utf8ValueMatch[3];
+        var regex = new Utf8PosixRegex("(😀)(é+)"); var groups = new Utf8CaptureRange[3];
         var whole = regex.Match(input, groups, prefix);
-        Assert.Equal(new Utf8ValueMatch(true, true, prefix, repeats + 2, prefix, 4 + 2 * repeats), whole);
+        Assert.Equal(new Utf8CaptureRange(prefix, (prefix) + (4 + 2 * repeats)), whole);
         Assert.Equal(whole, groups[0]);
-        Assert.Equal(new Utf8ValueMatch(true, true, prefix, 2, prefix, 4), groups[1]);
-        Assert.Equal(new Utf8ValueMatch(true, true, prefix + 2, repeats, prefix + 4, 2 * repeats), groups[2]);
-    }
-    [Fact]
-    public void CoordinateProjectionWorkRefusalUsesThePublicFailureAndClearsOutput()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "a");
-        using var token = new CancellationTokenSource(); var account = new Account();
-        var baseline = new Utf8PosixRegex("a");
-        var invocation = baseline.StartInvocation(token.Token, account);
-        ulong beforeProjection;
-        Utf8PosixRegex.CheckStart(input, 8192, ref invocation);
-        var workspace = baseline.CreateWorkspace(ref invocation, captureHistory: false);
-        try
-        {
-            Assert.True(workspace.Find(input, new int[workspace.StateLength], 8192, false, ref invocation, out _, out _, captureHistory: false));
-            beforeProjection = invocation.Budget.Steps;
-        }
-        finally { workspace.Release(ref invocation); }
-        // ClearOutput consumes one step. The next charge is the coordinate
-        // scan, whose shared helper reports an internal breach to the adapter.
-        var limited = new Utf8PosixRegex("a", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = beforeProjection + 1 });
-        var output = new[] { new Utf8ValueMatch(true, true, 0, 1, 0, 1) };
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            limited.Match(input, output, 8192, token.Token, account));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(beforeProjection + 2, error.Requested);
-        Assert.False(output[0].Success); Assert.Equal(0UL, account.Used);
+        Assert.Equal(new Utf8CaptureRange(prefix, (prefix) + (4)), groups[1]);
+        Assert.Equal(new Utf8CaptureRange(prefix + 4, (prefix + 4) + (2 * repeats)), groups[2]);
     }
     [Theory]
     [InlineData(false)]
@@ -265,7 +238,7 @@ public sealed class PosixPublicContractTests
         const int depth = 128;
         var regex = new Utf8PosixRegex(new string('(', depth) + "a" + new string(')', depth), default,
             deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, default);
-        var output = new Utf8ValueMatch[depth + 1]; var triggered = false;
+        var output = new Utf8CaptureRange[depth + 1]; var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             if (triggered || !output[0].Success) return;
@@ -311,7 +284,7 @@ public sealed class PosixPublicContractTests
             var regex = new Utf8PosixRegex($"x({body}b|{body}b)", folded ? PosixCompileOptions.IgnoreCase : default,
                 deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                 new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
-            var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+            var retained = new Utf8CaptureRange(0, (0) + (1));
             var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
             var input = Encoding.UTF8.GetBytes("x" + string.Concat(Enumerable.Repeat(folded ? "K" : scalar, 128)) + "b#");
             var triggered = false;
@@ -365,7 +338,7 @@ public sealed class PosixPublicContractTests
                 now = 0;
                 using var token = new CancellationTokenSource();
                 var account = new Account(); Assert.True(account.TryReserve(17));
-                var retained = new Utf8ValueMatch(true, true, 0, 1, 0, 1);
+                var retained = new Utf8CaptureRange(0, (0) + (1));
                 var output = Enumerable.Repeat(retained, regex.GroupCount + 1).ToArray();
                 var input = Encoding.ASCII.GetBytes(large ? new string('x', count) + "a#" : new string('a', count) + "!#");
                 var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -460,10 +433,10 @@ public sealed class PosixPublicContractTests
     [InlineData("((a|aa)*)", "aaa", 2, 2, 1)]
     public void RepeatedAndNullableCaptureHistoriesPreserveEarlierPriority(string pattern, string input, int slot, int start, int length)
     {
-        var regex = new Utf8PosixRegex(pattern); var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+        var regex = new Utf8PosixRegex(pattern); var groups = new Utf8CaptureRange[regex.GroupCount + 1];
         Assert.True(regex.Match(Encoding.UTF8.GetBytes(input), groups).Success);
         Assert.Equal(start >= 0, groups[slot].Success);
-        if (start >= 0) { Assert.Equal(start, groups[slot].IndexInBytes); Assert.Equal(length, groups[slot].LengthInBytes); }
+        if (start >= 0) { Assert.Equal(start, groups[slot].StartOffsetInBytes); Assert.Equal(length, (groups[slot].EndOffsetInBytes - groups[slot].StartOffsetInBytes)); }
     }
     [Theory]
     [InlineData(63)]
@@ -476,18 +449,18 @@ public sealed class PosixPublicContractTests
         var account = new Account();
         using var cursor = regex.CreateMatchCursor(input, 2, workingMemoryAllowance: account);
         var alias = cursor;
-        var captures = new Utf8ValueMatch[2];
+        var captures = new Utf8CaptureRange[2];
         Assert.True(cursor.MoveNext(captures, out var retained));
-        Assert.Equal(4 * count, retained.LengthInBytes);
-        Assert.Equal(2 + 4 * (count - 1), captures[1].IndexInBytes);
-        Assert.Equal(4, captures[1].LengthInBytes);
+        Assert.Equal(4 * count, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
+        Assert.Equal(2 + 4 * (count - 1), captures[1].StartOffsetInBytes);
+        Assert.Equal(4, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes));
         Assert.True(alias.MoveNext(captures, out var empty));
-        Assert.Equal(2 + 4 * count, empty.IndexInBytes);
-        Assert.Equal(0, empty.LengthInBytes);
+        Assert.Equal(2 + 4 * count, empty.StartOffsetInBytes);
+        Assert.Equal(0, (empty.EndOffsetInBytes - empty.StartOffsetInBytes));
         Assert.False(alias.MoveNext(captures, out _));
         alias.Dispose();
         Assert.Equal(0UL, account.Used);
-        Assert.Equal(4 * count, retained.LengthInBytes);
+        Assert.Equal(4 * count, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
     }
     [Theory]
     [InlineData(0, "a", "")]
@@ -507,14 +480,13 @@ public sealed class PosixPublicContractTests
         var regex = new Utf8PosixRegex($"(({atom})|({atom}{atom}))*");
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(atom, count)));
         var floor = Encoding.UTF8.GetByteCount(prefix); var width = Encoding.UTF8.GetByteCount(atom);
-        var output = new Utf8ValueMatch[4];
+        var output = new Utf8CaptureRange[4];
         var whole = regex.Match(input, output, floor);
-        Assert.Equal(new Utf8ValueMatch(true, true, prefix.Length, count * atom.Length, floor, count * width), whole);
+        Assert.Equal(new Utf8CaptureRange(floor, (floor) + (count * width)), whole);
         Assert.Equal(whole, output[0]);
         if (count == 0) { Assert.All(output[1..], capture => Assert.False(capture.Success)); return; }
         var last = (count & 1) == 0 ? 2 : 1;
-        var expected = new Utf8ValueMatch(true, true, prefix.Length + (count - last) * atom.Length,
-            last * atom.Length, floor + (count - last) * width, last * width);
+        var expected = new Utf8CaptureRange(floor + (count - last) * width, (floor + (count - last) * width) + (last * width));
         Assert.Equal(expected, output[1]);
         Assert.Equal(expected, output[last == 1 ? 2 : 3]);
         Assert.False(output[last == 1 ? 3 : 2].Success);
@@ -530,10 +502,10 @@ public sealed class PosixPublicContractTests
         // Earlier occurrences consume the available atoms. The two required
         // iterations force a final empty capture only when fewer than two
         // atoms exist; optional empty iterations lose to a shorter history.
-        var regex = new Utf8PosixRegex("(a?){2,4}"); var groups = new Utf8ValueMatch[2];
-        Assert.Equal(count, regex.Match(Encoding.ASCII.GetBytes(new string('a', count)), groups).LengthInBytes);
+        var regex = new Utf8PosixRegex("(a?){2,4}"); var groups = new Utf8CaptureRange[2];
+        Assert.Equal(count, regex.Match(Encoding.ASCII.GetBytes(new string('a', count)), groups).EndOffsetInBytes);
         var length = count >= 2 ? 1 : 0; var start = count - length;
-        Assert.Equal(new Utf8ValueMatch(true, true, start, length, start, length), groups[1]);
+        Assert.Equal(new Utf8CaptureRange(start, (start) + (length)), groups[1]);
     }
     [Fact]
     public void SmallAsciiLanguagesHaveIndependentLeftmostLongestWholeMatches()
@@ -563,7 +535,7 @@ public sealed class PosixPublicContractTests
                 Assert.Equal(expectedStart >= 0, actual.Success);
                 Assert.Equal(actual.Success, posix.IsMatch(input));
                 if (!actual.Success) continue;
-                Assert.Equal(expectedStart, actual.IndexInBytes); Assert.Equal(expectedEnd - expectedStart, actual.LengthInBytes);
+                Assert.Equal(expectedStart, actual.StartOffsetInBytes); Assert.Equal(expectedEnd - expectedStart, (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
         }
     }
@@ -574,7 +546,7 @@ public sealed class PosixPublicContractTests
     public void RefusalAtEveryWorkingAcquisitionRefundsAndClearsOutput(string pattern)
     {
         var regex = new Utf8PosixRegex(pattern); var granted = new Account();
-        var output = new Utf8ValueMatch[2];
+        var output = new Utf8CaptureRange[2];
         var input = Encoding.ASCII.GetBytes("aaaaaa" + (pattern.EndsWith('b') ? "b" : ""));
         Assert.True(regex.Match(input, output, workingMemoryAllowance: granted).Success);
         Assert.True(granted.Attempts > 2); Assert.Equal(0UL, granted.Used);
@@ -682,26 +654,24 @@ public sealed class PosixPublicContractTests
                 case "IsMatch": regex.IsMatch(input, token.Token, account); break;
                 case "Match": regex.Match(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 case "Count": regex.Count(input, cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "FoldedGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "SingleFlatCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "FixedFoldedCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "TerminalUnicodeCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "RequiredUnicodeCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "SparseGreedyCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
-                case "NewlineRewindCapture": regex.Match(input, new Utf8ValueMatch[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "FoldedGreedyCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "SingleFlatCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "FixedFoldedCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "TerminalUnicodeCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "RequiredUnicodeCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "SparseGreedyCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
+                case "NewlineRewindCapture": regex.Match(input, new Utf8CaptureRange[3], cancellationToken: token.Token, workingMemoryAllowance: account); break;
                 default: using (var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token, workingMemoryAllowance: account)) cursor.MoveNext(out _); break;
             }
         }
     }
 
-    private static void Check(Utf8ValueMatch actual, JsonElement expected)
+    private static void Check(Utf8CaptureRange actual, JsonElement expected)
     {
         var success = expected.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
         Assert.Equal(success, actual.Success);
         if (!success) return;
-        Assert.True(actual.IsByteAligned);
-        Assert.Equal(expected[0].GetInt32(), actual.IndexInBytes); Assert.Equal(expected[1].GetInt32(), actual.LengthInBytes);
-        Assert.Equal(expected[2].GetInt32(), actual.IndexInUtf16); Assert.Equal(expected[3].GetInt32(), actual.LengthInUtf16);
+        Assert.Equal(expected[0].GetInt32(), actual.StartOffsetInBytes); Assert.Equal(expected[1].GetInt32(), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     private sealed class Account : IUtf8MemoryAllowance

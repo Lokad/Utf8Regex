@@ -10,11 +10,11 @@ public sealed class PosixGreedyAsciiRunTests
     {
         var regex = new Utf8PosixRegex("^([a-z]+)([0-9]+)$", PosixCompileOptions.Newline,
             Timeout.InfiniteTimeSpan, default);
-        var captures = new Utf8ValueMatch[3];
+        var captures = new Utf8CaptureRange[3];
         var whole = regex.Match("bad\nsku007\nx9\n"u8, captures);
-        Assert.Equal((4, 6), (whole.IndexInBytes, whole.LengthInBytes));
-        Assert.Equal((4, 3), (captures[1].IndexInBytes, captures[1].LengthInBytes));
-        Assert.Equal((7, 3), (captures[2].IndexInBytes, captures[2].LengthInBytes));
+        Assert.Equal((4, 6), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
+        Assert.Equal((4, 3), (captures[1].StartOffsetInBytes, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes)));
+        Assert.Equal((7, 3), (captures[2].StartOffsetInBytes, (captures[2].EndOffsetInBytes - captures[2].StartOffsetInBytes)));
         Assert.Equal(2, regex.Count("bad\nsku007\nx9\n"u8));
     }
 
@@ -65,12 +65,12 @@ public sealed class PosixGreedyAsciiRunTests
     public void LineEndRewindSelectsTheLatestValidEndpoint(string text, int length, int whitespace)
     {
         var regex = new Utf8PosixRegex("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
-        var groups = new Utf8ValueMatch[3];
+        var groups = new Utf8CaptureRange[3];
         var whole = regex.Match(Encoding.UTF8.GetBytes(text), groups);
         Assert.True(whole.Success);
-        Assert.Equal((0, length), (whole.IndexInBytes, whole.LengthInBytes));
-        Assert.Equal((0, 1), (groups[1].IndexInBytes, groups[1].LengthInBytes));
-        Assert.Equal((1, whitespace), (groups[2].IndexInBytes, groups[2].LengthInBytes));
+        Assert.Equal((0, length), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
+        Assert.Equal((0, 1), (groups[1].StartOffsetInBytes, (groups[1].EndOffsetInBytes - groups[1].StartOffsetInBytes)));
+        Assert.Equal((1, whitespace), (groups[2].StartOffsetInBytes, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes)));
     }
 
     [Theory]
@@ -102,8 +102,8 @@ public sealed class PosixGreedyAsciiRunTests
                 if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
                 for (var width = 0; width <= regex.GroupCount + 2; width++)
                 {
-                    var expected = new Utf8ValueMatch[width];
-                    var actual = new Utf8ValueMatch[width];
+                    var expected = new Utf8CaptureRange[width];
+                    var actual = new Utf8CaptureRange[width];
                     Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
                     Assert.Equal(expected, actual);
                 }
@@ -146,7 +146,7 @@ public sealed class PosixGreedyAsciiRunTests
                 if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
                 for (var width = 0; width <= regex.GroupCount + 2; width++)
                 {
-                    var expected = new Utf8ValueMatch[width]; var actual = new Utf8ValueMatch[width];
+                    var expected = new Utf8CaptureRange[width]; var actual = new Utf8CaptureRange[width];
                     Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
                     Assert.Equal(expected, actual);
                 }
@@ -174,12 +174,12 @@ public sealed class PosixGreedyAsciiRunTests
         var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
         var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
         var regex = new Utf8PosixRegex(pattern);
-        var captures = new Utf8ValueMatch[regex.GroupCount + 1];
+        var captures = new Utf8CaptureRange[regex.GroupCount + 1];
         var whole = regex.Match(input, captures, floor);
         Assert.True(whole.Success);
-        Assert.Equal((wholeStart, wholeLength), (whole.IndexInBytes, whole.LengthInBytes));
-        Assert.Equal((firstStart, firstLength), (captures[1].IndexInBytes, captures[1].LengthInBytes));
-        Assert.Equal((secondStart, secondLength), (captures[2].IndexInBytes, captures[2].LengthInBytes));
+        Assert.Equal((wholeStart, wholeLength), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
+        Assert.Equal((firstStart, firstLength), (captures[1].StartOffsetInBytes, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes)));
+        Assert.Equal((secondStart, secondLength), (captures[2].StartOffsetInBytes, (captures[2].EndOffsetInBytes - captures[2].StartOffsetInBytes)));
         using var token = new CancellationTokenSource();
         Assert.Equal(whole, regex.Match(input, captures, floor, token.Token));
         Assert.Equal(1, regex.Count(input, floor, token.Token));
@@ -232,7 +232,7 @@ public sealed class PosixGreedyAsciiRunTests
                 var expected = oracle.Match(text, floor);
                 for (var width = 0; width <= regex.GroupCount + 2; width++)
                 {
-                    var output = new Utf8ValueMatch[width];
+                    var output = new Utf8CaptureRange[width];
                     var actual = regex.Match(input, output, byteFloor);
                     Assert.Equal(expected.Success, actual.Success);
                     if (!expected.Success) { Assert.All(output, value => Assert.False(value.Success)); continue; }
@@ -244,7 +244,7 @@ public sealed class PosixGreedyAsciiRunTests
                 Assert.Equal(ScalarMatches(floor).Count(), regex.Count(input, byteFloor));
             }
             using var cursor = regex.CreateMatchCursor(input);
-            var groups = new Utf8ValueMatch[regex.GroupCount + 1];
+            var groups = new Utf8CaptureRange[regex.GroupCount + 1];
             foreach (var expected in ScalarMatches(0))
             {
                 Assert.True(cursor.MoveNext(groups, out var actual));
@@ -259,13 +259,12 @@ public sealed class PosixGreedyAsciiRunTests
             IEnumerable<Match> ScalarMatches(int floor) => oracle.Matches(text, floor).Cast<Match>()
                 .Where(match => match.Index == text.Length || !char.IsLowSurrogate(text[match.Index]));
 
-            void Check(Group expected, Utf8ValueMatch actual)
+            void Check(Group expected, Utf8CaptureRange actual)
             {
                 Assert.Equal(expected.Success, actual.Success);
                 if (!expected.Success) return;
-                Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
                 Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
-                    (actual.IndexInBytes, actual.LengthInBytes));
+                    (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
             }
         }
     }
@@ -292,8 +291,8 @@ public sealed class PosixGreedyAsciiRunTests
                 if (floor < input.Length && (input[floor] & 0xc0) == 0x80) continue;
                 for (var width = 0; width <= regex.GroupCount + 2; width++)
                 {
-                    var expected = new Utf8ValueMatch[width];
-                    var actual = new Utf8ValueMatch[width];
+                    var expected = new Utf8CaptureRange[width];
+                    var actual = new Utf8CaptureRange[width];
                     Assert.Equal(general.Match(input, expected, floor), regex.Match(input, actual, floor));
                     Assert.Equal(expected, actual);
                 }
@@ -308,11 +307,11 @@ public sealed class PosixGreedyAsciiRunTests
         var regex = new Utf8PosixRegex("Z(a+)()", resourcePolicy: new()
             { MaxWorkSteps = 40_000, MaxDepth = 1, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
         var input = Encoding.ASCII.GetBytes("Z" + new string('a', 8192));
-        var output = new Utf8ValueMatch[3];
+        var output = new Utf8CaptureRange[3];
         var whole = regex.Match(input, output);
-        Assert.Equal((0, 8193), (whole.IndexInBytes, whole.LengthInBytes));
-        Assert.Equal((1, 8192), (output[1].IndexInBytes, output[1].LengthInBytes));
-        Assert.Equal((8193, 0), (output[2].IndexInBytes, output[2].LengthInBytes));
+        Assert.Equal((0, 8193), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
+        Assert.Equal((1, 8192), (output[1].StartOffsetInBytes, (output[1].EndOffsetInBytes - output[1].StartOffsetInBytes)));
+        Assert.Equal((8193, 0), (output[2].StartOffsetInBytes, (output[2].EndOffsetInBytes - output[2].StartOffsetInBytes)));
         var limited = new Utf8PosixRegex("Z(a+)()", resourcePolicy: new() { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
     }

@@ -13,9 +13,9 @@ using Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Posix;
 
 var regex = new Utf8PosixRegex("(a|aa)(a*)");
-Span<Utf8ValueMatch> groups = stackalloc Utf8ValueMatch[3];
+Span<Utf8CaptureRange> groups = stackalloc Utf8CaptureRange[3];
 var match = regex.Match("aaa"u8, groups);
-// Whole match: aaa; group 1: aa; group 2: a. Byte coordinates are primary.
+// Whole match: [0,3); group 1: [0,2); group 2: [2,3), all byte ranges.
 ```
 
 `IsMatch`, `Match`, `Count` and a disposable memory cursor accept cancellation
@@ -41,13 +41,14 @@ Use `tools/bench.ps1 -CommandArgs '--inspect-posix-cases'` for result preflight,
 or `tools/refresh-benchmarks.ps1 -Phase Posix` for the bounded .NET 11 catalog.
 Raw measurements stay under `artifacts/benchmark-refresh/current/`; Markdown
 regenerates offline from `bench/Snapshots/Posix.json`.
-The `projection/short-*` and `projection/unicode-prefix-*` cases isolate capture
-coordinate scaling with one/four captures. Their native comparisons use the
-same requested coordinates and the valid-text guarantee in both lanes.
-Projection rows include UTF-16 interoperability work: the native lane uses
-`Encoding.UTF8.GetCharCount`, while the managed lane uses its valid-text scalar
-counter. Their ratios describe the complete matching/projection operation, not
-raw native matching speed.
+Results and capture destinations use `Utf8CaptureRange`: `Success`,
+`StartOffsetInBytes` and exclusive `EndOffsetInBytes`. They have no UTF-16 fields
+or alignment flags. Publication does not scan the subject for coordinates.
+Current benchmark lanes return equivalent byte-only ranges on both sides.
+The frozen table below predates this API change and includes UTF-16 projection;
+it remains historical until the next coherent refresh. The existing
+`projection/short-*` and `projection/unicode-prefix-*` case names are retained
+for that comparison, without restoring coordinate scans.
 
 ## Subject text contract
 
@@ -64,7 +65,7 @@ before a ratio is reported; incompatible selection/history cases stay excluded.
 <!-- BEGIN GENERATED POSIX BENCHMARKS -->
 ## Benchmarks
 
-Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, captures and nested/nullable histories, including Unicode floors, invariant folding and LF rewind. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require valid unchanged UTF-8. Native PCRE2 NFA uses UTF+NO_UTF_CHECK, matching case/newline options, a reusable match buffer and equivalent byte/UTF-16 projection. Newline rows use positive classes: native negated brackets do not implement POSIX's LF exclusion. Ratios cover verified equal-result inputs only, not general POSIX selection or folding equivalence. Native allocations cover CLR traffic, excluding native workspace.
+Warm .NET 11 public operations over prepared UTF-8; compilation and input preparation are excluded. These rows cover POSIX longest selection, captures and nested/nullable histories, including Unicode floors, invariant folding and LF rewind. Core's generic search, validation, dense counting and scalar progression are not repeated here. Both lanes require valid unchanged UTF-8. Native PCRE2 NFA uses UTF+NO_UTF_CHECK, matching case/newline options, a reusable match buffer and equivalent requested capture output. Newline rows use positive classes: native negated brackets do not implement POSIX's LF exclusion. Ratios cover verified equal-result inputs only, not general POSIX selection or folding equivalence. Native allocations cover CLR traffic, excluding native workspace.
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|

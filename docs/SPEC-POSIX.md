@@ -14,7 +14,7 @@ Invalid UTF-8 subjects are outside this profile's domain. External byte validati
 belongs at the application's text boundary.
 
 There is no subject-validation option, property or token. Pattern validation,
-managed bounds, scalar selection, captures, coordinate projection, resource
+managed bounds, scalar selection, captures, byte-range publication, resource
 admission and original synchronous cancellation/deadlines remain independent.
 Only requested matching and output work needs to inspect text.
 
@@ -22,8 +22,8 @@ Only requested matching and output work needs to inspect text.
 
 Patterns are well-formed Unicode strings; subjects are strict UTF-8. A matching
 character is one Unicode scalar, including supplementary characters and U+0000.
-Primary offsets refer to the original bytes; UTF-16 coordinates are
-derived. A start offset must be a scalar boundary in `[0,input.Length]` and does
+Offsets refer to the original bytes; results expose only byte ranges.
+A start offset must be a scalar boundary in `[0,input.Length]` and does
 not rebase anchors or remove prefix context.
 
 | Admitted ERE | Meaning |
@@ -114,8 +114,8 @@ Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
   and original cancellation token. Use existing construction admission/backstops.
 - `IsMatch(input, token=default, workingMemoryAllowance=null)` returns existence.
 - `Match(input, startOffsetInBytes=0, token=default, workingMemoryAllowance=null)`
-  returns `Utf8ValueMatch` for the selected whole match.
-- `Match(input, Span<Utf8ValueMatch> groups, startOffsetInBytes=0, token=default,
+  returns `Utf8CaptureRange` for the selected whole match.
+- `Match(input, Span<Utf8CaptureRange> groups, startOffsetInBytes=0, token=default,
   workingMemoryAllowance=null)` also writes slots zero onward. Clear supplied
   output slots before publication, including after no match; leave no partial
   result on refusal/interruption. Excess slots are untouched. A shorter or empty span cannot alter
@@ -124,8 +124,8 @@ Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
   counts nonoverlapping selected matches.
 - `CreateMatchCursor(ReadOnlyMemory<byte> input, startOffsetInBytes=0,
   token=default, workingMemoryAllowance=null)` returns a sealed disposable
-  `Utf8PosixMatchCursor`. `MoveNext(out Utf8ValueMatch match)` and
-  `MoveNext(Span<Utf8ValueMatch> groups, out Utf8ValueMatch match)` use the same
+  `Utf8PosixMatchCursor`. `MoveNext(out Utf8CaptureRange match)` and
+  `MoveNext(Span<Utf8CaptureRange> groups, out Utf8CaptureRange match)` use the same
   selection and cumulative invocation. No copied value cursor or finalizer lease.
 
 This surface deliberately uses caller-owned capture spans and value coordinates.
@@ -137,18 +137,13 @@ Dispose refunds temporary workspace synchronously. Callers wanting text or owned
 arrays materialize them themselves. No replacement/split API, capture-history
 collection, RTL option or separate NonBacktracking mode is part of this subset.
 
-Capture projection reuses the whole match's known start or end coordinate. A
-capture ending with the whole match needs only its own UTF-16 content length;
-an empty capture there needs no prefix scan. Advancing capture ranges reuse the
-preceding completed capture's byte/UTF-16 end, counting only the intervening gap
-and their content. Nested or reordered ranges fall back to the whole-match start.
-These are call-local coordinates, with no subject index or additional allocation.
-Removing redundant scans can lower modeled work without changing selected
-captures, storage admission or interruption authority.
-Forward cursors reuse their preceding whole-match byte/UTF-16 end when projecting
-the next result, counting only the intervening prefix and selected content.
-Skipped scalars after empty matches still contribute to the next coordinate.
-This needs no subject index, additional allocation or whole-input preparation.
+`Utf8CaptureRange` exposes `Success`, inclusive `StartOffsetInBytes` and exclusive
+`EndOffsetInBytes`. An absent capture is the default value; a participating empty
+capture has equal endpoints and `Success=true`. Publication copies the selected
+byte endpoints without scanning the prefix or matched content. No UTF-16
+coordinates, alignment flags, coordinate map or cursor coordinate cache remain.
+Removing this output work can lower modeled work requirements; matching,
+capture selection, allocation admission and interruption checks stay metered.
 
 After a nonempty match, resume at its end. After an empty match, advance one scalar;
 the empty match at subject end is emitted once and completes iteration. For
@@ -272,10 +267,9 @@ can allocate dictionary storage where warmed history traversal previously did
 not; first-acceptance routes retain their existing allocation strategy. Recheck
 finite policies when upgrading rather than relying on exact prior step/byte totals.
 
-Scalar/coordinate scans retain bounded original interruption checks. Coordinate
-projection sizes valid ranges through the shared UTF-16 helper; it does not
-perform a subject-validity pass. Neither scalar units nor byte offsets,
-valid-text contract, captures or original-token/deadline behavior changes.
+Scalar scans and capture publication retain bounded original interruption checks.
+Results copy byte endpoints without a text-coordinate or validity pass. Scalar
+units, the valid-text contract, captures and original-token/deadline behavior stay.
 
 Working limits cover modeled matching/history/projection capacity, not borrowed
 input, the compiled program, fixed owner metadata, all GC traffic or process RAM.
