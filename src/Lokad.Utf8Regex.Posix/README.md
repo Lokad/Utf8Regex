@@ -44,6 +44,10 @@ regenerates offline from `bench/Snapshots/Posix.json`.
 The `projection/short-*` and `projection/unicode-prefix-*` cases isolate capture
 coordinate scaling with one/four captures. Their native comparisons use the
 same requested coordinates and the valid-text guarantee in both lanes.
+Projection rows include UTF-16 interoperability work: the native lane uses
+`Encoding.UTF8.GetCharCount`, while the managed lane uses its valid-text scalar
+counter. Their ratios describe the complete matching/projection operation, not
+raw native matching speed.
 
 ## Subject text contract
 
@@ -64,20 +68,20 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/newline-rewind` | Captures | 0.75 | 0.19 | 0 | Native faster | 3.99 |
-| `capture/ignorecase-disjoint` | Captures | 0.64 | 0.18 | 0 | Native faster | 3.54 |
-| `capture/nullable` | Captures | 0.49 | 0.19 | 0 | Native faster | 2.55 |
-| `capture/absent` | Captures | 0.32 | 0.14 | 0 | Native faster | 2.25 |
-| `projection/short-1` | Captures | 0.18 | 0.11 | 0 | Native faster | 1.66 |
-| `projection/short-4` | Captures | 0.29 | 0.19 | 0 | Native faster | 1.52 |
-| `projection/unicode-prefix-1` | Captures | 134.73 | 134.64 | 0 | Equivalent | 1.00 |
-| `projection/unicode-prefix-4` | Captures | 134.33 | 134.40 | 0 | Equivalent | 1.00 |
-| `capture/empty` | Captures | 0.14 | 0.15 | 0 | Managed faster | 0.97 |
-| `capture/ambiguous` | Captures | 1.11 | — | 680 | Excluded | — |
-| `capture/nested` | Captures | 1.56 | — | 680 | Excluded | — |
-| `capture/unicode-longest` | Captures | 1.14 | — | 680 | Excluded | — |
+| `capture/newline-rewind` | Captures | 0.71 | 0.20 | 0 | Native faster | 3.62 |
+| `capture/ignorecase-disjoint` | Captures | 0.65 | 0.20 | 0 | Native faster | 3.25 |
+| `capture/nullable` | Captures | 0.47 | 0.19 | 0 | Native faster | 2.44 |
+| `capture/absent` | Captures | 0.32 | 0.16 | 0 | Native faster | 2.03 |
+| `projection/short-1` | Captures | 0.18 | 0.11 | 0 | Native faster | 1.63 |
+| `projection/short-4` | Captures | 0.28 | 0.20 | 0 | Native faster | 1.46 |
+| `capture/empty` | Captures | 0.14 | 0.16 | 0 | Managed faster | 0.90 |
+| `projection/unicode-prefix-4` | Captures | 7.25 | 135.73 | 0 | Managed faster | 0.05 |
+| `projection/unicode-prefix-1` | Captures | 7.11 | 135.69 | 0 | Managed faster | 0.05 |
+| `capture/ambiguous` | Captures | 1.14 | — | 680 | Excluded | — |
+| `capture/nested` | Captures | 1.59 | — | 680 | Excluded | — |
+| `capture/unicode-longest` | Captures | 1.17 | — | 680 | Excluded | — |
 | `count/ambiguous` | Count | 0.39 | — | 0 | Excluded | — |
-| `cursor/ambiguous` | Cursor | 1.88 | — | 1048 | Excluded | — |
+| `cursor/ambiguous` | Cursor | 1.91 | — | 1048 | Excluded | — |
 
 The ratio is the median paired managed/native time; raw samples retain 95% bootstrap intervals and lane-order observations. Excluded rows have different native ranges/captures and no ratio. All rows retain ordinary costs, even when no equivalent native result exists.
 
@@ -87,9 +91,9 @@ The same `(a|aa)*` capture operation at three lengths exposes ambiguity cost. Ea
 
 | Case | Input bytes | Utf8Regex (µs) | Managed B/op | Peak working B |
 |---|---:|---:|---:|---:|
-| `history/length-4` | 4 | 1.37 | 680 | 2320 |
-| `history/length-8` | 8 | 2.30 | 680 | 2320 |
-| `history/length-12` | 12 | 3.42 | 1920 | 5904 |
+| `history/length-4` | 4 | 1.42 | 680 | 2320 |
+| `history/length-8` | 8 | 2.33 | 680 | 2320 |
+| `history/length-12` | 12 | 3.46 | 1920 | 5904 |
 
 ### Historical adapter control
 
@@ -97,18 +101,18 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.20 | 0.16 | 0 | 1.29 |
+| `capture/sku007` | 0.21 | 0.16 | 0 | 1.29 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/empty` | 0.22 µs | 0.26 µs | 0.33 µs | 1.78 |
-| `capture/sku007` | 1268.37 µs | 1414.45 µs | 1835.87 µs | 1.69 |
-| `capture/ignorecase-disjoint` | 0.84 µs | 0.95 µs | 1.05 µs | 1.48 |
-| `cursor/ambiguous` | 2.34 µs | 2.54 µs | 2.80 µs | 1.35 |
+| `capture/sku007` | 1334.06 µs | 1474.04 µs | 1877.25 µs | 1.74 |
+| `capture/empty` | 0.22 µs | 0.25 µs | 0.33 µs | 1.73 |
+| `capture/ignorecase-disjoint` | 0.88 µs | 0.99 µs | 1.09 µs | 1.53 |
+| `cursor/ambiguous` | 2.38 µs | 2.58 µs | 2.86 µs | 1.35 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `7CD1C12927423FFF67DB0C1161989066BB68400315296BC2F3B2AF0DFA9A5018`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `99E5860147E575CFAEFA81A0D73267706C1A29EDD12CD735F551E15DF1F36F36`.
 <!-- END GENERATED POSIX BENCHMARKS -->
