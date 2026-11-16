@@ -52,7 +52,7 @@ public sealed class Pcre2LiteralTemplateTextAuthorityTests
         var budget = new Pcre2ResourceBudget(limits, Timeout.InfiniteTimeSpan, false);
         budget.ReserveWorking(13);
         while (budget.WorkingInvocation.Budget.Steps < 100) budget.ChargeWorkspaceStep();
-        var control = new Pcre2CaptureProjectionBudget(ref budget);
+        var control = new Pcre2ResultControl(ref budget);
         Pcre2MatchException? failure = null;
         try { _ = control.DecodeReplacementText("😀"u8); }
         catch (Pcre2MatchException error) { failure = error; }
@@ -79,7 +79,7 @@ public sealed class Pcre2LiteralTemplateTextAuthorityTests
             Assert.Equal(Utf8ExecutionLimitKind.None, budget.WorkingInvocation.TryChargeInputStep());
         var entered = false;
         budget.WorkingInvocation.CheckpointHook = _ => { entered = true; if (cancel) source.Cancel(); else ticks = 25; };
-        var control = new Pcre2CaptureProjectionBudget(ref budget);
+        var control = new Pcre2ResultControl(ref budget);
         Exception? failure = null;
         try { _ = control.DecodeReplacementText(new byte[8192]); }
         catch (Exception error) { failure = error; }

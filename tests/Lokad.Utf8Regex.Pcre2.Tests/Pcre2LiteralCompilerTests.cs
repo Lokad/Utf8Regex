@@ -73,18 +73,12 @@ public sealed class Pcre2LiteralCompilerTests
     }
 
     [Theory]
-    [InlineData("abc", "xxabczz", 0, 2, 5, 2, 5)]
-    [InlineData("café", "--café--", 0, 2, 7, 2, 6)]
-    [InlineData("😀", "a😀b", 0, 1, 5, 1, 3)]
-    [InlineData("", "a😀b", 1, 1, 1, 1, 1)]
+    [InlineData("abc","xxabczz",0,2,5)]
+    [InlineData("café","--café--",0,2,7)]
+    [InlineData("😀","a😀b",0,1,5)]
+    [InlineData("","a😀b",1,1,1)]
     public void LiteralOneShotOperationsPreserveByteAndUtf16Coordinates(
-        string pattern,
-        string inputText,
-        int startOffsetInBytes,
-        int expectedByteStart,
-        int expectedByteEnd,
-        int expectedUtf16Start,
-        int expectedUtf16End)
+        string pattern,        string inputText,        int startOffsetInBytes,        int expectedByteStart,        int expectedByteEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -95,16 +89,12 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expectedByteStart, match.StartOffsetInBytes);
         Assert.Equal(expectedByteEnd, match.EndOffsetInBytes);
-        Assert.Equal(expectedUtf16Start, match.StartOffsetInUtf16);
-        Assert.Equal(expectedUtf16End, match.EndOffsetInUtf16);
 
         var detailed = regex.MatchDetailed(input, startOffsetInBytes);
         Assert.True(detailed.Success);
         Assert.Equal(1, detailed.CaptureSlotCount);
         Assert.Equal(expectedByteStart, detailed.Value.StartOffsetInBytes);
         Assert.Equal(expectedByteEnd, detailed.Value.EndOffsetInBytes);
-        Assert.Equal(expectedUtf16Start, detailed.Value.StartOffsetInUtf16);
-        Assert.Equal(expectedUtf16End, detailed.Value.EndOffsetInUtf16);
     }
 
     [Theory]
@@ -168,7 +158,6 @@ public sealed class Pcre2LiteralCompilerTests
         var afterFirstScalar = regex.Match(input, 0, Pcre2MatchOptions.NotEmptyAtStart);
         Assert.True(afterFirstScalar.Success);
         Assert.Equal(4, afterFirstScalar.StartOffsetInBytes);
-        Assert.Equal(2, afterFirstScalar.StartOffsetInUtf16);
         Assert.False(regex.IsMatch(input, input.Length, Pcre2MatchOptions.NotEmptyAtStart));
     }
 

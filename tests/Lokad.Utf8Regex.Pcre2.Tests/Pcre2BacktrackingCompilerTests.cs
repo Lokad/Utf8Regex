@@ -106,8 +106,6 @@ public sealed class Pcre2BacktrackingCompilerTests
         Assert.Equal("é😀z", match.GetValueString());
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(8, match.EndOffsetInBytes);
-        Assert.Equal(1, match.StartOffsetInUtf16);
-        Assert.Equal(5, match.EndOffsetInUtf16);
     }
 
     [Fact]

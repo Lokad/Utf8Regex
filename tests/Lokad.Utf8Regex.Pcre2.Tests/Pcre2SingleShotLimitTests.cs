@@ -48,7 +48,6 @@ public sealed class Pcre2SingleShotLimitTests
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Match(input)).ErrorKind);
         var actual = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = valueSteps }).Match(input);
         Assert.True(actual.Success);
-        Assert.Equal(expected.StartOffsetInUtf16, actual.StartOffsetInUtf16);
     }
     [Theory]
     [InlineData("abc", "xxABCxx", true)]

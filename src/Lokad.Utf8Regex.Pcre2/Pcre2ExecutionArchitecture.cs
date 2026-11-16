@@ -2217,9 +2217,8 @@ internal static partial class Pcre2Runner
             if (!literalMatch.Success) { result = default; return true; }
             // Discovery and required coordinate projection share the original
             // native authority; a short successful kernel is not publication.
-            var projection = input.CreateProjectionCursor();
-            result = Pcre2GlobalCursorProjection.Project(literalMatch.StartOffsetInBytes,
-                literalMatch.EndOffsetInBytes, ref input, ref projection, ref budget);
+            result = Pcre2MatchPublication.Publish(literalMatch.StartOffsetInBytes,
+                literalMatch.EndOffsetInBytes, ref input, ref budget);
             budget.CheckDeadline();
             return true;
         }
@@ -2263,10 +2262,8 @@ internal static partial class Pcre2Runner
             result = default;
             return true;
         }
-
-        var directProjection = input.CreateProjectionCursor();
-        result = Pcre2GlobalCursorProjection.Project(directMatch.StartOffsetInBytes,
-            directMatch.EndOffsetInBytes, ref input, ref directProjection, ref budget);
+        result = Pcre2MatchPublication.Publish(directMatch.StartOffsetInBytes,
+            directMatch.EndOffsetInBytes, ref input, ref budget);
         return true;
     }
 
@@ -2807,7 +2804,7 @@ internal static class Pcre2GlobalOperationDriver
 internal ref struct Pcre2GlobalMatchCursor
 {
     [UnscopedRef]
-    internal Pcre2CaptureProjectionBudget WorkingBufferControl => _kind == Pcre2GlobalCursorKind.Direct
+    internal Pcre2ResultControl WorkingBufferControl => _kind == Pcre2GlobalCursorKind.Direct
         ? _direct.WorkingBufferControl : _literalFamily.WorkingBufferControl;
 
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
@@ -2974,7 +2971,7 @@ internal readonly record struct Pcre2DirectGlobalMatch(
 internal ref struct Pcre2DirectGlobalMatchCursor
 {
     [UnscopedRef]
-    internal Pcre2CaptureProjectionBudget WorkingBufferControl => new(ref _budget);
+    internal Pcre2ResultControl WorkingBufferControl => new(ref _budget);
 
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>();
 
@@ -2991,7 +2988,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
     private Pcre2ResourceBudget _budget;
-    private Utf8ProjectionCursor _projection;
     private Utf8BytePosition _restartPosition;
     private Utf8BytePosition _firstMatchingPosition;
     private Pcre2GlobalRetryState _retryState;
@@ -3025,7 +3021,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         _request = request;
         _matchOptions = matchOptions;
         _budget = budget;
-        _projection = input.CreateProjectionCursor();
         _restartPosition = start;
         _firstMatchingPosition = start;
         _retryState = Pcre2GlobalRetryState.Search;
@@ -3378,11 +3373,11 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                     _budget.RecordResultProjection();
                 }
 
-                Current = Pcre2GlobalCursorProjection.Project(
+                Current = Pcre2MatchPublication.Publish(
                     match.StartOffsetInBytes,
                     match.EndOffsetInBytes,
                     ref _input,
-                    ref _projection, ref _budget);
+                    ref _budget);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 if (isBacktracking)
                 {
@@ -3435,12 +3430,11 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 
     private Utf8PreparedValueMatchEnumerator _enumerator;
     private Utf8ValidatedInput _input;
-    private Utf8ProjectionCursor _projection;
     private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
     private Pcre2ResourceBudget _budget;
 
     [UnscopedRef]
-    internal Pcre2CaptureProjectionBudget WorkingBufferControl => new(ref _budget);
+    internal Pcre2ResultControl WorkingBufferControl => new(ref _budget);
 
     internal Pcre2LiteralFamilyGlobalMatchCursor(
         Pcre2LiteralFamilyDirectProgram program,
@@ -3450,7 +3444,6 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
     {
         _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
-        _projection = input.CreateProjectionCursor();
         _boundaryProjection = (program as Pcre2FiniteLiteralLanguageDirectProgram)?.BoundaryProjection;
         // The selector admits this route only for unmetered matching. Shaping
         // still owns an aggregate working ledger on this same operation cursor.
@@ -3474,11 +3467,11 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
             _input.Bytes,
             consumedStart,
             consumedEnd) ?? consumedStart;
-        Current = Pcre2GlobalCursorProjection.Project(
+        Current = Pcre2MatchPublication.Publish(
             reportedStart,
             consumedEnd,
             ref _input,
-            ref _projection, ref _budget);
+            ref _budget);
         return true;
     }
 }
@@ -3578,64 +3571,25 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
     }
 }
 
-internal static class Pcre2GlobalCursorProjection
+internal static class Pcre2MatchPublication
 {
-    internal static Pcre2GroupData Project(
-        int startOffsetInBytes,
-        int endOffsetInBytes,
-        ref Utf8ValidatedInput input,
-        ref Utf8ProjectionCursor projection,
-        ref Pcre2ResourceBudget budget) =>
-        Project(startOffsetInBytes, endOffsetInBytes, ref input, ref projection, new Pcre2CaptureProjectionBudget(ref budget));
+    internal static Pcre2GroupData Publish(int start, int end,
+        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget)
+        => Publish(start, end, ref input, new Pcre2ResultControl(ref budget));
 
-    internal static Pcre2GroupData Project(
-        int startOffsetInBytes,
-        int endOffsetInBytes,
-        ref Utf8ValidatedInput input,
-        ref Utf8ProjectionCursor projection,
-        scoped Pcre2CaptureProjectionBudget control)
+    internal static Pcre2GroupData Publish(int start, int end,
+        ref Utf8ValidatedInput input, scoped Pcre2ResultControl control)
     {
-        var start = new Utf8BytePosition(startOffsetInBytes);
-        var end = new Utf8BytePosition(endOffsetInBytes);
-        if (!input.IsScalarBoundary(start) || !input.IsScalarBoundary(end))
-        {
-            return new Pcre2GroupData
-            {
-                Number = 0,
-                Success = true,
-                StartOffsetInBytes = startOffsetInBytes,
-                EndOffsetInBytes = endOffsetInBytes,
-                CoordinateFlagsSpecified = true,
-                Utf8SliceIsWellFormed = false,
-                Utf16ProjectionIsExact = false,
-            };
-        }
-
-        int startInUtf16, endInUtf16;
-        if (end.Value < start.Value)
-        {
-            endInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, end.Value, control);
-            startInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, start.Value, control);
-        }
-        else
-        {
-            startInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, start.Value, control);
-            endInUtf16 = Pcre2Runner.ProjectCaptureEndpoint(ref input, ref projection, end.Value, control);
-        }
+        control.ChargeWorkspaceStep();
         return new Pcre2GroupData
         {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = start.Value,
-            EndOffsetInBytes = end.Value,
-            StartOffsetInUtf16 = Math.Max(0, startInUtf16),
-            EndOffsetInUtf16 = Math.Max(0, endInUtf16),
-            CoordinateFlagsSpecified = true,
-            Utf8SliceIsWellFormed = start.Value <= end.Value,
-            Utf16ProjectionIsExact = startInUtf16 >= 0 && endInUtf16 >= 0,
+            Number = 0, Success = true,
+            StartOffsetInBytes = start, EndOffsetInBytes = end,
+            Utf8SliceIsWellFormed = start <= end &&
+                input.IsScalarBoundary(new Utf8BytePosition(start)) &&
+                input.IsScalarBoundary(new Utf8BytePosition(end)),
         };
     }
-
 }
 
 internal static class Pcre2GlobalCursorMovement

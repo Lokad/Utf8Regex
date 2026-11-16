@@ -28,10 +28,9 @@ retaining managed bounds and matching/output resource controls. Pattern and
 replacement validation remain independent. No invalid-UTF matching mode,
 per-call override or public validation token is introduced.
 
-Byte-only operations do not prepare whole-subject UTF-16 coordinates. Requested
-coordinates are projected over the necessary prefix; when an ignored prefix is
-invalid, byte results remain available and `HasUtf16Projection` is false.
-The match's own well-formed UTF-8 slice remains independently identifiable.
+Results expose byte endpoints without UTF-16 projection or a prefix scan.
+An ignored malformed prefix does not affect those byte endpoints. The match's
+own contiguous/well-formed value status remains independently identifiable.
 
 Byte-template `Replace`/`TryReplace` preserve an ignored malformed prefix as raw
 bytes; `SubstituteReplacementOnly` can omit it. Text output and completed callback
@@ -144,8 +143,9 @@ report start > end; byte extraction then throws. Single-match operations remain
 supported, while Count, enumeration, MatchMany and replacement reject a yielded
 non-monotone result with `NotSupportedException`.
 
-`HasUtf16Projection` can be false when explicitly allowed `\C` splits a
-scalar. Such ranges reject UTF-16/string extraction. `\C` consumes one byte,
+`IsUtf8SliceWellFormed` can be false when explicitly allowed `\C` splits a
+scalar. Such ranges retain their bytes and reject string extraction.
+No result exposes UTF-16 offsets or a UTF-16 projection flag. `\C` consumes one byte,
 is forbidden in UTF lookbehind, and does not change the selected subject validation policy.
 Successive global matches can expose individual bytes. Byte replacement can
 produce invalid UTF-8 in this mode; string replacement rejects invalid output.
@@ -302,8 +302,11 @@ separate scope; these are not total heap/RSS bounds.
 Copied value cursors retain independent positions and shared allowance/deadline.
 First denial stays sticky; refused growth leaves reservations unchanged.
 Exclusive scratch releases synchronously; retained values/aliases survive.
-Required UTF-16 projection is metered and incremental where available, without
-a subject-wide map for slice enumeration/MatchMany.
+Byte/status publication remains metered. Capture arrays receive working/result
+admission before allocation, with bounded interruption checks while filling them.
+There is no coordinate endpoint table, sorting, prefix scan or per-cursor UTF-16
+cache. Removing that work/storage changes numerical budget requirements; the
+work/depth/working/result guarantees and interruption authority stay enforced.
 
 Explicit Compile uses shared construction policy/timeout exceptions, independent
 of invocation limits. Major buffers, instructions, AST/name metadata and expansion

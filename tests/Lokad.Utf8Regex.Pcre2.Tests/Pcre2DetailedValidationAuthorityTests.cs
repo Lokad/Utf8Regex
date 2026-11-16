@@ -103,7 +103,6 @@ public sealed class Pcre2DetailedValidationAuthorityTests
             var retained = Match(regex, input, probe, lead + 4, flags);
             var whole = retained.GetGroup(0);
             Assert.Equal((lead + 4, input.Length), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
-            Assert.Equal((prefix.Length, prefix.Length + text.Length), (whole.StartOffsetInUtf16, whole.EndOffsetInUtf16));
             Assert.True(retained.TryGetFirstSetGroup("x", out var named));
             Assert.Equal(capture, named.GetValueString());
             Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Match(regex, input, probe, lead + 1, flags); });

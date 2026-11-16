@@ -17,9 +17,9 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Assert.True(match.Success);
         Assert.Equal(3, match.CaptureSlotCount);
-        AssertGroup(match.GetGroup(0), "é😀", 1, 7, 1, 4);
-        AssertGroup(match.GetGroup(1), "é", 1, 3, 1, 2);
-        AssertGroup(match.GetGroup(2), "😀", 3, 7, 2, 4);
+        AssertGroup(match.GetGroup(0),"é😀",1,7);
+        AssertGroup(match.GetGroup(1),"é",1,3);
+        AssertGroup(match.GetGroup(2),"😀",3,7);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -33,10 +33,10 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Assert.True(match.Success);
         Assert.Equal(explicitCaptureCount + 1, match.CaptureSlotCount);
-        AssertGroup(match.GetGroup(0), text, 0, explicitCaptureCount, 0, explicitCaptureCount);
+        AssertGroup(match.GetGroup(0),text,0,explicitCaptureCount);
         for (var slot = 1; slot <= explicitCaptureCount; slot++)
         {
-            AssertGroup(match.GetGroup(slot), "a", slot - 1, slot, slot - 1, slot);
+            AssertGroup(match.GetGroup(slot),"a",slot - 1,slot);
         }
     }
 
@@ -130,9 +130,9 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Assert.True(rollback.Success);
         Assert.False(rollback.GetGroup(1).Success);
-        AssertGroup(rollback.GetGroup(2), "b", 0, 1, 0, 1);
+        AssertGroup(rollback.GetGroup(2),"b",0,1);
         Assert.True(repeated.Success);
-        AssertGroup(repeated.GetGroup(1), "b", 1, 2, 1, 2);
+        AssertGroup(repeated.GetGroup(1),"b",1,2);
     }
 
     [Fact]
@@ -238,18 +238,11 @@ public sealed class Pcre2CaptureBackreferenceTests
     }
 
     private static void AssertGroup(
-        Utf8Pcre2GroupContext group,
-        string value,
-        int startInBytes,
-        int endInBytes,
-        int startInUtf16,
-        int endInUtf16)
+        Utf8Pcre2GroupContext group,        string value,        int startInBytes,        int endInBytes)
     {
         Assert.True(group.Success);
         Assert.Equal(value, group.GetValueString());
         Assert.Equal(startInBytes, group.StartOffsetInBytes);
         Assert.Equal(endInBytes, group.EndOffsetInBytes);
-        Assert.Equal(startInUtf16, group.StartOffsetInUtf16);
-        Assert.Equal(endInUtf16, group.EndOffsetInUtf16);
     }
 }

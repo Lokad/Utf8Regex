@@ -72,7 +72,6 @@ public sealed class Pcre2ProbePublicationAuthorityTests
         var result = regex.Probe("xé😀"u8, mode, 1, Pcre2MatchOptions.None);
         Assert.Equal(kind, result.Kind);
         Assert.Equal((1, 7), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-        Assert.Equal((1, 4), (result.Value.StartOffsetInUtf16, result.Value.EndOffsetInUtf16));
     }
 
     [Fact]

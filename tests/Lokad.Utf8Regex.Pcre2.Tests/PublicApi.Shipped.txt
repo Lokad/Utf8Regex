@@ -51,14 +51,11 @@ readonly struct Utf8Pcre2ExecutionLimits
   property UInt64 ResultLimitInBytes { get; init; }
 readonly ref struct Utf8Pcre2GroupContext
   property Boolean HasContiguousByteRange { get; }
-  property Boolean HasUtf16Projection { get; }
   property Boolean IsUtf8SliceWellFormed { get; }
   property Boolean Success { get; }
   property Int32 EndOffsetInBytes { get; }
-  property Int32 EndOffsetInUtf16 { get; }
   property Int32 Number { get; }
   property Int32 StartOffsetInBytes { get; }
-  property Int32 StartOffsetInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
 readonly ref struct Utf8Pcre2MatchContext
@@ -79,13 +76,10 @@ sealed class Utf8Pcre2MatchCursor : IDisposable
   method Void Dispose()
 readonly struct Utf8Pcre2MatchData
   property Boolean HasContiguousByteRange { get; init; }
-  property Boolean HasUtf16Projection { get; init; }
   property Boolean IsUtf8SliceWellFormed { get; init; }
   property Boolean Success { get; init; }
   property Int32 EndOffsetInBytes { get; init; }
-  property Int32 EndOffsetInUtf16 { get; init; }
   property Int32 StartOffsetInBytes { get; init; }
-  property Int32 StartOffsetInUtf16 { get; init; }
 readonly ref struct Utf8Pcre2PartialMatchContext
   property String Mark { get; }
   property Utf8Pcre2ValueMatch Value { get; }
@@ -230,13 +224,10 @@ sealed class Utf8Pcre2RetainedRangeMatch : IDisposable
   method Void Dispose()
 readonly ref struct Utf8Pcre2ValueMatch
   property Boolean HasContiguousByteRange { get; }
-  property Boolean HasUtf16Projection { get; }
   property Boolean IsUtf8SliceWellFormed { get; }
   property Boolean Success { get; }
   property Int32 EndOffsetInBytes { get; }
-  property Int32 EndOffsetInUtf16 { get; }
   property Int32 StartOffsetInBytes { get; }
-  property Int32 StartOffsetInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
 ref struct Utf8Pcre2ValueMatchEnumerator

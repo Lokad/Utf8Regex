@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- PCRE2 results now expose byte endpoints only. Delete UTF-16 projection tables,
+  sorting, scans and cursor caches. Preserve `\C` byte fragments, `\K` ranges,
+  captures, lifetimes and bounded publication; existing finite budgets may change.
+
 - PythonRe match/group results now expose byte coordinates only. Remove UTF-16
   offsets, alignment flags and result-prefix scans; explicit scalar queries retain
   a scalar-only lazy index. Captured text, lifetimes and resource admission stay

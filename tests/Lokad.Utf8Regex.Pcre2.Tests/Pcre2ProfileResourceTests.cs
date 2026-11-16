@@ -69,7 +69,6 @@ public sealed class Pcre2ProfileResourceTests
         Assert.Equal("é", context.GetGroup(2).GetValueString());
         Assert.True(context.TryGetFirstSetGroup("face", out var named));
         Assert.Equal((2, 6), (named.StartOffsetInBytes, named.EndOffsetInBytes));
-        Assert.Equal((2, 4), (named.StartOffsetInUtf16, named.EndOffsetInUtf16));
         Assert.True(regex.MatchDetailed("A😀é"u8).Success);
         Assert.Equal("😀", named.GetValueString());
 

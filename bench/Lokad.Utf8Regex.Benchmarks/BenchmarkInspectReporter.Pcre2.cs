@@ -636,7 +636,6 @@ internal static partial class BenchmarkInspectReporter
     {
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
         var input = Utf8ValidatedInput.Create(context.InputBytes);
-        var projection = input.CreateProjectionCursor();
         var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
@@ -646,12 +645,12 @@ internal static partial class BenchmarkInspectReporter
             out var matchStart,
             out var matchLength))
         {
-            var match = Pcre2GlobalCursorProjection.Project(
+            var match = Pcre2MatchPublication.Publish(
                 matchStart,
                 matchStart + matchLength,
                 ref input,
-                ref projection, ref budget);
-            sum = unchecked(sum + match.StartOffsetInBytes + match.StartOffsetInUtf16);
+                ref budget);
+            sum = unchecked(sum + match.StartOffsetInBytes + match.EndOffsetInBytes);
         }
 
         return sum;

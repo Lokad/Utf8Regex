@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 [Collection(Pcre2AllocationTestCollection.Name)]
-public sealed class Pcre2CaptureProjectionBudgetTests
+public sealed class Pcre2ResultControlTests
 {
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_budget")]
     private static extern ref Pcre2ResourceBudget CursorBudget(ref Pcre2BacktrackingDetailedGlobalMatchCursor cursor);
@@ -21,36 +21,35 @@ public sealed class Pcre2CaptureProjectionBudgetTests
     [InlineData(32)]
     [InlineData(33)]
     [InlineData(65)]
-    public void FinalGroupsAndHeapStagingShareExactAggregateAdmission(int slots)
+    public void FinalCaptureArrayReceivesAdmissionBeforeAllocation(int slots)
     {
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(slots);
-        var stagingBytes = slots <= 32 ? 0UL : Utf8ConstructionBudget.ArrayBytes<int>(checked(slots * 4));
         var starts = Enumerable.Repeat(1, slots).ToArray();
         var ends = Enumerable.Repeat(5, slots).ToArray();
         if (slots > 2) { starts[1] = -1; ends[1] = -1; starts[2] = 2; }
         foreach (var allow in new[] { false, true })
         {
-            var budget = Budget(7 + groupBytes + stagingBytes - (allow || groupBytes + stagingBytes == 0 ? 0UL : 1UL));
+            var budget = Budget(7 + groupBytes - (allow || groupBytes == 0 ? 0UL : 1UL));
             budget.ReserveWorking(7);
             var input = Utf8ValidatedInput.Create("x😀é"u8);
             Pcre2GroupData[]? groups = null;
             try
             {
-                if (!allow && groupBytes + stagingBytes > 0)
+                if (!allow && groupBytes > 0)
                 {
-                    try { groups = Pcre2Runner.ProjectCaptures(slots, 1, 7, starts, ends, ref input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
+                    try { groups = Pcre2Runner.PublishCaptures(slots, 1, 7, starts, ends, ref input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
                     catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind); }
                     Assert.Null(groups);
                     Assert.Equal(7UL, budget.ReservedWorkingBytes);
                 }
                 else
                 {
-                    groups = Pcre2Runner.ProjectCaptures(slots, 1, 7, starts, ends, ref input, ref budget);
+                    groups = Pcre2Runner.PublishCaptures(slots, 1, 7, starts, ends, ref input, ref budget);
                     Assert.Equal(slots, groups.Length);
-                    Assert.Equal(7 + groupBytes + stagingBytes, budget.HeapBytes);
+                    Assert.Equal(7 + groupBytes, budget.HeapBytes);
                     Assert.Equal(7 + groupBytes, budget.ReservedWorkingBytes);
-                    if (slots > 0) Assert.Equal((1, 7, 1, 4), (groups[0].StartOffsetInBytes, groups[0].EndOffsetInBytes, groups[0].StartOffsetInUtf16, groups[0].EndOffsetInUtf16));
-                    if (slots > 2) { Assert.False(groups[1].Success); Assert.True(groups[2].Success); Assert.False(groups[2].HasUtf16Projection); }
+                    if (slots > 0) Assert.Equal((1,7),(groups[0].StartOffsetInBytes,groups[0].EndOffsetInBytes));
+                    if (slots > 2) { Assert.False(groups[1].Success); Assert.True(groups[2].Success); Assert.False(groups[2].IsUtf8SliceWellFormed); }
                     Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
                     Assert.Equal(7UL, budget.ReservedWorkingBytes);
                     if (slots > 0) Assert.Equal(7, groups[0].EndOffsetInBytes);
@@ -78,8 +77,7 @@ public sealed class Pcre2CaptureProjectionBudgetTests
             {
                 try
                 {
-                    var groups = Pcre2Runner.ProjectCaptures(slots, 0, subject.Length, starts, ends, ref input, ref budget);
-                    Assert.Equal(8192, groups[0].EndOffsetInUtf16);
+                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, starts, ends, ref input, ref budget);
                     Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
                     completed = true;
                 }
@@ -162,7 +160,7 @@ public sealed class Pcre2CaptureProjectionBudgetTests
         Assert.True(match.Success);
         var groups = match.CaptureResult.ProjectedGroups;
         Assert.Equal(7 + Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length), budget.ReservedWorkingBytes);
-        Assert.Equal((0, 8, 0, 4), (groups[0].StartOffsetInBytes, groups[0].EndOffsetInBytes, groups[0].StartOffsetInUtf16, groups[0].EndOffsetInUtf16));
+        Assert.Equal((0,8),(groups[0].StartOffsetInBytes,groups[0].EndOffsetInBytes));
         match.CaptureResult.DetachProjectedWorking(ref budget);
         Assert.Equal(7UL, budget.ReservedWorkingBytes);
         budget.ReleaseWorking(7);
@@ -177,9 +175,9 @@ public sealed class Pcre2CaptureProjectionBudgetTests
         var budget = Budget(1UL << 20);
         int[] starts = [0, 1];
         int[] ends = [subject.Length, subject.Length - 2];
-        var groups = Pcre2Runner.ProjectCaptures(2, 0, subject.Length, starts, ends, ref input, ref budget);
-        Assert.Equal((0, subject.Length, 0, 6002), (groups[0].StartOffsetInBytes, groups[0].EndOffsetInBytes, groups[0].StartOffsetInUtf16, groups[0].EndOffsetInUtf16));
-        Assert.Equal((1, subject.Length - 2, 1, 6001), (groups[1].StartOffsetInBytes, groups[1].EndOffsetInBytes, groups[1].StartOffsetInUtf16, groups[1].EndOffsetInUtf16));
+        var groups = Pcre2Runner.PublishCaptures(2, 0, subject.Length, starts, ends, ref input, ref budget);
+        Assert.Equal((0,subject.Length),(groups[0].StartOffsetInBytes,groups[0].EndOffsetInBytes));
+        Assert.Equal((1,subject.Length - 2),(groups[1].StartOffsetInBytes,groups[1].EndOffsetInBytes));
         Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
         Assert.Equal(0UL, budget.ReservedWorkingBytes);
     }

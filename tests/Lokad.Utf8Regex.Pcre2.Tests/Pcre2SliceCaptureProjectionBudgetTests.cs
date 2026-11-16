@@ -21,29 +21,28 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
     public void SliceArraysShareExactAdmissionWithTheirParent(int slots)
     {
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(slots);
-        var scratchBytes = slots <= 32 ? 0UL : Utf8ConstructionBudget.ArrayBytes<int>(slots * 4);
         var starts = Enumerable.Repeat(1, Math.Max(0, slots - 1)).ToArray();
         var ends = Enumerable.Repeat(5, Math.Max(0, slots - 1)).ToArray();
         foreach (var allow in new[] { false, true })
         {
-            var bytes = 7 + groupBytes + scratchBytes - (allow || slots == 0 ? 0UL : 1UL);
+            var bytes = 7 + groupBytes - (allow || slots == 0 ? 0UL : 1UL);
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, bytes), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             var input = Utf8ValidatedInput.Create("x😀é"u8);
             if (!allow && slots != 0)
             {
-                try { _ = Pcre2Runner.ProjectSliceCaptures(slots, 1, 7, starts, ends, ref input, ref invocation); Assert.Fail("Expected physical aggregate denial."); }
+                try { _ = Pcre2Runner.PublishSliceCaptures(slots, 1, 7, starts, ends, ref input, ref invocation); Assert.Fail("Expected physical aggregate denial."); }
                 catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind); }
             }
             else
             {
-                var groups = Pcre2Runner.ProjectSliceCaptures(slots, 1, 7, starts, ends, ref input, ref invocation);
+                var groups = Pcre2Runner.PublishSliceCaptures(slots, 1, 7, starts, ends, ref input, ref invocation);
                 Assert.Equal(slots, groups.Length);
-                Assert.Equal(7 + groupBytes + scratchBytes, invocation.Budget.PeakWorkingBytes);
+                Assert.Equal(7 + groupBytes, invocation.Budget.PeakWorkingBytes);
                 Assert.Equal(7 + groupBytes, invocation.Ledger.ReservedBytes);
-                if (slots > 0) Assert.Equal((1, 7, 1, 4), Edges(groups[0]));
+                if (slots > 0) Assert.Equal((1, 7), Edges(groups[0]));
                 Pcre2SliceDriver.DetachProjectedGroups(groups, ref invocation);
-                if (slots > 1) Assert.Equal((1, 5, 1, 3), Edges(groups[1]));
+                if (slots > 1) Assert.Equal((1, 5), Edges(groups[1]));
             }
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             invocation.Ledger.Release(7);
@@ -57,11 +56,10 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         int[] starts = [7, -1, 2, 5];
         int[] ends = [1, 7, 5, -1];
-        var groups = Pcre2Runner.ProjectSliceCaptures(5, 1, 7, starts, ends, ref input, ref invocation);
-        Assert.Equal(new Pcre2GroupData { Number = 1, Success = true, StartOffsetInBytes = 1, EndOffsetInBytes = 7, StartOffsetInUtf16 = 1, EndOffsetInUtf16 = 4, CoordinateFlagsSpecified = true, Utf8SliceIsWellFormed = true, Utf16ProjectionIsExact = true }, groups[1]);
+        var groups = Pcre2Runner.PublishSliceCaptures(5, 1, 7, starts, ends, ref input, ref invocation);
+        Assert.Equal(new Pcre2GroupData { Number = 1,Success = true,StartOffsetInBytes = 1,EndOffsetInBytes = 7,Utf8SliceIsWellFormed = true}, groups[1]);
         Assert.False(groups[2].Success);
-        Assert.Equal(new Pcre2GroupData { Number = 3, Success = true, StartOffsetInBytes = 2, EndOffsetInBytes = 5, CoordinateFlagsSpecified = true }, groups[3]);
-        Assert.False(groups[3].HasUtf16Projection);
+        Assert.Equal(new Pcre2GroupData { Number = 3,Success = true,StartOffsetInBytes = 2,EndOffsetInBytes = 5}, groups[3]);
         Assert.False(groups[4].Success);
         Pcre2SliceDriver.DetachProjectedGroups(groups, ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -83,8 +81,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
             var input = Utf8ValidatedInput.Create(bytes);
             try
             {
-                var groups = Pcre2Runner.ProjectSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation);
-                Assert.Equal(6002, groups[0].EndOffsetInUtf16);
+                var groups = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation);
                 Pcre2SliceDriver.DetachProjectedGroups(groups, ref invocation);
                 completed = true;
             }
@@ -101,21 +98,21 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
     }
 
     [Theory]
-    [InlineData(65, 20)]
-    [InlineData(1, 80000)]
-    public void LiveCancellationDuringSortingAndWindowsUnwindsScratch(int slots, int scalars)
+    [InlineData(4097)]
+    [InlineData(8193)]
+    public void LiveCancellationDuringPublicationUnwindsCaptureStorage(int slots)
     {
         using var cancellation = new CancellationTokenSource();
-        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", scalars)));
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 20)));
         var starts = new int[Math.Max(0, slots - 1)];
         var ends = Enumerable.Repeat(bytes.Length, starts.Length).ToArray();
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1UL << 20), Timeout.InfiniteTimeSpan, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         invocation.CheckpointHook = _ => cancellation.Cancel();
         var input = Utf8ValidatedInput.Create(bytes);
-        try { _ = Pcre2Runner.ProjectSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation); Assert.Fail("Expected cancellation after entry."); }
+        try { _ = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation); Assert.Fail("Expected cancellation after entry."); }
         catch (OperationCanceledException failure) { Assert.Equal(cancellation.Token, failure.CancellationToken); }
-        Assert.True(invocation.Budget.Steps >= 64);
+        Assert.True(invocation.Budget.Steps > 0);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
     }
@@ -139,11 +136,11 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         Assert.Equal(7UL, CursorInvocation(ref cursor).Ledger.ReservedBytes);
         Assert.False(cursor.MoveNext());
         Assert.Equal(7UL, CursorInvocation(ref cursor).Ledger.ReservedBytes);
-        Assert.Equal((3, 7, 2, 4), Edges(first[2]));
-        Assert.Equal((10, 14, 6, 8), Edges(second[2]));
+        Assert.Equal((3, 7), Edges(first[2]));
+        Assert.Equal((10, 14), Edges(second[2]));
         CursorInvocation(ref cursor).Ledger.Release(7);
     }
 
-    private static (int, int, int, int) Edges(Pcre2GroupData group)
-        => (group.StartOffsetInBytes, group.EndOffsetInBytes, group.StartOffsetInUtf16, group.EndOffsetInUtf16);
+    private static (int, int) Edges(Pcre2GroupData group)
+        => (group.StartOffsetInBytes, group.EndOffsetInBytes);
 }

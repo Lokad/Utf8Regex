@@ -17,20 +17,18 @@ public sealed class Pcre2ValueCallbackAuthorityTests
     }
 
     [Fact]
-    public void ExpiredNativeProjectionReportsTheProfileTimeout()
+    public void ExpiredNativePublicationReportsTheProfileTimeout()
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(20), CancellationToken.None);
         var budget = new Pcre2ResourceBudget(default, invocation, false);
         var input = Utf8ValidatedInput.Create("éx"u8);
-        var projection = input.CreateProjectionCursor();
         ticks = 25;
         Pcre2MatchException? failure = null;
-        try { Pcre2GlobalCursorProjection.Project(2, 3, ref input, ref projection, ref budget); }
+        try { Pcre2MatchPublication.Publish(2, 3, ref input, ref budget); }
         catch (Pcre2MatchException error) { failure = error; }
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal(0, projection.BytesConsumed);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
     }
@@ -151,27 +149,29 @@ public sealed class Pcre2ValueCallbackAuthorityTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void NonAsciiCoordinateProjectionUsesBoundedWorkAndOriginalInterruption(bool cancel)
+    public void BytePublicationSkipsPrefixWorkAndKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
         var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(new string('é', 10000) + "x"));
-        var projection = input.CreateProjectionCursor();
         var invocation = new Utf8SliceInvocation(new(2, 0, 0), Timeout.InfiniteTimeSpan, source.Token);
         var budget = new Pcre2ResourceBudget(new() { MatchLimit = 2 }, invocation, false);
         if (cancel) source.Cancel();
         Exception? failure = null;
-        try { Pcre2GlobalCursorProjection.Project(20000, 20001, ref input, ref projection, ref budget); }
+        try
+        {
+            var value = Pcre2MatchPublication.Publish(20000, 20001, ref input, ref budget);
+            Assert.Equal((20000, 20001), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+            Assert.True(value.IsUtf8SliceWellFormed);
+        }
         catch (Exception error) { failure = error; }
         if (cancel)
         {
             Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(0, projection.BytesConsumed);
         }
         else
         {
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-            Assert.Equal(4096, projection.BytesConsumed);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
+            Assert.Null(failure);
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
         }
     }
 

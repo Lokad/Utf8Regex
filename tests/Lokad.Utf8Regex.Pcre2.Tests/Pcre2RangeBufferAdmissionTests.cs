@@ -73,7 +73,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
         var maximum = 13 + Bytes(count) + Bytes(next) - 1;
         var budget = new Pcre2ResourceBudget(new() { HeapLimitInBytes = maximum }, Regex.InfiniteMatchTimeout, false);
         budget.ReserveWorking(13);
-        var control = new Pcre2CaptureProjectionBudget(ref budget);
+        var control = new Pcre2ResultControl(ref budget);
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {

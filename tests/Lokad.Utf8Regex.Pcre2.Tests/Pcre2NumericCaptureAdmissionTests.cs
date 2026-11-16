@@ -151,10 +151,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         Assert.Equal(value is not null, group.Success);
         if (value is null) return;
         Assert.Equal(value, group.GetValueString());
-        Assert.True(group.HasUtf16Projection);
         var start = text.IndexOf(value, StringComparison.Ordinal);
-        Assert.Equal(1 + start, group.StartOffsetInUtf16);
-        Assert.Equal(1 + start + value.Length, group.EndOffsetInUtf16);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..start]), group.StartOffsetInBytes);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..(start + value.Length)]), group.EndOffsetInBytes);
     }

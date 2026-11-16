@@ -122,8 +122,7 @@ public sealed class Pcre2FastPathTimeoutTests
             new Utf8Pcre2ExecutionLimits { MatchLimit = 6 }, Timeout.InfiniteTimeSpan);
         var result = admitted.Match("xxabcxx"u8);
         Assert.True(result.Success); Assert.Equal(2, result.StartOffsetInBytes);
-        Assert.Equal(5, result.EndOffsetInBytes); Assert.Equal(2, result.StartOffsetInUtf16);
-    }
+        Assert.Equal(5, result.EndOffsetInBytes);     }
 
     private static int Run(Utf8Pcre2Regex regex, byte[] input, int operation)
     {

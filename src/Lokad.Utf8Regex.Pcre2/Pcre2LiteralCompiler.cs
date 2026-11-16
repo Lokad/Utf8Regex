@@ -492,8 +492,7 @@ internal static class Pcre2LiteralProbeRunner
         ref Utf8ValidatedInput input, int startOffsetInBytes, int endOffsetInBytes,
         ref Pcre2ResourceBudget budget)
     {
-        var projection = input.CreateProjectionCursor();
-        return Pcre2GlobalCursorProjection.Project(startOffsetInBytes, endOffsetInBytes,
-            ref input, ref projection, ref budget);
+        return Pcre2MatchPublication.Publish(startOffsetInBytes, endOffsetInBytes,
+            ref input, ref budget);
     }
 }

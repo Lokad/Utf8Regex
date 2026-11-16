@@ -32,10 +32,8 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.Equal(1, match.EndOffsetInBytes);
         Assert.True(match.HasContiguousByteRange);
         Assert.False(match.IsUtf8SliceWellFormed);
-        Assert.False(match.HasUtf16Projection);
         Assert.Equal(1, match.GetValueBytes().Length);
         Assert.Throws<InvalidOperationException>(static () => GetSplitValueString());
-        Assert.Throws<InvalidOperationException>(static () => GetSplitUtf16Offset());
         Assert.True(regex.Analyze().MayProduceNonUtf8Slices);
     }
 
@@ -47,27 +45,24 @@ public sealed class Pcre2BackslashCCompilerTests
 
         Assert.True(match.Success);
         Assert.False(match.Value.IsUtf8SliceWellFormed);
-        Assert.False(match.Value.HasUtf16Projection);
         var group = match.GetGroup(1);
         Assert.True(group.Success);
         Assert.Equal(0, group.StartOffsetInBytes);
         Assert.Equal(1, group.EndOffsetInBytes);
         Assert.False(group.IsUtf8SliceWellFormed);
-        Assert.False(group.HasUtf16Projection);
         Assert.Throws<InvalidOperationException>(static () => GetSplitGroupValueString());
     }
 
     [Fact]
-    public void CompleteScalarMadeOfCodeUnitsHasExactProjection()
+    public void CompleteScalarMadeOfCodeUnitsHasAValidByteValue()
     {
         var regex = Create(@"^\C\C$");
         var match = regex.Match("é"u8);
 
         Assert.True(match.Success);
         Assert.True(match.IsUtf8SliceWellFormed);
-        Assert.True(match.HasUtf16Projection);
-        Assert.Equal(0, match.StartOffsetInUtf16);
-        Assert.Equal(1, match.EndOffsetInUtf16);
+        Assert.Equal((0, 2), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(match.GetValueBytes().SequenceEqual("é"u8));
     }
 
     [Fact]
@@ -97,11 +92,6 @@ public sealed class Pcre2BackslashCCompilerTests
         Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[2];
         Assert.Equal(2, regex.MatchMany(input, matches, out var isMore));
         Assert.False(isMore);
-        Assert.All(matches.ToArray(), static match =>
-        {
-            Assert.False(match.IsUtf8SliceWellFormed);
-            Assert.False(match.HasUtf16Projection);
-        });
     }
 
     [Fact]
@@ -163,8 +153,6 @@ public sealed class Pcre2BackslashCCompilerTests
         new(pattern, Pcre2CompileOptions.None, s_allowBackslashC, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
 
     private static void GetSplitValueString() => Create(@"\C").Match("é"u8).GetValueString();
-
-    private static void GetSplitUtf16Offset() => _ = Create(@"\C").Match("é"u8).StartOffsetInUtf16;
 
     private static void GetSplitGroupValueString() => Create(@"(\C)").MatchDetailed("é"u8).GetGroup(1).GetValueString();
 }

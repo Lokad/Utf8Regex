@@ -1091,9 +1091,6 @@ public sealed partial class Utf8Pcre2Regex
                 EndOffsetInBytes = current.EndOffsetInBytes,
                 HasContiguousByteRange = current.HasContiguousByteRange,
                 IsUtf8SliceWellFormed = current.IsUtf8SliceWellFormed,
-                HasUtf16Projection = current.HasUtf16Projection,
-                StartOffsetInUtf16 = current.HasUtf16Projection ? current.StartOffsetInUtf16 : 0,
-                EndOffsetInUtf16 = current.HasUtf16Projection ? current.EndOffsetInUtf16 : 0,
             };
             written++;
         }
@@ -1509,7 +1506,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2SimpleReplacementPlan plan,
         bool replacementOnly,
         Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> matches, scoped Pcre2CaptureProjectionBudget control)
+        ReadOnlySpan<Utf8ReplacementRange> matches, scoped Pcre2ResultControl control)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);

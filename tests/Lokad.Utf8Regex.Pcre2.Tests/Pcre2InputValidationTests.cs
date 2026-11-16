@@ -5,8 +5,8 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2InputValidationTests
 {
-    private static (bool, int, int, int, int) Range(Utf8Pcre2ValueMatch value)
-        => (value.Success, value.StartOffsetInBytes, value.EndOffsetInBytes, value.StartOffsetInUtf16, value.EndOffsetInUtf16);
+    private static (bool, int, int) Range(Utf8Pcre2ValueMatch value)
+        => (value.Success, value.StartOffsetInBytes, value.EndOffsetInBytes);
 
     private static T Observe<T>(Utf8Pcre2Regex regex, Func<T> action)
     {
@@ -105,15 +105,12 @@ public sealed class Pcre2InputValidationTests
         Assert.True(match.Success);
         Assert.Equal((2, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         Assert.True(match.IsUtf8SliceWellFormed);
-        Assert.False(match.HasUtf16Projection);
         Assert.Equal("needle", match.GetValueString());
         var detailed = regex.MatchDetailed(input, 2);
         Assert.True(detailed.GetGroup(0).Success);
-        Assert.False(detailed.GetGroup(0).HasUtf16Projection);
         Assert.Equal("needle", detailed.GetGroup(0).GetValueString());
         var enumerator = regex.EnumerateMatches(input, 2);
         Assert.True(enumerator.MoveNext());
-        Assert.False(enumerator.Current.HasUtf16Projection);
         Assert.False(enumerator.MoveNext());
         using var cursor = regex.CreateMatchCursor(input, 2);
         Assert.True(cursor.MoveNext(out var range));
@@ -122,7 +119,6 @@ public sealed class Pcre2InputValidationTests
         Span<Utf8Pcre2MatchData> buffer = stackalloc Utf8Pcre2MatchData[2];
         Assert.Equal(1, regex.MatchMany(input, buffer, out var more, 2, Pcre2MatchOptions.None));
         Assert.False(more);
-        Assert.False(buffer[0].HasUtf16Projection);
         Assert.Equal(new byte[] { 0xff, (byte)' ', (byte)'X' }, regex.Replace(input, "X"u8, 2));
         Assert.Equal("X"u8.ToArray(), regex.Replace(input, "X"u8, 2, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
         Assert.Throws<ArgumentException>(() => regex.IsMatch(input, 0));

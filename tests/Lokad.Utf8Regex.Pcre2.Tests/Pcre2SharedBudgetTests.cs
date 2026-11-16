@@ -12,7 +12,7 @@ public sealed class Pcre2SharedBudgetTests
     private static extern ref Utf8SliceInvocation Invocation(ref Pcre2ResourceBudget budget);
 
     [Theory]
-    // Three validation units precede the native first-hit/projection allowance.
+    // Validation precedes the native first-hit and byte-publication allowance.
     [InlineData("a", "aaaa", Pcre2MatchOptions.None, 6u, false)]
     [InlineData("a", "aaaa", Pcre2MatchOptions.None, 6u, true)]
     [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 6u, false)]
@@ -54,7 +54,7 @@ public sealed class Pcre2SharedBudgetTests
     public void PublicAliasesKeepIndependentPositionsWithOneWorkAllowance(string pattern, string input)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 12 }, Timeout.InfiniteTimeSpan);
+            new() { MatchLimit = 9 }, Timeout.InfiniteTimeSpan);
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
         Assert.True(original.MoveNext());
         var first = original.Current;

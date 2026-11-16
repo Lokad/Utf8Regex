@@ -896,8 +896,7 @@ public sealed partial class Utf8Pcre2Regex
 
     private Pcre2GroupData Project(int number, int start, int end)
     {
-        var cursor = _input.CreateProjectionCursor();
-        var group = Pcre2GlobalCursorProjection.Project(start, end, ref _input, ref cursor, ref _budget);
+        var group = Pcre2MatchPublication.Publish(start, end, ref _input, ref _budget);
         return group with { Number = number };
     }
 

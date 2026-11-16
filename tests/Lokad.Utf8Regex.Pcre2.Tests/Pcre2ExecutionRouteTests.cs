@@ -186,7 +186,6 @@ public sealed class Pcre2ExecutionRouteTests
         {
             Assert.True(enumerator.Current.HasContiguousByteRange);
             Assert.True(enumerator.Current.IsUtf8SliceWellFormed);
-            Assert.True(enumerator.Current.HasUtf16Projection);
             count++;
         }
 
@@ -203,7 +202,6 @@ public sealed class Pcre2ExecutionRouteTests
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.MoveNext());
         Assert.Equal(3, enumerator.Current.StartOffsetInBytes);
-        Assert.Equal(2, enumerator.Current.StartOffsetInUtf16);
 
         Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
         Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));

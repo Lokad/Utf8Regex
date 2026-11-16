@@ -73,7 +73,6 @@ public sealed class Pcre2ProbeValidationAuthorityTests
             var retained = regex.Probe(input, Pcre2PartialMode.Soft, start).GetMatch();
             var group = retained.GetGroup(0);
             Assert.Equal((start, input.Length), (group.StartOffsetInBytes, group.EndOffsetInBytes));
-            Assert.Equal((prefix.Length, prefix.Length + body.Length), (group.StartOffsetInUtf16, group.EndOffsetInUtf16));
             Assert.Equal(body, retained.GetValueString());
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             { _ = regex.Probe(input, Pcre2PartialMode.Soft, lead + 1); });

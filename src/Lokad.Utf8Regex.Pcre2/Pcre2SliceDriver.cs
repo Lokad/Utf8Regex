@@ -26,7 +26,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 {
     private readonly Utf8SliceProgram _program;
     private Utf8ValidatedInput _input;
-    private Utf8ProjectionCursor _projection;
     private readonly Pcre2CompileRequest _request;
     private Utf8SliceInvocation _invocation;
     private int _position;
@@ -56,7 +55,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     {
         _program = program;
         _input = input;
-        _projection = input.CreateProjectionCursor();
         _request = request;
         _invocation = invocation;
         _position = start.Value;
@@ -136,12 +134,10 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal Pcre2GroupData ProjectCurrent()
     {
-        // The public enumerator projects once per successful move and retains
-        // that snapshot for Current. Slice global matches have forward ranges,
-        // so keep the projection position across matches and copied cursors.
-        return Pcre2GlobalCursorProjection.Project(Current.StartOffsetInBytes,
-            Current.EndOffsetInBytes, ref _input, ref _projection,
-            new Pcre2CaptureProjectionBudget(ref _invocation));
+        // The public enumerator retains this byte/status snapshot for Current;
+        // publication does not scan text or maintain coordinate state.
+        return Pcre2MatchPublication.Publish(Current.StartOffsetInBytes,
+            Current.EndOffsetInBytes, ref _input, new Pcre2ResultControl(ref _invocation));
     }
 
     private bool MoveNextCore()
@@ -433,7 +429,7 @@ internal static class Pcre2SliceDriver
         Utf8SliceProgram program, ref Utf8ValidatedInput input,
         int matchStart, int matchEnd, int[] captureStarts, int[] captureEnds,
         ref Utf8SliceInvocation invocation) =>
-        Pcre2Runner.ProjectSliceCaptures(checked(program.GroupCount + 1),
+        Pcre2Runner.PublishSliceCaptures(checked(program.GroupCount + 1),
             matchStart, matchEnd, captureStarts, captureEnds, ref input, ref invocation);
 
     // Single lexical publishing owner; immutable external arrays are never pooled.

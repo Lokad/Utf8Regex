@@ -133,10 +133,8 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var matches = regex.EnumerateMatches(input, 4);
             Assert.True(matches.MoveNext());
             Assert.Equal(4 + padding, matches.Current.StartOffsetInBytes);
-            Assert.Equal(2 + padding, matches.Current.StartOffsetInUtf16);
             var first = matches.Current;
             Assert.True(matches.MoveNext());
-            Assert.Equal(2 + padding, first.StartOffsetInUtf16);
         }
     }
 
@@ -148,17 +146,14 @@ public sealed class Pcre2LiteralGlobalOperationTests
 
         Assert.Equal(3, regex.Count(input));
         var bytes = new List<(int Start, int End)>();
-        var utf16 = new List<(int Start, int End)>();
         var enumerator = regex.EnumerateMatches(input);
         while (enumerator.MoveNext())
         {
             var match = enumerator.Current;
             bytes.Add((match.StartOffsetInBytes, match.EndOffsetInBytes));
-            utf16.Add((match.StartOffsetInUtf16, match.EndOffsetInUtf16));
         }
 
         Assert.Equal([(1, 3), (3, 5), (9, 11)], bytes);
-        Assert.Equal([(1, 2), (2, 3), (5, 6)], utf16);
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
@@ -199,16 +194,13 @@ public sealed class Pcre2LiteralGlobalOperationTests
         Assert.Equal(0, regex.Count(input, 0, Pcre2MatchOptions.NotEmpty));
 
         var byteStarts = new List<int>();
-        var utf16Starts = new List<int>();
         var enumerator = regex.EnumerateMatches(input);
         while (enumerator.MoveNext())
         {
             byteStarts.Add(enumerator.Current.StartOffsetInBytes);
-            utf16Starts.Add(enumerator.Current.StartOffsetInUtf16);
         }
 
         Assert.Equal([0, 4, 5], byteStarts);
-        Assert.Equal([0, 2, 3], utf16Starts);
     }
 
     [Fact]
@@ -375,14 +367,14 @@ public sealed class Pcre2LiteralGlobalOperationTests
     {
         var regex = new Utf8Pcre2Regex("alpha|amber|bravo");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha amber bravo ", 128)));
-        // Warm complete Count/projection batches long enough for runtime
+        // Warm complete Count/byte-result batches long enough for runtime
         // initialization and tiering; one batch depends on suite ordering.
         var warmup = Stopwatch.StartNew();
         for (var iteration = 0; iteration < 256 || warmup.ElapsedMilliseconds < 250; iteration++)
         {
             _ = regex.Count(input);
             var warm = regex.EnumerateMatches(input);
-            while (warm.MoveNext()) _ = warm.Current.StartOffsetInUtf16;
+            while (warm.MoveNext()) _ = warm.Current.StartOffsetInBytes;
         }
 
         var sum = 0;
@@ -393,7 +385,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var enumerator = regex.EnumerateMatches(input);
             while (enumerator.MoveNext())
             {
-                sum += enumerator.Current.StartOffsetInUtf16;
+                sum += enumerator.Current.StartOffsetInBytes;
             }
         }
 
@@ -436,7 +428,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var enumerator = regex.EnumerateMatches(input);
             while (enumerator.MoveNext())
             {
-                Assert.True(enumerator.Current.HasUtf16Projection);
                 count++;
             }
 

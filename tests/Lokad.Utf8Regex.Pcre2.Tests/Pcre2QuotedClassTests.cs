@@ -90,8 +90,7 @@ public sealed class Pcre2QuotedClassTests
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);
         Assert.Equal("😀-😃", group.GetValueString());
-        Assert.Equal((2, 11, 1, 6), (group.StartOffsetInBytes, group.EndOffsetInBytes,
-            group.StartOffsetInUtf16, group.EndOffsetInUtf16));
+        Assert.Equal((2,11),(group.StartOffsetInBytes,group.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("é<😀-😃>x<😀>", regex.ReplaceToString(input, "<$1>"));
         Assert.Equal("😀-😃", group.GetValueString());

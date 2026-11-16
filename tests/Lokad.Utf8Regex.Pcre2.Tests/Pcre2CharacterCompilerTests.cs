@@ -9,15 +9,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2CharacterCompilerTests
 {
     [Theory]
-    [InlineData("é", 1, 3, 1, 2)]
-    [InlineData("€", 3, 6, 2, 3)]
-    [InlineData("😀", 6, 10, 3, 5)]
+    [InlineData("é",1,3)]
+    [InlineData("€",3,6)]
+    [InlineData("😀",6,10)]
     public void DotReportsExactCoordinatesAcrossUtf8ScalarWidths(
-        string expected,
-        int startOffsetInBytes,
-        int expectedEndOffsetInBytes,
-        int expectedStartOffsetInUtf16,
-        int expectedEndOffsetInUtf16)
+        string expected,        int startOffsetInBytes,        int expectedEndOffsetInBytes)
     {
         var regex = new Utf8Pcre2Regex(".");
         var input = Encoding.UTF8.GetBytes("aé€😀z");
@@ -28,8 +24,6 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(expected, match.GetValueString());
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(expectedEndOffsetInBytes, match.EndOffsetInBytes);
-        Assert.Equal(expectedStartOffsetInUtf16, match.StartOffsetInUtf16);
-        Assert.Equal(expectedEndOffsetInUtf16, match.EndOffsetInUtf16);
         Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 

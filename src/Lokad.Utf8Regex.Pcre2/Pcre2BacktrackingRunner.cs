@@ -2500,7 +2500,7 @@ internal static class Pcre2BacktrackingRunner
                     MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureStarts, captureEnds, ref budget)),
             Pcre2CaptureMaterialization.ProjectedFinalSlots =>
                 Pcre2BacktrackingCaptureResult.FromProjectedGroups(
-                    Pcre2Runner.ProjectCaptures(
+                    Pcre2Runner.PublishCaptures(
                         captureSlotCount,
                         matchStart,
                         matchEnd,
@@ -2518,7 +2518,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(count);
-        var control = new Pcre2CaptureProjectionBudget(ref budget);
+        var control = new Pcre2ResultControl(ref budget);
         control.TryChargeResultBytes(bytes);
         control.ReserveWorking(bytes);
         try

@@ -28,38 +28,22 @@ internal readonly struct Pcre2GroupData
 
     public int EndOffsetInBytes { get; init; }
 
-    public int StartOffsetInUtf16 { get; init; }
-
-    public int EndOffsetInUtf16 { get; init; }
-
-    internal bool CoordinateFlagsSpecified { get; init; }
-
     internal bool Utf8SliceIsWellFormed { get; init; }
-
-    internal bool Utf16ProjectionIsExact { get; init; }
 
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
-    public bool IsUtf8SliceWellFormed => Success &&
-        (CoordinateFlagsSpecified ? Utf8SliceIsWellFormed : HasContiguousByteRange);
-
-    public bool HasUtf16Projection => Success &&
-        (!CoordinateFlagsSpecified || Utf16ProjectionIsExact);
-
+    public bool IsUtf8SliceWellFormed => Success && Utf8SliceIsWellFormed;
 
 }
 
 /// <summary>Provides a stack-only PCRE2 match view over the original UTF-8 input.</summary>
-/// <remarks>With byte-oriented constructs such as <c>\C</c> or reset-start constructs such as <c>\K</c>, a successful match may lack a well-formed, contiguous, or exactly projectable value.</remarks>
+/// <remarks>With byte-oriented constructs such as <c>\C</c> or reset-start constructs such as <c>\K</c>, a successful match may lack a well-formed or forward contiguous value.</remarks>
 public readonly ref struct Utf8Pcre2ValueMatch
 {
     private readonly ReadOnlySpan<byte> _input;
     private readonly int _startOffsetInBytes;
     private readonly int _endOffsetInBytes;
-    private readonly int _startOffsetInUtf16;
-    private readonly int _endOffsetInUtf16;
     private readonly bool _isUtf8SliceWellFormed;
-    private readonly bool _hasUtf16Projection;
     private readonly bool _success;
 
     private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, Pcre2GroupData data)
@@ -67,10 +51,7 @@ public readonly ref struct Utf8Pcre2ValueMatch
         _input = input;
         _startOffsetInBytes = data.Success ? data.StartOffsetInBytes : 0;
         _endOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0;
-        _startOffsetInUtf16 = data.Success ? data.StartOffsetInUtf16 : 0;
-        _endOffsetInUtf16 = data.Success ? data.EndOffsetInUtf16 : 0;
         _isUtf8SliceWellFormed = data.IsUtf8SliceWellFormed;
-        _hasUtf16Projection = data.HasUtf16Projection;
         _success = data.Success;
     }
 
@@ -100,41 +81,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
 
     /// <summary>Gets whether the contiguous value bytes form well-formed UTF-8.</summary>
     public bool IsUtf8SliceWellFormed => Success && _isUtf8SliceWellFormed;
-
-    /// <summary>Gets whether both reported byte endpoints have exact UTF-16 code-unit projections.</summary>
-    public bool HasUtf16Projection => Success && _hasUtf16Projection;
-
-    /// <summary>Gets the reported match start as a zero-based UTF-16 code-unit offset.</summary>
-    /// <exception cref="InvalidOperationException">No exact UTF-16 projection is available.</exception>
-    public int StartOffsetInUtf16
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            if (!HasUtf16Projection)
-            {
-                throw new InvalidOperationException("This match has no exact UTF-16 projection.");
-            }
-
-            return _startOffsetInUtf16;
-        }
-    }
-
-    /// <summary>Gets the reported exclusive match end as a zero-based UTF-16 code-unit offset.</summary>
-    /// <exception cref="InvalidOperationException">No exact UTF-16 projection is available.</exception>
-    public int EndOffsetInUtf16
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            if (!HasUtf16Projection)
-            {
-                throw new InvalidOperationException("This match has no exact UTF-16 projection.");
-            }
-
-            return _endOffsetInUtf16;
-        }
-    }
 
     /// <summary>Gets the contiguous match bytes from the original input.</summary>
     /// <returns>An empty span after no match.</returns>
@@ -170,7 +116,7 @@ public readonly ref struct Utf8Pcre2ValueMatch
         => new(input, data);
 }
 
-/// <summary>Stores an owned coordinate and projection snapshot for one PCRE2 match.</summary>
+/// <summary>Stores the reported byte endpoints and value status of one PCRE2 match.</summary>
 public readonly struct Utf8Pcre2MatchData
 {
     /// <summary>Gets whether the operation found a match.</summary>
@@ -188,15 +134,6 @@ public readonly struct Utf8Pcre2MatchData
     /// <summary>Gets whether the contiguous match value is well-formed UTF-8.</summary>
     public bool IsUtf8SliceWellFormed { get; init; }
 
-    /// <summary>Gets whether the byte endpoints have exact UTF-16 code-unit projections.</summary>
-    public bool HasUtf16Projection { get; init; }
-
-    /// <summary>Gets the projected match start in UTF-16 code units; consult <see cref="HasUtf16Projection"/> first.</summary>
-    public int StartOffsetInUtf16 { get; init; }
-
-    /// <summary>Gets the projected exclusive match end in UTF-16 code units; consult <see cref="HasUtf16Projection"/> first.</summary>
-    public int EndOffsetInUtf16 { get; init; }
-
     internal static Utf8Pcre2MatchData Create(Pcre2GroupData data)
     {
         return new Utf8Pcre2MatchData
@@ -206,9 +143,6 @@ public readonly struct Utf8Pcre2MatchData
             EndOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0,
             HasContiguousByteRange = data.HasContiguousByteRange,
             IsUtf8SliceWellFormed = data.IsUtf8SliceWellFormed,
-            HasUtf16Projection = data.HasUtf16Projection,
-            StartOffsetInUtf16 = data.Success ? data.StartOffsetInUtf16 : 0,
-            EndOffsetInUtf16 = data.Success ? data.EndOffsetInUtf16 : 0,
         };
     }
 }
@@ -367,7 +301,7 @@ public readonly ref struct Utf8Pcre2MatchContext
 }
 
 /// <summary>Provides a stack-only view of one PCRE2 capture slot over the original UTF-8 input.</summary>
-/// <remarks>Byte-oriented matching can produce a successful group without a well-formed UTF-8 value or exact UTF-16 projection.</remarks>
+/// <remarks>Byte-oriented matching can produce a successful group without a well-formed UTF-8 value.</remarks>
 public readonly ref struct Utf8Pcre2GroupContext
 {
     private readonly ReadOnlySpan<byte> _input;
@@ -396,21 +330,6 @@ public readonly ref struct Utf8Pcre2GroupContext
 
     /// <summary>Gets whether the contiguous group value is well-formed UTF-8.</summary>
     public bool IsUtf8SliceWellFormed => _data.IsUtf8SliceWellFormed;
-
-    /// <summary>Gets whether both group endpoints have exact UTF-16 code-unit projections.</summary>
-    public bool HasUtf16Projection => _data.HasUtf16Projection;
-
-    /// <summary>Gets the group start as a zero-based UTF-16 code-unit offset.</summary>
-    /// <exception cref="InvalidOperationException">No exact UTF-16 projection is available.</exception>
-    public int StartOffsetInUtf16 => HasUtf16Projection
-        ? _data.StartOffsetInUtf16
-        : throw new InvalidOperationException("This group has no exact UTF-16 projection.");
-
-    /// <summary>Gets the exclusive group end as a zero-based UTF-16 code-unit offset.</summary>
-    /// <exception cref="InvalidOperationException">No exact UTF-16 projection is available.</exception>
-    public int EndOffsetInUtf16 => HasUtf16Projection
-        ? _data.EndOffsetInUtf16
-        : throw new InvalidOperationException("This group has no exact UTF-16 projection.");
 
     /// <summary>Gets the contiguous group bytes from the original UTF-8 input.</summary>
     /// <returns>An empty span when the group did not participate.</returns>
@@ -670,11 +589,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                     Success = _currentData.Success,
                     StartOffsetInBytes = _currentData.StartOffsetInBytes,
                     EndOffsetInBytes = _currentData.EndOffsetInBytes,
-                    StartOffsetInUtf16 = _currentData.StartOffsetInUtf16,
-                    EndOffsetInUtf16 = _currentData.EndOffsetInUtf16,
-                    CoordinateFlagsSpecified = _currentData.CoordinateFlagsSpecified,
                     Utf8SliceIsWellFormed = _currentData.Utf8SliceIsWellFormed,
-                    Utf16ProjectionIsExact = _currentData.Utf16ProjectionIsExact,
                 });
         }
     }
@@ -698,11 +613,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 Success = true,
                 StartOffsetInBytes = match.StartOffsetInBytes,
                 EndOffsetInBytes = match.EndOffsetInBytes,
-                StartOffsetInUtf16 = match.StartOffsetInUtf16,
-                EndOffsetInUtf16 = match.EndOffsetInUtf16,
-                CoordinateFlagsSpecified = true,
                 Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed,
-                Utf16ProjectionIsExact = match.HasUtf16Projection,
             };
             return true;
         }
@@ -722,11 +633,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 Success = true,
                 StartOffsetInBytes = projected.StartOffsetInBytes,
                 EndOffsetInBytes = projected.EndOffsetInBytes,
-                StartOffsetInUtf16 = projected.StartOffsetInUtf16,
-                EndOffsetInUtf16 = projected.EndOffsetInUtf16,
-                CoordinateFlagsSpecified = true,
                 Utf8SliceIsWellFormed = projected.IsUtf8SliceWellFormed,
-                Utf16ProjectionIsExact = projected.HasUtf16Projection,
             };
             return true;
         }
@@ -743,15 +650,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
         public int EndOffsetInBytes { get; init; }
 
-        public int StartOffsetInUtf16 { get; init; }
-
-        public int EndOffsetInUtf16 { get; init; }
-
-        public bool CoordinateFlagsSpecified { get; init; }
-
         public bool Utf8SliceIsWellFormed { get; init; }
-
-        public bool Utf16ProjectionIsExact { get; init; }
     }
 
     private enum Pcre2ValueMatchEnumeratorMode : byte

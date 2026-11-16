@@ -53,8 +53,6 @@ public sealed class Pcre2AssertionCompilerTests
         Assert.Equal("😀", match.GetValueString());
         Assert.Equal(5, match.StartOffsetInBytes);
         Assert.Equal(9, match.EndOffsetInBytes);
-        Assert.Equal(3, match.StartOffsetInUtf16);
-        Assert.Equal(5, match.EndOffsetInUtf16);
     }
 
     [Fact]

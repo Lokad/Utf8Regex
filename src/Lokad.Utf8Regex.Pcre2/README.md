@@ -18,9 +18,9 @@ Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
 host guarantees valid UTF-8 and unchanged borrowed storage. This is the subject
 `PCRE2_NO_UTF_CHECK` equivalent; read-only `InputValidation` reports the choice.
 Pattern/replacement validation, checked accesses, scalar semantics and matching/
-output admission remain independent. Byte-only operations do not prepare whole
-UTF-16 coordinates. Requested byte results remain usable when an ignored invalid
-prefix prevents exact UTF-16 projection; consult `HasUtf16Projection`.
+output admission remain independent. Results expose byte endpoints without
+prefix scans or UTF-16 coordinates. An ignored invalid prefix does not affect
+the selected byte result.
 See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-validation).
 
 The canonical benchmark compares default UTF-checked managed and native PCRE2
@@ -219,10 +219,10 @@ An already cancelled explicit token still wins. Interruption during TryReplace c
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
 
-Slice enumeration and `MatchMany` project derived UTF-16 coordinates incrementally
-across results, preserving published snapshots and independent copied positions.
-Removed prefix scans can lower modeled work requirements; validation, projection
-and cumulative resource/interruption controls retain their scope.
+Enumeration and `MatchMany` publish byte endpoints and value status directly,
+preserving snapshots and independent copied positions. Capture publication has
+no coordinate table, sort or prefix scan. Numerical work/storage needs can drop;
+validation, allocation admission and cumulative interruption/limits stay enforced.
 
 `TryReplace` supports input and template buffers overlapping the destination.
 Matched overlapping input stages output before copying to caller storage, so
@@ -232,7 +232,8 @@ Disjoint simple-template output and no-match copies retain their direct paths.
 
 Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRATION.md).
 Benchmark observations below retain their recorded source/runtime and qualification
-scope.
+scope. They predate the byte-only result migration and are historical observations,
+not qualification of the current source.
 
 <!-- BEGIN GENERATED PCRE2 BENCHMARKS -->
 ## Benchmarks

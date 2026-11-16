@@ -3,15 +3,15 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Pcre2;
 
 // Stack-only borrowed authority for the two existing PCRE2 execution owners.
-// The projector never copies their counters or creates a second invocation.
+// Result publication never copies their counters or creates a second invocation.
 // Copies of this readonly view still reference the same mutable owners.
-internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBufferControl
+internal readonly ref struct Pcre2ResultControl : IUtf8InvocationBufferControl
 {
     private readonly ref Pcre2ResourceBudget _vm;
     private readonly ref Utf8SliceInvocation _slice;
     private readonly bool _isSlice;
 
-    internal Pcre2CaptureProjectionBudget(ref Pcre2ResourceBudget budget)
+    internal Pcre2ResultControl(ref Pcre2ResourceBudget budget)
     {
         // The compiler defaults the inactive reference; only the selected owner
         // is accessed. Do not copy or replace either invocation's authority.
@@ -19,7 +19,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
         _isSlice = false;
     }
 
-    internal Pcre2CaptureProjectionBudget(ref Utf8SliceInvocation invocation)
+    internal Pcre2ResultControl(ref Utf8SliceInvocation invocation)
     {
         _slice = ref invocation;
         _isSlice = true;
