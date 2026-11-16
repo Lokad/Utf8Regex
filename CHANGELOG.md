@@ -4,6 +4,9 @@
 
 - Fix an out-of-range read in `Count` for bounded suffix patterns when a
   non-ASCII subject ends with the searched literal, such as `é\ting`.
+- Use the general matcher for balancing-group counts, removing a BEGIN/END-specific
+  counter. These patterns now use the general engine's work, depth and storage
+  charges; existing finite budgets may need adjustment.
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.
 - Add immutable `inputValidation` and read-only `InputValidation` in Core and

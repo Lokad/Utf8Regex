@@ -1402,7 +1402,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorKeepsDirectFallbackRoutingForConditionalFallbackPattern()
+    public void BalancingConditionalsKeepPublicResultsAcrossCompilationOptions()
     {
         const string pattern = "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))";
         var baseline = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -1412,10 +1412,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, baseline.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount, baseline.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount, compiled.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
-        Assert.True(baseline.Inspection.DebugSupportsThrowIfInvalidOnlyCount);
-        Assert.True(compiled.Inspection.DebugSupportsThrowIfInvalidOnlyCount);
         Assert.Equal(baseline.IsMatch(input), compiled.IsMatch(input));
         Assert.Equal(baseline.Count(input), compiled.Count(input));
     }

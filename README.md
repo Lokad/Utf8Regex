@@ -108,6 +108,12 @@ runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 
 ## Benchmarks
 
+These are historical results. Pattern-specific executors are being retired;
+the `balancing/begin-end-blocks` counter has already been removed. Its recorded
+ratios do not describe current execution. [Generality measurements](docs/BENCHMARKS.md)
+cover ordinary patterns and controlled calls; tables will refresh after the
+deletion batch.
+
 The tables were refreshed on **15 November 2026** using **.NET 11**
 (`11.0.0`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
 They measure public operations, including strict UTF-8 validation and required

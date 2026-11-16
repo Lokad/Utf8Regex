@@ -55,14 +55,6 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
                 count = Utf8AsciiUntilByteStarExecutor.Count(input, plan.TerminatorByte);
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount:
-                if (Utf8BalancedBeginEndExecutor.TryCount(input, out count))
-                {
-                    diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectUtf8BalancedBeginEnd;
-                    return true;
-                }
-
-                return false;
         }
 
         if (Utf8FallbackDirectFamilyCategories.IsPreparedTokenCountFamily(plan.Kind))

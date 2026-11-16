@@ -19,6 +19,7 @@ public sealed class RegexDifferentialTests
         @"(?<x>a)+(b)?", @"(?<7>a)|(?<name>b)", @"(?:(a)|(b))*", "",
         @"[^\n]*", @"(?:ab|a)+?", @"(?>a+)a|a+", @"\G[a-z]+",
         @"START(?:(?<open>START)|(?<-open>STOP)|(?:(?!START|STOP)[\s\S]))*STOP(?(open)(?!))",
+        @"BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))",
     };
 
     private static readonly string[] Tokens =
@@ -26,7 +27,7 @@ public sealed class RegexDifferentialTests
         "a", "b", "Z", "0", "12", " ", "\t", "\n", "\r", ".", ",", ":", "@",
         "é", "Ω", "中", "٣", "\u0301", "\u00a0", "\u2003", "ing", "sing",
         "Sherlock", "Holmes", "Watson", "the", "and", "https://a.b/", "a@b.c",
-        "12.1.2.3", "key: value", "\"word\"", "START", "STOP",
+        "12.1.2.3", "key: value", "\"word\"", "START", "STOP", "BEGIN", "END",
     ];
 
     // Bounded, reproducible generation; all BMP characters here are complete scalars.
@@ -36,7 +37,7 @@ public sealed class RegexDifferentialTests
     public void GeneratedSubjectsAgreeAcrossOperationsAndCallModes(string pattern)
     {
         var random = new Random(0x5ca1a);
-        string[] subjects = ["", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP",
+        string[] subjects = ["", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP", "BEGINBEGINENDEND",
             .. Enumerable.Range(0, 96).Select(_ => string.Concat(Enumerable.Range(0, random.Next(1, 13))
                 .Select(_ => Tokens[random.Next(Tokens.Length)])))];
         using var cancellation = new CancellationTokenSource();

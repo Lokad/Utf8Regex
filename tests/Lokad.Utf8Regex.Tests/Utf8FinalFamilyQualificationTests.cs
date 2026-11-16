@@ -12,7 +12,6 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FinalFamilyQualificationTests
 {
     private const string Email = @"^[a-zA-Z0-9_\-\.]+@(\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.|([a-zA-Z0-9\-]+\.)+)([a-zA-Z]{2,12}|[0-9]{1,3})\]?$";
-    private const string Balanced = @"BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))";
     private const string Digits = @"^(?<before>.*)(https://go(\.testing)?\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/d/(?<topicId>\d+)/?\?t=(?<tab>[^ ?]+)(?<rest>.*)$";
     private const string Hex = @"^(?<before>.*)(https://go(\.testing)?\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \n]+)?(?<rest>.*)$";
     private const string HexRoute = "/gateway/BigFiles/Browse/Download?hash=";
@@ -36,7 +35,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     }
     private static Utf8FallbackDirectFamilyPlan Plan(string pattern, RegexOptions options, Utf8FallbackDirectFamilyKind kind)
     {
-        var tree = Tree(pattern, options); var method = Classifier(kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole or Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount
+        var tree = Tree(pattern, options); var method = Classifier(kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole
             ? "Utf8FallbackFinalProfileClassifier" : "Utf8FallbackQueryClassifier", tree);
         var plan = Classify(method, tree); Assert.True(plan.Kind == kind, Describe(tree.Root)); return plan;
     }
@@ -92,46 +91,6 @@ public sealed class Utf8FinalFamilyQualificationTests
     }
 
     [Fact]
-    public void BalancedProofUsesCaptureIdentityAndTransparentLiteralAliases()
-    {
-        var alias = Balanced.Replace("open", "stack").Replace("BEGIN", @"(?:\x42)EGIN").Replace("END", @"E(?:\x4e)D");
-        Plan(alias, RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount);
-        PublicRange(alias, RegexOptions.CultureInvariant, "BEGINxBEGIN😀END tail", 6, 12, false);
-        var match = new Utf8Regex(alias).MatchDetailed("BEGIN😀END"u8);
-        Assert.False(match.GetGroup("stack").Success);
-    }
-
-    [Fact]
-    public void BalancedGrammarRejectsChangedCaptureEffectsAndIncompleteGuards()
-    {
-        var tree = Tree(Balanced, RegexOptions.None); var method = Classifier("Utf8FallbackFinalProfileClassifier", tree);
-        foreach (var pattern in new[] { Balanced.Replace("(?<-open>END)", "(?<open-open>END)"),
-            Balanced.Replace("(?!BEGIN|END)", "(?!BEGIN)"), Balanced.Replace("[\\s\\S]", "."),
-            Balanced.Replace("*END", "*?END"), Balanced.Replace("(?(open)(?!))", ""), Balanced.Replace("END(?(open)", "EN(?(open)") })
-            Assert.False(Classify(method, Tree(pattern, RegexOptions.None)).HasValue);
-        Assert.False(Classify(method, Tree(Balanced, RegexOptions.IgnoreCase)).HasValue);
-        Assert.False(Classify(method, Tree(Balanced, RegexOptions.RightToLeft)).HasValue);
-        var outsidePush = @"(?<open>x?)" + Balanced;
-        Assert.False(Classify(method, Tree(outsidePush, RegexOptions.None)).HasValue);
-        Assert.Equal(0, new Utf8Regex(outsidePush).Count("BEGINEND"u8));
-    }
-
-    [Fact]
-    public void BalancedCountsCompleteScalarsAndRetainsTheExistingDepthEnvelope()
-    {
-        Plan(Balanced, RegexOptions.None, Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount);
-        foreach (var item in new[] { ("BEGIN😀\0\nEND", 1), ("BEGINBEGIN😀END", 1), ("BEGINBEGINENDEND", 1), ("BEGINEND😀BEGINEND", 2), ("BEGIN😀", 0) })
-        {
-            var input = Encoding.UTF8.GetBytes(item.Item1);
-            Assert.True(Utf8BalancedBeginEndExecutor.TryCount(input, out var count)); Assert.Equal(item.Item2, count);
-            Assert.Equal(item.Item2, new Utf8Regex(Balanced, RegexOptions.Compiled).Count(input));
-        }
-        var deep = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("BEGIN", 129)) + "😀" + string.Concat(Enumerable.Repeat("END", 129)));
-        Assert.False(Utf8BalancedBeginEndExecutor.TryCount(deep, out _));
-        Assert.Equal(1, new Utf8Regex(Balanced).Count(deep));
-    }
-
-    [Fact]
     public void QueryMarkersRequireEqualsAndOptionalTrigramCanBacktrack()
     {
         var digits = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(Digits, Fold));
@@ -155,7 +114,7 @@ public sealed class Utf8FinalFamilyQualificationTests
         Plan(Digits, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
         PublicRange(Digits, Fold, "😀~/d/١?t=é\n", 0, 16, true);
         var invalid = new byte[] { (byte)'a', 0xff };
-        foreach (var pattern in new[] { Email, Balanced, Digits, Hex })
+        foreach (var pattern in new[] { Email, Digits, Hex })
         {
             var regex = new Utf8Regex(pattern, pattern == Digits || pattern == Hex ? Fold | RegexOptions.Compiled : RegexOptions.Compiled);
             Assert.Throws<ArgumentException>(() => regex.Count(invalid));
@@ -217,7 +176,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void EveryFinalProofCutoffFundsOnlySelectedArraysAndRestoresParentState()
     {
-        foreach (var item in new[] { (Email, RegexOptions.None, "Utf8FallbackFinalProfileClassifier"), (Balanced, RegexOptions.None, "Utf8FallbackFinalProfileClassifier"),
+        foreach (var item in new[] { (Email, RegexOptions.None, "Utf8FallbackFinalProfileClassifier"),
             (Digits, Fold, "Utf8FallbackQueryClassifier"), (Hex, Fold, "Utf8FallbackQueryClassifier") })
         {
             var tree = Tree(item.Item1, item.Item2); var method = Classifier(item.Item3, tree); ulong peak, work, retained;
@@ -252,7 +211,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void ActualFinalWrappersUseSharedDepthAndTextScannersStayAbsent()
     {
-        var tree = Tree(Balanced, RegexOptions.None); var root = tree.Root;
+        var tree = Tree(Email, RegexOptions.None); var root = tree.Root;
         for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).WithChild(root);
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
@@ -262,7 +221,7 @@ public sealed class Utf8FinalFamilyQualificationTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "ClassifyRemainingPattern", "IsAnchoredAsciiEmailWhole", "IsUtf8BalancedBeginEndCount", "TryParseAnchoredAsciiDigitsQueryWhole", "TryParseAnchoredAsciiHexQueryWhole",
+        foreach (var name in new[] { "ClassifyRemainingPattern", "IsAnchoredAsciiEmailWhole", "TryParseAnchoredAsciiDigitsQueryWhole", "TryParseAnchoredAsciiHexQueryWhole",
             "TryReadEscapedAsciiChar", "TryReadEscapedAsciiLiteral", "TryReadAsciiPrefixAlternation", "TryConsumeNamedCapturedOrRaw", "TryConsumeNamedOptional", "TryConsume", "TryConsumeCapturedOrRaw", "RequireBytes" })
             Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
