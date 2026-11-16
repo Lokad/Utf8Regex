@@ -35,7 +35,7 @@ public sealed partial class Utf8PythonRegex
                 var start = cursor.StartOffsetInBytes;
                 var end = cursor.EndOffsetInBytes;
                 completed = MaterializeMatchText(input, start, end,
-                    null, ref cursor.WorkingInvocation, ref scalarResults);
+                    ref cursor.WorkingInvocation, ref scalarResults);
             }
             cursor.Checkpoint();
             return completed;
@@ -49,13 +49,13 @@ public sealed partial class Utf8PythonRegex
     }
 
     private string MaterializeMatchText(ReadOnlySpan<byte> input, int start, int end,
-        int? characterCount, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results)
+        ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results)
     {
         try
         {
-            var bytes = input[start..end];
-            var count = characterCount ?? Utf8SliceBufferWork.CountUtf16(bytes, ref invocation);
-            var completed = results.DecodeUtf8(bytes, count, ref invocation);
+            // The ledger owns short-range admission and bounded large-range
+            // sizing. Discovery has not requested a character count here.
+            var completed = results.DecodeUtf8(input[start..end], null, ref invocation);
             Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             return completed;
         }

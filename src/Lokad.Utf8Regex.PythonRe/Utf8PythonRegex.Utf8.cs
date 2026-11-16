@@ -391,7 +391,7 @@ public sealed partial class Utf8PythonRegex
                 Utf8InvocationOutput.Checkpoint(control);
                 return null;
             }
-            return MaterializeMatchText(input, start, end, null, ref invocation, ref results);
+            return MaterializeMatchText(input, start, end, ref invocation, ref results);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

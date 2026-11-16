@@ -307,10 +307,13 @@ each capture, including absent groups, instead of checking again immediately
 afterward. Decoding, capacity admission, next discovery and final publication
 retain their checks; numerical work can decrease by one step per captured value.
 
-One-shot scalar `SearchToString`, `MatchToString` and `FullMatchToString` reuse
-already-proved ASCII-prefix lengths or requested coordinate facts when available.
-Otherwise they size only the returned scalar range, without describing an
-unrelated suffix or requiring whole-subject character counts.
+One-shot `SearchToString`, `MatchToString` and `FullMatchToString` pass only the
+returned scalar range to the same result ledger. They request no coordinate or
+character-count metadata first. Up to4096 UTF-8 bytes use conservative byte-derived
+string admission; larger results retain bounded exact sizing. Short Unicode
+one-shot results can require more modeled working/result capacity and deny earlier
+than older builds that counted their UTF-16 units first. No unrelated suffix is
+described and whole-subject character counts are not required.
 Native one-shot discovery returns byte endpoints over caller-guaranteed valid text.
 Text output sizes its selected range; value output derives prefix/range
 coordinates after a hit. Batch output reuses facts requested by discovery or

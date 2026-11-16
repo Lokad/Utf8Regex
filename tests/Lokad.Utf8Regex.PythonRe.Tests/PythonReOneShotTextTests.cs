@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -39,6 +40,34 @@ public sealed class PythonReOneShotTextTests
             1 => regex.MatchToString(input, start, token),
             _ => regex.FullMatchToString(input, start, token),
         };
+
+    [Theory]
+    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
+    public void OneShotUnicodeTextKeepsConservativeAndLargeRangeAdmission(int byteLength)
+    {
+        var text = new string('é', byteLength / 2) + (byteLength % 2 == 0 ? "" : "a");
+        var input = Encoding.UTF8.GetBytes("π" + text);
+        var extent = Utf8ConstructionBudget.StringBytes(byteLength <= 4096 ? byteLength : text.Length);
+        foreach (var pattern in new[] { "(.+)", text })
+        foreach (var allow in new[] { false, true })
+        {
+            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
+            {
+                MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 24,
+                MaxResultBytes = extent - (allow ? 0UL : 1UL),
+            });
+            for (var kind = 0; kind < 3; kind++)
+            {
+                if (allow) Assert.Equal(text, Run(regex, input, 2, kind, default));
+                else
+                {
+                    var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, input, 2, kind, default));
+                    Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
+                    Assert.Equal(extent, failure.Requested);
+                }
+            }
+        }
+    }
 
     [Fact]
     public void NativeDotAllStringKeepsTheCompleteSuffixAndDoesNotPrepareAFullVm()
