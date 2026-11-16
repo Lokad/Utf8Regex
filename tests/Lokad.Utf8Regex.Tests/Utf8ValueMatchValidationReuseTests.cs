@@ -7,6 +7,30 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValueMatchValidationReuseTests
 {
     [Theory]
+    [InlineData(0)]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(4096)]
+    public void SmallFamilyKeepsCoordinatesAcrossBorrowedBoundaryOffsets(int padding)
+    {
+        const string pattern = "alpha|bravo|charlie";
+        var text = new string('x', padding) + "é😀bravo " + new string('中', 8192);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text);
+        var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        foreach (var offset in new[] { 0, 1, 7, 31 })
+        {
+            var storage = new byte[offset + bytes.Length + 1];
+            storage.AsSpan().Fill(0xff);
+            bytes.CopyTo(storage.AsSpan(offset));
+            AssertRange(regex.Match(storage.AsSpan(offset, bytes.Length)), text, expected.Index, expected.Length);
+        }
+    }
+
+    [Theory]
     [InlineData("needle", "é😀needle中")]
     [InlineData("中", "é😀中needle")]
     [InlineData("needle", "é😀no match中")]
