@@ -388,8 +388,8 @@ native capture shaping requires them; this does not make UTF-16 the matching uni
 
 Core's evaluator replacement overloads, evaluator delegates and `ReplaceToString`
 are removed in 0.5 development. Hosts compute custom substitutions over the byte capture cursor.
-Templates use last-capture byte ranges without callback history or subject maps.
-Byte/destination output does not request whole-input UTF-16 totals. Hosts decode
+Scalar templates use last-capture byte ranges without callback history or subject maps.
+Scalar byte/destination output does not request whole-input UTF-16 totals. Hosts decode
 returned bytes when text materialization is needed; that allocation and its cost
 belong to the host rather than the regex invocation's output budget.
 The shared `Utf8ReplacementWriter` remains for the PCRE2 adapter's live callbacks;

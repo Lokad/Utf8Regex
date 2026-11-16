@@ -34,15 +34,15 @@ public sealed class Utf8LazyDisjointRepeatTests
                 new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000,
                     MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
             var expected = oracle.Match(text);
-            var retained = regex.MatchDetailed(input);
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
             if (expected.Success)
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), retained.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), retained.LengthInBytes);
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), retained.Value.StartOffsetInBytes);
+                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes);
             }
             Assert.Equal(oracle.Count(text), regex.Count(input));
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
         }
     }
 }

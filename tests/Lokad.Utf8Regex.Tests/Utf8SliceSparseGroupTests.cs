@@ -81,8 +81,7 @@ public sealed class Utf8SliceSparseGroupTests
         AssertOwnedOperations(regex, oracle, texts);
     }
 
-    // Reuse complete public-operation qualification for native engines that do
-    // not lower through the scalar VM. The caller must establish its route guard.
+    // Share public-operation assertions across the qualified scalar fixture.
     internal static void AssertOwnedOperations(Utf8Regex regex, Regex oracle, string[] texts)
     {
         oracle = Utf8ScalarCaptureFixture.Project(oracle);
@@ -102,10 +101,13 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "IsMatch");
             Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Count");
-            AssertValue(oracle.Match(subject.Projected), regex.Match(input, source.Token), subject);
+            AssertValue(oracle.Match(subject.Projected), regex.Match(input,
+                (regex.Options & RegexOptions.RightToLeft) != 0 ? input.Length : 0, [], source.Token), subject);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Match");
-            AssertDetailed(oracle, oracle.Match(subject.Projected), regex.MatchDetailed(input, source.Token), subject);
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Detailed");
+            Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected),
+                Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)),
+                input, index => subject.Bytes[index]);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Capture cursor");
             for (var offset = 0; offset <= text.Length; offset++)
             {
                 var scalarOffset = Array.BinarySearch(subject.Units, offset);
@@ -127,8 +129,6 @@ public sealed class Utf8SliceSparseGroupTests
                 while (expected.MoveNext())
                 {
                     Assert.True(actual.MoveNext());
-                    Assert.Equal(subject.UnitRange(expected.Current.Index, expected.Current.Length),
-                        (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
                     Assert.True(actual.Current.TryGetByteRange(out var index, out var length));
                     Assert.Equal(subject.ByteRange(expected.Current.Index, expected.Current.Length), (index, length));
                 }
@@ -149,8 +149,6 @@ public sealed class Utf8SliceSparseGroupTests
                     Assert.True(actual.MoveNext());
                     Assert.True(actual.Current.IsByteAligned);
                     Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                    Assert.Equal(0, actual.Current.IndexInUtf16);
-                    Assert.Equal(text.Length, actual.Current.LengthInUtf16);
                     Assert.Equal(text, actual.Current.GetValueString());
                     Assert.False(actual.MoveNext());
                     continue;
@@ -162,7 +160,6 @@ public sealed class Utf8SliceSparseGroupTests
                     var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
                     Assert.True(actual.Current.IsByteAligned);
                     Assert.Equal(subject.ByteRange(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                    Assert.Equal(subject.UnitRange(index, length), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
                     Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
                 }
                 Assert.False(actual.MoveNext());
@@ -174,8 +171,6 @@ public sealed class Utf8SliceSparseGroupTests
                 // The comparator receives the scalar form of each literal;
                 // string APIs no longer retain halves across substitutions.
                 var expected = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
-                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template, source.Token)));
-                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Text template " + template);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Byte template " + template);
@@ -197,9 +192,6 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
-
-    private static bool IsBoundary(string text, int index)
-        => index == 0 || index == text.Length || !char.IsHighSurrogate(text[index - 1]) || !char.IsLowSurrogate(text[index]);
 
     [Theory]
     [InlineData("(?<12>a)(?<5>b)", "ab")]
@@ -223,13 +215,18 @@ public sealed class Utf8SliceSparseGroupTests
     [InlineData("(?<12>a)", "a")]
     [InlineData("(?<12>a)?b", "b")]
     [InlineData("(?<2147483647>a)(?<x>b)", "ab")]
-    public void OwnedContextDistinguishesSparseGroupsFromHoles(string pattern, string text)
+    public void CaptureCursorDistinguishesSparseGroupsFromHoles(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var match = oracle.Match(text);
-        var context = new Utf8Regex(pattern, RegexOptions.CultureInvariant).MatchDetailed(input);
-        AssertDetailed(oracle, match, context);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(match, actual, input, text);
+        var numbers = oracle.GetGroupNumbers();
+        Assert.Equal(numbers, actual.GroupNumbers.ToArray());
+        foreach (var number in new[] { -1, 0, 1, 2, 5, 7, 12, int.MaxValue })
+            Assert.Equal(numbers.Contains(number), actual.TryGetGroup(number, out _));
     }
 
     [Theory]
@@ -275,51 +272,5 @@ public sealed class Utf8SliceSparseGroupTests
         }
     }
 
-    internal static void AssertDetailed(Regex oracle, Match expected, Utf8MatchContext actual, Utf8ScalarCaptureFixture.Subject? subject = null)
-    {
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(subject?.UnitRange(expected.Index, expected.Length) ?? (expected.Index, expected.Length),
-            (actual.IndexInUtf16, actual.LengthInUtf16));
-        if (subject is not null && expected.Success)
-        {
-            Assert.True(actual.IsByteAligned);
-            Assert.Equal(subject.ByteRange(expected.Index, expected.Length), (actual.IndexInBytes, actual.LengthInBytes));
-        }
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        Assert.Equal(subject?.Value(expected.Index, expected.Length) ?? expected.Value, actual.GetValueString());
-        var numbers = expected.Success ? oracle.GetGroupNumbers() : new[] { 0 };
-        foreach (var number in numbers.Concat(new[] { -1, 1, 2, 5, 7, 12, int.MaxValue }).Distinct())
-        {
-            var group = actual.GetGroup(number);
-            var expectedGroup = expected.Groups[number];
-            Assert.Equal(expectedGroup.Success, group.Success);
-            Assert.Equal(subject?.UnitRange(expectedGroup.Index, expectedGroup.Length) ?? (expectedGroup.Index, expectedGroup.Length),
-                (group.IndexInUtf16, group.LengthInUtf16));
-            Assert.Equal(subject?.Value(expectedGroup.Index, expectedGroup.Length) ?? expectedGroup.Value, group.GetValueString());
-            if (subject is not null && expectedGroup.Success)
-            {
-                Assert.True(group.IsByteAligned);
-                Assert.Equal(subject.ByteRange(expectedGroup.Index, expectedGroup.Length), (group.IndexInBytes, group.LengthInBytes));
-            }
-            Assert.Equal(expectedGroup.Captures.Count, group.CaptureCount);
-            Assert.Equal(numbers.Contains(number), actual.TryGetGroup(number, out var tryGroup));
-            Assert.Equal(group.GetValueString(), tryGroup.GetValueString());
-            for (var capture = 0; capture < expectedGroup.Captures.Count; capture++)
-            {
-                var projected = group.GetCapture(capture);
-                var wanted = expectedGroup.Captures[capture];
-                Assert.Equal(subject?.UnitRange(wanted.Index, wanted.Length) ?? (wanted.Index, wanted.Length),
-                    (projected.IndexInUtf16, projected.LengthInUtf16));
-                Assert.Equal(subject?.Value(wanted.Index, wanted.Length) ?? wanted.Value, projected.GetValueString());
-                if (subject is not null)
-                {
-                    Assert.True(projected.IsByteAligned);
-                    Assert.Equal(subject.ByteRange(wanted.Index, wanted.Length), (projected.IndexInBytes, projected.LengthInBytes));
-                }
-            }
-        }
-        foreach (var name in oracle.GetGroupNames().Concat(new[] { "00", "01", "05", "012", "missing" }))
-            Assert.Equal(subject is null ? expected.Groups[name].Value : Utf8ScalarCaptureFixture.Subject.Restore(expected.Groups[name].Value), actual.GetGroup(name).GetValueString());
-    }
 
 }

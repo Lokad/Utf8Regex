@@ -85,21 +85,21 @@ public sealed class Utf8ScalarCaptureFixtureTests
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex("(?<12>.)+", options);
         var subject = new Utf8ScalarCaptureFixture.Subject(Text);
-        var match = regex.MatchDetailed(subject.Input);
-        Assert.Equal((0, 14), (match.IndexInBytes, match.LengthInBytes));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
+        Assert.Equal((0, 14), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.Equal(new[] { 0, 12 }, regex.GetGroupNumbers());
-        var group = match.GetGroup(12);
+        var captures = match.GetCaptures(12);
         var expected = new[] { (0, 1), (1, 4), (5, 4), (9, 4), (13, 1) };
         if (rtl) Array.Reverse(expected);
-        Assert.Equal(expected.Length, group.CaptureCount);
+        Assert.Equal(expected.Length, captures.Length);
         for (var index = 0; index < expected.Length; index++)
         {
-            var capture = group.GetCapture(index);
-            Assert.True(capture.IsByteAligned);
-            Assert.Equal(expected[index], (capture.IndexInBytes, capture.LengthInBytes));
+            var capture = captures[index];
+            Assert.True(capture.Success);
+            Assert.Equal(expected[index], (capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes));
         }
-        Assert.False(match.GetGroup(1).Success);
-        Assert.False(match.TryGetGroup(1, out _));
+        Assert.False(match.TryGetGroup(1, out var missing));
+        Assert.False(missing.Success);
         Assert.True(match.TryGetGroup(12, out _));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -117,10 +117,11 @@ public sealed class Utf8ScalarCaptureFixtureTests
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         var subject = new Utf8ScalarCaptureFixture.Subject(Text);
-        var match = regex.MatchDetailed(subject.Input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);
-        Assert.Equal((5, 8), (match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal((rtl ? 9 : 5, 4), (match.GetGroup(1).IndexInBytes, match.GetGroup(1).LengthInBytes));
+        Assert.Equal((5, 13), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.True(match.TryGetGroup(1, out var group));
+        Assert.Equal((rtl ? 9 : 5, 4), (group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options & ~RegexOptions.Compiled), [Text]);
     }
 
@@ -137,10 +138,11 @@ public sealed class Utf8ScalarCaptureFixtureTests
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         var subject = new Utf8ScalarCaptureFixture.Subject("😀\U00010400x");
-        var match = regex.MatchDetailed(subject.Input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);
-        Assert.Equal((8, 1), (match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal((4, 4), (match.GetGroup(1).IndexInBytes, match.GetGroup(1).LengthInBytes));
+        Assert.Equal((8, 9), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.True(match.TryGetGroup(1, out var group));
+        Assert.Equal((4, 8), (group.StartOffsetInBytes, group.EndOffsetInBytes));
         var comparator = new Regex("(?<=" + scalar + "(" + scalar + "))x", options & ~RegexOptions.Compiled);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, comparator, [subject.Text]);
     }

@@ -36,10 +36,10 @@ public sealed class Utf8AdjacentSetRepeatTests
             new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
-        var actual = owner.MatchDetailed(bytes);
-        Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, actual);
+        var actual = Utf8MatchSequence.First(owner.CreateMatchCursor(bytes));
+        Utf8MatchSequence.AssertCaptures(expected, actual, bytes, text);
         Assert.Equal(oracle.Count(text), owner.Count(bytes));
-        Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, actual);
+        Utf8MatchSequence.AssertCaptures(expected, actual, bytes, text);
     }
 
     [Theory]
@@ -52,8 +52,9 @@ public sealed class Utf8AdjacentSetRepeatTests
         options |= RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options);
         var owner = new Utf8Regex(pattern, options);
-        var actual = owner.MatchDetailed(Encoding.UTF8.GetBytes(text));
-        Utf8SliceSparseGroupTests.AssertDetailed(oracle, oracle.Match(text), actual);
+        var input = Encoding.UTF8.GetBytes(text);
+        var actual = Utf8MatchSequence.First(owner.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
     }
 
     [Fact]
@@ -61,12 +62,12 @@ public sealed class Utf8AdjacentSetRepeatTests
     {
         var owner = new Utf8Regex(@"(?<run>[é😀]{1,2})[0-9]+");
         var bytes = Encoding.UTF8.GetBytes("😀é12 é3");
-        var retained = owner.MatchDetailed(bytes);
-        Assert.Equal("😀é12", retained.GetValueString());
-        Assert.Equal("😀é", retained.GetGroup(owner.GroupNumberFromName("run")).GetValueString());
-        Assert.Equal((8, 5), (retained.LengthInBytes, retained.LengthInUtf16));
+        var retained = Utf8MatchSequence.First(owner.CreateMatchCursor(bytes));
+        Assert.Equal("😀é12"u8.ToArray(), retained.GetValueMemory().ToArray());
+        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromName("run")).ToArray());
+        Assert.Equal((0, 8), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal(2, owner.Count(bytes));
-        Assert.Equal("😀é", retained.GetGroup(owner.GroupNumberFromName("run")).GetValueString());
+        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromName("run")).ToArray());
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public sealed class Utf8AdjacentSetRepeatTests
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var owner = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
-        Assert.True(owner.Match("item   12345"u8).Success);
+        Assert.True(owner.Match("item   12345"u8, 0, []).Success);
     }
 
     [Theory]

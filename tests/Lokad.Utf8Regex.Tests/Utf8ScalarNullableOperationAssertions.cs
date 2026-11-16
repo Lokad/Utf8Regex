@@ -46,13 +46,13 @@ internal static class Utf8ScalarNullableOperationAssertions
         foreach (var live in new[] { false, true })
         {
             var token = live ? source.Token : default;
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, oracle.Match(text), regex.MatchDetailed(input, token));
+            Utf8MatchSequence.AssertCaptures(oracle.Match(text),
+                Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)), input, text);
             var cursor = regex.EnumerateMatches(input, token);
             foreach (var row in rows)
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((row.Byte, row.Length, row.Unit, row.Units),
-                    (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes, cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
+                Assert.Equal((row.Byte, row.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
             }
             Assert.False(cursor.MoveNext());
             foreach (var count in new[] { 0, 1, 2 })
@@ -63,7 +63,6 @@ internal static class Utf8ScalarNullableOperationAssertions
             }
             foreach (var (template, expected) in new[] { ("Q", "Q😀QQ😀Q"), ("$&", text) })
             {
-                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template, token)));
                 var bytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(bytes, regex.Replace(input, template, token));
                 var destination = new byte[bytes.Length + 1];

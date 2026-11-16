@@ -87,18 +87,18 @@ public sealed class Utf8AsciiScalarWitnessTests
     {
         var subject = new Utf8AsciiScalarOperationAssertions.Subject(Text);
         var regex = new Utf8Regex("(?<x>.)+", options);
-        var match = regex.MatchDetailed(subject.Input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);
-        Assert.Equal((0, 18), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, 18), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         var expected = new[] { (0, 1), (1, 4), (5, 4), (9, 4), (13, 4), (17, 1) };
         if (options.HasFlag(RegexOptions.RightToLeft)) Array.Reverse(expected);
-        var group = match.GetGroup(regex.GroupNumberFromName("x"));
-        Assert.Equal(expected.Length, group.CaptureCount);
+        var captures = match.GetCaptures(regex.GroupNumberFromName("x"));
+        Assert.Equal(expected.Length, captures.Length);
         for (var index = 0; index < expected.Length; index++)
         {
-            var capture = group.GetCapture(index);
-            Assert.True(capture.IsByteAligned);
-            Assert.Equal(expected[index], (capture.IndexInBytes, capture.LengthInBytes));
+            var capture = captures[index];
+            Assert.True(capture.Success);
+            Assert.Equal(expected[index], (capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes));
         }
         Utf8AsciiScalarOperationAssertions.Owned(regex);
     }

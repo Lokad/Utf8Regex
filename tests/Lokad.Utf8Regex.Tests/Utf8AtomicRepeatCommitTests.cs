@@ -43,11 +43,11 @@ public sealed class Utf8AtomicRepeatCommitTests
                 new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000,
                     MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
             var expected = oracle.Match(text);
-            var retained = regex.MatchDetailed(input);
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
             Assert.Equal(expected.Success, regex.IsMatch(input));
             Assert.Equal(oracle.Count(text), regex.Count(input));
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
         }
     }
 }

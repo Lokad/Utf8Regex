@@ -22,11 +22,11 @@ public sealed class Utf8CaptureTrailChunkTests
             var oracle = new Regex(pattern, mode);
             var regex = new Utf8Regex(pattern, mode);
             var expected = oracle.Match(text);
-            var retained = regex.MatchDetailed(input);
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
-            Assert.True(regex.MatchDetailed("b"u8).Success);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
+            Assert.True(regex.Match("b"u8, (mode & RegexOptions.RightToLeft) != 0 ? 1 : 0, []).Success);
             Assert.Equal(1, regex.Count(input));
-            Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+            Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
         }
     }
 
@@ -41,9 +41,9 @@ public sealed class Utf8CaptureTrailChunkTests
         var oracle = new Regex(pattern, options);
         var expected = oracle.Match(text);
         var regex = new Utf8Regex(pattern, options);
-        var retained = regex.MatchDetailed(input);
-        Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
         Assert.True(regex.IsMatch("éX"u8));
-        Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, retained);
+        Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
     }
 }

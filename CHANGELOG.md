@@ -7,7 +7,7 @@
   the regex's resource limits.
 
 - Remove Core callback replacement overloads and evaluator delegates. Custom
-  substitutions use the byte capture cursor; byte templates avoid input UTF-16
+  substitutions use the byte capture cursor; scalar byte templates avoid input UTF-16
   preparation. Shared PCRE2 writer support remains.
 
 - Remove Core's static cached operation families and global pattern cache. Retain
