@@ -382,16 +382,16 @@ surrogate becomes U+FFFD and cannot join a fragment from another substitution.
 Subject validation follows the instance policy; template bytes remain strict.
 
 Native discovery/capture-map eligibility is preserved. Grouped template expansion
-splices original byte views through the admitted output writer; text results
-decode only the final output. Scalar fall-throughs likewise emit the requested
+splices original byte views through the admitted output writer. Scalar fall-throughs likewise emit the requested
 byte/destination form directly. Existing derived coordinate maps remain where
 native capture shaping requires them; this does not make UTF-16 the matching unit.
 
-Core's evaluator replacement overloads and evaluator delegates are removed in
-0.5 development. Hosts compute custom substitutions over the byte capture cursor.
+Core's evaluator replacement overloads, evaluator delegates and `ReplaceToString`
+are removed in 0.5 development. Hosts compute custom substitutions over the byte capture cursor.
 Templates use last-capture byte ranges without callback history or subject maps.
-Byte/destination output does not request whole-input UTF-16 totals. Legacy string
-output counts only when needed to materialize an unchanged subject after a miss.
+Byte/destination output does not request whole-input UTF-16 totals. Hosts decode
+returned bytes when text materialization is needed; that allocation and its cost
+belong to the host rather than the regex invocation's output budget.
 The shared `Utf8ReplacementWriter` remains for the PCRE2 adapter's live callbacks;
 its contract is described by that profile.
 

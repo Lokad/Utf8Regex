@@ -111,7 +111,7 @@ public sealed class Utf8InputValidationTests
             Assert.Equal(Observe(strict, () => strict.MatchDetailed(input).Success), Observe(assumed, () => assumed.MatchDetailed(input).Success));
             Assert.Equal(Observe(strict, () => strict.Replace(input, "X")), Observe(assumed, () => assumed.Replace(input, "X")));
             Assert.Equal(Observe(strict, () => strict.Replace(input, "X"u8)), Observe(assumed, () => assumed.Replace(input, "X"u8)));
-            Assert.Equal(Observe(strict, () => strict.ReplaceToString(input, "X")), Observe(assumed, () => assumed.ReplaceToString(input, "X")));
+            Assert.Equal(Observe(strict, () => Encoding.UTF8.GetString(strict.Replace(input, "X"))), Observe(assumed, () => Encoding.UTF8.GetString(assumed.Replace(input, "X"))));
             if (pattern.Contains("word", StringComparison.Ordinal))
                 Assert.Equal(Observe(strict, () => strict.Replace(input, "${word}")), Observe(assumed, () => assumed.Replace(input, "${word}")));
             Assert.Equal(Observe(strict, () => Splits(strict, input)), Observe(assumed, () => Splits(assumed, input)));

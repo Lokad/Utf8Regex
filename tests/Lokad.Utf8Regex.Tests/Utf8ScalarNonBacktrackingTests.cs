@@ -82,7 +82,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInUtf16, match.LengthInUtf16));
         Assert.Equal(oracle.Matches(text).Select(match => (match.Index, match.Length)), ranges);
-        Assert.Equal(oracle.Replace(text, "<$0:$1>"), regex.ReplaceToString(input, "<$0:$1>"));
+        Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -117,7 +117,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal(1, group.CaptureCount);
         Assert.Equal((5, 4), (group.IndexInBytes, group.LengthInBytes));
         Assert.Equal("😀", group.GetValueString());
-        Assert.Equal("aQb", regex.ReplaceToString(input, "Q"));
+        Assert.Equal("aQb", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
         using var cursor = regex.CreateMatchCursor(input, 5);
         Assert.True(cursor.MoveNext(out var fromOffset));
         Assert.Equal((5, 9), (fromOffset.Value.StartOffsetInBytes, fromOffset.Value.EndOffsetInBytes));

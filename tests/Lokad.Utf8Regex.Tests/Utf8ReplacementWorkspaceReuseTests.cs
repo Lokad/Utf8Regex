@@ -21,7 +21,7 @@ public sealed class Utf8ReplacementWorkspaceReuseTests
         var text = string.Concat(Enumerable.Repeat("dog fox bird ", 512));
         var input = Encoding.UTF8.GetBytes(text);
         var regex = Create("(dog)", compiled ? RegexOptions.Compiled : RegexOptions.None, 24000);
-        Assert.Equal(text, regex.ReplaceToString(input, "$1"));
+        Assert.Equal(text, Encoding.UTF8.GetString(regex.Replace(input, "$1")));
         Assert.Equal(input, regex.Replace(input, "$1"u8));
     }
 
@@ -37,7 +37,7 @@ public sealed class Utf8ReplacementWorkspaceReuseTests
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
             var regex = Create(pattern, options);
             for (var iteration = 0; iteration < 3; iteration++)
-                Assert.Equal(oracle.Replace(text, template), regex.ReplaceToString(input, template));
+                Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(regex.Replace(input, template)));
         }
     }
 
@@ -50,10 +50,10 @@ public sealed class Utf8ReplacementWorkspaceReuseTests
         using (var cursor = regex.CreateMatchCursor(input))
             while (cursor.MoveNext(out var match))
             {
-                Assert.Equal("a", regex.ReplaceToString("aa"u8, "$1"));
+                Assert.Equal("a", Encoding.UTF8.GetString(regex.Replace("aa"u8, "$1")));
                 retained.Add(match);
             }
-        Assert.Equal("a", regex.ReplaceToString("aaaa"u8, "$1"));
+        Assert.Equal("a", Encoding.UTF8.GetString(regex.Replace("aaaa"u8, "$1")));
         Assert.Equal(new[] { "aaa", "aa", "aa" },
             retained.Select(match => Encoding.UTF8.GetString(match.GetValueMemory().Span)));
         for (var index = 0; index < retained.Count; index++)

@@ -10,7 +10,7 @@ public sealed class Utf8CoreWorkPolicyTests
 {
     private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "replace-text", "destination", "destination-bytes"];
+        "replace-bytes", "destination", "destination-bytes"];
 
     private static Utf8Regex Create(string pattern, ulong cap, RegexOptions options = RegexOptions.CultureInvariant,
         TimeSpan? timeout = null) => new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
@@ -347,7 +347,6 @@ public sealed class Utf8CoreWorkPolicyTests
                 return string.Join("|", pieces);
             case "replace": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>", token) : regex.Replace(input, "<$&>"));
             case "replace-bytes": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>"u8, token) : regex.Replace(input, "<$&>"u8));
-            case "replace-text": return live ? regex.ReplaceToString(input, "<$&>", token) : regex.ReplaceToString(input, "<$&>");
             case "destination":
             case "destination-bytes":
                 var destination = new byte[4096];

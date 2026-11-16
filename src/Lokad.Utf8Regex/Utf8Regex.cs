@@ -2814,37 +2814,6 @@ public sealed partial class Utf8Regex
         return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
-    /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
-    {
-        return ReplaceToString(input, replacement, CancellationToken.None);
-    }
-
-    /// <summary>Replaces all matches and returns the result as a UTF-16 string, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="replacement">The replacement text.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
-        {
-            return ReplaceToStringMappedCore(input, replacement, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
-    private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
-    {
-        var deadline = CreateExecutionBudget();
-        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
-        return ReplaceToStringCore(input, analyzed, cancellationToken, deadline);
-    }
-
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
     /// <remarks>An overlapping input and destination use staged output. An insufficient destination remains unchanged.</remarks>

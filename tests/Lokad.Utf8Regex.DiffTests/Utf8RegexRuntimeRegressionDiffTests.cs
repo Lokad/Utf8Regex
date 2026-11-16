@@ -115,7 +115,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
                 Assert.Equal(0, matches.Current.LengthInUtf16);
             }
             Assert.False(matches.MoveNext());
-            Assert.Equal(ordinary.Replace(input, "Q"), regex.ReplaceToString(bytes, "Q"));
+            Assert.Equal(ordinary.Replace(input, "Q"), Encoding.UTF8.GetString(regex.Replace(bytes, "Q")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }

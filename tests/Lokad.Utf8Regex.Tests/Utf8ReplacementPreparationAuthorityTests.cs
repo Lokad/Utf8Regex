@@ -148,7 +148,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         switch (route)
         {
             case 0: _ = regex.Replace(input, template, token); break;
-            case 1: _ = regex.ReplaceToString(input, template, token); break;
+            case 1: _ = Encoding.UTF8.GetString(regex.Replace(input, template, token)); break;
             case 2: _ = regex.TryReplace(input, template, destination, out _, token); break;
             case 3: _ = regex.Replace(input, templateBytes, token); break;
             default: _ = regex.TryReplace(input, templateBytes, destination, out _, token); break;

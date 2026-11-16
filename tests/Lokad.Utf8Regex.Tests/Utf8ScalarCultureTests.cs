@@ -70,7 +70,6 @@ public sealed class Utf8ScalarCultureTests
                     foreach (var split in regex.EnumerateSplits(input, int.MaxValue)) splits.Add(split.GetValueString());
                     Assert.Equal(expectedSplits, splits);
                     var output = oracle.Replace(text, "[$&]");
-                    Assert.Equal(output, regex.ReplaceToString(input, "[$&]"));
                     Assert.Equal(Encoding.UTF8.GetBytes(output), regex.Replace(input, "[$&]"));
                     Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$&]", destination, out var written));
                     Assert.Equal(Encoding.UTF8.GetBytes(output), destination[..written].ToArray());
@@ -112,7 +111,6 @@ public sealed class Utf8ScalarCultureTests
                 Assert.Equal(length, cursor.Current.LengthInBytes);
                 Assert.False(cursor.MoveNext());
                 var replacement = "<" + value + ">" + (all ? "" : "\U0001f600");
-                Assert.Equal(replacement, regex.ReplaceToString(input, "<$&>", source.Token));
                 Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>", source.Token));
                 var splits = new List<string>();
                 foreach (var split in regex.EnumerateSplits(input, int.MaxValue, source.Token)) splits.Add(split.GetValueString());
@@ -132,7 +130,7 @@ public sealed class Utf8ScalarCultureTests
                 Assert.Equal(input.Length, found.LengthInBytes);
                 Assert.Equal("\U00010428", found.GetGroup(1).GetValueString());
                 Assert.Equal(1, regex.Count(input, source.Token));
-                Assert.Equal("\U00010428", regex.ReplaceToString(input, "$1", source.Token));
+                Assert.Equal("\U00010428", Encoding.UTF8.GetString(regex.Replace(input, "$1", source.Token)));
                 AssertOwned(regex);
             }
 

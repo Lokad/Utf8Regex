@@ -139,7 +139,6 @@ public sealed class Utf8ScalarMinimumOverlapTests
             {
                 var expectedReplacement = oracle.Replace(text, replacement);
                 var expectedBytes = Encoding.UTF8.GetBytes(expectedReplacement);
-                Assert.Equal(expectedReplacement, regex.ReplaceToString(input, replacement));
                 Assert.Equal(expectedBytes, regex.Replace(input, replacement));
                 Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
                 var destination = new byte[expectedBytes.Length];
@@ -203,7 +202,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options);
-            Assert.Equal(oracle.Replace(text, template), regex.ReplaceToString(input, template));
+            Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(regex.Replace(input, template)));
         }
     }
 
@@ -222,7 +221,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             Assert.Equal(0, regex.Count(input));
             Assert.False(regex.MatchDetailed(input).Success);
             Assert.False(regex.EnumerateMatches(input).GetEnumerator().MoveNext());
-            Assert.Equal(text, regex.ReplaceToString(input, "<$1>"));
+            Assert.Equal(text, Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
             AssertOwned(regex);
         }
     }

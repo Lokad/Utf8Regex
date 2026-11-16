@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -68,7 +69,7 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
             var detailed = regex.MatchDetailed(input);
             Assert.Equal("\U0001f600ab\U0001f600", detailed.GetValueString());
             Assert.Equal(6, detailed.LengthInUtf16);
-            Assert.Equal("<\U0001f600ab\U0001f600>", regex.ReplaceToString(input, "<$&>"));
+            Assert.Equal("<\U0001f600ab\U0001f600>", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var positions = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInBytes, match.LengthInBytes));
             Assert.Equal(new[] { (0, 10) }, positions);

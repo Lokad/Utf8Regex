@@ -120,7 +120,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                 // become U+FFFD before substitution, including an empty match.
                 var scalarTemplate = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template));
                 var expected = subject.Restore(oracle.Replace(subject.Projected, scalarTemplate));
-                Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template, source.Token)));
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
                 var destination = new byte[expectedBytes.Length + 1];
@@ -153,7 +153,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         AssertMatch(text, oracle.Match(text), regex.Match(input));
         AssertDetailed(new FixtureSubject(text, projectSupplementary: false), oracle.Match(text), regex.MatchDetailed(input));
         AssertSequence(text, oracle.EnumerateMatches(text), regex.EnumerateMatches(input));
-        Assert.Equal(oracle.Replace(text, "[$1]"), regex.ReplaceToString(input, "[$1]"));
+        Assert.Equal(oracle.Replace(text, "[$1]"), Encoding.UTF8.GetString(regex.Replace(input, "[$1]")));
         AssertOwned(regex);
     }
 
@@ -201,7 +201,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                         case 0: _ = regex.Count(input, source.Token); break;
                         case 1: _ = regex.MatchDetailed(input, source.Token); break;
                         case 2: _ = regex.EnumerateMatches(input, source.Token).MoveNext(); break;
-                        case 3: _ = regex.ReplaceToString(input, "Q", source.Token); break;
+                        case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q", source.Token)); break;
                     }
                 });
                 Assert.True(entered);

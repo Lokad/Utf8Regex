@@ -80,7 +80,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
                 Assert.False(cursor.MoveNext());
             }
             Assert.Equal(expected ? "<" + (capture ? body : text) + ">" : text,
-                regex.ReplaceToString(input, capture ? "<${x}>" : "<$&>"));
+                Encoding.UTF8.GetString(regex.Replace(input, capture ? "<${x}>" : "<$&>")));
             var splits = new List<string>();
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
             Assert.Equal(expected ? new[] { "", "" } : new[] { text }, splits);

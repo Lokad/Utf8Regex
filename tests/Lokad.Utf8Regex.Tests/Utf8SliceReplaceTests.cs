@@ -111,7 +111,7 @@ public sealed class Utf8SliceReplaceTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(oracle, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -145,7 +145,7 @@ public sealed class Utf8SliceReplaceTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram);
-        Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
+        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -180,7 +180,7 @@ public sealed class Utf8SliceReplaceTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
+        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options);

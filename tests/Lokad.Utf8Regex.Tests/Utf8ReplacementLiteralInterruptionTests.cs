@@ -98,7 +98,7 @@ public sealed class Utf8ReplacementLiteralInterruptionTests
         var regex = new Utf8Regex("(a)");
         using var token = new CancellationTokenSource();
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("a"u8, template, token.Token));
-        Assert.Equal(expected, regex.ReplaceToString("a"u8, template, token.Token));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace("a"u8, template, token.Token)));
     }
 
     [Theory]

@@ -174,7 +174,7 @@ public sealed class Utf8SliceSparseGroupTests
                 // The comparator receives the scalar form of each literal;
                 // string APIs no longer retain halves across substitutions.
                 var expected = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
-                Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template, source.Token)));
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Text template " + template);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
@@ -213,7 +213,7 @@ public sealed class Utf8SliceSparseGroupTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var template in new[] { "$+", "$12|$5|$2147483647", "$00|$01|$" + "{012}" })
         {
-            Assert.Equal(match.Result(template), regex.ReplaceToString(Encoding.UTF8.GetBytes(text), template));
+            Assert.Equal(match.Result(template), Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), template)));
             Assert.Equal(Encoding.UTF8.GetBytes(match.Result(template)), regex.Replace(Encoding.UTF8.GetBytes(text), Encoding.UTF8.GetBytes(template)));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

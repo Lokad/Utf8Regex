@@ -58,7 +58,7 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
     }
 }
 
-internal enum Utf8SliceReplacementResultKind { Text, Bytes, Destination }
+internal enum Utf8SliceReplacementResultKind { Bytes, Destination }
 
 /// <summary>One completed output form; destination storage remains caller-owned.</summary>
-internal readonly record struct Utf8SliceReplacementResult(string Text, byte[] Bytes, System.Buffers.OperationStatus Status, int BytesWritten);
+internal readonly record struct Utf8SliceReplacementResult(byte[] Bytes, System.Buffers.OperationStatus Status, int BytesWritten);

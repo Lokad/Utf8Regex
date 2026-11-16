@@ -26,7 +26,7 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal("😀ab", first.GetGroup(2).GetValueString());
         var next = regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, 6)), []);
         Assert.Equal((9, 6), (next.StartOffsetInBytes, (next.EndOffsetInBytes - next.StartOffsetInBytes)));
-        Assert.Equal("z<😀ab:😀ab> z<中def:中def>", regex.ReplaceToString(input, "<${2}:${1}>"));
+        Assert.Equal("z<😀ab:😀ab> z<中def:中def>", Encoding.UTF8.GetString(regex.Replace(input, "<${2}:${1}>")));
         var parts = new List<string>();
         foreach (var part in regex.EnumerateSplits(input)) parts.Add(part.GetValueString());
         Assert.Equal(new[] { "z", " z", "" }, parts);
@@ -51,7 +51,7 @@ public sealed class Utf8NativeCapturePreparationTests
         var first = regex.MatchDetailed(input);
         Assert.Equal("😀token000xxxxxxxx", first.GetGroup("g0").GetValueString());
         Assert.False(first.GetGroup("g31").Success);
-        Assert.Equal("<😀token000xxxxxxxx> <>", regex.ReplaceToString(input, "<${g0}>"));
+        Assert.Equal("<😀token000xxxxxxxx> <>", Encoding.UTF8.GetString(regex.Replace(input, "<${g0}>")));
         Assert.Equal("😀token000xxxxxxxx", first.GetGroup("g0").GetValueString());
     }
 
@@ -71,16 +71,16 @@ public sealed class Utf8NativeCapturePreparationTests
     {
         var grouped = new Utf8Regex("(a)(b)", Options(compiled));
         Assert.NotNull(Field<object?>(grouped, "_groupedLiteralSpanTable"));
-        Assert.Equal("<b:a> <b:a>", grouped.ReplaceToString("ab ab"u8, "<${2}:${1}>"));
+        Assert.Equal("<b:a> <b:a>", Encoding.UTF8.GetString(grouped.Replace("ab ab"u8, "<${2}:${1}>")));
         var family = new Utf8Regex("(?<a>cat)|(?<b>horse)", Options(compiled));
         Assert.NotNull(Field<object?>(family, "_literalFamilyCaptureMap"));
         Assert.NotNull(Field<object?>(family, "_alternationBranchSpanMap"));
-        Assert.Equal("<cat|> <|horse>", family.ReplaceToString("cat horse"u8, "<${a}|${b}>"));
+        Assert.Equal("<cat|> <|horse>", Encoding.UTF8.GetString(family.Replace("cat horse"u8, "<${a}|${b}>")));
         var prefix = new Utf8Regex("^((ab)c)", Options(compiled));
         Assert.NotNull(Field<object?>(prefix, "_groupedLiteralSpanTable"));
         Assert.NotNull(Field<object?>(prefix, "_caretAnchoredGroupedLiteralUtf8"));
         Assert.Equal(1, prefix.Count("abc abc"u8));
-        Assert.Equal("<ab> abc", prefix.ReplaceToString("abc abc"u8, "<${2}>"));
+        Assert.Equal("<ab> abc", Encoding.UTF8.GetString(prefix.Replace("abc abc"u8, "<${2}>")));
     }
 
     [Theory]
@@ -118,7 +118,7 @@ public sealed class Utf8NativeCapturePreparationTests
         var first = regex.MatchDetailed("cat horse"u8);
         Assert.Equal("cat", first.GetGroup("a").GetValueString());
         Assert.False(first.GetGroup("b").Success);
-        Assert.Equal("<cat|> <|horse>", regex.ReplaceToString("cat horse"u8, "<${a}|${b}>"));
+        Assert.Equal("<cat|> <|horse>", Encoding.UTF8.GetString(regex.Replace("cat horse"u8, "<${a}|${b}>")));
         Assert.Equal("cat", first.GetGroup("a").GetValueString());
     }
 

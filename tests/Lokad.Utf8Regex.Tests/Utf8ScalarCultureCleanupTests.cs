@@ -51,7 +51,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 detailed.GetGroup(patternId == 0 ? "col" : "before").GetValueString());
             Assert.Equal(patternId == 0 ? "23" : "\U0001f600",
                 detailed.GetGroup(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name").GetValueString());
-            Assert.Equal("<" + text + ">", regex.ReplaceToString(input, "<$&>"));
+            Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
             Assert.Equal(input.Length, cursor.Current.LengthInBytes);
@@ -96,7 +96,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 var found = regex.MatchDetailed(input);
                 Assert.Equal(wanted.Success, found.Success);
                 if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, found.GetGroup("x").GetValueString());
-                Assert.Equal(oracle.Replace(text, "<$1>"), regex.ReplaceToString(input, "<$1>"));
+                Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
                 var positions = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInUtf16, match.LengthInUtf16));
                 Assert.Equal(oracle.Matches(text).Select(m => (m.Index, m.Length)), positions);

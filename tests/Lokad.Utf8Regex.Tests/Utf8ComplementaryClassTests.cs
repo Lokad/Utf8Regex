@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -110,7 +111,7 @@ public sealed class Utf8ComplementaryClassTests
             Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
             Assert.Throws<ArgumentException>(() => regex.Count(input));
             Assert.Throws<ArgumentException>(() => { _ = regex.MatchDetailed(input); });
-            Assert.Throws<ArgumentException>(() => regex.ReplaceToString(input, "x"));
+            Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "x")));
             Assert.Throws<ArgumentException>(() => { foreach (var item in regex.EnumerateSplits(input)) { } });
         }
     }

@@ -28,7 +28,7 @@ public sealed class Utf8ScalarReplacementOutputTests
                 Assert.Throws<ArgumentException>(() => regex.TryReplace(input, template, destination, out _, source.Token));
                 Assert.All(destination, value => Assert.Equal((byte)0xa5, value));
             }
-            Assert.Equal("q😀q", regex.ReplaceToString("a😀a"u8, "q", source.Token));
+            Assert.Equal("q😀q", Encoding.UTF8.GetString(regex.Replace("a😀a"u8, "q", source.Token)));
         }
     }
 
@@ -47,7 +47,6 @@ public sealed class Utf8ScalarReplacementOutputTests
             const string template = "\ud83d${x}\ude00|$&";
             var expected = string.Concat(text.EnumerateRunes().Select(scalar => $"\ufffd{scalar}\ufffd|{scalar}"));
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
-            Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
             Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
             Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token));
             var destination = new byte[expectedBytes.Length];
@@ -72,16 +71,11 @@ public sealed class Utf8ScalarReplacementOutputTests
         var regex = new Utf8Regex("()", Options(compiled, rtl));
         const string template = "\ud83d$1\ude00";
         const string expected = "\ufffd\ufffd\U0001f600\ufffd\ufffd";
-        Assert.Equal(expected, regex.ReplaceToString("\U0001f600"u8, template));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("\U0001f600"u8, template));
         AssertOwned(regex);
     }
 
     [Theory]
-    [InlineData(false, false, "string")]
-    [InlineData(false, true, "string")]
-    [InlineData(true, false, "string")]
-    [InlineData(true, true, "string")]
     [InlineData(false, false, "bytes")]
     [InlineData(false, true, "bytes")]
     [InlineData(true, false, "bytes")]
@@ -109,7 +103,6 @@ public sealed class Utf8ScalarReplacementOutputTests
         {
             switch (operation)
             {
-                case "string": Assert.Equal(text, regex.ReplaceToString(input, "$1")); break;
                 case "bytes": Assert.Equal(input, regex.Replace(input, "$1")); break;
                 case "destination":
                     Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "$1", destination, out var written));

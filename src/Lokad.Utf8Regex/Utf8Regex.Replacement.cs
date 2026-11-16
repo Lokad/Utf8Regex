@@ -156,48 +156,6 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken,
-        Utf8ExecutionDeadline deadline)
-    {
-        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
-        {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken, deadline).Text;
-        }
-
-        var validation = Utf8Validation.Subject(input, InputValidation);
-        var budget = deadline;
-        if (UsesOwnedTemplateBeforeNativePlan() &&
-            TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Text,
-                default, cancellationToken, deadline, out var ownedTemplate))
-        {
-            return ownedTemplate.Text;
-        }
-
-        if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
-        {
-            var text = Encoding.UTF8.GetString(nativeResult);
-            deadline.CheckNow();
-            return text;
-        }
-
-        if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
-        {
-            var text = Encoding.UTF8.GetString(ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes, deadline));
-            deadline.CheckNow();
-            return text;
-        }
-
-        if (TryGetNativeReplacementBytes(replacement, out var replacementBytes))
-        {
-            var text = Encoding.UTF8.GetString(ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline));
-            deadline.CheckNow();
-            return text;
-        }
-
-        return OwnedSliceReplace(input, _ownedSliceProgram, replacement, Utf8SliceReplacementResultKind.Text,
-            default, cancellationToken, deadline).Text;
-    }
-
     private OperationStatus TryReplaceCore(
         ReadOnlySpan<byte> input,
         Utf8AnalyzedReplacement replacement,
@@ -384,7 +342,7 @@ public sealed partial class Utf8Regex
             : EnumerateMatches(input);
         if (!matches.MoveNext())
         {
-            result = CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind,
+            result = CompleteUnchangedOwnedReplacement(input, resultKind,
                 destination, ref invocation);
             return true;
         }
@@ -444,19 +402,16 @@ public sealed partial class Utf8Regex
                 case Utf8SliceReplacementResultKind.Bytes:
                     if (!writer.TryToArrayAndRelease(ref invocation, out var bytes))
                         throw new InvalidOperationException("Owned replacement output could not be published.");
-                    result = new(string.Empty, bytes, OperationStatus.Done, 0);
-                    break;
-                case Utf8SliceReplacementResultKind.Text:
-                    result = new(Utf8SliceBufferWork.DecodeUtf8(writer.WrittenBytes, ref invocation), [], OperationStatus.Done, 0);
+                    result = new(bytes, OperationStatus.Done, 0);
                     break;
                 case Utf8SliceReplacementResultKind.Destination:
                     if (writer.Length > destination.Length)
-                        result = new(string.Empty, [], OperationStatus.DestinationTooSmall, 0);
+                        result = new([], OperationStatus.DestinationTooSmall, 0);
                     else
                     {
                         var written = writer.Length;
                         Utf8SliceBufferWork.Copy(writer.WrittenBytes, destination, ref invocation);
-                        result = new(string.Empty, [], OperationStatus.Done, written);
+                        result = new([], OperationStatus.Done, written);
                     }
                     break;
                 default: throw new InvalidOperationException("Unknown owned output kind.");

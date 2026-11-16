@@ -132,15 +132,6 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceToString()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(s_input, "pet", token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeTryReplace()
     {
         var regex = new Utf8Regex("cat|horse");
@@ -178,7 +169,7 @@ public sealed class Utf8CancellationTests
         Assert.Equal(regex.IsMatch(s_input), regex.IsMatch(s_input, token));
         Assert.Equal(regex.Count(s_input), regex.Count(s_input, token));
         Assert.Equal((regex.Match(s_input).IndexInUtf16, regex.Match(s_input).LengthInUtf16), (regex.Match(s_input, token).IndexInUtf16, regex.Match(s_input, token).LengthInUtf16));
-        Assert.Equal(regex.ReplaceToString(s_input, "pet"), regex.ReplaceToString(s_input, "pet", token));
+        Assert.Equal(Encoding.UTF8.GetString(regex.Replace(s_input, "pet")), Encoding.UTF8.GetString(regex.Replace(s_input, "pet", token)));
     }
 
 }

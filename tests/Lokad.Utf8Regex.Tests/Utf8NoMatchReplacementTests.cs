@@ -28,8 +28,6 @@ public sealed class Utf8NoMatchReplacementTests
         foreach (var text in new[] { "", "dog é😀", string.Concat(Enumerable.Repeat("dog fox bird ", 512)) })
         {
             var input = Encoding.UTF8.GetBytes(text);
-            var strings = Create(options, Controls + Utf8ConstructionBudget.StringBytes(text.Length));
-            Assert.Equal(text, strings.ReplaceToString(input, "tiger"));
             var bytes = Create(options, Controls + Utf8ConstructionBudget.ArrayBytes<byte>(input.Length));
             var first = bytes.Replace(input, "tiger"u8);
             var retained = bytes.Replace(input, "tiger"u8);
@@ -46,20 +44,13 @@ public sealed class Utf8NoMatchReplacementTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void OneByteBelowFinalExtentStillDenies(bool bytes)
+    [Fact]
+    public void OneByteBelowFinalExtentStillDenies()
     {
         var input = "😀é"u8.ToArray();
-        var extent = bytes ? Utf8ConstructionBudget.ArrayBytes<byte>(input.Length)
-            : Utf8ConstructionBudget.StringBytes("😀é".Length);
+        var extent = Utf8ConstructionBudget.ArrayBytes<byte>(input.Length);
         var regex = Create(RegexOptions.None, Controls + extent - 1);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (bytes) _ = regex.Replace(input, "tiger"u8);
-            else _ = regex.ReplaceToString(input, "tiger");
-        });
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace(input, "tiger"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
     }
 
@@ -94,19 +85,19 @@ public sealed class Utf8NoMatchReplacementTests
     public void EmptyMatchesAndEmptyExpansionStillUseMatchedSemantics(string pattern, string text, string template, string expected)
     {
         var regex = Create(RegexOptions.None, 1 << 20, pattern);
-        Assert.Equal(expected, regex.ReplaceToString(Encoding.UTF8.GetBytes(text), template));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), template)));
     }
 
     [Fact]
     public void MissStillValidatesSubjectTemplateAndOriginalToken()
     {
         var regex = Create(RegexOptions.None, 1 << 20);
-        Assert.Throws<ArgumentException>(() => regex.ReplaceToString([0xff], "tiger"));
+        Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace([0xff], "tiger")));
         Assert.Throws<ArgumentException>(() => regex.Replace("dog"u8, [0xff]));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            regex.ReplaceToString("dog"u8, "tiger", cancellation.Token));
+            Encoding.UTF8.GetString(regex.Replace("dog"u8, "tiger", cancellation.Token)));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -47,7 +48,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         var regex = CreateRegex(compiled);
 
         Assert.Throws<ArgumentException>(() => regex.Replace(s_invalidUtf8, "z"));
-        Assert.Throws<ArgumentException>(() => regex.ReplaceToString(s_invalidUtf8, "z"));
+        Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(s_invalidUtf8, "z")));
         Assert.Throws<ArgumentException>(() => regex.Replace(s_invalidUtf8, "z"u8));
     }
 

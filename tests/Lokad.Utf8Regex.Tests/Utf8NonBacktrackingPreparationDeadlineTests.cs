@@ -145,7 +145,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
             Assert.Throws<ArgumentException>(() => regex.Count(input));
             Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
             Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
-            Assert.Throws<ArgumentException>(() => regex.ReplaceToString(input, "X"));
+            Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(input); _ = cursor.MoveNext(); });
             using var live = new CancellationTokenSource();
             live.Cancel();

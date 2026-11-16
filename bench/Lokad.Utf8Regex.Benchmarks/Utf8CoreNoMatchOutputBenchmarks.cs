@@ -40,14 +40,14 @@ public class Utf8CoreNoMatchOutputBenchmarks
         _regex = new Regex("(cat)", RegexOptions.CultureInvariant);
         _matchedRegex = new Regex("(dog)", RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
-        if (FiniteText() != _text || FiniteTextWithToken() != _text ||
-            !FiniteBytes().AsSpan().SequenceEqual(_input) || FiniteDestination() != _input.Length ||
-            !_destination.AsSpan().SequenceEqual(_input) || NativeText() != _text ||
-            PredecodedRegex() != _text || DecodeThenRegex() != _text ||
-            MatchedFiniteText() != MatchedPredecodedRegex() ||
-            NativeGroupedText() != _text || !NativeGroupedBytes().AsSpan().SequenceEqual(_input) ||
+        if (!FiniteBytes().AsSpan().SequenceEqual(_input) ||
+            !FiniteBytesWithToken().AsSpan().SequenceEqual(_input) || FiniteDestination() != _input.Length ||
+            !_destination.AsSpan().SequenceEqual(_input) || !NativeBytes().AsSpan().SequenceEqual(_input) ||
+            !PredecodedRegex().AsSpan().SequenceEqual(_input) || !DecodeThenRegex().AsSpan().SequenceEqual(_input) ||
+            !MatchedFiniteBytes().AsSpan().SequenceEqual(MatchedPredecodedRegex()) ||
+            !NativeGroupedBytes().AsSpan().SequenceEqual(_input) ||
             NativeGroupedDestination() != _input.Length || !_destination.AsSpan().SequenceEqual(_input) ||
-            MatchedNativeGroupedText() != "cat-cat")
+            !MatchedNativeGroupedBytes().AsSpan().SequenceEqual("cat-cat"u8))
             throw new InvalidOperationException("Core replacement outputs disagree.");
     }
 
@@ -55,31 +55,27 @@ public class Utf8CoreNoMatchOutputBenchmarks
     public void Cleanup() => _cancellation.Dispose();
 
     [Benchmark(Baseline = true)]
-    public string FiniteText() => _finite.ReplaceToString(_input, "tiger");
-    [Benchmark]
-    public string FiniteTextWithToken() => _finite.ReplaceToString(_input, "tiger", _cancellation.Token);
-    [Benchmark]
     public byte[] FiniteBytes() => _finite.Replace(_input, "tiger"u8);
+    [Benchmark]
+    public byte[] FiniteBytesWithToken() => _finite.Replace(_input, "tiger"u8, _cancellation.Token);
     [Benchmark]
     public int FiniteDestination() => _finite.TryReplace(_input, "tiger", _destination, out var written)
         == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
-    [Benchmark]
-    public string NativeGroupedText() => _nativeGrouped.ReplaceToString(_input, "$1-$2");
     [Benchmark]
     public byte[] NativeGroupedBytes() => _nativeGrouped.Replace(_input, "$1-$2");
     [Benchmark]
     public int NativeGroupedDestination() => _nativeGrouped.TryReplace(_input, "$1-$2", _destination, out var written)
         == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
     [Benchmark]
-    public string MatchedNativeGroupedText() => _nativeGrouped.ReplaceToString("cat"u8, "$1-$2");
+    public byte[] MatchedNativeGroupedBytes() => _nativeGrouped.Replace("cat"u8, "$1-$2");
     [Benchmark]
-    public string NativeText() => _native.ReplaceToString(_input, "tiger");
+    public byte[] NativeBytes() => _native.Replace(_input, "tiger"u8);
     [Benchmark]
-    public string PredecodedRegex() => _regex.Replace(_text, "tiger");
+    public byte[] PredecodedRegex() => Encoding.UTF8.GetBytes(_regex.Replace(_text, "tiger"));
     [Benchmark]
-    public string DecodeThenRegex() => _regex.Replace(Encoding.UTF8.GetString(_input), "tiger");
+    public byte[] DecodeThenRegex() => Encoding.UTF8.GetBytes(_regex.Replace(Encoding.UTF8.GetString(_input), "tiger"));
     [Benchmark]
-    public string MatchedFiniteText() => _matched.ReplaceToString(_input, "<$1>");
+    public byte[] MatchedFiniteBytes() => _matched.Replace(_input, "<$1>"u8);
     [Benchmark]
-    public string MatchedPredecodedRegex() => _matchedRegex.Replace(_text, "<$1>");
+    public byte[] MatchedPredecodedRegex() => Encoding.UTF8.GetBytes(_matchedRegex.Replace(_text, "<$1>"));
 }

@@ -74,7 +74,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, replacement));
                 Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
-                Assert.Equal(expected, regex.ReplaceToString(input, replacement));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
                 var destination = new byte[expectedBytes.Length];
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, replacement, destination, out var written));
                 Assert.Equal(expectedBytes.Length, written);
@@ -93,7 +93,6 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             if (!finiteTimeout)
             {
                 const string template = "<$&>:$`:$':$_:$$";
-                Assert.Equal(oracle.Replace(text, template), regex.ReplaceToString(input, template));
                 Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, template)), regex.Replace(input, template));
                 AssertOwned(regex);
             }

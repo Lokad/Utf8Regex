@@ -189,7 +189,7 @@ public sealed class Utf8SliceAnchorTests
                 actual.Add(match.LengthInUtf16);
             }
             Assert.Equal(expectedFlat, actual.ToArray());
-            Assert.Equal(expectedReplaced, regex.ReplaceToString(input, "Q"));
+            Assert.Equal(expectedReplaced, Encoding.UTF8.GetString(regex.Replace(input, "Q")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, candidate.ToString());
         }
     }

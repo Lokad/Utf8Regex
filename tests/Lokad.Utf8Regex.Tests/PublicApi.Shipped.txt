@@ -103,8 +103,6 @@ sealed class Utf8Regex
   method Int32 GroupNumberFromUtf8Name(ReadOnlySpan<Byte> nameUtf8, Threading.CancellationToken cancellationToken = default)
   method Int32[] GetGroupNumbers()
   method String GroupNameFromNumber(Int32 i)
-  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement)
-  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Threading.CancellationToken cancellationToken)
   method String[] GetGroupNames()
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
   method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input)

@@ -290,7 +290,7 @@ public sealed class Utf8NativeLiteralPreparationTests
             var count = 0;
             foreach (var item in regex.EnumerateMatches(input)) { Assert.True(item.LengthInBytes is 1 or 4); count++; }
             Assert.Equal(expected, count);
-            Assert.Equal(subtracted ? "Aa" : expected == 1 ? "AX!" : "AXX", regex.ReplaceToString(input, "X"));
+            Assert.Equal(subtracted ? "Aa" : expected == 1 ? "AX!" : "AXX", Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }

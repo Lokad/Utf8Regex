@@ -503,7 +503,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -574,7 +574,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -595,7 +595,7 @@ public sealed class GroupedLiteralDetailedTests
                 var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
                 var regex = new Utf8Regex(pattern, options);
                 var expected = oracle.Replace(text, template);
-                var actual = regex.ReplaceToString(input, template);
+                var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
 
                 Assert.Equal(expected, actual);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -634,7 +634,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -654,7 +654,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -726,7 +726,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
-        var stringActual = stringRegex.ReplaceToString(input, template);
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -784,7 +784,7 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Replace(text, template);
-        var actual = regex.ReplaceToString(input, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -856,7 +856,7 @@ public sealed class GroupedLiteralDetailedTests
         var expected = oracle.Replace(text, template);
 
         var regex = new Utf8Regex(pattern, options, timeout);
-        var actual = regex.ReplaceToString(input, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
         Assert.Equal(expected, actual);
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -1045,7 +1045,7 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Replace(text, template);
-        var actual = regex.ReplaceToString(input, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -1202,7 +1202,7 @@ public sealed class GroupedLiteralDetailedTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Replace(text, template);
-        var actual = regex.ReplaceToString(input, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

@@ -263,12 +263,16 @@ retains group zero. Python default/missed detailed capture/name arrays and text
 are empty. Successful supplied arrays retain their documented identity. Mutable
 output arrays remain independent even when immutable equal-range strings share.
 
-Core removes callback `Replace`/`ReplaceToString` and both evaluator delegates.
+Core removes `ReplaceToString`, callback replacement and both evaluator delegates.
 Use `CreateMatchCursor` to read byte ranges and capture histories, then assemble
 custom output in the host. Byte-template replacement and destination output keep
 their resource controls and original cancellation/deadline. Their scalar worker
 no longer derives input UTF-16 coordinates. PCRE2 and PythonRe callbacks remain
 available pending their separate surface cleanup.
+
+For text output, decode `regex.Replace(input, template)` in the host with
+`Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the
+additional string allocation and any host-level admission for it.
 
 ## Profile scope and other compatibility changes
 

@@ -79,7 +79,7 @@ public sealed class Utf8ResidualScalarRouteTests
             var regex = new Utf8Regex(pattern, Options(compiled));
             Assert.Equal(expectedBytes, regex.Replace(input, "Q", token));
             Assert.Equal(expectedBytes, regex.Replace(input, "Q"u8, token));
-            Assert.Equal(expected, regex.ReplaceToString(input, "Q", token));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "Q", token)));
             var destination = new byte[expectedBytes.Length];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q", destination, out var written, token));
             Assert.Equal(expectedBytes.Length, written);

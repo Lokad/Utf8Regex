@@ -59,7 +59,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
         }
     }
 
-    private static readonly string[] Operations = ["string", "bytes-string", "bytes-pattern", "destination-string", "destination-pattern"];
+    private static readonly string[] Operations = ["bytes-string", "bytes-pattern", "destination-string", "destination-pattern"];
 
     public static IEnumerable<object[]> ReplacementSurfaces()
     {
@@ -164,8 +164,6 @@ public sealed class Utf8SliceReplacementLifetimeTests
     {
         switch (operation)
         {
-            case "string":
-                return token.HasValue ? regex.ReplaceToString(input, replacement, token.Value) : regex.ReplaceToString(input, replacement);
             case "bytes-string":
                 return Encoding.UTF8.GetString(token.HasValue ? regex.Replace(input, replacement, token.Value) : regex.Replace(input, replacement));
             case "bytes-pattern":

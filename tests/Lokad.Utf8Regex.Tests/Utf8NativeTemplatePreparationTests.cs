@@ -35,7 +35,7 @@ public sealed class Utf8NativeTemplatePreparationTests
             var regex = new Utf8Regex(pattern, options);
             Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"));
             Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"u8));
-            Assert.Equal(expected, regex.ReplaceToString(input, "[$1]"));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[$1]")));
             var destination = new byte[expectedBytes.Length];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$1]"u8, destination, out var written));
             Assert.Equal(destination.Length, written);
@@ -54,7 +54,7 @@ public sealed class Utf8NativeTemplatePreparationTests
         var subject = Encoding.UTF8.GetBytes(input); var native = Encoding.UTF8.GetBytes(template);
         var expected = regex.Replace(subject, template);
         Assert.Equal(expected, regex.Replace(subject, native));
-        Assert.Equal(Encoding.UTF8.GetString(expected), regex.ReplaceToString(subject, template));
+        Assert.Equal(Encoding.UTF8.GetString(expected), Encoding.UTF8.GetString(regex.Replace(subject, template)));
         var destination = new byte[expected.Length + 4]; destination.AsSpan().Fill(0xcc);
         Assert.Equal(OperationStatus.Done, regex.TryReplace(subject, native, destination, out var written));
         Assert.Equal(expected.Length, written); Assert.Equal(expected, destination[..written]);
@@ -112,7 +112,7 @@ public sealed class Utf8NativeTemplatePreparationTests
     public void MappedCaptureOutputKeepsBytePiecesAndFinalTextProjection(string pattern, string subject, string template, string expected)
     {
         var regex = new Utf8Regex(pattern); var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(expected, regex.ReplaceToString(input, template));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template)));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template)));
     }
 }

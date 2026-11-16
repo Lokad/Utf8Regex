@@ -31,7 +31,6 @@ public sealed class Utf8TemplateFinalCaptureTests
         var bytes = Encoding.UTF8.GetBytes(expected);
         var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 });
-        Assert.Equal(expected, regex.ReplaceToString(input, template));
         Assert.Equal(bytes, regex.Replace(input, template));
         Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         var output = new byte[bytes.Length];

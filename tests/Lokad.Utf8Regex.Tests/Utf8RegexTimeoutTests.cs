@@ -127,7 +127,7 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
         Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
 
-        Assert.Equal(oracle.Replace(text, "z"), regex.ReplaceToString(input, "z"));
+        Assert.Equal(oracle.Replace(text, "z"), Encoding.UTF8.GetString(regex.Replace(input, "z")));
 
         var expectedIndexes = new List<int>();
         foreach (Match match in oracle.Matches(text))

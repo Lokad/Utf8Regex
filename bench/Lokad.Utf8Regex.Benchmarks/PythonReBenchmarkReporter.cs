@@ -3584,7 +3584,7 @@ internal sealed class PythonReBenchmarkContext
         }
 
         return new PythonReBenchmarkReplacementResult(
-            regex.ReplaceToString(InputBytes, _case.Replacement),
+            Encoding.UTF8.GetString(regex.Replace(InputBytes, _case.Replacement)),
             null,
             replacementCount);
     }
@@ -3630,7 +3630,7 @@ internal sealed class PythonReBenchmarkContext
                 regex.Replace(InputBytes, _case.Replacement),
                 null)
             : new PythonReBenchmarkReplacementResult(
-                regex.ReplaceToString(InputBytes, _case.Replacement),
+                Encoding.UTF8.GetString(regex.Replace(InputBytes, _case.Replacement)),
                 null,
                 null);
     }

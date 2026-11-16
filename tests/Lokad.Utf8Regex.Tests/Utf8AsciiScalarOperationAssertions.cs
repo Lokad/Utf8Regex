@@ -126,8 +126,6 @@ internal static class Utf8AsciiScalarOperationAssertions
         var replacement = subject.Restore(oracle.Replace(subject.Projected,
             Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
         var bytes = Encoding.UTF8.GetBytes(replacement);
-        var stringReplace = new Utf8Regex(pattern, options);
-        Assert.Equal(replacement, stringReplace.ReplaceToString(subject.Input, template));
         var byteReplace = new Utf8Regex(pattern, options);
         Assert.Equal(bytes, byteReplace.Replace(subject.Input, template));
         var utf8Replace = new Utf8Regex(pattern, options);
@@ -153,7 +151,6 @@ internal static class Utf8AsciiScalarOperationAssertions
         Sequence(subject, expected, live.EnumerateMatches(subject.Input, source.Token));
         Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, source.Token));
         Assert.Equal(bytes, live.Replace(subject.Input, template, source.Token));
-        Assert.Equal(replacement, live.ReplaceToString(subject.Input, template, source.Token));
     }
 
     internal static void Offset(string pattern, RegexOptions options, string text, int offset)

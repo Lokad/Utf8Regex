@@ -103,9 +103,7 @@ public sealed partial class Utf8Regex
             // overlap; finally also covers failures and interruption.
             workspace.Release(ref invocation);
             if (!anyMatch)
-                return CompleteUnchangedOwnedReplacement(input,
-                    resultKind == Utf8SliceReplacementResultKind.Text ? Utf8SliceBufferWork.CountUtf16(input, ref invocation) : 0,
-                    resultKind, destination, ref invocation);
+                return CompleteUnchangedOwnedReplacement(input, resultKind, destination, ref invocation);
             if (program.RightToLeft)
             {
                 writer.Append(input.Slice(0, edgeByte));
@@ -115,13 +113,11 @@ public sealed partial class Utf8Regex
             else writer.Append(input[edgeByte..]);
             switch (resultKind)
             {
-                case Utf8SliceReplacementResultKind.Text:
-                    return new(writer.ToValidatedString(), [], System.Buffers.OperationStatus.Done, 0);
                 case Utf8SliceReplacementResultKind.Bytes:
-                    return new(string.Empty, writer.ToArray(), System.Buffers.OperationStatus.Done, 0);
+                    return new(writer.ToArray(), System.Buffers.OperationStatus.Done, 0);
                 case Utf8SliceReplacementResultKind.Destination:
                     var status = writer.CopyUtf8(destination, out var written);
-                    return new(string.Empty, [], status, written);
+                    return new([], status, written);
                 default:
                     throw new InvalidOperationException("Unknown owned output kind.");
             }
@@ -139,10 +135,10 @@ public sealed partial class Utf8Regex
         }
     }
 
-    // The original subject is already validated. A miss needs only its final
-    // projection; keep the same scope/authority without staging those bytes.
+    // Subject preparation is complete. A miss needs only final bytes; keep
+    // the same scope/authority without staging an unchanged subject.
     private static Utf8SliceReplacementResult CompleteUnchangedOwnedReplacement(
-        ReadOnlySpan<byte> input, int utf16Length, Utf8SliceReplacementResultKind resultKind,
+        ReadOnlySpan<byte> input, Utf8SliceReplacementResultKind resultKind,
         Span<byte> destination, ref Utf8SliceInvocation invocation)
     {
         Utf8InvocationResultLedger results = default;
@@ -151,17 +147,15 @@ public sealed partial class Utf8Regex
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             switch (resultKind)
             {
-                case Utf8SliceReplacementResultKind.Text:
-                    return new(results.DecodeUtf8(input, utf16Length, ref invocation), [], System.Buffers.OperationStatus.Done, 0);
                 case Utf8SliceReplacementResultKind.Bytes:
                     var bytes = results.AllocateArray<byte>(input.Length, ref invocation);
                     Utf8SliceBufferWork.Copy(input, bytes, ref invocation);
-                    return new(string.Empty, bytes, System.Buffers.OperationStatus.Done, 0);
+                    return new(bytes, System.Buffers.OperationStatus.Done, 0);
                 case Utf8SliceReplacementResultKind.Destination:
                     if (destination.Length < input.Length)
-                        return new(string.Empty, [], System.Buffers.OperationStatus.DestinationTooSmall, 0);
+                        return new([], System.Buffers.OperationStatus.DestinationTooSmall, 0);
                     Utf8SliceBufferWork.Copy(input, destination, ref invocation);
-                    return new(string.Empty, [], System.Buffers.OperationStatus.Done, input.Length);
+                    return new([], System.Buffers.OperationStatus.Done, input.Length);
                 default:
                     throw new InvalidOperationException("Unknown owned output kind.");
             }

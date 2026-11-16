@@ -76,7 +76,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(count, Cache(regex).Count);
         Assert.Equal("😀", retained.GetGroup("x").GetValueString());
-        Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, "<${x}>"));
+        Assert.Equal("<😀><a>", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<${x}>")));
     }
 
     [Theory]

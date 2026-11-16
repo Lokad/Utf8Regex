@@ -1,3 +1,4 @@
+using System.Text;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -75,7 +76,7 @@ public sealed class Utf8ParseTreeRetentionTests
             var hit = regex.MatchDetailed("İ😀"u8);
             Assert.Equal((0, 6), (hit.IndexInBytes, hit.LengthInBytes));
             Assert.Equal("İ😀", hit.GetGroup("n").GetValueString());
-            Assert.Equal("<İ😀>", regex.ReplaceToString("İ😀"u8, "<${n}>"));
+            Assert.Equal("<İ😀>", Encoding.UTF8.GetString(regex.Replace("İ😀"u8, "<${n}>")));
             Assert.Same(catalog, regex.Inspection.PreparedRegex.ScalarProgram?.CaptureCatalog);
             Assert.DoesNotContain(InspectLibraryGraph(regex), static value => value is Utf8OwnedRegexTree or Utf8TreeNode);
         }

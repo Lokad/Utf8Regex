@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core `ReplaceToString` and its text-output execution branches. Hosts can
+  decode byte replacement results; their additional string allocation is outside
+  the regex's resource limits.
+
 - Remove Core callback replacement overloads and evaluator delegates. Custom
   substitutions use the byte capture cursor; byte templates avoid input UTF-16
   preparation. Shared PCRE2 writer support remains.

@@ -419,12 +419,12 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("(ab)+", "xxababyy", "Q", RegexOptions.CultureInvariant)]
     [InlineData("café", "café café", "tea", RegexOptions.CultureInvariant)]
     [InlineData("(a)(b)?", "xab ay", "$`|$'|$+|$_", RegexOptions.CultureInvariant)]
-    public void ReplaceToStringMatchesRuntime(string pattern, string input, string replacement, RegexOptions options)
+    public void StringTemplateByteReplacementMatchesRuntime(string pattern, string input, string replacement, RegexOptions options)
     {
         var utf8Regex = new Utf8Regex(pattern, options);
 
         var expected = Regex.Replace(input, pattern, replacement, options);
-        var actual = utf8Regex.ReplaceToString(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = Encoding.UTF8.GetString(utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement));
 
         Assert.Equal(expected, actual);
     }

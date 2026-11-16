@@ -32,7 +32,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
         var cursor = regex.EnumerateMatches(input);
         Assert.False(cursor.MoveNext());
         Assert.Equal(input, regex.Replace(input, "Q"));
-        Assert.Equal(Encoding.UTF8.GetString(input), regex.ReplaceToString(input, "$&"));
+        Assert.Equal(Encoding.UTF8.GetString(input), Encoding.UTF8.GetString(regex.Replace(input, "$&")));
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         AssertOwned(regex);
     }
@@ -54,7 +54,6 @@ public sealed class Utf8ScalarFlatAdmissionTests
             Assert.Equal((0, 4, 0, 2), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
             Assert.Equal("\U0001f600", match.GetValueString());
             if (regex.GetGroupNumbers().Length > 1) Assert.Equal("\U0001f600", match.GetGroup(1).GetValueString());
-            Assert.Equal("<\U0001f600>", regex.ReplaceToString("\U0001f600"u8, "<$&>", source.Token));
             Assert.Equal("<\U0001f600>"u8.ToArray(), regex.Replace("\U0001f600"u8, "<$&>", source.Token));
             AssertOwned(regex);
         }

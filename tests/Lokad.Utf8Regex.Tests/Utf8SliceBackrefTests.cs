@@ -284,7 +284,7 @@ public sealed class Utf8SliceBackrefTests
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal(oracle.Replace(inputText, "Q"), stringRegex.ReplaceToString(input, "Q"));
+        Assert.Equal(oracle.Replace(inputText, "Q"), Encoding.UTF8.GetString(stringRegex.Replace(input, "Q")));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

@@ -148,7 +148,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        foreach (var operation in new[] { "detail", "replace", "replace-bytes", "replace-text", "destination", "destination-bytes" })
+        foreach (var operation in new[] { "detail", "replace", "replace-bytes", "destination", "destination-bytes" })
         {
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
@@ -167,7 +167,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀😀 aaabb 😀");
-        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace", "replace-text" })
+        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace" })
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);
@@ -334,8 +334,8 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, overflow.TryChargeResultBytes(1));
         Assert.Equal(ulong.MaxValue, overflow.ResultBytes);
         Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, overflow.TryChargeResultBytes(0));
-        AssertResultFailure(() => Create("ab", 1, work: 100000).ReplaceToString("ab"u8, "Z"), 1);
-        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create("ab", 100000, work: 1).ReplaceToString("ab"u8, "Z"));
+        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1, work: 100000).Replace("ab"u8, "Z")), 1);
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Encoding.UTF8.GetString(Create("ab", 100000, work: 1).Replace("ab"u8, "Z")));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
     }
 
@@ -355,7 +355,7 @@ public sealed class Utf8CoreResultPolicyTests
         var canceled = Assert.Throws<OperationCanceledException>(() =>
         {
             using var already = new CancellationTokenSource(); already.Cancel();
-            Create("ab", 1).ReplaceToString("ab"u8, "Z", already.Token);
+            Encoding.UTF8.GetString(Create("ab", 1).Replace("ab"u8, "Z", already.Token));
         });
         Assert.True(canceled.CancellationToken.IsCancellationRequested);
     }
@@ -380,7 +380,7 @@ public sealed class Utf8CoreResultPolicyTests
         var input = "é😀ab"u8.ToArray();
         var regex = Create("ab", 1000000);
         var context = regex.MatchDetailed(input);
-        AssertResultFailure(() => Create("ab", 1).ReplaceToString(input, "Z"), 1);
+        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1).Replace(input, "Z")), 1);
         Assert.Equal("ab", context.GetValueString());
         var destination = new byte[] { 0x7f };
         Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace(input, "longer", destination, out var written));

@@ -259,7 +259,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
                     Assert.True(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
                 var expected = reference.Replace(text, "[😀]");
                 Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[😀]"));
-                Assert.Equal(expected, regex.ReplaceToString(input, "[😀]"));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[😀]")));
             }
         }
     }
@@ -277,7 +277,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
             Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
             var expected = new Regex(pattern, flags).Replace(text, "[x]");
             Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[x]"));
-            Assert.Equal(expected, regex.ReplaceToString(input, "[x]"));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[x]")));
         }
     }
 
@@ -293,7 +293,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         try { Assert.Same(interrupted, Assert.Throws<InvalidOperationException>(() => regex.Replace(input, "x"))); }
         finally { session.Complete(); }
         Assert.True(observed);
-        Assert.Equal("x x x", regex.ReplaceToString("tempus magna semper"u8, "x"));
+        Assert.Equal("x x x", Encoding.UTF8.GetString(regex.Replace("tempus magna semper"u8, "x")));
     }
 
     private sealed class Box(int value) { internal readonly int Value = value; }

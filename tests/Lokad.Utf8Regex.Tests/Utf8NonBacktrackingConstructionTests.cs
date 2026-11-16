@@ -53,7 +53,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
                 }
             }
         }
-        Assert.Equal(ordinary.ReplaceToString(input, "<$0:${x}>"), regex.ReplaceToString(input, "<$0:${x}>"));
+        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:${x}>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0:${x}>")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ordinary.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -77,7 +77,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.True(group.Success);
         Assert.Equal(1, group.CaptureCount);
         Assert.Equal((0, 0), (group.IndexInBytes, group.LengthInBytes));
-        Assert.Equal("Q😀Q", huge.ReplaceToString("😀"u8, "Q"));
+        Assert.Equal("Q😀Q", Encoding.UTF8.GetString(huge.Replace("😀"u8, "Q")));
         Assert.True(huge.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -162,7 +162,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             Assert.Equal(wanted.Success ? 1 : 0, found.CaptureCount);
             if (found.Success) Assert.Equal(wanted.GetValueString(), found.GetValueString());
         }
-        Assert.Equal(ordinary.ReplaceToString(input, "<$0:$1>"), regex.ReplaceToString(input, "<$0:$1>"));
+        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:$1>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
         if (!text.Any(char.IsSurrogate))
         {
             // The interpreted comparator avoids the known compiled finite-lazy
@@ -202,7 +202,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         Assert.Equal(new[] { (0, input.Length) }, ranges);
-        Assert.Equal("<" + text + ">", regex.ReplaceToString(input, "<$&>"));
+        Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
         Assert.Equal(Encoding.UTF8.GetBytes("<" + text + ">"), regex.Replace(input, "<$&>"u8));
         var splits = new List<(int, int)>();
         foreach (var split in regex.EnumerateSplits(input)) splits.Add((split.IndexInBytes, split.LengthInBytes));
