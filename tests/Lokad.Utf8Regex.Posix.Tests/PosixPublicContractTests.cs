@@ -645,11 +645,12 @@ public sealed class PosixPublicContractTests
             rewind ? Encoding.UTF8.GetBytes(new string('a', 8192) + " \nb") :
             Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a");
         var triggered = false;
+        // Construction is complete and these small workspaces reach the first
+        // scheduled checkpoint while matching. Stack membership depends on JIT
+        // inlining and cannot determine when the public contract requests stop.
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (triggered || (foldedGreedy || rewind) && !new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod() is { Name: var name, DeclaringType: { } type } &&
-                name == (sparseGreedy ? "Find" : "MatchAt") && type == typeof(PosixWorkspace))) return;
+            if (triggered) return;
             triggered = true; if (deadline) now = 101; else token.Cancel();
         });
         try
