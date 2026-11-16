@@ -21,6 +21,10 @@ three exact producer pins change among1565 original consumer inputs; repositorie
 remain untouched. All700 older assets rehash unchanged; eight new files total708.
 Source CI**43838709274 GREEN Windows/Linux**, saved/closed. Implementation and version commits were pushed together so one freeze CI covers
 the batch. No qualification/test/producer retry or package overwrite.
+Generated summary/README commit4165174f CI43843659587 is GREEN Windows/Linux,
+saved/closed. Package/source bytes remain767c0089; no repack or measurement retry.
+Final read-only closeout verifies all35 plan evidence links, both target graphs,
+original consumer scopes and the700 preserved assets. No new optimization is queued.
 
 One21.565s absolute observation of10 final-package public operations,
 ordinary net11 process, normal8CPU startup thenCPU2, reused caller/no producer build.
