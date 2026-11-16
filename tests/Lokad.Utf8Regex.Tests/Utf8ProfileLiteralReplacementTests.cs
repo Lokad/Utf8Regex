@@ -1,0 +1,52 @@
+using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
+
+namespace Lokad.Utf8Regex.Tests;
+
+public sealed class Utf8ProfileLiteralReplacementTests
+{
+    [Theory]
+    [InlineData(Utf8InputValidation.Validate)]
+    [InlineData(Utf8InputValidation.AssumeValid)]
+    public void BorrowedInvocationKeepsExactUtf8ReplacementAndOriginalAdmission(Utf8InputValidation policy)
+    {
+        var regex = new Utf8Regex("foo", inputValidation: policy);
+        var input = Encoding.UTF8.GetBytes("é😀foo 中foo!");
+        var invocation = new Utf8SliceInvocation(new(10000, 0, 1 << 20), Timeout.InfiniteTimeSpan, default)
+        { InputValidation = policy };
+        Assert.True(invocation.Ledger.TryReserve(17));
+        Utf8InvocationResultLedger results = default;
+        byte[]? retained = null;
+        try
+        {
+            retained = regex.ReplaceExactLiteralForResult(input, "😀é"u8, 1, ref invocation, ref results, out var count);
+            Assert.Equal(1, count);
+            Assert.Equal("é😀😀é 中foo!"u8.ToArray(), retained);
+            Assert.Equal(17 + results.ReservedBytes, invocation.Ledger.ReservedBytes);
+        }
+        finally { results.Release(ref invocation); }
+        Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(17);
+        input.AsSpan().Fill((byte)'x');
+        Assert.Equal("é😀😀é 中foo!"u8.ToArray(), retained);
+    }
+
+    [Fact]
+    public void StrictSubjectAndIndependentReplacementValidationPrecedeMissPublication()
+    {
+        var regex = new Utf8Regex("foo");
+        foreach (var subjectFailure in new[] { false, true })
+        {
+            var input = subjectFailure ? new byte[] { (byte)'x', 0xff } : "é😀 no match"u8.ToArray();
+            var replacement = subjectFailure ? "ok"u8.ToArray() : new byte[] { 0xff };
+            var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
+            Utf8InvocationResultLedger results = default;
+            Exception? failure = null;
+            try { _ = regex.ReplaceExactLiteralForResult(input, replacement, int.MaxValue, ref invocation, ref results, out _); }
+            catch (ArgumentException error) { failure = error; }
+            finally { results.Release(ref invocation); }
+            Assert.IsAssignableFrom<ArgumentException>(failure);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+}

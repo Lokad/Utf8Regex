@@ -285,22 +285,18 @@ public sealed partial class Utf8Regex
         int maximumReplacementCount,
         ref Utf8SliceInvocation invocation,
         ref Utf8InvocationResultLedger results,
-        out int replacementCount, out int outputUtf16Length)
+        out int replacementCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
-        var inputValidation = Utf8Validation.Subject(input, ref invocation);
-        var replacementValidation = Utf8Validation.Validate(literalReplacementUtf8, ref invocation);
-        var bytes = Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
+        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8Validation.ThrowIfInvalidOnly(literalReplacementUtf8, ref invocation);
+        // ASCII needles select complete scalar ranges. The caller's result
+        // ledger sizes text only when requested; bytes need no UTF-16 metadata.
+        return Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
-        // Complete ASCII needles replace whole scalar ranges. Both source and
-        // replacement are validated, so their UTF-16 extents determine output
-        // sizing without validating the assembled bytes a second time.
-        outputUtf16Length = checked(inputValidation.Utf16Length + replacementCount *
-            (replacementValidation.Utf16Length - literal.Length));
-        return bytes;
     }
 
     private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,

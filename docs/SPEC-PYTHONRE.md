@@ -318,6 +318,12 @@ Native one-shot discovery returns byte endpoints over caller-guaranteed valid te
 Text output sizes its selected range; value output derives prefix/range
 coordinates after a hit. Batch output reuses facts requested by discovery or
 projection within the same operation.
+Exact ASCII-literal substitution does not describe the subject or replacement
+in UTF-16 before byte discovery/output. Replacement validity remains checked
+independently. String output uses the shared ledger on its actual completed
+bytes, including the unchanged subject on a miss. Its unknown short Unicode
+lengths use the same conservative capacity bound; larger text retains bounded
+exact sizing. Byte output needs neither character counts nor ASCII classification.
 Counting/decoding use bounded blocks and the original
 invocation, with string capacity admitted before allocation and held through
 publication. Numerical work requirements can change. The caller supplies valid unchanged UTF-8 text; matching and output work retain

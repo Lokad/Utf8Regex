@@ -343,11 +343,11 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var bytes = _utf8Regex.ReplaceExactLiteralForResult(input, literalBytes,
-                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced, out var charCount);
+                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced);
             var text = string.Empty;
             if (textOutput)
             {
-                text = results.DecodeUtf8(bytes is null ? input : bytes, charCount, ref invocation);
+                text = results.DecodeUtf8(bytes is null ? input : bytes, null, ref invocation);
                 if (bytes is not null) results.ReleaseArray(bytes, ref invocation);
             }
             else if (bytes is null)

@@ -64,7 +64,8 @@ Instances accept positive nullable `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`
 required shaping cumulatively. Depth admits live frames before acquisition;
 working/result controls admit modeled major capacities and growth overlap.
 Result/staging charges do not refund and may conservatively count storage again.
-Unknown string lengths up to 4096 UTF-8 bytes, including one-shot string results,
+Unknown string lengths up to 4096 UTF-8 bytes, including one-shot and literal
+replacement string results,
 use a byte-derived capacity bound before decoding; Unicode results can therefore
 reach a finite byte limit earlier. Larger results retain bounded exact sizing.
 Denials use `Utf8ResourceLimitExceededException` with the corresponding

@@ -258,24 +258,22 @@ public sealed class PythonReSubstitutionOutputTests
     public void NativeLiteralOutputKeepsItsLoanThroughStringProjection(bool textOutput)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("foo");
-        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + 96), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + 48 + 64), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(13));
         Utf8InvocationResultLedger results = default;
-        var control = new Utf8InvocationBufferControl(ref invocation);
         try
         {
-            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, ref invocation, ref results, out var count, out var chars);
+            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, ref invocation, ref results, out var count);
             Assert.NotNull(bytes);
-            Assert.Equal(6, chars);
             Assert.Equal(2, count); Assert.Equal("😀 😀é"u8.ToArray(), bytes);
             Assert.Equal(48UL, results.ReservedBytes); Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
             if (textOutput)
             {
-                var text = results.DecodeUtf8(bytes, 6, ref invocation);
+                var text = results.DecodeUtf8(bytes, null, ref invocation);
                 Assert.Equal("😀 😀é", text);
-                Assert.Equal(109UL, invocation.Ledger.ReservedBytes);
+                Assert.Equal(125UL, invocation.Ledger.ReservedBytes);
                 results.ReleaseArray(bytes, ref invocation);
-                Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
+                Assert.Equal(77UL, invocation.Ledger.ReservedBytes);
             }
         }
         finally { results.Release(ref invocation); }
@@ -293,13 +291,12 @@ public sealed class PythonReSubstitutionOutputTests
         try
         {
             var bytes = core.ReplaceExactLiteralForResult(input, "😀é"u8, int.MaxValue,
-                ref invocation, ref results, out var count, out var chars);
+                ref invocation, ref results, out var count);
             Assert.Null(bytes);
             Assert.Equal(0, count);
-            Assert.Equal(7, chars);
             Assert.Equal(0UL, results.ReservedBytes);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.Equal("é😀 dog", results.DecodeUtf8(input, chars, ref invocation));
+            Assert.Equal("é😀 dog", results.DecodeUtf8(input, null, ref invocation));
         }
         finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
