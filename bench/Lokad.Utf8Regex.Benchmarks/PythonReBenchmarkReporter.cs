@@ -3606,7 +3606,7 @@ internal sealed class PythonReBenchmarkContext
         try
         {
             var bytes = GetCoreReplacementRegex().ReplaceExactLiteralForResult(InputBytes,
-                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount, out var charCount);
+                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount);
             var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
             if (IsUtf8ReplacementOperation)
             {
@@ -3617,7 +3617,7 @@ internal sealed class PythonReBenchmarkContext
                 }
                 return new PythonReBenchmarkReplacementResult(string.Empty, bytes, returnedCount);
             }
-            var text = results.DecodeUtf8(bytes ?? InputBytes, charCount, ref invocation);
+            var text = results.DecodeUtf8(bytes ?? InputBytes, null, ref invocation);
             return new PythonReBenchmarkReplacementResult(text, null, returnedCount);
         }
         finally { results.Release(ref invocation); }

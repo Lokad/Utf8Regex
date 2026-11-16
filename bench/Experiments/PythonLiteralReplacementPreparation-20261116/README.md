@@ -56,3 +56,8 @@ hash/zero references. Artifacts:
 artifacts/experiments/python-literal-replacement-preparation-20261116/.
 SHA256 raw C8C75FFAC696906F4AED7DC678374B6C087AE1D25C13BD0C9566D7726780BF88;
 validation1523D412BE6FFAB7BC3BF454C645BDD2D9EEE1E964B38CA4724F017F45F25FA6.
+
+Source CI also found one benchmark-only counted-replacement diagnostic still
+calling the removed signature. Update it to use the same ledger-owned sizing;
+the affected benchmark project builds both Release targets. Producer binaries
+and the public performance comparison are unchanged; no remeasurement follows.
