@@ -171,8 +171,9 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = preparedRegex.ScalarProgram
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
         _ownedSliceProgram = ownedSliceProgram;
-        _hasCaptures = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.FallbackDirectFamily.HasValue
-            ? ownedSliceProgram.GroupCount != 0 : HasOwnedCaptures(preparedRegex.ExecutionTree);
+        _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
+            (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.FallbackDirectFamily.HasValue ||
+             HasOwnedCaptures(preparedRegex.ExecutionTree));
         // Fixed finite policies/deadlines and captured Unicode atoms use scalar
         // projection. Avoid maps that no public detailed/template route consumes. A missing
         // native tree cannot produce a map either; inactive catalog declarations

@@ -27,10 +27,20 @@ internal static class Utf8RegexPreparer
                 fallbackReason = null;
             }
 
-            // The scalar fallback and its offset/profile adapters do not execute
-            // this native execution tree. Direct-family kernels retain their
-            // preparation and capture-projection inputs.
-            var tree = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !fallbackDirectFamily.HasValue
+            var executionBackend = analyzedRegex.ExecutionKind switch
+            {
+                NativeExecutionKind.ExactAsciiLiteral or
+                NativeExecutionKind.AsciiLiteralIgnoreCase or
+                NativeExecutionKind.ExactUtf8Literal or
+                NativeExecutionKind.ExactUtf8Literals or
+                NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => Utf8ExecutionBackend.NativeLiteral,
+                NativeExecutionKind.FallbackRegex => Utf8ExecutionBackend.FallbackRegex,
+                _ => Utf8ExecutionBackend.NativeSimplePattern,
+            };
+            // General scalar execution and capture-free literal search do not
+            // consume this copied tree. Captured/native shape preparation still does.
+            var tree = (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !fallbackDirectFamily.HasValue) ||
+                (executionBackend == Utf8ExecutionBackend.NativeLiteral && scalarProgram is { GroupCount: 0 })
                 ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
             var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
@@ -76,17 +86,6 @@ internal static class Utf8RegexPreparer
                     compiledPatternCategory = Utf8CompiledPatternCategory.DeterministicLinear;
                 }
             }
-
-            var executionBackend = analyzedRegex.ExecutionKind switch
-            {
-                NativeExecutionKind.ExactAsciiLiteral or
-                NativeExecutionKind.AsciiLiteralIgnoreCase or
-                NativeExecutionKind.ExactUtf8Literal or
-                NativeExecutionKind.ExactUtf8Literals or
-                NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => Utf8ExecutionBackend.NativeLiteral,
-                NativeExecutionKind.FallbackRegex => Utf8ExecutionBackend.FallbackRegex,
-                _ => Utf8ExecutionBackend.NativeSimplePattern,
-            };
 
             var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan, structuralLinearProgram,
                 analyzedRegex.SimplePatternPlan, structuralSearchPlan, structuralVerifier.AsciiProgram);

@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Omit unused execution-tree preparation for capture-free native literals and
+  redundant capture-predicate walks for programs without capture slots, reducing
+  construction allocations while preserving literal search and resource bounds.
+
 - Remove Core `ReplaceToString` and its text-output execution branches. Hosts can
   decode byte replacement results; their additional string allocation is outside
   the regex's resource limits.
