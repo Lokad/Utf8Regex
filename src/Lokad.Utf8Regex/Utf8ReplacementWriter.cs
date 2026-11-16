@@ -3,7 +3,8 @@ using System.Text;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Accumulates UTF-8 replacement output for the PCRE2 adapter's byte callbacks.</summary>
+// PCRE2-INTEGRATION-POINT: The adapter still consumes the shared callback writer.
+/// <summary>Accumulates UTF-8 replacement output for adapter byte callbacks.</summary>
 /// <remarks>The writer supplied to an evaluator is valid only during that callback.
 /// Copies of an initialized writer share its buffer. Resetting it to default clears
 /// accumulated output. Default/reset writers join the active callback's invocation.
