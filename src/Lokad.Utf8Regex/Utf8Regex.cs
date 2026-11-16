@@ -1997,7 +1997,7 @@ public sealed partial class Utf8Regex
             // Keep strict validity under the same invocation without describing
             // an unrelated suffix, especially for trusted early matches.
             Utf8ValidationResult validation = default;
-            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
                 Utf8Validation.CheckSubject(input, ref invocation);
             else
                 validation = Utf8Validation.Subject(input, ref invocation);
@@ -2013,7 +2013,7 @@ public sealed partial class Utf8Regex
         int startByte, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
-        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
         {
             // Value Match needs only the selected range. Borrow Count's proven
             // literal discovery and the existing metered coordinate projection;

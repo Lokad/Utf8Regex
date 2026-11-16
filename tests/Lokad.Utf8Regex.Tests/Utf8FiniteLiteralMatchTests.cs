@@ -10,9 +10,66 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteLiteralMatchTests
 {
-    private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None)
+    private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None,
+        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
         => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, inputValidation: inputValidation);
+
+    [Theory]
+    [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    public void WiderValueFamiliesKeepEveryOrdinalAndCoordinatesWithoutVmStorage(int count)
+    {
+        string[] literals = ["猫", "😀a", "dog", "日本人", "é", "bravissimo", "中", "東京"];
+        var pattern = string.Join('|', literals.Take(count));
+        using var source = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
+        {
+            var expected = new Regex(pattern, options | RegexOptions.CultureInvariant);
+            foreach (var policy in Enum.GetValues<Utf8InputValidation>())
+            {
+                var regex = Create(pattern, options: options, inputValidation: policy);
+                foreach (var padding in new[] { 0, 2037, 2043, 4095 })
+                foreach (var literal in literals.Take(count))
+                {
+                    var text = "π😀" + new string('x', padding) + literal + "!";
+                    var bytes = Encoding.UTF8.GetBytes(text);
+                    byte[] storage = [0xff, .. bytes, 0xff];
+                    var reference = expected.Match(text);
+                    AssertRange(regex.Match(storage.AsSpan(1, bytes.Length), source.Token), text,
+                        reference.Index, reference.Length);
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("cat")]
+    [InlineData("é😀fox")]
+    [InlineData("none")]
+    public void WiderValueFamiliesRejectMalformedTailsAndKeepPreCancellation(string text)
+    {
+        var regex = Create("cat|dog|emu|fox|yak");
+        byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
+        Assert.Throws<ArgumentException>(() => regex.Match(bytes));
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token)).CancellationToken);
+    }
+
+    [Fact]
+    public void WiderValueFamiliesDoNotChangeDetailedCaptureAdmissionOrRetainedResults()
+    {
+        const string pattern = "(?<animal>cat|dog|emu|fox|yak)";
+        var tiny = Create(pattern);
+        AssertRange(tiny.Match("é😀dog"u8), "é😀dog", 3, 3);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.MatchDetailed("é😀dog"u8)).ResourceKind);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var retained = regex.MatchDetailed("é😀dog"u8);
+        AssertRange(regex.Match("😀cat"u8), "😀cat", 2, 3);
+        Assert.Equal("dog", retained.GetGroup("animal").GetValueString());
+    }
 
     private static void AssertRange(Utf8ValueMatch actual, string text, int start, int length)
     {
@@ -135,6 +192,7 @@ public sealed class Utf8FiniteLiteralMatchTests
 
     [Theory]
     [InlineData("needle")] [InlineData("needle|other|third")] [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("needle|other|third|fourth|fifth")]
     public void WorkDenialIncludesValidationDiscoveryProjectionAndPublication(string pattern)
     {
         var literal = pattern.Contains('夏') ? pattern : "needle";
@@ -163,14 +221,20 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("validation", false)] [InlineData("validation", true)]
-    [InlineData("search", false)] [InlineData("search", true)]
-    [InlineData("projection", false)] [InlineData("projection", true)]
-    public void EveryPhaseKeepsTheOriginalCancellationAndAbsoluteDeadline(string phase, bool expire)
+    [InlineData("validation", false, "needle")] [InlineData("validation", true, "needle")]
+    [InlineData("search", false, "needle")] [InlineData("search", true, "needle")]
+    [InlineData("projection", false, "needle")] [InlineData("projection", true, "needle")]
+    [InlineData("validation", false, "needle|other|third|fourth|fifth")]
+    [InlineData("validation", true, "needle|other|third|fourth|fifth")]
+    [InlineData("search", false, "needle|other|third|fourth|fifth")]
+    [InlineData("search", true, "needle|other|third|fourth|fifth")]
+    [InlineData("projection", false, "needle|other|third|fourth|fifth")]
+    [InlineData("projection", true, "needle|other|third|fourth|fifth")]
+    public void EveryPhaseKeepsTheOriginalCancellationAndAbsoluteDeadline(string phase, bool expire, string pattern)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("needle", RegexOptions.CultureInvariant,
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");

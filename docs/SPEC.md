@@ -464,6 +464,9 @@ confirmation is required. Needles above1024 bytes keep the existing generic path
 The same invocation charges eligibility, each bounded scan and publication;
 avoiding false-candidate replay can reduce work, while dense hits can cost more.
 Caller validation, enclosing regex verification and original interruption remain.
+Eligible finite whole-value `Match` calls admit up to eight exact alternatives
+through the same bounded discovery and projection without VM working storage.
+Offset maps and detailed capture results retain their separate admission.
 Already-prepared families of three or four distinct heads, with needles of 3–16
 bytes, can share the ordinary checked search inside each admitted window.
 Complete verification precedes recovery of the original branch ordinal. One
