@@ -107,6 +107,10 @@ try {
     }
     if ('Generality' -in $Phase) {
         Invoke-RefreshBenchmark generality @('--measure-generality')
+        Invoke-RefreshBenchmark generality-posix-ambiguous @('--measure-posix-case', 'extent/ambiguous-haystack', '3')
+        Invoke-RefreshBenchmark generality-posix-words @('--measure-posix-case', 'extent/word-haystack', '3')
+        Invoke-RefreshBenchmark generality-pcre2-jit @('--measure-pcre2-case', 'backtracking/capture-backreference', '1', '3')
+        Invoke-RefreshBenchmark generality-pcre2-empty @('--measure-pcre2-case', 'literal/empty-unicode', '1', '3')
     }
     if ('Core' -in $Phase) {
         Invoke-RefreshBenchmark core @('--refresh-readme-benchmarks', 'dotnet-performance,dotnet-performance-compiled,lokad,lokad-compiled', '1', '5')

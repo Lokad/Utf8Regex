@@ -33,6 +33,11 @@ internal static partial class BenchmarkInspectReporter
                 return true;
             case "--measure-posix-case":
                 if (args.Length is < 2 or > 3) throw new ArgumentException("Select one POSIX valid-text case and optional sample count.");
+                if (args[1].StartsWith("extent/", StringComparison.Ordinal))
+                {
+                    exitCode = MeasurePosixLongestExtents(args[1], args.Length > 2 ? int.Parse(args[2], CultureInfo.InvariantCulture) : 3);
+                    return true;
+                }
                 exitCode = RefreshPosix(args[1], args.Length > 2 ? int.Parse(args[2], CultureInfo.InvariantCulture) : 9,
                     writeSnapshot: false);
                 return true;

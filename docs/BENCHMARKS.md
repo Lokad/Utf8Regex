@@ -64,6 +64,21 @@ The historical POSIX comparator is PCRE2's
 ordered NFA, not a leftmost-longest POSIX reference; use it only for verified
 overlap. Native interop floors and tiny subjects do not establish haystack parity.
 
+For whole-match extents, `--measure-posix-case extent/ambiguous-haystack 3` and
+`extent/word-haystack` use PCRE2's DFA with longest results first. Both cases
+deliberately put the shorter alternative first and verify complete nonoverlapping
+byte ranges before timing. They cover Count and cursor operation costs, including
+token, finite/deadline and caller-funded lanes. These focused commands are part of
+the Generality refresh phase. They do not refresh the old POSIX table.
+
+This DFA reference uses PCRE.NET's predecoded **16-bit** public API, not its 8-bit
+reusable match buffer. The byte-coordinate map is prepared outside timing and
+the native API's substantial per-match workspace/result allocations remain in
+the reported cost. It is an extent-correctness reference and a public-wrapper
+cost observation, not a native matching-throughput parity claim. It supplies no
+POSIX subgroup, locale or collation reference. Broader reference coverage and a
+more representative reusable native throughput comparator remain pending.
+
 Older investigation records remain available at the
 `experiments-archive-20261116` Git tag. They describe historical producer versions;
 their focused gains must not be multiplied into present performance ratios.
