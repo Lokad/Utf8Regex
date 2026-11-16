@@ -105,6 +105,7 @@ internal partial struct PosixWorkspace
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
+        var terminalExit = -1;
         while (true)
         {
             Charge(ref invocation);
@@ -191,7 +192,11 @@ internal partial struct PosixWorkspace
                     }
                     else
                     {
-                        PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
+                        // A proved terminal scalar run has no shorter choice.
+                        // Keep its ordinary counters, decoder and predicates;
+                        // a failed optional atom selects the same exit directly.
+                        if (code[instruction.A].B != 0) terminalExit = instruction.A;
+                        else PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
                         SetState(state, slot, maximum == long.MaxValue ? (int)minimum + 1 : count + 1, ref invocation);
                         SetState(state, slot + 1, at, ref invocation);
                         pc++;
@@ -199,6 +204,7 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.RepeatEnd: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatExit:
+                    terminalExit = -1;
                     SetState(state, instruction.A * 2, -1, ref invocation);
                     SetState(state, instruction.A * 2 + 1, -1, ref invocation);
                     pc++;
@@ -243,7 +249,8 @@ internal partial struct PosixWorkspace
             }
             if (failed)
             {
-                if (!Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
+                if (terminalExit >= 0) { pc = terminalExit; terminalExit = -1; }
+                else if (!Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
             }
         }
     }

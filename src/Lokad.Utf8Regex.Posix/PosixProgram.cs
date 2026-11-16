@@ -175,23 +175,49 @@ internal sealed partial class PosixProgram
 
     private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
-        // A fixed sequence has only one parse. Empty, dot and bracket captures
-        // must keep that native trace rather than acquire general memo storage.
-        if (program.RepeatCount == 0)
+        // A fixed sequence, optionally ending in one single-scalar greedy run,
+        // has one longest parse. Keep its native trace instead of chart storage.
+        if (program.RepeatCount <= 1)
         {
             var unique = true;
+            var terminalRepeat = -1;
             for (var index = 0; index < program.Instructions.Length; index++)
             {
                 budget.ChargeWork(1);
-                var kind = program.Instructions[index].Kind;
+                var instruction = program.Instructions[index];
+                var kind = instruction.Kind;
+                if (kind == Utf8SliceInstructionKind.RepeatGreedy && terminalRepeat < 0 &&
+                    index <= program.Instructions.Length - 4 && instruction.A == index + 3 &&
+                    program.Instructions[index + 1].Kind is (Utf8SliceInstructionKind.Literal or
+                        Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.CategorySet) &&
+                    program.Instructions[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } end && end.A == index &&
+                    program.Instructions[index + 3] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == instruction.B)
+                {
+                    budget.ChargeWork(3);
+                    terminalRepeat = index;
+                    index += 3;
+                    continue;
+                }
                 if (kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
                     Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Anchor or
                     Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Accept) ||
+                    terminalRepeat >= 0 && kind is not (Utf8SliceInstructionKind.CaptureStart or
+                        Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Accept) ||
                     kind == Utf8SliceInstructionKind.Accept && index != program.Instructions.Length - 1)
                 { unique = false; break; }
             }
             if (unique && program.Instructions.Length != 0 && program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept)
+            {
+                if (terminalRepeat >= 0)
+                {
+                    var exitIndex = program.Instructions[terminalRepeat].A;
+                    var exit = program.Instructions[exitIndex];
+                    // POSIX owns this stream. RepeatExit.B marks an impossible
+                    // shorter choice; repeat C/D remain their original bounds.
+                    program.Instructions[exitIndex] = new(exit.Kind, exit.A, 1, exit.C, exit.D);
+                }
                 return true;
+            }
         }
         // For one scalar R, each piece consumes x_i in [min_i,max_i]. First
         // greedy success reserves remaining minima and consumes the maximum

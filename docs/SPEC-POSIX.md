@@ -184,6 +184,13 @@ captures. Those routes keep one trace and project it directly, except the flat
 run case below. First and
 mandatory empty participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
+One greedy single-scalar repeat after a fixed scalar prefix, followed only by
+capture operations, also has one longest parse. Its ordinary scalar interpreter
+keeps counters, decoding, predicates and checkpoints but omits impossible shorter
+exit frames. A failing optional atom selects that exit directly. Body captures,
+forks, preceding repeats and consuming or anchored tails retain their existing
+rules. This can lower pending-depth/working requirements without weakening work
+or interruption enforcement; scalar values and finite repeat bounds are unchanged.
 For positive ASCII-origin literals/classes, invariant lowercase-fiber keys can
 also prove folded run boundaries. Intersecting scalar closures necessarily share
 an ASCII key. This proof changes selection eligibility only: Unicode partners
