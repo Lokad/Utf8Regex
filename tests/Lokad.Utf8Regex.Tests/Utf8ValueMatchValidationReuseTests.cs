@@ -1,10 +1,37 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ValueMatchValidationReuseTests
 {
+    [Theory]
+    [InlineData("needle", "é😀needle中")]
+    [InlineData("中", "é😀中needle")]
+    [InlineData("needle", "é😀no match中")]
+    public void LiteralValueMatchUsesOneSubjectPolicyAuthority(string pattern, string text)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
+            RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled, RegexOptions.NonBacktracking })
+        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
+        {
+            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant, inputValidation: policy);
+            var expected = new Regex(pattern, mode | RegexOptions.CultureInvariant).Match(text);
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xFF, .. bytes, 0xFF];
+            var session = Utf8SearchDiagnosticsSession.Start();
+            try
+            {
+                var actual = regex.Match(storage.AsSpan(1, bytes.Length));
+                Assert.Equal(expected.Success, actual.Success);
+                if (actual.Success) AssertRange(actual, text, expected.Index, expected.Length);
+                Assert.Equal(policy == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
+            }
+            finally { session.Complete(); }
+        }
+    }
+
     [Theory]
     [InlineData("needleé😀")]
     [InlineData("é😀needle")]

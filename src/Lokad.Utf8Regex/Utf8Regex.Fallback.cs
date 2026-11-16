@@ -8,7 +8,6 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
@@ -554,19 +553,6 @@ public sealed partial class Utf8Regex
             !features.HasAtomicGroups &&
             !features.HasConditionals &&
             !features.HasLoops;
-    }
-
-    private Utf8ValidationResult GetWellFormedOnlyValidation(ReadOnlySpan<byte> input)
-    {
-        if (!TryUseAsciiInputValidationShortcut(input) &&
-            _compiledEngineRuntime.SupportsWellFormedOnlyCount &&
-            Utf8.IsValid(input))
-        {
-            return default;
-        }
-
-        Utf8Validation.CheckSubject(input, InputValidation);
-        return default;
     }
 
     private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation) =>

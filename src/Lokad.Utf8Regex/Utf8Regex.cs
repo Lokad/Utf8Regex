@@ -1337,7 +1337,6 @@ public sealed partial class Utf8Regex
 
         if (_compiledEngineRuntime.SupportsWellFormedOnlyCount)
         {
-            Utf8ValidationResult countValidation;
             if (_compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount)
             {
                 // This ASCII scan exists only to prove strict validity. Trusted
@@ -1355,12 +1354,10 @@ public sealed partial class Utf8Regex
                         return 0;
                     }
                 }
-
-                countValidation = default;
             }
             else
             {
-                countValidation = GetWellFormedOnlyValidation(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
@@ -1370,7 +1367,7 @@ public sealed partial class Utf8Regex
             }
 
             var fastBudget = CreateExecutionBudget();
-            return CountViaCompiledEngine(input, countValidation, fastBudget);
+            return CountViaCompiledEngine(input, default, fastBudget);
         }
 
         if (CanUseWellFormedOnlyValidation())
@@ -1827,7 +1824,7 @@ public sealed partial class Utf8Regex
         {
             if (!canUseAsciiWellFormedOnlyMatch)
             {
-                _ = GetWellFormedOnlyValidation(input);
+                Utf8Validation.CheckSubject(input, InputValidation);
             }
 
             if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
