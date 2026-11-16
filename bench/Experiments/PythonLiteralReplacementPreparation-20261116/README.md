@@ -61,3 +61,5 @@ Source CI also found one benchmark-only counted-replacement diagnostic still
 calling the removed signature. Update it to use the same ledger-owned sizing;
 the affected benchmark project builds both Release targets. Producer binaries
 and the public performance comparison are unchanged; no remeasurement follows.
+The corrected cad091d0 source CI43806709953 passes Windows/Linux, saved/closed.
+Its diagnostic smoke checksums pass; smoke timings are not qualification evidence.
