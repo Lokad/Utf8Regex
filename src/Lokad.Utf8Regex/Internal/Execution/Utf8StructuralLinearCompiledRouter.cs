@@ -19,25 +19,9 @@ internal static class Utf8StructuralLinearCompiledRouter
             !UsesRightToLeft(options);
     }
 
-    public static bool CanUseEmittedDeterministicMatcher(
-        Utf8PreparedRegex regexPlan,
-        bool emitEnabled,
-        Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget)
-    {
-        return budget.IsInfinite &&
-            emitEnabled &&
-            validation.IsAscii &&
-            emittedDeterministicMatcher is not null &&
-            regexPlan.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily;
-    }
-
     public static bool TryIsMatch(
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
-        bool emitEnabled,
-        Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -82,13 +66,6 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
-            emittedDeterministicMatcher is { } deterministicMatcher)
-        {
-            isMatch = deterministicMatcher.FindNext(input, 0, out _) >= 0;
-            return true;
-        }
-
         isMatch = false;
         return false;
     }
@@ -96,8 +73,6 @@ internal static class Utf8StructuralLinearCompiledRouter
     public static bool TryCount(
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
-        bool emitEnabled,
-        Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
@@ -154,23 +129,6 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
-            emittedDeterministicMatcher is { } deterministicMatcher)
-        {
-            if (Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-                regexPlan.StructuralLinearProgram,
-                input,
-                budget,
-                out count))
-            {
-                return true;
-            }
-
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearEmit);
-            count = deterministicMatcher.Count(input);
-            return true;
-        }
-
         count = 0;
         return false;
     }
@@ -178,8 +136,6 @@ internal static class Utf8StructuralLinearCompiledRouter
     public static bool TryMatch(
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
-        bool emitEnabled,
-        Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -224,16 +180,6 @@ internal static class Utf8StructuralLinearCompiledRouter
                 0,
                 budget,
                 out var matchedLength);
-            match = index < 0
-                ? Utf8ValueMatch.NoMatch
-                : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-            return true;
-        }
-
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
-            emittedDeterministicMatcher is { } deterministicMatcher)
-        {
-            var index = deterministicMatcher.FindNext(input, 0, out var matchedLength);
             match = index < 0
                 ? Utf8ValueMatch.NoMatch
                 : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);

@@ -7,6 +7,10 @@
 - Use the general matcher for balancing-group counts, removing a BEGIN/END-specific
   counter. These patterns now use the general engine's work, depth and storage
   charges; existing finite budgets may need adjustment.
+- Remove whole-pattern, identifier/window and fixed-token shape IL emitters,
+  reducing construction work and storage. Their operations use existing owned
+  interpreters/search helpers. Literal-family emission and fixed-width SIMD
+  counting remain; `Compiled` does not yet compile general patterns to IL.
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.
 - Add immutable `inputValidation` and read-only `InputValidation` in Core and

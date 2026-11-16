@@ -12,11 +12,6 @@ internal static class Utf8CompiledBackendCapability
             Utf8EmittedLiteralFamilyCounter.CanCreate(searchPlan, searchPlan.CountOperation, searchPlan.FirstMatchOperation);
     }
 
-    public static bool CanUseEmittedStructuralLinear(Utf8PreparedRegex regexPlan)
-    {
-        return Utf8EmittedDeterministicMatcher.CanCreate(regexPlan.StructuralLinearProgram);
-    }
-
     private static bool IsEmittableLiteralFamilyProgram(Utf8SearchOperationPlan program)
     {
         return program.HasValue &&

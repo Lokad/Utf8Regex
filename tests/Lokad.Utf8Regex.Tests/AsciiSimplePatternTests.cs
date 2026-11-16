@@ -404,28 +404,6 @@ public sealed class AsciiSimplePatternTests
             new Utf8Regex(pattern, options).Count(System.Text.Encoding.UTF8.GetBytes(input)));
     }
 
-    [Fact]
-    public void CompiledFixedWidthCountPreservesDiagnosticEmitRoute()
-    {
-        const string Input = "ab1d-ab2d-ab3d";
-        var regex = new Utf8Regex(
-            "ab[0-9]d",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var session = Utf8SearchDiagnosticsSession.Start();
-
-        try
-        {
-            Assert.Equal(
-                Regex.Count(Input, "ab[0-9]d", RegexOptions.CultureInvariant),
-                regex.Count(System.Text.Encoding.UTF8.GetBytes(Input)));
-            Assert.Equal(Utf8ExecutionRoute.NativeStructuralLinearEmit, session.ExecutionRoute);
-        }
-        finally
-        {
-            session.Complete();
-        }
-    }
-
     [Theory]
     [InlineData("^ab[0-9]d", RegexOptions.CultureInvariant)]
     [InlineData("ab[0-9]d$", RegexOptions.CultureInvariant)]

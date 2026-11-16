@@ -977,23 +977,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void AnalysisCanCompileEmitMatcherForDeterministicFixedTokenPattern()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"ab[0-9]d", RegexOptions.CultureInvariant);
-
-        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.StructuralLinearProgram));
-    }
-
-    [Fact]
-    public void AnalysisCanCompileEmitMatcherForAnyByteFixedTokenPattern()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"ab.[0-9]d", RegexOptions.CultureInvariant);
-
-        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.StructuralLinearProgram));
-    }
-
-    [Fact]
-    public void DeterministicFixedTokenPatternPreservesBehaviorWithEmitBackedRuntime()
+    public void DeterministicFixedTokenPatternPreservesPublicBehavior()
     {
         var regex = new Utf8Regex(@"ab[0-9]d", RegexOptions.CultureInvariant);
         var input = "xx ab3d yy ab7d zz"u8;
@@ -1007,7 +991,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void AnyByteDeterministicFixedTokenPatternPreservesBehaviorWithEmitBackedRuntime()
+    public void AnyByteDeterministicFixedTokenPatternPreservesPublicBehavior()
     {
         var regex = new Utf8Regex(@"ab.[0-9]d", RegexOptions.CultureInvariant);
         var input = "xx ab_3d yy ab!7d zz"u8;

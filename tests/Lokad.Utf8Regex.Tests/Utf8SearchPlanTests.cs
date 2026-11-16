@@ -313,20 +313,6 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void CompiledEngineSelectionUsesExecutablePipelines()
-    {
-        var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
-        var fallback = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
-        var structural = new Utf8Regex("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
-
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literalFamily.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, structural.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledExecutionBackend.Legacy, fallback.Inspection.CompiledExecutionBackend);
-        Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, structural.Inspection.CompiledExecutionBackend);
-    }
-
-    [Fact]
     public void CompiledFamiliesUseSelectedRuntimesAndNativeKernels()
     {
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;

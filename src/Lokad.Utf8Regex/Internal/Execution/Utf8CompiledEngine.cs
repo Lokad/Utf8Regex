@@ -59,8 +59,7 @@ internal static class Utf8CompiledEngineSelector
                 NativeExecutionKind.AsciiStructuralQuotedRelation or NativeExecutionKind.AsciiOrderedLiteralWindow ||
              regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern && CanUseStructuralLinearSimplePattern(regexPlan)))
         {
-            var emitted = Utf8CompiledBackendCapability.CanUseEmittedStructuralLinear(regexPlan) ||
-                Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regexPlan);
+            var emitted = Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regexPlan);
             return new(Utf8CompiledEngineKind.StructuralLinearAutomaton,
                 emitted ? Utf8CompiledExecutionBackend.EmittedInstruction : Utf8CompiledExecutionBackend.Legacy);
         }

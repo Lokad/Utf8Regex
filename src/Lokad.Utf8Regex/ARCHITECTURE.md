@@ -26,14 +26,13 @@ their admitted subsets. Internal `FallbackRegex` classification names refer to
 owned execution, not BCL matching. Optional family plans are optimization results,
 not a general regex IR or an integration contract for other regex flavors.
 
-Engine selection reads prepared capabilities; it does not lower a kernel merely
-to label it. The structural linear runtime prepares its optional emitted kernel
-once. For compiled identifier families the program borrows that same immutable
-kernel for direct Count; ordinary construction still prepares its direct kernel.
-A declined preparation is not retried by the program. Invocation state, budgets
-and result ownership are separate from this shared implementation. There is no
-separate structural-family runtime or emitted-kernel engine kind; actual emitted
-capabilities are reported by the selected runtime.
+Engine selection reads prepared capabilities. The whole-pattern,
+identifier/window and fixed-token shape emitters have been removed. Their public
+operations use the remaining owned interpreters and search helpers. Literal-family
+emission remains; the live fixed-width SIMD counter is shared by interpreter and
+facade paths. General patterns currently use the owned scalar interpreter,
+including when `Compiled` is requested. A general compiled backend remains future
+work. Invocation budgets and result ownership are separate from prepared programs.
 
 Search dispositions derive from canonical candidate sources, confirmation and
 projection. Count, first-match and enumeration control their actual exit and

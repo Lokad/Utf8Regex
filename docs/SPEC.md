@@ -929,7 +929,9 @@ graph, identity deduplication or transactional manifest is required.
 Production execution is owned and managed: parse/analyze/prepare, immutable
 program, invocation runtime. No BCL matcher/result engine, native imports or
 unchecked memory reads are shipped. Actual `Unsafe.SizeOf<T>()` is permitted.
-`Compiled` affects strategy only; disabled dynamic code uses existing
+`Compiled` affects strategy only. General patterns currently use the owned scalar
+interpreter; the removed shape-specific IL emitters are not a general compiled
+backend. Literal-family emission remains. Disabled dynamic code uses existing
 non-emitted execution. NativeAOT/trimming are not qualified.
 
 Native search is an optimization of the same scalar semantics. Eligibility must

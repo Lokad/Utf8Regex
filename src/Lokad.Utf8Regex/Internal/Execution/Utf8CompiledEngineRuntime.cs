@@ -451,8 +451,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly bool _emitEnabled;
-    private readonly Utf8EmittedDeterministicMatcher? _emittedDeterministicMatcher;
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
     private readonly PreparedAsciiFindPlan _orderedWindowTrailingFindPlan;
 
@@ -461,10 +459,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         _regexPlan = plan;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(plan);
         _verifierRuntime = verifier;
-        _emitEnabled = emit;
-        _emittedDeterministicMatcher = emit && Utf8EmittedDeterministicMatcher.TryCreate(_regexPlan.StructuralLinearProgram, out var matcher)
-            ? matcher
-            : null;
         _emittedBoundaryLiteralFamily = emit &&
             (_regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) == 0 &&
             Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
@@ -510,8 +504,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (Utf8StructuralLinearCompiledRouter.TryIsMatch(
                 _regexPlan,
                 _verifierRuntime,
-                _emitEnabled,
-                _emittedDeterministicMatcher,
                 input,
                 validation,
                 budget,
@@ -545,8 +537,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (Utf8StructuralLinearCompiledRouter.TryCount(
                 _regexPlan,
                 _verifierRuntime,
-                _emitEnabled,
-                _emittedDeterministicMatcher,
                 _orderedWindowTrailingFindPlan,
                 input,
                 validation,
@@ -590,8 +580,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (Utf8StructuralLinearCompiledRouter.TryMatch(
                 _regexPlan,
                 _verifierRuntime,
-                _emitEnabled,
-                _emittedDeterministicMatcher,
                 input,
                 validation,
                 budget,

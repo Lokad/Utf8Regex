@@ -28,6 +28,7 @@ public sealed class RegexDifferentialTests
         @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+",
         @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
         @"\bpublic\s+async\b", @"\bawait\b\s+.{0,60}\bConfigureAwait\b",
+        @"ab[0-9]d", @"ab.[0-9]d", @"a[A-Za-z]cd", @"ab[0-9]cd", @"abc[0-9]defg", @"ab[0-9][0-9]cd",
     };
 
     private static readonly string[] Tokens =
@@ -54,6 +55,8 @@ public sealed class RegexDifferentialTests
             "1234-5678-1234-456", "1234 5678 1234 4567", "1234-5678 1234-456", "1234-5678-1234-45",
             "1234-5678-1234-45678", "1234-5678_1234-456", "1234-5678-123x-456", "x1234-5678-1234-456",
             "class Alpha struct Beta record Gamma", "éclass Nope class Goodé", "public\tasync", "xpublic async",
+            "ab1d-ab2d-ab3d", "ab1cd-ab7cd-", "abc1defg-abc7defg-", "ab12cd ab34cd ab5cd ab567cd", "aZcd ab_3d ab!7d",
+            "ab\n3d abé3d ab_٣d", "ab0d", "ab0", "ab_3", "ab0d\n",
             "LogError( LogWarning \t( LogInformation\n(", "xLogError( LogErrorx(", "await x.ConfigureAwait", "await\nConfigureAwait",
             .. Enumerable.Range(0, 96).Select(_ => string.Concat(Enumerable.Range(0, random.Next(1, 13))
                 .Select(_ => Tokens[random.Next(Tokens.Length)])))];
@@ -118,6 +121,7 @@ public sealed class RegexDifferentialTests
     [InlineData(@"[^\n]*")]
     [InlineData("(?:a|.){1,2}")]
     [InlineData("(?:😀|é)+")]
+    [InlineData(@"ab.[0-9]d")]
     public void SupplementaryScalarsUseOneOracleSymbolAndOriginalByteRanges(string pattern)
     {
         // Replace each emoji by one BMP symbol, then project oracle positions through
@@ -131,7 +135,8 @@ public sealed class RegexDifferentialTests
             var oracle = new Regex(pattern.Replace("😀", "\ue000"), options);
             for (var sample = 0; sample < 32; sample++)
             {
-                var text = string.Concat(Enumerable.Range(0, random.Next(0, 12)).Select(_ => tokens[random.Next(tokens.Length)]));
+                var text = sample == 0 ? "ab😀3d abé3d ab\n3d" :
+                    string.Concat(Enumerable.Range(0, random.Next(0, 12)).Select(_ => tokens[random.Next(tokens.Length)]));
                 var symbols = text.Replace("😀", "\ue000");
                 foreach (var start in new[] { 0, symbols.Length / 2, symbols.Length }.Distinct())
                     AssertCursor(regex, oracle, text, symbols, start, cancellation.Token, $"{pattern}; {options}; {text}");

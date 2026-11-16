@@ -81,7 +81,6 @@ internal static class Utf8GraphQualification
         {
             nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime) or nameof(Utf8FallbackRegexCompiledEngineRuntime)
                 => Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes,
-            nameof(Utf8EmittedDeterministicMatcher) => Utf8ConstructionBudget.ObjectBytes<(Utf8EmittedDelegate<Utf8EmittedDeterministicMatcher.FindNextDelegate>, byte[], AsciiCharClass[], bool)>(),
             "CompositeTrailingLiteralSearch" => Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch, int, int)>(),
             nameof(PreparedByteSet) => Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>(),
             nameof(PreparedAsciiIgnoreCaseLiteralSetSearchData) => StateBytes(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Search.PreparedAsciiIgnoreCaseLiteralSetSearchDataState", true)!),
