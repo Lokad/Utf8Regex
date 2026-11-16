@@ -22,13 +22,6 @@ internal sealed class Utf8ReplacementPlanCache
     internal int Count => _plans.Count;
     internal ulong PayloadBytes => _plans.PayloadBytes;
 
-    // Reserve the wrapper and the child's enforced metadata/payload maxima.
-    // This immutable allowance covers every later lazy publication. It is a
-    // conservative owner loan, not a snapshot of the child's current leaves.
-    internal ulong MaximumRetainedBytes => Utf8ConstructionBudget.ObjectBytes<
-        Utf8BoundedPreparationCache<object, Utf8AnalyzedReplacement>>()
-        + _plans.MaximumMetadataBytes + _plans.MaximumPayloadBytes;
-
     internal Utf8AnalyzedReplacement GetOrAdd<TState>(
         object replacement,
         TState state,
