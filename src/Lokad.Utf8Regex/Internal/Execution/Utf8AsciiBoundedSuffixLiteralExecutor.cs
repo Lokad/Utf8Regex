@@ -67,7 +67,8 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         var candidateSearchStart = Math.Max(searchFrom + literalSuffixOffset, literalSuffixOffset);
         while (candidateSearchStart <= latestLiteralEnd)
         {
-            var relative = input[candidateSearchStart..].IndexOf(plan.LiteralLastByte);
+            // A literal candidate must leave at least one byte for the suffix scalar.
+            var relative = input[candidateSearchStart..(latestLiteralEnd + 1)].IndexOf(plan.LiteralLastByte);
             if (relative < 0)
             {
                 return -1;
