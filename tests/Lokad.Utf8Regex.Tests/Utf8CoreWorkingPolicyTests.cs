@@ -180,7 +180,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var probe = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
+        var probe = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out _);
         Assert.True(probe.MoveNext());
         var cap = probe.DebugPeakWorkingBytes;
         var regex = Create(pattern, cap, options);

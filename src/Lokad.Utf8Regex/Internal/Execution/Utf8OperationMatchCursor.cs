@@ -67,7 +67,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
     private Utf8BoundaryMap? _boundaryMap;
-    private bool _retainBoundaryMap;
     private readonly Utf8ExecutionDeadline _budget;
     private readonly int _literalUtf16Length;
     private readonly Utf8ProjectionPlan _projectionPlan;
@@ -297,19 +296,16 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.OwnedSlice;
     }
 
-    // Entry work and the map reservation move together into the cursor. Split
-    // enumeration still needs its map for tail/result projection after EOF.
+    // Entry work and the map reservation move together into the legacy cursor.
     internal static Utf8OperationMatchCursor CreateMapped(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, scoped ref Utf8SliceInvocation invocation, bool retainMap,
+        Utf8ValidationResult validation, scoped ref Utf8SliceInvocation invocation,
         out Utf8BoundaryMap map)
     {
         invocation.ShareStorageForCursor();
         map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
         try
         {
-            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
-            cursor._retainBoundaryMap = retainMap;
-            return cursor;
+            return new Utf8OperationMatchCursor(program, input, map, invocation);
         }
         catch
         {
@@ -341,7 +337,6 @@ internal ref partial struct Utf8OperationMatchCursor
     internal void ReleaseOwnedBoundaryMap()
     {
         _nonBacktrackingState = null;
-        if (_retainBoundaryMap) return;
         // Published payloads stay numerically charged for the shared invocation.
         // The map/table references are ordinary managed roots, with no lease.
         _boundaryMap = null;

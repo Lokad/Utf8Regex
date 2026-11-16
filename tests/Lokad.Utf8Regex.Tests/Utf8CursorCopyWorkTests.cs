@@ -275,7 +275,7 @@ public sealed class Utf8CursorCopyWorkTests
         var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
         return owned ? Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation,
-                ref invocation, false, out _)
+                ref invocation, out _)
             : new Utf8OperationMatchCursor(input, Prepared(regex), true, false, invocation);
     }
 

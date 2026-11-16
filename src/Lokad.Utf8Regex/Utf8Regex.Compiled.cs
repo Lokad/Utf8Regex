@@ -256,7 +256,7 @@ public sealed partial class Utf8Regex
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             if (validation.ByteLength != input.Length)
                 validation = Utf8Validation.Subject(input, ref invocation);
-            var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
+            var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, out _);
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
 

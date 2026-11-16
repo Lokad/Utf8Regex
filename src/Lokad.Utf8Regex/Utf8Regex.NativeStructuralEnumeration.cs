@@ -28,7 +28,7 @@ public sealed partial class Utf8Regex
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)
                 : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram,
-                    input, validation, ref invocation, false, out _);
+                    input, validation, ref invocation, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
         }

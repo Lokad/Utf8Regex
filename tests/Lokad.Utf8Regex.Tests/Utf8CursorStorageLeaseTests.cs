@@ -107,7 +107,7 @@ public sealed class Utf8CursorStorageLeaseTests
     private static ulong ExerciseCopies(Utf8Regex regex, byte[] input, string text, ref Utf8SliceInvocation invocation)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var original = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out _);
+        var original = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, out _);
         var held = original.DebugInvocationReservedBytes;
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         FinishCopy(ref original);
@@ -149,7 +149,7 @@ public sealed class Utf8CursorStorageLeaseTests
     private static WeakReference Abandon(Utf8Regex regex, byte[] input, ref Utf8SliceInvocation invocation, out ulong held)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out var map);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, out var map);
         Assert.True(cursor.MoveNext());
         held = invocation.Ledger.ReservedBytes;
         var offsets = typeof(Utf8BoundaryMap).GetField("_byteOffsets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(map)!;
@@ -201,7 +201,7 @@ public sealed class Utf8CursorStorageLeaseTests
         var input = Encoding.UTF8.GetBytes("😀");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out _);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, out _);
         FinishCopy(ref cursor);
         Assert.True(cursor.MoveNext());
         Assert.Equal((0, 2), (cursor.CurrentValueMatch.IndexInUtf16, cursor.CurrentValueMatch.LengthInUtf16));

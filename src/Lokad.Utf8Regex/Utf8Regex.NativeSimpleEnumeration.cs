@@ -30,7 +30,7 @@ public sealed partial class Utf8Regex
                 ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
             var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
-                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
+                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
         }

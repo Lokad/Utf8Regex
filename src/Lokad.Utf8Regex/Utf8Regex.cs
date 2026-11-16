@@ -2417,7 +2417,7 @@ public sealed partial class Utf8Regex
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0;
             var cursor = nativeBranch
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, true)
-                : Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
+                : Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out _);
             return new Utf8ValueMatchEnumerator(cursor);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

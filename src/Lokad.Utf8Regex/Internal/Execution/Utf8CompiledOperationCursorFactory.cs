@@ -26,7 +26,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         if (regexPlan.ScalarProgram is { RightToLeft: true } or { IsNonBacktracking: true })
-            return CreateOwnedMatchCursor(regexPlan, input, validation, budget, false, out _);
+            return CreateOwnedMatchCursor(regexPlan, input, validation, budget, out _);
         var literal = regexPlan.LiteralUtf8;
         // R05: single ASCII literals (exact and folded) project incrementally on
         // non-ASCII input, so no BCL verification divert remains here. Kelvin and
@@ -72,7 +72,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     useStructuralLinearProgram: false,
                     budget,
                     validation.IsAscii),
-            _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget, false, out _),
+            _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget, out _),
         };
     }
 
@@ -148,7 +148,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
 
     private static Utf8OperationMatchCursor CreateOwnedMatchCursor(Utf8PreparedRegex prepared,
         ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline,
-        bool retainMap, out Utf8BoundaryMap map)
+        out Utf8BoundaryMap map)
     {
         // Public entry already established its subject contract. Missing
         // coordinate metadata requires description, never a second validation.
@@ -158,7 +158,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned cursor preparation exceeded {breach}.");
         if (validation.ByteLength != input.Length) validation = Utf8Validation.Subject(input, ref invocation);
         var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Owned cursor preparation requires its admitted scalar program.");
-        return Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retainMap, out map);
+        return Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out map);
     }
 
     private static Utf8OperationMatchCursor CreateLiteralMatchCursor(

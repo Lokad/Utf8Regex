@@ -162,32 +162,27 @@ public sealed class Utf8MappedEntryInvocationTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void LastHolderCollectionReleasesOnlyUnretainedCoordinateStorage(bool rtl, bool retain)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompletedCursorPreservesPublishedRangeAndModeledMapCharge(bool rtl)
     {
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
         var input = Encoding.UTF8.GetBytes("é😀 abab 中abab");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var map = FinishMappedCursor(regex, input, validation, retain, ref invocation);
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
+        var map = FinishMappedCursor(regex, input, validation, ref invocation);
         var mapBytes = MapBytes(validation.Utf16Length);
         Assert.Equal(mapBytes + 7, invocation.Ledger.ReservedBytes);
-        if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
+        Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Utf8BoundaryMap FinishMappedCursor(Utf8Regex regex, byte[] input, Utf8ValidationResult validation,
-        bool retain, ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation)
     {
         var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retain, out var map);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out var map);
         var mapBytes = MapBytes(validation.Utf16Length);
         Assert.True(cursor.DebugInvocationSteps >= invocation.Budget.Steps);
         Assert.Equal(mapBytes + 7, cursor.DebugInvocationReservedBytes);
@@ -202,9 +197,7 @@ public sealed class Utf8MappedEntryInvocationTests
         Assert.False(cursor.MoveNext());
         Assert.Equal(previous, cursor.CurrentValueMatch);
         Assert.False(cursor.MoveNext());
-        // Physical lifetime follows every value holder, including Debug's
-        // hidden temporaries. The caller verifies collection after this frame.
-        return retain ? map : default;
+        return map;
     }
 
     [Theory]
@@ -270,7 +263,7 @@ public sealed class Utf8MappedEntryInvocationTests
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         var entrySteps = baseline.Budget.Steps;
-        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref baseline, false, out _);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref baseline, out _);
         var totalSteps = cursor.DebugInvocationSteps;
         Assert.True(totalSteps > entrySteps);
         Assert.Equal(totalSteps, baseline.Budget.Steps);
@@ -279,7 +272,7 @@ public sealed class Utf8MappedEntryInvocationTests
             var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             var denied = false;
-            try { _ = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _); }
+            try { _ = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out _); }
             catch (InvalidOperationException) { denied = true; }
             Assert.True(denied);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
@@ -287,11 +280,9 @@ public sealed class Utf8MappedEntryInvocationTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void InterruptedMovePreservesPublishedRangeAndReleasesOnlyOwnedStorage(bool rtl, bool retain)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InterruptedMovePreservesPublishedRangeAndOriginalAuthority(bool rtl)
     {
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
         var input = Encoding.UTF8.GetBytes("é😀 ab 中ab");
@@ -299,21 +290,18 @@ public sealed class Utf8MappedEntryInvocationTests
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var map = InterruptMappedCursor(regex, input, validation, retain, source, ref invocation);
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
+        var map = InterruptMappedCursor(regex, input, validation, source, ref invocation);
         var mapBytes = MapBytes(validation.Utf16Length);
         Assert.Equal(mapBytes + 7, invocation.Ledger.ReservedBytes);
-        if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
+        Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Utf8BoundaryMap InterruptMappedCursor(Utf8Regex regex, byte[] input, Utf8ValidationResult validation,
-        bool retain, CancellationTokenSource source, ref Utf8SliceInvocation invocation)
+        CancellationTokenSource source, ref Utf8SliceInvocation invocation)
     {
         var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retain, out var map);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out var map);
         Assert.True(cursor.MoveNext());
         var previous = cursor.CurrentValueMatch;
         source.Cancel();
@@ -322,6 +310,6 @@ public sealed class Utf8MappedEntryInvocationTests
         catch (OperationCanceledException exception) { Assert.Equal(source.Token, exception.CancellationToken); canceled = true; }
         Assert.True(canceled);
         Assert.Equal(previous, cursor.CurrentValueMatch);
-        return retain ? map : default;
+        return map;
     }
 }

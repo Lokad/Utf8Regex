@@ -40,13 +40,13 @@ public sealed class Utf8CursorInvocationReservationTests
         var validation = Utf8Validation.Validate("😀é😀"u8, ref invocation);
         try
         {
-            _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref invocation, false, out _);
+            _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref invocation, out _);
             Assert.Fail("The full same-invocation allowance must deny another map.");
         }
         catch (InvalidOperationException) { Assert.Equal(before, invocation.Ledger.ReservedBytes); }
         var fresh = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096), Regex.InfiniteMatchTimeout, default);
         Assert.True(fresh.Ledger.TryReserve(7));
-        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref fresh, false, out _);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref fresh, out _);
         Assert.True(cursor.MoveNext());
         Assert.Equal((0, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
     }
@@ -55,7 +55,7 @@ public sealed class Utf8CursorInvocationReservationTests
     private static WeakReference[] ExerciseLinearCopies(Utf8SliceProgram program, ref Utf8SliceInvocation invocation, out ulong held)
     {
         var validation = Utf8Validation.Validate("😀é😀"u8, ref invocation);
-        var cursor = Utf8OperationMatchCursor.CreateMapped(program, "😀é😀"u8, validation, ref invocation, false, out var map);
+        var cursor = Utf8OperationMatchCursor.CreateMapped(program, "😀é😀"u8, validation, ref invocation, out var map);
         var table = Table(ref cursor)!;
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
         WeakReference[] arrays = [new(typeof(Utf8BoundaryMap).GetField("_byteOffsets", flags)!.GetValue(map)!),
@@ -119,7 +119,7 @@ public sealed class Utf8CursorInvocationReservationTests
             Assert.True(invocation.Ledger.TryReserve(7));
             try
             {
-                _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out _);
+                _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, out _);
                 Assert.True(invocation.Ledger.ReservedBytes > 7);
                 success = true;
             }
