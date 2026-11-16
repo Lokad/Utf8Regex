@@ -78,7 +78,7 @@ public sealed partial class Utf8PythonRegex
             Utf8InvocationOutput.Checkpoint(control);
             if (!matched) return default;
             var startUtf16 = startOffsetInBytes == 0 ? 0
-                : Utf8SliceBufferWork.CountUtf16(input[..startOffsetInBytes], ref invocation);
+                : Utf8SliceBufferWork.CountValidUtf16(input[..startOffsetInBytes], ref invocation);
             // A successful exact repetition already proves every input byte.
             // Derive its width from the bounded pattern instead of rescanning text.
             var endUtf16 = startUtf16 + repetitions * Utf8SliceBufferWork.CountUtf16(literal, ref invocation)
@@ -419,8 +419,8 @@ public sealed partial class Utf8PythonRegex
             // Discovery proves scalar endpoints; only successful value consumers
             // need interoperability coordinates, counted over their actual ranges.
             var startUtf16 = start == 0 ? 0
-                : Utf8SliceBufferWork.CountUtf16(input[..start], ref invocation);
-            var endUtf16 = startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref invocation);
+                : Utf8SliceBufferWork.CountValidUtf16(input[..start], ref invocation);
+            var endUtf16 = startUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[start..end], ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {

@@ -56,8 +56,8 @@ internal static class Utf8SliceBufferWork
         return (remaining[cut] & 0xc0) == 0x80 ? count : cut;
     }
 
-    // The caller has validated these complete scalar ranges. Sizing shares the
-    // decoder's bounded work and interruption authority without validating again.
+    // General decoder sizing retains Encoding's fallback behavior and bounded
+    // interruption authority.
     internal static int CountUtf16(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
     {
         var chars = 0;
@@ -66,6 +66,24 @@ internal static class Utf8SliceBufferWork
             Checkpoint(ref invocation);
             var count = Utf8BlockLength(bytes[offset..]);
             chars += Encoding.UTF8.GetCharCount(bytes.Slice(offset, count));
+            offset += count;
+        }
+        return chars;
+    }
+
+    // Complete valid scalar ranges can count UTF-16 units without decoding.
+    // Keep short ranges on the existing BCL path and the same 4096-byte cadence.
+    internal static int CountValidUtf16(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
+    {
+        if (bytes.Length <= 4096) return CountUtf16(bytes, ref invocation);
+        var chars = 0;
+        for (var offset = 0; offset < bytes.Length;)
+        {
+            Checkpoint(ref invocation);
+            var count = Utf8BlockLength(bytes[offset..]);
+            var block = bytes.Slice(offset, count);
+            for (var inner = 0; inner < block.Length; inner += 32)
+                chars += CountValidUtf8Units(block.Slice(inner, Math.Min(32, block.Length - inner))).Utf16;
             offset += count;
         }
         return chars;

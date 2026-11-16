@@ -9,6 +9,32 @@ public sealed class PythonReNativeOneShotInvocationTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
+    public void LongNativeValueCoordinateSizingKeepsOriginalInterruption(bool expire)
+    {
+        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
+        using var regex = new Utf8PythonRegex("needle", matchTimeout: timeout);
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 65536)) + "needle");
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(100000, 0, 1 << 20), timeout, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var reached = false;
+        invocation.CheckpointHook = _ => { reached = true; if (expire) ticks = 50; else token.Cancel(); };
+        Exception? failure = null;
+        // Exact FullMatch stays eligible with a finite deadline. Its discovery
+        // checks one literal; the long prefix is scanned only for coordinates.
+        try { _ = regex.MaterializeNativeMatchValue(input, input.Length - 6, 2, ref invocation); }
+        catch (Exception error) { failure = error; }
+        Assert.True(reached);
+        if (expire) Assert.Equal(timeout, Assert.IsType<RegexMatchTimeoutException>(failure).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
     public void LiteralSearchObservesOriginalAuthorityDuringDiscovery(bool expire)
     {
         const string pattern = "abcdefghijklmnopq";

@@ -630,9 +630,9 @@ internal partial struct PythonReScalarMatchState
         // A one-shot value keeps its allocation-free prefix/range counting.
         var indexed = _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount;
         var startUtf16 = end <= _asciiPrefixEnd ? start : indexed ? CoordinateOffset(input, start).Utf16
-            : Utf8SliceBufferWork.CountUtf16(input[..start], ref _invocation);
+            : Utf8SliceBufferWork.CountValidUtf16(input[..start], ref _invocation);
         var endUtf16 = end <= _asciiPrefixEnd ? end : indexed ? CoordinateOffset(input, end).Utf16
-            : startUtf16 + Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation);
+            : startUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[start..end], ref _invocation);
         var value = new PythonReGroupData
         {
             Number = 0, Success = true,

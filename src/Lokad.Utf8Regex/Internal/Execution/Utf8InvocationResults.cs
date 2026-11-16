@@ -81,21 +81,7 @@ internal struct Utf8InvocationResultLedger
         // their byte-derived UTF-16 upper bound. Known lengths stay exact;
         // larger ranges retain bounded sizing and decoding checkpoints.
         if (charCount is null && bytes.Length > 4096)
-        {
-            // Ledger consumers supply valid scalar ranges or completed valid
-            // output. General decoding keeps its independent validation/fallback rules.
-            var chars = 0;
-            for (var offset = 0; offset < bytes.Length;)
-            {
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var count = Utf8SliceBufferWork.Utf8BlockLength(bytes[offset..]);
-                var block = bytes.Slice(offset, count);
-                for (var inner = 0; inner < block.Length; inner += 32)
-                    chars += Utf8SliceBufferWork.CountValidUtf8Units(block.Slice(inner, Math.Min(32, block.Length - inner))).Utf16;
-                offset += count;
-            }
-            charCount = chars;
-        }
+            charCount = Utf8SliceBufferWork.CountValidUtf16(bytes, ref invocation);
         var control = new Utf8InvocationBufferControl(ref invocation);
         var extent = Utf8ConstructionBudget.StringBytes(charCount ?? bytes.Length);
         Reserve(extent, ref invocation);

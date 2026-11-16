@@ -53,6 +53,37 @@ public sealed class PythonReOneShotProjectionTests
         => kind switch { 0 => regex.SearchDetailed(input, start, token), 1 => regex.MatchDetailed(input, start, token), _ => regex.FullMatchDetailed(input, start, token) };
 
     [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(7)]
+    public void LongNativeAndScalarValuesKeepCoordinatesAcrossBorrowedBlockCuts(int borrowedOffset)
+    {
+        using var native = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
+        using var scalar = new Utf8PythonRegex("(start.*end)", PythonReCompileOptions.DotAll,
+            resourcePolicy: new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        using var token = new CancellationTokenSource();
+        foreach (var prefixLength in new[] { 0, 1, 30, 31, 32, 4093, 4094, 4095 })
+        foreach (var tail in new[] { 0, 1, 31 })
+        {
+            var prefix = new string('x', prefixLength) + string.Concat(Enumerable.Repeat("é😀中", 513));
+            var text = "start" + string.Concat(Enumerable.Repeat("\0\u007f\u0080\u07ff\u0800\uffff\U00010000\U0010ffff", 257)) + new string('y', tail) + "end";
+            var bytes = Encoding.UTF8.GetBytes(prefix + text);
+            byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. bytes, 0xff];
+            var input = storage.AsSpan(borrowedOffset, bytes.Length);
+            var start = Encoding.UTF8.GetByteCount(prefix);
+            var expected = Encoding.UTF8.GetBytes(text);
+            foreach (var regex in new[] { native, scalar })
+            {
+                var value = regex.FullMatch(input, start, ReferenceEquals(regex, native) ? default : token.Token);
+                Assert.True(value.Success);
+                Assert.Equal((start, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+                Assert.Equal((prefix.Length, prefix.Length + text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+                Assert.True(value.GetValueBytes().SequenceEqual(expected));
+                Assert.False(regex.FullMatch("no"u8).Success);
+                Assert.True(value.GetValueBytes().SequenceEqual(expected));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData("(?<=(?P<left>é))a", "πéa", 4, "left", "é", 2, 4, 1, 2)]
     [InlineData("a(?=(?P<right>😀))", "πa😀", 2, "right", "😀", 3, 7, 2, 4)]
     [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?", "πé😀", 2, "inner", "é😀", 2, 8, 1, 4)]
