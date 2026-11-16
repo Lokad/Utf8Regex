@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -345,29 +344,20 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
         if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
-            // The public API must reject malformed bytes even after an early
-            // match. Utf8.IsValid proves that contract more cheaply than an
-            // ASCII-only scan on large subjects. A non-ASCII prefix still
-            // declines this shortcut because byte and UTF-16 indices diverge.
-            if (!Utf8.IsValid(input))
+            var found = primitive.TryFindFirst(input, out var index, out var matchedLength);
+            // Decline before validation if this shortcut cannot project the
+            // prefix. The caller then owns validation and Unicode coordinates.
+            if (found && !Utf8InputAnalyzer.IsAscii(input[..index]))
             {
                 match = Utf8ValueMatch.NoMatch;
                 return false;
             }
 
-            if (!primitive.TryFindFirst(input, out var index, out var matchedLength))
-            {
-                match = Utf8ValueMatch.NoMatch;
-                return true;
-            }
-
-            if (!Utf8InputAnalyzer.IsAscii(input[..index]))
-            {
-                match = Utf8ValueMatch.NoMatch;
-                return false;
-            }
-
-            match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            // A definitive hit or miss must still reject a malformed suffix.
+            Utf8Validation.CheckSubject(input, Utf8InputValidation.Validate);
+            match = found
+                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
+                : Utf8ValueMatch.NoMatch;
             return true;
         }
 

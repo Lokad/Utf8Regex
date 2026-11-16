@@ -10,6 +10,12 @@ public sealed class Utf8ValueMatchValidationReuseTests
     [InlineData("needle", "é😀needle中")]
     [InlineData("中", "é😀中needle")]
     [InlineData("needle", "é😀no match中")]
+    [InlineData("alpha|bravo|charlie", "alphaé😀")]
+    [InlineData("alpha|bravo|charlie", "é😀bravo中")]
+    [InlineData("alpha|bravo|charlie", "é😀no match中")]
+    [InlineData("alpha|bravo|charlie", "charlieéalpha")]
+    [InlineData("alpha|alphabet|bravo", "alphabeté😀")]
+    [InlineData("alphabet|alpha|bravo", "alphabeté😀")]
     public void LiteralValueMatchUsesOneSubjectPolicyAuthority(string pattern, string text)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
@@ -29,6 +35,25 @@ public sealed class Utf8ValueMatchValidationReuseTests
                 Assert.Equal(policy == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
             }
             finally { session.Complete(); }
+        }
+    }
+
+    [Theory]
+    [InlineData("alpha")]
+    [InlineData("é😀bravo")]
+    [InlineData("no match")]
+    public void LiteralFamilyRejectsMalformedSuffixBeforeReturningAHitOrMiss(string text)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
+            RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
+        {
+            var regex = new Utf8Regex("alpha|bravo|charlie", mode | RegexOptions.CultureInvariant);
+            byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
+            Assert.Throws<ArgumentException>(() => regex.Match(bytes));
+            using var source = new CancellationTokenSource();
+            source.Cancel();
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token));
+            Assert.Equal(source.Token, error.CancellationToken);
         }
     }
 
