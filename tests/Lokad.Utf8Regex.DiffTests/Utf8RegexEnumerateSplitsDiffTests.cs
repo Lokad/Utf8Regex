@@ -43,20 +43,6 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     }
 
     [Fact]
-    public void StaticEnumerateSplitsMatchesInstanceBehavior()
-    {
-        var instance = EnumerateUtf8Splits(new Utf8Regex("(a)", RegexOptions.CultureInvariant), "baac", int.MaxValue);
-        var actual = new List<(string Value, int Index, int Length)>();
-
-        foreach (var split in Utf8Regex.EnumerateSplits("baac"u8, "(a)", int.MaxValue, RegexOptions.CultureInvariant))
-        {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-        }
-
-        Assert.Equal(instance, actual);
-    }
-
-    [Fact]
     public void EnumerateSplitsMatchesRuntimeForNativeCountLimitedSimplePattern()
     {
         const string input = "a,b,c,d";

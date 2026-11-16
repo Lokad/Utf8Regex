@@ -7,7 +7,6 @@ namespace Lokad.Utf8Regex.Tests;
 // bounded cache implementation as real producers with an explicit numeric policy.
 internal readonly struct Utf8CacheTestStorage<TValue> : IUtf8RetainedStorage<string, TValue>
 {
-    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
     public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
     public bool TryGetValueCharge<TControl>(TValue value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl

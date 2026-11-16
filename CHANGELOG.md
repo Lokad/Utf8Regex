@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core's static cached operation families and global pattern cache. Retain
+  a compiled instance in the caller; replacement preparation stays bounded.
+
 - Remove Core `CountFromUtf16Offset`. Partial counts aggregate byte-start
   `EnumerateMatches` under one invocation; whole-subject `Count` remains.
   Iterator coordinate/result work can increase partial-count costs and budget needs.

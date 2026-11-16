@@ -51,15 +51,6 @@ public sealed class Utf8RegexInvalidInputApiTests
         Assert.Throws<ArgumentException>(() => regex.Replace(s_invalidUtf8, "z"u8));
     }
 
-    [Fact]
-    public void StaticApisRejectInvalidUtf8()
-    {
-        Assert.Throws<ArgumentException>(() => Utf8Regex.IsMatch(s_invalidUtf8, "abc", RegexOptions.CultureInvariant));
-        Assert.Throws<ArgumentException>(() => Utf8Regex.Match(s_invalidUtf8, "abc", RegexOptions.CultureInvariant));
-        Assert.Throws<ArgumentException>(() => Utf8Regex.MatchDetailed(s_invalidUtf8, "abc", RegexOptions.CultureInvariant));
-        Assert.Throws<ArgumentException>(() => Utf8Regex.Count(s_invalidUtf8, "abc", RegexOptions.CultureInvariant));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

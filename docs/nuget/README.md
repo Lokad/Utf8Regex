@@ -58,8 +58,8 @@ slice-validity rules; check result slice properties before decoding those result
 
 Synchronous cancellation observes the original token. One absolute deadline and
 finite work/depth/working/result policies cover the documented operation stages.
-Explicit compilation factories offer separate construction controls. Defaults and
-static cached conveniences are unlimited.
+Explicit compilation factories offer separate construction controls. Defaults are
+unlimited.
 
 Memory limits admit modeled major buffers, retained payloads and growth overlap,
 not total heap/RSS, arbitrary callbacks/getters or host retention. Caller-owned

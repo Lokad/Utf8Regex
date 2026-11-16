@@ -4,7 +4,6 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<object, Utf8AnalyzedReplacement>
 {
-    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
     public ulong GetKeyCharge(object key) => key is byte[] bytes
         ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length) : Utf8ConstructionBudget.StringBytes(((string)key).Length);
 

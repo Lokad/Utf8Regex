@@ -1958,7 +1958,6 @@ public sealed partial class Utf8Pcre2Regex
 
     private readonly struct Pcre2ReplacementRetainedStorage : IUtf8RetainedStorage<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(Pcre2ReplacementCacheKey key) => key.Replacement is byte[] bytes
             ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length)
             : Utf8ConstructionBudget.StringBytes(((string)key.Replacement).Length);

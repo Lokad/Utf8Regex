@@ -219,7 +219,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     private readonly struct HugeStorage(ulong charge) : IUtf8RetainedStorage<int, object>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(int key) => 0;
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong computedCharge)
             where TControl : struct, IUtf8ConstructionTextControl
@@ -232,7 +231,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     private readonly struct ByteStorage : IUtf8RetainedStorage<string, byte[]>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
@@ -243,37 +241,6 @@ public sealed class Utf8PreparationCachePayloadTests
         }
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CollectorScopeCannotBeReinterpretedAsAnotherOwnershipProof(bool descendants)
-    {
-        var cache = descendants
-            ? Utf8BoundedPreparationCache<string, byte[]>.CreateRootAndDescendantRetained(2, StringComparer.Ordinal, 65536, 4096)
-            : Create(2, 4096);
-        var called = false;
-        if (descendants)
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("key", 0,
-                (_, _) => { called = true; return new byte[100]; }, default(Utf8ConstructionTextNoControl), default(ByteStorage)));
-        else
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("key", 0,
-                (_, _) => { called = true; return new byte[100]; }, default(Utf8ConstructionTextNoControl), default(DescendantByteStorage)));
-        Assert.False(called);
-        Assert.Equal(0, cache.Count);
-        Assert.Equal(0ul, cache.PayloadBytes);
-    }
-
-    private readonly struct DescendantByteStorage : IUtf8RetainedStorage<string, byte[]>
-    {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
-        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
-            where TControl : struct, IUtf8ConstructionTextControl
-        {
-            control.Check();
-            charge = Utf8ConstructionBudget.ArrayBytes<byte>(value.Length);
-            return charge <= maximum;
-        }
-    }
     private readonly struct TokenControl(CancellationToken token) : IUtf8ConstructionTextControl
     { public void Check() => token.ThrowIfCancellationRequested(); }
 }

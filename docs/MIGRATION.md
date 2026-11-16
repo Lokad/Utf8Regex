@@ -136,6 +136,21 @@ can decrease compared with the removed UTF16-start operation; recheck finite
 policies. Defined output slots clear on no match or failure after entry, while
 pre-cancellation and excess entries leave caller storage unchanged.
 
+### Caller-owned compiled expressions
+
+Core removes the static `IsMatch`, `Count`, `Match`, `MatchDetailed`,
+`EnumerateMatches`, `EnumerateSplits` and `Replace` families and their global
+pattern cache. Construct or compile an expression once and retain it in the host:
+
+```csharp
+var words = new Utf8Regex(@"\w+");
+bool found = words.IsMatch("é😀 hello"u8);
+```
+
+Construction captures the effective options and culture. Per-instance replacement
+preparation remains bounded; explicit construction and invocation limits keep
+their documented scopes. No process-wide program-cache allowance is implied.
+
 ## Scalar matching and coordinates, introduced in 0.4.0
 
 ```csharp
@@ -172,7 +187,7 @@ int words = limited.Count("café tea"u8, cancellation.Token);
 ```
 
 These are examples, not universal recommended budgets. Null invocation limits
-and static cached conveniences are unlimited; zero is invalid. Typed denial is
+are unlimited; zero is invalid. Typed denial is
 separate from no match and never means truncated successful output.
 
 Work/depth/working/result controls enforce their documented stages. Memory

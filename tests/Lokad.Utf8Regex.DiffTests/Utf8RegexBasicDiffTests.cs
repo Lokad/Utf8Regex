@@ -510,14 +510,6 @@ public sealed class Utf8RegexIsMatchDiffTests
     }
 
     [Fact]
-    public void StaticIsMatchMatchesInstanceBehavior()
-    {
-        var input = "xxabcxx"u8.ToArray();
-
-        Assert.True(Utf8Regex.IsMatch(input, "abc", RegexOptions.CultureInvariant));
-    }
-
-    [Fact]
     public void MatchReturnsByteAlignedCoordinatesForNativeLiteral()
     {
         var match = new Utf8Regex("abc", RegexOptions.CultureInvariant).Match("xxabcxx"u8);

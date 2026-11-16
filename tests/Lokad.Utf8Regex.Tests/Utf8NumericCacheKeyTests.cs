@@ -79,7 +79,6 @@ public sealed class Utf8NumericCacheKeyTests
 
     private readonly struct TextStorage : IUtf8RetainedStorage<string, string>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(string value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
@@ -92,7 +91,6 @@ public sealed class Utf8NumericCacheKeyTests
 
     private readonly struct BoundaryStorage(ulong keyCharge, ulong valueCharge) : IUtf8RetainedStorage<int, object>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(int key) => keyCharge;
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl

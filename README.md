@@ -94,7 +94,7 @@ using var cancellation = new CancellationTokenSource();
 int count = bounded.Count("café tea"u8, cancellation.Token); // 2
 ```
 
-These caps are examples. Defaults and static helpers have unlimited invocation
+These caps are examples. Defaults have unlimited invocation
 budgets. Byte limits cover modeled engine/result capacities, not total process
 memory. `Compile` offers separate construction controls.
 See the [resource contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits)

@@ -5,8 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 
 /// <summary>Owns bounded preparation-entry metadata. Pending entries share one
 /// preparation without retaining its factory, state or invocation controls.
-/// Immutable payload charges or declared root/descendant reservations have
-/// a separate conservative per-entry cap. Shared storage across entries is
+/// Immutable payload charges have a separate conservative capacity bound.
+/// Shared storage across entries is
 /// charged repeatedly; no retained manifests or global identity registry.
 /// These modeled cache charges do not bound total program/process memory;
 /// public invocation and construction policies have their own documented scope.
@@ -24,15 +24,14 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     private long _generation;
     private readonly ulong _maximumPayloadBytes;
     private ulong _payloadBytes;
-    private readonly Utf8RetainedStorageScope _storageScope;
     private IUtf8MemoryAllowance? _memoryAllowance;
 
     private Utf8BoundedPreparationCache(IEqualityComparer<TKey> comparer, int capacity, ulong maximumMetadataBytes,
-        ulong maximumPayloadBytes, Utf8RetainedStorageScope storageScope)
-    { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; _storageScope = storageScope; }
+        ulong maximumPayloadBytes)
+    { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; }
 
     internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
-        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, Utf8RetainedStorageScope, IUtf8MemoryAllowance?)>();
+        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, IUtf8MemoryAllowance?)>();
     internal static ulong EntryBytes => Utf8ConstructionBudget.ObjectBytes<
         (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong, Utf8FundedStorage?)>();
     private ulong BaseMetadataBytes => ObjectBytes;
@@ -44,25 +43,12 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         IEqualityComparer<TKey> comparer, ulong maximumMetadataBytes, ulong maximumPayloadBytes)
     {
         ArgumentOutOfRangeException.ThrowIfZero(maximumPayloadBytes);
-        return Create(capacity, comparer, maximumMetadataBytes, maximumPayloadBytes, Utf8RetainedStorageScope.CompletePayload);
-    }
-
-    internal static Utf8BoundedPreparationCache<TKey, TValue> CreateRootAndDescendantRetained(int capacity,
-        IEqualityComparer<TKey> comparer, ulong maximumMetadataBytes, ulong maximumStorageBytes)
-    {
-        ArgumentOutOfRangeException.ThrowIfZero(maximumStorageBytes);
-        return Create(capacity, comparer, maximumMetadataBytes, maximumStorageBytes, Utf8RetainedStorageScope.RootsAndBoundedDescendants);
-    }
-
-    private static Utf8BoundedPreparationCache<TKey, TValue> Create(int capacity,
-        IEqualityComparer<TKey> comparer, ulong maximumMetadataBytes, ulong maximumPayloadBytes, Utf8RetainedStorageScope storageScope)
-    {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
         if (maximumMetadataBytes < ObjectBytes) throw new ArgumentOutOfRangeException(nameof(maximumMetadataBytes));
         using var owner = Utf8ConstructionScope.Enter();
         var result = owner.Budget.AllocateObject(
-            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Scope: storageScope, Funding: (IUtf8MemoryAllowance?)null),
-            static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload, state.Scope));
+            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Funding: (IUtf8MemoryAllowance?)null),
+            static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload));
         owner.Complete();
         return result;
     }
@@ -195,8 +181,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
-        if (storage.Scope != _storageScope)
-            throw new InvalidOperationException("Retention requires the owner's declared storage scope.");
         Utf8ConstructionScope? cleanup = null;
         try
         {

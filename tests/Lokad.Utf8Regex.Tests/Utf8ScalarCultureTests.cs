@@ -2,12 +2,10 @@ using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
-[Collection(Utf8RegexCacheCollection.Name)]
 public sealed class Utf8ScalarCultureTests
 {
     public static IEnumerable<object[]> CultureLanes()
@@ -184,29 +182,6 @@ public sealed class Utf8ScalarCultureTests
             }
         }
         finally { CultureInfo.CurrentCulture = saved; }
-    }
-
-    [Theory]
-    [InlineData("en-US", "tr-TR")]
-    [InlineData("tr-TR", "en-US")]
-    public void StaticScopedCultureCacheUsesScalarOperationsInBothOrders(string first, string second)
-    {
-        var saved = CultureInfo.CurrentCulture;
-        try
-        {
-            Utf8RegexCache.ResetForTests();
-            foreach (var culture in new[] { first, second })
-            {
-                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
-                var prefix = culture == "tr-TR" ? "\u0130" : "I";
-                var input = Encoding.UTF8.GetBytes(prefix + "\U0001f600");
-                Assert.Equal(input.Length, Utf8Regex.Match(input, "(?i:i(.))", RegexOptions.None).LengthInBytes);
-                Assert.Equal(1, Utf8Regex.Count(input, "(?i:i(.))", RegexOptions.None));
-                Assert.Equal("<\U0001f600>", Encoding.UTF8.GetString(Utf8Regex.Replace(input, "(?i:i(.))", "<$1>", RegexOptions.None)));
-                AssertOwned(Utf8RegexCache.GetOrAdd("(?i:i(.))", RegexOptions.None));
-            }
-        }
-        finally { Utf8RegexCache.ResetForTests(); CultureInfo.CurrentCulture = saved; }
     }
 
     [Theory]

@@ -415,7 +415,7 @@ unlimited calls retain their existing diagnostic input. Scheduling, GC/JIT and
 arbitrary caller callbacks cannot be preempted; checks surround callbacks.
 
 Core/PythonRe accept positive nullable `Utf8ResourcePolicy` values; null is
-unlimited and zero is invalid. Defaults and static cached calls are unlimited.
+unlimited and zero is invalid. Defaults are unlimited.
 
 | Policy | Covered scope | Denial kind |
 | --- | --- | --- |
@@ -907,9 +907,16 @@ and `Utf8PythonMatchCursor.MoveNext`, with finite-result/working/cursor fixtures
 
 ## Construction, preparation and caches
 
+Core exposes instance operations over expressions owned by the caller. Static
+cached matching/replacement operations are removed in 0.5 development, together
+with their private global program cache. Replacement preparation and adapter
+payload caches retain conservative bounds on complete immutable keys/values;
+shared storage can be charged more than once. Cache bounds are not process or
+total-program memory bounds.
+
 Explicit `Compile` accepts separate construction policy, timeout and token;
 pre-cancellation wins, nested preparation shares the owner, and authority is not
-retained for execution. It does not consult static caches. Ordinary constructors
+retained for execution. Ordinary constructors
 keep fixed backstops; positive construction values tighten them, null keeps them.
 The three profiles' caller-funded program overloads instead delegate byte admission to
 their shared allowance, with an optional additional `MaxBytes`; the other

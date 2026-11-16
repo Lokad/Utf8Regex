@@ -228,17 +228,6 @@ public sealed class Utf8SliceNonBacktrackingTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    [Fact]
-    public void NonBacktrackingStaticIsMatchMatchesOracle()
-    {
-        const string pattern = "a+b+";
-        var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
-        var input = Encoding.UTF8.GetBytes("xxaabbxx");
-        Assert.Equal(
-            Regex.IsMatch("xxaabbxx", pattern, options, Regex.InfiniteMatchTimeout),
-            Utf8Regex.IsMatch(input, pattern, options, Regex.InfiniteMatchTimeout));
-    }
-
     public static IEnumerable<object?[]> NonBacktrackingLaneParityCases()
     {
         (string pattern, string text, string template)[] rows =

@@ -105,7 +105,6 @@ public sealed partial class Utf8Regex
             ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
         }
         using var construction = Utf8ConstructionScope.Enter();
-        var beforeProgram = construction.Budget.ReservedBytes;
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
@@ -270,12 +269,6 @@ public sealed partial class Utf8Regex
             construction.Budget.ChargeWork((ulong)pattern.Utf8.Length);
             pattern.Utf8.CopyTo(_patternUtf8);
         }
-        // Scratch has closed; covered retained capacity and conservative helper
-        // charges survive successful children. Explicitly cover the facade and
-        // borrowed pattern, and reserve the already-enforced lazy child maximum.
-        _cacheProgramBytes = checked(construction.Budget.ReservedBytes - beforeProgram
-            + CachedObjectBytes + (pattern.IsUtf8 ? 0UL : Utf8ConstructionBudget.StringBytes(pattern.Text.Length))
-            + _replacementCache.MaximumRetainedBytes);
         construction.Complete();
     }
 
@@ -290,7 +283,7 @@ public sealed partial class Utf8Regex
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
         => resourcePolicy.Validate(paramName);
 
-    /// <summary>Gets or sets the timeout used by constructors and cached operations that do not specify one.</summary>
+    /// <summary>Gets or sets the timeout used by constructors that do not specify one.</summary>
     /// <remarks>The initial value is <see cref="Regex.InfiniteMatchTimeout"/>.</remarks>
     public static TimeSpan DefaultMatchTimeout
     {

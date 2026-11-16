@@ -325,14 +325,6 @@ public sealed class Utf8RegexReplaceDiffTests
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void StaticReplaceMatchesInstanceBehavior()
-    {
-        var actual = Utf8Regex.Replace("xxabcxx"u8, "abc", "ZZ", RegexOptions.CultureInvariant);
-
-        Assert.Equal("xxZZxx"u8.ToArray(), actual);
-    }
-
     [Theory]
     [InlineData("abc", "xxabcxxabc", "piñata", RegexOptions.CultureInvariant)]
     [InlineData("ab+", "ab abb abbb", "茶", RegexOptions.CultureInvariant)]

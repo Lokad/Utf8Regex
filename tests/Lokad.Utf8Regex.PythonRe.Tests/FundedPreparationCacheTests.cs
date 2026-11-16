@@ -94,7 +94,6 @@ public sealed class FundedPreparationCacheTests
 
     private readonly struct TextStorage : IUtf8RetainedStorage<string, string>
     {
-        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(string value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl

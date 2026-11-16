@@ -100,16 +100,6 @@ public sealed class Utf8MatchContextTests
     }
 
     [Fact]
-    public void StaticMatchDetailedExposesDetailedContext()
-    {
-        var match = Utf8Regex.MatchDetailed("xxabcxx"u8, "(abc)", RegexOptions.CultureInvariant);
-
-        Assert.True(match.Success);
-        Assert.Equal("abc", match.GetValueString());
-        Assert.Equal("abc", match.GetGroup(1).GetValueString());
-    }
-
-    [Fact]
     public void MatchDetailedSupportsTryGetGroupByName()
     {
         var regex = new Utf8Regex("(?<word>abc)(?<missing>z)?", RegexOptions.CultureInvariant);
