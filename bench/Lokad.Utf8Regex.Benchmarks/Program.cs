@@ -8,6 +8,14 @@ using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using Lokad.Utf8Regex.Benchmarks;
 using Lokad.Utf8Regex;
 
+if (args.Length >= 1 && args[0] == "--measure-generality")
+{
+    if (args.Length > 4) throw new ArgumentException("Use --measure-generality [case-filter] [operation] [verify].");
+    if (args.Length > 3 && args[3] != "verify") throw new ArgumentException("The fourth argument must be verify.");
+    return BenchmarkInspectReporter.RunGenerality(args.Length > 1 ? args[1] : null,
+        args.Length > 2 ? args[2] : null, args.Length > 3 && args[3] == "verify");
+}
+
 if (BenchmarkInspectReporter.TryHandlePosixCommand(args, out var posixExitCode))
 {
     return posixExitCode;

@@ -6,8 +6,8 @@ Builds/tests once, reuses binaries, writes phase artifacts and regenerates recor
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify')]
-    [string[]]$Phase = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify'),
+    [ValidateSet('Build', 'Tests', 'Generality', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify')]
+    [string[]]$Phase = @('Build', 'Tests', 'Generality', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify'),
     [ValidateRange(1, 86400)]
     [int]$MaxWallTimeSeconds = 3600,
     [string]$OutputDirectory
@@ -39,7 +39,7 @@ if (Test-Path -LiteralPath $OutputDirectory) { throw "Output already exists: $Ou
 [void](New-Item -ItemType Directory -Path $OutputDirectory)
 $steps = [Collections.Generic.List[object]]::new()
 $complete = $false
-$full = @('Build', 'Tests', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify').Where({ $_ -notin $Phase }).Count -eq 0
+$full = @('Build', 'Tests', 'Generality', 'Core', 'PythonRe', 'Pcre2', 'Posix', 'Resources', 'Verify').Where({ $_ -notin $Phase }).Count -eq 0
 
 function Save-Receipt {
     [ordered]@{
@@ -104,6 +104,9 @@ try {
                 finally { [IO.File]::WriteAllBytes($path, $original) }
             }
         }
+    }
+    if ('Generality' -in $Phase) {
+        Invoke-RefreshBenchmark generality @('--measure-generality')
     }
     if ('Core' -in $Phase) {
         Invoke-RefreshBenchmark core @('--refresh-readme-benchmarks', 'dotnet-performance,dotnet-performance-compiled,lokad,lokad-compiled', '1', '5')

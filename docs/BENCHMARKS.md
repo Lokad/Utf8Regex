@@ -1,0 +1,59 @@
+# Benchmark scope and procedure
+
+The README tables describe their recorded workloads, rather than the performance
+of arbitrary regex patterns. Historical tables strongly favor pattern-specific
+executors. Changing a quantifier, capture or delimiter can select a much slower
+general engine. Removing those executors is planned; their historical ratios are
+not a delivery requirement.
+
+The representative generality catalog covers structural neighbors and everyday
+patterns. Its primary operations are `IsMatch`, captures from a byte offset, and
+cursor advance. The mode matrix includes a live token, deadline, finite resource
+limits, their combination with caller-owned working storage, and `Compiled`.
+Unmetered `Count` and construction are secondary measurements. This first catalog
+has 24 Core patterns; exhaustive catalog neighbors and adapter catalogs remain
+work in progress.
+
+Inputs are caller-valid, unchanged UTF-8. Until the subject-policy API is removed,
+Core measurements select `AssumeValid`. .NET receives predecoded text; a separate
+lane includes UTF-8 decoding. Matching options and complete capture histories are
+checked before timing. .NET byte-coordinate lookup is prepared outside timing;
+the comparison includes public result handling, rather than only matching kernels.
+Capture matching currently uses one cursor advance because the existing Core
+surface has no direct caller-buffer match from a byte offset.
+
+Run the existing Release driver, using the SDK from `global.json`:
+
+```powershell
+# Verify outputs across all modes without timing.
+./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-generality','','','verify'
+
+# One bounded selection; operations: IsMatch, MatchCaptures, Cursor, Count, Construct.
+./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-generality','word/flexible-literal','Cursor'
+
+# Include the catalog in the existing refresh; a selected phase is not a full refresh.
+./tools/refresh-benchmarks.ps1 -Phase Generality -MaxWallTimeSeconds 900
+```
+
+The generality command reuses the existing independent lane calibration,
+alternating measurement order and allocation probe. It retains three samples per
+lane, targets 75 ms, and marks any lane with a sample below 20 ms unqualified.
+Raw durations, iteration counts, allocations and loaded producer identities go
+to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
+selection neither replaces accepted README tables nor qualifies a package.
+
+Only a completed full VM refresh establishes the 60-minute target. The earlier
+47-minute run predates this catalog; the enlarged full pipeline has not yet been
+timed. Keep experiments selective and bounded, reuse matching binaries and build
+servers, and compare equal public outputs. Use one ordinary producer per process
+for before/after comparisons. Kernel attribution is not a public speedup.
+
+Comparator scope matters: Python uses a long-lived official CPython worker over
+`str`. PCRE.NET is a benchmark-only PCRE2 comparator. Its interpreted and future
+JIT lanes must be labeled separately. The historical POSIX comparator is PCRE2's
+ordered NFA, not a leftmost-longest POSIX reference; use it only for verified
+overlap. Native interop floors and tiny subjects do not establish haystack parity.
+
+Older investigation records remain available at the
+`experiments-archive-20261116` Git tag. They describe historical producer versions;
+their focused gains must not be multiplied into present performance ratios.
