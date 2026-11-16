@@ -61,3 +61,7 @@ artifacts/experiments/python-value-unit-sizing-measure-20261116/.
 - Initial setup SHA256: 8D45D391F943ED40CB434AAAFCFF2E09C0B6D521FC86F3BBD1230BA48066A3E4.
 - Public comparison: 8071FBBB08CD45CF49F03D4541E6F037DE4EEDC7925005479D2E45C1ADAE9A17.
 - Validation: BCECE0DB6FEB1E9EDA7AE68194101CD2DD55CD155F88924860057C9DF6D4F777.
+
+Source db90f728 CI43814881958 passes Windows/Linux, saved/closed. Owned VM
+scratch is retired after accepted hashes and zero references; the failed external
+tmpfs fixture root was already absent. Dev.102 remains immutable.

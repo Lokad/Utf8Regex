@@ -53,6 +53,26 @@ public sealed class PythonReOneShotProjectionTests
         => kind switch { 0 => regex.SearchDetailed(input, start, token), 1 => regex.MatchDetailed(input, start, token), _ => regex.FullMatchDetailed(input, start, token) };
 
     [Theory]
+    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)] [InlineData(8193)]
+    public void LongAsciiAndUnicodeTailsKeepValueAndStringWidths(int asciiBytes)
+    {
+        using var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
+        foreach (var tail in new[] { "", "é", "中", "😀", "\U0010ffff" })
+        {
+            var text = "start" + new string('x', asciiBytes) + tail + "end";
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xff, 0xff, 0xff, .. bytes, 0xff];
+            var input = storage.AsSpan(3, bytes.Length);
+            var value = regex.FullMatch(input);
+            Assert.True(value.Success);
+            Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+            Assert.Equal((0, text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+            Assert.True(value.GetValueBytes().SequenceEqual(bytes));
+            Assert.Equal(text, regex.FullMatchToString(input));
+        }
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(7)]
     public void LongNativeAndScalarValuesKeepCoordinatesAcrossBorrowedBlockCuts(int borrowedOffset)
     {

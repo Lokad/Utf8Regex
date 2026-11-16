@@ -82,8 +82,15 @@ internal static class Utf8SliceBufferWork
             Checkpoint(ref invocation);
             var count = Utf8BlockLength(bytes[offset..]);
             var block = bytes.Slice(offset, count);
-            for (var inner = 0; inner < block.Length; inner += 32)
-                chars += CountValidUtf8Units(block.Slice(inner, Math.Min(32, block.Length - inner))).Utf16;
+            var firstNonAscii = block.IndexOfAnyInRange((byte)0x80, byte.MaxValue);
+            if (firstNonAscii < 0) chars += block.Length;
+            else
+            {
+                // The proved ASCII prefix needs no unit masks or second scan.
+                chars += firstNonAscii;
+                for (var inner = firstNonAscii; inner < block.Length; inner += 32)
+                    chars += CountValidUtf8Units(block.Slice(inner, Math.Min(32, block.Length - inner))).Utf16;
+            }
             offset += count;
         }
         return chars;
