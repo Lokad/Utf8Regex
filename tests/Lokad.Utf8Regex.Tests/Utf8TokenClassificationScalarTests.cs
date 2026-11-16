@@ -58,12 +58,11 @@ public sealed class Utf8TokenClassificationScalarTests
             var input = tokenPattern.Contains("\\.", StringComparison.Ordinal) ? "a:b.c"u8 : "a:bc"u8;
             using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
             for (var iteration = 0; iteration < 100; iteration++)
-                Assert.Equal(1, Utf8AsciiPreparedTokenFamilyExecutor.CountTokens(input, tokenPlan, delimited, structured));
+                Assert.True(Utf8AsciiPreparedTokenFamilyExecutor.TryFindToken(input, 0, tokenPlan, delimited, structured, out _, out _));
             var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
             for (var iteration = 0; iteration < 1000; iteration++)
             {
-                if (Utf8AsciiPreparedTokenFamilyExecutor.CountTokens(input, tokenPlan, delimited, structured) != 1 ||
-                    !Utf8AsciiPreparedTokenFamilyExecutor.TryFindToken(input, 0, tokenPlan, delimited, structured, out index, out length) ||
+                if (!Utf8AsciiPreparedTokenFamilyExecutor.TryFindToken(input, 0, tokenPlan, delimited, structured, out index, out length) ||
                     index != 0 || length != input.Length) throw new InvalidOperationException("Prepared operation changed its range.");
             }
             Assert.Equal(0L, GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
@@ -86,7 +85,6 @@ public sealed class Utf8TokenClassificationScalarTests
     public void AsciiIntersectionsDeclineUnicodeSubjectsWhileQualifiedWordTokensRemainNative()
     {
         var plan = Plan("[a]+:[b]+[^x]+");
-        Assert.False(Utf8AsciiDirectFamilyCountExecutor.TryCount("a:b😀"u8, false, plan, default, default, out _, out _));
         ScalarRange("[a]+:[b]+[^x]+", "a:b😀", 0, 7);
         const string email = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, Plan(email).Kind);
@@ -94,7 +92,6 @@ public sealed class Utf8TokenClassificationScalarTests
         const string plainWord = @"\w+@\w+\.\w+";
         var plainPlan = Plan(plainWord);
         Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, plainPlan.Kind);
-        Assert.False(Utf8AsciiDirectFamilyCountExecutor.TryCount("𐐀@𐐀.𐐀"u8, false, plainPlan, default, default, out _, out _));
         ScalarRange(plainWord, "𐐀@𐐀.𐐀", 0, 14);
     }
 

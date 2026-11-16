@@ -657,33 +657,28 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void EmittedBoundedDateTokenMatcherMatchesCompiledDateRuntime()
+    public void DateTokensPreservePublicByteRanges()
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.Inspection.PreparedRegex.FallbackDirectFamily, out var matcher));
-        Assert.NotNull(matcher);
-
-        Assert.True(matcher!.TryFindNext("Today is 11/18/2019 and tomorrow is 11/19/2019."u8, 0, out var matchIndex, out var matchedLength));
-        Assert.Equal("Today is ".Length, matchIndex);
-        Assert.Equal("11/18/2019".Length, matchedLength);
-        Assert.Equal(2, matcher.Count("Today is 11/18/2019 and tomorrow is 11/19/2019."u8));
-        Assert.False(matcher.TryFindNext("Today is xx/yy/zzzz and tomorrow is ??/??/????."u8, 0, out _, out _));
+        var match = regex.Match("Today is 11/18/2019 and tomorrow is 11/19/2019."u8);
+        Assert.True(match.Success);
+        Assert.Equal(("Today is ".Length, "11/18/2019".Length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal(2, regex.Count("Today is 11/18/2019 and tomorrow is 11/19/2019."u8));
+        Assert.False(regex.IsMatch("Today is xx/yy/zzzz and tomorrow is ??/??/????."u8));
     }
 
     [Fact]
-    public void EmittedUriTokenMatcherMatchesCompiledUriRuntime()
+    public void UriTokensPreservePublicByteRanges()
     {
         var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.Inspection.PreparedRegex.FallbackDirectFamily, out var matcher));
-        Assert.NotNull(matcher);
-
-        Assert.True(matcher!.TryFindNext("https://atlas.example.org/reports/export?id=42"u8, 0, out var matchIndex, out var matchedLength));
-        Assert.Equal(0, matchIndex);
-        Assert.Equal("https://atlas.example.org/reports/export?id=42".Length, matchedLength);
-        Assert.Equal(2, matcher.Count("https://a.example/x ftp://b.example/y"u8));
-        Assert.False(matcher.TryFindNext("https://a https://b"u8, 0, out _, out _));
+        var input = "https://atlas.example.org/reports/export?id=42"u8;
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal(2, regex.Count("https://a.example/x ftp://b.example/y"u8));
+        Assert.False(regex.IsMatch("https://a https://b"u8));
     }
 
     [Theory]

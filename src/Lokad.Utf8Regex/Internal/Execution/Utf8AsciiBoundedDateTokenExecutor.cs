@@ -94,19 +94,6 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
         }
     }
 
-    public static int CountAsciiBoundedDateTokens(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan family)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (TryFindAsciiBoundedDateToken(input, startIndex, family, out var matchIndex, out var matchedLength))
-        {
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return count;
-    }
-
     public static bool TryFindAsciiBoundedDateToken(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackDirectFamilyPlan family, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;

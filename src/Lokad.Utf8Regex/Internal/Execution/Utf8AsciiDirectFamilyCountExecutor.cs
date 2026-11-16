@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using System.Buffers;
 using System.Text;
 
@@ -6,86 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiDirectFamilyCountExecutor
 {
-    public static bool TryCount(
-        ReadOnlySpan<byte> input,
-        bool isAscii,
-        in Utf8FallbackDirectFamilyPlan plan,
-        Utf8EmittedTokenFamilyMatcher? emittedTokenFamilyMatcher,
-        in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
-        in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
-        out int count,
-        out Utf8ExecutionRoute diagnosticsRoute)
-    {
-        if (emittedTokenFamilyMatcher is not null && isAscii)
-        {
-            count = emittedTokenFamilyMatcher.Count(input);
-            diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiEmittedTokenFamily;
-            return true;
-        }
-
-        return TryCount(input, isAscii, plan, delimitedTokenSearch, literalStructuredTokenSearch, out count, out diagnosticsRoute);
-    }
-
-    public static bool TryCount(
-        ReadOnlySpan<byte> input,
-        bool isAscii,
-        in Utf8FallbackDirectFamilyPlan plan,
-        in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
-        in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
-        out int count,
-        out Utf8ExecutionRoute diagnosticsRoute)
-    {
-        count = 0;
-        diagnosticsRoute = Utf8ExecutionRoute.None;
-
-        switch (plan.Kind)
-        {
-            case Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectUtf8WordDelimitedToken;
-                count = Utf8WordDelimitedTokenExecutor.CountWellFormed(input);
-                return true;
-
-            case Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad;
-                count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
-                return true;
-
-            case Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiUntilByteStar;
-                count = Utf8AsciiUntilByteStarExecutor.Count(input, plan.TerminatorByte);
-                return true;
-
-        }
-
-        if (Utf8FallbackDirectFamilyCategories.IsPreparedTokenCountFamily(plan.Kind))
-        {
-            if (!isAscii)
-            {
-                return false;
-            }
-
-            diagnosticsRoute = plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount
-                ? Utf8ExecutionRoute.FallbackDirectAsciiDelimitedToken
-                : Utf8ExecutionRoute.FallbackDirectAsciiLiteralStructuredToken;
-            count = Utf8AsciiPreparedTokenFamilyExecutor.CountTokens(input, plan, delimitedTokenSearch, literalStructuredTokenSearch);
-            return true;
-        }
-
-        if (Utf8FallbackDirectFamilyCategories.IsTokenCountFamily(plan.Kind))
-        {
-            if (!Utf8AsciiTokenFamilyExecutor.TryCountTokens(input, isAscii, plan, out count, out diagnosticsRoute))
-            {
-                count = 0;
-                diagnosticsRoute = Utf8ExecutionRoute.None;
-                return false;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
     // The complete greedy word proof needs no captures or VM scratch. Keep
     // the ASCII lookup/run algorithm, decoding only encountered wider scalars.
     internal static Utf8ExecutionLimitKind TryCountWordRunsValidated(ReadOnlySpan<byte> input, int minCount,

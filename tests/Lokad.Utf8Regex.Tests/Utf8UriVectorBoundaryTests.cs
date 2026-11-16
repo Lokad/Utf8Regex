@@ -25,7 +25,7 @@ public sealed class Utf8UriVectorBoundaryTests
             input.CopyTo(storage.AsSpan(offset));
             input = storage.AsSpan(offset, input.Length);
             var expected = oracle.Count(text);
-            Assert.Equal(expected, Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input));
+            AssertUriRanges(oracle, text, input);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, compiled.Count(input));
             var whole = Utf8AsciiUriTokenExecutor.TryMatchWhole(input, out var matchedLength);
@@ -47,10 +47,21 @@ public sealed class Utf8UriVectorBoundaryTests
             var text = "x://aa" + new string('b', position) + (char)value + "tail?query#fragment y://zz";
             var input = Encoding.UTF8.GetBytes(text);
             var expected = oracle.Count(text);
-            Assert.Equal(expected, Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input));
+            AssertUriRanges(oracle, text, input);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, finite.Count(input));
         }
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes("x://aa" + new string('b', position) + "😀tail?é#😀")));
+    }
+    private static void AssertUriRanges(Regex oracle, string text, ReadOnlySpan<byte> input)
+    {
+        var start = 0;
+        foreach (Match expected in oracle.Matches(text))
+        {
+            Assert.True(Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, start, out var index, out var length));
+            Assert.Equal((expected.Index, expected.Length), (index, length));
+            start = index + length;
+        }
+        Assert.False(Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, start, out _, out _));
     }
 }

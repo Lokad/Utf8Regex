@@ -5,23 +5,6 @@ internal static class Utf8AsciiDirectFamilyExecutor
     public static bool TryFindMatch(
         ReadOnlySpan<byte> input,
         in Utf8FallbackDirectFamilyPlan plan,
-        Utf8EmittedTokenFamilyMatcher? emittedTokenFamilyMatcher,
-        in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
-        in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
-        out int matchIndex,
-        out int matchedLength)
-    {
-        if (emittedTokenFamilyMatcher is not null)
-        {
-            return emittedTokenFamilyMatcher.TryFindNext(input, 0, out matchIndex, out matchedLength);
-        }
-
-        return TryFindMatch(input, plan, delimitedTokenSearch, literalStructuredTokenSearch, out matchIndex, out matchedLength);
-    }
-
-    public static bool TryFindMatch(
-        ReadOnlySpan<byte> input,
-        in Utf8FallbackDirectFamilyPlan plan,
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
         out int matchIndex,

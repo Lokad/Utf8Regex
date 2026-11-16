@@ -21,8 +21,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
     [Fact]
     public void RemainingPayloadStatesCoverStoredFieldsAndNoDiscardedImplementationSurvives()
     {
-        Type[] types = [typeof(Utf8CompiledSymmetricLiteralWindowCounter),
-            typeof(Utf8EmittedTokenFamilyMatcher)];
+        Type[] types = [typeof(Utf8CompiledSymmetricLiteralWindowCounter)];
         foreach (var type in types)
         {
             var state = type.GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
@@ -31,7 +30,6 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             Assert.Equal(fields.Select(f => f.FieldType.FullName).Order(), stateFields.Select(f => f.FieldType.FullName).Order());
             Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
         }
-        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8NonLiteralCompiledEngineRuntime"));
         Assert.Single(typeof(Utf8StructuralLinearRuntime).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
         foreach (var type in new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) })
             Assert.Empty(type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
@@ -93,7 +91,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
 
-    public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 6)
+    public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 4)
         from bytes in new[] { false, true } select new object[] { kind, bytes };
 
     [Theory]
@@ -115,16 +113,9 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             0, (byte)'a', (byte)'c', 0, 8, false, 1, (byte)'b', (byte)'d', 0, (byte)'a', (byte)'c');
         // Prepare primitive inputs explicitly. Public scalar admission may bypass
         // these legacy optimization shapes; this test qualifies holder accounting.
-        var tokenPlan = kind == 4
-            ? Utf8FallbackDirectFamilyPlan.ForBoundedDateToken(1, 2, 1, 2, 2, 4, (byte)'/', (byte)'/', true, true)
-            : Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8UriToken);
-        object Acquire()
-        {
-            if (kind < 3) return Utf8StructuralLinearRuntime.Create(holderPlan);
-            if (kind == 3) return Utf8CompiledSymmetricLiteralWindowCounter.Create(symmetric);
-            Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(tokenPlan, out var result));
-            return result!;
-        }
+        object Acquire() => kind < 3
+            ? Utf8StructuralLinearRuntime.Create(holderPlan)
+            : Utf8CompiledSymmetricLiteralWindowCounter.Create(symmetric);
         ulong loan;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 0))
         {

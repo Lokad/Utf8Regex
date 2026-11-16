@@ -45,7 +45,7 @@ internal static class Utf8UnicodeCategoryExecutor
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
             count += letters
-                ? Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input.Slice(offset, length))
+                ? Utf8UnicodeLetterCounter.CountLetters(input.Slice(offset, length))
                 : CountCategory(input.Slice(offset, length), family.UnicodeCategory);
             offset += length;
         }

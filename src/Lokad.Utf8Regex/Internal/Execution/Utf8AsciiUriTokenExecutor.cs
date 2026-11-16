@@ -23,19 +23,6 @@ internal static class Utf8AsciiUriTokenExecutor
             matchedLength == input.Length;
     }
 
-    public static int CountAsciiUriTokens(ReadOnlySpan<byte> input)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (TryFindAsciiUriToken(input, startIndex, out var matchIndex, out var matchedLength))
-        {
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return count;
-    }
-
 
     public static bool TryFindAsciiUriToken(ReadOnlySpan<byte> input, int startIndex, out int matchIndex, out int matchedLength)
     {

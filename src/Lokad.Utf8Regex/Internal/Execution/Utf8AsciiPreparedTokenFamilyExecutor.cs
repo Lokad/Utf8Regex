@@ -25,24 +25,4 @@ internal static class Utf8AsciiPreparedTokenFamilyExecutor
         matchIndex = 0; matchedLength = 0; return false;
     }
 
-    public static int CountTokens(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan,
-        in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
-        in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch)
-    {
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount)
-        {
-            if (delimitedTokenSearch.HasValue) return delimitedTokenSearch.Count(input);
-            using var scratch = Utf8ConstructionScope.Enter();
-            var search = Utf8FallbackPreparedTokenSearchFactory.CreateDelimitedTokenSearch(plan);
-            return search.Count(input);
-        }
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount)
-        {
-            if (literalStructuredTokenSearch.HasValue) return literalStructuredTokenSearch.Count(input);
-            using var scratch = Utf8ConstructionScope.Enter();
-            var search = Utf8FallbackPreparedTokenSearchFactory.CreateLiteralStructuredTokenSearch(plan);
-            return search.Count(input);
-        }
-        return 0;
-    }
 }

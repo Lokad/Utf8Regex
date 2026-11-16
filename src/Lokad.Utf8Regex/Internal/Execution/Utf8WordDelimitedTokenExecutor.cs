@@ -11,15 +11,6 @@ internal static class Utf8WordDelimitedTokenExecutor
     private static readonly PreparedByteSetState s_body = PreparedByteSetState.FromValues(
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.-"u8);
 
-    public static int CountWellFormed(ReadOnlySpan<byte> input)
-    {
-        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-        var breach = TryCountWellFormed(input, ref invocation, out var count);
-        if (breach != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
-        return count;
-    }
-
     internal static Utf8ExecutionLimitKind TryCountWellFormed(ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out int count)
     {

@@ -5,12 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8UriTokenExecutor
 {
-    public static int CountWellFormed(ReadOnlySpan<byte> input)
-    {
-        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-        return CountWellFormed(input, ref invocation);
-    }
-
     internal static int CountWellFormed(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
         Checkpoint(ref invocation);

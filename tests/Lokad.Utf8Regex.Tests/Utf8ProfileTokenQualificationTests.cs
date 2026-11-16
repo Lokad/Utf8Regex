@@ -47,13 +47,12 @@ public sealed class Utf8ProfileTokenQualificationTests
     private static void AsciiOracle(string pattern, IEnumerable<string> subjects, Utf8FallbackDirectFamilyPlan plan)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var text in subjects)
         {
             var input = Encoding.ASCII.GetBytes(text);
             var expectedCount = oracle.Count(text);
-            var actualCount = plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount ? Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input) :
-                plan.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken ? Utf8UriTokenExecutor.CountWellFormed(input) : Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens(input, plan);
-            Assert.Equal(expectedCount, actualCount);
+            Assert.Equal(expectedCount, regex.Count(input));
             for (var floor = 0; floor <= input.Length; floor++)
             {
                 var expected = oracle.Match(text, floor);
@@ -69,18 +68,17 @@ public sealed class Utf8ProfileTokenQualificationTests
     {
         foreach (var text in new[] { "x://😀", "𐐀://😀?q#f", "x://𐐀", "x:///😀😀" })
         {
-            Assert.Equal(0, Utf8UriTokenExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled }) Assert.Equal(0, new Utf8Regex(Uri, options).Count(Encoding.UTF8.GetBytes(text)));
         }
         Range(Uri, " x://😀/ ", 1, 9); Range(Uri, " 𐐀://😀😀?q#f ", 1, 19);
-        Assert.Equal(1, Utf8UriTokenExecutor.CountWellFormed("𐐀://😀😀"u8));
+        Assert.Equal(1, new Utf8Regex(Uri).Count("𐐀://😀😀"u8));
     }
 
     [Fact]
     public void UriFragmentAllowsNulAndDoesNotStartASecondTokenInsideIt()
     {
         var text = "x://😀a#\0y://ab";
-        Assert.Equal(1, Utf8UriTokenExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
+        Assert.Equal(1, new Utf8Regex(Uri).Count(Encoding.UTF8.GetBytes(text)));
         Range(Uri, text, 0, Encoding.UTF8.GetByteCount(text));
     }
 
@@ -101,7 +99,8 @@ public sealed class Utf8ProfileTokenQualificationTests
     {
         var plan = Utf8FallbackDirectFamilyPlan.ForBoundedDateToken(1, 1, 1, 1, 1, 1, (byte)'/', (byte)'/', false, false);
         Assert.True(Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken("1/2/3"u8, 0, plan, out var index, out var length));
-        Assert.Equal((0, 5), (index, length)); Assert.Equal(1, Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens("1/2/3"u8, plan));
+        Assert.Equal((0, 5), (index, length));
+        Assert.Equal(1, new Utf8Regex(@"\d{1}/\d{1}/\d{1}").Count("1/2/3"u8));
         Range(@"\d{1}/\d{1}/\d{1}", "😀 ١/٢/٣", 5, 8);
     }
 
@@ -116,7 +115,6 @@ public sealed class Utf8ProfileTokenQualificationTests
         var captured = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ ")).GetGroup("day");
         Assert.Equal((5, 2), (captured.IndexInBytes, captured.LengthInBytes));
         var input = Encoding.UTF8.GetBytes("𐐀1/2-20"); Assert.False(new Utf8Regex(pattern).IsMatch(input));
-        Assert.False(Utf8AsciiTokenFamilyExecutor.TryCountTokens(input, false, plan, out _, out _));
         var method = Classifier();
         foreach (var unproved in new[] { @"\d{0,2}/\d{1}/\d{1}", @"\d{1,2}?/\d{1}/\d{1}", @"(?:\d{2}){2}/\d{1}/\d{1}", @"[\dA]{1}/\d{1}/\d{1}", @"\d{1}.\d{1}/\d{1}" })
             Assert.False(Classify(method, Tree(unproved)).HasValue);
