@@ -22,7 +22,7 @@ internal static class Utf8FallbackLineClassifier
         {
             Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte => Utf8FallbackDirectFamilyPlan.ForPrefixUntilByte(primary, shape.Terminator),
             Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail => Utf8FallbackDirectFamilyPlan.ForTrimmedOptionalLiteralPrefixTail(primary, secondary),
-            _ => Utf8FallbackDirectFamilyPlan.ForLiteral(shape.Kind, Utf8FallbackFindModeKind.MatchAtStart, primary),
+            _ => Utf8FallbackDirectFamilyPlan.ForLiteral(shape.Kind, primary),
         };
         scope.Complete(); return plan;
     }

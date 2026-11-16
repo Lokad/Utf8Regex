@@ -17,7 +17,7 @@ internal static class Utf8FallbackFinalProfileClassifier
         }
         if (kind == Utf8FallbackDirectFamilyKind.None) return default;
         scope.Complete();
-        return Utf8FallbackDirectFamilyPlan.ForKind(kind, Utf8FallbackFindModeKind.MatchAtStart);
+        return Utf8FallbackDirectFamilyPlan.ForKind(kind);
     }
 
     private static bool IsEmail(Utf8TreeNode root)

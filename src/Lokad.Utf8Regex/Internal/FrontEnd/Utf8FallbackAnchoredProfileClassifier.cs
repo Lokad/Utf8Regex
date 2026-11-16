@@ -32,7 +32,7 @@ internal static class Utf8FallbackAnchoredProfileClassifier
                 IsCell(body.Child(4), body.Child(5), tree)) kind = Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole;
         }
         if (kind == Utf8FallbackDirectFamilyKind.None) return default;
-        scope.Complete(); return Utf8FallbackDirectFamilyPlan.ForKind(kind, Utf8FallbackFindModeKind.MatchAtStart);
+        scope.Complete(); return Utf8FallbackDirectFamilyPlan.ForKind(kind);
     }
 
     private static bool IsNumber(Utf8TreeNode body, Utf8OwnedRegexTree tree)

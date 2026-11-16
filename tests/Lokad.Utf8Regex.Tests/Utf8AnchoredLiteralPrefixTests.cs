@@ -29,7 +29,6 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
-        Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
     }
 
     public static IEnumerable<object?[]> FoldedAcceptCases()
@@ -45,7 +44,6 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, plan.Kind);
-        Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
     }
 
     public static IEnumerable<object?[]> DeclineCases()

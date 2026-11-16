@@ -15,8 +15,8 @@ internal static class Utf8FallbackProfileClassifier
         if (!Admit(tree.Root, false)) return default;
         var body = Unwrap(tree.Root);
         if (body.Kind != Utf8TreeNodeKind.Concatenate) return default;
-        var plan = TryUri(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8UriToken, Utf8FallbackFindModeKind.FindToken) :
-            TryIpv4(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount, Utf8FallbackFindModeKind.FindToken) : ClassifyDate(body);
+        var plan = TryUri(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8UriToken) :
+            TryIpv4(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount) : ClassifyDate(body);
         if (plan.HasValue) scope.Complete();
         return plan;
     }

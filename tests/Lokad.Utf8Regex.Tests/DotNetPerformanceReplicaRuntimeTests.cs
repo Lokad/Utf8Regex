@@ -274,7 +274,6 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole, analysis.FallbackDirectFamily.Kind);
         Assert.False(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-        Assert.False(analysis.FallbackDirectFamily.SupportsDefinitiveIsMatch);
     }
 
     [Fact]

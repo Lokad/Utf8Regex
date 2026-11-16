@@ -40,15 +40,14 @@ internal static class Utf8FallbackClassClassifier
         if (anchored && body.ChildCount == 2 && TryRepeat(body.Child(1), out atom, out minimum, out maximum) &&
             minimum == 1 && maximum == int.MaxValue && TryMask(atom, out var operators) &&
             operators == AsciiCharClass.FromBytes("=+-^*/.<>~!&|?"u8))
-            return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AnchoredOperatorRun, Utf8FallbackFindModeKind.MatchAtStart);
+            return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AnchoredOperatorRun);
         if (body.ChildCount == offset + 2 && TryRepeat(body.Child(offset), out var head, out var headMin, out var headMax) &&
             headMin == 1 && headMax == 1 && TryMask(head, out var headMask) &&
             headMask == AsciiCharClass.FromBytes("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"u8) &&
             TryRepeat(body.Child(offset + 1), out var tail, out var tailMin, out var tailMax) && tailMin == 0 && tailMax == int.MaxValue &&
             TryMask(tail, out var tailMask) && tailMask == (anchored ? AsciiCharClass.FromBytes("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"u8) :
                 AsciiCharClass.FromBytes("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"u8)))
-            return Utf8FallbackDirectFamilyPlan.ForKind(anchored ? Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix : Utf8FallbackDirectFamilyKind.AsciiIdentifierToken,
-                anchored ? Utf8FallbackFindModeKind.MatchAtStart : Utf8FallbackFindModeKind.FindToken);
+            return Utf8FallbackDirectFamilyPlan.ForKind(anchored ? Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix : Utf8FallbackDirectFamilyKind.AsciiIdentifierToken);
         if (body.ChildCount == 3 && TryRepeat(body.Child(0), out head, out headMin, out headMax) && headMin == 1 && headMax == int.MaxValue &&
             !head.MatchCaseInsensitive && TryExcludedByte(head, out var headExcluded) && TryLiteral(body.Child(1), out var literal) &&
             !literal.MatchCaseInsensitive && LiteralLength(literal) == 1 && TryRepeat(body.Child(2), out tail, out tailMin, out tailMax) &&

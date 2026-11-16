@@ -30,7 +30,6 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
-        Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
     }
 
     public static IEnumerable<object?[]> FoldedAcceptCases()
@@ -46,7 +45,6 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
-        Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
     }
 
     public static IEnumerable<object?[]> DeclineCases()

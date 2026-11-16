@@ -30,7 +30,7 @@ internal static class Utf8FallbackLiteralClassifier
             ? folded ? Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix
             : folded ? lax ? Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd
             : lax ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
-        var plan = Utf8FallbackDirectFamilyPlan.ForLiteral(kind, suffix ? Utf8FallbackFindModeKind.MatchAtEnd : Utf8FallbackFindModeKind.MatchAtStart, bytes);
+        var plan = Utf8FallbackDirectFamilyPlan.ForLiteral(kind, bytes);
         scope.Complete(); return plan;
     }
 
