@@ -1,3 +1,8 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Shared bounded-buffer checkpoint and copy mechanics for owned shaping.</summary>
@@ -64,6 +69,30 @@ internal static class Utf8SliceBufferWork
             offset += count;
         }
         return chars;
+    }
+
+    // Count leads in an already-valid UTF-8 range. Counts compose across byte
+    // blocks, including blocks that cut a scalar; this is not a validator.
+    // Callers supply at most 32 bytes per chunk and own interruption checkpoints.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static (int Scalars, int Utf16) CountValidUtf8Units(ReadOnlySpan<byte> bytes)
+    {
+        if (Vector256.IsHardwareAccelerated && bytes.Length == Vector256<byte>.Count)
+        {
+            var current = MemoryMarshal.Read<Vector256<byte>>(bytes);
+            var continuations = Vector256.Equals(current & Vector256.Create((byte)0xc0), Vector256.Create((byte)0x80));
+            var scalars = Vector256<byte>.Count - BitOperations.PopCount(continuations.ExtractMostSignificantBits());
+            var supplementary = BitOperations.PopCount(Vector256.GreaterThanOrEqual(current, Vector256.Create((byte)0xf0)).ExtractMostSignificantBits());
+            return (scalars, scalars + supplementary);
+        }
+        var count = 0;
+        var extra = 0;
+        foreach (var value in bytes)
+        {
+            if ((value & 0xc0) != 0x80) count++;
+            if (value >= 0xf0) extra++;
+        }
+        return (count, count + extra);
     }
 
     // The caller has validated these bytes. Count and admit the returned string

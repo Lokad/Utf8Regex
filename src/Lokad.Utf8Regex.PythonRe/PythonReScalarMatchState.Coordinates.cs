@@ -1,6 +1,3 @@
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -116,7 +113,7 @@ internal partial struct PythonReScalarMatchState
     private (int Scalars, int Utf16) CountCoordinateUnits(ReadOnlySpan<byte> bytes)
     {
         var scalars = 0;
-        var supplementary = 0;
+        var utf16 = 0;
         for (var offset = 0; offset < bytes.Length;)
         {
             // Valid unchanged UTF-8 is the profile's input contract. A leading
@@ -124,24 +121,12 @@ internal partial struct PythonReScalarMatchState
             // index block cuts through a scalar; queried captures end on scalars.
             Checkpoint();
             var block = bytes.Slice(offset, Math.Min(32, bytes.Length - offset));
-            if (Vector256.IsHardwareAccelerated && block.Length == Vector256<byte>.Count)
-            {
-                var current = MemoryMarshal.Read<Vector256<byte>>(block);
-                var continuations = Vector256.Equals(current & Vector256.Create((byte)0xc0), Vector256.Create((byte)0x80));
-                scalars += Vector256<byte>.Count - BitOperations.PopCount(continuations.ExtractMostSignificantBits());
-                supplementary += BitOperations.PopCount(Vector256.GreaterThanOrEqual(current, Vector256.Create((byte)0xf0)).ExtractMostSignificantBits());
-            }
-            else
-            {
-                foreach (var value in block)
-                {
-                    if ((value & 0xc0) != 0x80) scalars++;
-                    if (value >= 0xf0) supplementary++;
-                }
-            }
+            var units = Utf8SliceBufferWork.CountValidUtf8Units(block);
+            scalars += units.Scalars;
+            utf16 += units.Utf16;
             offset += block.Length;
         }
-        return (scalars, scalars + supplementary);
+        return (scalars, utf16);
     }
 
     private void ReleaseCoordinatePrefixes()
