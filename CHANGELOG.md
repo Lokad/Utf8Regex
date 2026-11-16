@@ -31,6 +31,9 @@
   input UTF-16 metadata for exact literals and literal families. Returned byte/
   UTF-16 coordinates remain relative to the original input; `Validate` still
   rejects malformed tails.
+- Finite-limit value `Match` reuses bounded search for literal families of up to
+  eight alternatives, reducing work and temporary storage on those routes.
+  Detailed capture results retain their separate admission requirements.
 - Reduce repeated preparation, search, capture traversal, coordinate scans and
   output copies. Results and numerical resource requirements depend on the route;
   some workloads use more time or storage. Recheck finite policies when upgrading.
