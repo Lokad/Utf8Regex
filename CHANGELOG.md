@@ -23,6 +23,9 @@
 - Preserve POSIX `Newline` matches when a whitespace run must rewind before LF
   to satisfy `$`. Proved flat runs reuse scalar capture selection and reject
   impossible starts before recording capture events.
+- Extend proved POSIX runs to single repeats and fixed scalar pieces, avoiding
+  unnecessary rewind storage. Valid-text coordinate projection reuses bounded
+  counting. Numerical work/depth/working requirements can decrease on these routes.
 - Add direct UTF-8 pattern/template APIs, byte capture-name lookup and caller-
   buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
   ownership, persistent memory cursors and explicit retained-result/output
