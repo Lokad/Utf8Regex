@@ -7,19 +7,19 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReLiteralFullMatchTests
 {
     [Theory]
-    [InlineData("cat", "cat", 0, true, 0)]
-    [InlineData("cat", "xcat", 0, false, 0)]
-    [InlineData("cat", "catx", 0, false, 0)]
-    [InlineData("cat", "xcat", 1, true, 1)]
-    [InlineData("café😀", "πcafé😀", 2, true, 1)]
-    [InlineData("😀", "é😀", 2, true, 1)]
-    [InlineData("😀", "é😀x", 2, false, 0)]
-    [InlineData("😀", "éx😀", 2, false, 0)]
-    [InlineData("", "", 0, true, 0)]
-    [InlineData("", "😀", 0, false, 0)]
-    [InlineData("", "😀", 4, true, 2)]
+    [InlineData("cat","cat",0,true)]
+    [InlineData("cat","xcat",0,false)]
+    [InlineData("cat","catx",0,false)]
+    [InlineData("cat","xcat",1,true)]
+    [InlineData("café😀","πcafé😀",2,true)]
+    [InlineData("😀","é😀",2,true)]
+    [InlineData("😀","é😀x",2,false)]
+    [InlineData("😀","éx😀",2,false)]
+    [InlineData("","",0,true)]
+    [InlineData("","😀",0,false)]
+    [InlineData("","😀",4,true)]
     public void ValueAndStringFullMatchKeepSuffixEndpointsAndScalarCoordinates(
-        string pattern, string text, int start, bool success, int startUtf16)
+        string pattern,string text,int start,bool success)
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var controlled in new[] { false, true })
@@ -34,7 +34,6 @@ public sealed class PythonReLiteralFullMatchTests
             if (success)
             {
                 Assert.Equal((start, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                Assert.Equal((startUtf16, text.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
                 Assert.Equal(pattern, match.GetValueString());
             }
             Assert.False(regex.DebugIsScalarFullProgramValueCreated);
@@ -70,7 +69,6 @@ public sealed class PythonReLiteralFullMatchTests
             var full = regex.FullMatch(input, start);
             Assert.True(full.Success);
             Assert.Equal((start, input.Length), (full.StartOffsetInBytes, full.EndOffsetInBytes));
-            Assert.Equal((prefix.Length, prefix.Length + length), (full.StartOffsetInUtf16, full.EndOffsetInUtf16));
             Assert.Equal(pattern, regex.FullMatchToString(input, start));
             var tail = Encoding.UTF8.GetBytes(prefix + pattern + "!");
             var match = regex.Match(tail, start);
@@ -176,8 +174,9 @@ public sealed class PythonReLiteralFullMatchTests
     [InlineData(false)] [InlineData(true)]
     public void LongMatchObservesInFlightCancellationAndFreshInvocationRecovers(bool text)
     {
-        var regex = new Utf8PythonRegex("cat", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
-        var input = Encoding.UTF8.GetBytes(new string('x', 65536) + "cat");
+        var pattern = new string('x', 8192) + "cat";
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
+        var input = Encoding.UTF8.GetBytes(new string('x', 65536) + pattern);
         using var cancellation = new CancellationTokenSource();
         var reads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -192,7 +191,7 @@ public sealed class PythonReLiteralFullMatchTests
         }
         Run(regex, input, 65536, text, default);
         Assert.True(regex.FullMatch(input, 65536).Success);
-        Assert.Equal("cat", regex.FullMatchToString(input, 65536));
+        Assert.Equal(pattern, regex.FullMatchToString(input, 65536));
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 

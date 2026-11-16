@@ -10,7 +10,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 /// <summary>Provides a culture-invariant CPython <c>re</c>-compatible surface over well-formed UTF-8 input.</summary>
-/// <remarks>The adapter preserves Python operation shaping while exposing both UTF-8 byte and UTF-16 coordinate projections.</remarks>
+/// <remarks>The adapter preserves Python operation shaping while exposing UTF-8 byte ranges and explicit scalar-coordinate queries.</remarks>
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Compiles an expression over already-valid UTF-8 text.</summary>
@@ -25,9 +25,7 @@ public sealed partial class Utf8PythonRegex
 
     private readonly record struct PythonReUtf8MatchRange(
         int IndexInBytes,
-        int LengthInBytes,
-        int IndexInUtf16,
-        int LengthInUtf16);
+        int LengthInBytes);
 
     private ref struct PythonReUtf8MatchRangeBuffer
     {
@@ -56,7 +54,7 @@ public sealed partial class Utf8PythonRegex
             => _results.AllocateArray<T>(count, ref _invocation);
 
         internal string GetText(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
-            => _results.DecodeUtf8(input.Slice(range.IndexInBytes, range.LengthInBytes), range.LengthInUtf16, ref _invocation);
+            => _results.DecodeUtf8(input.Slice(range.IndexInBytes, range.LengthInBytes), null, ref _invocation);
 
         internal byte[] GetBytes(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
         {

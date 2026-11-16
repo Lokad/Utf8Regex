@@ -8,26 +8,24 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReNativeLiteralCursorTests
 {
     [Theory]
-    [InlineData("cat|dog", "é😀dog tail", 0, 6, 9, 3, 6)]
-    [InlineData("😀|中", "é😀中", 0, 2, 6, 1, 3)]
-    [InlineData("😀|中", "é😀中", 6, 6, 9, 3, 4)]
-    [InlineData("a|ab", "éab", 0, 2, 3, 1, 2)]
-    [InlineData("ab|a", "éab", 0, 2, 4, 1, 3)]
-    [InlineData("foo(?=bar)", "é😀foobar", 0, 6, 9, 3, 6)]
-    [InlineData("foo(?=bar)", "éfoobar foobar", 6, 9, 12, 8, 11)]
-    [InlineData("(?:a|ab)(?=c)", "éabc", 0, 2, 4, 1, 3)]
-    [InlineData("(?:ab|a)(?=bc)", "éabc", 0, 2, 3, 1, 2)]
-    [InlineData("(?:😀|中)(?=é)", "é😀é中é", 8, 8, 11, 4, 5)]
-    public void CaptureFreeFamilySearchKeepsScalarPriorityWithoutVmStorage(string pattern, string text,
-        int start, int byteStart, int byteEnd, int utf16Start, int utf16End)
+    [InlineData("cat|dog","é😀dog tail",0,6,9)]
+    [InlineData("😀|中","é😀中",0,2,6)]
+    [InlineData("😀|中","é😀中",6,6,9)]
+    [InlineData("a|ab","éab",0,2,3)]
+    [InlineData("ab|a","éab",0,2,4)]
+    [InlineData("foo(?=bar)","é😀foobar",0,6,9)]
+    [InlineData("foo(?=bar)","éfoobar foobar",6,9,12)]
+    [InlineData("(?:a|ab)(?=c)","éabc",0,2,4)]
+    [InlineData("(?:ab|a)(?=bc)","éabc",0,2,3)]
+    [InlineData("(?:😀|中)(?=é)","é😀é中é",8,8,11)]
+    public void CaptureFreeFamilySearchKeepsScalarPriorityWithoutVmStorage(string pattern,string text,        int start,int byteStart,int byteEnd)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(text);
         var match = regex.Search(input, start);
         Assert.True(match.Success);
-        Assert.Equal((byteStart, byteEnd, utf16Start, utf16End),
-            (match.StartOffsetInBytes, match.EndOffsetInBytes, match.StartOffsetInUtf16, match.EndOffsetInUtf16));
+        Assert.Equal((byteStart,byteEnd),            (match.StartOffsetInBytes,match.EndOffsetInBytes));
     }
 
     [Theory]

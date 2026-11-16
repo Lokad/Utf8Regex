@@ -42,8 +42,6 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Equal(expected.Success, found.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
         }
 
     }
@@ -201,12 +199,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -222,8 +218,6 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(Utf8("x\na"), 0);
         Assert.True(expected.Success);
         Assert.True(found.Success);
-        Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-        Assert.Equal(2, found.StartOffsetInUtf16);
     }
 
     [Theory]
@@ -306,12 +300,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -391,12 +383,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -506,12 +496,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -600,12 +588,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -735,12 +721,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -823,12 +807,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -912,12 +894,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -993,12 +973,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -1077,12 +1055,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -1153,12 +1129,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -1193,12 +1167,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }
@@ -1229,12 +1201,10 @@ public sealed class PythonReSliceOwnershipTests
         var found = regex.Search(input, startByte);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
-        if (expectedSuccess)
+        if (found.Success)
         {
-            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
-            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedEnd)), found.EndOffsetInBytes);
         }
 
     }

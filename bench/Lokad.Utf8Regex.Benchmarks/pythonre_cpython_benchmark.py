@@ -113,15 +113,6 @@ def bound_trivial(value: int) -> int:
     return value
 
 
-def build_utf16_offsets(value: str) -> tuple[int, ...]:
-    offsets = [0]
-    utf16_offset = 0
-    for character in value:
-        utf16_offset += 2 if ord(character) > 0xFFFF else 1
-        offsets.append(utf16_offset)
-    return tuple(offsets)
-
-
 def build_utf8_offsets(value: str) -> tuple[int, ...]:
     offsets = [0]
     utf8_offset = 0
@@ -131,52 +122,49 @@ def build_utf8_offsets(value: str) -> tuple[int, ...]:
     return tuple(offsets)
 
 
-def simple_match_checksum(match: re.Match[str] | None, utf16_offsets: tuple[int, ...]) -> int:
+def simple_match_checksum(match: re.Match[bytes] | None) -> int:
     if match is None:
         return 0
     return combine(
         1,
-        utf16_offsets[match.start()],
-        utf16_offsets[match.end()],
+        match.start(),
+        match.end(),
     )
 
 
-DetailedGroup = tuple[bool, int, int, int, int, str]
+DetailedGroup = tuple[bool, int, int, str]
 DetailedMatch = tuple[DetailedGroup, ...] | None
-ValueMatch = tuple[re.Match[str], int, int, int, int] | None
+ValueMatch = tuple[re.Match[str], int, int] | None
 
 
 def materialize_value(match: re.Match[str] | None) -> ValueMatch:
-    # Value APIs publish byte and UTF-16 ranges within the timed operation,
+    # Value APIs publish byte ranges within the timed operation,
     # but do not require an eagerly decoded value string. CPython's isascii()
     # reads the str representation flag; it does not rescan the subject.
     if match is None:
         return None
     start, end = match.span()
     if match.string.isascii():
-        return match, start, end, start, end
+        return match, start, end
     prefix = match.string[:start]
     value = match.group()
     start_bytes = len(prefix.encode("utf-8"))
-    start_utf16 = len(prefix.encode("utf-16-le")) // 2
     return (
         match,
         start_bytes,
         start_bytes + len(value.encode("utf-8")),
-        start_utf16,
-        start_utf16 + len(value.encode("utf-16-le")) // 2,
     )
 
 
 def result_offsets(
     input_text: str, matches: list[re.Match[str]], captures: bool = True,
-) -> tuple[Sequence[int] | Mapping[int, int], Sequence[int] | Mapping[int, int]]:
+) -> Sequence[int] | Mapping[int, int]:
     # Reuse conversion only inside this logical result. Encode disjoint segments
     # up to requested boundaries, including lookaround captures outside group 0.
     # No setup map, full suffix scan, or repeated dense-prefix conversion.
     if input_text.isascii():
         identity = range(len(input_text) + 1)
-        return identity, identity
+        return identity
     boundaries = sorted({
         position
         for match in matches
@@ -185,28 +173,24 @@ def result_offsets(
         if position >= 0
     })
     utf8_offsets = {0: 0}
-    utf16_offsets = {0: 0}
-    previous = utf8_offset = utf16_offset = 0
+    previous = utf8_offset = 0
     for boundary in boundaries:
         segment = input_text[previous:boundary]
         utf8_offset += len(segment.encode("utf-8"))
-        utf16_offset += len(segment.encode("utf-16-le")) // 2
         utf8_offsets[boundary] = utf8_offset
-        utf16_offsets[boundary] = utf16_offset
         previous = boundary
-    return utf8_offsets, utf16_offsets
+    return utf8_offsets
 
 
 def materialize_detailed_result(match: re.Match[str] | None) -> DetailedMatch:
     if match is None:
         return None
-    return materialize_detailed(match, *result_offsets(match.string, [match]))
+    return materialize_detailed(match, result_offsets(match.string, [match]))
 
 
 def materialize_detailed(
     match: re.Match[str] | None,
     utf8_offsets: Sequence[int] | Mapping[int, int],
-    utf16_offsets: Sequence[int] | Mapping[int, int],
 ) -> DetailedMatch:
     if match is None:
         return None
@@ -215,15 +199,13 @@ def materialize_detailed(
     for group_index in range(match.re.groups + 1):
         start, end = match.span(group_index)
         if start < 0:
-            groups.append((False, 0, 0, 0, 0, ""))
+            groups.append((False, 0, 0, ""))
         else:
             groups.append(
                 (
                     True,
                     utf8_offsets[start],
                     utf8_offsets[end],
-                    utf16_offsets[start],
-                    utf16_offsets[end],
                     match.group(group_index),
                 )
             )
@@ -235,12 +217,12 @@ def detailed_checksum(match: DetailedMatch) -> int:
         return 0
 
     checksum = 1
-    for success, _, _, start_utf16, end_utf16, value in match:
+    for success, start_bytes, end_bytes, value in match:
         checksum = combine(
             checksum,
             1 if success else 0,
-            start_utf16,
-            end_utf16,
+            start_bytes,
+            end_bytes,
             checksum_string(value),
         )
     return checksum
@@ -272,14 +254,12 @@ def digest_detailed(seed: int, match: DetailedMatch) -> int:
         return digest_add(seed, 0)
 
     seed = digest_add(seed, 1, len(match))
-    for success, start_bytes, end_bytes, start_utf16, end_utf16, value in match:
+    for success, start_bytes, end_bytes, value in match:
         seed = digest_add(
             seed,
             1 if success else 0,
             start_bytes,
             end_bytes,
-            start_utf16,
-            end_utf16,
         )
         seed = digest_string(seed, value)
     return seed
@@ -325,7 +305,6 @@ class CaseRunner:
         # Setup maps serve only start-offset translation and untimed callback/
         # bytes-control verification. Timed coordinate results project afresh.
         self.utf8_offsets = build_utf8_offsets(self.input_text)
-        self.utf16_offsets = build_utf16_offsets(self.input_text)
         start_offset_in_bytes = request.get("StartOffsetInBytes", 0)
         if not isinstance(start_offset_in_bytes, int) or isinstance(start_offset_in_bytes, bool):
             raise ValueError("StartOffsetInBytes must be an integer.")
@@ -543,13 +522,11 @@ class CaseRunner:
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
+                    _, start_bytes, end_bytes = result
                     consumption_checksum += (
                         2
                         + start_bytes
                         + end_bytes
-                        + start_utf16
-                        + end_utf16
                     )
         elif operation == "Match":
             for _ in range(iterations):
@@ -557,13 +534,11 @@ class CaseRunner:
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
+                    _, start_bytes, end_bytes = result
                     consumption_checksum += (
                         2
                         + start_bytes
                         + end_bytes
-                        + start_utf16
-                        + end_utf16
                     )
         else:
             for _ in range(iterations):
@@ -571,13 +546,11 @@ class CaseRunner:
                 if result is None:
                     consumption_checksum += 1
                 else:
-                    _, start_bytes, end_bytes, start_utf16, end_utf16 = result
+                    _, start_bytes, end_bytes = result
                     consumption_checksum += (
                         2
                         + start_bytes
                         + end_bytes
-                        + start_utf16
-                        + end_utf16
                     )
         return time.perf_counter_ns() - started, result, consumption_checksum
 
@@ -618,7 +591,7 @@ class CaseRunner:
     def byte_checksum(self, result: Any) -> int:
         if self.operation == "IsMatch":
             return 1 if result else 0
-        return simple_match_checksum(result, self.utf16_offsets)
+        return simple_match_checksum(result)
 
     def byte_semantic_digest(self, result: Any) -> int:
         operation = self.operation
@@ -628,7 +601,7 @@ class CaseRunner:
         if result is None:
             return digest_add(digest, 0)
         start, end = result.span()
-        digest = digest_add(digest, 1, start, end, start, end)
+        digest = digest_add(digest, 1, start, end)
         return digest_string(digest, result.group().decode("ascii", "strict"))
 
     @staticmethod
@@ -636,20 +609,18 @@ class CaseRunner:
         if result is None:
             return 1
         start, end = result.span()
-        return 2 + start + end + start + end
+        return 2 + start + end
 
     def consumption_token(self, result: Any) -> int:
         if self.operation not in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             return 0
         if result is None:
             return 1
-        _, start_bytes, end_bytes, start_utf16, end_utf16 = result
+        _, start_bytes, end_bytes = result
         return (
             2
             + start_bytes
             + end_bytes
-            + start_utf16
-            + end_utf16
         )
 
     @staticmethod
@@ -676,13 +647,13 @@ class CaseRunner:
 
     def materialize_iter_detailed(self, input_text: str) -> list[DetailedMatch]:
         matches = list(self.pattern.finditer(input_text))
-        utf8_offsets, utf16_offsets = result_offsets(input_text, matches)
-        return [materialize_detailed(match, utf8_offsets, utf16_offsets) for match in matches]
+        utf8_offsets = result_offsets(input_text, matches)
+        return [materialize_detailed(match, utf8_offsets) for match in matches]
 
-    def materialize_structural(self, input_text: str) -> list[tuple[bool, int, int, int, int, str]]:
-        values: list[tuple[bool, int, int, int, int, str]] = []
+    def materialize_structural(self, input_text: str) -> list[tuple[bool, int, int, str]]:
+        values: list[tuple[bool, int, int, str]] = []
         matches = list(self.pattern.finditer(input_text))
-        utf8_offsets, utf16_offsets = result_offsets(input_text, matches, captures=False)
+        utf8_offsets = result_offsets(input_text, matches, captures=False)
         for match in matches:
             start, end = match.span()
             values.append(
@@ -690,8 +661,6 @@ class CaseRunner:
                     True,
                     utf8_offsets[start],
                     utf8_offsets[end],
-                    utf16_offsets[start],
-                    utf16_offsets[end],
                     match.group(),
                 )
             )
@@ -706,7 +675,7 @@ class CaseRunner:
         ]
 
     def replace_callback(self, match: re.Match[str]) -> str:
-        detailed = materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
+        detailed = materialize_detailed(match, self.utf8_offsets)
         self.callback_checksum = combine(
             self.callback_checksum,
             detailed_checksum(detailed),
@@ -737,7 +706,7 @@ class CaseRunner:
         if operation == "IsMatch":
             return 1 if result else 0
         if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
-            return 0 if result is None else combine(1, result[3], result[4])
+            return 0 if result is None else combine(1, result[1], result[2])
         if operation == "SearchDetailed":
             return detailed_checksum(result)
         if operation in {"Count", "CountFromOffset"}:
@@ -753,12 +722,12 @@ class CaseRunner:
             return checksum
         if operation == "FindAllStructural":
             checksum = len(result)
-            for success, _, _, start_utf16, end_utf16, value in result:
+            for success, start_bytes, end_bytes, value in result:
                 checksum = combine(
                     checksum,
                     1 if success else 0,
-                    start_utf16,
-                    end_utf16,
+                    start_bytes,
+                    end_bytes,
                     checksum_string(value),
                 )
             return checksum
@@ -801,14 +770,12 @@ class CaseRunner:
         if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             if result is None:
                 return digest_add(digest, 0)
-            match, start_bytes, end_bytes, start_utf16, end_utf16 = result
+            match, start_bytes, end_bytes = result
             digest = digest_add(
                 digest,
                 1,
                 start_bytes,
                 end_bytes,
-                start_utf16,
-                end_utf16,
             )
             return digest_string(digest, match.group())
         if operation == "SearchDetailed":
@@ -826,14 +793,12 @@ class CaseRunner:
             return digest
         if operation == "FindAllStructural":
             digest = digest_add(digest, len(result))
-            for success, start_bytes, end_bytes, start_utf16, end_utf16, value in result:
+            for success, start_bytes, end_bytes, value in result:
                 digest = digest_add(
                     digest,
                     1 if success else 0,
                     start_bytes,
                     end_bytes,
-                    start_utf16,
-                    end_utf16,
                 )
                 digest = digest_string(digest, value)
             return digest
@@ -1254,7 +1219,7 @@ def run_stream_worker() -> int:
                         "ByteControlConsumptionChecksum": byte_control_consumption_token,
                         "InputUtf8Bytes": len(runner.input_bytes),
                         "InputCodePoints": len(runner.input_text),
-                        "InputUtf16CodeUnits": runner.utf16_offsets[-1],
+                        "InputUtf16CodeUnits": len(runner.input_text.encode("utf-16-le")) // 2,
                     }
                 )
                 continue

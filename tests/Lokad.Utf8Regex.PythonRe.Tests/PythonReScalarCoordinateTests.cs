@@ -52,7 +52,6 @@ public sealed class PythonReScalarCoordinateTests
             using var cursor = regex.CreateMatchCursor(storage.AsMemory(borrowedOffset, bytes.Length));
             Assert.True(cursor.MoveNext());
             var value = cursor.Current.Value;
-            Assert.Equal((0, text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
             var expected = text.EnumerateRunes().Count();
             Assert.True(cursor.TryGetScalarRange(0, out var start, out var end));
             Assert.Equal((0, expected), (start, end));
@@ -61,14 +60,13 @@ public sealed class PythonReScalarCoordinateTests
         }
     }
     [Fact]
-    public void DetailedUtf16CoordinatesAndScalarCoordinatesKeepDistinctUnits()
+    public void DetailedByteRangesAndScalarCoordinatesKeepDistinctUnits()
     {
         using var cursor = new Utf8PythonRegex("(?P<x>.)").CreateMatchCursor("é😀a"u8.ToArray(), 2);
         Assert.True(cursor.MoveNext()); var snapshot = cursor.Current;
         Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
         Assert.Equal(1, start); Assert.Equal(2, end);
         Assert.Equal(2, snapshot.Groups[1].StartOffsetInBytes); Assert.Equal(6, snapshot.Groups[1].EndOffsetInBytes);
-        Assert.Equal(1, snapshot.Groups[1].StartOffsetInUtf16); Assert.Equal(3, snapshot.Groups[1].EndOffsetInUtf16);
         cursor.Dispose(); Assert.Equal("😀", snapshot.Groups[1].ValueText); Assert.Equal(1, start);
     }
     [Theory]
@@ -139,7 +137,6 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(cursor.MoveNext()); var detailed = cursor.Current;
         Assert.Equal("é", detailed.Groups[0].ValueText);
         Assert.Equal((7107, 7109), (detailed.Groups[0].StartOffsetInBytes, detailed.Groups[0].EndOffsetInBytes));
-        Assert.Equal((7104, 7105), (detailed.Groups[0].StartOffsetInUtf16, detailed.Groups[0].EndOffsetInUtf16));
         Assert.True(cursor.TryGetScalarRange(0, out var finalStart, out var finalEnd));
         Assert.Equal((7103, 7104), (finalStart, finalEnd));
         cursor.Dispose(); Assert.Equal(0UL, account.Used); Assert.Equal("é", detailed.Groups[0].ValueText);
@@ -215,8 +212,7 @@ public sealed class PythonReScalarCoordinateTests
     [InlineData(true)]
     public void HalfMillionDiscardedScalarRangesHaveBoundedLiveStorage(bool unicode)
     {
-        // The shared index stores both scalar and UTF-16 counts, admitting old/new
-        // growth overlap. Keep a bounded cap that covers that pair of counts.
+        // Scalar-only prefixes admit old/new growth overlap within a bounded cap.
         var account = new Allowance(65536); var input = unicode ? Encoding.UTF8.GetBytes(new string('é', 500000)) : new byte[500000];
         if (!unicode) input.AsSpan().Fill((byte)'a');
         using var cursor = new Utf8PythonRegex(".", default, Timeout.InfiniteTimeSpan,

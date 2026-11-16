@@ -12,8 +12,8 @@ internal partial struct PythonReScalarMatchState
         Checkpoint();
         if (!TryGetCaptureByteRange(groupNumber, out var byteStart, out var byteEnd)) return false;
         PrepareCoordinates(input, byteEnd);
-        start = CoordinateOffset(input, byteStart).Scalars;
-        end = CoordinateOffset(input, byteEnd).Scalars;
+        start = ScalarOffset(input, byteStart);
+        end = ScalarOffset(input, byteEnd);
         Checkpoint();
         return true;
     }
@@ -35,18 +35,6 @@ internal partial struct PythonReScalarMatchState
         EnsureCoordinatePrefixes(input, end);
     }
 
-    private void PrepareCaptureProjection(ReadOnlySpan<byte> input)
-    {
-        Checkpoint();
-        var end = EndOffsetInBytes;
-        for (var group = 1; group <= _program.GroupCount; group++)
-        {
-            if ((group & 255) == 0) Checkpoint();
-            if (TryGetCaptureByteRange(group, out _, out var captureEnd)) end = Math.Max(end, captureEnd);
-        }
-        PrepareCoordinates(input, end);
-    }
-
     private void EnsureCoordinatePrefixes(ReadOnlySpan<byte> input, int end)
     {
         var count = end / CoordinatePrefixBlockBytes + 1;
@@ -58,7 +46,7 @@ internal partial struct PythonReScalarMatchState
         {
             capacity = Math.Min(input.Length / CoordinatePrefixBlockBytes + 1,
                 Math.Max(count, Math.Max(2, capacity * 2)));
-            reservation = Utf8ConstructionBudget.ArrayBytes<(int, int)>(capacity);
+            reservation = Utf8ConstructionBudget.ArrayBytes<int>(capacity);
             if (_invocation.TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
                 throw ResourceFailure();
         }
@@ -67,7 +55,7 @@ internal partial struct PythonReScalarMatchState
             Checkpoint();
             if (reservation != 0)
             {
-                var grown = new (int Scalars, int Utf16)[capacity];
+                var grown = new int[capacity];
                 for (var offset = 0; offset < _coordinatePrefixCount;)
                 {
                     Checkpoint();
@@ -81,10 +69,10 @@ internal partial struct PythonReScalarMatchState
             {
                 if ((block & 255) == 0) Checkpoint();
                 var to = block * CoordinatePrefixBlockBytes;
-                if (to <= _asciiPrefixEnd) { prefixes![block] = (to, to); continue; }
-                var units = CountCoordinateUnits(input.Slice(to - CoordinatePrefixBlockBytes, CoordinatePrefixBlockBytes));
+                if (to <= _asciiPrefixEnd) { prefixes![block] = to; continue; }
+                var units = CountScalarUnits(input.Slice(to - CoordinatePrefixBlockBytes, CoordinatePrefixBlockBytes));
                 var previous = prefixes![block - 1];
-                prefixes[block] = (previous.Scalars + units.Scalars, previous.Utf16 + units.Utf16);
+                prefixes[block] = previous + units;
             }
             Checkpoint();
         }
@@ -99,34 +87,29 @@ internal partial struct PythonReScalarMatchState
         }
     }
 
-    private (int Scalars, int Utf16) CoordinateOffset(ReadOnlySpan<byte> input, int byteOffset)
+    private int ScalarOffset(ReadOnlySpan<byte> input, int byteOffset)
     {
-        if (byteOffset <= _asciiPrefixEnd) return (byteOffset, byteOffset);
+        if (byteOffset <= _asciiPrefixEnd) return byteOffset;
         var block = byteOffset / CoordinatePrefixBlockBytes;
-        if (_coordinatePrefixes is null) return CountCoordinateUnits(input[..byteOffset]);
+        if (_coordinatePrefixes is null) return CountScalarUnits(input[..byteOffset]);
         var count = _coordinatePrefixes[block];
         var from = block * CoordinatePrefixBlockBytes;
-        var tail = CountCoordinateUnits(input.Slice(from, byteOffset - from));
-        return (count.Scalars + tail.Scalars, count.Utf16 + tail.Utf16);
+        var tail = CountScalarUnits(input.Slice(from, byteOffset - from));
+        return count + tail;
     }
 
-    private (int Scalars, int Utf16) CountCoordinateUnits(ReadOnlySpan<byte> bytes)
+    private int CountScalarUnits(ReadOnlySpan<byte> bytes)
     {
         var scalars = 0;
-        var utf16 = 0;
         for (var offset = 0; offset < bytes.Length;)
         {
-            // Valid unchanged UTF-8 is the profile's input contract. A leading
-            // four-byte octet adds one UTF-16 unit. Counts compose even when an
-            // index block cuts through a scalar; queried captures end on scalars.
+            // Valid UTF-8 lead counts compose even when a block cuts a scalar.
             Checkpoint();
             var block = bytes.Slice(offset, Math.Min(32, bytes.Length - offset));
-            var units = Utf8SliceBufferWork.CountValidUtf8Units(block);
-            scalars += units.Scalars;
-            utf16 += units.Utf16;
+            scalars += Utf8SliceBufferWork.CountValidUtf8Units(block).Scalars;
             offset += block.Length;
         }
-        return (scalars, utf16);
+        return scalars;
     }
 
     private void ReleaseCoordinatePrefixes()

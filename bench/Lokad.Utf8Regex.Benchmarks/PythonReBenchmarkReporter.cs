@@ -3394,7 +3394,7 @@ internal sealed class PythonReBenchmarkContext
         var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
         return end == 0
             ? default
-            : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
+            : new PythonReBenchmarkValueResult(true, 0, end);
     }
 
     internal PythonReBenchmarkValueResult ExecuteValidatedAsciiPrefixDigitOneShot()
@@ -3409,7 +3409,7 @@ internal sealed class PythonReBenchmarkContext
         var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
         return end == 0
             ? default
-            : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
+            : new PythonReBenchmarkValueResult(true, 0, end);
     }
 
     internal PythonReBenchmarkValueResult ExecuteRawAsciiDotAllFullMatch()
@@ -3422,7 +3422,7 @@ internal sealed class PythonReBenchmarkContext
         return InputBytes.Length >= _oneShotDotAllPrefix.Length + _oneShotDotAllSuffix.Length &&
             InputBytes.AsSpan().StartsWith(_oneShotDotAllPrefix) &&
             InputBytes.AsSpan().EndsWith(_oneShotDotAllSuffix)
-                ? new PythonReBenchmarkValueResult(true, 0, InputBytes.Length, 0, InputBytes.Length)
+                ? new PythonReBenchmarkValueResult(true, 0, InputBytes.Length)
                 : default;
     }
 
@@ -3454,12 +3454,7 @@ internal sealed class PythonReBenchmarkContext
             _ => throw new InvalidOperationException($"Unsupported one-shot operation {_case.Operation}."),
         };
         return match.Success
-            ? new PythonReBenchmarkValueResult(
-                true,
-                match.StartOffsetInBytes,
-                match.EndOffsetInBytes,
-                match.StartOffsetInUtf16,
-                match.EndOffsetInUtf16)
+            ? new PythonReBenchmarkValueResult(true, match.StartOffsetInBytes, match.EndOffsetInBytes)
             : default;
     }
 
@@ -3481,12 +3476,7 @@ internal sealed class PythonReBenchmarkContext
         var endOffsetInBytes = match.Index + match.Length == _decoded.Length
             ? InputBytes.Length
             : s_strictUtf8.GetByteCount(_decoded.AsSpan(0, match.Index + match.Length));
-        return new PythonReBenchmarkValueResult(
-            true,
-            startOffsetInBytes,
-            endOffsetInBytes,
-            match.Index,
-            match.Index + match.Length);
+        return new PythonReBenchmarkValueResult(true, startOffsetInBytes, endOffsetInBytes);
     }
 
     private PythonReBenchmarkValueResult ProjectCoreOneShot(Utf8ValueMatch match)
@@ -3502,12 +3492,7 @@ internal sealed class PythonReBenchmarkContext
             throw new InvalidOperationException("The exact-literal one-shot control has no byte range.");
         }
 
-        return new PythonReBenchmarkValueResult(
-            true,
-            indexInBytes,
-            indexInBytes + lengthInBytes,
-            match.IndexInUtf16,
-            match.IndexInUtf16 + match.LengthInUtf16);
+        return new PythonReBenchmarkValueResult(true, indexInBytes, indexInBytes + lengthInBytes);
     }
 
     private Utf8Regex GetOneShotCoreRegex() => _oneShotCoreRegex ??
@@ -4222,10 +4207,10 @@ internal sealed class PythonReBenchmarkContext
     private int ExecuteRegex(string input) => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,
-        PythonReBenchmarkOperation.Search => Checksum(_regex.Match(input)),
-        PythonReBenchmarkOperation.SearchFromOffset => Checksum(_regex.Match(input, _startOffsetInUtf16)),
-        PythonReBenchmarkOperation.Match => ChecksumAtStart(_regex.Match(input)),
-        PythonReBenchmarkOperation.FullMatch => Checksum(_fullRegex.Match(input)),
+        PythonReBenchmarkOperation.Search => Checksum(ProjectRegexValue(_regex.Match(input), input)),
+        PythonReBenchmarkOperation.SearchFromOffset => Checksum(ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input)),
+        PythonReBenchmarkOperation.Match => Checksum(ProjectRegexValue(_regex.Match(input), input, true)),
+        PythonReBenchmarkOperation.FullMatch => Checksum(ProjectRegexValue(_fullRegex.Match(input), input)),
         PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input))),
         PythonReBenchmarkOperation.Count => _regex.Count(input),
         PythonReBenchmarkOperation.CountFromOffset => _regex.Count(input, _startOffsetInUtf16),
@@ -4258,10 +4243,10 @@ internal sealed class PythonReBenchmarkContext
     internal PythonReBenchmarkBatch MeasureRegexBatch(int iterations, bool decode) => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => MeasureRegexBatch(iterations, decode, input => _regex.IsMatch(input) ? 1 : 0, result => result),
-        PythonReBenchmarkOperation.Search => MeasureRegexBatch(iterations, decode, input => _regex.Match(input), Checksum),
-        PythonReBenchmarkOperation.SearchFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Match(input, _startOffsetInUtf16), Checksum),
-        PythonReBenchmarkOperation.Match => MeasureRegexBatch(iterations, decode, input => _regex.Match(input), ChecksumAtStart),
-        PythonReBenchmarkOperation.FullMatch => MeasureRegexBatch(iterations, decode, input => _fullRegex.Match(input), Checksum),
+        PythonReBenchmarkOperation.Search => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input), Checksum),
+        PythonReBenchmarkOperation.SearchFromOffset => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input), Checksum),
+        PythonReBenchmarkOperation.Match => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input, true), Checksum),
+        PythonReBenchmarkOperation.FullMatch => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_fullRegex.Match(input), input), Checksum),
         PythonReBenchmarkOperation.SearchDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input)), Checksum),
         PythonReBenchmarkOperation.Count => MeasureRegexBatch(iterations, decode, input => _regex.Count(input), result => result),
         PythonReBenchmarkOperation.CountFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Count(input, _startOffsetInUtf16), result => result),
@@ -4374,8 +4359,6 @@ internal sealed class PythonReBenchmarkContext
                 Success = true,
                 StartOffsetInBytes = utf8Offsets is null ? match.Index : utf8Offsets[match.Index],
                 EndOffsetInBytes = utf8Offsets is null ? match.Index + match.Length : utf8Offsets[match.Index + match.Length],
-                StartOffsetInUtf16 = match.Index,
-                EndOffsetInUtf16 = match.Index + match.Length,
                 ValueText = match.Value,
             });
         }
@@ -4598,14 +4581,8 @@ internal sealed class PythonReBenchmarkContext
         {
             var group = match.Groups[index];
             groups[index] = group.Success
-                ? new BclDetailedGroup(
-                    true,
-                    utf8Offsets is null ? group.Index : utf8Offsets[group.Index],
-                    utf8Offsets is null ? group.Index + group.Length : utf8Offsets[group.Index + group.Length],
-                    group.Index,
-                    group.Index + group.Length,
-                    group.Value)
-                : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
+                ? new BclDetailedGroup(true, utf8Offsets is null ? group.Index : utf8Offsets[group.Index], utf8Offsets is null ? group.Index + group.Length : utf8Offsets[group.Index + group.Length], group.Value)
+                : new BclDetailedGroup(false, 0, 0, string.Empty);
         }
 
         return new BclDetailedMatch(groups);
@@ -4637,14 +4614,8 @@ internal sealed class PythonReBenchmarkContext
         {
             var group = staged[index];
             groups[index] = group.Success
-                ? new BclDetailedGroup(
-                    true,
-                    group.StartOffsetInBytes,
-                    group.EndOffsetInBytes,
-                    group.StartOffsetInUtf16,
-                    group.EndOffsetInUtf16,
-                    input[group.StartOffsetInUtf16..group.EndOffsetInUtf16])
-                : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
+                ? new BclDetailedGroup(true, group.StartOffsetInBytes, group.EndOffsetInBytes, input[group.StartOffsetInUtf16..group.EndOffsetInUtf16])
+                : new BclDetailedGroup(false, 0, 0, string.Empty);
         }
 
         return new BclDetailedMatch(groups);
@@ -4697,9 +4668,7 @@ internal sealed class PythonReBenchmarkContext
         return checked(
             2UL +
             (uint)match.StartOffsetInBytes +
-            (uint)match.EndOffsetInBytes +
-            (uint)match.StartOffsetInUtf16 +
-            (uint)match.EndOffsetInUtf16);
+            (uint)match.EndOffsetInBytes);
     }
 
     private static ulong SemanticDigest(PythonReBenchmarkOperation operation, int value)
@@ -4719,8 +4688,6 @@ internal sealed class PythonReBenchmarkContext
         {
             digest.Add(match.StartOffsetInBytes);
             digest.Add(match.EndOffsetInBytes);
-            digest.Add(match.StartOffsetInUtf16);
-            digest.Add(match.EndOffsetInUtf16);
             digest.AddString(match.GetValueString());
         }
 
@@ -4761,8 +4728,6 @@ internal sealed class PythonReBenchmarkContext
             digest.Add(match.Success);
             digest.Add(match.StartOffsetInBytes);
             digest.Add(match.EndOffsetInBytes);
-            digest.Add(match.StartOffsetInUtf16);
-            digest.Add(match.EndOffsetInUtf16);
             digest.AddString(match.ValueText);
         }
 
@@ -4920,8 +4885,6 @@ internal sealed class PythonReBenchmarkContext
             digest.Add(group.Success);
             digest.Add(group.StartOffsetInBytes);
             digest.Add(group.EndOffsetInBytes);
-            digest.Add(group.StartOffsetInUtf16);
-            digest.Add(group.EndOffsetInUtf16);
             digest.AddString(group.ValueText);
         }
     }
@@ -4978,8 +4941,19 @@ internal sealed class PythonReBenchmarkContext
         }
     }
 
+    private PythonReBenchmarkValueResult ProjectRegexValue(Match match, string input, bool anchored = false)
+    {
+        if (!match.Success || anchored && match.Index != 0) return default;
+        if (input.Length == InputBytes.Length) return new(true, match.Index, match.Index + match.Length);
+        var start = s_strictUtf8.GetByteCount(input.AsSpan(0, match.Index));
+        return new(true, start, start + s_strictUtf8.GetByteCount(input.AsSpan(match.Index, match.Length)));
+    }
+
+    private static int Checksum(PythonReBenchmarkValueResult match) => match.Success
+        ? Combine(1, match.StartOffsetInBytes, match.EndOffsetInBytes) : 0;
+
     private static int Checksum(Utf8PythonValueMatch match) => match.Success
-        ? Combine(1, match.StartOffsetInUtf16, match.EndOffsetInUtf16)
+        ? Combine(1, match.StartOffsetInBytes, match.EndOffsetInBytes)
         : 0;
 
     private static int Checksum(Match match) => match.Success
@@ -4995,7 +4969,7 @@ internal sealed class PythonReBenchmarkContext
         var checksum = match.Success ? 1 : 0;
         foreach (var group in match.Groups ?? [])
         {
-            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInUtf16, group.EndOffsetInUtf16, Checksum(group.ValueText));
+            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInBytes, group.EndOffsetInBytes, Checksum(group.ValueText));
         }
 
         return checksum;
@@ -5006,7 +4980,7 @@ internal sealed class PythonReBenchmarkContext
         var checksum = match.Groups.Length == 0 ? 0 : 1;
         foreach (var group in match.Groups)
         {
-            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInUtf16, group.EndOffsetInUtf16, Checksum(group.Value));
+            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInBytes, group.EndOffsetInBytes, Checksum(group.Value));
         }
 
         return checksum;
@@ -5031,8 +5005,8 @@ internal sealed class PythonReBenchmarkContext
             checksum = Combine(
                 checksum,
                 match.Success ? 1 : 0,
-                match.StartOffsetInUtf16,
-                match.EndOffsetInUtf16,
+                match.StartOffsetInBytes,
+                match.EndOffsetInBytes,
                 Checksum(match.ValueText));
         }
 
@@ -5264,8 +5238,6 @@ internal readonly record struct BclDetailedGroup(
     bool Success,
     int StartOffsetInBytes,
     int EndOffsetInBytes,
-    int StartOffsetInUtf16,
-    int EndOffsetInUtf16,
     string Value);
 
 internal sealed record BclSubnResult(
@@ -5282,9 +5254,7 @@ internal readonly record struct PythonReBenchmarkReplacementResult(
 internal readonly record struct PythonReBenchmarkValueResult(
     bool Success,
     int StartOffsetInBytes,
-    int EndOffsetInBytes,
-    int StartOffsetInUtf16,
-    int EndOffsetInUtf16);
+    int EndOffsetInBytes);
 
 internal readonly record struct PythonReBenchmarkBatch(
     TimeSpan Elapsed,

@@ -10,22 +10,22 @@ public sealed class PythonReOneShotProjectionTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
     [Theory]
-    [InlineData(0, "(?P<x>.)", "é😀z", 2, 2, 6, 1, 3, "😀")]
-    [InlineData(1, "(?P<x>.)", "é😀z", 2, 2, 6, 1, 3, "😀")]
-    [InlineData(2, "(?P<x>.)", "é😀", 2, 2, 6, 1, 3, "😀")]
-    [InlineData(0, "(?<=é).(?=z)", "é😀z", 0, 2, 6, 1, 3, "😀")]
-    [InlineData(0, @"(.)\1", "é😀😀z", 0, 2, 10, 1, 5, "😀😀")]
-    [InlineData(1, "(?P<x>.)?", "", 0, 0, 0, 0, 0, "")]
-    [InlineData(2, "(?P<x>.)?", "", 0, 0, 0, 0, 0, "")]
-    [InlineData(0, "😀", "é😀", 0, 2, 6, 1, 3, "😀")]
-    [InlineData(1, "ab[0-9]+", "ab12😀", 0, 0, 4, 0, 4, "ab12")]
-    [InlineData(2, "(?P<x>.)+", "é😀", 0, 0, 6, 0, 3, "é😀")]
-    [InlineData(2, "(?P<x>.)+", "πé😀", 2, 2, 8, 1, 4, "é😀")]
-    [InlineData(2, "(?P<x>.*)", "πé😀", 8, 8, 8, 4, 4, "")]
-    [InlineData(0, "(?P<x>😀)$", "πé😀", 0, 4, 8, 2, 4, "😀")]
-    [InlineData(0, "(?P<x>é)", "πé😀", 0, 2, 4, 1, 2, "é")]
-    public void ValueAndContextEntryPointsKeepScalarByteRangesAndDerivedCoordinates(int kind, string pattern,
-        string subject, int start, int startBytes, int endBytes, int startUtf16, int endUtf16, string text)
+    [InlineData(0,"(?P<x>.)","é😀z",2,2,6,"😀")]
+    [InlineData(1,"(?P<x>.)","é😀z",2,2,6,"😀")]
+    [InlineData(2,"(?P<x>.)","é😀",2,2,6,"😀")]
+    [InlineData(0,"(?<=é).(?=z)","é😀z",0,2,6,"😀")]
+    [InlineData(0,@"(.)\1","é😀😀z",0,2,10,"😀😀")]
+    [InlineData(1,"(?P<x>.)?","",0,0,0,"")]
+    [InlineData(2,"(?P<x>.)?","",0,0,0,"")]
+    [InlineData(0,"😀","é😀",0,2,6,"😀")]
+    [InlineData(1,"ab[0-9]+","ab12😀",0,0,4,"ab12")]
+    [InlineData(2,"(?P<x>.)+","é😀",0,0,6,"é😀")]
+    [InlineData(2,"(?P<x>.)+","πé😀",2,2,8,"é😀")]
+    [InlineData(2,"(?P<x>.*)","πé😀",8,8,8,"")]
+    [InlineData(0,"(?P<x>😀)$","πé😀",0,4,8,"😀")]
+    [InlineData(0,"(?P<x>é)","πé😀",0,2,4,"é")]
+    public void ValueAndContextEntryPointsKeepByteRangesAndValues(int kind, string pattern,
+        string subject, int start, int startBytes, int endBytes, string text)
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
@@ -35,12 +35,10 @@ public sealed class PythonReOneShotProjectionTests
             var value = Value(regex, input, start, kind, cancellation);
             Assert.True(value.Success);
             Assert.Equal((startBytes, endBytes), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-            Assert.Equal((startUtf16, endUtf16), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
             Assert.Equal(Encoding.UTF8.GetBytes(text), value.GetValueBytes().ToArray());
             var context = Context(regex, input, start, kind, cancellation);
             Assert.True(context.Success);
             Assert.Equal((startBytes, endBytes), (context.Value.StartOffsetInBytes, context.Value.EndOffsetInBytes));
-            Assert.Equal((startUtf16, endUtf16), (context.Value.StartOffsetInUtf16, context.Value.EndOffsetInUtf16));
             Assert.Equal(text, context.GetValueString());
             if (regex.IsMatch(input, start, cancellation)) Assert.True(regex.Search(input, start, cancellation).Success);
         }
@@ -66,7 +64,6 @@ public sealed class PythonReOneShotProjectionTests
             var value = regex.FullMatch(input);
             Assert.True(value.Success);
             Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-            Assert.Equal((0, text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
             Assert.True(value.GetValueBytes().SequenceEqual(bytes));
             Assert.Equal(text, regex.FullMatchToString(input));
         }
@@ -95,7 +92,6 @@ public sealed class PythonReOneShotProjectionTests
                 var value = regex.FullMatch(input, start, ReferenceEquals(regex, native) ? default : token.Token);
                 Assert.True(value.Success);
                 Assert.Equal((start, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-                Assert.Equal((prefix.Length, prefix.Length + text.Length), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
                 Assert.True(value.GetValueBytes().SequenceEqual(expected));
                 Assert.False(regex.FullMatch("no"u8).Success);
                 Assert.True(value.GetValueBytes().SequenceEqual(expected));
@@ -104,12 +100,11 @@ public sealed class PythonReOneShotProjectionTests
     }
 
     [Theory]
-    [InlineData("(?<=(?P<left>é))a", "πéa", 4, "left", "é", 2, 4, 1, 2)]
-    [InlineData("a(?=(?P<right>😀))", "πa😀", 2, "right", "😀", 3, 7, 2, 4)]
-    [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?", "πé😀", 2, "inner", "é😀", 2, 8, 1, 4)]
-    [InlineData("(?P<empty>)", "π", 2, "empty", "", 2, 2, 1, 1)]
-    public void OneShotDetailsProjectAllCapturesWithoutUnrelatedUnicodeSuffix(string pattern, string prefix,
-        int start, string name, string text, int begin, int end, int beginUtf16, int endUtf16)
+    [InlineData("(?<=(?P<left>é))a","πéa",4,"left","é",2,4)]
+    [InlineData("a(?=(?P<right>😀))","πa😀",2,"right","😀",3,7)]
+    [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?","πé😀",2,"inner","é😀",2,8)]
+    [InlineData("(?P<empty>)","π",2,"empty","",2,2)]
+    public void OneShotDetailsProjectAllCapturesWithoutUnrelatedUnicodeSuffix(string pattern,string prefix,        int start,string name,string text,int begin,int end)
     {
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat("é😀", 65536)));
         using var token = new CancellationTokenSource();
@@ -126,11 +121,8 @@ public sealed class PythonReOneShotProjectionTests
             Assert.True(owned.TryGetFirstSetGroup(name, out var group));
             Assert.True(context.TryGetFirstSetGroup(name, out var borrowed));
             Assert.Equal(text, group.ValueText); Assert.Equal(text, borrowed.GetValueString());
-            Assert.Equal((begin, end, beginUtf16, endUtf16),
-                (group.StartOffsetInBytes, group.EndOffsetInBytes, group.StartOffsetInUtf16, group.EndOffsetInUtf16));
-            Assert.Equal((begin, end, beginUtf16, endUtf16),
-                (borrowed.Value.StartOffsetInBytes, borrowed.Value.EndOffsetInBytes,
-                 borrowed.Value.StartOffsetInUtf16, borrowed.Value.EndOffsetInUtf16));
+            Assert.Equal((begin,end),                (group.StartOffsetInBytes,group.EndOffsetInBytes));
+            Assert.Equal((begin,end),                (borrowed.Value.StartOffsetInBytes,borrowed.Value.EndOffsetInBytes));
             Assert.Equal(1, owned.LastIndex); Assert.Equal(owned.LastIndex, context.LastIndex);
             Assert.Equal(owned.LastGroup, context.LastGroup);
             if (name == "inner")
@@ -196,7 +188,6 @@ public sealed class PythonReOneShotProjectionTests
             var baseline = cursor.ReservedBytes;
             value = cursor.SnapshotValueData();
             Assert.Equal((2, 6), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-            Assert.Equal((1, 3), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
              Assert.Equal(0UL, cursor.ResultReservation);
             Assert.Equal(baseline, cursor.ReservedBytes);
         }

@@ -46,8 +46,6 @@ public sealed partial class PythonReScalarGlobalTests
                     Assert.Equal(endByte, group.EndOffsetInBytes);
                     Assert.True(startByte == input.Length || (input[startByte] & 0xc0) != 0x80);
                     Assert.True(endByte == input.Length || (input[endByte] & 0xc0) != 0x80);
-                    Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, startByte)), group.StartOffsetInUtf16);
-                    Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, endByte)), group.EndOffsetInUtf16);
                 }
             }
             var strings = regex.FindAllToStrings(input, start, token);

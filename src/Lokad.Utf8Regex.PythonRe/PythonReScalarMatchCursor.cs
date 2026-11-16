@@ -34,13 +34,12 @@ internal ref struct PythonReScalarMatchCursor
     internal void Checkpoint() => _state.Checkpoint();
     internal bool MoveNext() => _state.MoveNext(_input);
     internal bool MatchAtCurrentPosition() => _state.MatchAtCurrentPosition(_input);
-    internal PythonReGroupData SnapshotValueData() => _state.SnapshotValueData(_input);
+    internal PythonReGroupData SnapshotValueData() => _state.SnapshotValueData();
     internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names) => _state.SnapshotNameEntries(names);
-    internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups(_input);
+    internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups();
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);
-    internal void PrepareValueProjection() => _state.PrepareCoordinates(_input, EndOffsetInBytes);
     internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names) => _state.SnapshotDetailed(_input, names);
-    internal string GetText(int start, int end) => _state.GetText(_input, start, end, null);
+    internal string GetText(int start, int end) => _state.GetText(_input, start, end);
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);
     internal Utf8SliceOutputWriter CreateOutputWriter() => _state.CreateOutputWriter();
     internal void AppendBytes(scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes) => _state.AppendBytes(ref writer, bytes);

@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- PythonRe match/group results now expose byte coordinates only. Remove UTF-16
+  offsets, alignment flags and result-prefix scans; explicit scalar queries retain
+  a scalar-only lazy index. Captured text, lifetimes and resource admission stay
+  enforced; numerical budget requirements can change.
+
 - POSIX `Match`, capture destinations and cursor advances now use
   `Utf8CaptureRange` with byte start/end offsets. Remove UTF-16 projection and
   its cursor cache; selected captures and resource controls remain unchanged,

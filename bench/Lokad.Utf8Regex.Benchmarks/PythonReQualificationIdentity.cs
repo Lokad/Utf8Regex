@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class PythonReBenchmarkReporter
 {
-    private const string PythonReSemanticDigestAlgorithm = "structured-u64-mix-v1";
+    private const string PythonReSemanticDigestAlgorithm = "structured-u64-byte-ranges-v2";
     private static string ComputePythonReManagedProductSha256()
     {
         var repositoryRoot = Path.GetDirectoryName(FindRepositoryFile("README.md")) ??

@@ -53,7 +53,6 @@ public sealed class PythonReTextInputContractTests
             var first = regex.Search(input);
             Assert.Equal(firstByte, first.StartOffsetInBytes);
             Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
-            Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, firstByte)), first.StartOffsetInUtf16);
             _ = regex.Match(input);
             _ = regex.FullMatch(input);
             _ = regex.FindAllToStrings(input);

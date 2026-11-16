@@ -13,8 +13,7 @@ public sealed class PythonReSubjectFactsTests
             resourcePolicy: new() { MaxWorkSteps = 64, MaxWorkingBytes = 32768, MaxResultBytes = 512 });
         var value = regex.Search(input);
         Assert.True(value.Success);
-        Assert.Equal((0, 2, 0, 1), (value.StartOffsetInBytes, value.EndOffsetInBytes,
-            value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+        Assert.Equal((0,2),(value.StartOffsetInBytes,value.EndOffsetInBytes));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => regex.Search(input, 0, cancellation.Token));
@@ -113,8 +112,7 @@ public sealed class PythonReSubjectFactsTests
         var regex = new Utf8PythonRegex("(item)-([0-9]+)");
         var value = regex.Search(input);
         Assert.True(value.Success);
-        Assert.Equal((7, 16, 4, 13), (value.StartOffsetInBytes, value.EndOffsetInBytes,
-            value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+        Assert.Equal((7,16),(value.StartOffsetInBytes,value.EndOffsetInBytes));
         Assert.False(regex.Match(input).Success);
         Assert.True(regex.FullMatch(input, 7).Success);
         Assert.Equal(new[] { "item", "1234" }, regex.FindAllToStrings(input).TupleValues[0]);

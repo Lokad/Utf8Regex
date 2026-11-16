@@ -152,7 +152,6 @@ public sealed class PythonReFiniteResultPolicyTests
         var actual = Create(pattern, 1000000, options: options).FindIterDetailed(input);
         Assert.Equal(expected.Select(x => x.Value.ValueText), actual.Select(x => x.Value.ValueText));
         Assert.Equal(expected.Select(x => x.Value.StartOffsetInBytes), actual.Select(x => x.Value.StartOffsetInBytes));
-        Assert.Equal(expected.Select(x => x.Value.EndOffsetInUtf16), actual.Select(x => x.Value.EndOffsetInUtf16));
         Assert.Equal(4, actual[0].Value.EndOffsetInBytes);
     }
 
@@ -219,7 +218,6 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(2, Create(".", 1).Count("😀a"u8));
         var range = Create(".", 1).Search("😀"u8);
         Assert.Equal(4, range.EndOffsetInBytes);
-        Assert.Equal(2, range.EndOffsetInUtf16);
         Denied(() => Create(".", 1).SearchDetailedData("😀"u8), 1);
         Assert.Equal("", Create("", 1).SearchToString("😀"u8));
         Assert.Null(Create("missing", 1).SearchToString("😀"u8));

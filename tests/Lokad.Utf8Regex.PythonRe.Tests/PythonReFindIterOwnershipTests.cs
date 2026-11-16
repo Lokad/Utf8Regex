@@ -48,8 +48,6 @@ public sealed class PythonReFindIterOwnershipTests
                     Assert.Equal(string.Empty, matchGroups[g].ValueText);
                     Assert.Equal(0, matchGroups[g].StartOffsetInBytes);
                     Assert.Equal(0, matchGroups[g].EndOffsetInBytes);
-                    Assert.Equal(0, matchGroups[g].StartOffsetInUtf16);
-                    Assert.Equal(0, matchGroups[g].EndOffsetInUtf16);
                 }
                 else
                 {
@@ -57,8 +55,6 @@ public sealed class PythonReFindIterOwnershipTests
                     Assert.Equal(groups[i][g], matchGroups[g].ValueText);
                     Assert.Equal(matches[i].Value.StartOffsetInBytes, matchGroups[g].StartOffsetInBytes);
                     Assert.Equal(matches[i].Value.EndOffsetInBytes, matchGroups[g].EndOffsetInBytes);
-                    Assert.Equal(matches[i].Value.StartOffsetInUtf16, matchGroups[g].StartOffsetInUtf16);
-                    Assert.Equal(matches[i].Value.EndOffsetInUtf16, matchGroups[g].EndOffsetInUtf16);
                 }
             }
         }

@@ -36,7 +36,6 @@ public sealed class PythonReAtomicRepeatCommitTests
         if (expected is null) return;
         Assert.Equal(expected, match.GetValueString());
         Assert.Equal(expected, Encoding.UTF8.GetString(match.GetValueBytes()));
-        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.StartOffsetInUtf16)), match.StartOffsetInBytes);
         _ = regex.Count(input);
         Assert.Equal(expected, match.GetValueString());
     }

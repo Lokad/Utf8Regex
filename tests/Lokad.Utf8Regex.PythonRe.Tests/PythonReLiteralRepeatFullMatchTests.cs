@@ -45,7 +45,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                 Assert.Equal(expected, match.Success);
                 if (!expected) continue;
                 Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                Assert.Equal((prefix.Length, text.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
                 Assert.Equal(body, match.GetValueString());
             }
         }
@@ -118,7 +117,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
             Assert.Equal(expected, match.Success);
             if (!expected) continue;
             Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.Equal((prefix.Length, text.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
             Assert.Equal(candidate, match.GetValueString());
         }
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
@@ -136,7 +134,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var match = regex.FullMatch(input);
         Assert.True(match.Success);
         Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-        Assert.Equal(text.Length, match.EndOffsetInUtf16);
         Assert.Equal(text, match.GetValueString());
         Assert.Equal(periodScalars == 60, regex.DebugIsScalarFullProgramValueCreated);
 

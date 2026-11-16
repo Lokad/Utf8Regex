@@ -51,7 +51,6 @@ public sealed class PythonReBraceQuantifierTests
             Assert.Equal(text, actual.Value.ValueText);
             Assert.Equal(0, actual.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes);
-            Assert.Equal(text.Length, actual.Value.EndOffsetInUtf16);
             Assert.True(regex.FullMatch(input).Success);
         }
     }

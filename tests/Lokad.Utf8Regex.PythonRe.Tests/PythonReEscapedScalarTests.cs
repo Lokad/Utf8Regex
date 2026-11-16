@@ -62,7 +62,6 @@ public sealed class PythonReEscapedScalarTests
             Assert.True(cursor.MoveNext());
             retained = alias.Current;
             Assert.Equal((2, 10), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-            Assert.Equal((1, 5), (retained.Value.StartOffsetInUtf16, retained.Value.EndOffsetInUtf16));
             Assert.Equal(1, retained.LastIndex);
             Assert.Equal("x", retained.LastGroup);
             Assert.True(alias.MoveNext());

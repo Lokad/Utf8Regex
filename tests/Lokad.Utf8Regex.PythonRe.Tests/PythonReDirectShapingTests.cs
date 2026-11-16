@@ -62,8 +62,6 @@ public sealed class PythonReDirectShapingTests
                 Assert.Equal(ranges[i][0].GetString(), matches[i].ValueText);
                 Assert.Equal(ranges[i][1].GetInt32(), matches[i].StartOffsetInBytes);
                 Assert.Equal(ranges[i][2].GetInt32(), matches[i].EndOffsetInBytes);
-                Assert.Equal(ranges[i][3].GetInt32(), matches[i].StartOffsetInUtf16);
-                Assert.Equal(ranges[i][4].GetInt32(), matches[i].EndOffsetInUtf16);
             }
             var strings = regex.FindAllToStrings(input, 0, token);
             var bytes = regex.FindAllToUtf8(input, 0, token);
@@ -103,7 +101,7 @@ public sealed class PythonReDirectShapingTests
             var count = 0;
             while (cursor.MoveNext())
             {
-                cursor.PrepareValueProjection();
+
                 var traffic = cursor.WorkingInvocation.Budget.ResultBytes;
                 var storage = cursor.ReservedBytes;
                 var steps = cursor.WorkingInvocation.Budget.Steps;
@@ -117,8 +115,6 @@ public sealed class PythonReDirectShapingTests
                 var second = count % 2 != 0;
                 Assert.Equal(6 * pair + (second ? 4 : 0), value.StartOffsetInBytes);
                 Assert.Equal(6 * pair + (second ? 6 : 4), value.EndOffsetInBytes);
-                Assert.Equal(3 * pair + (second ? 2 : 0), value.StartOffsetInUtf16);
-                Assert.Equal(3 * pair + (second ? 3 : 2), value.EndOffsetInUtf16);
                 count++;
             }
             Assert.Equal(512, count);

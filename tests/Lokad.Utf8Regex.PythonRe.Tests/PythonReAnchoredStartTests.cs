@@ -43,8 +43,6 @@ public sealed class PythonReAnchoredStartTests
             Assert.True(match.Success);
             Assert.Equal(start, match.StartOffsetInBytes);
             Assert.Equal(start + Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes);
-            Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, start)), match.StartOffsetInUtf16);
-            Assert.Equal(match.StartOffsetInUtf16 + expected.Length, match.EndOffsetInUtf16);
             Assert.Equal(expected, regex.MatchDetailedData(input, start).Value.ValueText);
             Assert.Equal(expected, regex.FullMatchToString(input, start));
         }

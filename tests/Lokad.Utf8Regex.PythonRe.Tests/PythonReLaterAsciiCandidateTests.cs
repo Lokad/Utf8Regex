@@ -21,7 +21,6 @@ public sealed class PythonReLaterAsciiCandidateTests
         var matches = regex.FindIterDetailed(input);
         Assert.Equal(2, matches.Length);
         Assert.Equal(start, matches[0].Value.StartOffsetInBytes);
-        Assert.Equal(start - 3, matches[0].Value.StartOffsetInUtf16);
         Assert.Equal("3", matches[0].Groups[1].ValueText);
         Assert.Equal(second, matches[1].Value.StartOffsetInBytes);
         Assert.Equal("45", matches[1].Groups[1].ValueText);

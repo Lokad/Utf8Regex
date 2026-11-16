@@ -133,7 +133,6 @@ public sealed class PythonGroupNumberingRegressionTests
         Assert.Equal(["a", "b"], tuples[1]);
         var matches = new Utf8PythonRegex("(?P<x>a)(b)").FindAll(Utf8("abab"));
         Assert.Equal(2, matches.Length);
-        Assert.Equal([(0, 2), (2, 4)], matches.Select(static match => (match.StartOffsetInUtf16, match.EndOffsetInUtf16)).ToArray());
     }
 
     [Fact]
@@ -141,7 +140,6 @@ public sealed class PythonGroupNumberingRegressionTests
     {
         var found = new Utf8PythonRegex("(?P<x>a)(b)").FindIterDetailed(Utf8("xaby"));
         var single = Assert.Single(found);
-        Assert.Equal((1, 3), (single.Value.StartOffsetInUtf16, single.Value.EndOffsetInUtf16));
         Assert.Equal(["ab", "a", "b"], single.Groups.Select(static group => group.ValueText).ToArray());
     }
 
@@ -160,8 +158,6 @@ public sealed class PythonGroupNumberingRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
             Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
         }
     }

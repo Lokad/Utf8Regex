@@ -108,8 +108,6 @@ public sealed class PythonSyntaxParityRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
             Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
         }
     }

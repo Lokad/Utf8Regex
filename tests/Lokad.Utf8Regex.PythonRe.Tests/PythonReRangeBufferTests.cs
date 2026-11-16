@@ -26,7 +26,6 @@ public sealed class PythonReRangeBufferTests
             var startByte = 13 * block + (second ? 9 : 4);
             var startUnit = 10 * block + (second ? 6 : 2);
             Assert.Equal((startByte, startByte + 3), (matches[i].StartOffsetInBytes, matches[i].EndOffsetInBytes));
-            Assert.Equal((startUnit, startUnit + 3), (matches[i].StartOffsetInUtf16, matches[i].EndOffsetInUtf16));
             Assert.Equal(second ? "bar" : "foo", matches[i].ValueText);
             Assert.Equal(matches[i].ValueText, strings[i]);
             Assert.Equal(Encoding.UTF8.GetBytes(strings[i]), bytes[i]);

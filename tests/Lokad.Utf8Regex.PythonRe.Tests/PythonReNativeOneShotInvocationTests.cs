@@ -9,28 +9,20 @@ public sealed class PythonReNativeOneShotInvocationTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void LongNativeValueCoordinateSizingKeepsOriginalInterruption(bool expire)
+    public void NativeValueAtFarByteStartNeedsNoPrefixCoordinates(bool finiteDeadline)
     {
-        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        using var regex = new Utf8PythonRegex("needle", matchTimeout: timeout);
+        var timeout = finiteDeadline ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan;
+        using var regex = new Utf8PythonRegex("needle", matchTimeout: timeout,
+            resourcePolicy: new() { MaxWorkSteps = 64, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 65536)) + "needle");
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(100000, 0, 1 << 20), timeout, token.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        var reached = false;
-        invocation.CheckpointHook = _ => { reached = true; if (expire) ticks = 50; else token.Cancel(); };
-        Exception? failure = null;
-        // Exact FullMatch stays eligible with a finite deadline. Its discovery
-        // checks one literal; the long prefix is scanned only for coordinates.
-        try { _ = regex.MaterializeNativeMatchValue(input, input.Length - 6, 2, ref invocation); }
-        catch (Exception error) { failure = error; }
-        Assert.True(reached);
-        if (expire) Assert.Equal(timeout, Assert.IsType<RegexMatchTimeoutException>(failure).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        invocation.Ledger.Release(13);
+        var value = regex.FullMatch(input, input.Length - 6, token.Token);
+        Assert.True(value.Success);
+        Assert.Equal((input.Length - 6, input.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+        Assert.True(value.GetValueBytes().SequenceEqual("needle"u8));
+        token.Cancel();
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.FullMatch(input, input.Length - 6, token.Token)).CancellationToken);
     }
 
     [Theory]
@@ -74,24 +66,23 @@ public sealed class PythonReNativeOneShotInvocationTests
     }
 
     [Theory]
-    [InlineData(0, "é😀", "xé😀z", 0, 1, 7, 1, 4, "é😀")]
-    [InlineData(1, "é😀", "é😀z", 0, 0, 6, 0, 3, "é😀")]
-    [InlineData(1, "é😀", "xé😀z", 0, 0, 0, 0, 0, null)]
-    [InlineData(0, "", "😀", 0, 0, 0, 0, 0, "")]
-    [InlineData(0, "abc", "abc😀", 0, 0, 3, 0, 3, "abc")]
-    [InlineData(0, "abc", "😀abc", 0, 4, 7, 2, 5, "abc")]
-    [InlineData(0, "Шерлок", "😀 π Шерлок", 0, 8, 20, 5, 11, "Шерлок")]
-    [InlineData(0, "Шерлок", "😀 π Шерлок 𝒜", 0, 8, 20, 5, 11, "Шерлок")]
-    [InlineData(0, "needle", "😀éneedle", 0, 6, 12, 3, 9, "needle")]
-    [InlineData(0, "Шерлок", "😀 Ватсон", 0, 0, 0, 0, 0, null)]
-    [InlineData(1, "ab[0-9]+", "ab123😀", 0, 0, 5, 0, 5, "ab123")]
-    [InlineData(1, "ab[0-9]+", "ab😀", 0, 0, 0, 0, 0, null)]
-    [InlineData(2, "ab.*xy", "éab😀xy", 2, 2, 10, 1, 7, "ab😀xy")]
-    [InlineData(2, "ab.*xy", "éab😀xz", 2, 0, 0, 0, 0, null)]
-    [InlineData(2, "ab.*xy", "abxy", 0, 0, 4, 0, 4, "abxy")]
-    [InlineData(2, ".*", "", 0, 0, 0, 0, 0, "")]
-    public void NativeValueAndTextOutcomesAgreeWithScalarEdges(int kind, string pattern, string subject,
-        int start, int first, int last, int firstUtf16, int lastUtf16, string? expected)
+    [InlineData(0,"é😀","xé😀z",0,1,7,"é😀")]
+    [InlineData(1,"é😀","é😀z",0,0,6,"é😀")]
+    [InlineData(1,"é😀","xé😀z",0,0,0,null)]
+    [InlineData(0,"","😀",0,0,0,"")]
+    [InlineData(0,"abc","abc😀",0,0,3,"abc")]
+    [InlineData(0,"abc","😀abc",0,4,7,"abc")]
+    [InlineData(0,"Шерлок","😀 π Шерлок",0,8,20,"Шерлок")]
+    [InlineData(0,"Шерлок","😀 π Шерлок 𝒜",0,8,20,"Шерлок")]
+    [InlineData(0,"needle","😀éneedle",0,6,12,"needle")]
+    [InlineData(0,"Шерлок","😀 Ватсон",0,0,0,null)]
+    [InlineData(1,"ab[0-9]+","ab123😀",0,0,5,"ab123")]
+    [InlineData(1,"ab[0-9]+","ab😀",0,0,0,null)]
+    [InlineData(2,"ab.*xy","éab😀xy",2,2,10,"ab😀xy")]
+    [InlineData(2,"ab.*xy","éab😀xz",2,0,0,null)]
+    [InlineData(2,"ab.*xy","abxy",0,0,4,"abxy")]
+    [InlineData(2,".*","",0,0,0,"")]
+    public void NativeValueAndTextOutcomesAgreeWithScalarEdges(int kind,string pattern,string subject,        int start,int first,int last,string? expected)
     {
         var input = Encoding.UTF8.GetBytes(subject);
         using var token = new CancellationTokenSource();
@@ -113,7 +104,6 @@ public sealed class PythonReNativeOneShotInvocationTests
             };
             Assert.Equal(expected, text); Assert.Equal(expected is not null, value.Success);
             Assert.Equal((first, last), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-            Assert.Equal((firstUtf16, lastUtf16), (value.StartOffsetInUtf16, value.EndOffsetInUtf16));
             if (expected is not null) Assert.Equal(Encoding.UTF8.GetBytes(expected), value.GetValueBytes().ToArray());
         }
     }

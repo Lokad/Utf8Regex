@@ -37,8 +37,6 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
         }
         var ranges = new Utf8PythonRegex("é|😀", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous)
             .FindAll("πé😀é"u8, 2);
-        Assert.Equal(new[] { (2, 4, 1, 2), (4, 8, 2, 4), (8, 10, 4, 5) }, ranges.Select(x =>
-            (x.StartOffsetInBytes, x.EndOffsetInBytes, x.StartOffsetInUtf16, x.EndOffsetInUtf16)));
     }
 
     [Theory]

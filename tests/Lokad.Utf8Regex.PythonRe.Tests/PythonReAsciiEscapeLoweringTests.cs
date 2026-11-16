@@ -38,7 +38,6 @@ public sealed class PythonReAsciiEscapeLoweringTests
                 if (!actual.Success) continue;
                 Assert.Equal(text, actual.Groups[1].ValueText);
                 Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
-                Assert.Equal((0, text.Length), (actual.Groups[1].StartOffsetInUtf16, actual.Groups[1].EndOffsetInUtf16));
             }
         }
     }
@@ -76,7 +75,6 @@ public sealed class PythonReAsciiEscapeLoweringTests
                 if (!expected) continue;
                 Assert.Equal(text, actual.Groups[1].ValueText);
                 Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
-                Assert.Equal((0, text.Length), (actual.Groups[1].StartOffsetInUtf16, actual.Groups[1].EndOffsetInUtf16));
             }
             Assert.False(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         }

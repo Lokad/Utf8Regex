@@ -86,8 +86,6 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(group.GetProperty("text").GetString(), value.ValueText);
             Assert.Equal(group.GetProperty("startByte").GetInt32(), value.StartOffsetInBytes);
             Assert.Equal(group.GetProperty("endByte").GetInt32(), value.EndOffsetInBytes);
-            Assert.Equal(group.GetProperty("startUtf16").GetInt32(), value.StartOffsetInUtf16);
-            Assert.Equal(group.GetProperty("endUtf16").GetInt32(), value.EndOffsetInUtf16);
         }
     }
 
@@ -105,8 +103,6 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(group.GetProperty("text").GetString(), value.GetValueString());
             Assert.Equal(group.GetProperty("startByte").GetInt32(), value.Value.StartOffsetInBytes);
             Assert.Equal(group.GetProperty("endByte").GetInt32(), value.Value.EndOffsetInBytes);
-            Assert.Equal(group.GetProperty("startUtf16").GetInt32(), value.Value.StartOffsetInUtf16);
-            Assert.Equal(group.GetProperty("endUtf16").GetInt32(), value.Value.EndOffsetInUtf16);
         }
     }
     [Theory]

@@ -67,7 +67,6 @@ public sealed class PythonReClassDelimiterWindowTests
                 Assert.Equal(wanted.Length, actual.Length);
                 for (var index = 0; index < actual.Length; index++)
                 {
-                    Assert.Equal(wanted[index].Index, actual[index].Value.StartOffsetInUtf16);
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted[index].Index)), actual[index].Value.StartOffsetInBytes);
                     Assert.Equal(wanted[index].Groups.Cast<Group>().Select(group => group.Value),
                         actual[index].Groups.Select(group => group.ValueText));
@@ -143,7 +142,6 @@ public sealed class PythonReClassDelimiterWindowTests
         var first = owner.SearchDetailedData(input);
         var wanted = oracle.Match(text);
         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), first.Value.StartOffsetInBytes);
-        Assert.Equal(wanted.Index, first.Value.StartOffsetInUtf16);
         Assert.Equal(new[] { "item-123", "item", "123" }, first.Groups.Select(g => g.ValueText));
         Assert.Equal(2, owner.Count(input));
         Assert.Equal(new[] { "item", "123", "other", "45" }, owner.FindAllToStrings(input).TupleValues.SelectMany(row => row));

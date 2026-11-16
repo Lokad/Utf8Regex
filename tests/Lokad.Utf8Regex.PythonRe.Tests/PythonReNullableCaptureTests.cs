@@ -56,8 +56,6 @@ public sealed class PythonReNullableCaptureTests
                 Assert.True(snapshot.TryGetFirstSetGroup("x", out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
                 if (expectedCaptures[index] is { } text) Assert.Equal(text, capture.ValueText);
-                Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, expectedRanges[index].Start)), snapshot.Value.StartOffsetInUtf16);
-                Assert.Equal(Encoding.UTF8.GetCharCount(input.AsSpan(0, expectedRanges[index].End)), snapshot.Value.EndOffsetInUtf16);
             }
             Assert.False(alias.MoveNext());
             alias.Dispose();

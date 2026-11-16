@@ -26,9 +26,6 @@ public sealed class PythonReLeadingAsciiTests
         Assert.Equal(2, regex.Count(input, 6, cancellation.Token));
         var matches = regex.FindIterDetailed(input, 6, cancellation.Token);
         Assert.Equal(new[] { "needle१२", "needle\U0001D7CE" }, matches.Select(m => m.Value.ValueText));
-        Assert.Equal(new[] { (10 + padding, 22 + padding, 5 + padding, 13 + padding),
-            (23 + padding, 33 + padding, 14 + padding, 22 + padding) }, matches.Select(m =>
-            (m.Value.StartOffsetInBytes, m.Value.EndOffsetInBytes, m.Value.StartOffsetInUtf16, m.Value.EndOffsetInUtf16)));
         Assert.Equal(1, regex.Count(input, 23 + padding));
         Assert.Equal(0, regex.Count(input, input.Length));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));

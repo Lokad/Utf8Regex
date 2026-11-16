@@ -37,13 +37,13 @@ public sealed class PythonRePersistentCursorTests
     public void EmptyThenNonemptyDiscoveryUsesWholeSupplementaryScalars()
     {
         using var cursor = new Utf8PythonRegex(".*?").CreateMatchCursor(Encoding.UTF8.GetBytes("😀"));
-        var ranges = new List<(int, int, int, int)>();
+        var ranges = new List<(int, int)>();
         while (cursor.MoveNext())
         {
             var value = cursor.Current.Value;
-            ranges.Add((value.StartOffsetInBytes, value.EndOffsetInBytes, value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+            ranges.Add((value.StartOffsetInBytes, value.EndOffsetInBytes));
         }
-        Assert.Equal([(0, 0, 0, 0), (0, 4, 0, 2), (4, 4, 2, 2)], ranges);
+        Assert.Equal([(0, 0), (0, 4), (4, 4)], ranges);
     }
 
     [Fact]
@@ -58,8 +58,7 @@ public sealed class PythonRePersistentCursorTests
         Assert.True(alias.MoveNext());
         var second = cursor.Current;
         Assert.Equal("😀", second.Value.ValueText);
-        Assert.Equal((2, 6, 1, 3), (second.Value.StartOffsetInBytes, second.Value.EndOffsetInBytes,
-            second.Value.StartOffsetInUtf16, second.Value.EndOffsetInUtf16));
+        Assert.Equal((2,6),(second.Value.StartOffsetInBytes,second.Value.EndOffsetInBytes));
         Assert.NotSame(first.Groups, second.Groups); Assert.NotSame(first.NameEntries, second.NameEntries);
         alias.Dispose(); cursor.Dispose();
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());

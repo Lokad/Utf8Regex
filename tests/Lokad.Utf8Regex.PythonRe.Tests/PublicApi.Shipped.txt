@@ -43,13 +43,10 @@ readonly ref struct PythonRe.Utf8PythonGroupContext
   property PythonRe.Utf8PythonValueMatch Value { get; }
   method String GetValueString()
 readonly struct PythonRe.Utf8PythonGroupMatchData
-  property Boolean HasContiguousByteRange { get; init; }
   property Boolean Success { get; init; }
   property Int32 EndOffsetInBytes { get; init; }
-  property Int32 EndOffsetInUtf16 { get; init; }
   property Int32 Number { get; init; }
   property Int32 StartOffsetInBytes { get; init; }
-  property Int32 StartOffsetInUtf16 { get; init; }
   property String ValueText { get; init; }
 readonly ref struct PythonRe.Utf8PythonMatchContext
   property Boolean Success { get; }
@@ -77,9 +74,7 @@ sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
 readonly struct PythonRe.Utf8PythonMatchData
   property Boolean Success { get; init; }
   property Int32 EndOffsetInBytes { get; init; }
-  property Int32 EndOffsetInUtf16 { get; init; }
   property Int32 StartOffsetInBytes { get; init; }
-  property Int32 StartOffsetInUtf16 { get; init; }
   property String ValueText { get; init; }
 delegate String PythonRe.Utf8PythonMatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
 readonly struct PythonRe.Utf8PythonRangeMatch
@@ -251,11 +246,8 @@ readonly struct PythonRe.Utf8PythonSubnUtf8Result
   property Int32 ReplacementCount { get; init; }
 delegate Byte[] PythonRe.Utf8PythonUtf8MatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
 readonly ref struct PythonRe.Utf8PythonValueMatch
-  property Boolean HasContiguousByteRange { get; }
   property Boolean Success { get; }
   property Int32 EndOffsetInBytes { get; }
-  property Int32 EndOffsetInUtf16 { get; }
   property Int32 StartOffsetInBytes { get; }
-  property Int32 StartOffsetInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()

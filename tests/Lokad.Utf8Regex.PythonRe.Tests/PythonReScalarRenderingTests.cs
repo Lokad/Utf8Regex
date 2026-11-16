@@ -52,8 +52,6 @@ public sealed class PythonReScalarRenderingTests
             {
                 Assert.Equal(0, found.StartOffsetInBytes);
                 Assert.Equal(input.Length, found.EndOffsetInBytes);
-                Assert.Equal(0, found.StartOffsetInUtf16);
-                Assert.Equal(subject.Length, found.EndOffsetInUtf16);
                 Assert.Equal(subject, found.GetValueString());
             }
             var detailed = regex.SearchDetailedData(input, 0, token);

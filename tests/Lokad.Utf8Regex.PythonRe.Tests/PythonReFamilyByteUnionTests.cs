@@ -19,7 +19,6 @@ public sealed class PythonReFamilyByteUnionTests
         var matches = regex.FindIterDetailed(input, 4);
         Assert.Equal(new[] { "12", "345" }, regex.FindAllToStrings(input, 4).ScalarValues);
         Assert.Equal(2, matches.Length);
-        Assert.Equal(prefix.Length + 7, matches[0].Value.StartOffsetInUtf16);
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix) + 7, matches[0].Value.StartOffsetInBytes);
         Assert.Equal("12", matches[0].Groups[1].ValueText);
         Assert.False(regex.Match(input, 4).Success);

@@ -29,7 +29,6 @@ public sealed class PythonReShortFoldedPrefixTests
             Assert.Equal(expected.Length != 0, actual.Success);
             if (actual.Success)
             {
-                Assert.Equal(first, actual.StartOffsetInUtf16);
                 Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first)), actual.StartOffsetInBytes);
                 Assert.Equal(Encoding.UTF8.GetByteCount(expected[0]), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
             }

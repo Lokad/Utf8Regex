@@ -30,8 +30,7 @@ public sealed class PythonReAdjacentSetRepeatTests
             var owner = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             var value = owner.FullMatch(input);
             Assert.True(value.Success);
-            Assert.Equal((0, input.Length, 0, text.Length),
-                (value.StartOffsetInBytes, value.EndOffsetInBytes, value.StartOffsetInUtf16, value.EndOffsetInUtf16));
+            Assert.Equal((0,input.Length),                (value.StartOffsetInBytes,value.EndOffsetInBytes));
             Assert.Equal(text, owner.FullMatchToString(input));
             var retained = owner.FullMatchDetailedData(input);
             Assert.Equal(text, retained.Value.ValueText);

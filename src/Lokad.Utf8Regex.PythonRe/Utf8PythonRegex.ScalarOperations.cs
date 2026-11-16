@@ -251,13 +251,11 @@ public sealed partial class Utf8PythonRegex
         {
             while (cursor.MoveNext())
             {
-                cursor.PrepareValueProjection();
                 var group = cursor.SnapshotValueData();
                 cursor.AddResult(ref list, new Utf8PythonMatchData
                 {
                     Success = true,
                     StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                    StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
                     ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
                 });
                 cursor.Checkpoint();

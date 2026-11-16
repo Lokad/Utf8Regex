@@ -39,10 +39,10 @@ public sealed class PythonAnchorOffsetRegressionTests
     {
         var match = new Utf8PythonRegex(pattern).Match(Utf8(input));
         Assert.Equal(expectedSuccess, match.Success);
-        if (expectedSuccess)
+        if (match.Success)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedStart)), match.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedEnd)), match.EndOffsetInBytes);
         }
     }
 
@@ -78,8 +78,6 @@ public sealed class PythonAnchorOffsetRegressionTests
         var regex = new Utf8PythonRegex("(?<=x)foo");
         var value = regex.FullMatch(Utf8("xfoo"), 1);
         Assert.True(value.Success);
-        Assert.Equal(1, value.StartOffsetInUtf16);
-        Assert.Equal(4, value.EndOffsetInUtf16);
         Assert.Equal("foo", value.GetValueString());
         var detailed = regex.FullMatchDetailedData(Utf8("xfoo"), 1);
         Assert.True(detailed.Success);
@@ -108,10 +106,10 @@ public sealed class PythonAnchorOffsetRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         var match = regex.Search(Utf8(input), startOffsetInBytes);
         Assert.Equal(expectedSuccess, match.Success);
-        if (expectedSuccess)
+        if (match.Success)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedStart)), match.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedEnd)), match.EndOffsetInBytes);
         }
     }
 
@@ -123,10 +121,10 @@ public sealed class PythonAnchorOffsetRegressionTests
     {
         var match = new Utf8PythonRegex(pattern).Match(Utf8(input), startOffsetInBytes);
         Assert.Equal(expectedSuccess, match.Success);
-        if (expectedSuccess)
+        if (match.Success)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedStart)), match.StartOffsetInBytes);
+            Assert.Equal(global::System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedEnd)), match.EndOffsetInBytes);
         }
     }
 
@@ -144,8 +142,6 @@ public sealed class PythonAnchorOffsetRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
             Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
         }
     }

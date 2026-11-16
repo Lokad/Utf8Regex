@@ -71,8 +71,6 @@ public sealed class PythonReDetailedTextAdmissionTests
                 Assert.True(group.Success);
                 Assert.Equal(start, group.StartOffsetInBytes);
                 Assert.Equal(start + 6, group.EndOffsetInBytes);
-                Assert.Equal(row * 4, group.StartOffsetInUtf16);
-                Assert.Equal(row * 4 + 3, group.EndOffsetInUtf16);
                 Assert.Equal("😀é", group.ValueText);
             }
             Assert.True(match.Groups[3].Success);

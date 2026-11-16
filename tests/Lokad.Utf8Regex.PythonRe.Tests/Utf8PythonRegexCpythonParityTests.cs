@@ -707,7 +707,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
     private static (int Start, int End) GetSpan(Utf8PythonValueMatch match)
     {
         Assert.True(match.Success);
-        return (match.StartOffsetInUtf16, match.EndOffsetInUtf16);
+        return (match.StartOffsetInBytes, match.EndOffsetInBytes);
     }
 
     private static string GetGroup1(Utf8PythonMatchContext match)

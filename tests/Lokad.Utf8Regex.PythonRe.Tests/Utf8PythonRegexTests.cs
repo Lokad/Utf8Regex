@@ -64,7 +64,6 @@ public sealed class Utf8PythonRegexTests
         var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
         Assert.True(nonAsciiPrefixMatch.Success);
         Assert.Equal(2, nonAsciiPrefixMatch.StartOffsetInBytes);
-        Assert.Equal(1, nonAsciiPrefixMatch.StartOffsetInUtf16);
         Assert.True(regex.Match("foo xx"u8).Success);
         Assert.False(regex.Match("xx foo"u8).Success);
         Assert.Equal(2, regex.Count("foo xx foo"u8));
@@ -93,8 +92,6 @@ public sealed class Utf8PythonRegexTests
         Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
         Assert.False(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
         Assert.True(search.Success);
-        Assert.Equal("π ".Length, search.StartOffsetInUtf16);
-        Assert.Equal("π Шерлок".Length, search.EndOffsetInUtf16);
         Assert.Equal("π "u8.Length, search.StartOffsetInBytes);
         Assert.Equal("π Шерлок"u8.Length, search.EndOffsetInBytes);
         Assert.Equal("Шерлок", search.GetValueString());
@@ -349,9 +346,6 @@ public sealed class Utf8PythonRegexTests
         var match = regex.Search("xxcaféyy"u8);
 
         Assert.True(match.Success);
-        Assert.True(match.HasContiguousByteRange);
-        Assert.Equal(2, match.StartOffsetInUtf16);
-        Assert.Equal(6, match.EndOffsetInUtf16);
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(2 + "café"u8.Length, match.EndOffsetInBytes);
     }
@@ -385,11 +379,8 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.True(match.Success);
-        Assert.True(match.HasContiguousByteRange);
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(input.Length, match.EndOffsetInBytes);
-        Assert.Equal("π".Length, match.StartOffsetInUtf16);
-        Assert.Equal("πstart\n東京𝒜end".Length, match.EndOffsetInUtf16);
         Assert.Equal("start\n東京𝒜end", match.GetValueString());
         Assert.True(regex.FullMatch("startend"u8).Success);
         Assert.True(regex.FullMatch("start\0end"u8).Success);
@@ -440,11 +431,8 @@ public sealed class Utf8PythonRegexTests
         var match = regex.FullMatch(input, startOffsetInBytes: 2);
 
         Assert.True(match.Success);
-        Assert.True(match.HasContiguousByteRange);
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(input.Length, match.EndOffsetInBytes);
-        Assert.Equal(2, match.StartOffsetInUtf16);
-        Assert.Equal("xxШерлок Шерлок ".Length, match.EndOffsetInUtf16);
         Assert.Equal("Шерлок Шерлок ", match.GetValueString());
         Assert.False(regex.FullMatch("xxШерлок x"u8, startOffsetInBytes: 2).Success);
     }
@@ -551,9 +539,6 @@ public sealed class Utf8PythonRegexTests
         Assert.True(search.Success);
         Assert.Equal(0, search.StartOffsetInBytes);
         Assert.Equal(4, search.EndOffsetInBytes);
-        Assert.Equal(0, search.StartOffsetInUtf16);
-        Assert.Equal(2, search.EndOffsetInUtf16);
-        Assert.True(search.HasContiguousByteRange);
         Assert.Equal("𝒜"u8.ToArray(), search.GetValueBytes().ToArray());
         Assert.Equal("𝒜", search.GetValueString());
 
@@ -562,9 +547,6 @@ public sealed class Utf8PythonRegexTests
         Assert.True(group.Success);
         Assert.Equal(0, group.Value.StartOffsetInBytes);
         Assert.Equal(4, group.Value.EndOffsetInBytes);
-        Assert.Equal(0, group.Value.StartOffsetInUtf16);
-        Assert.Equal(2, group.Value.EndOffsetInUtf16);
-        Assert.True(group.Value.HasContiguousByteRange);
         Assert.Equal("𝒜", group.Value.GetValueString());
     }
 
@@ -986,8 +968,6 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);
         Assert.Equal(12, match.EndOffsetInBytes);
-        Assert.Equal(0, match.StartOffsetInUtf16);
-        Assert.Equal(12, match.EndOffsetInUtf16);
         Assert.Equal("header:12345", match.GetValueString());
         Assert.False(regex.Match("header: tail"u8).Success);
         Assert.False(regex.Match("other:123"u8).Success);

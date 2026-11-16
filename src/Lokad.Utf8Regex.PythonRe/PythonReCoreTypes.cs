@@ -22,11 +22,6 @@ internal readonly struct PythonReGroupData
 
     public int EndOffsetInBytes { get; init; }
 
-    public int StartOffsetInUtf16 { get; init; }
-
-    public int EndOffsetInUtf16 { get; init; }
-
-    public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
 }
 
@@ -66,28 +61,13 @@ public readonly ref struct Utf8PythonValueMatch
     /// <summary>Gets the exclusive match end as a zero-based byte offset, or zero after no match.</summary>
     public int EndOffsetInBytes => _data.EndOffsetInBytes;
 
-    /// <summary>Gets the match start as a zero-based UTF-16 code-unit offset, or zero after no match.</summary>
-    public int StartOffsetInUtf16 => _data.StartOffsetInUtf16;
-
-    /// <summary>Gets the exclusive match end as a zero-based UTF-16 code-unit offset, or zero after no match.</summary>
-    public int EndOffsetInUtf16 => _data.EndOffsetInUtf16;
-
-    /// <summary>Gets whether the successful match maps to one contiguous range in the original UTF-8 input.</summary>
-    public bool HasContiguousByteRange => _data.HasContiguousByteRange;
-
     /// <summary>Gets the match value from the original UTF-8 input.</summary>
     /// <returns>An empty span after no match.</returns>
-    /// <exception cref="InvalidOperationException">The successful match has no contiguous byte range.</exception>
     public ReadOnlySpan<byte> GetValueBytes()
     {
         if (!Success)
         {
             return ReadOnlySpan<byte>.Empty;
-        }
-
-        if (!HasContiguousByteRange)
-        {
-            throw new InvalidOperationException("This match does not map to a contiguous byte range.");
         }
 
         return _input[StartOffsetInBytes..EndOffsetInBytes];
@@ -110,12 +90,6 @@ public readonly struct Utf8PythonMatchData
 
     /// <summary>Gets the exclusive match end as a zero-based byte offset, or zero after no match.</summary>
     public int EndOffsetInBytes { get; init; }
-
-    /// <summary>Gets the match start as a zero-based UTF-16 code-unit offset, or zero after no match.</summary>
-    public int StartOffsetInUtf16 { get; init; }
-
-    /// <summary>Gets the exclusive match end as a zero-based UTF-16 code-unit offset, or zero after no match.</summary>
-    public int EndOffsetInUtf16 { get; init; }
 
     /// <summary>Gets the matched text, or an empty string after no match.</summary>
     public string ValueText { get => field ?? string.Empty; init; }
@@ -205,15 +179,6 @@ public readonly struct Utf8PythonGroupMatchData
 
     /// <summary>Gets the exclusive group end as a zero-based byte offset, or zero when unmatched.</summary>
     public int EndOffsetInBytes { get; init; }
-
-    /// <summary>Gets the group start as a zero-based UTF-16 code-unit offset, or zero when unmatched.</summary>
-    public int StartOffsetInUtf16 { get; init; }
-
-    /// <summary>Gets the exclusive group end as a zero-based UTF-16 code-unit offset, or zero when unmatched.</summary>
-    public int EndOffsetInUtf16 { get; init; }
-
-    /// <summary>Gets whether the successful group maps to one contiguous UTF-8 byte range.</summary>
-    public bool HasContiguousByteRange { get; init; }
 
     /// <summary>Gets the captured UTF-16 text, or an empty string when unmatched.</summary>
     public string ValueText { get => field ?? string.Empty; init; }

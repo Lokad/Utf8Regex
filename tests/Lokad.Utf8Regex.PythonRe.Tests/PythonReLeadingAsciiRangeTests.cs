@@ -146,8 +146,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         // A non-ASCII subject keeps all CPython partners on the scalar route.
         var match = regex.FindIterDetailed("π😀ſHERLOCK"u8)[0];
         Assert.Equal("ſHERLOCK", match.Groups[1].ValueText);
-        Assert.Equal(6, match.Value.StartOffsetInBytes); Assert.Equal(3, match.Value.StartOffsetInUtf16);
-    }
+        Assert.Equal(6, match.Value.StartOffsetInBytes);     }
 
     [Theory]
     [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(8192)]
@@ -168,8 +167,7 @@ public sealed class PythonReLeadingAsciiRangeTests
 
         var match = regex.FindIterDetailed("π😀éa"u8)[0];
         Assert.Equal("éa", match.Groups[1].ValueText);
-        Assert.Equal(6, match.Value.StartOffsetInBytes); Assert.Equal(3, match.Value.StartOffsetInUtf16);
-    }
+        Assert.Equal(6, match.Value.StartOffsetInBytes);     }
 
     [Fact]
     public void OptionalProofStopsAtItsFixedWorkAndBranchBounds()
@@ -211,7 +209,6 @@ public sealed class PythonReLeadingAsciiRangeTests
         var first = alias.Current;
         Assert.Equal(",", first.Groups[1].ValueText);
         Assert.Equal(5, first.Value.StartOffsetInBytes);
-        Assert.Equal(3, first.Value.StartOffsetInUtf16);
         Assert.True(alias.MoveNext());
         Assert.False(cursor.Current.Groups[1].Success);
         while (cursor.MoveNext()) { }
@@ -276,7 +273,6 @@ public sealed class PythonReLeadingAsciiRangeTests
         var matches = regex.FindIterDetailed(input, 0, token.Token);
         var first = matches[0];
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
-        Assert.Equal(prefix.Length, first.Value.StartOffsetInUtf16);
         Assert.Equal("alpha", first.Groups[1].ValueText);
         Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
         Assert.Equal(new[] { "beta", "gamma" }, regex.FindAllToStrings(input, matches[1].Value.StartOffsetInBytes, token.Token).ScalarValues);

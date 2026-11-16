@@ -133,8 +133,6 @@ public sealed class PythonUnicodeClassRegressionTests
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
         var match = new Utf8PythonRegex(@"\w").Search(input);
         Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInUtf16);
-        Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
     [Fact]
@@ -143,8 +141,6 @@ public sealed class PythonUnicodeClassRegressionTests
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
         var match = new Utf8PythonRegex(@"[\w]").Search(input);
         Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInUtf16);
-        Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
     [Fact]
@@ -159,8 +155,6 @@ public sealed class PythonUnicodeClassRegressionTests
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x1D7CE));
         var match = new Utf8PythonRegex(@"\d").Search(input);
         Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInUtf16);
-        Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
     [Fact]
@@ -181,8 +175,6 @@ public sealed class PythonUnicodeClassRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
             Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
         }
     }

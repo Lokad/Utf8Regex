@@ -168,8 +168,6 @@ public sealed class PythonScalarAtomRegressionTests
     {
         var match = new Utf8PythonRegex("\\W").SearchDetailedData(Utf8(char.ConvertFromUtf32(0x1F600)));
         Assert.True(match.Success);
-        Assert.Equal(0, match.Value.StartOffsetInUtf16);
-        Assert.Equal(2, match.Value.EndOffsetInUtf16);
         Assert.Equal(char.ConvertFromUtf32(0x1F600), match.Value.ValueText);
     }
 
@@ -189,8 +187,6 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.True(search.Success);
         Assert.Equal(match.Success, search.Success);
         Assert.Equal(full.Success, search.Success);
-        Assert.Equal(0, search.StartOffsetInUtf16);
-        Assert.Equal(2, search.EndOffsetInUtf16);
         Assert.Equal(input, search.GetValueString());
     }
 
@@ -232,8 +228,6 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
-            Assert.Equal(expectedEnd, match.EndOffsetInUtf16);
             Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
         }
     }

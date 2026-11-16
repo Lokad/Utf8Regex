@@ -99,7 +99,7 @@ public sealed class PythonReBooleanNativeTests
             Assert.Equal("b", matches[0].Groups[2].ValueText);
             Assert.Equal(2, matches[0].LastIndex);
             Assert.Null(matches[0].LastGroup);
-            Assert.Equal((6, 3), (matches[0].Value.StartOffsetInBytes, matches[0].Value.StartOffsetInUtf16));
+            Assert.Equal(6,matches[0].Value.StartOffsetInBytes);
         }
         var generic = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });

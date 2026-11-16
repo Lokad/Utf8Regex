@@ -21,8 +21,7 @@ public sealed class PythonReLeadingAsciiProjectionTests
         Assert.Equal("1", regex.SearchToString(input, 0, token.Token));
         var owned = regex.SearchDetailedData(input, 0, token.Token);
         Assert.Equal("1", owned.Value.ValueText);
-        Assert.Equal((0, 1, 0, 1), (owned.Value.StartOffsetInBytes, owned.Value.EndOffsetInBytes,
-            owned.Value.StartOffsetInUtf16, owned.Value.EndOffsetInUtf16));
+        Assert.Equal((0,1),(owned.Value.StartOffsetInBytes,owned.Value.EndOffsetInBytes));
     }
 
     [Theory]
@@ -56,7 +55,6 @@ public sealed class PythonReLeadingAsciiProjectionTests
         var retained = cursor.Current;
         Assert.Equal("١", retained.Groups[1].ValueText);
         Assert.Equal(prefixLength + 4, retained.Value.StartOffsetInBytes);
-        Assert.Equal(prefixLength + 2, retained.Value.StartOffsetInUtf16);
         Assert.True(cursor.MoveNext()); Assert.Equal("123", cursor.Current.Value.ValueText);
         Assert.False(cursor.MoveNext()); cursor.Dispose();
         Assert.Equal("١", retained.Groups[1].ValueText); Assert.Equal(1, retained.LastIndex);

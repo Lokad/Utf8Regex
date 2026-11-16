@@ -3,7 +3,8 @@
 `Lokad.Utf8Regex.PythonRe` is the optional managed Python `re` profile.
 It targets CPython **3.13.2 str-pattern semantics**, with owned Unicode **15.1.0**
 case, identifier and predefined-class data. It matches scalars over strict UTF-8;
-byte coordinates are primary and UTF-16 coordinates are derived.
+results expose byte coordinates. Scalar coordinates are available only through
+the cursor's explicit scalar-range query; no result exposes UTF-16 coordinates.
 
 See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
 [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). Exact declarations are pinned in the
@@ -287,8 +288,8 @@ This can change covered capacity/work compared with earlier development builds.
 No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
 Borrowed literal Count trusts the subject's valid-text contract without deriving
-discarded UTF-16 totals. Canonical text output sizes its returned value separately; APIs
-exposing coordinates retain their required projections.
+discarded UTF-16 totals. Canonical text output sizes its returned value separately;
+only explicit scalar-coordinate queries prepare absolute-coordinate state.
 
 String output trusts valid scalar ranges and reuses already-known lengths or
 coordinate facts. Unknown lengths up to 4096 UTF-8 bytes can use conservative
@@ -539,19 +540,16 @@ be lower than general matching. Captures, folding, lazy or nonliteral bodies and
 unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
-Scalar value results reuse existing coordinate facts when available;
-otherwise they count only the prefix and range requested by that value. String
-output sizes its selected range without describing an unrelated subject suffix.
-Detailed results and capture contexts prepare coordinates only through
-the furthest participating capture end, including captures inside lookarounds.
-They do not describe or map an unrelated suffix. Repeated iteration and callback
-substitutions share the same lazy coordinate index as durable cursors and scalar
-queries; projection does not stop discovery. Substitutions still copy the complete
-required output and validate assembled raw-byte callback output. Removing the
-whole-subject bidirectional map reduces early-result work and capacity; finite
-requirements can fall. Coordinate scratch is working storage, not result traffic;
-returned arrays and strings still consume modeled result capacity independently.
-Captures equal to group zero may reuse its completed projection with independent
+Value results and borrowed capture contexts copy selected scalar byte endpoints
+without scanning their prefix or content for coordinates. Owned detailed results
+size and decode only requested captured text. These paths do not prepare the
+scalar-coordinate index; only an explicit scalar-range query does so.
+Substitutions still copy required output and validate assembled raw-byte callback
+output. Returned arrays and strings consume modeled result capacity independently.
+Deleting coordinate scans/storage can lower numerical limits; selected-content
+string sizing can change its conservative capacity charge. Positive extents still
+require admission before allocation. Captures equal to group zero may reuse its
+completed text with independent
 capture numbers and mutable entries. Empty name metadata needs no result allocation
 or copy. These omissions can reduce numerical work requirements; positive result
 extents retain their admission and traffic charges.
@@ -729,22 +727,20 @@ retained range advance. It returns true for a participating capture, including
 empty; absent/unmatched groups return false and both positions are `-1`. Positions
 are zero-based Unicode-scalar offsets from the whole subject's beginning,
 including before a match's start for lookbehind captures. They are not grapheme,
-UTF-16 or byte positions. Existing byte and UTF-16 coordinates retain their meanings.
+UTF-16 or byte positions. Match/group results expose only byte start/end offsets.
 The integers remain valid after advance/disposal; querying a cursor without a
 current match fails explicitly.
 
-Byte-only advances do no extra coordinate preparation. Mixed-input scalar or
-UTF-16 projection beyond the first 256-byte block lazily admits one shared working
-array (scalar and UTF-16 prefix counts
+Byte and text advances do no absolute-coordinate preparation. An explicit
+mixed-input scalar query beyond the first 256-byte block lazily admits one working
+array (scalar prefix counts
 per 256 UTF-8 bytes), extending initialized counts only through requested positions.
 ASCII proof is confined to the queried prefix, not an unused subject suffix;
 ASCII prefixes and shorter queries need no such allocation. The array counts
 scalar starts over caller-guaranteed valid bytes, including blocks cutting through
 scalars, with bounded scans inside the selected block on later queries.
-Scalar queries create no text or full-subject coordinate map. Both counts are
-stored together to avoid separate owners and repeated prefix preparation; compared
-with the former scalar-only index, distant scalar-only queries can require more
-working capacity. Offsets in the first 256-byte block are counted directly without
+Scalar queries create no text or full-subject coordinate map. No UTF-16 counts
+are stored. Offsets in the first 256-byte block are counted directly without
 an index; proved prefix facts and existing counts are reused without describing the
 whole subject. Capacity grows geometrically up to the subject's possible entry
 count, with old/new capacity admitted before allocation and synchronous release

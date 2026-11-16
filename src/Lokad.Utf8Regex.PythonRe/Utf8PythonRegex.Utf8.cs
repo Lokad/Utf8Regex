@@ -77,17 +77,10 @@ public sealed partial class Utf8PythonRegex
             }
             Utf8InvocationOutput.Checkpoint(control);
             if (!matched) return default;
-            var startUtf16 = startOffsetInBytes == 0 ? 0
-                : Utf8SliceBufferWork.CountValidUtf16(input[..startOffsetInBytes], ref invocation);
-            // A successful exact repetition already proves every input byte.
-            // Derive its width from the bounded pattern instead of rescanning text.
-            var endUtf16 = startUtf16 + repetitions * Utf8SliceBufferWork.CountUtf16(literal, ref invocation)
-                + Utf8SliceBufferWork.CountUtf16(suffix, ref invocation);
             var completed = Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
                 Number = 0, Success = true,
                 StartOffsetInBytes = startOffsetInBytes, EndOffsetInBytes = input.Length,
-                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
             });
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
@@ -174,8 +167,6 @@ public sealed partial class Utf8PythonRegex
                     Success = true,
                     StartOffsetInBytes = range.IndexInBytes,
                     EndOffsetInBytes = range.IndexInBytes + range.LengthInBytes,
-                    StartOffsetInUtf16 = range.IndexInUtf16,
-                    EndOffsetInUtf16 = range.IndexInUtf16 + range.LengthInUtf16,
                     ValueText = ranges.GetText(input, range),
                 };
             }
@@ -278,9 +269,7 @@ public sealed partial class Utf8PythonRegex
 
                 ranges.Add(new PythonReUtf8MatchRange(
                     indexInBytes,
-                    lengthInBytes,
-                    match.IndexInUtf16,
-                    match.LengthInUtf16));
+                    lengthInBytes));
             }
 
             return true;
@@ -416,17 +405,12 @@ public sealed partial class Utf8PythonRegex
                 Utf8InvocationOutput.Checkpoint(control);
                 return default;
             }
-            // Discovery proves scalar endpoints; only successful value consumers
-            // need interoperability coordinates, counted over their actual ranges.
-            var startUtf16 = start == 0 ? 0
-                : Utf8SliceBufferWork.CountValidUtf16(input[..start], ref invocation);
-            var endUtf16 = startUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[start..end], ref invocation);
+            // Discovery already proved the selected scalar byte endpoints.
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
                 Number = 0, Success = true,
                 StartOffsetInBytes = start, EndOffsetInBytes = end,
-                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
             });
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&

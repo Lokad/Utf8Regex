@@ -11,7 +11,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 // Span and durable cursors borrow this single discovery implementation. Search positions and empty
-// advancement are bytes; a lazy prefix index serves requested scalar/UTF-16 coordinates.
+// advancement are bytes; a lazy prefix index serves requested explicit scalar coordinates.
 // Python retains the last capture, so discovery does not collect capture history.
 internal partial struct PythonReScalarMatchState
 {
@@ -32,7 +32,7 @@ internal partial struct PythonReScalarMatchState
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
-    private (int Scalars, int Utf16)[]? _coordinatePrefixes;
+    private int[]? _coordinatePrefixes;
     private ulong _coordinatePrefixReservation;
     private int _coordinatePrefixCount;
     private int _asciiPrefixEnd;
@@ -621,23 +621,15 @@ internal partial struct PythonReScalarMatchState
         return false;
     }
 
-    internal PythonReGroupData SnapshotValueData(ReadOnlySpan<byte> input)
+    internal PythonReGroupData SnapshotValueData()
     {
         Checkpoint();
         var start = StartOffsetInBytes;
         var end = EndOffsetInBytes;
-        // Bulk values reuse coordinates already requested by their collection.
-        // A one-shot value keeps its allocation-free prefix/range counting.
-        var indexed = _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount;
-        var startUtf16 = end <= _asciiPrefixEnd ? start : indexed ? CoordinateOffset(input, start).Utf16
-            : Utf8SliceBufferWork.CountValidUtf16(input[..start], ref _invocation);
-        var endUtf16 = end <= _asciiPrefixEnd ? end : indexed ? CoordinateOffset(input, end).Utf16
-            : startUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[start..end], ref _invocation);
         var value = new PythonReGroupData
         {
             Number = 0, Success = true,
             StartOffsetInBytes = start, EndOffsetInBytes = end,
-            StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
         };
         Checkpoint();
         return value;
@@ -654,10 +646,9 @@ internal partial struct PythonReScalarMatchState
         return copied;
     }
 
-    internal PythonReGroupData[] SnapshotGroups(ReadOnlySpan<byte> input)
+    internal PythonReGroupData[] SnapshotGroups()
     {
         Checkpoint();
-        PrepareCaptureProjection(input);
         var groups = AllocateResultArray<PythonReGroupData>(_program.GroupCount + 1);
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
@@ -668,8 +659,6 @@ internal partial struct PythonReScalarMatchState
                 {
                     Number = pythonGroup, Success = true,
                     StartOffsetInBytes = start, EndOffsetInBytes = end,
-                    StartOffsetInUtf16 = CoordinateOffset(input, start).Utf16,
-                    EndOffsetInUtf16 = CoordinateOffset(input, end).Utf16,
                 };
         }
         Checkpoint();
@@ -732,7 +721,6 @@ internal partial struct PythonReScalarMatchState
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
         var lastIndex = GetLastIndex();
-        PrepareCaptureProjection(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
         // still use SnapshotGroups; no temporary range array is needed here.
         var projected = AllocateResultArray<Utf8PythonGroupMatchData>(_program.GroupCount + 1);
@@ -744,23 +732,17 @@ internal partial struct PythonReScalarMatchState
                 projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
                 continue;
             }
-            // Equal ranges already share owned immutable text. Reuse their
-            // completed coordinates too, with an independent numbered slot.
+            // Equal ranges share owned immutable text with independent numbers.
             if (i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes)
             {
                 projected[i] = projected[0] with { Number = i };
                 continue;
             }
-            var startInUtf16 = CoordinateOffset(input, start).Utf16;
-            var endInUtf16 = CoordinateOffset(input, end).Utf16;
             projected[i] = new Utf8PythonGroupMatchData
             {
                 Number = i, Success = true,
                 StartOffsetInBytes = start, EndOffsetInBytes = end,
-                StartOffsetInUtf16 = startInUtf16,
-                EndOffsetInUtf16 = endInUtf16,
-                HasContiguousByteRange = true,
-                ValueText = GetText(input, start, end, endInUtf16 - startInUtf16),
+                ValueText = GetText(input, start, end),
             };
         }
         var copiedNames = SnapshotNameEntries(names);
@@ -769,22 +751,11 @@ internal partial struct PythonReScalarMatchState
         return result;
     }
 
-    internal string GetText(ReadOnlySpan<byte> input, int start, int end, int? characterCount)
+    internal string GetText(ReadOnlySpan<byte> input, int start, int end)
     {
         Checkpoint();
-        // String-only results need the selected scalar range's char count,
-        // not a coordinate map for the complete subject. Detailed results
-        // already project coordinates and can supply their character count.
-        // The caller's valid-text contract proves these scalar ranges.
-        // Reuse facts already requested by coordinates or matching. Creating
-        // one string must not describe an unrelated, possibly enormous suffix.
-        int? count = characterCount ?? (end <= _asciiPrefixEnd ? end - start
-            : _coordinatePrefixes is not null && end / CoordinatePrefixBlockBytes < _coordinatePrefixCount
-            ? CoordinateOffset(input, end).Utf16 - CoordinateOffset(input, start).Utf16
-            : (int?)null);
-        // The decoder checks completion under this invocation. Keep the entry
-        // check above so interruption still precedes result/storage admission.
-        return _results.DecodeUtf8(input[start..end], count, ref _invocation);
+        // Only selected string content needs sizing/admission, never its prefix.
+        return _results.DecodeUtf8(input[start..end], null, ref _invocation);
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)

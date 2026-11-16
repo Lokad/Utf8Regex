@@ -30,7 +30,6 @@ public sealed class PythonRePrefixOverlapTests
         Assert.Equal(expectedStart >= 0, match.Success);
         if (expectedStart >= 0)
         {
-            Assert.Equal(expectedStart, match.StartOffsetInUtf16);
         }
     }
 

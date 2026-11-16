@@ -34,8 +34,6 @@ public sealed class PythonReBulkDeadlineEntryTests
         using var steadyClock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
         var detailed = regex.FindAll(input, 7);
         Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => x.ValueText));
-        Assert.Equal(new[] { (7, 10, 4, 7), (11, 16, 8, 13), (17, 20, 14, 17) }, detailed.Select(x =>
-            (x.StartOffsetInBytes, x.EndOffsetInBytes, x.StartOffsetInUtf16, x.EndOffsetInUtf16)));
         var retained = Run(regex, input, 7, operation);
         long reads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000))

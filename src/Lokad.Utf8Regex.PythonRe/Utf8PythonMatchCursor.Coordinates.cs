@@ -6,7 +6,7 @@ public sealed partial class Utf8PythonMatchCursor
 {
     /// <summary>Gets the current numbered capture's zero-based Unicode-scalar start/end positions.</summary>
     /// <returns>True for a participating capture, including empty; false with both positions -1 for an absent or unmatched group.</returns>
-    /// <remarks>Works after either detailed or range-only advances. Byte coordinates keep their existing meanings. Distant mixed UTF-8 coordinates lazily extend a working index shared with UTF-16 projection through queried positions; first-block queries and byte-only iteration do not acquire it. Returned integers remain valid after advance/disposal. The optional token applies only to this call alongside the creation token and original deadline. Projection failure faults the cursor and releases its scratch synchronously.</remarks>
+    /// <remarks>Works after either detailed or range-only advances. Byte coordinates keep their existing meanings. Distant mixed UTF-8 coordinates lazily extend a working index through queried positions; first-block queries and byte-only iteration do not acquire it. Returned integers remain valid after advance/disposal. The optional token applies only to this call alongside the creation token and original deadline. Projection failure faults the cursor and releases its scratch synchronously.</remarks>
     /// <exception cref="InvalidOperationException">The cursor is not positioned on a match or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor is disposed.</exception>
     /// <exception cref="OperationCanceledException">The creation or current-call token is canceled; the original caller token is preserved.</exception>

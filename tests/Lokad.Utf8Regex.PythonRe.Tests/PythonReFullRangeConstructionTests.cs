@@ -58,7 +58,6 @@ public sealed class PythonReFullRangeConstructionTests
         Assert.Equal(new[] { "é", "😀", "\n" }, matches.Select(match => match.Groups[1].ValueText));
         Assert.Equal(new[] { 0, 2, 6 }, matches.Select(match => match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { 2, 6, 7 }, matches.Select(match => match.Value.EndOffsetInBytes));
-        Assert.Equal(new[] { 0, 1, 3 }, matches.Select(match => match.Value.StartOffsetInUtf16));
         Assert.All(matches, match => Assert.Equal(1, match.LastIndex));
         Assert.False(Utf8ConstructionScope.IsActive);
     }

@@ -36,7 +36,8 @@ Search, Match and FullMatch expose value, detailed, string and UTF-8 forms.
 `FindAllToUtf8` provide Python-shaped scalar/tuple outputs; `FindAll` is the
 structural full-match collector. Split and template/callback replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
-coordinates; derived UTF-16 coordinates do not define matching width.
+coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
+positions require an explicit cursor query.
 
 `Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans as well as
 text templates. Native preparation/cache keys and literal/capture output remain
@@ -99,11 +100,11 @@ Use `cursor.MoveNext(out Utf8PythonRangeMatch match)` for capture byte ranges
 without captured strings or a whole-subject coordinate map. Range metadata stays
 valid after advances/disposal; byte memory remains borrowed and must stay unchanged
 with its manager alive. A range advance clears the text-based `Current`.
-Detailed results and scalar queries share a lazy coordinate index through requested
-captures, including lookarounds. They do not prepare an unused suffix. The index
+Only explicit scalar queries prepare a lazy scalar index through requested
+captures, including lookarounds. Byte and text results prepare no absolute
+coordinates. The index
 uses admitted working storage and is refunded synchronously; published arrays and
-strings retain their separate result charges. Distant scalar-only queries now store
-both scalar and UTF-16 prefix counts, so their working requirements can increase;
+strings retain their separate result charges. The index stores only scalar counts;
 short and ASCII-only projections need no index allocation.
 `SplitRanges` provides ordinary segments and captured separators as byte ranges,
 including unmatched captures, without decoding or copying their text. These paths
@@ -210,11 +211,16 @@ callback capture checks and digests run in a separate untimed verification pass.
 Earlier instrumented callback ratios are not bare replacement-throughput claims.
 
 The canonical comparison uses preexisting valid text on both sides. Value rows
-include byte/UTF-16 range projection; detailed and structural rows include their
+include byte-range projection; detailed and structural rows include their
 requested ranges, captures and text. CPython performs that conversion within
 each timed operation, sharing work across bulk results. These are public-output
 costs, rather than bare `re.Match` discovery timings. Boolean, count, string,
 callback and split rows keep their existing timing contract.
+
+The frozen tables below predate the byte-only result contract and include the
+former UTF-16 output costs. They remain historical until the next coherent refresh.
+Current .NET/CPython preflights compare byte-only outputs and use the versioned
+byte-range digest; they do not requalify those older measurements.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;

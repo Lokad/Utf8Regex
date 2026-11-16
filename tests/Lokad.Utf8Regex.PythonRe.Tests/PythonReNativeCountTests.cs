@@ -58,7 +58,7 @@ public sealed class PythonReNativeCountTests
         Assert.Equal("a", matches[0].Groups[1].ValueText);
         Assert.Equal("b", matches[0].Groups[2].ValueText);
         Assert.Equal(2, matches[0].LastIndex); Assert.Null(matches[0].LastGroup);
-        Assert.Equal((6, 3), (matches[0].Value.StartOffsetInBytes, matches[0].Value.StartOffsetInUtf16));
+        Assert.Equal(6,matches[0].Value.StartOffsetInBytes);
         var tuples = regex.FindAllToUtf8(input).TupleValues;
         Assert.Equal("a"u8.ToArray(), tuples[0][0]); Assert.Equal("b"u8.ToArray(), tuples[0][1]);
         var generic = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,

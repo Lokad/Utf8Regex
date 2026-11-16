@@ -133,7 +133,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var matches = captured.FindIterDetailed(input);
         Assert.Equal(new[] { "cat", "cow" }, matches.Select(match => match.Groups[1].ValueText));
         Assert.Equal("cat", retained.Groups[1].ValueText);
-        Assert.Equal((6, 3), (retained.Value.StartOffsetInBytes, retained.Value.StartOffsetInUtf16));
+        Assert.Equal(6,retained.Value.StartOffsetInBytes);
     }
     [Fact]
     public void NinthAlternativeStillUsesAdmittedScalarExecution()

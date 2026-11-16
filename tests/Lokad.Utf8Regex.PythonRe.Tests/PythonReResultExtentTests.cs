@@ -26,7 +26,7 @@ public sealed class PythonReResultExtentTests
         try
         {
             Assert.True(cursor.MoveNext());
-            cursor.PrepareValueProjection();
+
             var baseline = cursor.ReservedBytes;
             result = cursor.SnapshotDetailed(names);
             var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257)
@@ -61,7 +61,7 @@ public sealed class PythonReResultExtentTests
             var count = 0;
             do
             {
-                cursor.PrepareValueProjection();
+
                 var positioned = cursor.ReservedBytes;
                 var marker = cursor.ResultReservation;
                 var groups = cursor.SnapshotGroups();
@@ -98,7 +98,7 @@ public sealed class PythonReResultExtentTests
             null, "(.+)", new(new(0, 0, 1UL << 20), timeout, token.Token));
         try
         {
-            Assert.True(cursor.MoveNext()); cursor.PrepareValueProjection();
+            Assert.True(cursor.MoveNext());
             var baseline = cursor.ReservedBytes;
             ref var invocation = ref cursor.WorkingInvocation;
             while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());

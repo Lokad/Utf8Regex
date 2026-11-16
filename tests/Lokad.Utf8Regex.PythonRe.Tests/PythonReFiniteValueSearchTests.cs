@@ -11,13 +11,13 @@ public sealed class PythonReFiniteValueSearchTests
     { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
-    [InlineData("needle", "π😀needle!", 6, 3)]
-    [InlineData("Шерлок", "π😀Шерлок!", 6, 3)]
-    [InlineData("needle", "Ватсон", -1, -1)]
-    [InlineData("Шерлок", "Ватсон", -1, -1)]
-    [InlineData("", "π😀", 0, 0)]
-    [InlineData("", "", 0, 0)]
-    public void ExactLiteralSearchKeepsCoordinatesUnderTinyStorageAndLiveToken(string pattern, string text, int start, int utf16)
+    [InlineData("needle","π😀needle!",6)]
+    [InlineData("Шерлок","π😀Шерлок!",6)]
+    [InlineData("needle","Ватсон",-1)]
+    [InlineData("Шерлок","Ватсон",-1)]
+    [InlineData("","π😀",0)]
+    [InlineData("","",0)]
+    public void ExactLiteralSearchKeepsCoordinatesUnderTinyStorageAndLiveToken(string pattern,string text,int start)
     {
         var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, Policy);
         using var token = new CancellationTokenSource();
@@ -27,7 +27,6 @@ public sealed class PythonReFiniteValueSearchTests
         if (start >= 0)
         {
             Assert.Equal((start, start + Encoding.UTF8.GetByteCount(pattern)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.Equal((utf16, utf16 + pattern.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
             Assert.False(regex.Search("other"u8, 0, token.Token).Success && pattern.Length != 0);
             Assert.Equal(pattern, match.GetValueString());
         }
@@ -122,8 +121,6 @@ public sealed class PythonReFiniteValueSearchTests
             Assert.True(match.Success);
             Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
                 (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.Equal((prefix.Length, prefix.Length + pattern.Length),
-                (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
             Assert.False(owner.Search("absent"u8).Success);
             Assert.Equal(pattern, match.GetValueString());
         }
