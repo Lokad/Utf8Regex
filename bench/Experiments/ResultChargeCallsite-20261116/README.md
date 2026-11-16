@@ -52,5 +52,6 @@ without confirmation, new helpers or another inlining campaign.
 
 Original Windows/VM worker/collector terminal0; raw verified offVM. Artifacts:
 artifacts/experiments/result-charge-callsite-20261116/.
+Source commit dfac6581 CI43823910670 is GREEN on Windows/Linux; saved/closed.
 Raw SHA25653A1F9B498C94878F43235AC18E5786D6A79F754BD068CBFE1D18C9B4851D3E2;
 validationCB1FE505E6CA46B218CF5F40AA5C80405610D988E5F1DF271BF98A6F365FE796.

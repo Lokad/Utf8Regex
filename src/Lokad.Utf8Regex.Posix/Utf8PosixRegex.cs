@@ -204,11 +204,11 @@ public sealed class Utf8PosixRegex
             {
                 // A known ending coordinate needs only the selected content,
                 // including zero bytes for an empty capture at the whole end.
-                var length = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
+                var length = Utf8SliceBufferWork.CountValidUtf16(input[from..to], ref invocation);
                 return new(true, true, originUtf16 - length, length, from, to - from);
             }
-            var prefix = originUtf16 + Utf8SliceBufferWork.CountUtf16(input[originByte..from], ref invocation);
-            var content = Utf8SliceBufferWork.CountUtf16(input[from..to], ref invocation);
+            var prefix = originUtf16 + Utf8SliceBufferWork.CountValidUtf16(input[originByte..from], ref invocation);
+            var content = Utf8SliceBufferWork.CountValidUtf16(input[from..to], ref invocation);
             return new(true, true, prefix, content, from, to - from);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&

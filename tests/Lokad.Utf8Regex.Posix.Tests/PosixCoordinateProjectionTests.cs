@@ -181,6 +181,45 @@ public sealed class PosixCoordinateProjectionTests
         }
     }
 
+    [Theory]
+    [InlineData("a")]
+    [InlineData("é")]
+    [InlineData("中")]
+    [InlineData("😀")]
+    public void LongSuffixCaptureKeepsCoordinatesForBorrowedScalarRanges(string scalar)
+    {
+        var prefix = new string('p', 4091) + "中😀";
+        var content = string.Concat(Enumerable.Repeat(scalar, 4097));
+        var text = prefix + "Z" + content;
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = Enumerable.Repeat((byte)255, bytes.Length + 12).ToArray();
+        bytes.CopyTo(storage, 5);
+        var input = storage.AsMemory(5, bytes.Length);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var whole = Value(floor, bytes.Length - floor, prefix.Length, content.Length + 1);
+        var expected = new[] { whole,
+            Value(floor + 1, bytes.Length - floor - 1, prefix.Length + 1, content.Length),
+            Value(bytes.Length, 0, text.Length, 0) };
+        foreach (var finite in new[] { false, true })
+        {
+            var regex = new Utf8PosixRegex("Z(" + scalar + "+)()", resourcePolicy: finite
+                ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 32768, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 }
+                : default);
+            var output = new Utf8ValueMatch[3];
+            Assert.Equal(whole, regex.Match(input.Span, output, floor));
+            Assert.Equal(expected, output);
+            using var cursor = regex.CreateMatchCursor(input, floor);
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(output, out var selected));
+            Assert.Equal(whole, selected);
+            Assert.Equal(expected, output);
+            var retained = output.ToArray();
+            Assert.False(alias.MoveNext(output, out _));
+            Assert.All(output, value => Assert.False(value.Success));
+            Assert.Equal(expected, retained);
+        }
+    }
+
     private static Utf8ValueMatch Value(int bytes,int byteLength,int utf16,int utf16Length)
         => new(true,true,utf16,utf16Length,bytes,byteLength);
 }
