@@ -42,15 +42,25 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
-Only a completed full VM refresh establishes the 60-minute target. The earlier
-47-minute run predates this catalog; the enlarged full pipeline has not yet been
-timed. Keep experiments selective and bounded, reuse matching binaries and build
+The initial VM generality phase took 609.9 seconds: 120 rows, 816 lanes, and no
+sample below 20 ms. It used source `cf12bac0`, .NET 11 and the existing affinity
+policy. The retained raw data is under
+`artifacts/benchmark-refresh/generality-vm-20261116/`. Only a completed full VM
+refresh establishes the 60-minute target. The earlier 47-minute run predates this
+catalog; the enlarged full pipeline has not yet been timed. Keep experiments
+selective and bounded, reuse matching binaries and build
 servers, and compare equal public outputs. Use one ordinary producer per process
 for before/after comparisons. Kernel attribution is not a public speedup.
 
 Comparator scope matters: Python uses a long-lived official CPython worker over
-`str`. PCRE.NET is a benchmark-only PCRE2 comparator. Its interpreted and future
-JIT lanes must be labeled separately. The historical POSIX comparator is PCRE2's
+`str`. PCRE.NET is a benchmark-only PCRE2 comparator. The existing focused
+`--measure-pcre2-case <id> 1 3` command also compares explicitly labeled native
+interpreted and JIT lanes for IsMatch and Count. It verifies actual JIT compilation
+and equal results, uses native `NO_UTF_CHECK` and managed `AssumeValid`, and
+reports token/finite/deadline costs separately. The legacy snapshots still use
+their original interpreted comparator; this does not refresh or qualify them.
+JIT catalog coverage and adapter generality catalogs remain pending.
+The historical POSIX comparator is PCRE2's
 ordered NFA, not a leftmost-longest POSIX reference; use it only for verified
 overlap. Native interop floors and tiny subjects do not establish haystack parity.
 

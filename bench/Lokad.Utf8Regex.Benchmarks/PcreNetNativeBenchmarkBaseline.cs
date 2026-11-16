@@ -22,12 +22,15 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     private readonly byte[] _input;
     private readonly PcreRegexUtf8 _regex;
     private readonly PcreMatchBuffer8Bit _matchBuffer;
+    private readonly PcreMatchOptions _matchOptions;
 
     internal PcreNetNativeBenchmarkBaseline(
         Utf8Pcre2BenchmarkCase benchmarkCase,
-        PcreOptions additionalOptions = PcreOptions.None)
+        PcreOptions additionalOptions = PcreOptions.None,
+        PcreMatchOptions matchOptions = PcreMatchOptions.None)
     {
         _input = System.Text.Encoding.UTF8.GetBytes(benchmarkCase.Input);
+        _matchOptions = matchOptions;
         var settings = new PcreRegexSettings
         {
             Options = ToPcreNetOptions(benchmarkCase) | additionalOptions,
@@ -181,7 +184,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         Utf8Pcre2BenchmarkOperation operation,
         PcreMatchBuffer8Bit matchBuffer) => operation switch
     {
-        Utf8Pcre2BenchmarkOperation.IsMatch => matchBuffer.IsMatch(_input) ? 1 : 0,
+        Utf8Pcre2BenchmarkOperation.IsMatch => IsMatch(matchBuffer) ? 1 : 0,
         Utf8Pcre2BenchmarkOperation.Count => CountMatches(matchBuffer),
         Utf8Pcre2BenchmarkOperation.EnumerateMatches => ComputeRangeSink(matchBuffer, int.MaxValue),
         Utf8Pcre2BenchmarkOperation.MatchMany => ComputeRangeSink(matchBuffer, 8),
@@ -197,7 +200,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         switch (operation)
         {
             case Utf8Pcre2BenchmarkOperation.IsMatch:
-                return checksum.Complete(matchBuffer.IsMatch(_input) ? 1 : 0, false);
+                return checksum.Complete(IsMatch(matchBuffer) ? 1 : 0, false);
             case Utf8Pcre2BenchmarkOperation.Count:
                 return checksum.Complete(CountMatches(matchBuffer), false);
             case Utf8Pcre2BenchmarkOperation.EnumerateMatches:
@@ -214,7 +217,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     {
         var checksum = new Pcre2BenchmarkChecksumBuilder(Utf8Pcre2BenchmarkOperation.EnumerateMatches);
         var enumeratedCount = 0;
-        foreach (var match in _matchBuffer.Matches(_input))
+        foreach (var match in _matchBuffer.Matches(_input, 0, _matchOptions, null))
         {
             checksum.AddRange(match.Index, match.Length);
             enumeratedCount++;
@@ -238,10 +241,13 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         GC.KeepAlive(_regex);
     }
 
+    private bool IsMatch(PcreMatchBuffer8Bit buffer) => _matchOptions == PcreMatchOptions.None
+        ? buffer.IsMatch(_input) : buffer.Match(_input, _matchOptions).Success;
+
     private int CountMatches(PcreMatchBuffer8Bit matchBuffer)
     {
         var count = 0;
-        foreach (var _ in matchBuffer.Matches(_input))
+        foreach (var _ in matchBuffer.Matches(_input, 0, _matchOptions, null))
         {
             count++;
         }
@@ -254,7 +260,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         var written = 0;
         var sink = 0;
         var isMore = false;
-        foreach (var match in matchBuffer.Matches(_input))
+        foreach (var match in matchBuffer.Matches(_input, 0, _matchOptions, null))
         {
             if (written == limit)
             {
@@ -276,7 +282,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     {
         var written = 0;
         var isMore = false;
-        foreach (var match in matchBuffer.Matches(_input))
+        foreach (var match in matchBuffer.Matches(_input, 0, _matchOptions, null))
         {
             if (written == limit)
             {

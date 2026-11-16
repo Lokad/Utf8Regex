@@ -460,7 +460,49 @@ internal static partial class BenchmarkInspectReporter
             Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
         }
 
+        MeasurePcre2TrustedNativeModes(benchmarkCase, samples);
         return 0;
+    }
+
+    private static void MeasurePcre2TrustedNativeModes(Utf8Pcre2BenchmarkCase row, int samples)
+    {
+        if ((row.SupportedOperations & (Utf8Pcre2BenchmarkOperation.IsMatch | Utf8Pcre2BenchmarkOperation.Count)) == 0) return;
+        if (!PCRE.PcreBuildInfo.Jit)
+        { Console.WriteLine("Native JIT comparison excluded: this native build has no JIT support."); return; }
+        // Same caller-valid UTF-8 contract in all lanes; compilation is excluded.
+        // Keep the existing historical interpreted snapshots unchanged.
+        using var native = new PcreNetNativeBenchmarkBaseline(row, matchOptions: PCRE.PcreMatchOptions.NoUtfCheck);
+        using var jit = new PcreNetNativeBenchmarkBaseline(row, PCRE.PcreOptions.Compiled, PCRE.PcreMatchOptions.NoUtfCheck);
+        var plan = jit.CapturePlanFingerprint();
+        if (!plan.IsJitCompiled)
+        { Console.WriteLine("Native JIT comparison excluded: this pattern was not JIT-compiled."); return; }
+        var input = Encoding.UTF8.GetBytes(row.Input);
+        var options = Utf8Pcre2BenchmarkCatalog.ToPcre2Options(row.Options);
+        var trusted = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, default,
+            Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
+        var finite = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, new() {
+            MaxWorkSteps = 50_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 },
+            TimeSpan.FromSeconds(10), Utf8InputValidation.AssumeValid);
+        using var cancellation = new CancellationTokenSource();
+        Console.WriteLine($"TrustedNativeModes: native PCRE2 {PcreNetNativeBenchmarkBaseline.NativePcre2Version}; UTF + NO_UTF_CHECK; JIT size={plan.JitSizeBytes}; managed AssumeValid");
+        foreach (var operation in new[] { Utf8Pcre2BenchmarkOperation.IsMatch, Utf8Pcre2BenchmarkOperation.Count })
+        {
+            if ((row.SupportedOperations & operation) == 0) continue;
+            var expected = ComputePcre2ManagedResultChecksum(trusted, input, operation);
+            if (native.ComputeChecksum(operation) != expected || jit.ComputeChecksum(operation) != expected)
+            { Console.WriteLine($"Trusted native modes excluded: {row.Id}/{operation} returns different results."); continue; }
+            int Managed(Utf8Pcre2Regex regex, CancellationToken token) => operation == Utf8Pcre2BenchmarkOperation.IsMatch
+                ? regex.IsMatch(input, 0, Pcre2MatchOptions.None, token) ? 1 : 0
+                : regex.Count(input, 0, Pcre2MatchOptions.None, token);
+            string[] names = ["ManagedTrusted", "ManagedToken", "ManagedFiniteTokenDeadline", "NativeInterpretedTrusted", "NativeJitTrusted"];
+            Func<int>[] actions = [() => Managed(trusted, default), () => Managed(trusted, cancellation.Token),
+                () => Managed(finite, cancellation.Token), () => native.Execute(operation), () => jit.Execute(operation)];
+            var result = MeasureComparisonLanes(1, 1_000_000, Math.Max(3, samples), actions, names);
+            for (var i = 0; i < names.Length; i++)
+                Console.WriteLine($"{operation}/{names[i]}: {result.Medians[i]:F3} us/op; {result.AllocatedBytes[i]:F0} B/op; samples=" +
+                    string.Join(",", result.RawSamples[i].Select(us => us.ToString("F1", CultureInfo.InvariantCulture))) +
+                    $" us total; iterations={result.Iterations[i]}; qualified={result.RawSamples[i].All(us => us >= 20_000)}");
+        }
     }
 
     public static int RunMeasureUtf8Pcre2CompatibleCase(string caseId, string? iterationsText, string? samplesText)
