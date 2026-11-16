@@ -76,7 +76,7 @@ public sealed class Utf8ControlledRequiredLiteralTests
     {
         var regex = new Utf8Regex("(?<=foo)bar", RegexOptions.CultureInvariant,
             Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 10000 });
-        Assert.True(regex.IsMatchFromUtf16Offset("éfoobar"u8, 4));
+        Assert.True(regex.Match("éfoobar"u8, 5, []).Success);
         Assert.Equal(1, regex.CountFromUtf16Offset("éfoobar"u8, 4));
     }
 

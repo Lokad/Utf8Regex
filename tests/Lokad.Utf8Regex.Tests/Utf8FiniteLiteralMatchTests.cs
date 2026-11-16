@@ -167,10 +167,10 @@ public sealed class Utf8FiniteLiteralMatchTests
             var actual = regex.MatchFromUtf16Offset(input, offset, source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success) AssertRange(actual, text, expected.Index, expected.Length);
-            Assert.Equal(expected.Success, regex.IsMatchFromUtf16Offset(input, offset, source.Token));
+            Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)), [], source.Token).Success);
         }
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 3, []).Success);
         var detailed = regex.MatchDetailed(input, source.Token);
         Assert.Equal("nee", detailed.GetGroup(1).GetValueString());
         Assert.Equal("dle", detailed.GetGroup("suffix").GetValueString());
@@ -186,7 +186,10 @@ public sealed class Utf8FiniteLiteralMatchTests
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchDetailed(input)).ResourceKind);
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchFromUtf16Offset(input, 0)).ResourceKind);
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatchFromUtf16Offset(input, 0)).ResourceKind);
+            if (working)
+                Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 0, []).Success).ResourceKind);
+            else
+                Assert.True(limited.Match(input, 0, []).Success); // Caller-owned output creates no result-storage payload.
         }
     }
 

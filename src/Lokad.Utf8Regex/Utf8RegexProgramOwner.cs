@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Owns caller-funded Core compilation, existence/count calls and persistent range cursors.</summary>
+/// <summary>Owns caller-funded Core compilation, matching calls and persistent range cursors.</summary>
 /// <remarks>Dispose closes new operations and refunds compilation after active calls finish. The underlying expression stays private. Temporary matching storage uses the program allowance unless a separate working allowance is supplied. Borrowed input and fixed invocation metadata remain outside modeled storage.</remarks>
 public sealed class Utf8RegexProgramOwner : IDisposable
 {
@@ -26,6 +26,15 @@ public sealed class Utf8RegexProgramOwner : IDisposable
             using var use = _storage.Enter();
             return regex.CaptureGroupCount;
         }
+    }
+
+    /// <inheritdoc cref="Utf8Regex.GroupNumberFromCaptureSlot" />
+    /// <remarks>Retains program admission during this allocation-free metadata lookup and rejects access after close.</remarks>
+    public int GroupNumberFromCaptureSlot(int captureSlot)
+    {
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.GroupNumberFromCaptureSlot(captureSlot);
     }
 
     /// <inheritdoc cref="Utf8Regex.GroupNumberFromUtf8Name" />
@@ -58,6 +67,19 @@ public sealed class Utf8RegexProgramOwner : IDisposable
         var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
         using var use = _storage.Enter();
         return regex.IsMatch(input, cancellationToken, workingMemoryAllowance ?? _storage.Allowance);
+    }
+
+    /// <summary>Finds a match into caller-owned byte capture slots with funded temporary storage.</summary>
+    /// <remarks>Slots follow Core group-number order including zero. Null working allowance uses program funding; entry cancellation or a closed owner leaves output unchanged. Returned ranges remain valid after owner disposal.</remarks>
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        Span<Utf8CaptureRange> captures, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null, int? endOffsetInBytes = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.Match(input, startOffsetInBytes, captures, cancellationToken,
+            workingMemoryAllowance ?? _storage.Allowance, endOffsetInBytes);
     }
 
     /// <summary>Counts matches with caller-funded temporary storage.</summary>

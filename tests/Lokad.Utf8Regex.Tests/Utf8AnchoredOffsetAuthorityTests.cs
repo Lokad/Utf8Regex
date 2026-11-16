@@ -67,7 +67,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         var expected = start >= 0;
-        Assert.Equal(expected, regex.IsMatchFromUtf16Offset(input, floor, source.Token));
+        Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor)), [], source.Token).Success);
         Assert.Equal(expected ? 1 : 0, regex.CountFromUtf16Offset(input, floor, source.Token));
         var value = regex.MatchFromUtf16Offset(input, floor, source.Token);
         var detailed = regex.MatchDetailedFromUtf16Offset(input, floor, source.Token);
@@ -141,7 +141,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
     private static bool Run(Utf8Regex regex, byte[] input, int operation, CancellationToken token)
         => operation switch
         {
-            0 => regex.IsMatchFromUtf16Offset(input, 0, token),
+            0 => regex.Match(input, 0, [], token).Success,
             1 => regex.MatchFromUtf16Offset(input, 0, token).Success,
             2 => regex.MatchDetailedFromUtf16Offset(input, 0, token).Success,
             _ => regex.CountFromUtf16Offset(input, 0, token) == 1,

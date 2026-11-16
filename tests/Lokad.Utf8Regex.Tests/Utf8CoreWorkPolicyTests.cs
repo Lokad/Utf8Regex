@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreWorkPolicyTests
 {
-    private static readonly string[] Operations = ["is", "count", "match", "detail", "is-offset", "count-offset",
+    private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match", "count-offset",
         "match-offset", "detail-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "replace-text", "destination", "destination-bytes", "callback-bytes", "callback-text"];
 
@@ -334,7 +334,7 @@ public sealed class Utf8CoreWorkPolicyTests
             case "count": return (live ? regex.Count(input, token) : regex.Count(input)).ToString();
             case "match": return Range(live ? regex.Match(input, token) : regex.Match(input));
             case "detail": return Detail(live ? regex.MatchDetailed(input, token) : regex.MatchDetailed(input));
-            case "is-offset": return (live ? regex.IsMatchFromUtf16Offset(input, offset, token) : regex.IsMatchFromUtf16Offset(input, offset)).ToString();
+            case "slot-match": return (live ? regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), [], token).Success : regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), []).Success).ToString();
             case "count-offset": return (live ? regex.CountFromUtf16Offset(input, offset, token) : regex.CountFromUtf16Offset(input, offset)).ToString();
             case "match-offset": return Range(live ? regex.MatchFromUtf16Offset(input, offset, token) : regex.MatchFromUtf16Offset(input, offset));
             case "detail-offset": return Detail(live ? regex.MatchDetailedFromUtf16Offset(input, offset, token) : regex.MatchDetailedFromUtf16Offset(input, offset));

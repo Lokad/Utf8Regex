@@ -582,7 +582,7 @@ public sealed class LazyFallbackConstructionTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-        Assert.Equal(oracle.IsMatch(inputText, offset), regex.IsMatchFromUtf16Offset(input, offset));
+        Assert.Equal(oracle.IsMatch(inputText, offset), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         Assert.Equal(oracle.Matches(inputText, offset).Count, regex.CountFromUtf16Offset(input, offset));
 
         var expected = oracle.Match(inputText, offset);

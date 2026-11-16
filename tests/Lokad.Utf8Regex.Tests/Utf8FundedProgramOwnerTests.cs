@@ -15,6 +15,34 @@ public sealed class Utf8FundedProgramOwnerTests
             options, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, token, account);
 
     [Fact]
+    public void CallerCaptureSlotsKeepSparseNumbersAndSurviveOwnerDisposal()
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var owner = Compile(@"(?<=é)(?<10>a)+(?<2>b)?", programs, policy: new() { MaxResultBytes = 1 });
+        Assert.Equal(2, owner.CaptureGroupCount);
+        Assert.Equal(new[] { 0, 2, 10 }, Enumerable.Range(0, 3).Select(owner.GroupNumberFromCaptureSlot));
+        var regex = new Utf8Regex(@"(?<=é)(?<10>a)+(?<2>b)?");
+        Assert.Equal(regex.GetGroupNumbers(), Enumerable.Range(0, 3).Select(regex.GroupNumberFromCaptureSlot));
+        Assert.Throws<ArgumentOutOfRangeException>(() => owner.GroupNumberFromCaptureSlot(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.GroupNumberFromCaptureSlot(3));
+        var output = new Utf8CaptureRange[3];
+        var result = owner.Match("éaaabx"u8, 2, output, workingMemoryAllowance: working, endOffsetInBytes: 6);
+        Assert.Equal((2, 6), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((5, 6), (output[1].StartOffsetInBytes, output[1].EndOffsetInBytes));
+        Assert.Equal((4, 5), (output[2].StartOffsetInBytes, output[2].EndOffsetInBytes));
+        Assert.Equal(0UL, working.Used);
+        var held = programs.Used;
+        Assert.Equal(result, owner.Match("éaaabx"u8, 2, output, endOffsetInBytes: 6));
+        Assert.Equal(held, programs.Used);
+        owner.Dispose();
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(result, output[0]);
+        Assert.Throws<ObjectDisposedException>(() => owner.Match("éaaabx"u8, 2, output));
+        Assert.Throws<ObjectDisposedException>(() => owner.GroupNumberFromCaptureSlot(0));
+        Assert.Equal(result, output[0]);
+    }
+
+    [Fact]
     public void SeparateProgramAndWorkingChildrenShareOneRootAndRefundDeterministically()
     {
         var root = new SharedRoot(); var programAccount = new Account(root); var working = new Account(root);

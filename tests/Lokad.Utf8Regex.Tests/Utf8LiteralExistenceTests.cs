@@ -33,9 +33,9 @@ public sealed class Utf8LiteralExistenceTests
         }
         var suffix = new Utf8Regex(".*(ss)", options);
         Assert.Equal(1, suffix.Count("ssxxss"u8));
-        Assert.False(suffix.IsMatchFromUtf16Offset("éss😀x"u8, 3));
-        Assert.True(suffix.IsMatchFromUtf16Offset("éss😀xss"u8, 3));
-        Assert.Throws<ArgumentOutOfRangeException>(() => suffix.IsMatchFromUtf16Offset("😀ss"u8, 1));
+        Assert.False(suffix.Match("éss😀x"u8, 4, []).Success);
+        Assert.True(suffix.Match("éss😀xss"u8, 4, []).Success);
+        Assert.Throws<ArgumentOutOfRangeException>(() => suffix.Match("😀ss"u8, 1, []).Success);
     }
 
     [Fact]

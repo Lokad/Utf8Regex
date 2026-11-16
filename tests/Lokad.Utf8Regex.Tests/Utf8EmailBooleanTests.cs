@@ -98,8 +98,8 @@ public sealed class Utf8EmailBooleanTests
         var retained = regex.MatchDetailed(input);
         Assert.Equal("a_b", retained.GetGroup(1).GetValueString());
         Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.IsMatchFromUtf16Offset(input, 0));
-        Assert.False(regex.IsMatchFromUtf16Offset(input, 1));
+        Assert.True(regex.Match(input, 0, []).Success);
+        Assert.False(regex.Match(input, 1, []).Success);
         Assert.Equal("a_b", retained.GetGroup(1).GetValueString());
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));

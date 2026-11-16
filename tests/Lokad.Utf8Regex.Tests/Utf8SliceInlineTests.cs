@@ -469,7 +469,7 @@ public sealed class Utf8SliceInlineOperationTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var found = regex.MatchFromUtf16Offset(input, startAt);
         Assert.Equal(expectedSuccess, found.Success);
-        Assert.Equal(oracle.IsMatch(inputText, startAt), regex.IsMatchFromUtf16Offset(input, startAt));
+        Assert.Equal(oracle.IsMatch(inputText, startAt), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []).Success);
         Assert.Equal(oracle.Matches(inputText, startAt).Count, regex.CountFromUtf16Offset(input, startAt));
         if (expectedSuccess)
         {

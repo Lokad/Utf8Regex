@@ -18,7 +18,7 @@ ReadOnlySpan<byte> input = "Order AB1234 is ready."u8;
 
 bool found = regex.IsMatch(input);              // true
 int count = regex.Count(input);                 // 1
-Utf8ValueMatch first = regex.Match(input);       // byte index 6, length 6
+Utf8CaptureRange first = regex.Match(input, 0, []); // bytes [6, 12)
 byte[] redacted = regex.Replace(input, "[order]");
 ```
 
@@ -26,6 +26,9 @@ Use `EnumerateMatches` to visit matches and `MatchDetailed` for groups and
 capture history. Match byte offsets and lengths can be used directly with UTF-8
 slices. `EnumerateMatches(input, startOffsetInBytes, cancellationToken)` searches
 from a scalar-aligned byte position while retaining full context for assertions.
+The byte-start `Match` can fill caller-owned `Utf8CaptureRange` slots; slot zero
+is the whole match and `GroupNumberFromCaptureSlot` resolves sparse group numbers.
+Use the persistent memory cursor when capture history is required.
 
 ## Choose a profile
 

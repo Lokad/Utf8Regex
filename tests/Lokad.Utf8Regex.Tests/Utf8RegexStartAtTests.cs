@@ -9,7 +9,7 @@ public sealed class Utf8RegexStartAtTests
     {
         var regex = new Utf8Regex(@"\Aabc", RegexOptions.CultureInvariant);
 
-        Assert.False(regex.IsMatchFromUtf16Offset("xxabc"u8, 2));
+        Assert.False(regex.Match("xxabc"u8, 2, []).Success);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class Utf8RegexStartAtTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset("abc"u8, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 4, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset("abc"u8, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset("abc"u8, 4));

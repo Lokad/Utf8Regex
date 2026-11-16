@@ -30,9 +30,39 @@ cancellationToken)` starts at a scalar-aligned byte position, retaining the orig
 subject for anchors, boundaries and lookbehind. Starts outside the subject or in a
 UTF-8 continuation byte throw `ArgumentOutOfRangeException` for `startOffsetInBytes`.
 The original token, deadline and cumulative limits apply through every advance.
-This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. The remaining
-one-shot `FromUtf16Offset` APIs and derived UTF-16 result coordinates have not yet
-been removed.
+This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. Offset
+existence uses `Match(input, startOffsetInBytes, captures, cancellationToken).Success`;
+`IsMatchFromUtf16Offset` is removed. The remaining Count/value/detailed UTF16-start
+APIs and derived UTF-16 result coordinates have not yet been removed.
+
+### Caller-owned capture slots
+
+The byte-start `Match` returns a `Utf8CaptureRange` and fills caller-owned slots
+with the last participating capture of each group. Slot zero is the whole match;
+`GroupNumberFromCaptureSlot` resolves each compact ordinal without allocating a
+metadata array. Sparse group numbers do not require sparse buffers. Empty or short
+buffers do not change matching or capture selection. Entries beyond the defined
+slots remain untouched. A nonparticipating group has a default range; a
+participating empty group has `Success == true` and equal start/end bytes.
+
+`endOffsetInBytes` optionally defines the matching end. It must be a scalar
+boundary at or beyond the start. Prefix context remains available, and all ranges
+refer to original bytes. End anchors and lookahead observe the bounded end.
+The instance input policy still covers the original whole input independently
+of this matching bound.
+
+This operation does not create coordinate maps, captured strings or capture-history
+snapshots. Use the memory cursor for capture history. Matching scratch is admitted
+before allocation against numeric and optional caller-owned working allowances,
+then refunded synchronously. Caller-owned output is outside engine-owned result
+storage, so a result-byte limit does not charge its existing capacity. Numerical
+work/storage needs can differ from the removed UTF16-start existence operation.
+
+No match or a failure after matching entry clears the defined output window.
+Pre-cancellation leaves it unchanged. Interrupted publication clears the whole
+defined window; extra caller entries remain untouched. `Utf8RegexProgramOwner`
+exposes the same operation while retaining program admission; a closed owner
+rejects entry without modifying output. Returned ranges need no producer lifetime.
 
 ## Input and pattern language
 

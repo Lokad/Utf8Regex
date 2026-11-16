@@ -31,9 +31,9 @@ public sealed class Utf8UriExistenceTests
         }
         Assert.False(regex.IsMatch("x://😀"u8));
         Assert.True(regex.IsMatch("𐐀://😀😀"u8));
-        Assert.True(regex.IsMatchFromUtf16Offset("😀x://ab"u8, 2));
-        Assert.False(regex.IsMatchFromUtf16Offset("😀x://ab"u8, 3));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset("😀x://ab"u8, 1));
+        Assert.True(regex.Match("😀x://ab"u8, 4, []).Success);
+        Assert.False(regex.Match("😀x://ab"u8, 5, []).Success);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀x://ab"u8, 1, []).Success);
     }
 
     [Fact]

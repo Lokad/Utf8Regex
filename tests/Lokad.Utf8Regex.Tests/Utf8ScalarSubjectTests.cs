@@ -279,7 +279,7 @@ public sealed class Utf8ScalarSubjectTests
     {
         var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("\U0001f600a");
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, 1));
@@ -351,7 +351,7 @@ public sealed class Utf8ScalarSubjectTests
             case "detailed": _ = regex.MatchDetailed(input, token); break;
             case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
             case "split": _ = regex.EnumerateSplits(input, token).MoveNext(); break;
-            case "offset-bool": _ = regex.IsMatchFromUtf16Offset(input, 2, token); break;
+            case "offset-bool": _ = regex.Match(input, 4, [], token).Success; break;
             case "offset-count": _ = regex.CountFromUtf16Offset(input, 2, token); break;
             case "offset-value": _ = regex.MatchFromUtf16Offset(input, 2, token); break;
             case "offset-detailed": _ = regex.MatchDetailedFromUtf16Offset(input, 2, token); break;

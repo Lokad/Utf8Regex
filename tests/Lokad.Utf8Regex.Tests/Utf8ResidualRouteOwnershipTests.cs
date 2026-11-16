@@ -28,7 +28,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         // leaving "a" as its literal; the other three leave "ab".
         var length = pattern == "(?#(?<100>a)a" ? 1 : 2;
         Assert.Equal((12, length), (match.IndexInBytes, match.LengthInBytes));
-        Assert.True(regex.IsMatchFromUtf16Offset(bytes, startUtf16));
+        Assert.True(regex.Match(bytes, start.Value, []).Success);
         var detailed = regex.MatchDetailedFromUtf16Offset(bytes, startUtf16);
         Assert.True(detailed.Success);
         Assert.Equal((12, length), (detailed.IndexInBytes, detailed.LengthInBytes));

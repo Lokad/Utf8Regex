@@ -9,6 +9,15 @@ public sealed partial class Utf8Regex
     /// <remarks>Sparse numbers and repeated declarations of a shared slot do not add slots. Match participation does not affect this count.</remarks>
     public int CaptureGroupCount => _program.CaptureCatalog.GroupNumbers.Length - 1;
 
+    /// <summary>Gets the group number for a compact capture slot, including slot zero.</summary>
+    /// <remarks>Byte-start Match writes slots in this order. Sparse or shared group numbers do not require sparse output storage. No metadata array is allocated.</remarks>
+    public int GroupNumberFromCaptureSlot(int captureSlot)
+    {
+        var numbers = _program.CaptureCatalog.GroupNumbers;
+        if ((uint)captureSlot >= (uint)numbers.Length) throw new ArgumentOutOfRangeException(nameof(captureSlot));
+        return numbers[captureSlot];
+    }
+
     /// <summary>Finds a defined capture number from a strict UTF-8 group name, returning -1 when undefined.</summary>
     /// <remarks>Matches the existing ordinal name/numeric lookup, without decoding or allocating a key string. Validates the complete name. This explicit metadata lookup uses the supplied token independently of matching limits.</remarks>
     public int GroupNumberFromUtf8Name(ReadOnlySpan<byte> nameUtf8, CancellationToken cancellationToken = default)

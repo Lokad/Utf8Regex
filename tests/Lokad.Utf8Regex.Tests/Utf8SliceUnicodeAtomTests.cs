@@ -106,7 +106,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                     AssertInteriorStartRejected(regex, input, offset, subject.ByteBoundaries[~scalarOffset - 1] + 1, source.Token);
                     continue;
                 }
-                Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.IsMatchFromUtf16Offset(input, offset, source.Token));
+                Assert.Equal(oracle.IsMatch(subject.Projected.AsSpan(), scalarOffset), regex.Match(input, subject.ByteBoundaries[scalarOffset], [], source.Token).Success);
                 Assert.Equal(oracle.Count(subject.Projected.AsSpan(), scalarOffset), regex.CountFromUtf16Offset(input, offset, source.Token));
                 AssertMatch(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchFromUtf16Offset(input, offset, source.Token));
                 AssertDetailed(subject, oracle.Match(subject.Projected, scalarOffset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
@@ -529,7 +529,6 @@ public sealed class Utf8SliceUnicodeAtomTests
     {
         Action[] operations =
         [
-            () => { _ = regex.IsMatchFromUtf16Offset(input, offset, token); },
             () => { _ = regex.CountFromUtf16Offset(input, offset, token); },
             () => { _ = regex.MatchFromUtf16Offset(input, offset, token); },
             () => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, token); },

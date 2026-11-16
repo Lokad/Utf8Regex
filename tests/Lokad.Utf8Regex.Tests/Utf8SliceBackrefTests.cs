@@ -160,7 +160,7 @@ public sealed class Utf8SliceBackrefTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var expected = oracle.Match(inputText, offset);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal(expected.Success, regex.IsMatchFromUtf16Offset(input, offset));
+        Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         var actual = regex.MatchFromUtf16Offset(input, offset);
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)

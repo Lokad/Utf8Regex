@@ -223,7 +223,7 @@ public sealed class Utf8InputValidationTests
         var bytes = Encoding.UTF8.GetBytes("é😀 needle aabb needle");
         var strict = new Utf8Regex(pattern);
         var assumed = new Utf8Regex(pattern, inputValidation: Utf8InputValidation.AssumeValid);
-        Assert.Equal(Observe(strict, () => strict.IsMatchFromUtf16Offset(bytes, 3)), Observe(assumed, () => assumed.IsMatchFromUtf16Offset(bytes, 3)));
+        Assert.Equal(Observe(strict, () => strict.Match(bytes, 6, []).Success), Observe(assumed, () => assumed.Match(bytes, 6, []).Success));
         Assert.Equal(Observe(strict, () => strict.CountFromUtf16Offset(bytes, 3)), Observe(assumed, () => assumed.CountFromUtf16Offset(bytes, 3)));
         Assert.Equal(Observe(strict, () => strict.MatchFromUtf16Offset(bytes, 3)), Observe(assumed, () => assumed.MatchFromUtf16Offset(bytes, 3)));
         Assert.Equal(Observe(strict, () => strict.MatchDetailedFromUtf16Offset(bytes, 3).Success), Observe(assumed, () => assumed.MatchDetailedFromUtf16Offset(bytes, 3).Success));

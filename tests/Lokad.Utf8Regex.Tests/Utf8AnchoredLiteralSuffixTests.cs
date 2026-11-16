@@ -216,7 +216,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
                 Assert.Equal(expectedMatch.Success, actualMatch.Success);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex2 = new Utf8Regex(pattern, options);
-                Assert.Equal(oracle.IsMatch(inputText, offset), regex2.IsMatchFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.IsMatch(inputText, offset), regex2.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
                 Assert.True(regex2.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex3 = new Utf8Regex(pattern, options);
                 Assert.Equal(expectedMatch.Success, regex3.MatchDetailedFromUtf16Offset(input, offset).Success);

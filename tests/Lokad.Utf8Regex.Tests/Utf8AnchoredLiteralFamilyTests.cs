@@ -920,7 +920,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
+        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset)), []).Success);
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
@@ -970,7 +970,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
+        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset)), []).Success);
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
@@ -1147,7 +1147,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
+        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, utf16Offset)), []).Success);
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);

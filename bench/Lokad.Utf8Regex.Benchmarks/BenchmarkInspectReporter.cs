@@ -6051,7 +6051,7 @@ internal static partial class BenchmarkInspectReporter
     {
         return operation switch
         {
-            Utf8RegexBenchmarkOperation.IsMatch => regex.IsMatchFromUtf16Offset(input, utf16Offset) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.IsMatch => regex.Match(input, byteOffset, []).Success ? 1 : 0,
             Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(regex.MatchFromUtf16Offset(input, utf16Offset)),
             Utf8RegexBenchmarkOperation.Count => regex.CountFromUtf16Offset(input, utf16Offset),
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(

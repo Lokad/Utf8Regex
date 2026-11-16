@@ -87,9 +87,9 @@ public sealed class Utf8LeadingDigitsBooleanTests
         Assert.Equal("-", first.GetGroup("separator").GetValueString());
         Assert.Equal("😀é", first.GetGroup("tail").GetValueString());
         Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.IsMatchFromUtf16Offset(input, 0));
-        Assert.False(regex.IsMatchFromUtf16Offset(input, 1));
-        Assert.False(regex.IsMatchFromUtf16Offset(input, 2));
+        Assert.True(regex.Match(input, 0, []).Success);
+        Assert.False(regex.Match(input, 1, []).Success);
+        Assert.False(regex.Match(input, 2, []).Success);
         Assert.True(regex.IsMatch("7-ok"u8));
         Assert.Equal("😀é", first.GetGroup("tail").GetValueString());
     }

@@ -93,8 +93,8 @@ public sealed class Utf8CapturedSimpleBooleanTests
         Assert.Equal("1234-", retained.GetGroup(1).GetCapture(0).GetValueString());
         Assert.Equal("5678-", retained.GetGroup(1).GetCapture(1).GetValueString());
         Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.IsMatchFromUtf16Offset(input, 0));
-        Assert.False(regex.IsMatchFromUtf16Offset(input, 1));
+        Assert.True(regex.Match(input, 0, []).Success);
+        Assert.False(regex.Match(input, 1, []).Success);
         Assert.Equal("1234-", retained.GetGroup(1).GetCapture(0).GetValueString());
         foreach (var prefix in new[] { "1234-5678-1234-456", "no match" })
         {

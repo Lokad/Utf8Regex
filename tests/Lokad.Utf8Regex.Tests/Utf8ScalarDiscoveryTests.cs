@@ -124,7 +124,7 @@ public sealed class Utf8ScalarDiscoveryTests
         foreach (var live in new[] { false, true })
         {
             var token = live ? source.Token : default;
-            Assert.True(regex.IsMatchFromUtf16Offset(input, start, token));
+            Assert.True(regex.Match(input, reverse ? 5 : 1, [], token).Success);
             var value = regex.MatchFromUtf16Offset(input, start, token);
             Assert.Equal((1, 4, 1, 2), (value.IndexInBytes, value.LengthInBytes, value.IndexInUtf16, value.LengthInUtf16));
             var detail = regex.MatchDetailedFromUtf16Offset(input, start, token);

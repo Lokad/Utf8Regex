@@ -77,7 +77,35 @@ Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
 as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
 resource limits throughout enumeration. This change does not yet remove the
-remaining UTF-16 result properties or one-shot offset APIs.
+remaining UTF-16 result properties or Count/value/detailed offset APIs.
+
+### Byte-start matching with captures
+
+Core removes both `IsMatchFromUtf16Offset` overloads. Use the byte-start match
+operation, passing an empty capture span when only existence is needed:
+
+```csharp
+var regex = new Utf8Regex("(?<=é)(?<value>😀)");
+Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+var match = regex.Match("é😀x"u8, startOffsetInBytes: 2, captures: slots,
+    endOffsetInBytes: 6);
+// match and slots[1] are byte range [2, 6); lookbehind still sees é.
+bool found = regex.Match("é😀x"u8, 2, []).Success;
+```
+
+Slot zero is the whole match; `GroupNumberFromCaptureSlot` resolves compact slots
+to actual group numbers, including sparse numbers. Short spans do not change the
+selected match. The optional end is a scalar boundary and the matching end, with
+byte offsets relative to the original subject. Pass the token and working-memory
+allowance to this one signature; funded program owners expose it too.
+Use `CreateMatchCursor` for capture history.
+
+The operation creates no UTF16 map, captured strings or result-storage snapshot.
+Existing output storage belongs to the caller and is not charged as engine-owned
+result bytes. Scratch remains subject to working admission. Work and storage needs
+can decrease compared with the removed UTF16-start operation; recheck finite
+policies. Defined output slots clear on no match or failure after entry, while
+pre-cancellation and excess entries leave caller storage unchanged.
 
 ## Scalar matching and coordinates, introduced in 0.4.0
 
