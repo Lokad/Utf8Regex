@@ -72,33 +72,6 @@ internal ref struct Utf8ValidatedInput
         return position;
     }
 
-    public Utf8ByteRange GetByteRange(int start, int length, string startParameterName, string lengthParameterName)
-    {
-        var range = Utf8ByteRange.CreateChecked(
-            Validation,
-            start,
-            length,
-            startParameterName,
-            lengthParameterName);
-        if (!IsScalarBoundary(range.Start))
-        {
-            throw new ArgumentOutOfRangeException(
-                startParameterName,
-                start,
-                "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
-        }
-
-        if (!IsScalarBoundary(range.End))
-        {
-            throw new ArgumentOutOfRangeException(
-                lengthParameterName,
-                length,
-                "The requested byte range ends inside a UTF-8 scalar.");
-        }
-
-        return range;
-    }
-
     public bool IsScalarBoundary(Utf8BytePosition position)
     {
         var value = position.Value;
@@ -117,14 +90,6 @@ internal ref struct Utf8ValidatedInput
     {
         var cursor = CreateProjectionCursor();
         return cursor.Project(position);
-    }
-
-    public Utf16Range ProjectRange(Utf8ByteRange range)
-    {
-        var cursor = CreateProjectionCursor();
-        var start = cursor.Project(range.Start);
-        var end = cursor.Project(range.End);
-        return new Utf16Range(start, end);
     }
 
     public Utf8ValidationResult GetSuffixValidation(Utf8BytePosition start)
@@ -155,23 +120,6 @@ internal ref struct Utf8ValidatedInput
         return true;
     }
 
-    public bool TryRetreatScalar(Utf8BytePosition position, out Utf8BytePosition previous)
-    {
-        if (position.Value == 0)
-        {
-            previous = default;
-            return false;
-        }
-
-        var status = Rune.DecodeLastFromUtf8(_bytes[..position.Value], out _, out var consumed);
-        if (status != OperationStatus.Done)
-        {
-            throw new InvalidOperationException("Validated UTF-8 subject contained an invalid scalar boundary.");
-        }
-
-        previous = new Utf8BytePosition(position.Value - consumed);
-        return true;
-    }
 }
 
 internal ref struct Utf8ProjectionCursor

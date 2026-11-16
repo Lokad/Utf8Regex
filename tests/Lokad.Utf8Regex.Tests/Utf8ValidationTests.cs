@@ -334,28 +334,6 @@ public sealed class Utf8ValidationTests
             position = next;
         }
         Assert.False(subject.TryAdvanceScalar(position, out _));
-        for (var index = boundaries.Count - 1; index > 0; index--)
-        {
-            Assert.True(subject.TryRetreatScalar(position, out var previous));
-            Assert.Equal(boundaries[index - 1].Bytes, previous.Value);
-            Assert.True(previous.Value < position.Value);
-            position = previous;
-        }
-        Assert.Equal(0, position.Value);
-        Assert.False(subject.TryRetreatScalar(position, out _));
-    }
-
-    [Fact]
-    public void ValidatedRangeProjectionDoesNotRevalidateDisjointGaps()
-    {
-        var subject = Utf8ValidatedInput.Create("aé€😀z"u8);
-        var range = subject.GetByteRange(3, 7, "start", "length");
-
-        var projected = subject.ProjectRange(range);
-
-        Assert.Equal(2, projected.Start.Value);
-        Assert.Equal(5, projected.End.Value);
-        Assert.Equal(3, projected.Length);
     }
 
     [Fact]
