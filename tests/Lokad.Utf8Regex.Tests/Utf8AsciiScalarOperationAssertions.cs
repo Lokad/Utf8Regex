@@ -84,6 +84,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         var oracle = Comparator(pattern, options);
         var metadata = new Regex(pattern, options & ~RegexOptions.Compiled);
         var expected = oracle.Matches(subject.Projected).Cast<Match>().ToArray();
+        var startOffset = (options & RegexOptions.RightToLeft) != 0 ? subject.Input.Length : 0;
         var metadataRegex = new Utf8Regex(pattern, options);
         if (requireSlice) Assert.True(metadataRegex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
@@ -99,9 +100,11 @@ internal static class Utf8AsciiScalarOperationAssertions
         var count = new Utf8Regex(pattern, options);
         Assert.Equal(expected.Length, count.Count(subject.Input));
         var match = new Utf8Regex(pattern, options);
-        Value(subject, oracle.Match(subject.Projected), match.Match(subject.Input));
-        var detailed = new Utf8Regex(pattern, options);
-        Detailed(subject, oracle.Match(subject.Projected), detailed.MatchDetailed(subject.Input));
+        Value(subject, oracle.Match(subject.Projected), match.Match(subject.Input, startOffset, []));
+        var captures = new Utf8Regex(pattern, options);
+        Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected),
+            Utf8MatchSequence.First(captures.CreateMatchCursor(subject.Input)),
+            subject.Input, index => subject.ByteBoundaries[index]);
         var enumerate = new Utf8Regex(pattern, options);
         Sequence(subject, expected, enumerate.EnumerateMatches(subject.Input));
         foreach (var maximum in new[] { 0, 1, 2, int.MaxValue })
@@ -115,7 +118,6 @@ internal static class Utf8AsciiScalarOperationAssertions
                 Assert.True(cursor.MoveNext());
                 Assert.True(cursor.Current.IsByteAligned);
                 Assert.Equal((0, subject.Input.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
-                Assert.Equal((0, text.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
                 Assert.Equal(text, cursor.Current.GetValueString());
                 Assert.False(cursor.MoveNext());
             }
@@ -146,8 +148,10 @@ internal static class Utf8AsciiScalarOperationAssertions
         var live = new Utf8Regex(pattern, options);
         Assert.Equal(expected.Length != 0, live.IsMatch(subject.Input, source.Token));
         Assert.Equal(expected.Length, live.Count(subject.Input, source.Token));
-        Value(subject, oracle.Match(subject.Projected), live.Match(subject.Input, source.Token));
-        Detailed(subject, oracle.Match(subject.Projected), live.MatchDetailed(subject.Input, source.Token));
+        Value(subject, oracle.Match(subject.Projected), live.Match(subject.Input, startOffset, [], source.Token));
+        Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected),
+            Utf8MatchSequence.First(live.CreateMatchCursor(subject.Input, cancellationToken: source.Token)),
+            subject.Input, index => subject.ByteBoundaries[index]);
         Sequence(subject, expected, live.EnumerateMatches(subject.Input, source.Token));
         Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, source.Token));
         Assert.Equal(bytes, live.Replace(subject.Input, template, source.Token));
@@ -209,46 +213,9 @@ internal static class Utf8AsciiScalarOperationAssertions
     private static void Value(Subject subject, Match expected, Utf8ValueMatch actual)
     {
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(subject.Units(expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
         if (!expected.Success) return;
         Assert.True(actual.TryGetByteRange(out var index, out var length));
         Assert.Equal(subject.Bytes(expected.Index, expected.Length), (index, length));
-    }
-
-    internal static void Detailed(Subject subject, Match expected, Utf8MatchContext actual)
-    {
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(subject.Units(expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
-        Assert.Equal(subject.Value(expected.Index, expected.Length), actual.GetValueString());
-        if (expected.Success)
-        {
-            Assert.True(actual.IsByteAligned);
-            Assert.Equal(subject.Bytes(expected.Index, expected.Length), (actual.IndexInBytes, actual.LengthInBytes));
-        }
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        for (var number = 0; number < expected.Groups.Count; number++)
-        {
-            var wanted = expected.Groups[number];
-            var group = actual.GetGroup(number);
-            Assert.Equal(wanted.Success, group.Success);
-            Assert.Equal(subject.Units(wanted.Index, wanted.Length), (group.IndexInUtf16, group.LengthInUtf16));
-            Assert.Equal(subject.Value(wanted.Index, wanted.Length), group.GetValueString());
-            if (wanted.Success)
-            {
-                Assert.True(group.IsByteAligned);
-                Assert.Equal(subject.Bytes(wanted.Index, wanted.Length), (group.IndexInBytes, group.LengthInBytes));
-            }
-            Assert.Equal(wanted.Captures.Count, group.CaptureCount);
-            for (var index = 0; index < wanted.Captures.Count; index++)
-            {
-                var expectedCapture = wanted.Captures[index];
-                var capture = group.GetCapture(index);
-                Assert.True(capture.IsByteAligned);
-                Assert.Equal(subject.Units(expectedCapture.Index, expectedCapture.Length), (capture.IndexInUtf16, capture.LengthInUtf16));
-                Assert.Equal(subject.Bytes(expectedCapture.Index, expectedCapture.Length), (capture.IndexInBytes, capture.LengthInBytes));
-                Assert.Equal(subject.Value(expectedCapture.Index, expectedCapture.Length), capture.GetValueString());
-            }
-        }
     }
 
     private static void Sequence(Subject subject, Match[] expected, Utf8ValueMatchEnumerator cursor)
@@ -270,7 +237,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
             Assert.True(actual.Current.IsByteAligned);
             Assert.Equal(subject.Bytes(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-            Assert.Equal(subject.Units(index, length), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
             Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
         }
         Assert.False(actual.MoveNext());

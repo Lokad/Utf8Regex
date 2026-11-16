@@ -12,13 +12,13 @@ public sealed class Utf8ScalarDiscoveryTests
     {
         var regex = new Utf8Regex("(?s:.)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
-        if (value) Assert.Equal(4, regex.Match(input).LengthInBytes);
+        if (value) Assert.Equal(4, regex.Match(input, 0, []).EndOffsetInBytes);
         else Assert.True(regex.IsMatch(input));
         var before = GC.GetAllocatedBytesForCurrentThread();
         if (value)
         {
-            var match = regex.Match(input);
-            Assert.Equal((0, 4, 0, 2), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+            var match = regex.Match(input, 0, []);
+            Assert.Equal((0, 4), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         }
         else Assert.True(regex.IsMatch(input));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
@@ -27,40 +27,38 @@ public sealed class Utf8ScalarDiscoveryTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void DetailedResultsDecodeOnlyRequestedValues(bool compiled)
+    public void CaptureCursorBorrowsSelectedValuesWithoutSubjectMaps(bool compiled)
     {
         var regex = new Utf8Regex("(?s:.)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
-        Assert.Equal(4, regex.MatchDetailed(input).LengthInBytes);
+        Assert.Equal(4, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.EndOffsetInBytes);
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var match = regex.MatchDetailed(input);
-        // The current context retains its derived interoperability map; a whole
-        // decoded subject is unnecessary. Allow map payload plus bounded scratch.
-        var mapBytes = (100001L + (100001L + 31) / 32) * sizeof(int);
-        Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, mapBytes + 65536);
+        // First disposes the real cursor; retained ranges still borrow the input.
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
         before = GC.GetAllocatedBytesForCurrentThread();
-        Assert.Equal("😀", match.GetValueString());
-        Assert.Equal("😀", match.GetGroup(0).GetValueString());
-        Assert.Equal("😀", match.GetGroup(0).GetCapture(0).GetValueString());
+        Assert.Equal("😀"u8.ToArray(), match.GetValueMemory().ToArray());
+        Assert.Equal("😀"u8.ToArray(), match.GetGroupMemory(0).ToArray());
+        var capture = Assert.Single(match.GetCaptures(0).ToArray());
+        Assert.Equal((0, 4), (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 4096L);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void FailedDetailedDiscoveryNeedsNeitherMapNorDecodedSubject(bool compiled)
+    public void FailedCaptureDiscoveryNeedsNeitherMapNorDecodedSubject(bool compiled)
     {
         var regex = new Utf8Regex("z(?=\\z)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
         using var source = new CancellationTokenSource();
-        Assert.False(regex.MatchDetailed(input, source.Token).Success);
+        Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)).Success);
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var match = regex.MatchDetailed(input, source.Token);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
         Assert.False(match.Success);
-        Assert.Equal(1, match.GroupCount);
-        Assert.Equal(string.Empty, match.GetValueString());
-        Assert.True(match.TryGetByteRange(out var start, out var length));
-        Assert.Equal((0, 0), (start, length));
+        Assert.Empty(match.GroupNumbers.ToArray());
+        Assert.Empty(match.GetValueMemory().ToArray());
+        Assert.Equal((0, 0), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -68,34 +66,35 @@ public sealed class Utf8ScalarDiscoveryTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
-    public void DetailedHistoriesUseCompleteScalars(bool compiled, bool reverse)
+    public void RetainedCursorHistoriesUseCompleteScalars(bool compiled, bool reverse)
     {
         var regex = new Utf8Regex("(?<word>(?<scalar>.)+)", RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "é😀𐐀a"u8.ToArray();
-        var match = regex.MatchDetailed(input);
-        AssertHistory(match, reverse);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        AssertHistory(match, regex.GroupNumberFromName("scalar"), input, reverse);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    private static void AssertHistory(Utf8MatchContext match, bool reverse)
+    private static void AssertHistory(Utf8RangeMatch match, int scalarNumber, byte[] input, bool reverse)
     {
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal("é😀𐐀a", match.GetValueString());
-        Assert.Equal("é😀𐐀a", match.GetGroup("word").GetValueString());
-        var group = match.GetGroup("scalar");
-        Assert.Equal(4, group.CaptureCount);
-        (int Byte, int Length, int Unit, int Units, string Value)[] expected =
-        [(0, 2, 0, 1, "é"), (2, 4, 1, 2, "😀"), (6, 4, 3, 2, "𐐀"), (10, 1, 5, 1, "a")];
+        Assert.Equal(input, match.GetValueMemory().ToArray());
+        Assert.True(match.TryGetGroup("word", out var word));
+        Assert.Equal((0, input.Length), (word.StartOffsetInBytes, word.EndOffsetInBytes));
+        var captures = match.GetCaptures(scalarNumber);
+        Assert.Equal(4, captures.Length);
+        (int Byte, int Length, string Value)[] expected =
+        [(0, 2, "é"), (2, 4, "😀"), (6, 4, "𐐀"), (10, 1, "a")];
         for (var index = 0; index < expected.Length; index++)
         {
             var row = expected[reverse ? expected.Length - 1 - index : index];
-            var capture = group.GetCapture(index);
-            Assert.True(capture.IsByteAligned);
-            Assert.Equal((row.Byte, row.Length, row.Unit, row.Units),
-                (capture.IndexInBytes, capture.LengthInBytes, capture.IndexInUtf16, capture.LengthInUtf16));
-            Assert.Equal(row.Value, capture.GetValueString());
+            var capture = captures[index];
+            Assert.True(capture.Success);
+            Assert.Equal((row.Byte, row.Byte + row.Length),
+                (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
+            Assert.Equal(Encoding.UTF8.GetBytes(row.Value),
+                input.AsSpan(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes).ToArray());
         }
     }
 
