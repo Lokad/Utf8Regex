@@ -26,6 +26,9 @@
 - Extend proved POSIX runs to single repeats and fixed scalar pieces, avoiding
   unnecessary rewind storage. Valid-text coordinate projection reuses bounded
   counting. Numerical work/depth/working requirements can decrease on these routes.
+- Single-scalar POSIX repeats reuse first acceptance through fixed prefixes and
+  suffixes, avoiding redundant capture charts. Capture-only terminal tails omit
+  unneeded exit frames; required endpoint rewind remains active.
 - Add direct UTF-8 pattern/template APIs, byte capture-name lookup and caller-
   buffer pattern metadata in Core, PythonRe and PCRE2. Add caller-funded program
   ownership, persistent memory cursors and explicit retained-result/output
