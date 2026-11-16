@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove the duplicate non-literal replacement worker and its UTF-16 capture
+  shaping. These replacements use the existing scalar byte-template engine;
+  literal replacement paths remain. Route-dependent costs and budget needs can change.
+
 - Core split results expose only byte start and length. Controlled scalar splits
   no longer prepare or retain UTF-16 coordinate maps. Empty/count/RTL ordering,
   borrowed-view lifetimes and cumulative interruption/resource controls remain.

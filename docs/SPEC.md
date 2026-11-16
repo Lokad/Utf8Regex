@@ -392,10 +392,12 @@ literal text or a duplicate source. Each string literal is encoded independently
 surrogate becomes U+FFFD and cannot join a fragment from another substitution.
 Subject validation follows the instance policy; template bytes remain strict.
 
-Native discovery/capture-map eligibility is preserved. Grouped template expansion
-splices original byte views through the admitted output writer. Scalar fall-throughs likewise emit the requested
-byte/destination form directly. Existing derived coordinate maps remain where
-native capture shaping requires them; this does not make UTF-16 the matching unit.
+Non-literal fallback/simple-pattern replacements use the existing scalar byte
+template engine for both allocated and caller-owned output. They select that
+engine before subject preparation and do not construct UTF-16 match/group views
+or repeat subject validation. Literal replacement paths retain their existing
+search and output implementations. Existing derived coordinate maps remain for
+legacy detailed-match results until their separate migration.
 
 Core's evaluator replacement overloads, evaluator delegates and `ReplaceToString`
 are removed in 0.5 development. Hosts compute custom substitutions over the byte capture cursor.

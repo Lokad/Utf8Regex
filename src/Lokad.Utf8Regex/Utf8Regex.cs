@@ -2757,7 +2757,8 @@ public sealed partial class Utf8Regex
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
-        if ((GetOwnedSliceProgram(input, cancellationToken) ??
+        if ((_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern
+            ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken) ??
             (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
                 _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
         {
@@ -2780,13 +2781,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, requiredProgram, replacementPattern,
                 Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         var budget = deadline;
-        if (UsesOwnedTemplateBeforeNativePlan() &&
-            TryReplaceTemplateWithOwnedGroups(input, validation, replacementPattern, Utf8SliceReplacementResultKind.Bytes,
-                default, cancellationToken, deadline, out var ownedTemplate))
-        {
-            return ownedTemplate.Bytes;
-        }
-
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
         {
             return ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes, deadline);
@@ -2854,7 +2848,9 @@ public sealed partial class Utf8Regex
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
-        if (!input.Overlaps(destination) && GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
+        if (!input.Overlaps(destination) &&
+            _preparedRegex.ExecutionKind is not (NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern) &&
+            GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {

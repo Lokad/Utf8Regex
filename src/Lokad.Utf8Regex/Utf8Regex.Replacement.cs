@@ -28,13 +28,6 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Subject(input, InputValidation);
         var budget = deadline;
-        if (UsesOwnedTemplateBeforeNativePlan() &&
-            TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Bytes,
-                default, cancellationToken, deadline, out var ownedTemplate))
-        {
-            return ownedTemplate.Bytes;
-        }
-
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             return nativeResult;
@@ -176,14 +169,6 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Subject(input, InputValidation);
         var budget = deadline;
-        if (UsesOwnedTemplateBeforeNativePlan() &&
-            TryReplaceTemplateWithOwnedGroups(input, validation, replacement, Utf8SliceReplacementResultKind.Destination,
-                destination, cancellationToken, deadline, out var ownedTemplate))
-        {
-            bytesWritten = ownedTemplate.BytesWritten;
-            return ownedTemplate.Status;
-        }
-
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(
@@ -289,167 +274,6 @@ public sealed partial class Utf8Regex
             out bytesWritten);
 
         return success ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
-    }
-
-    // Keep native discovery/capture-map eligibility. Finite deadlines
-    // use a cursor that retains the operation budget rather than this template worker.
-    private bool UsesOwnedTemplateBeforeNativePlan()
-    {
-        // Controlled calls retain their existing scalar invocation route.
-        if (MatchTimeout != Regex.InfiniteMatchTimeout)
-        {
-            return false;
-        }
-
-        return _preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern;
-    }
-
-    // Expand original byte slices from the same native discovery/capture maps.
-    // Validate the first projection before acquiring output. A later projection
-    // failure throws instead of publishing a partially expanded result.
-    private bool TryReplaceTemplateWithOwnedGroups(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, Utf8AnalyzedReplacement replacement,
-        Utf8SliceReplacementResultKind resultKind, Span<byte> destination,
-        CancellationToken token, Utf8ExecutionDeadline deadline, out Utf8SliceReplacementResult result)
-    {
-        // Keep the existing map-covered, groupless and single-wrap eligibility.
-        // Finite deadlines use the existing scalar cursor path.
-        result = default;
-        if (MatchTimeout != Regex.InfiniteMatchTimeout || HasFiniteExecutionLimits || token.CanBeCanceled)
-        {
-            return false;
-        }
-        var hasMaps = _groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null;
-        if (!hasMaps && _hasCaptures &&
-            !(_groupNumbers.Length == 2 && GetSingleWrapCaptureNumber() == 1))
-        {
-            return false;
-        }
-
-        if (ShouldUseKelvinSignFallback(input))
-        {
-            return false;
-        }
-
-        var invocation = new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation };
-        // Simple-pattern discovery reaches this same factory through public
-        // enumeration's validation and zero-offset routing. Reuse the complete
-        // validation above; diagnostic hooks retain their invocation route.
-        var matches = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null
-            ? CreateMatchEnumeratorViaCompiledEngine(input, validation, deadline)
-            : EnumerateMatches(input);
-        if (!matches.MoveNext())
-        {
-            result = CompleteUnchangedOwnedReplacement(input, resultKind,
-                destination, ref invocation);
-            return true;
-        }
-
-        var analysis = Utf8ValidatedInput.Create(input, InputValidation);
-        var writer = default(Utf8SliceOutputWriter);
-        var sourcePosition = 0;
-        var first = true;
-        try
-        {
-            do
-            {
-                var valueMatch = matches.Current;
-                Utf8MatchContext context;
-                if (_groupedLiteralSpanTable is not null &&
-                    TryShapeGroupedLiteralDetailedMatch(input, analysis.BoundaryMap, valueMatch, out var grouped))
-                {
-                    context = grouped;
-                }
-                else if (_alternationBranchSpanMap is not null &&
-                    TryShapeAlternationBranchDetailedMatch(input, analysis.BoundaryMap, valueMatch, out var branched))
-                {
-                    context = branched;
-                }
-                else if (!hasMaps && !_hasCaptures)
-                {
-                    context = new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
-                }
-                else if (!hasMaps && _hasCaptures &&
-                    TryGetOwnedDetailedGroupCount(out var wrapGroups) &&
-                    wrapGroups > 1)
-                {
-                    context = new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
-                }
-                else if (!first)
-                {
-                    throw new InvalidOperationException("The grouped template projection failed after matching began.");
-                }
-                else
-                {
-                    return false;
-                }
-
-                if (first && !Utf8SliceOutputWriter.Rent(input.Length, ref invocation, out writer))
-                    throw new InvalidOperationException("Owned replacement output could not be admitted.");
-                first = false;
-                if (!writer.Append(input.Slice(sourcePosition, valueMatch.IndexInBytes - sourcePosition), ref invocation))
-                    throw new InvalidOperationException("Owned replacement output exceeded its capacity.");
-                AppendOwnedGroupTemplate(replacement.Plan, input, in context, ref writer, ref invocation);
-                sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-            } while (matches.MoveNext());
-
-            if (!writer.Append(input[sourcePosition..], ref invocation))
-                throw new InvalidOperationException("Owned replacement output exceeded its capacity.");
-            switch (resultKind)
-            {
-                case Utf8SliceReplacementResultKind.Bytes:
-                    if (!writer.TryToArrayAndRelease(ref invocation, out var bytes))
-                        throw new InvalidOperationException("Owned replacement output could not be published.");
-                    result = new(bytes, OperationStatus.Done, 0);
-                    break;
-                case Utf8SliceReplacementResultKind.Destination:
-                    if (writer.Length > destination.Length)
-                        result = new([], OperationStatus.DestinationTooSmall, 0);
-                    else
-                    {
-                        var written = writer.Length;
-                        Utf8SliceBufferWork.Copy(writer.WrittenBytes, destination, ref invocation);
-                        result = new([], OperationStatus.Done, written);
-                    }
-                    break;
-                default: throw new InvalidOperationException("Unknown owned output kind.");
-            }
-            return true;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw CreateExecutionResourceFailure(ref invocation); }
-        finally { writer.Release(ref invocation); }
-    }
-
-    private static void AppendOwnedGroupTemplate(Utf8ReplacementPlan plan, ReadOnlySpan<byte> input,
-        in Utf8MatchContext context, ref Utf8SliceOutputWriter writer, ref Utf8SliceInvocation invocation)
-    {
-        foreach (var instruction in plan.Instructions)
-        {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            ReadOnlySpan<byte> value;
-            switch (instruction.Kind)
-            {
-                case Utf8ReplacementInstructionKind.Literal: value = instruction.LiteralUtf8; break;
-                case Utf8ReplacementInstructionKind.Group:
-                case Utf8ReplacementInstructionKind.LastGroup:
-                    var number = instruction.Kind == Utf8ReplacementInstructionKind.Group
-                        ? instruction.GroupNumber : context.OwnedLastGroupNumber;
-                    value = context.TryGetGroup(number, out var group) && group.Success ? group.GetValueBytes() : [];
-                    break;
-                case Utf8ReplacementInstructionKind.WholeMatch:
-                    value = input.Slice(context.IndexInBytes, context.LengthInBytes); break;
-                case Utf8ReplacementInstructionKind.LeftPortion: value = input[..context.IndexInBytes]; break;
-                case Utf8ReplacementInstructionKind.RightPortion: value = input[(context.IndexInBytes + context.LengthInBytes)..]; break;
-                case Utf8ReplacementInstructionKind.WholeString: value = input; break;
-                default: throw new InvalidOperationException("Unsupported replacement instruction kind.");
-            }
-            if (!writer.Append(value, ref invocation))
-                throw new InvalidOperationException("Owned replacement output exceeded its capacity.");
-        }
     }
 
     private bool TryReplaceViaNativePlan(

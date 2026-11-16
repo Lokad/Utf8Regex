@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -17,6 +18,11 @@ public sealed partial class Utf8Regex
 
     private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken token)
     {
+        // Non-literal shape replacements use the existing byte template engine.
+        // Select it before preparation; no legacy capture view or second subject
+        // invocation is needed. Genuine literal replacement routes remain below.
+        if (_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern)
+            return _ownedSliceProgram;
         if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _ownedSliceProgram : null)) is { } program) return program;
         // Native replacement routes need complete scalar endpoints. Unsupported
         // native cursor shapes use the admitted scalar program with the original token.
@@ -24,7 +30,8 @@ public sealed partial class Utf8Regex
              // These structural shapes have no qualified native match cursor.
              _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiStructuralTokenWindow or
                 NativeExecutionKind.AsciiStructuralRepeatedSegment or NativeExecutionKind.AsciiStructuralQuotedRelation ||
-             RequiresScalarSimplePatternReplacement(replacement, input))
+             replacement.ContainsGroupReferences &&
+                (MatchTimeout != Regex.InfiniteMatchTimeout || _hasCaptures && ShouldUseKelvinSignFallback(input)))
             return _ownedSliceProgram;
         return null;
     }
