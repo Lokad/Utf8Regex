@@ -246,15 +246,29 @@ public sealed class Utf8MemoryCursorTests
         Assert.InRange(published, 1, 4); Assert.Equal(0UL, root.Used); Assert.True(first.Success);
     }
 
-    [Fact]
-    public void CancellationAfterSeparateResultAdmissionRefundsBothChildrenBeforePublication()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CancellationAfterSeparateResultAdmissionRefundsBothChildrenBeforePublication(bool cancelOriginal)
     {
         var root = new Root(); var working = new Account(root); var results = new Account(root);
-        using var current = new CancellationTokenSource();
-        using var cursor = new Utf8Regex("(a+)").CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
-        results.AfterGrant = current.Cancel;
-        Assert.Equal(current.Token, Assert.Throws<OperationCanceledException>(() =>
+        using var original = new CancellationTokenSource(); using var current = new CancellationTokenSource();
+        using var cursor = new Utf8Regex("(a+)").CreateMatchCursor("aaa"u8.ToArray(),
+            cancellationToken: original.Token, workingMemoryAllowance: working);
+        results.AfterGrant = (cancelOriginal ? original : current).Cancel;
+        Assert.Equal((cancelOriginal ? original : current).Token, Assert.Throws<OperationCanceledException>(() =>
             cursor.MoveNextRetained(out _, current.Token, results)).CancellationToken);
+        Assert.Equal(1, results.Attempts); Assert.Equal(0UL, root.Used);
+    }
+
+    [Fact]
+    public void DeadlineAfterSeparateResultAdmissionRefundsBothChildrenBeforePublication()
+    {
+        var root = new Root(); var working = new Account(root); var results = new Account(root);
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var cursor = new Utf8Regex("(a+)", matchTimeout: TimeSpan.FromMilliseconds(200))
+            .CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
+        results.AfterGrant = () => clock.Advance(250);
+        Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNextRetained(out _, resultMemoryAllowance: results));
         Assert.Equal(1, results.Attempts); Assert.Equal(0UL, root.Used);
     }
 

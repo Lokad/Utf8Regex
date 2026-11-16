@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreWorkPolicyTests
 {
-    private static readonly string[] Operations = ["is", "count", "match", "detail", "slot-match",
+    private static readonly string[] Operations = ["is", "count", "match", "capture", "slot-match",
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "destination", "destination-bytes"];
 
@@ -291,19 +291,11 @@ public sealed class Utf8CoreWorkPolicyTests
     }
 
     private static string Range(Utf8ValueMatch value) => value.Success
-        ? $"True:{value.IndexInBytes}:{value.LengthInBytes}:{value.IndexInUtf16}:{value.LengthInUtf16}"
+        ? $"True:{value.IndexInBytes}:{value.LengthInBytes}"
         : "False";
-    private static string Detail(Utf8MatchContext value)
-    {
-        var result = new StringBuilder($"{value.Success}:{value.IndexInBytes}:{value.LengthInBytes}:{value.GroupCount}");
-        for (var n = 0; n < value.GroupCount; n++)
-        {
-            var group = value.GetGroup(n);
-            result.Append($"|{group.Success}:{group.GetValueString()}:{group.CaptureCount}");
-            for (var c = 0; c < group.CaptureCount; c++) result.Append($":{group.GetCapture(c).GetValueString()}");
-        }
-        return result.ToString();
-    }
+    private static string Range(Utf8CaptureRange value) => value.Success
+        ? $"True:{value.StartOffsetInBytes}:{value.EndOffsetInBytes - value.StartOffsetInBytes}"
+        : "False";
 
     private static string Detail(Utf8RangeMatch value)
     {
@@ -325,8 +317,9 @@ public sealed class Utf8CoreWorkPolicyTests
         {
             case "is": return (live ? regex.IsMatch(input, token) : regex.IsMatch(input)).ToString();
             case "count": return (live ? regex.Count(input, token) : regex.Count(input)).ToString();
-            case "match": return Range(live ? regex.Match(input, token) : regex.Match(input));
-            case "detail": return Detail(live ? regex.MatchDetailed(input, token) : regex.MatchDetailed(input));
+            case "match": return Range(regex.Match(input,
+                (regex.Options & RegexOptions.RightToLeft) != 0 ? input.Length : 0, [], token));
+            case "capture": return Detail(Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)));
             case "slot-match": return (live ? regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), [], token).Success : regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), []).Success).ToString();
             case "capture-offset": return Detail(live ? Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), token)) : Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));
             case "matches":

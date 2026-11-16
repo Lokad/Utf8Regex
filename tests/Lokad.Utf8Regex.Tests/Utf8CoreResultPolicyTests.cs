@@ -26,7 +26,7 @@ public sealed class Utf8CoreResultPolicyTests
 
     [Theory]
     [InlineData("count")]
-    [InlineData("detail")]
+    [InlineData("capture")]
     [InlineData("matches")]
     [InlineData("split")]
     [InlineData("replace")]
@@ -148,7 +148,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        foreach (var operation in new[] { "detail", "replace", "replace-bytes", "destination", "destination-bytes" })
+        foreach (var operation in new[] { "capture", "replace", "replace-bytes", "destination", "destination-bytes" })
         {
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
@@ -167,7 +167,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀😀 aaabb 😀");
-        foreach (var operation in new[] { "detail", "capture-offset", "matches", "split", "replace" })
+        foreach (var operation in new[] { "capture", "capture-offset", "matches", "split", "replace" })
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);
