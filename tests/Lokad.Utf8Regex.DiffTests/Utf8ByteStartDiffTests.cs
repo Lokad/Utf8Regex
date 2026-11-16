@@ -4,14 +4,10 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.DiffTests;
 
 /// <summary>
-/// R03 first engine slice: MatchFromUtf16Offset answers scalar-boundary starts from the
-/// owned byte-range search. Interior offsets reject. Every valid row compares
-/// success, UTF-16 coordinates, and byte coordinates (when scalar-aligned) against
-/// the BCL oracle across literal, alternation, class, anchor, lookaround, backreference,
-/// capture, empty-match, Unicode, and right-to-left shapes, including starts inside a
-/// supplementary scalar and at the end of input.
+/// Public byte-start cursors preserve original subject context and complete scalar
+/// ranges. Oracle UTF-16 positions are converted only within these tests.
 /// </summary>
-public sealed class Utf8MatchFromOffsetDiffTests
+public sealed class Utf8ByteStartDiffTests
 {
     public static IEnumerable<object?[]> OffsetCases()
     {
@@ -22,8 +18,11 @@ public sealed class Utf8MatchFromOffsetDiffTests
         yield return new object?[] { "abc$", RegexOptions.CultureInvariant, "xxabc", new[] { 0, 1, 5 } };
         yield return new object?[] { "\\bword\\b", RegexOptions.CultureInvariant, "a word here", new[] { 0, 2, 5, 11 } };
         yield return new object?[] { "a(?=b)", RegexOptions.CultureInvariant, "ababa", new[] { 0, 1, 2, 5 } };
+        yield return new object?[] { "(?<= )word(?= )", RegexOptions.CultureInvariant, "a word z", new[] { 0, 1, 2, 6, 8 } };
+        yield return new object?[] { "\\G[a-z]+", RegexOptions.CultureInvariant, "ab cd", new[] { 0, 1, 3, 5 } };
         yield return new object?[] { "(a)\\1", RegexOptions.CultureInvariant, "xaaaya", new[] { 0, 1, 2, 6 } };
         yield return new object?[] { "(?<w>\\w+)", RegexOptions.CultureInvariant, "hi there", new[] { 0, 3, 8 } };
+        yield return new object?[] { "(?<x>a)+(?<tail>b)?", RegexOptions.CultureInvariant, "x aab ab", new[] { 0, 2, 5, 8 } };
         yield return new object?[] { "a*", RegexOptions.CultureInvariant, "bba", new[] { 0, 1, 2, 3 } };
         yield return new object?[] { "x", RegexOptions.CultureInvariant, "x", new[] { 0, 1 } };
         yield return new object?[] { "Шерлок", RegexOptions.None, "аШерлокб", new[] { 0, 1, 2, 7, 8 } };
@@ -34,59 +33,60 @@ public sealed class Utf8MatchFromOffsetDiffTests
 
     [Theory]
     [MemberData(nameof(OffsetCases))]
-    public void MatchFromUtf16OffsetMatchesRuntime(string pattern, RegexOptions options, string text, int[] offsets)
+    public void ByteStartCursorMatchesRuntimeRangesAndCaptures(string pattern, RegexOptions options, string text, int[] offsets)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var utf8 = new Utf8Regex(pattern, options);
         var runtime = new Regex(pattern, options);
-
+        foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         foreach (var offset in offsets)
         {
+            var utf8 = new Utf8Regex(pattern, options | compiled);
             if (!IsScalarBoundary(text, offset))
             {
+                // This oracle position splits a surrogate pair. Exercise the
+                // corresponding UTF-8 scalar's interior byte, rather than a
+                // removed UTF-16 entry-point contract.
+                var interiorByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, offset - 1)) + 1;
                 using var source = new CancellationTokenSource();
                 foreach (var token in new[] { CancellationToken.None, source.Token })
                 {
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
-                        () => { _ = utf8.MatchFromUtf16Offset(input, offset, token); }).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
-                        () => { _ = utf8.IsMatchFromUtf16Offset(input, offset, token); }).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
-                        () => { _ = utf8.CountFromUtf16Offset(input, offset, token); }).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
-                        () => { _ = utf8.MatchDetailedFromUtf16Offset(input, offset, token); }).ParamName);
-                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
-                        () => { _ = utf8.EnumerateMatchesFromUtf16Offset(input, offset, token); }).ParamName);
+                    Assert.Equal("startOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { using var cursor = utf8.CreateMatchCursor(input, interiorByte, token); }).ParamName);
                 }
-                Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
-                Assert.True(ReferenceEquals(utf8.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, utf8.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
                 continue;
             }
-            var expected = runtime.Match(text, offset);
-            var actual = utf8.MatchFromUtf16Offset(input, offset);
-
-            Assert.Equal(expected.Success, actual.Success);
-            Assert.Equal(expected.Success ? expected.Index : 0, actual.IndexInUtf16);
-            Assert.Equal(expected.Success ? expected.Length : 0, actual.LengthInUtf16);
-            if (!actual.Success)
+            var startByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, offset));
+            using var matches = utf8.CreateMatchCursor(input, startByte);
+            foreach (Match expected in runtime.Matches(text, offset))
             {
-                continue;
+                Assert.True(matches.MoveNext(out var actual));
+                AssertRange(text, expected, actual.Value.StartOffsetInBytes, actual.Value.EndOffsetInBytes);
+                foreach (var number in runtime.GetGroupNumbers())
+                {
+                    Assert.True(actual.TryGetGroup(number, out var group));
+                    var expectedGroup = expected.Groups[number];
+                    Assert.Equal(expectedGroup.Success, group.Success);
+                    if (group.Success)
+                        AssertRange(text, expectedGroup, group.StartOffsetInBytes, group.EndOffsetInBytes);
+                    var captures = actual.GetCaptures(number);
+                    Assert.Equal(expectedGroup.Captures.Count, captures.Length);
+                    for (var index = 0; index < captures.Length; index++)
+                        AssertRange(text, expectedGroup.Captures[index], captures[index].StartOffsetInBytes,
+                            captures[index].EndOffsetInBytes);
+                }
             }
-
-            var start = actual.IndexInUtf16;
-            var end = start + actual.LengthInUtf16;
-            var aligned = IsScalarBoundary(text, start) && IsScalarBoundary(text, end);
-            Assert.Equal(aligned, actual.IsByteAligned);
-            if (aligned)
-            {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(0, start)), actual.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(start, actual.LengthInUtf16)), actual.LengthInBytes);
-            }
+            Assert.False(matches.MoveNext(out _));
         }
     }
 
+    private static void AssertRange(string text, Capture expected, int startByte, int endByte)
+    {
+        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), startByte);
+        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length)), endByte);
+    }
+
     [Fact]
-    public void MatchFromUtf16OffsetTimeoutMatchesRuntime()
+    public void ByteStartCursorPreservesTheMatchingDeadline()
     {
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
@@ -96,7 +96,11 @@ public sealed class Utf8MatchFromOffsetDiffTests
         var text = Encoding.UTF8.GetString(input);
 
         var runtimeException = Assert.Throws<RegexMatchTimeoutException>(() => runtime.Match(text, 0));
-        var utf8Exception = Assert.Throws<RegexMatchTimeoutException>(() => utf8.MatchFromUtf16Offset(input, 0));
+        var utf8Exception = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            using var cursor = utf8.CreateMatchCursor(input, 0);
+            _ = cursor.MoveNext(out _);
+        });
         Assert.Equal(runtimeException.Pattern, utf8Exception.Pattern);
     }
 
