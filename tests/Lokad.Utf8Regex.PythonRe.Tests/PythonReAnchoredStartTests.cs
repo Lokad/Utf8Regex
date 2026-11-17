@@ -21,7 +21,7 @@ public sealed class PythonReAnchoredStartTests
             Assert.False(regex.Match(input).Success);
             Assert.False(regex.FullMatch(input).Success);
             Assert.False(regex.Match(input).Success);
-            Assert.False(regex.MatchDetailedData(input).Success);
+            Assert.False(regex.MatchDetailed(input).Success);
             Assert.True(regex.Search(input).Success);
         }
     }
@@ -43,7 +43,7 @@ public sealed class PythonReAnchoredStartTests
             Assert.True(match.Success);
             Assert.Equal(start, match.StartOffsetInBytes);
             Assert.Equal(start + Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes);
-            Assert.Equal(expected, regex.MatchDetailedData(input, start).Value.ValueText);
+            Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input, start).Value.GetValueBytes()));
             PythonReMatchAssert.Equal(expected, regex.FullMatch(input, start));
         }
     }

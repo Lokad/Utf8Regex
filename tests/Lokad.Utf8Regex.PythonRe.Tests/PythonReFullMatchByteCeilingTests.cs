@@ -123,11 +123,11 @@ public sealed class PythonReFullMatchByteCeilingTests
         Assert.Same(hook, parent.Budget.CheckpointHook);
         ticks = 0;
         parent.Budget.CheckpointHook = null;
-        var retained = regex.FullMatchDetailedData("😀a"u8);
+        var retained = regex.FullMatchDetailed("😀a"u8);
         Assert.True(retained.Success);
         Assert.Equal("x", retained.LastGroup);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.FullMatch("😀a"u8).Success);
-        Assert.Equal("😀a", retained.Value.ValueText);
+        Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
     }
 }

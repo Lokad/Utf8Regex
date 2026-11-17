@@ -18,19 +18,25 @@ public sealed class PythonReLaterAsciiCandidateTests
         var input = Encoding.UTF8.GetBytes(text);
         var start = 6 + padding;
         var second = start + width + 2;
-        var matches = regex.FindIterDetailed(input);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
         Assert.Equal(2, matches.Length);
         Assert.Equal(start, matches[0].Value.StartOffsetInBytes);
-        Assert.Equal("3", matches[0].Groups[1].ValueText);
+        Assert.Equal("3", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
         Assert.Equal(second, matches[1].Value.StartOffsetInBytes);
-        Assert.Equal("45", matches[1].Groups[1].ValueText);
+        Assert.Equal("45", System.Text.Encoding.UTF8.GetString(matches[1].GetGroupMemory(1).Span));
         Assert.Equal(new[] { "3", "45" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal(second, regex.Search(input, start + 1).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success);
         Assert.True(regex.Match(input, start).Success);
         Assert.True(regex.FullMatch(input.AsSpan(start, width + 1)).Success);
         _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("unrelated"u8));
-        Assert.Equal("3", matches[0].Groups[1].ValueText);
+        Assert.Equal("3", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
     }
 
     [Fact]

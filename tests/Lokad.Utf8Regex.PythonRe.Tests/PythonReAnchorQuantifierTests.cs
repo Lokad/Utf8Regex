@@ -43,7 +43,7 @@ public sealed class PythonReAnchorQuantifierTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
-        Assert.True(regex.FullMatchDetailedData(Encoding.UTF8.GetBytes(text)).Success);
+        Assert.True(regex.FullMatchDetailed(Encoding.UTF8.GetBytes(text)).Success);
     }
 
     [Theory]

@@ -96,11 +96,11 @@ public sealed class PythonReIpv4BooleanTests
     {
         using var regex = new Utf8PythonRegex(prefix + "(?P<address>" + Pattern + ")");
         var input = Encoding.UTF8.GetBytes(text);
-        var held = regex.SearchDetailedData(input);
+        var held = regex.SearchDetailed(input);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, held.Success);
         regex.Dispose();
-        if (expected) Assert.Equal(text, held.Groups[1].ValueText);
+        if (expected) Assert.Equal(text, System.Text.Encoding.UTF8.GetString(held.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Fact]

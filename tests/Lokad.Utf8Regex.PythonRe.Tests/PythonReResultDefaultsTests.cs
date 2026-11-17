@@ -2,14 +2,6 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReResultDefaultsTests
 {
-    [Fact]
-    public void DefaultAndZeroInitializedResultsExposeEmptyTextAndCollections()
-    {
-        Assert.Empty(default(Utf8PythonGroupMatchData).ValueText);
-        Assert.Empty(new Utf8PythonGroupMatchData { Success = false }.ValueText);
-        AssertEmpty(default);
-        AssertEmpty(new Utf8PythonDetailedMatchData { LastIndex = null });
-    }
 
     [Theory]
     [InlineData(0, false)]
@@ -26,61 +18,45 @@ public sealed class PythonReResultDefaultsTests
         var token = controlled ? cancellation.Token : default;
         var data = operation switch
         {
-            0 => regex.SearchDetailedData("😀b"u8, 4, token),
-            1 => regex.MatchDetailedData("😀b"u8, 4, token),
-            _ => regex.FullMatchDetailedData("😀b"u8, 4, token),
-        };
-        AssertEmpty(data);
-        var view = operation switch
-        {
             0 => regex.SearchDetailed("😀b"u8, 4, token),
             1 => regex.MatchDetailed("😀b"u8, 4, token),
             _ => regex.FullMatchDetailed("😀b"u8, 4, token),
         };
-        Assert.False(view.Success);
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(view.Value.GetValueBytes()), data.Value.ValueText);
+        AssertEmpty(data);
+
     }
 
     [Fact]
-    public void SuccessfulResultsPreserveSuppliedArraysOptionalCapturesAndRetainedValues()
+    public void BorrowedContextsKeepOptionalCapturesAcrossLaterCalls()
     {
         var regex = new Utf8PythonRegex("(?P<x>a)?(?P<y>😀)");
-        var retained = regex.FullMatchDetailedData("😀"u8);
+        var retained = regex.FullMatchDetailed("😀"u8);
         Assert.True(retained.Success);
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal("y", retained.LastGroup);
         Assert.True(retained.TryGetGroup(1, out var absent));
         Assert.False(absent.Success);
-        Assert.Empty(absent.ValueText);
-        var supplied = new Utf8PythonDetailedMatchData
-        {
-            Groups = retained.Groups,
-            NameEntries = retained.NameEntries,
-            LastIndex = retained.LastIndex
-        };
-        Assert.Same(retained.Groups, supplied.Groups);
-        Assert.Same(retained.NameEntries, supplied.NameEntries);
-        Assert.Equal("y", supplied.LastGroup);
+        Assert.Empty(System.Text.Encoding.UTF8.GetString(absent.Value.GetValueBytes()));
         Assert.True(regex.FullMatch("a😀"u8).Success);
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal((0, 4), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.False(retained.TryGetGroup(-1, out var missing));
-        Assert.Empty(missing.ValueText);
+        Assert.Empty(System.Text.Encoding.UTF8.GetString(missing.Value.GetValueBytes()));
     }
 
-    private static void AssertEmpty(Utf8PythonDetailedMatchData result)
+    private static void AssertEmpty(Utf8PythonMatchContext result)
     {
         Assert.False(result.Success);
-        Assert.Equal(0, result.Value.ValueText.Length);
-        Assert.Empty(result.Groups);
-        Assert.Empty(result.NameEntries);
+        Assert.Equal(0, System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()).Length);
+        Assert.Equal(0,result.CaptureSlotCount);
+        Assert.Empty(result.GetNameEntries());
         Assert.Equal(0, result.CaptureSlotCount);
         Assert.Equal(0, result.NameEntryCount);
         Assert.Null(result.LastIndex);
         Assert.Null(result.LastGroup);
         Assert.False(result.TryGetGroup(0, out var group));
-        Assert.Empty(group.ValueText);
+        Assert.Empty(System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
         Assert.False(result.TryGetFirstSetGroup("x", out group));
-        Assert.Empty(group.ValueText);
+        Assert.Empty(System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
     }
 }

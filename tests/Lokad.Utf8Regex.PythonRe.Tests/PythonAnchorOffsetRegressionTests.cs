@@ -55,7 +55,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
         Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailedData(Utf8(input)).Success);
+        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input)).Success);
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input), startOffsetInBytes).Success);
         Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input), startOffsetInBytes).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailedData(Utf8(input), startOffsetInBytes).Success);
+        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input), startOffsetInBytes).Success);
     }
 
     [Fact]
@@ -79,9 +79,9 @@ public sealed class PythonAnchorOffsetRegressionTests
         var value = regex.FullMatch(Utf8("xfoo"), 1);
         Assert.True(value.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
-        var detailed = regex.FullMatchDetailedData(Utf8("xfoo"), 1);
+        var detailed = regex.FullMatchDetailed(Utf8("xfoo"), 1);
         Assert.True(detailed.Success);
-        Assert.Equal("foo", detailed.Value.ValueText);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
         PythonReMatchAssert.Equal("foo", regex.FullMatch(Utf8("xfoo"), 1));
     }
 

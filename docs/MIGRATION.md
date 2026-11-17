@@ -366,4 +366,20 @@ Range metadata survives advances, failure and disposal. Its byte views borrow th
 subject, which must stay unchanged with its manager alive while read. Decode or
 copy selected bytes in the host when owned text is needed; host allocation and
 final publication checks are outside regex controls. One-shot owned detailed
-results remain available pending their separate API reduction.
+results are removed as described below.
+
+### PythonRe owned-text capture results
+
+SearchDetailedData, MatchDetailedData, FullMatchDetailedData, FindIterDetailed,
+Utf8PythonDetailedMatchData and Utf8PythonGroupMatchData are removed. For a
+synchronous match, use SearchDetailed/MatchDetailed/FullMatchDetailed and read
+their borrowed byte capture contexts. For incremental or retained captures, use
+CreateMatchCursor and its real range/retained advances. Keep subject bytes unchanged
+and their manager alive while reading borrowed bytes.
+
+Decode selected capture bytes and collect results in the host. Regex resource
+limits cover matching and admitted capture metadata/byte output; host string and
+collection allocation, copying and final publication checks belong to the host.
+The removed invocation string-sizing/decoding helpers provide no host memory cap.
+Scalar progression, offsets, capture completion, synchronous cancellation,
+deadlines and meaningful byte/work/depth limits remain on the retained APIs.

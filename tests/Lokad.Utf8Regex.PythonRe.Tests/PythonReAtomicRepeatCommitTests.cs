@@ -71,15 +71,15 @@ public sealed class PythonReAtomicRepeatCommitTests
         var regex = Utf8PythonRegex.Compile("(?>(a+))b", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
         var held = allowance.Used;
-        var retained = regex.SearchDetailedData("xxaaaabzz"u8);
+        var retained = regex.SearchDetailed("xxaaaabzz"u8);
         Assert.True(retained.Success);
-        Assert.Equal("aaaa", retained.Groups[1].ValueText);
+        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(held, allowance.Used);
         Assert.False(regex.FullMatch("aaaabX"u8).Success);
         Assert.Equal(held, allowance.Used);
         regex.Dispose();
         Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("aaaa", retained.Groups[1].ValueText);
+        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Theory]

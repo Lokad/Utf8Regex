@@ -208,7 +208,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
             var regex = new Utf8PythonRegex("(😀)a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             var input = "😀a"u8.ToArray();
-            var retained = regex.SearchDetailedData(input);
+            var retained = regex.SearchDetailed(input);
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Assert.Throws<PythonRePatternException>(() => regex.Replace(input, template));
@@ -216,8 +216,8 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
                 Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
             }
-            Assert.Equal("😀a", retained.Value.ValueText);
-            Assert.Equal("😀", retained.Groups[1].ValueText);
+            Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000001>")));
             Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000000>")));
             Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);

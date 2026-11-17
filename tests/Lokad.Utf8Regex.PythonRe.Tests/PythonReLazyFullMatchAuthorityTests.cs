@@ -30,8 +30,8 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         AssertRestored(construction, hook);
         // Interrupted preparation must not poison future invocations.
         ticks = 0;
-        Assert.Equal("x", regex.FullMatchDetailedData("😀a"u8).LastGroup);
-        Assert.Equal(1, regex.FullMatchDetailedData("😀a"u8).LastIndex);
+        Assert.Equal("x", regex.FullMatchDetailed("😀a"u8).LastGroup);
+        Assert.Equal(1, regex.FullMatchDetailed("😀a"u8).LastIndex);
     }
 
     [Theory]
@@ -71,7 +71,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             AssertRestored(construction, hook);
         }
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.Equal("x", regex.FullMatchDetailedData("😀a"u8).LastGroup);
+        Assert.Equal("x", regex.FullMatchDetailed("😀a"u8).LastGroup);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             }
             else
             {
-                var match = regex.FullMatchDetailedData("😀a"u8);
+                var match = regex.FullMatchDetailed("😀a"u8);
                 Assert.Equal(1, match.LastIndex);
                 Assert.Equal("x", match.LastGroup);
                 Assert.Same(hook, construction.Budget.CheckpointHook);
@@ -165,6 +165,6 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     {
         if (result == 0) _ = regex.FullMatch("😀a"u8, 0, token);
         else if (result == 1) _ = regex.FullMatchDetailed("😀a"u8, 0, token);
-        else _ = regex.FullMatchDetailedData("😀a"u8, 0, token);
+        else _ = regex.FullMatchDetailed("😀a"u8, 0, token);
     }
 }

@@ -67,7 +67,14 @@ public sealed class PythonReTimeoutTests
     public void CatastrophicFindIterDetailedHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindIterDetailed(CreateCatastrophicInput()));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => {
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(CreateCatastrophicInput(), 0, default))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+});
     }
 
     [Fact]

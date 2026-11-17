@@ -114,25 +114,25 @@ public sealed class PythonReOneShotProjectionTests
         });
         foreach (var kind in new[] { 0, 1 })
         {
-            var owned = kind == 0 ? regex.SearchDetailedData(input, start, token.Token)
-                : regex.MatchDetailedData(input, start, token.Token);
+            var owned = kind == 0 ? regex.SearchDetailed(input, start, token.Token)
+                : regex.MatchDetailed(input, start, token.Token);
             var context = Context(regex, input, start, kind, token.Token);
             Assert.True(owned.Success); Assert.True(context.Success);
             Assert.True(owned.TryGetFirstSetGroup(name, out var group));
             Assert.True(context.TryGetFirstSetGroup(name, out var borrowed));
-            Assert.Equal(text, group.ValueText); Assert.Equal(text, System.Text.Encoding.UTF8.GetString(borrowed.Value.GetValueBytes()));
-            Assert.Equal((begin,end),                (group.StartOffsetInBytes,group.EndOffsetInBytes));
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes())); Assert.Equal(text, System.Text.Encoding.UTF8.GetString(borrowed.Value.GetValueBytes()));
+            Assert.Equal((begin,end),                (group.Value.StartOffsetInBytes,group.Value.EndOffsetInBytes));
             Assert.Equal((begin,end),                (borrowed.Value.StartOffsetInBytes,borrowed.Value.EndOffsetInBytes));
             Assert.Equal(1, owned.LastIndex); Assert.Equal(owned.LastIndex, context.LastIndex);
             Assert.Equal(owned.LastGroup, context.LastGroup);
             if (name == "inner")
             {
                 Assert.Equal("outer", owned.LastGroup);
-                Assert.False(owned.Groups[3].Success); Assert.False(context.GetGroup(3).Success);
+                Assert.False(owned.GetGroup(3).Success); Assert.False(context.GetGroup(3).Success);
             }
             // The independently owned text survives another operation's scratch release.
-            _ = regex.SearchDetailedData("!"u8);
-            Assert.Equal(text, group.ValueText);
+            _ = regex.SearchDetailed("!"u8);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
         }
     }
 

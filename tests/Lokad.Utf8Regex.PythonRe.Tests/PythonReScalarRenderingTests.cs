@@ -54,13 +54,13 @@ public sealed class PythonReScalarRenderingTests
                 Assert.Equal(input.Length, found.EndOffsetInBytes);
                 Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(found.GetValueBytes()));
             }
-            var detailed = regex.SearchDetailedData(input, 0, token);
+            var detailed = regex.SearchDetailed(input, 0, token);
             Assert.Equal(expected, detailed.Success);
             if (detailed.Success)
             {
                 Assert.Equal(0, detailed.Value.StartOffsetInBytes);
                 Assert.Equal(input.Length, detailed.Value.EndOffsetInBytes);
-                Assert.Equal(subject, detailed.Value.ValueText);
+                Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
             }
         }
         Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);

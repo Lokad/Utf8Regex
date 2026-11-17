@@ -4,9 +4,9 @@ using Lokad.Utf8Regex.PythonRe;
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 [Collection(PythonReGlobalSettingsCollection.Name)]
-public sealed class PythonReFindIterOwnershipTests
+public sealed class PythonReRangeIterationTests
 {
-    public static IEnumerable<object?[]> OwnedCases()
+    public static IEnumerable<object?[]> CaptureCases()
     {
         var none = PythonReCompileOptions.None;
         var ignoreCase = PythonReCompileOptions.IgnoreCase;
@@ -28,31 +28,37 @@ public sealed class PythonReFindIterOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(OwnedCases))]
-    public void OwnedFindIterMatchesManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[][] groups)
+    [MemberData(nameof(CaptureCases))]
+    public void RangeIterationMatchesCaptureFixtures(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[][] groups)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
-        Assert.Equal(values, matches.Select(static match => match.Value.ValueText).ToArray());
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         Assert.Equal(values.Length, groups.Length);
         for (var i = 0; i < matches.Length; i++)
         {
-            var matchGroups = matches[i].Groups;
+            var matchGroups = matches[i].Groups.ToArray();
             Assert.Equal(groups[i].Length, matchGroups.Length);
             for (var g = 0; g < matchGroups.Length; g++)
             {
                 if (groups[i][g] is null)
                 {
                     Assert.False(matchGroups[g].Success);
-                    Assert.Equal(string.Empty, matchGroups[g].ValueText);
+                    Assert.Equal(string.Empty, Encoding.UTF8.GetString(matches[i].GetGroupMemory(g).Span));
                     Assert.Equal(0, matchGroups[g].StartOffsetInBytes);
                     Assert.Equal(0, matchGroups[g].EndOffsetInBytes);
                 }
                 else
                 {
                     Assert.True(matchGroups[g].Success);
-                    Assert.Equal(groups[i][g], matchGroups[g].ValueText);
+                    Assert.Equal(groups[i][g], Encoding.UTF8.GetString(matches[i].GetGroupMemory(g).Span));
                     Assert.Equal(matches[i].Value.StartOffsetInBytes, matchGroups[g].StartOffsetInBytes);
                     Assert.Equal(matches[i].Value.EndOffsetInBytes, matchGroups[g].EndOffsetInBytes);
                 }
@@ -61,7 +67,7 @@ public sealed class PythonReFindIterOwnershipTests
 
     }
 
-    public static IEnumerable<object?[]> ManagedCases()
+    public static IEnumerable<object?[]> ValueCases()
     {
         var none = PythonReCompileOptions.None;
         yield return new object?[] { "(a)+", none, "aaabaaa", 0, new[] { "aaa", "aaa" } };
@@ -70,12 +76,18 @@ public sealed class PythonReFindIterOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(ManagedCases))]
-    public void FormerManagedFindIterStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
+    [MemberData(nameof(ValueCases))]
+    public void RangeIterationMatchesValueFixtures(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
-        Assert.Equal(values, matches.Select(static match => match.Value.ValueText).ToArray());
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var matches = collectedRanges2.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
     }
 }

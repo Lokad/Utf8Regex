@@ -83,12 +83,12 @@ internal static partial class BenchmarkInspectReporter
         {
             var text = string.Concat(Enumerable.Repeat("ab ", count));
             var input = Encoding.UTF8.GetBytes(text);
-            Utf8PythonDetailedMatchData[] detailed = [];
+            PythonReHostDetailedMatch[] detailed = [];
             Utf8PythonFindAllUtf8Result values = default;
             byte[][][] baselineValues = [];
             int Detailed(Utf8PythonRegex pattern, CancellationToken token)
             {
-                detailed = pattern.FindIterDetailed(input, 0, token);
+                detailed = PythonReBenchmarkReporter.MaterializeDetailedMatches(pattern,input, 0, token);
                 return detailed.Length;
             }
             int Values(Utf8PythonRegex pattern, CancellationToken token)
@@ -124,8 +124,8 @@ internal static partial class BenchmarkInspectReporter
                 var match = detailed[index];
                 if (match.Value.StartOffsetInBytes != index * 3 || match.Value.EndOffsetInBytes != index * 3 + 2 ||
                     match.Value.ValueText != "ab" || match.LastIndex != 2 ||
-                    !match.TryGetGroup(1, out var a) || a.ValueText != "a" ||
-                    !match.TryGetGroup(2, out var b) || b.ValueText != "b" ||
+                    match.Groups.Length != 3 || match.Groups[1].ValueText != "a" ||
+                    match.Groups[2].ValueText != "b" ||
                     !values.TupleValues[index][0].AsSpan().SequenceEqual("a"u8) ||
                     !values.TupleValues[index][1].AsSpan().SequenceEqual("b"u8))
                     throw new InvalidOperationException("Unexpected handoff capture/range/value.");
@@ -149,7 +149,7 @@ internal static partial class BenchmarkInspectReporter
                 new("values", "dotnet/predecoded", () => BaselineValues(text), () => count),
                 new("values", "dotnet/decode", () => BaselineValues(Encoding.UTF8.GetString(input)), () => count),
             ], iterations, samples);
-            // Prefix measurements include full-input validation and early Dispose.
+            // Prefix measurements include first-result discovery and early Dispose.
             var prefixIterations = Math.Max(iterations, 2_000);
             MeasureSlicePolicyOperation("CursorFirstAndDispose", [
                 new("first", "python/unlimited", () => Prefix(regex, 1), () => 1),

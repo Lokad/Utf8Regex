@@ -166,9 +166,9 @@ public sealed class PythonScalarAtomRegressionTests
     [Fact]
     public void ComplementDetailedMatchFreezesWholeScalarRanges()
     {
-        var match = new Utf8PythonRegex("\\W").SearchDetailedData(Utf8(char.ConvertFromUtf32(0x1F600)));
+        var match = new Utf8PythonRegex("\\W").SearchDetailed(Utf8(char.ConvertFromUtf32(0x1F600)));
         Assert.True(match.Success);
-        Assert.Equal(char.ConvertFromUtf32(0x1F600), match.Value.ValueText);
+        Assert.Equal(char.ConvertFromUtf32(0x1F600), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
     }
 
     // CPython 3.13.2 searches an astral scalar with a scoped-ASCII complement and

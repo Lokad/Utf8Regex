@@ -27,8 +27,8 @@ public sealed class PythonReFundedExecutionTests
         {
             operation(); Assert.True(account.Used == held, name + " left temporary funding outstanding.");
         }
-        var retained = regex.SearchDetailedData(input); Assert.True(retained.Success);
-        regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.NotEmpty(retained.Groups[0].ValueText);
+        var retained = regex.SearchDetailed(input); Assert.True(retained.Success);
+        regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.NotEmpty(System.Text.Encoding.UTF8.GetString(retained.GetGroup(0).Value.GetValueBytes()));
     }
 
     [Fact]
@@ -159,9 +159,9 @@ public sealed class PythonReFundedExecutionTests
         ("Match", () => { _ = regex.Match(input); }), ("FullMatch", () => { _ = regex.FullMatch(input); }),
         ("Count", () => regex.Count(input)), ("SearchDetailed", () => { _ = regex.SearchDetailed(input); }),
         ("MatchDetailed", () => { _ = regex.MatchDetailed(input); }), ("FullMatchDetailed", () => { _ = regex.FullMatchDetailed(input); }),
-        ("SearchDetailedData", () => regex.SearchDetailedData(input)), ("MatchDetailedData", () => regex.MatchDetailedData(input)),
-        ("FullMatchDetailedData", () => regex.FullMatchDetailedData(input)),
-        ("FindAllToUtf8", () => regex.FindAllToUtf8(input)), ("FindIterDetailed", () => regex.FindIterDetailed(input)),
+        ("SearchDetailed", () => regex.SearchDetailed(input)), ("MatchDetailed", () => regex.MatchDetailed(input)),
+        ("FullMatchDetailed", () => regex.FullMatchDetailed(input)),
+        ("FindAllToUtf8", () => regex.FindAllToUtf8(input)),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),
         ("Cursor", () => { using var cursor = regex.CreateMatchCursor(input); while (cursor.MoveNext(out _)) { } }),

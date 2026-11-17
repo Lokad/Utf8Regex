@@ -323,7 +323,7 @@ public sealed class Utf8PythonRegexTests
                     Assert.True(native.FullMatchDetailed("ab12"u8).Success);
                     break;
                 default:
-                    Assert.True(native.FullMatchDetailedData("ab12"u8).Success);
+                    Assert.True(native.FullMatchDetailed("ab12"u8).Success);
                     break;
             }
         });
@@ -437,15 +437,15 @@ public sealed class Utf8PythonRegexTests
         var input = "xxШерлок Шерлок "u8.ToArray();
 
         var detailed = regex.FullMatchDetailed(input, startOffsetInBytes: 2);
-        var data = regex.FullMatchDetailedData(input, startOffsetInBytes: 2);
+        var data = regex.FullMatchDetailed(input, startOffsetInBytes: 2);
 
         Assert.True(detailed.Success);
         Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
         Assert.Equal("Шерлок ", System.Text.Encoding.UTF8.GetString(word.Value.GetValueBytes()));
         Assert.True(data.Success);
-        Assert.Equal("Шерлок Шерлок ", data.Value.ValueText);
-        Assert.False(regex.FullMatchDetailedData("xxШерлок x"u8, startOffsetInBytes: 2).Success);
+        Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(data.Value.GetValueBytes()));
+        Assert.False(regex.FullMatchDetailed("xxШерлок x"u8, startOffsetInBytes: 2).Success);
 
 
     }
@@ -457,7 +457,7 @@ public sealed class Utf8PythonRegexTests
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailedData(input));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailed(input));
     }
     [Fact]
     public void ScalarGlobalLoopsHonorTimeout()
@@ -538,16 +538,16 @@ public sealed class Utf8PythonRegexTests
 
         var search = regex.Search("𝒜"u8);
         var detailed = regex.SearchDetailed("𝒜"u8);
-        var detailedData = regex.SearchDetailedData("𝒜"u8);
+        var detailedData = regex.SearchDetailed("𝒜"u8);
 
         Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(search.GetValueBytes()));
         Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
         Assert.True(detailed.TryGetGroup(0, out var whole));
         Assert.True(whole.Success);
         Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(whole.Value.GetValueBytes()));
-        Assert.Equal("𝒜", detailedData.Value.ValueText);
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(detailedData.Value.GetValueBytes()));
         Assert.True(detailedData.TryGetGroup(0, out var dataGroup));
-        Assert.Equal("𝒜", dataGroup.ValueText);
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(dataGroup.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -865,7 +865,13 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(
             expected,
             regex.FindAllToUtf8("y"u8).ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
-        Assert.Equal(expected, regex.FindIterDetailed("y"u8).Select(static match => match.Value.ValueText).ToArray());
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(("y"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        Assert.Equal(expected, collectedRanges1.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         Assert.Equal(3, regex.Count("y"u8));
         Assert.Equal("---", System.Text.Encoding.UTF8.GetString(regex.Replace("y"u8, "-")));
 
@@ -884,7 +890,13 @@ public sealed class Utf8PythonRegexTests
             }
         }
         Assert.Equal(["", ""], wholeMatches27.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
-        Assert.Equal(["", ""], empty.FindIterDetailed("𝒜"u8).Select(static match => match.Value.ValueText).ToArray());
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = empty.CreateMatchCursor(("𝒜"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        Assert.Equal(["", ""], collectedRanges2.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         Assert.Equal(2, empty.Count("𝒜"u8));
     }
 
@@ -1138,14 +1150,20 @@ public sealed class Utf8PythonRegexTests
         var matches = wholeMatches31.ToArray();
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("foobar foo"u8));
         var utf8 = regex.FindAllToUtf8("foobar foo"u8);
-        var detailed = regex.FindIterDetailed("foobar foo"u8);
+        var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor3 = regex.CreateMatchCursor(("foobar foo"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor3.MoveNext(out var rangeMatch3))
+                collectedRanges3.Add(rangeMatch3);
+        }
+        var detailed = collectedRanges3.ToArray();
 
         Assert.Equal(["foo", "foo"], matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         Assert.Equal(["foo", "foo"], strings.ScalarValues);
         Assert.Equal(
             strings.ScalarValues,
             utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
-        Assert.Equal(["foo", "foo"], detailed.Select(static match => match.Value.ValueText).ToArray());
+        Assert.Equal(["foo", "foo"], detailed.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         Assert.Equal(2, regex.Count("foobar foo"u8));
     }
 
@@ -1169,7 +1187,13 @@ public sealed class Utf8PythonRegexTests
         var matches = wholeMatches32.ToArray();
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
-        var detailed = regex.FindIterDetailed(input, startOffsetInBytes);
+        var collectedRanges4 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor4 = regex.CreateMatchCursor((input).ToArray(), startOffsetInBytes, default))
+        {
+            while (rangeCursor4.MoveNext(out var rangeMatch4))
+                collectedRanges4.Add(rangeMatch4);
+        }
+        var detailed = collectedRanges4.ToArray();
 
         Assert.Empty(matches);
         Assert.Empty(strings.ScalarValues);
@@ -1212,14 +1236,20 @@ public sealed class Utf8PythonRegexTests
     public void FindIterDetailedReturnsHostFriendlySnapshots()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
+        var collectedRanges5 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor5 = regex.CreateMatchCursor(("xx foo-foo yy foo-foo"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor5.MoveNext(out var rangeMatch5))
+                collectedRanges5.Add(rangeMatch5);
+        }
 
-        var matches = regex.FindIterDetailed("xx foo-foo yy foo-foo"u8);
+        var matches = collectedRanges5.ToArray();
 
         Assert.Equal(2, matches.Length);
-        Assert.Equal("foo-foo", matches[0].Value.ValueText);
+        Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(matches[0].GetValueMemory().Span));
         Assert.True(matches[0].TryGetFirstSetGroup("word", out var firstWord));
-        Assert.Equal("foo", firstWord.ValueText);
-        Assert.Equal("foo-foo", matches[1].Value.ValueText);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((firstWord.Success ? matches[0].GetGroupMemory(firstWord.Number) : default).Span));
+        Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(matches[1].GetValueMemory().Span));
     }
 
     [Fact]
@@ -1228,22 +1258,34 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("(é+)-(𝒜𝒜|𝒜)");
         var input = System.Text.Encoding.UTF8.GetBytes("é-𝒜 xx éé-𝒜𝒜");
         var startOffsetInBytes = "é-𝒜 xx "u8.Length;
+        var collectedRanges6 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor6 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor6.MoveNext(out var rangeMatch6))
+                collectedRanges6.Add(rangeMatch6);
+        }
 
-        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
+        var matches = collectedRanges6.ToArray();
 
         var match = Assert.Single(matches);
         Assert.Equal(startOffsetInBytes, match.Value.StartOffsetInBytes);
-        Assert.Equal("éé-𝒜𝒜", match.Value.ValueText);
-        Assert.Equal("éé", match.Groups[1].ValueText);
-        Assert.Equal("𝒜𝒜", match.Groups[2].ValueText);
+        Assert.Equal("éé-𝒜𝒜", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal("𝒜𝒜", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
     }
 
     [Fact]
     public void FindIterDetailedKeepsGeneralEmptyMatchTraversal()
     {
-        var matches = new Utf8PythonRegex("x*").FindIterDetailed("xx"u8);
+        var collectedRanges7 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor7 = new Utf8PythonRegex("x*").CreateMatchCursor(("xx"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor7.MoveNext(out var rangeMatch7))
+                collectedRanges7.Add(rangeMatch7);
+        }
+        var matches = collectedRanges7.ToArray();
 
-        Assert.Equal(["xx", ""], matches.Select(static match => match.Value.ValueText).ToArray());
+        Assert.Equal(["xx", ""], matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
     }
 
     [Fact]
@@ -1471,26 +1513,35 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?P<word>[a-z]+)(?:-([0-9]+))?");
         var input = "π skip cat dog-12"u8.ToArray();
         var startOffsetInBytes = "π skip "u8.Length;
+        var collectedRanges8 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor8 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor8.MoveNext(out var rangeMatch8))
+                collectedRanges8.Add(rangeMatch8);
+        }
 
-        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
+        var matches = collectedRanges8.ToArray();
         Assert.Equal(2, matches.Length);
         Assert.Equal("cat", Describe(matches[0]));
         Assert.Equal("dog:12", Describe(matches[1]));
 
         Parallel.For(0, 16, _ =>
         {
-            var values = regex.FindIterDetailed(input, startOffsetInBytes);
+            var collected = new List<Utf8PythonRangeMatch>();
+            using (var cursor = regex.CreateMatchCursor(input, startOffsetInBytes))
+                while (cursor.MoveNext(out var range)) collected.Add(range);
+            var values = collected.ToArray();
             Assert.Equal(new[] { "cat", "dog:12" }, values.Select(Describe));
         });
 
-        static string Describe(Utf8PythonDetailedMatchData match)
+        static string Describe(Utf8PythonRangeMatch match)
         {
             Assert.True(match.TryGetFirstSetGroup("word", out var word));
-            var optional = match.Groups.FirstOrDefault(group =>
-                group.Number != 0 && group.Number != word.Number && group.Success);
+            Assert.True(match.TryGetGroup(2, out var optional));
+            var value = System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(word.Number).Span);
             return optional.Success
-                ? $"{word.ValueText}:{optional.ValueText}"
-                : word.ValueText;
+                ? $"{value}:{System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(2).Span)}"
+                : value;
         }
     }
 
@@ -1649,7 +1700,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.Search(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.FullMatch(input, startOffsetInBytes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => direct.SearchDetailedData(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.SearchDetailed(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.FindAllToUtf8(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => empty.Count(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => System.Text.Encoding.UTF8.GetString(direct.Replace(input, "_", count: 0, startOffsetInBytes: startOffsetInBytes)));

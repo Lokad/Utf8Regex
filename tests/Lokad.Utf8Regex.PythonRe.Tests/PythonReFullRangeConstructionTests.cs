@@ -56,8 +56,14 @@ public sealed class PythonReFullRangeConstructionTests
         var regex = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, Limits, new() { MaxWorkSteps = 20000 },
             Timeout.InfiniteTimeSpan, CancellationToken.None);
-        var matches = regex.FindIterDetailed("é😀\n"u8);
-        Assert.Equal(new[] { "é", "😀", "\n" }, matches.Select(match => match.Groups[1].ValueText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(("é😀\n"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
+        Assert.Equal(new[] { "é", "😀", "\n" }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
         Assert.Equal(new[] { 0, 2, 6 }, matches.Select(match => match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { 2, 6, 7 }, matches.Select(match => match.Value.EndOffsetInBytes));
         Assert.All(matches, match => Assert.Equal(1, match.LastIndex));
@@ -69,10 +75,10 @@ public sealed class PythonReFullRangeConstructionTests
     {
         var regex = Compile(@"(?i)([^\x00-\U0010ffff]*)");
         Assert.Equal(new[] { "", "", "" }, regex.FindAllToUtf8("é😀"u8).ScalarValues.Select(Encoding.UTF8.GetString));
-        var empty = regex.FullMatchDetailedData([]);
+        var empty = regex.FullMatchDetailed([]);
         Assert.True(empty.Success);
         Assert.Equal(1, empty.LastIndex);
-        Assert.Equal("", empty.Groups[1].ValueText);
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(empty.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Theory]

@@ -26,14 +26,26 @@ public sealed class PythonReGreedyEmptyRetryTests
         // The empty assertion preserves the language while keeping the reference
         // on the general retry path, including its distinct assertion workspace.
         var reference = new Utf8PythonRegex("(?=)(?:" + pattern + ")");
-        var expected = reference.FindIterDetailed(input, start);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = reference.CreateMatchCursor(input, start, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var expected = collectedRanges1.ToArray();
         using var token = new CancellationTokenSource();
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, new Utf8ResourcePolicy
         {
             MaxWorkSteps = 1_000_000,MaxDepth = 1024,            MaxWorkingBytes = 1 << 20,MaxResultBytes = 1 << 20        } })
         {
             var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, policy);
-            var actual = regex.FindIterDetailed(input, start, token.Token);
+            var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor2 = regex.CreateMatchCursor(input, start, token.Token))
+            {
+                while (rangeCursor2.MoveNext(out var rangeMatch2))
+                    collectedRanges2.Add(rangeMatch2);
+            }
+            var actual = collectedRanges2.ToArray();
             Assert.Equal(expected.Select(m => m.Value), actual.Select(m => m.Value));
             Assert.Equal(expected.Length, regex.Count(input, start, token.Token));
             Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(input, start)).ScalarValues,
@@ -51,11 +63,11 @@ public sealed class PythonReGreedyEmptyRetryTests
                 Assert.True(alias.MoveNext(out cursorRange));
                 var match = cursorRange;
                 first ??= match;
-                PythonReRangeAssert.Equal(expected[i], match);
+                PythonReCaptureAssert.Equal(expected[i], match);
             }
             Assert.False(cursor.MoveNext(out cursorRange));
             Assert.False(alias.MoveNext(out cursorRange));
-            if (first is { } retained) PythonReRangeAssert.Equal(expected[0], retained);
+            if (first is { } retained) PythonReCaptureAssert.Equal(expected[0], retained);
         }
     }
 }

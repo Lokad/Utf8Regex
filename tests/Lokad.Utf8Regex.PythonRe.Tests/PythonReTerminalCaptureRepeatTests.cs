@@ -12,11 +12,17 @@ public sealed class PythonReTerminalCaptureRepeatTests
         var regex = Create();
         var values = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("ab"u8)).ScalarValues;
         Assert.Equal(new[] { "", "ab", "" }, values);
-        var matches = regex.FindIterDetailed("ab"u8);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(("ab"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
         Assert.Equal(3, matches.Length);
         Assert.Null(matches[0].LastIndex);
         Assert.Equal(1, matches[1].LastIndex);
-        Assert.Equal("ab", matches[1].Groups[1].ValueText);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(matches[1].GetGroupMemory(1).Span));
         Assert.Null(matches[2].LastIndex);
         Assert.False(matches[0].Groups[1].Success);
         Assert.False(matches[2].Groups[1].Success);
@@ -25,13 +31,13 @@ public sealed class PythonReTerminalCaptureRepeatTests
     [Fact]
     public void DerivedFullMatchKeepsItsEndRequirementAndAlternatives()
     {
-        var match = Create().FullMatchDetailedData("ab"u8);
+        var match = Create().FullMatchDetailed("ab"u8);
         Assert.True(match.Success);
-        Assert.Equal("ab", match.Groups[1].ValueText);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(1, match.LastIndex);
-        var empty = Create().FullMatchDetailedData([]);
+        var empty = Create().FullMatchDetailed([]);
         Assert.True(empty.Success);
         Assert.Null(empty.LastIndex);
-        Assert.False(empty.Groups[1].Success);
+        Assert.False(empty.GetGroup(1).Success);
     }
 }

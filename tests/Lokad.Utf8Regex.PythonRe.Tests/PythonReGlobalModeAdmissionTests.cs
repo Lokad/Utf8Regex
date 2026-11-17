@@ -45,10 +45,10 @@ public sealed class PythonReGlobalModeAdmissionTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
-        var match = regex.FullMatchDetailedData(Encoding.UTF8.GetBytes(text));
+        var match = regex.FullMatchDetailed(Encoding.UTF8.GetBytes(text));
         Assert.True(match.Success);
-        Assert.Equal(first, match.Groups[1].ValueText);
-        Assert.Equal(second, match.Groups[2].ValueText);
+        Assert.Equal(first, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(second, System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
         Assert.Equal(2, match.LastIndex);
         Assert.Equal("y", match.LastGroup);
     }

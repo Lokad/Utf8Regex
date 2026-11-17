@@ -8,7 +8,6 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarResultCapacityTests
 {
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
-    private static ulong StringBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
     private static Utf8SliceInvocation Create(ulong cap) => new(new(0, 0, 0, cap), Regex.InfiniteMatchTimeout, default);
 
     [Theory]
@@ -39,120 +38,6 @@ public sealed class Utf8ScalarResultCapacityTests
         Assert.Throws<InvalidOperationException>(() => rejected.AllocateArray<string>(count, ref denied));
         Assert.Equal(0UL, rejected.ReservedBytes);
         Assert.Equal(7UL, denied.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(2)] [InlineData(2049)]
-    public void StringCapacityPrecedesAllocationAndPreservesExactWorkingLoans(int chars)
-    {
-        var text = chars == 2 ? "😀" : new string('é', chars);
-        var input = Encoding.UTF8.GetBytes(text);
-        var bytes = StringBytes(chars);
-        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + bytes, Math.Max(1UL, bytes)), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        Utf8InvocationResultLedger results = default;
-        var retained = results.DecodeUtf8(input, chars, ref invocation);
-        Assert.Equal(text, retained);
-        Assert.Equal(bytes, invocation.Budget.ResultBytes);
-        Assert.Equal(13 + bytes, invocation.Ledger.ReservedBytes);
-        results.Release(ref invocation);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(text, retained);
-        Assert.Equal(bytes, invocation.Budget.ResultBytes);
-        if (bytes == 0) return;
-        var denied = Create(bytes - 1);
-        Assert.True(denied.Ledger.TryReserve(13));
-        Utf8InvocationResultLedger rejected = default;
-        Assert.Throws<InvalidOperationException>(() => rejected.DecodeUtf8(input, chars, ref denied));
-        Assert.Equal(0UL, rejected.ReservedBytes);
-        Assert.Equal(13UL, denied.Ledger.ReservedBytes);
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, denied.Budget.LimitBreach);
-    }
-
-    [Theory]
-    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
-    public void UnknownStringLengthAdmitsItsBoundBeforeDecodingAndRefundsIt(int byteCount)
-    {
-        var text = new string('\u00e9', byteCount / 2) + ((byteCount & 1) == 0 ? "" : "x");
-        var input = Encoding.UTF8.GetBytes(text);
-        var extent = StringBytes(byteCount <= 4096 ? byteCount : text.Length);
-        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + extent, extent), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        Utf8InvocationResultLedger results = default;
-        var retained = results.DecodeUtf8(input, null, ref invocation);
-        Assert.Equal(text, retained);
-        Assert.Equal(extent, results.ReservedBytes);
-        Assert.Equal(extent, invocation.Budget.ResultBytes);
-        results.Release(ref invocation);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(text, retained);
-        foreach (var resultLimit in new[] { false, true })
-        {
-            var denied = new Utf8SliceInvocation(new(0, 0, resultLimit ? 13 + extent : 12 + extent,
-                resultLimit ? extent - 1 : extent), Regex.InfiniteMatchTimeout, default);
-            Assert.True(denied.Ledger.TryReserve(13));
-            Utf8InvocationResultLedger rejected = default;
-            Assert.Throws<InvalidOperationException>(() => rejected.DecodeUtf8(input, null, ref denied));
-            Assert.Equal(resultLimit ? Utf8ExecutionLimitKind.ResultBytes : Utf8ExecutionLimitKind.WorkingBytes,
-                denied.Budget.LimitBreach);
-            Assert.Equal(0UL, rejected.ReservedBytes);
-            Assert.Equal(13UL, denied.Ledger.ReservedBytes);
-        }
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(7)]
-    public void LargeUnknownStringsKeepExactCapacityAcrossScalarAndBlockCuts(int borrowedOffset)
-    {
-        for (var prefix = 0; prefix < 32; prefix++)
-        foreach (var tail in new[] { 0, 1, 31, 32, 33 })
-        {
-            var text = new string('x', prefix) + string.Concat(Enumerable.Repeat("\0\u007f\u0080\u07ff\u0800\uffff\U00010000\U0010ffff", 257)) + new string('y', tail);
-            var input = Encoding.UTF8.GetBytes(text);
-            byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. input, 0xff];
-            var extent = StringBytes(text.Length);
-            var invocation = new Utf8SliceInvocation(new(0, 0, 13 + extent, extent), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Utf8InvocationResultLedger results = default;
-            var retained = results.DecodeUtf8(storage.AsSpan(borrowedOffset, input.Length), null, ref invocation);
-            Assert.Equal(text, retained);
-            Assert.Equal(extent, results.ReservedBytes);
-            Assert.Equal(extent, invocation.Budget.ResultBytes);
-            results.Release(ref invocation);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.Equal(text, retained);
-        }
-    }
-
-    [Theory]
-    [InlineData("cancel")] [InlineData("deadline")] [InlineData("work")]
-    public void LargeUnknownSizingRemainsInterruptibleBeforeStringAdmission(string interruption)
-    {
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 50000)));
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(interruption == "work" ? 63UL : 0, 0, 1 << 22, 1 << 22),
-            interruption == "deadline" ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (interruption == "cancel") token.Cancel(); else ticks = 50; };
-        Utf8InvocationResultLedger results = default;
-        Exception? failure = null;
-        try { results.DecodeUtf8(input, null, ref invocation); }
-        catch (Exception error) { failure = error; }
-        if (interruption == "cancel")
-            Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        else if (interruption == "deadline") Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        else
-        {
-            Assert.IsType<InvalidOperationException>(failure);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
-        }
-        Assert.Equal(interruption != "work", entered);
-        Assert.Equal(0UL, results.ReservedBytes);
-        Assert.Equal(0UL, invocation.Budget.ResultBytes);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 
     [Theory]
@@ -310,9 +195,8 @@ public sealed class Utf8ScalarResultCapacityTests
         Assert.Equal(new byte[] { 42 }, child);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void LargeArrayAndTextAreDeniedBeforeActualAcquisition(bool text)
+    [Fact]
+    public void LargeArraysAreDeniedBeforeActualAcquisition()
     {
         var input = new byte[1000000];
         Array.Fill(input, (byte)'x');
@@ -325,8 +209,7 @@ public sealed class Utf8ScalarResultCapacityTests
         var before = GC.GetAllocatedBytesForCurrentThread();
         try
         {
-            if (text) results.DecodeUtf8(input, input.Length, ref invocation);
-            else results.AllocateArray<byte>(input.Length, ref invocation);
+            results.AllocateArray<byte>(input.Length, ref invocation);
             Assert.Fail("A large result must be denied before acquisition.");
         }
         catch (InvalidOperationException) { Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.Budget.LimitBreach); }

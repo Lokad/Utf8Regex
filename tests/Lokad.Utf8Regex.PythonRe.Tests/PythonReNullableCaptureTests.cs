@@ -41,11 +41,17 @@ public sealed class PythonReNullableCaptureTests
         {
             Assert.True(regex.IsMatch(input, 0, token));
             Assert.True(regex.Match(input, 0, token).Success);
-            Assert.True(regex.SearchDetailedData(input, 0, token).Success);
+            Assert.True(regex.SearchDetailed(input, 0, token).Success);
             Assert.Equal(fullMatch, regex.FullMatch(input, 0, token).Success);
             Assert.Equal(expectedRanges.Length, regex.Count(input, 0, token));
             Assert.Equal(expectedCaptures.Select(value => value ?? ""), PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token)).ScalarValues);
-            var detailed = regex.FindIterDetailed(input, 0, token);
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, token))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            var detailed = collectedRanges1.ToArray();
             Assert.Equal(expectedRanges, detailed.Select(value => (value.Value.StartOffsetInBytes, value.Value.EndOffsetInBytes)));
             using var cursor = regex.CreateMatchCursor(input, 0, token);
             var alias = cursor;
@@ -55,7 +61,7 @@ public sealed class PythonReNullableCaptureTests
                 Assert.True((index % 2 == 0 ? cursor : alias).MoveNext(out cursorRange));
                 var snapshot = cursorRange;
                 retained.Add(snapshot);
-                PythonReRangeAssert.Equal(detailed[index], snapshot);
+                PythonReCaptureAssert.Equal(detailed[index], snapshot);
                 Assert.True(snapshot.TryGetFirstSetGroup("x", out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
                 if (expectedCaptures[index] is { } text) Assert.Equal(text, System.Text.Encoding.UTF8.GetString((capture.Success ? snapshot.GetGroupMemory(capture.Number) : default).Span));
@@ -68,7 +74,7 @@ public sealed class PythonReNullableCaptureTests
                 Assert.True(retained[index].TryGetFirstSetGroup("x", out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
                 if (expectedCaptures[index] is { } text) Assert.Equal(text, System.Text.Encoding.UTF8.GetString((capture.Success ? retained[index].GetGroupMemory(capture.Number) : default).Span));
-                PythonReRangeAssert.Equal(detailed[index], retained[index]);
+                PythonReCaptureAssert.Equal(detailed[index], retained[index]);
             }
         }
         var invalid = input.Concat(new byte[] { 0xff }).ToArray();

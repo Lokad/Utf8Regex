@@ -68,7 +68,13 @@ public sealed class PythonReZeroWidthCandidateTests
                 Assert.Equal(expected.Count != 0, owner.IsMatch(input, start));
                 Assert.Equal(expected.Count != 0, owner.IsMatch(input, start, token.Token));
                 Assert.Equal(expected.Count, owner.Count(input, start, token.Token));
-                var matches = owner.FindIterDetailed(input, start, token.Token);
+                var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+                using (var rangeCursor1 = owner.CreateMatchCursor(input, start, token.Token))
+                {
+                    while (rangeCursor1.MoveNext(out var rangeMatch1))
+                        collectedRanges1.Add(rangeMatch1);
+                }
+                var matches = collectedRanges1.ToArray();
                 Assert.Equal(expected.Count, matches.Length);
                 for (var index = 0; index < matches.Length; index++)
                     Assert.Equal(expected[index], (matches[index].Value.StartOffsetInBytes, matches[index].Value.EndOffsetInBytes));
@@ -84,8 +90,14 @@ public sealed class PythonReZeroWidthCandidateTests
         Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"\b(?P<n>\d+)\b");
         var input = Encoding.UTF8.GetBytes("a1 12_ 3é ٤٥ ६७ 𝟙𝟚 9\u0301");
-        var matches = regex.FindIterDetailed(input);
-        Assert.Equal(new[] { "٤٥", "६७", "𝟙𝟚", "9" }, matches.Select(match => match.Groups[1].ValueText));
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var matches = collectedRanges2.ToArray();
+        Assert.Equal(new[] { "٤٥", "६७", "𝟙𝟚", "9" }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
         Assert.True(cursor.MoveNext(out cursorRange));

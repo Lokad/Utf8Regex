@@ -32,11 +32,21 @@ public sealed class PythonReCompletedBackreferenceTests
         {
             var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, policy);
             Assert.Equal(reference.FullMatch(input).Success, regex.FullMatch(input, 0, source.Token).Success);
-            Assert.Equal(JsonSerializer.Serialize(reference.FullMatchDetailedData(input)),
-                JsonSerializer.Serialize(regex.FullMatchDetailedData(input, 0, source.Token)));
+            PythonReCaptureAssert.Equal(reference.FullMatchDetailed(input), regex.FullMatchDetailed(input, 0, source.Token));
             var repeated = Encoding.UTF8.GetBytes("😀 " + text + " " + text);
-            Assert.Equal(JsonSerializer.Serialize(reference.FindIterDetailed(repeated)),
-                JsonSerializer.Serialize(regex.FindIterDetailed(repeated, 0, source.Token)));
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = reference.CreateMatchCursor(repeated, 0, default))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor2 = regex.CreateMatchCursor(repeated, 0, source.Token))
+            {
+                while (rangeCursor2.MoveNext(out var rangeMatch2))
+                    collectedRanges2.Add(rangeMatch2);
+            }
+            PythonReCaptureAssert.Equal(collectedRanges1.ToArray(), collectedRanges2.ToArray());
             Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(repeated)).ScalarValues,
                 PythonReFindAllAssert.Decode(regex.FindAllToUtf8(repeated, 0, source.Token)).ScalarValues);
             Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(repeated, "!")), System.Text.Encoding.UTF8.GetString(regex.Replace(repeated, "!")));
@@ -73,6 +83,6 @@ public sealed class PythonReCompletedBackreferenceTests
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, policy).FullMatchDetailedData("token-token"u8.ToArray()));
+                new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, policy).FullMatchDetailed("token-token"u8.ToArray()));
     }
 }

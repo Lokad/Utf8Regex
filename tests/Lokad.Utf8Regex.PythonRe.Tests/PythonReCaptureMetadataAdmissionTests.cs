@@ -47,7 +47,7 @@ public sealed class PythonReCaptureMetadataAdmissionTests
         Assert.Equal(new[] { "0", "first", "2", "third", "4" }, regex.GetGroupNames());
         var first = regex.GetGroupNames(); first[1] = "changed";
         Assert.Equal("first", regex.GetGroupNames()[1]);
-        var result = regex.SearchDetailedData("abcd"u8);
+        var result = regex.SearchDetailed("abcd"u8);
         Assert.Null(result.LastGroup);
         Assert.Equal(4, result.LastIndex);
     }

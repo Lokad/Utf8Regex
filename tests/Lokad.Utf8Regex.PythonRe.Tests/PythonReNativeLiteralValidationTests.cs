@@ -96,12 +96,12 @@ public sealed class PythonReNativeLiteralValidationTests
         var regex = new Utf8PythonRegex("é😀");
         var input = Encoding.UTF8.GetBytes("中é😀尾");
         var first = regex.Search(input);
-        var snapshot = regex.SearchDetailedData(input);
+        var snapshot = regex.SearchDetailed(input);
         Assert.False(regex.Search("Ватсон"u8).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal((3,9),            (first.StartOffsetInBytes,first.EndOffsetInBytes));
         Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
-        Assert.Equal("é😀", snapshot.Value.ValueText);
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(snapshot.Value.GetValueBytes()));
     }
 
     [Theory]

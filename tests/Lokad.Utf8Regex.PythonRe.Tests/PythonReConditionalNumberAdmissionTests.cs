@@ -38,10 +38,10 @@ public sealed class PythonReConditionalNumberAdmissionTests
             MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
         var input = Encoding.UTF8.GetBytes(text);
-        var result = regex.FullMatchDetailedData(input);
+        var result = regex.FullMatchDetailed(input);
         Assert.True(result.Success);
-        Assert.Equal(text, result.Value.ValueText);
-        Assert.Equal(text == "😀é" ? "😀" : "c", result.Groups[1].ValueText);
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()));
+        Assert.Equal(text == "😀é" ? "😀" : "c", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(input.Length, result.Value.EndOffsetInBytes);
     }
 

@@ -25,9 +25,15 @@ public sealed partial class PythonReScalarGlobalTests
             using var source = new CancellationTokenSource();
             var token = live ? source.Token : CancellationToken.None;
             var regex = new Utf8PythonRegex(pattern, options);
-            var detailed = regex.FindIterDetailed(input, start, token);
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(input, start, token))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            var detailed = collectedRanges1.ToArray();
             var values = e.GetProperty("matches").Deserialize<string[]>() ?? [];
-            Assert.Equal(values, detailed.Select(static m => m.Value.ValueText));
+            Assert.Equal(values, detailed.Select(static m => System.Text.Encoding.UTF8.GetString(m.GetValueMemory().Span)));
             var wholeMatches13 = new List<Utf8PythonRangeMatch>();
             using (var rangeCursor13 = regex.CreateMatchCursor(input, start, token))
             {
@@ -48,7 +54,7 @@ public sealed partial class PythonReScalarGlobalTests
                     var startByte = ranges[i][g][0].GetInt32();
                     var endByte = ranges[i][g][1].GetInt32();
                     Assert.Equal(startByte >= 0, group.Success);
-                    Assert.Equal(expectedGroups[i][g].GetString(), group.ValueText);
+                    Assert.Equal(expectedGroups[i][g].GetString(), System.Text.Encoding.UTF8.GetString(detailed[i].GetGroupMemory(g).Span));
                     if (startByte < 0) continue;
                     Assert.Equal(startByte, group.StartOffsetInBytes);
                     Assert.Equal(endByte, group.EndOffsetInBytes);
@@ -86,7 +92,7 @@ public sealed partial class PythonReScalarGlobalTests
     }
 
     [Theory]
-    [InlineData(0)]  [InlineData(3)] [InlineData(4)]
+    [InlineData(3)] [InlineData(4)]
     [InlineData(6)] [InlineData(8)] [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
@@ -106,7 +112,6 @@ public sealed partial class PythonReScalarGlobalTests
             {
                 switch (operation)
                 {
-                    case 0: regex.FindIterDetailed(input, 0, source.Token); break;
                     case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
                     case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
                     case 6: regex.Replace(input, "x", 0, 0, source.Token); break;
@@ -118,6 +123,12 @@ public sealed partial class PythonReScalarGlobalTests
             Assert.Equal(source.Token, failure.CancellationToken);
         }
         finally { session.Complete(); }
-        Assert.Single(regex.FindIterDetailed("\U0001f600\U0001f600"u8));
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(("\U0001f600\U0001f600"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        Assert.Single(collectedRanges2.ToArray());
     }
 }

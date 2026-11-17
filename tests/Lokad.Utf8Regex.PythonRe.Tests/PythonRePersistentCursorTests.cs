@@ -7,30 +7,6 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonRePersistentCursorTests
 {
-    [Theory]
-    [InlineData("(?P<x>.)", "é😀z", 0)]
-    [InlineData("(?P<x>.)", "é😀z", 2)]
-    [InlineData("(?<=é)(?P<x>.)", "é😀z", 0)]
-    [InlineData(@"(.)\1", "é😀😀z", 0)]
-    [InlineData("", "é😀z", 0)]
-    [InlineData(".*?", "é😀z", 0)]
-    [InlineData("(?P<x>a)?", "ab", 0)]
-    [InlineData("(?P<x>z)", "é😀", 0)]
-    public void IncrementalDiscoveryPreservesScalarRangesCapturesAndEmptyRetries(string pattern, string subject, int start)
-    {
-        Utf8PythonRangeMatch cursorRange = default;
-        var regex = new Utf8PythonRegex(pattern);
-        var input = Encoding.UTF8.GetBytes(subject);
-        var expected = regex.FindIterDetailed(input, start);
-        using var cursor = regex.CreateMatchCursor(input, start);
-        foreach (var match in expected)
-        {
-            Assert.True(cursor.MoveNext(out cursorRange));
-            PythonReRangeAssert.Equal(match, cursorRange);
-            Assert.Equal(match.NameEntries, cursorRange.NameEntries.ToArray());
-        }
-        Assert.False(cursor.MoveNext(out cursorRange)); Assert.False(cursor.MoveNext(out cursorRange));
-    }
 
     [Fact]
     public void EmptyThenNonemptyDiscoveryUsesWholeSupplementaryScalars()

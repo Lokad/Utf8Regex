@@ -109,9 +109,9 @@ public sealed class PythonReCountOwnershipTests
             Assert.Equal(0, regex.Count(input, input.Length));
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
             using var detailed = new Utf8PythonRegex(pattern);
-            var retained = detailed.SearchDetailedData(input);
+            var retained = detailed.SearchDetailed(input);
             Assert.Equal(expected, detailed.Count(input));
-            Assert.Equal("12", retained.Groups[^1].ValueText);
+            Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroup(retained.CaptureSlotCount - 1).Value.GetValueBytes()));
         }
     }
     [Theory]

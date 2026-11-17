@@ -57,15 +57,15 @@ public sealed class PythonReConditionalNameAdmissionTests
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var match = regex.FullMatchDetailedData(input);
+            var match = regex.FullMatchDetailed(input);
             Assert.Equal(success, match.Success);
             if (success)
             {
                 Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                Assert.Equal(text, match.Value.ValueText);
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                 if (text == "😀é")
                 {
-                    Assert.Equal("😀", match.Groups[1].ValueText);
+                    Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
                     Assert.Equal(1, match.LastIndex);
                     Assert.Equal("x", match.LastGroup);
                 }

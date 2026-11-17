@@ -42,17 +42,17 @@ public sealed class PythonReCaptureAliasTests
             Assert.False(regex.IsMatch(absent));
             Assert.Equal(1, regex.Count(input));
             Assert.True(regex.FullMatch(input).Success);
-            var retained = regex.SearchDetailedData(input);
+            var retained = regex.SearchDetailed(input);
             Assert.Equal(2, retained.LastIndex);
             Assert.Equal(second, retained.LastGroup);
             Assert.True(retained.TryGetFirstSetGroup(first, out var a));
             Assert.True(retained.TryGetFirstSetGroup(second, out var b));
-            Assert.Equal("a", a.ValueText);
-            Assert.Equal("b", b.ValueText);
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(a.Value.GetValueBytes()));
+            Assert.Equal("b", System.Text.Encoding.UTF8.GetString(b.Value.GetValueBytes()));
             Assert.Equal(["a", "b"], Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
             Assert.Equal("a|b", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "\\g<" + first + ">|\\g<" + second + ">")));
-            Assert.Equal("a", retained.Groups[1].ValueText);
-            Assert.Equal("b", retained.Groups[2].ValueText);
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).Value.GetValueBytes()));
 
         }
     }
@@ -67,12 +67,12 @@ public sealed class PythonReCaptureAliasTests
         Assert.True(native.IsMatch("abcab"u8));
         Assert.False(native.IsMatch("abccb"u8));
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.FullMatchDetailedData("abcab"u8);
+        var match = regex.FullMatchDetailed("abcab"u8);
         Assert.True(match.Success);
         Assert.Equal(["0", "α", "2", "g1"], regex.GetGroupNames());
         Assert.Equal(3, match.LastIndex);
         Assert.Equal("g1", match.LastGroup);
-        Assert.Equal(["abcab", "a", "b", "c"], match.Groups.Select(group => group.ValueText).ToArray());
+        Assert.Equal(["abcab", "a", "b", "c"], PythonReCaptureAssert.Values(match).ToArray());
     }
 
     [Fact]
@@ -84,9 +84,9 @@ public sealed class PythonReCaptureAliasTests
         Assert.True(core.CanFindNativeLiteralForResult);
         Assert.Equal(["0", "α", "g1"], regex.GetGroupNames());
         Assert.True(regex.IsMatch("é😀ab"u8));
-        var match = regex.SearchDetailedData("é😀ab"u8);
+        var match = regex.SearchDetailed("é😀ab"u8);
         Assert.Equal(6, match.Value.StartOffsetInBytes);
-        Assert.Equal("a", match.Groups[1].ValueText);
-        Assert.Equal("b", match.Groups[2].ValueText);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
     }
 }

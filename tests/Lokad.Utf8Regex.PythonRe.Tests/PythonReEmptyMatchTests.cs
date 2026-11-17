@@ -39,7 +39,13 @@ public sealed class PythonReEmptyMatchTests
     [MemberData(nameof(EmptyRows))]
     public void FindIterVisitsEveryBoundaryOnce(string pattern, PythonReCompileOptions options, string inputText, int expected, string expectedStarts)
     {
-        var detailed = new Utf8PythonRegex(pattern, options).FindIterDetailed(Encoding.UTF8.GetBytes(inputText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var detailed = collectedRanges1.ToArray();
         var starts = detailed.Select(static item => item.Value.StartOffsetInBytes).ToList();
 
         Assert.Equal(expected, starts.Count);

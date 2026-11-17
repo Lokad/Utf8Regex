@@ -34,7 +34,7 @@ public sealed class PythonReDirectNegatedClassTests
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.FullMatch(input).Success);
-        Assert.Equal(expected, regex.FullMatchDetailedData(input).Success);
+        Assert.Equal(expected, regex.FullMatchDetailed(input).Success);
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class PythonReDirectNegatedClassTests
         cursor.Dispose();
         Assert.Equal(value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input, 2));
-        Assert.Equal(value + "a", regex.SearchDetailedData(input, 2).Value.ValueText);
+        Assert.Equal(value + "a", System.Text.Encoding.UTF8.GetString(regex.SearchDetailed(input, 2).Value.GetValueBytes()));
     }
 
     [Fact]

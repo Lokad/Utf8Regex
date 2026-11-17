@@ -34,7 +34,13 @@ public sealed class PythonReLiteralAtomRepeatTests
             Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
             Assert.Equal(expected, regex.FindAllToUtf8(input, 0, token.Token).ScalarValues.Select(Encoding.UTF8.GetString));
             Assert.Equal(expected.Length, regex.Count(input, 0, token.Token));
-            Assert.Equal(expected.Length, regex.FindIterDetailed(input, 0, token.Token).Length);
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, token.Token))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            Assert.Equal(expected.Length, collectedRanges1.ToArray().Length);
         }
     }
 

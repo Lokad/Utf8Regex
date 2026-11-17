@@ -63,8 +63,14 @@ public sealed class PythonReAstralRangeRenderingTests
         var first = "\U00010001\U0010fffe";
         var second = "\U00010400\U00100000";
         var text = first + "X" + second;
-        var matches = regex.FindIterDetailed(Encoding.UTF8.GetBytes(text));
-        Assert.Equal(new[] { first, second }, matches.Select(match => match.Groups[1].ValueText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
+        Assert.Equal(new[] { first, second }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
         Assert.Equal(new[] { 0, 9 }, matches.Select(match => match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { 8, 17 }, matches.Select(match => match.Value.EndOffsetInBytes));
         Assert.All(matches, match => { Assert.Equal(1, match.LastIndex); Assert.Equal("x", match.LastGroup); });
@@ -76,10 +82,10 @@ public sealed class PythonReAstralRangeRenderingTests
     public void FixedLookbehindStillCountsOneScalarAndCapturesForward()
     {
         var regex = Compile(@"(?<=([\U00010001-\U0010fffe]))X");
-        var match = regex.SearchDetailedData("😀X"u8);
+        var match = regex.SearchDetailed("😀X"u8);
         Assert.True(match.Success);
         Assert.Equal(4, match.Value.StartOffsetInBytes);
-        Assert.Equal("😀", match.Groups[1].ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(1, match.LastIndex);
         var managed = new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant).Match("😀X");
         Assert.True(managed.Success);

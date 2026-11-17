@@ -75,35 +75,6 @@ internal struct Utf8InvocationResultLedger
         return result;
     }
 
-    internal string DecodeUtf8(ReadOnlySpan<byte> bytes, int? charCount, ref Utf8SliceInvocation invocation)
-    {
-        // Complete valid short ranges can be decoded directly after admitting
-        // their byte-derived UTF-16 upper bound. Known lengths stay exact;
-        // larger ranges retain bounded sizing and decoding checkpoints.
-        if (charCount is null && bytes.Length > 4096)
-            charCount = Utf8SliceBufferWork.CountValidUtf16(bytes, ref invocation);
-        var control = new Utf8InvocationBufferControl(ref invocation);
-        var extent = Utf8ConstructionBudget.StringBytes(charCount ?? bytes.Length);
-        Reserve(extent, ref invocation);
-        try
-        {
-            string result;
-            if (charCount is { } exact)
-                result = Utf8SliceBufferWork.DecodeUtf8(bytes, exact, ref invocation);
-            else
-            {
-                Utf8InvocationOutput.Checkpoint(control);
-                result = bytes.Length == 1 && bytes[0] <= 0x7f
-                    ? ((char)bytes[0]).ToString()
-                    : System.Text.Encoding.UTF8.GetString(bytes);
-                Utf8InvocationOutput.Checkpoint(control);
-            }
-            _reservedBytes += extent;
-            return result;
-        }
-        catch { control.ReleaseWorking(extent); throw; }
-    }
-
     internal static void Copy<T>(ReadOnlySpan<T> source, Span<T> destination, ref Utf8SliceInvocation invocation)
     {
         if (source.Length > destination.Length) throw new ArgumentException("The result destination is too small.", nameof(destination));

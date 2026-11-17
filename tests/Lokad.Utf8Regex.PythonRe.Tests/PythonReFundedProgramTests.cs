@@ -21,9 +21,9 @@ public sealed class PythonReFundedProgramTests
             : Compile("(?P<x>é+)", allowance, token.Token);
         var held = allowance.Used; Assert.True(held > 13); token.Cancel();
         Assert.Equal(1, regex.Count("éé"u8)); Assert.Equal(held, allowance.Used);
-        var retained = regex.SearchDetailedData("éé"u8);
+        var retained = regex.SearchDetailed("éé"u8);
         regex.Dispose(); regex.Dispose(); Assert.Equal(13UL, allowance.Used);
-        Assert.Equal("éé", retained.Groups[1].ValueText);
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
         Assert.Throws<ObjectDisposedException>(() => regex.Count("é"u8));
         allowance.Release(13);
     }
@@ -103,9 +103,9 @@ public sealed class PythonReFundedProgramTests
             () => { _ = regex.Match("a"u8); }, () => { _ = regex.FullMatch("a"u8); },
             () => regex.Count("a"u8), () => { _ = regex.SearchDetailed("a"u8); },
             () => { _ = regex.MatchDetailed("a"u8); }, () => { _ = regex.FullMatchDetailed("a"u8); },
-            () => regex.SearchDetailedData("a"u8), () => regex.MatchDetailedData("a"u8), () => regex.FullMatchDetailedData("a"u8),
+            () => regex.SearchDetailed("a"u8), () => regex.MatchDetailed("a"u8), () => regex.FullMatchDetailed("a"u8),
             () => regex.FindAllToUtf8("a"u8),
-            () => regex.FindIterDetailed("a"u8), () => regex.SplitRanges("a"u8),
+            () => regex.SplitRanges("a"u8),
             () => regex.Subn("a"u8, "x"),
             () => regex.CreateMatchCursor("a"u8.ToArray()),
         ];

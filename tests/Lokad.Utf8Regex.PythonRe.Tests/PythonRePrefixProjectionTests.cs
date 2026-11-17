@@ -21,11 +21,17 @@ public sealed class PythonRePrefixProjectionTests
         using var cursor = regex.CreateMatchCursor(input, start, default, account);
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Assert.Equal((start,endBytes),            (retained.Value.StartOffsetInBytes,retained.Value.EndOffsetInBytes));
-        var collection = Assert.Single(regex.FindIterDetailed(input, start));
-        var oneShot = regex.SearchDetailedData(input, start);
-        PythonReRangeAssert.Equal(oneShot, retained); Assert.Equal(oneShot.Groups, collection.Groups);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, start, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var collection = Assert.Single(collectedRanges1.ToArray());
+        var oneShot = regex.SearchDetailed(input, start);
+        PythonReCaptureAssert.Equal(oneShot, retained); PythonReCaptureAssert.Equal(oneShot,collection);
         cursor.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
-        PythonReRangeAssert.Equal(oneShot, retained);
+        PythonReCaptureAssert.Equal(oneShot, retained);
     }
 
     [Fact]

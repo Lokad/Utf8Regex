@@ -718,48 +718,6 @@ internal struct PythonReScalarMatchState
         return new Utf8PythonRangeMatch(input, groups, copiedNames, lastIndex);
     }
 
-    internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
-    {
-        var lastIndex = GetLastIndex();
-        // Owned snapshots project directly from capture slots. Borrowed contexts
-        // still use SnapshotGroups; no temporary range array is needed here.
-        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(_program.GroupCount + 1);
-        for (var i = 0; i < projected.Length; i++)
-        {
-            Checkpoint();
-            if (!TryGetCaptureByteRange(i, out var start, out var end))
-            {
-                projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
-                continue;
-            }
-            // Equal ranges share owned immutable text with independent numbers.
-            if (i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes)
-            {
-                projected[i] = projected[0] with { Number = i };
-                continue;
-            }
-            projected[i] = new Utf8PythonGroupMatchData
-            {
-                Number = i,
-                Success = true,
-                StartOffsetInBytes = start,
-                EndOffsetInBytes = end,
-                ValueText = GetText(input, start, end)
-            };
-        }
-        var copiedNames = SnapshotNameEntries(names);
-        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames, LastIndex = lastIndex };
-        Checkpoint();
-        return result;
-    }
-
-    internal string GetText(ReadOnlySpan<byte> input, int start, int end)
-    {
-        Checkpoint();
-        // Only selected string content needs sizing/admission, never its prefix.
-        return _results.DecodeUtf8(input[start..end], null, ref _invocation);
-    }
-
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)
     {
         Checkpoint();

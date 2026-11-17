@@ -26,7 +26,13 @@ public sealed class PythonReTerminalClassRepeatTests
         Assert.Equal(expected.Length, regex.Count(input, 0, token.Token));
         var values = regex.FindAllToUtf8(input, 0, token.Token);
         Assert.Equal(expected, values.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
-        var matches = regex.FindIterDetailed(input, 0, token.Token);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, token.Token))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
         Assert.Equal(expected.Length, matches.Length);
         var previous = 0;
         for (var i = 0; i < expected.Length; i++)

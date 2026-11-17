@@ -46,9 +46,9 @@ public sealed class PythonReBraceQuantifierTests
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             var input = Encoding.UTF8.GetBytes(text);
-            var actual = regex.FullMatchDetailedData(input, 0, cancellation.Token);
+            var actual = regex.FullMatchDetailed(input, 0, cancellation.Token);
             Assert.True(actual.Success);
-            Assert.Equal(text, actual.Value.ValueText);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
             Assert.Equal(0, actual.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes);
             Assert.True(regex.FullMatch(input).Success);
@@ -78,14 +78,14 @@ public sealed class PythonReBraceQuantifierTests
     public void OmittedLowerBoundsKeepLastCompleteScalarCapture(string pattern, string text, string capture, string? name, int startByte)
     {
         var regex = new Utf8PythonRegex(pattern);
-        var actual = regex.FullMatchDetailedData(Encoding.UTF8.GetBytes(text));
+        var actual = regex.FullMatchDetailed(Encoding.UTF8.GetBytes(text));
         Assert.True(actual.Success);
-        Assert.Equal(capture, actual.Groups[1].ValueText);
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(1, actual.LastIndex);
         Assert.Equal(name, actual.LastGroup);
-        Assert.Equal(startByte, actual.Groups[1].StartOffsetInBytes);
+        Assert.Equal(startByte, actual.GetGroup(1).Value.StartOffsetInBytes);
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(text)));
-        Assert.Equal(capture, actual.Groups[1].ValueText);
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Theory]

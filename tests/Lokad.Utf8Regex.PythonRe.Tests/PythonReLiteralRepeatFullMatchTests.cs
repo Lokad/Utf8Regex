@@ -83,10 +83,10 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.FullMatch(input).Success);
-        var detailed = regex.FullMatchDetailedData(input);
+        var detailed = regex.FullMatchDetailed(input);
         Assert.True(detailed.Success);
-        Assert.Equal(text, detailed.Groups[0].ValueText);
-        if (pattern == "(ab)+") Assert.Equal("ab", detailed.Groups[1].ValueText);
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
+        if (pattern == "(ab)+") Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 

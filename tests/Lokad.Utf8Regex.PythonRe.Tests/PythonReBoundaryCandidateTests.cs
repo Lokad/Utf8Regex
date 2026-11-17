@@ -35,12 +35,12 @@ public sealed class PythonReBoundaryCandidateTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected is not null, regex.IsMatch(input, offset));
         Assert.Equal(expected is not null, regex.IsMatch(input, offset, token.Token));
-        var held = regex.SearchDetailedData(input, offset);
+        var held = regex.SearchDetailed(input, offset);
         Assert.Equal(expected is not null, held.Success);
-        if (expected is not null) Assert.Equal(expected, held.Groups[0].ValueText);
-        if (pattern.Contains("?P<")) Assert.Equal("22", held.Groups[1].ValueText);
+        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(held.GetGroup(0).Value.GetValueBytes()));
+        if (pattern.Contains("?P<")) Assert.Equal("22", System.Text.Encoding.UTF8.GetString(held.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(expectedCount, regex.Count(input, offset));
-        if (expected is not null) Assert.Equal(expected, held.Groups[0].ValueText);
+        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(held.GetGroup(0).Value.GetValueBytes()));
     }
 
     [Fact]
@@ -109,21 +109,39 @@ public sealed class PythonReBoundaryCandidateTests
             using var reference = new Utf8PythonRegex("(?=)(?:" + pattern + ")");
             foreach (var start in new[] { 0, 1, count })
             {
-                var expected = reference.FindIterDetailed(input, start);
-                var actual = regex.FindIterDetailed(input, start);
+                var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+                using (var rangeCursor1 = reference.CreateMatchCursor(input, start, default))
+                {
+                    while (rangeCursor1.MoveNext(out var rangeMatch1))
+                        collectedRanges1.Add(rangeMatch1);
+                }
+                var expected = collectedRanges1.ToArray();
+                var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+                using (var rangeCursor2 = regex.CreateMatchCursor(input, start, default))
+                {
+                    while (rangeCursor2.MoveNext(out var rangeMatch2))
+                        collectedRanges2.Add(rangeMatch2);
+                }
+                var actual = collectedRanges2.ToArray();
                 Assert.Equal(expected.Length, regex.Count(input, start));
                 Assert.Equal(expected.Length, actual.Length);
                 for (var i = 0; i < expected.Length; i++)
                 {
-                    Assert.Equal(expected[i].Groups, actual[i].Groups);
+                    Assert.Equal(expected[i].Groups.ToArray(), actual[i].Groups.ToArray());
                     Assert.Equal(expected[i].LastIndex, actual[i].LastIndex);
                 }
             }
         }
         using var boundary = new Utf8PythonRegex(@"\b");
         var eof = Encoding.UTF8.GetBytes("a" + new string('1', count));
+        var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor3 = boundary.CreateMatchCursor(eof, 0, default))
+        {
+            while (rangeCursor3.MoveNext(out var rangeMatch3))
+                collectedRanges3.Add(rangeMatch3);
+        }
         Assert.Equal(new[] { 0, eof.Length },
-            boundary.FindIterDetailed(eof).Select(m => m.Value.StartOffsetInBytes));
+            collectedRanges3.ToArray().Select(m => m.Value.StartOffsetInBytes));
     }
 
     [Theory]

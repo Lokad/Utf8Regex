@@ -26,10 +26,10 @@ public sealed class PythonReLeadingFlagTriviaTests
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             using var cancellation = new CancellationTokenSource();
-            var match = regex.FullMatchDetailedData("😀A"u8, 0, cancellation.Token);
+            var match = regex.FullMatchDetailed("😀A"u8, 0, cancellation.Token);
             Assert.True(match.Success);
-            Assert.Equal("😀A", match.Groups[1].ValueText);
-            Assert.Equal((0, 5), (match.Groups[1].StartOffsetInBytes, match.Groups[1].EndOffsetInBytes));
+            Assert.Equal("😀A", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal((0, 5), (match.GetGroup(1).Value.StartOffsetInBytes, match.GetGroup(1).Value.EndOffsetInBytes));
             Assert.Equal(1, match.LastIndex);
             Assert.Equal("x", match.LastGroup);
             Assert.Equal(1, regex.Count("😀A"u8, 0, cancellation.Token));

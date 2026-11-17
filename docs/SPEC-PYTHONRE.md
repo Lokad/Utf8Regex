@@ -31,11 +31,10 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 
 | Family | Contract |
 | --- | --- |
-| Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value, detailed and data forms agree. |
+| Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value and borrowed capture-context forms agree. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
 | FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
-| FindIterDetailed | Materialized owned snapshots |
-| CreateMatchCursor | Incremental detailed snapshots over ReadOnlyMemory<byte>; explicit disposal on early stop |
+| CreateMatchCursor | Incremental immutable capture ranges borrowing ReadOnlyMemory<byte>; explicit disposal on early stop |
 | Replace / Subn | Python template expansion into owned UTF-8 bytes; Subn includes replacement count |
 | SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
@@ -138,8 +137,6 @@ coordinate scans. No VM workspace or capture storage
 is needed for that route. Numerical work/depth/working requirements can decrease;
 actual payload admission and original interruption authority remain. Other
 patterns and nonzero offsets retain their existing routes.
-Text publication, when requested by a remaining text-output API, sizes only its
-selected valid scalar ranges under the operation's cancellation and deadline.
 
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
@@ -264,9 +261,9 @@ workspace cleanup. Lazy, captured, alternating and constrained-tail programs kee
 their retry. Eliminated instructions lower work requirements,
 with the original cancellation/deadline and byte/depth/result admission preserved.
 
-Default owned detailed group data expose empty text. Default and unsuccessful detailed
-results expose empty capture/name arrays and group-zero text. Successful snapshots
-retain supplied arrays and their owned values across later calls/disposal.
+Default and unsuccessful borrowed capture contexts expose no capture slots or
+named mappings. Successful range results own immutable capture/name metadata and
+borrow the unchanged subject. Text materialization belongs to the host.
 
 ## Grammar and parsing
 
@@ -448,7 +445,7 @@ Dispose a funded expression when finished. Disposal closes new matching uses
 with `ObjectDisposedException` and returns its program charge once already
 active operations and cursors finish. It does not wait, cancel those operations,
 or depend on a finalizer. Dispose abandoned cursors explicitly; retained range
-snapshots keep their borrowed-input contract and owned snapshots remain valid.
+snapshots keep their borrowed-input contract; owned byte outputs remain valid.
 Metadata remains readable. Disposal of expressions created without a program
 allowance is a no-op. Construction tokens never become later execution authority.
 
@@ -515,7 +512,7 @@ Removing intermediate storage and repeated sizing can lower modeled result
 traffic, work and peak working requirements. Finite limits, cancellable tokens
 and deadlines retain their existing scalar substitution path.
 
-Native literal value/text operations use discovery's own bounded
+Native literal value operations use discovery's own bounded
 checkpoints, followed by final publication checks. Adjacent helper boundaries
 add no separate work charges. This can reduce required work units without
 changing interruption bounds or byte/depth/result admission.
@@ -524,7 +521,7 @@ Constructors defer general FullMatch preparation; Compile completes it eagerly.
 Cold FullMatch copies the existing instruction program with an end constraint,
 sharing immutable tables/names. Its token/deadline is the current invocation's;
 failure is retryable and leaves no failed publication. Exact capture-free literal
-value/string paths can use prepared literal operations without this preparation.
+value paths can use prepared literal operations without this preparation.
 For an unfolded literal of 1-256 UTF-8 bytes without boundary or trailing-literal
 requirements, Match/FullMatch can compare directly at the required scalar start. The comparison and final publication remain charged;
 avoiding candidate discovery lowers work requirements. Other eligible literals
@@ -542,26 +539,21 @@ be lower than general matching. Captures, folding, lazy or nonliteral bodies and
 unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
-Value results and borrowed capture contexts copy selected scalar byte endpoints
-without scanning their prefix or content for coordinates. Owned detailed results
-size and decode only requested captured text. No scalar-coordinate index is kept.
+Value results, borrowed capture contexts and range cursors publish selected byte
+endpoints without scanning their prefix/content for coordinates or captured text.
+There is no owned-text result family: SearchDetailedData, MatchDetailedData,
+FullMatchDetailedData, FindIterDetailed and their two owned-text carriers are
+removed. Hosts read SearchDetailed/MatchDetailed/FullMatchDetailed contexts or
+collect real cursor ranges, and decode/copy under their own controls.
+
 Template substitutions copy required output from encoded template literals and
-scalar-aligned captures. Returned arrays and detailed strings consume modeled
-result capacity independently.
-Deleting coordinate scans/storage can lower numerical limits; selected-content
-string sizing can change its conservative capacity charge. Positive extents still
-require admission before allocation. Captures equal to group zero may reuse its
-completed text with independent
-capture numbers and mutable entries. Empty name metadata needs no result allocation
-or copy. These omissions can reduce numerical work requirements; positive result
-extents retain their admission and traffic charges.
-Borrowed contexts retain their existing unchanged-input lifetime contract, while
-owned detailed text remains independent of the input and temporary index.
-For an unknown string length of at most4096 UTF-8 bytes, admission can use the
-byte-derived upper bound on UTF-16 capacity before a bounded checked decode,
-avoiding a separate character-count pass. Known lengths remain exact; larger
-ranges retain bounded sizing/decoding. Unicode working/result charges can be
-larger under this conservative model, so an existing finite budget can deny earlier.
+scalar-aligned captures. Capture/name arrays and owned byte output consume modeled
+result capacity independently. Admission precedes allocation and cumulative
+traffic is not refunded by working release. Host strings, collections and borrowed
+subject storage are excluded. Empty name metadata needs no allocation/copy.
+Deleting owned-text publication and its string-sizing/decoding helpers does not
+change scalar matching, byte offsets, interruption or admission for retained byte
+operations. There is no invocation UTF-16 string-capacity guarantee for host work.
 LTR backtracking search reuses the shared beginning-anchor finder for an initial
 mandatory \A/^; candidate verification, RTL and NonBacktracking remain unchanged.
 Sizing, discovery and publication retain bounded original interruption and limits.
@@ -685,8 +677,8 @@ original modeled charge, including after disposal. Finish `Result` property read
 before disposal. Dispose clears the receipt's payload references, closes later
 `Result` access and refunds once, including concurrent Dispose calls and aliases.
 Previously obtained byte arrays remain valid; the caller owns admission for
-continued retention after explicit release. No finalizer is involved. Retained
-owned detailed text and bulk output remain outside these two receipt APIs.
+continued retention after explicit release. No finalizer is involved. Host text collections and ordinary
+bulk byte output remain outside these two receipt APIs.
 
 `Replace`, `Subn` and `SubnRetained` also accept a `ReadOnlySpan<byte>` replacement
 template, with optional count, byte start and cancellation token. These are UTF-8

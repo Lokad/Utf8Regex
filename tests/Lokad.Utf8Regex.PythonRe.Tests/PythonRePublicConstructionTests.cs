@@ -40,9 +40,9 @@ public sealed class PythonRePublicConstructionTests
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1, 1);
-        var match = regex.FullMatchDetailedData("😀😀"u8);
+        var match = regex.FullMatchDetailed("😀😀"u8);
         Assert.True(match.Success);
-        Assert.Equal("😀", match.Groups[1].ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal("x", match.LastGroup);
         Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
@@ -100,7 +100,7 @@ public sealed class PythonRePublicConstructionTests
         Assert.False(Utf8ConstructionScope.IsActive);
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var result = regex.SearchDetailedData("😀😀"u8);
+        var result = regex.SearchDetailed("😀😀"u8);
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
@@ -129,7 +129,7 @@ public sealed class PythonRePublicConstructionTests
             TimeSpan.FromSeconds(30), cancellation.Token);
         cancellation.Cancel();
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var result = regex.SearchDetailedData("😀😀"u8);
+        var result = regex.SearchDetailed("😀😀"u8);
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);

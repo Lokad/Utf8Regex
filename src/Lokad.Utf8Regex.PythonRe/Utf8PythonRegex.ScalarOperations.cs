@@ -177,54 +177,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.Dispose(); }
     }
 
-    private Utf8PythonDetailedMatchData MatchDataScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, CancellationToken cancellationToken)
-    {
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
-        try
-        {
-            Utf8PythonDetailedMatchData result = default;
-            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
-            {
-                result = cursor.SnapshotDetailed(_nameEntries);
-            }
-            cursor.Checkpoint();
-            return result;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.Dispose(); }
-    }
-
-    private void FindIterScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonDetailedMatchData[] matches)
-    {
-        matches = [];
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
-        Utf8InvocationResultBuffer<Utf8PythonDetailedMatchData> list = default;
-        try
-        {
-            while (cursor.MoveNext())
-            {
-                cursor.AddResult(ref list, cursor.SnapshotDetailed(_nameEntries));
-                cursor.Checkpoint();
-            }
-            var completed = cursor.CompleteResults(ref list);
-            cursor.Checkpoint();
-            matches = completed;
-            return;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
-    }
-
     private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
     {

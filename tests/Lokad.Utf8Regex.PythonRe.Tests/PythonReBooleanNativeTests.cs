@@ -87,16 +87,28 @@ public sealed class PythonReBooleanNativeTests
         var input = "é😀ab ab"u8.ToArray();
         var regex = new Utf8PythonRegex("(?P<x>a)(b)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
-        var held = regex.FindIterDetailed(input);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var held = collectedRanges1.ToArray();
         using var token = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, 0, token.Token));
         Assert.False(regex.IsMatch(input, input.Length, token.Token));
-        var later = regex.FindIterDetailed(input);
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var later = collectedRanges2.ToArray();
         foreach (var matches in new[] { held, later })
         {
             Assert.Equal(2, matches.Length);
-            Assert.Equal("a", matches[0].Groups[1].ValueText);
-            Assert.Equal("b", matches[0].Groups[2].ValueText);
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
+            Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
             Assert.Equal(2, matches[0].LastIndex);
             Assert.Null(matches[0].LastGroup);
             Assert.Equal(6,matches[0].Value.StartOffsetInBytes);

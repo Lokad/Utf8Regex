@@ -6,44 +6,6 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReRangeResultTests
 {
-    [Theory]
-    [InlineData(@"(?P<word>\w+)(?P<tail>!)?", "😀é! two", 0)]
-    [InlineData(@"(?P<outer>(?P<inner>a))", "😀a", 4)]
-    [InlineData(@"(?<=(?P<prefix>é))a|(?P<other>🙂)", "éa🙂", 0)]
-    [InlineData(@"(?P<empty>)|(?P<letter>a)", "a😀", 0)]
-    [InlineData(@"(?P<none>z)", "é😀", 0)]
-    public void RangesMatchOwnedCaptureMetadataAndScalarProgression(string pattern, string text, int start)
-    {
-        var regex = new Utf8PythonRegex(pattern); var bytes = Encoding.UTF8.GetBytes(text);
-        byte[] padded = [0xff, .. bytes, 0xff]; var input = padded.AsMemory(1, bytes.Length);
-        var expected = regex.FindIterDetailed(input.Span, start);
-        var retained = new List<Utf8PythonRangeMatch>();
-        using var cursor = regex.CreateMatchCursor(input, start); var alias = cursor;
-        foreach (var match in expected)
-        {
-            Assert.True(alias.MoveNext(out var ranges)); retained.Add(ranges);
-            Assert.Equal(match.LastIndex, ranges.LastIndex); Assert.Equal(match.LastGroup, ranges.LastGroup);
-            Assert.Equal(match.NameEntries, ranges.NameEntries.ToArray().ToArray());
-            Assert.Equal(match.Groups.Length, ranges.Groups.Length);
-            for (var number = 0; number < match.Groups.Length; number++)
-            {
-                Assert.True(ranges.TryGetGroup(number, out var actual)); var wanted = match.Groups[number];
-                Assert.Equal(wanted.Success, actual.Success); Assert.Equal(number, actual.Number);
-                Assert.Equal(wanted.Success ? wanted.StartOffsetInBytes : 0, actual.StartOffsetInBytes);
-                Assert.Equal(wanted.Success ? wanted.EndOffsetInBytes : 0, actual.EndOffsetInBytes);
-                Assert.Equal(wanted.ValueText, Encoding.UTF8.GetString(ranges.GetGroupMemory(number).Span));
-            }
-            foreach (var name in ranges.NameEntries)
-            {
-                Assert.True(ranges.TryGetFirstSetGroup(name.Name, out var group)); Assert.Equal(name.Number, group.Number);
-            }
-        }
-        Assert.False(cursor.MoveNext(out var none)); Assert.False(none.Success);
-        alias.Dispose();
-        for (var i = 0; i < retained.Count; i++)
-            Assert.Equal(expected[i].Value.ValueText, Encoding.UTF8.GetString(retained[i].GetValueMemory().Span));
-        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
-    }
 
     [Theory]
     [InlineData(0, 0)]

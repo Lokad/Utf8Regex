@@ -31,10 +31,10 @@ public sealed class PythonReAdjacentSetRepeatTests
             Assert.True(value.Success);
             Assert.Equal((0,input.Length),                (value.StartOffsetInBytes,value.EndOffsetInBytes));
             PythonReMatchAssert.Equal(text, owner.FullMatch(input));
-            var retained = owner.FullMatchDetailedData(input);
-            Assert.Equal(text, retained.Value.ValueText);
+            var retained = owner.FullMatchDetailed(input);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
             Assert.Equal(1, owner.Count(input));
-            Assert.Equal(text, retained.Value.ValueText);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
 
         }
@@ -48,16 +48,16 @@ public sealed class PythonReAdjacentSetRepeatTests
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
         var held = allowance.Used;
         var input = "item\u2003 12345"u8.ToArray();
-        var retained = owner.FullMatchDetailedData(input);
+        var retained = owner.FullMatchDetailed(input);
         Assert.True(retained.Success);
-        Assert.Equal("\u2003 ", retained.Groups[1].ValueText);
+        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal("gap", retained.LastGroup);
         Assert.Equal(held, allowance.Used);
         Assert.Equal(1, owner.Count(input));
         Assert.Equal(held, allowance.Used);
         owner.Dispose();
         Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("\u2003 ", retained.Groups[1].ValueText);
+        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Fact]

@@ -32,10 +32,10 @@ public sealed class PythonReIdentifierVersionTests
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
             MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-        var match = regex.SearchDetailedData("😀aa"u8);
+        var match = regex.SearchDetailed("😀aa"u8);
         Assert.True(match.Success);
         Assert.Equal(name, match.LastGroup);
-        Assert.Equal("a", match.Groups[1].ValueText);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal("😀a", PythonReSubstitutionAssert.Decode(regex.Subn("😀aa"u8, "\\g<" + name + ">")).ResultText);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -46,7 +46,7 @@ public sealed class PythonReIdentifierVersionTests
     public void IdentifierValidationDoesNotNormalizeStoredNames()
     {
         var regex = new Utf8PythonRegex("(?P<é>a)(?P<e\u0301>b)");
-        var match = regex.SearchDetailedData("ab"u8);
+        var match = regex.SearchDetailed("ab"u8);
         Assert.Equal("e\u0301", match.LastGroup);
         Assert.Equal("a|b", PythonReSubstitutionAssert.Decode(regex.Subn("ab"u8, "\\g<é>|\\g<e\u0301>")).ResultText);
     }

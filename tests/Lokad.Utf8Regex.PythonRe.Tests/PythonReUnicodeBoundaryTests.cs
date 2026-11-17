@@ -45,8 +45,20 @@ public sealed class PythonReUnicodeBoundaryTests
                 var input = Encoding.UTF8.GetBytes(text);
                 for (var offset = 0;;)
                 {
-                    Assert.Equal(control.FindIterDetailed(input, offset, token.Token).Select(x => x.Value),
-                        actual.FindIterDetailed(input, offset, token.Token).Select(x => x.Value));
+                    var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+                    using (var rangeCursor1 = control.CreateMatchCursor(input, offset, token.Token))
+                    {
+                        while (rangeCursor1.MoveNext(out var rangeMatch1))
+                            collectedRanges1.Add(rangeMatch1);
+                    }
+                    var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+                    using (var rangeCursor2 = actual.CreateMatchCursor(input, offset, token.Token))
+                    {
+                        while (rangeCursor2.MoveNext(out var rangeMatch2))
+                            collectedRanges2.Add(rangeMatch2);
+                    }
+                    Assert.Equal(collectedRanges1.ToArray().Select(x => x.Value),
+                        collectedRanges2.ToArray().Select(x => x.Value));
                     Assert.Equal(control.Count(input, offset, token.Token), actual.Count(input, offset, token.Token));
                     Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
                     AssertRange(control.Search(input, offset), actual.Search(input, offset));
@@ -86,7 +98,19 @@ public sealed class PythonReUnicodeBoundaryTests
         var regex = new Utf8PythonRegex(@"(?P<b>\b)|(?P<a>a)");
         var control = new Utf8PythonRegex(@"(?P<b>(?:(?<!\w)(?=\w)|(?<=\w)(?!\w)))|(?P<a>a)");
         var input = "a éa😀a"u8.ToArray();
-        Assert.Equal(control.FindIterDetailed(input).Select(x => x.Groups), regex.FindIterDetailed(input).Select(x => x.Groups));
+        var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor3 = control.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor3.MoveNext(out var rangeMatch3))
+                collectedRanges3.Add(rangeMatch3);
+        }
+        var collectedRanges4 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor4 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor4.MoveNext(out var rangeMatch4))
+                collectedRanges4.Add(rangeMatch4);
+        }
+        Assert.Equal(collectedRanges3.ToArray().Select(x => x.Groups.ToArray()), collectedRanges4.ToArray().Select(x => x.Groups.ToArray()));
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out cursorRange));
         var alias = cursor; var retained = cursorRange; var groups = retained.Groups.ToArray();

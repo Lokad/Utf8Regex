@@ -53,10 +53,16 @@ public sealed class PythonReNativeCountTests
         var input = "é😀ab ab"u8.ToArray();
         var regex = new Utf8PythonRegex("(?P<x>a)(b)");
         Assert.Equal(2, regex.Count(input));
-        var matches = regex.FindIterDetailed(input);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
         Assert.Equal(2, matches.Length);
-        Assert.Equal("a", matches[0].Groups[1].ValueText);
-        Assert.Equal("b", matches[0].Groups[2].ValueText);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
         Assert.Equal(2, matches[0].LastIndex); Assert.Null(matches[0].LastGroup);
         Assert.Equal(6,matches[0].Value.StartOffsetInBytes);
         var tuples = regex.FindAllToUtf8(input).TupleValues;

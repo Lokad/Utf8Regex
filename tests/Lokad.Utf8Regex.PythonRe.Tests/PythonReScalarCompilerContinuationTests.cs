@@ -60,10 +60,10 @@ public sealed class PythonReScalarCompilerContinuationTests
             "(?P<x>.)" + new string(')', depth);
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes("\U0001f600");
-        var result = regex.FullMatchDetailedData(input);
+        var result = regex.FullMatchDetailed(input);
         Assert.True(result.Success);
         Assert.Equal((0, 4), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         Assert.Contains("x", regex.GetGroupNames());
-        Assert.Equal("\U0001f600", result.Groups[scoped ? 1 : depth + 1].ValueText);
+        Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(result.GetGroup(scoped ? 1 : depth + 1).Value.GetValueBytes()));
     }
 }

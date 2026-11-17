@@ -13,39 +13,6 @@ public sealed class PythonReResultExtentTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
     [Fact]
-    public void DetailedGraphIncludesAllOwnedChildrenWithoutTemporaryGroups()
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0,
-            Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        var names = Enumerable.Repeat(new PythonReNameEntry { Name = "value", Number = 1 }, 257).ToArray();
-        Utf8PythonDetailedMatchData result;
-        try
-        {
-            Assert.True(cursor.MoveNext());
-
-            var baseline = cursor.ReservedBytes;
-            result = cursor.SnapshotDetailed(names);
-            var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257)
-                + Utf8ConstructionBudget.StringBytes(2); // Whole match and capture share owned text.
-            Assert.Equal(graph, cursor.ResultReservation);
-            Assert.Equal(baseline + graph, cursor.ReservedBytes);
-            Assert.Equal(baseline + graph, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
-            Assert.NotSame(names, result.NameEntries);
-            Assert.Same(names[0].Name, result.NameEntries[0].Name);
-            Assert.Equal("😀", result.Groups[1].ValueText);
-            Assert.True(cursor.MoveNext());
-            Assert.Equal("😀", result.Groups[1].ValueText);
-        }
-        finally { cursor.Dispose(); }
-        Assert.Equal(0UL, cursor.ReservedBytes);
-        Assert.Equal("😀", result.Groups[1].ValueText);
-    }
-
-    [Fact]
     public void TemporaryGroupRootsReleaseAfterEachLastRead()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
@@ -76,41 +43,6 @@ public sealed class PythonReResultExtentTests
             } while (cursor.MoveNext(input));
             Assert.Equal(1025, count);
             Assert.True(cursor.ReservedBytes < 65536); // Inline discovery retains bounded scratch until disposal.
-        }
-        finally { cursor.Dispose(); }
-        Assert.Equal(0UL, cursor.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void DecodedChildFailureUsesTheOriginalTokenOrProfileDeadline(bool expire)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.+)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var input = Encoding.UTF8.GetBytes(new string('é', 5000));
-        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchState(input,program,0,            timeout,"(.+)",new(new(0, 0, 1UL << 20), timeout, token.Token),            null);
-        try
-        {
-            Assert.True(cursor.MoveNext(input));
-            var baseline = cursor.ReservedBytes;
-            ref var invocation = ref cursor.WorkingInvocation;
-            while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            var entered = false;
-            invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
-            string? result = null;
-            Exception? failure = null;
-            try { result = cursor.GetText(input,0, input.Length); }
-            catch (Exception error) { failure = error; }
-            Assert.True(entered); Assert.Null(result);
-            if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(baseline, cursor.ReservedBytes);
-            Assert.Equal(0UL, cursor.ResultReservation);
         }
         finally { cursor.Dispose(); }
         Assert.Equal(0UL, cursor.ReservedBytes);

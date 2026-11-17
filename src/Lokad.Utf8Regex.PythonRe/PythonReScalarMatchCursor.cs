@@ -37,7 +37,6 @@ internal ref struct PythonReScalarMatchCursor
     internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names) => _state.SnapshotNameEntries(names);
     internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups();
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);
-    internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names) => _state.SnapshotDetailed(_input, names);
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);
     internal Utf8SliceOutputWriter CreateOutputWriter() => _state.CreateOutputWriter();
     internal void AppendBytes(scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes) => _state.AppendBytes(ref writer, bytes);

@@ -33,11 +33,11 @@ public sealed class PythonReAsciiEscapeLoweringTests
                 };
                 var text = char.ConvertFromUtf32(scalar);
                 var input = Encoding.UTF8.GetBytes(text);
-                var actual = regex.FullMatchDetailedData(input);
+                var actual = regex.FullMatchDetailed(input);
                 Assert.Equal(negate ? !positive : positive, actual.Success);
                 if (!actual.Success) continue;
-                Assert.Equal(text, actual.Groups[1].ValueText);
-                Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
+                Assert.Equal((0, input.Length), (actual.GetGroup(1).Value.StartOffsetInBytes, actual.GetGroup(1).Value.EndOffsetInBytes));
             }
         }
     }
@@ -70,11 +70,11 @@ public sealed class PythonReAsciiEscapeLoweringTests
                     _ => scalar is >= 9 and <= 13 or 32,
                 };
                 var expected = char.IsLower(escape) ? positive : !positive;
-                var actual = regex.FullMatchDetailedData(input);
+                var actual = regex.FullMatchDetailed(input);
                 Assert.Equal(expected, actual.Success);
                 if (!expected) continue;
-                Assert.Equal(text, actual.Groups[1].ValueText);
-                Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
+                Assert.Equal((0, input.Length), (actual.GetGroup(1).Value.StartOffsetInBytes, actual.GetGroup(1).Value.EndOffsetInBytes));
             }
             Assert.False(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         }

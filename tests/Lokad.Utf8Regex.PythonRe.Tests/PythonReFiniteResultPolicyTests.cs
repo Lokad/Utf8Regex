@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFiniteResultPolicyTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(11)] [InlineData(13)] [InlineData(15)]
+    [InlineData(0)]
     [InlineData(17)] [InlineData(18)] [InlineData(21)]
     public void ByteBoundedTimeoutOmitsSubjectAcrossPreparationAndResultOwners(int operation)
     {
@@ -149,9 +149,21 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         const string pattern = "😀|(?P<x>a)";
         var input = "😀a\nA"u8.ToArray();
-        var expected = new Utf8PythonRegex(pattern, options).FindIterDetailed(input);
-        var actual = Create(pattern, 1000000, options: options).FindIterDetailed(input);
-        Assert.Equal(expected.Select(x => x.Value.ValueText), actual.Select(x => x.Value.ValueText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var expected = collectedRanges1.ToArray();
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = Create(pattern, 1000000, options: options).CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var actual = collectedRanges2.ToArray();
+        Assert.Equal(expected.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)), actual.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
         Assert.Equal(expected.Select(x => x.Value.StartOffsetInBytes), actual.Select(x => x.Value.StartOffsetInBytes));
         Assert.Equal(4, actual[0].Value.EndOffsetInBytes);
     }
@@ -168,12 +180,12 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Empty(bytes.TupleValues[0][1]);
         Assert.Empty(bytes.TupleValues[1][0]);
         Assert.Equal("a"u8.ToArray(), bytes.TupleValues[1][1]);
-        var retained = regex.SearchDetailedData(input);
-        Assert.Equal("😀", retained.Value.ValueText);
+        var retained = regex.SearchDetailed(input);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.True(retained.TryGetFirstSetGroup("first", out var first));
-        Assert.Equal("😀", first.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(first.Value.GetValueBytes()));
         Denied(() => PythonReFindAllAssert.Decode(Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToUtf8(input)), 1);
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }
 
@@ -220,11 +232,17 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(2, Create(".", 1).Count("😀a"u8));
         var range = Create(".", 1).Search("😀"u8);
         Assert.Equal(4, range.EndOffsetInBytes);
-        Denied(() => Create(".", 1).SearchDetailedData("😀"u8), 1);
+        Denied(() => Create(".", 1).SearchDetailed("😀"u8), 1);
         PythonReMatchAssert.Equal("", Create("", 1).Search("😀"u8));
         Assert.False(Create("missing", 1).Search("😀"u8).Success);
         var regex = Create(".*?", 1000000);
-        Assert.Equal(new[] { "", "😀", "", "a", "" }, regex.FindIterDetailed("😀a"u8).Select(x => x.Value.ValueText));
+        var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor3.MoveNext(out var rangeMatch3))
+                collectedRanges3.Add(rangeMatch3);
+        }
+        Assert.Equal(new[] { "", "😀", "", "a", "" }, collectedRanges3.ToArray().Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
         Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀a"u8, 1));
         var context = regex.SearchDetailed("😀a"u8);

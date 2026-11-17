@@ -90,33 +90,6 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeSearchDetailedData()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SearchDetailedData(s_input, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeMatchDetailedData()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailedData(s_input, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeFullMatchDetailedData()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatchDetailedData(s_input, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeFindAll()
     {
         var regex = Create();
@@ -139,7 +112,14 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindIterDetailed(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => {
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(s_input, 4, token))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+});
         Assert.Equal(token, exception.CancellationToken);
     }
 

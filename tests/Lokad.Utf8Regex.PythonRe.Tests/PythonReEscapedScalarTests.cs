@@ -36,11 +36,11 @@ public sealed class PythonReEscapedScalarTests
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
-            var actual = regex.FullMatchDetailedData(input);
+            var actual = regex.FullMatchDetailed(input);
             Assert.Equal(expected, actual.Success);
             if (expected)
             {
-                Assert.Equal(text, actual.Value.ValueText);
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
                 Assert.Equal((0, input.Length), (actual.Value.StartOffsetInBytes, actual.Value.EndOffsetInBytes));
             }
         }
@@ -134,7 +134,7 @@ public sealed class PythonReEscapedScalarTests
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
         Assert.Equal(1, regex.Count("😀"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatchDetailedData("😀"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatchDetailed("😀"u8)).ResourceKind);
         Assert.Equal(1, regex.Count("😀"u8));
     }
 }

@@ -17,20 +17,32 @@ public sealed class PythonReDetailedPublicationContractTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(subject);
-        var unlimited = new Utf8PythonRegex(pattern).FindIterDetailed(input);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = new Utf8PythonRegex(pattern).CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var unlimited = collectedRanges1.ToArray();
         var finiteRegex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
-        var finite = finiteRegex.FindIterDetailed(input);
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = finiteRegex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var finite = collectedRanges2.ToArray();
         Assert.Equal(expectedCount, finite.Length);
         Assert.Equal(firstLastIndex, finite[0].LastIndex);
         Assert.Equal(firstLastGroup, finite[0].LastGroup);
         for (var match = 0; match < finite.Length; match++)
         {
-            Assert.Equal(unlimited[match].Groups, finite[match].Groups);
+            Assert.Equal(unlimited[match].Groups.ToArray(), finite[match].Groups.ToArray());
             foreach (var group in finite[match].Groups)
             {
-                if (!group.Success) { Assert.Equal(string.Empty, group.ValueText); continue; }
-                Assert.Equal(group.ValueText, Encoding.UTF8.GetString(input.AsSpan(
+                if (!group.Success) { Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(finite[match].GetGroupMemory(group.Number).Span)); continue; }
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(finite[match].GetGroupMemory(group.Number).Span), Encoding.UTF8.GetString(input.AsSpan(
                     group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes)));
             }
         }
@@ -43,7 +55,7 @@ public sealed class PythonReDetailedPublicationContractTests
         }
         else Assert.False(cursor.MoveNext(out cursorRange));
         cursor.Dispose();
-        PythonReRangeAssert.Equal(finite[0], retained);
+        PythonReCaptureAssert.Equal(finite[0], retained);
     }
 
     [Theory]
@@ -92,7 +104,7 @@ public sealed class PythonReDetailedPublicationContractTests
         try
         {
             Assert.True(measured.MoveNext());
-            _ = measured.SnapshotDetailed([]);
+            _ = measured.SnapshotGroups();
             work = measured.WorkingInvocation.Budget.Steps;
             extent = measured.WorkingInvocation.Budget.ResultBytes;
         }
@@ -110,10 +122,10 @@ public sealed class PythonReDetailedPublicationContractTests
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
                 reserved = true;
                 Assert.True(cursor.MoveNext());
-                var snapshot = cursor.SnapshotDetailed([]);
+                var snapshot = cursor.SnapshotGroups();
                 Assert.Equal(work, cap);
                 Assert.Equal(extent, cursor.WorkingInvocation.Budget.ResultBytes);
-                Assert.Equal("😀é", snapshot.Value.ValueText);
+                Assert.Equal("😀é", Encoding.UTF8.GetString(input.AsSpan(snapshot[0].StartOffsetInBytes, snapshot[0].EndOffsetInBytes - snapshot[0].StartOffsetInBytes)));
             }
             catch (InvalidOperationException error)
             {
@@ -128,51 +140,5 @@ public sealed class PythonReDetailedPublicationContractTests
                 if (reserved) Assert.Equal(13UL, cursor.ReservedBytes);
             }
         }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DetailedDecodePollsOriginalAuthorityAndReleasesOwnedScratch(bool expire)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.+)");
-        // One decode alone must cross the diagnostic hook's 64-step interval;
-        // sharing equal capture text must not make the injection depend on a
-        // second redundant decode or on the VM's preceding step count.
-        var input = Encoding.UTF8.GetBytes(new string('é', 150000));
-        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor(input, core.Inspection.AvailableOwnedSliceProgram,
-            0, timeout,
-            null, "(.+)", new(new(0, 0, 64UL << 20, 1048576), timeout, token.Token));
-        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-        try
-        {
-            Assert.True(cursor.MoveNext());
-            cursor.WorkingInvocation.ShareStorageForCursor();
-            var observer = cursor.WorkingInvocation;
-            var initialBytes = cursor.ReservedBytes;
-            var entered = false;
-            cursor.WorkingInvocation.CheckpointHook = _ =>
-            {
-                if (observer.Ledger.ReservedBytes > initialBytes + 1024)
-                { entered = true; if (expire) ticks = 50; else token.Cancel(); }
-            };
-            Exception? failure = null;
-            try { _ = cursor.SnapshotDetailed([]); }
-            catch (Exception error) { failure = error; }
-            Assert.True(entered);
-            if (expire)
-            {
-                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-
-            }
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        }
-        finally { cursor.Dispose(); }
-        Assert.Equal(13UL, cursor.ReservedBytes);
-        Assert.True(new Utf8PythonRegex("(.+)").SearchDetailedData(input).Success);
     }
 }

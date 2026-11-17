@@ -47,9 +47,9 @@ public sealed class PythonReScalarOneShotTests
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length)), actual.EndOffsetInBytes);
                     Assert.Equal(Encoding.UTF8.GetBytes(expected.Value), actual.GetValueBytes().ToArray());
                     if (!pattern.StartsWith("(?P<", StringComparison.Ordinal)) continue;
-                    var detailed = full ? regex.FullMatchDetailedData(input, start, token) : regex.MatchDetailedData(input, start, token);
+                    var detailed = full ? regex.FullMatchDetailed(input, start, token) : regex.MatchDetailed(input, start, token);
                     Assert.True(detailed.Success);
-                    Assert.Equal(expected.Groups[1].Value, detailed.Groups[1].ValueText);
+                    Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
                 }
             }
         }

@@ -138,7 +138,7 @@ public sealed class PythonUnicodeVersionTests
                 _ => new Utf8ResourcePolicy { MaxResultBytes = 1 },
             };
             var regex = new Utf8PythonRegex(@"(?P<w>(?:\w|zz)+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailedData("éé"u8));
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailed("éé"u8));
             Assert.Equal(kind switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps, 1 => Utf8ResourceLimitKind.ExecutionDepth,
                 2 => Utf8ResourceLimitKind.ExecutionWorkingBytes, _ => Utf8ResourceLimitKind.ExecutionResultBytes }, error.ResourceKind);
         }

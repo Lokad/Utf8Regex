@@ -52,6 +52,12 @@ public sealed class PythonReOwnedConstructionTests
         // without constructing the former managed engine.
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
-        Assert.NotEmpty(regex.FindIterDetailed(input));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        Assert.NotEmpty(collectedRanges1.ToArray());
     }
 }

@@ -19,7 +19,13 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.True(regex.IsMatch(input));
             Assert.True(regex.Match(input).Success);
             Assert.Equal(count, regex.Count(input));
-            var matches = regex.FindIterDetailed(input);
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            var matches = collectedRanges1.ToArray();
             Assert.Equal(count, matches.Length);
             Assert.Equal(count == 2 ? new[] { 0, 7 } : new[] { 0, 2, 6, 7 },
                 matches.Select(match => match.Value.StartOffsetInBytes));
@@ -69,7 +75,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal(1, regex.Count(input));
             Assert.True(regex.Search(input).Success);
             Assert.True(regex.FullMatch(input).Success);
-            Assert.True(regex.SearchDetailedData(input).Success);
+            Assert.True(regex.SearchDetailed(input).Success);
             Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
             Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
         }
@@ -90,7 +96,7 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Search(input).Success);
         Assert.True(regex.FullMatch(input).Success);
-        Assert.True(regex.SearchDetailedData(input).Success);
+        Assert.True(regex.SearchDetailed(input).Success);
         Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
         Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
     }
@@ -106,7 +112,7 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.FullMatch(input).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.SearchDetailedData(input).Success);
+        Assert.True(regex.SearchDetailed(input).Success);
     }
     [Theory]
     [InlineData(false)]
@@ -144,11 +150,11 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.False(regex.DebugUsesUtf8RegexBackend);
             Assert.DoesNotContain(ReachableStrings(regex), text => text == rendered);
             Assert.Equal(["0", "α"], regex.GetGroupNames());
-            var hit = regex.SearchDetailedData("ab"u8);
+            var hit = regex.SearchDetailed("ab"u8);
             Assert.True(hit.Success);
-            Assert.Equal("a", hit.Groups[1].ValueText);
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(hit.GetGroup(1).Value.GetValueBytes()));
             Assert.Equal("α", hit.LastGroup);
-            Assert.True(regex.FullMatchDetailedData("ab"u8).Success);
+            Assert.True(regex.FullMatchDetailed("ab"u8).Success);
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, @"\g<α>", 1)));
         }
     }

@@ -18,13 +18,13 @@ public sealed class PythonReTranslationContinuationTests
             Utf8ConstructionScope.DefaultBufferBytes, Utf8ConstructionScope.DefaultWorkSteps, 131072);
         var pattern = string.Concat(Enumerable.Repeat(opener, depth)) + "." + new string(')', depth);
         var regex = new Utf8PythonRegex(pattern);
-        var result = regex.FullMatchDetailedData("😀"u8);
+        var result = regex.FullMatchDetailed("😀"u8);
         Assert.True(result.Success);
         Assert.Equal((0, 4), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         if (opener == "(")
         {
-            Assert.Equal(depth + 1, result.Groups.Length);
-            Assert.Equal("😀", result.Groups[depth].ValueText);
+            Assert.Equal(depth + 1, result.CaptureSlotCount);
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroup(depth).Value.GetValueBytes()));
         }
         Assert.InRange(construction.Budget.PeakDepth, 1ul, 131072ul);
         Assert.Equal(0ul, construction.Budget.Depth);
@@ -54,10 +54,10 @@ public sealed class PythonReTranslationContinuationTests
     {
         var inner = string.Concat(Enumerable.Repeat("(?:", depth)) + "😀" + new string(')', depth);
         var regex = new Utf8PythonRegex("(?<=" + inner + ")(?P<x>.)");
-        var result = regex.SearchDetailedData("😀é"u8);
+        var result = regex.SearchDetailed("😀é"u8);
         Assert.True(result.Success);
         Assert.Equal((4, 6), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-        Assert.Equal("é", result.Groups[1].ValueText);
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).Value.GetValueBytes()));
     }
 
     [Theory]

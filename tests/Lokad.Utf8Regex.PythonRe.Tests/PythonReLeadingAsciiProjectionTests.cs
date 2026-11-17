@@ -19,8 +19,8 @@ public sealed class PythonReLeadingAsciiProjectionTests
             MaxWorkSteps = 200, MaxWorkingBytes = 65536, MaxResultBytes = 65536
         });
         PythonReMatchAssert.Equal("1", regex.Search(input, 0, token.Token));
-        var owned = regex.SearchDetailedData(input, 0, token.Token);
-        Assert.Equal("1", owned.Value.ValueText);
+        var owned = regex.SearchDetailed(input, 0, token.Token);
+        Assert.Equal("1", System.Text.Encoding.UTF8.GetString(owned.Value.GetValueBytes()));
         Assert.Equal((0,1),(owned.Value.StartOffsetInBytes,owned.Value.EndOffsetInBytes));
     }
 
@@ -40,7 +40,7 @@ public sealed class PythonReLeadingAsciiProjectionTests
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
         PythonReMatchAssert.Equal(expected, regex.Search(input));
-        Assert.Equal(expected, regex.SearchDetailedData(input).Value.ValueText);
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.SearchDetailed(input).Value.GetValueBytes()));
     }
 
     [Theory]

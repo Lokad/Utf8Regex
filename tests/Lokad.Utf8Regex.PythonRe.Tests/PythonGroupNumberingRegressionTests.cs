@@ -26,23 +26,23 @@ public sealed class PythonGroupNumberingRegressionTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             finite ? new() { MaxWorkSteps = 1000000, MaxDepth = 1000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
         var values = new[] { text, body }.Concat(pieces).Concat(trailingGroup ? new[] { "z" } : []).ToArray();
-        void AssertGroups(Utf8PythonDetailedMatchData match)
+        void AssertGroups(Utf8PythonMatchContext match)
         {
             Assert.True(match.Success);
             Assert.Equal(trailingGroup ? 72 : 1, match.LastIndex);
             Assert.Equal(trailingGroup ? null : "outer", match.LastGroup);
-            Assert.Equal(values, match.Groups.Select(group => group.ValueText));
-            Assert.Equal(Enumerable.Range(0, values.Length), match.Groups.Select(group => group.Number));
+            Assert.Equal(values, PythonReCaptureAssert.Values(match));
+            Assert.Equal(Enumerable.Range(0, values.Length), Enumerable.Range(0,match.CaptureSlotCount));
         }
-        AssertGroups(regex.SearchDetailedData(input));
-        AssertGroups(regex.FullMatchDetailedData(input));
+        AssertGroups(regex.SearchDetailed(input));
+        AssertGroups(regex.FullMatchDetailed(input));
         Assert.Equal(values.Skip(1), Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
         Assert.False(cursor.MoveNext(out cursorRange));
         cursor.Dispose();
-        PythonReRangeAssert.Equal(regex.SearchDetailedData(input), retained);
+        PythonReCaptureAssert.Equal(regex.SearchDetailed(input), retained);
     }
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
@@ -77,12 +77,12 @@ public sealed class PythonGroupNumberingRegressionTests
     [Fact]
     public void DetailedGroupsFollowPythonSlotOrder()
     {
-        var detailed = new Utf8PythonRegex("(?P<x>a)(b)").SearchDetailedData(Utf8("ab"));
+        var detailed = new Utf8PythonRegex("(?P<x>a)(b)").SearchDetailed(Utf8("ab"));
         Assert.True(detailed.Success);
-        Assert.Equal(["ab", "a", "b"], detailed.Groups.Select(static group => group.ValueText).ToArray());
-        Assert.Equal([0, 1, 2], detailed.Groups.Select(static group => group.Number).ToArray());
-        var named = detailed.Groups.Single(group => group.Number == 1);
-        Assert.Equal("a", named.ValueText);
+        Assert.Equal(["ab", "a", "b"], PythonReCaptureAssert.Values(detailed).ToArray());
+        Assert.Equal([0, 1, 2], Enumerable.Range(0,detailed.CaptureSlotCount).ToArray());
+        var named = detailed.GetGroup(1);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(named.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -144,9 +144,15 @@ public sealed class PythonGroupNumberingRegressionTests
     [Fact]
     public void FindIterDetailedFollowsPythonSlotOrder()
     {
-        var found = new Utf8PythonRegex("(?P<x>a)(b)").FindIterDetailed(Utf8("xaby"));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = new Utf8PythonRegex("(?P<x>a)(b)").CreateMatchCursor(Utf8("xaby"), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var found = collectedRanges1.ToArray();
         var single = Assert.Single(found);
-        Assert.Equal(["ab", "a", "b"], single.Groups.Select(static group => group.ValueText).ToArray());
+        Assert.Equal(["ab", "a", "b"], single.Groups.ToArray().Select(group => System.Text.Encoding.UTF8.GetString(single.GetGroupMemory(group.Number).Span)).ToArray());
     }
 
     [Fact]

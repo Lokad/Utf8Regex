@@ -35,13 +35,13 @@ public sealed partial class PythonReScalarFoldingTests
             var first = char.ConvertFromUtf32(row.Captured);
             var second = char.ConvertFromUtf32(row.Referenced);
             var input = Encoding.UTF8.GetBytes(first + second);
-            var match = regex.FullMatchDetailedData(input, 0, source.Token);
+            var match = regex.FullMatchDetailed(input, 0, source.Token);
             Assert.True(row.Matches == match.Success,
                 $"reference U+{row.Captured:X}/U+{row.Referenced:X}");
             if (!match.Success) continue;
             Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(first), match.Groups[1].EndOffsetInBytes);
-            Assert.Equal(first, match.Groups[1].ValueText);
+            Assert.Equal(Encoding.UTF8.GetByteCount(first), match.GetGroup(1).Value.EndOffsetInBytes);
+            Assert.Equal(first, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         }
     }
 
@@ -97,9 +97,9 @@ public sealed partial class PythonReScalarFoldingTests
                     case 3: regex.SearchDetailed(input, 0, source.Token); break;
                     case 4: regex.MatchDetailed(input, 0, source.Token); break;
                     case 5: regex.FullMatchDetailed(input, 0, source.Token); break;
-                    case 6: regex.SearchDetailedData(input, 0, source.Token); break;
-                    case 7: regex.MatchDetailedData(input, 0, source.Token); break;
-                    default: regex.FullMatchDetailedData(input, 0, source.Token); break;
+                    case 6: regex.SearchDetailed(input, 0, source.Token); break;
+                    case 7: regex.MatchDetailed(input, 0, source.Token); break;
+                    default: regex.FullMatchDetailed(input, 0, source.Token); break;
                 }
             });
             Assert.True(entered);
@@ -133,7 +133,7 @@ public sealed partial class PythonReScalarFoldingTests
         var regex = new Utf8PythonRegex(@"(?<=x)(?i:k|kk)");
         Assert.True(regex.FullMatch("xKK"u8, 1).Success);
         Assert.False(regex.FullMatch("yKK"u8, 1).Success);
-        Assert.Equal("KK", regex.FullMatchDetailedData("xKK"u8, 1).Value.ValueText);
+        Assert.Equal("KK", System.Text.Encoding.UTF8.GetString(regex.FullMatchDetailed("xKK"u8, 1).Value.GetValueBytes()));
         Assert.False(new Utf8PythonRegex(@"(?i:^kk)").FullMatch("xKK"u8, 1).Success);
     }
 }

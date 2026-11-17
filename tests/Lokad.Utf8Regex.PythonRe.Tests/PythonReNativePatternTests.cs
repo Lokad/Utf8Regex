@@ -38,8 +38,20 @@ public sealed class PythonReNativePatternTests
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(text.Count(input), native.Count(input));
         Assert.Equal(text.IsMatch(input), native.IsMatch(input));
-        var expected = text.FindIterDetailed(input);
-        var actual = native.FindIterDetailed(input);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = text.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var expected = collectedRanges1.ToArray();
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = native.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var actual = collectedRanges2.ToArray();
         Assert.Equal(expected.Length, actual.Length);
         for (var index = 0; index < expected.Length; index++)
         {

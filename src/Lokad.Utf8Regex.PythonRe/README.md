@@ -31,8 +31,8 @@ the owned engine. `LastIndex`/`LastGroup` identify the last capture to close on 
 successful path; an unnamed last capture has a null name. Unmatched captures keep
 the documented null/empty shaping for each API.
 
-Search, Match and FullMatch expose borrowed byte values and capture views, plus
-owned detailed snapshots. `FindIterDetailed` returns owned capture snapshots.
+Search, Match and FullMatch expose borrowed byte values and capture contexts.
+The range cursor supplies incremental captures with immutable byte metadata.
 `FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs. Whole-match
 ranges and capture memories come from `CreateMatchCursor`; hosts collect them when
 needed. Split ranges and byte-template replacement include
@@ -161,7 +161,6 @@ while (matches.MoveNext(out var match))
 {
     Console.WriteLine($"{match.Value.StartOffsetInBytes}:{match.Value.EndOffsetInBytes}");
 }
-var iter = regex.FindIterDetailed("foo-foo xx foo-foo"u8);
 Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 ```
 
@@ -224,6 +223,13 @@ over the real range cursor, with host-owned output buffers. Their capture replay
 remains untimed, and regex limits cover advances rather than host output. These
 rows have new operation identities; the tables retain their historical API scope
 until the coherent refresh.
+
+Current detailed search rows materialize host capture strings from SearchDetailed;
+detailed iteration rows collect and decode actual range-cursor results. Those
+containers/strings and final host publication are outside regex budgets. Both
+operations have new managed protocol identities; their recorded tables remain
+historical until the coherent refresh. One-shot owned-text Data APIs and the
+FindIterDetailed collector are removed.
 
 The canonical comparison uses preexisting valid text on both sides. Value rows
 include byte-range projection; detailed and structural rows include their

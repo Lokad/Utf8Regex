@@ -53,10 +53,10 @@ public sealed class PythonReLookbehindReferenceAdmissionTests
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var match = regex.SearchDetailedData(input);
+            var match = regex.SearchDetailed(input);
             Assert.True(match.Success);
-            Assert.Equal(capture, match.Groups[1].ValueText);
-            Assert.Equal(Encoding.UTF8.GetByteCount(capture), match.Groups[1].EndOffsetInBytes - match.Groups[1].StartOffsetInBytes);
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal(Encoding.UTF8.GetByteCount(capture), match.GetGroup(1).Value.EndOffsetInBytes - match.GetGroup(1).Value.StartOffsetInBytes);
             Assert.Equal(1, match.LastIndex);
         }
     }

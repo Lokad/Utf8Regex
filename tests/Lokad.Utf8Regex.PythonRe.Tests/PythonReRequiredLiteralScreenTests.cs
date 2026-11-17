@@ -93,11 +93,11 @@ public sealed class PythonReRequiredLiteralScreenTests
         var held = allowance.Used; allowance.Maximum = held;
         Assert.False(regex.Search("aaaa"u8).Success); Assert.Equal(held, allowance.Used);
         allowance.Maximum += 1 << 20;
-        var snapshot = regex.SearchDetailedData("xxéé😀"u8);
-        Assert.True(snapshot.Success); Assert.Equal("éé", snapshot.Groups[1].ValueText);
+        var snapshot = regex.SearchDetailed("xxéé😀"u8);
+        Assert.True(snapshot.Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(held, allowance.Used);
-        Assert.False(regex.Search("zzzz"u8).Success); Assert.Equal("éé", snapshot.Groups[1].ValueText);
-        regex.Dispose(); Assert.Equal(0UL, allowance.Used); Assert.Equal("éé", snapshot.Groups[1].ValueText);
+        Assert.False(regex.Search("zzzz"u8).Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
+        regex.Dispose(); Assert.Equal(0UL, allowance.Used); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
         Assert.Throws<ObjectDisposedException>(() => regex.Search("aaaa"u8));
     }
 

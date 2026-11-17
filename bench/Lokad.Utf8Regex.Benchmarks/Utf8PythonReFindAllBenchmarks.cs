@@ -38,8 +38,8 @@ public class Utf8PythonReFindAllBenchmarks
             });
         _regex = new Regex(item.Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
-        // A wrapping capture commonly repeats group zero in owned snapshots.
-        // Keep the existing corpus and exercise the actual public materializer.
+        // Keep the existing corpus; materialize full capture text in host code
+        // over the real public range cursor, including the wrapping capture.
         var detailedPattern = "(" + item.Pattern + ")";
         _detailedUnlimited = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan);
         _detailedFinite = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan,
@@ -77,14 +77,14 @@ public class Utf8PythonReFindAllBenchmarks
     public byte[][][] DecodeThenRegex() => Project(Encoding.UTF8.GetString(_input));
 
     [Benchmark]
-    public Utf8PythonDetailedMatchData[] DetailedUnlimited() => _detailedUnlimited.FindIterDetailed(_input);
+    public PythonReHostDetailedMatch[] DetailedUnlimited() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedUnlimited,_input);
 
     [Benchmark]
-    public Utf8PythonDetailedMatchData[] DetailedFinite() => _detailedFinite.FindIterDetailed(_input);
+    public PythonReHostDetailedMatch[] DetailedFinite() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite,_input);
 
     [Benchmark]
-    public Utf8PythonDetailedMatchData[] DetailedFiniteWithToken() =>
-        _detailedFinite.FindIterDetailed(_input, 0, _cancellation.Token);
+    public PythonReHostDetailedMatch[] DetailedFiniteWithToken() =>
+PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite,_input, 0, _cancellation.Token);
 
     private byte[][][] Project(string text) => _regex.Matches(text)
         .Select(match => new[]
@@ -106,7 +106,7 @@ public class Utf8PythonReFindAllBenchmarks
         }
     }
 
-    private static void VerifyDetailed(Utf8PythonDetailedMatchData[] actual, byte[][][] expected)
+    private static void VerifyDetailed(PythonReHostDetailedMatch[] actual, byte[][][] expected)
     {
         if (actual.Length != expected.Length)
             throw new InvalidOperationException("Detailed capture counts disagree.");

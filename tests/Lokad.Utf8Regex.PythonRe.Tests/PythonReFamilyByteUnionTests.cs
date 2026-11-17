@@ -16,11 +16,17 @@ public sealed class PythonReFamilyByteUnionTests
         var text = prefix + "item-x item-12 item-345";
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex("item-([0-9]+)");
-        var matches = regex.FindIterDetailed(input, 4);
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 4, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
         Assert.Equal(new[] { "12", "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 4)).ScalarValues);
         Assert.Equal(2, matches.Length);
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix) + 7, matches[0].Value.StartOffsetInBytes);
-        Assert.Equal("12", matches[0].Groups[1].ValueText);
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
         Assert.False(regex.Match(input, 4).Success);
         Assert.True(regex.FullMatch(input, matches[1].Value.StartOffsetInBytes).Success);
         Assert.Equal(new[] { "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes)).ScalarValues);
@@ -35,16 +41,22 @@ public sealed class PythonReFamilyByteUnionTests
     public void PrefixIsNecessaryOnlyAndOriginalOrderedVerificationWins(string pattern, string text)
     {
         var expected = new Regex(pattern).Matches(text);
-        var actual = new Utf8PythonRegex(pattern).FindIterDetailed(Encoding.UTF8.GetBytes(text));
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = new Utf8PythonRegex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        var actual = collectedRanges2.ToArray();
         Assert.Equal(expected.Count, actual.Length);
         for (var index = 0; index < actual.Length; index++)
         {
-            Assert.Equal(expected[index].Value, actual[index].Value.ValueText);
+            Assert.Equal(expected[index].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetValueMemory().Span));
             for (var group = 1; group < expected[index].Groups.Count; group++)
             {
                 Assert.Equal(expected[index].Groups[group].Success, actual[index].Groups[group].Success);
                 if (expected[index].Groups[group].Success)
-                    Assert.Equal(expected[index].Groups[group].Value, actual[index].Groups[group].ValueText);
+                    Assert.Equal(expected[index].Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetGroupMemory(group).Span));
             }
         }
     }

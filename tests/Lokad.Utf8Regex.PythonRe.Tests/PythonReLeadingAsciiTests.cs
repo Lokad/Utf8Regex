@@ -26,8 +26,14 @@ public sealed class PythonReLeadingAsciiTests
         var regex = new Utf8PythonRegex(@"needle\d+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input, 6, cancellation.Token));
-        var matches = regex.FindIterDetailed(input, 6, cancellation.Token);
-        Assert.Equal(new[] { "needle१२", "needle\U0001D7CE" }, matches.Select(m => m.Value.ValueText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 6, cancellation.Token))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var matches = collectedRanges1.ToArray();
+        Assert.Equal(new[] { "needle१२", "needle\U0001D7CE" }, matches.Select(m => System.Text.Encoding.UTF8.GetString(m.GetValueMemory().Span)));
         Assert.Equal(1, regex.Count(input, 23 + padding));
         Assert.Equal(0, regex.Count(input, input.Length));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
@@ -49,7 +55,13 @@ public sealed class PythonReLeadingAsciiTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
         Assert.Equal(expected, regex.Count(input));
-        Assert.Equal(expected, regex.FindIterDetailed(input).Length);
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        Assert.Equal(expected, collectedRanges2.ToArray().Length);
     }
 
     [Fact]

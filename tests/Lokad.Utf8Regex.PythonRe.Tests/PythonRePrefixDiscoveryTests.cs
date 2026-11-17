@@ -29,20 +29,31 @@ public sealed class PythonRePrefixDiscoveryTests
         Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
-        var plain = new PythonReScalarMatchCursor(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
-            0, Regex.InfiniteMatchTimeout,
-            null, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default));
-        var expected = new List<Utf8PythonDetailedMatchData>();
-        try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(Field<PythonReNameEntry[]>(regex, "_nameEntries"))); }
+        var plain = new PythonReScalarMatchState(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
+            0, Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
+        var expected = new List<Utf8PythonRangeMatch>();
+        try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input, Field<PythonReNameEntry[]>(regex, "_nameEntries"))); }
         finally { plain.Dispose(); }
         var finite = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
-        foreach (var actual in new[] { regex.FindIterDetailed(input), finite.FindIterDetailed(input) })
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = finite.CreateMatchCursor(input, 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
+        foreach (var actual in new[] { collectedRanges1.ToArray(), collectedRanges2.ToArray() })
         {
             Assert.Equal(expected.Count, actual.Length);
             for (var i = 0; i < actual.Length; i++)
             {
-                Assert.Equal(expected[i].Groups, actual[i].Groups);
+                Assert.Equal(expected[i].Groups.ToArray(), actual[i].Groups.ToArray());
                 Assert.Equal(expected[i].LastIndex, actual[i].LastIndex);
                 Assert.Equal(expected[i].LastGroup, actual[i].LastGroup);
             }
@@ -50,7 +61,7 @@ public sealed class PythonRePrefixDiscoveryTests
         Assert.Equal(expected.Count, finite.Count(input));
         using var cursor = finite.CreateMatchCursor(input);
         var index = 0;
-        while (cursor.MoveNext(out cursorRange)) PythonReRangeAssert.Equal(expected[index++], cursorRange);
+        while (cursor.MoveNext(out cursorRange)) PythonReCaptureAssert.Equal(expected[index++], cursorRange);
         Assert.Equal(expected.Count, index);
     }
 
@@ -75,17 +86,22 @@ public sealed class PythonRePrefixDiscoveryTests
                 var start = 0;
                 while (true)
                 {
-                    var plain = new PythonReScalarMatchCursor(input, program, start,
-                        Regex.InfiniteMatchTimeout,
-                        null, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default));
-                    var expected = new List<Utf8PythonDetailedMatchData>();
-                    try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(names)); }
+                    var plain = new PythonReScalarMatchState(input, program, start,
+                        Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
+                    var expected = new List<Utf8PythonRangeMatch>();
+                    try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input, names)); }
                     finally { plain.Dispose(); }
-                    var actual = regex.FindIterDetailed(input, start);
+                    var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+                    using (var rangeCursor3 = regex.CreateMatchCursor(input, start, default))
+                    {
+                        while (rangeCursor3.MoveNext(out var rangeMatch3))
+                            collectedRanges3.Add(rangeMatch3);
+                    }
+                    var actual = collectedRanges3.ToArray();
                     Assert.Equal(expected.Count, actual.Length);
                     for (var index = 0; index < actual.Length; index++)
                     {
-                        Assert.Equal(expected[index].Groups, actual[index].Groups);
+                        Assert.Equal(expected[index].Groups.ToArray(), actual[index].Groups.ToArray());
                         Assert.Equal(expected[index].LastIndex, actual[index].LastIndex);
                         Assert.Equal(expected[index].LastGroup, actual[index].LastGroup);
                     }
@@ -102,9 +118,9 @@ public sealed class PythonRePrefixDiscoveryTests
     {
         var regex = new Utf8PythonRegex("(ab|cd)+");
         var input = "éxxabcd"u8.ToArray();
-        Assert.False(regex.MatchDetailedData(input).Success);
-        Assert.False(regex.FullMatchDetailedData(input).Success);
-        Assert.Equal(4, regex.SearchDetailedData(input).Value.StartOffsetInBytes);
+        Assert.False(regex.MatchDetailed(input).Success);
+        Assert.False(regex.FullMatchDetailed(input).Success);
+        Assert.Equal(4, regex.SearchDetailed(input).Value.StartOffsetInBytes);
         Assert.Equal(1, regex.Count(input, 4));
         Assert.Equal(0, regex.Count(input, 8));
 

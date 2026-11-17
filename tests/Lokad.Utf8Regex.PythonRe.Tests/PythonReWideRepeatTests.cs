@@ -38,16 +38,16 @@ public sealed class PythonReWideRepeatTests
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            var match = regex.FullMatchDetailedData(input, 0, cancellation.Token);
+            var match = regex.FullMatchDetailed(input, 0, cancellation.Token);
             Assert.Equal(success, match.Success);
             Assert.Equal(count, regex.Count(input, 0, cancellation.Token));
             if (!success) continue;
-            Assert.Equal(text, match.Value.ValueText);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
             Assert.Equal(0, match.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
             if (capture is not null)
             {
-                Assert.Equal(capture, match.Groups[1].ValueText);
+                Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
                 Assert.Equal(1, match.LastIndex);
             }
         }

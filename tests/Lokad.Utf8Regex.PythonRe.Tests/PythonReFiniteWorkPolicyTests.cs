@@ -9,7 +9,7 @@ public sealed class PythonReFiniteWorkPolicyTests
     internal static IEnumerable<int> OperationIds()
     {
         for (var operation = 0; operation < 25; operation++)
-            if (operation is not (5 or 6 or 7 or 14 or 16 or 19 or 20 or 22 or 23 or 24)) yield return operation;
+            if (operation is not (5 or 6 or 7 or 11 or 12 or 13 or 15 or 14 or 16 or 19 or 20 or 22 or 23 or 24)) yield return operation;
     }
 
     public static IEnumerable<object[]> Operations()
@@ -41,10 +41,6 @@ public sealed class PythonReFiniteWorkPolicyTests
         8 => regex.SearchDetailed(input, start, token).Success.ToString(),
         9 => regex.MatchDetailed(input, start, token).Success.ToString(),
         10 => regex.FullMatchDetailed(input, start, token).Success.ToString(),
-        11 => regex.SearchDetailedData(input, start, token).Value.ValueText,
-        12 => regex.MatchDetailedData(input, start, token).Value.ValueText,
-        13 => regex.FullMatchDetailedData(input, start, token).Value.ValueText,
-        15 => string.Join("|", regex.FindIterDetailed(input, start, token).Select(x => x.Value.ValueText)),
         17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
         18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
         21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
@@ -88,14 +84,14 @@ public sealed class PythonReFiniteWorkPolicyTests
     public void EverySmallSearchCutoffEitherCompletesOrFailsExplicitly(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var expected = new Utf8PythonRegex(pattern).SearchDetailedData(input);
+        var expected = new Utf8PythonRegex(pattern).SearchDetailed(input);
         for (ulong limit = 1; limit <= 4096; limit++)
         {
             try
             {
-                var actual = RegexWith(pattern, limit).SearchDetailedData(input);
+                var actual = RegexWith(pattern, limit).SearchDetailed(input);
                 Assert.Equal(expected.Success, actual.Success);
-                Assert.Equal(expected.Groups, actual.Groups);
+                PythonReCaptureAssert.Equal(expected,actual);
                 return;
             }
             catch (Utf8ResourceLimitExceededException error)
@@ -134,15 +130,21 @@ public sealed class PythonReFiniteWorkPolicyTests
     public void EmptyRetryAndSupplementaryOffsetsRemainScalar()
     {
         var regex = RegexWith(".*?", 10000);
-        var all = regex.FindIterDetailed("😀a"u8);
-        Assert.Equal(new[] { "", "😀", "", "a", "" }, all.Select(x => x.Value.ValueText));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(("😀a"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
+        var all = collectedRanges1.ToArray();
+        Assert.Equal(new[] { "", "😀", "", "a", "" }, all.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
         Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀a"u8, 1));
         Assert.Equal(1, regex.Count("😀a"u8, 5));
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(4)] [InlineData(11)]  [InlineData(21)]
+    [InlineData(0)] [InlineData(4)]   [InlineData(21)]
     public void WorkCoversLateMisses(int operation)
     {
         var miss = Encoding.UTF8.GetBytes(new string('x', 16384));

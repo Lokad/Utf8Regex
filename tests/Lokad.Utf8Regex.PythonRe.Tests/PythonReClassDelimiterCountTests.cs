@@ -26,7 +26,13 @@ public sealed class PythonReClassDelimiterCountTests
         using var token = new CancellationTokenSource();
         for (var floor = 0; floor <= input.Length;)
         {
-            var expected = regex.FindIterDetailed(input, floor).Length;
+            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor1 = regex.CreateMatchCursor(input, floor, default))
+            {
+                while (rangeCursor1.MoveNext(out var rangeMatch1))
+                    collectedRanges1.Add(rangeMatch1);
+            }
+            var expected = collectedRanges1.ToArray().Length;
             Assert.Equal(expected, regex.Count(storage.AsSpan(1, input.Length), floor));
             Assert.Equal(expected, regex.Count(input, floor, token.Token));
             if (floor == input.Length) break;

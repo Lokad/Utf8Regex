@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe's owned-text detailed Data APIs, FindIterDetailed and their two
+  text carriers. Borrowed capture contexts and range cursors remain. Host code
+  owns decoding/collections; obsolete invocation string sizing and decoding are
+  removed without changing byte-result admission or matching controls.
+
 - Remove PythonRe's cursor text Current and no-output MoveNext overloads. Advance
   into byte ranges with an optional token; retained ranges and cumulative controls
   remain. Hosts own text decoding and keep borrowed subjects unchanged while read.

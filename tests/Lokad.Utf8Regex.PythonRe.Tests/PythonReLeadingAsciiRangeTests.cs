@@ -141,11 +141,17 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
+        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = regex.CreateMatchCursor(("π😀ſHERLOCK"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                collectedRanges1.Add(rangeMatch1);
+        }
 
 
         // A non-ASCII subject keeps all CPython partners on the scalar route.
-        var match = regex.FindIterDetailed("π😀ſHERLOCK"u8)[0];
-        Assert.Equal("ſHERLOCK", match.Groups[1].ValueText);
+        var match = collectedRanges1.ToArray()[0];
+        Assert.Equal("ſHERLOCK", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         Assert.Equal(6, match.Value.StartOffsetInBytes);     }
 
     [Theory]
@@ -164,9 +170,15 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
+        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(("π😀éa"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                collectedRanges2.Add(rangeMatch2);
+        }
 
-        var match = regex.FindIterDetailed("π😀éa"u8)[0];
-        Assert.Equal("éa", match.Groups[1].ValueText);
+        var match = collectedRanges2.ToArray()[0];
+        Assert.Equal("éa", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         Assert.Equal(6, match.Value.StartOffsetInBytes);     }
 
     [Fact]
@@ -243,7 +255,13 @@ public sealed class PythonReLeadingAsciiRangeTests
             foreach (var start in new[] { 0, 1 + first.Length })
             {
                 var expected = oracle.Matches(text, start).Cast<Match>().ToArray();
-                var actual = regex.FindIterDetailed(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)));
+                var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+                using (var rangeCursor3 = regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), default))
+                {
+                    while (rangeCursor3.MoveNext(out var rangeMatch3))
+                        collectedRanges3.Add(rangeMatch3);
+                }
+                var actual = collectedRanges3.ToArray();
                 Assert.Equal(expected.Length, actual.Length);
                 for (var index = 0; index < expected.Length; index++)
                 {
@@ -253,7 +271,7 @@ public sealed class PythonReLeadingAsciiRangeTests
                     {
                         Assert.Equal(expected[index].Groups[group].Success, actual[index].Groups[group].Success);
                         if (expected[index].Groups[group].Success)
-                            Assert.Equal(expected[index].Groups[group].Value, actual[index].Groups[group].ValueText);
+                            Assert.Equal(expected[index].Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetGroupMemory(group).Span));
                     }
                 }
             }
@@ -271,17 +289,23 @@ public sealed class PythonReLeadingAsciiRangeTests
             new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         using var token = new CancellationTokenSource();
         Assert.Equal(new[] { "alpha", "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
-        var matches = regex.FindIterDetailed(input, 0, token.Token);
+        var collectedRanges4 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor4 = regex.CreateMatchCursor(input, 0, token.Token))
+        {
+            while (rangeCursor4.MoveNext(out var rangeMatch4))
+                collectedRanges4.Add(rangeMatch4);
+        }
+        var matches = collectedRanges4.ToArray();
         var first = matches[0];
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
-        Assert.Equal("alpha", first.Groups[1].ValueText);
+        Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
         Assert.Equal(new[] { "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes, token.Token)).ScalarValues);
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.FullMatch(input).Success);
         Assert.True(regex.Match(input, first.Value.StartOffsetInBytes).Success);
         Assert.ThrowsAny<ArgumentException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, padding + 1)));
-        Assert.Equal("alpha", first.Groups[1].ValueText);
+        Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
 
     [Theory]
@@ -346,7 +370,13 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(new[] { "one", "12" }, strings[0]); Assert.Equal(new[] { "z", "3" }, strings[1]);
         for (var index = 0; index < strings.Length; index++)
             Assert.Equal(strings[index], bytes[index].Select(Encoding.UTF8.GetString));
-        Assert.All(regex.FindIterDetailed(input), match => Assert.Equal(2, match.LastIndex));
+        var collectedRanges5 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor5 = regex.CreateMatchCursor((input).ToArray(), 0, default))
+        {
+            while (rangeCursor5.MoveNext(out var rangeMatch5))
+                collectedRanges5.Add(rangeMatch5);
+        }
+        Assert.All(collectedRanges5.ToArray(), match => Assert.Equal(2, match.LastIndex));
     }
 
     [Theory]
