@@ -258,24 +258,6 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
-    public int ExecuteRepeatedDigitGroupWholeOnly()
-    {
-        var plan = Utf8Regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan;
-        return plan.HasValue && Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
-            InputBytes, plan, out var matchedLength, out _)
-            ? matchedLength
-            : 0;
-    }
-
-    public int ExecuteRepeatedDigitGroupFindOnly()
-    {
-        var plan = Utf8Regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan;
-        return plan.HasValue && Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
-            InputBytes, plan, out _, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
     public int ExecuteUtf8DirectFixedLengthOnly()
     {
         var prepared = Utf8Regex.Inspection.PreparedRegex;

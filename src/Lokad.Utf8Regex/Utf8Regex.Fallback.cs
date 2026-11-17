@@ -110,27 +110,6 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        var repeatedDigitGroupPlan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
-        if (repeatedDigitGroupPlan.HasValue)
-        {
-            var matched = Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
-                input,
-                repeatedDigitGroupPlan,
-                out _,
-                out var needsValidation);
-            if (needsValidation)
-            {
-                return false;
-            }
-
-            isMatch = matched || Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
-                input,
-                repeatedDigitGroupPlan,
-                out _,
-                out _);
-            return true;
-        }
-
         if (!_hasDirectAnchoredValidatorWithoutValidation || _hasDirectAnchoredHeadTailWithoutValidation)
         {
             return false;

@@ -126,8 +126,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 ? anchoredValidatorPlan
                 : default, anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
                 ? anchoredBoundedDatePlan
-                : default, repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
-                ? repeatedDigitGroupPlan
                 : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {
@@ -163,7 +161,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             foreach (var segment in plan.AnchoredValidatorPlan.Segments)
                 { Utf8ConstructionScope.ChargeWork(1); if (segment.IsLiteral) storage.Retain(segment.Literal); }
         }
-        if (plan.RepeatedDigitGroupPlan.HasValue) storage.Retain(plan.RepeatedDigitGroupPlan.SeparatorBytes);
     }
 
     private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);

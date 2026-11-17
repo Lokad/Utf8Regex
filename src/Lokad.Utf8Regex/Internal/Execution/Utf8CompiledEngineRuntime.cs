@@ -124,7 +124,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     private readonly bool _canUseDirectAnchoredValidatorMatch;
     private readonly bool _anchoredValidatorAllowsTrailingNewline;
     private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
-    private readonly AsciiSimplePatternRepeatedDigitGroupPlan _repeatedDigitGroupPlan;
 
     internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
@@ -138,7 +137,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         _anchoredValidatorAllowsTrailingNewline = _canUseDirectAnchoredValidatorMatch &&
             _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
         _anchoredBoundedDatePlan = compiledPatternFamily.AnchoredBoundedDatePlan;
-        _repeatedDigitGroupPlan = compiledPatternFamily.RepeatedDigitGroupPlan;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -146,7 +144,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         SupportsWellFormedOnlyMatch: _canUseDirectAnchoredValidatorMatch,
         WellFormedOnlyMatchMissIsDefinitive: _canUseDirectAnchoredValidatorMatch,
         SupportsWellFormedOnlyCount: false,
-        SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch || _repeatedDigitGroupPlan.HasValue,
+        SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch,
         SkipRequiredPrefilterForCount: false);
 
     public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
@@ -182,7 +180,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatchWithoutValidation(
                 _anchoredBoundedDatePlan,
-                _repeatedDigitGroupPlan,
                 _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd,
                 input,
                 out match))
@@ -247,11 +244,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
-            if (Utf8SimplePatternCompiledSearchGuidedRouter.TryIsMatch(
-                    _repeatedDigitGroupPlan, input, validation, out var guidedIsMatch))
-            {
-                return guidedIsMatch;
-            }
 
             if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out _))
             {
@@ -310,12 +302,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
             return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
         }
 
-        if (Utf8SimplePatternCompiledSearchGuidedRouter.TryCount(
-                _repeatedDigitGroupPlan, input, validation, out var guidedCount))
-        {
-            return guidedCount;
-        }
-
         if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out _))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternFixedAlternation);
@@ -366,11 +352,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
-            if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatch(
-                    _repeatedDigitGroupPlan, input, validation, out var guidedMatch))
-            {
-                return guidedMatch;
-            }
 
             if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out var alternationMatchedLength))
             {

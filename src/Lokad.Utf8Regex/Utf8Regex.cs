@@ -521,20 +521,6 @@ public sealed partial class Utf8Regex
                 if (!Utf8InputAnalyzer.IsAscii(input, ref simpleInvocation))
                     return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref simpleInvocation);
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
-                // The existing whole-subject digit kernel can prove existence.
-                // Bound its validation/comparison loops before entering it.
-                var repeated = simple.RepeatedDigitGroupPlan;
-                if (repeated.HasValue && repeated.MaximumLength <= 32 &&
-                    input.Length >= repeated.MinimumLength && input.Length <= repeated.MaximumLength)
-                {
-                    var before = simpleInvocation.TryChargeInputStep();
-                    if (before != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
-                    var whole = Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(input, repeated, out _, out _);
-                    var after = simpleInvocation.TryChargeInputStep();
-                    simpleInvocation.Budget.ThrowIfCancellationRequested();
-                    if (after != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
-                    if (whole) return true;
-                }
                 var breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
                     _preparedRegex.SearchPlan, simple, 0, ref simpleInvocation, out var index, out _);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);

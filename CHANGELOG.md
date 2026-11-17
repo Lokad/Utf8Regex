@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Keep repeated-digit alternative results consistent when a cancellation token is
+  supplied. Remove the specialized digit-group proof and executor that could fill
+  excluded repeat lengths. Captures and interruption remain on existing matchers;
+  numerical resource needs and execution costs can change.
+
 - Fix bounded-repeat alternatives that could accept excluded intermediate lengths.
   Remove the bounded-suffix specialization and retain exact branch semantics in
   the remaining matchers. Unmetered costs and numerical resource needs can change.

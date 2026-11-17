@@ -526,12 +526,10 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoostdocsCreditCardMatchUsesRepeatedDigitGroupPlan(RegexOptions options)
+    public void CreditCardAlternativesKeepScalarResults(RegexOptions options)
     {
         const string pattern = @"([0-9]{4}[- ]){3}[0-9]{3,4}";
         var regex = new Utf8Regex(pattern, options);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
 
         string[] inputs =
         [
@@ -541,6 +539,8 @@ public sealed class LokadPublicRouteGuardrailTests
             "x1234-5678-1234-456y",
             "1234-5678-1234-456x",
             "1234-5678-1234-45",
+            "1234-5678-1234",
+            "1234-5678-1234-45x",
             "1234-5678_1234-456",
             "1234-5678-123x-456",
             "١٢٣٤-٥٦٧٨-١٢٣٤-٤٥٦",

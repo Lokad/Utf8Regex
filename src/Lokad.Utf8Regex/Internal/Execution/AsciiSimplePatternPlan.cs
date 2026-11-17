@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal readonly struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
-        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
+        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
     {
         Branches = branches;
         MinLength = 0;
@@ -41,7 +41,6 @@ internal readonly struct AsciiSimplePatternPlan
         AnchoredHeadTailRunPlan = anchoredHeadTailRunPlan;
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
-        RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
     }
 
     public AsciiSimplePatternToken[][] Branches { get; }
@@ -82,8 +81,6 @@ internal readonly struct AsciiSimplePatternPlan
 
     public AsciiSimplePatternAnchoredBoundedDatePlan AnchoredBoundedDatePlan { get; }
 
-    public AsciiSimplePatternRepeatedDigitGroupPlan RepeatedDigitGroupPlan { get; }
-
     public Utf8CompiledPatternFamilyPlan CompiledPatternFamily => Utf8CompiledPatternFamilyPlan.FromSimplePatternPlan(this);
 
     public Utf8CompiledPatternCategory CompiledPatternCategory => CompiledPatternFamily.Category;
@@ -92,18 +89,17 @@ internal readonly struct AsciiSimplePatternPlan
 
 internal enum Utf8CompiledPatternFamilyKind : byte
 {
-    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2, RepeatedDigitGroup = 3
+    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2
 }
 
 internal readonly struct Utf8CompiledPatternFamilyPlan
 {
     private Utf8CompiledPatternFamilyPlan(
-        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan)
+        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan)
     {
         Kind = kind;
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
-        RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
     }
 
     public Utf8CompiledPatternFamilyKind Kind { get; }
@@ -112,18 +108,13 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
 
     public AsciiSimplePatternAnchoredBoundedDatePlan AnchoredBoundedDatePlan { get; }
 
-    public AsciiSimplePatternRepeatedDigitGroupPlan RepeatedDigitGroupPlan { get; }
-
     public Utf8CompiledPatternCategory Category => Utf8CompiledPatternCategories.GetSimplePatternCategory(this);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default);
+        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredBoundedDate(AsciiSimplePatternAnchoredBoundedDatePlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan, default);
-
-    private static Utf8CompiledPatternFamilyPlan ForRepeatedDigitGroup(AsciiSimplePatternRepeatedDigitGroupPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.RepeatedDigitGroup, default, default, plan);
+        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan);
 
     public static Utf8CompiledPatternFamilyPlan FromSimplePatternPlan(AsciiSimplePatternPlan plan)
     {
@@ -135,11 +126,6 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
         if (plan.AnchoredValidatorPlan.HasValue)
         {
             return ForAnchoredValidator(plan.AnchoredValidatorPlan);
-        }
-
-        if (plan.RepeatedDigitGroupPlan.HasValue)
-        {
-            return ForRepeatedDigitGroup(plan.RepeatedDigitGroupPlan);
         }
 
         return default;
@@ -337,37 +323,4 @@ internal readonly struct AsciiSimplePatternAnchoredBoundedDatePlan
     public byte SecondSeparatorByte { get; }
 
     public bool HasValue => FirstFieldMinCount > 0;
-}
-
-internal readonly struct AsciiSimplePatternRepeatedDigitGroupPlan
-{
-    public AsciiSimplePatternRepeatedDigitGroupPlan(
-        byte repeatedGroupCount,
-        byte groupDigitCount,
-        byte trailingMinDigits,
-        byte trailingMaxDigits,
-        byte[] separatorBytes)
-    {
-        RepeatedGroupCount = repeatedGroupCount;
-        GroupDigitCount = groupDigitCount;
-        TrailingMinDigits = trailingMinDigits;
-        TrailingMaxDigits = trailingMaxDigits;
-        SeparatorBytes = separatorBytes;
-    }
-
-    public byte RepeatedGroupCount { get; }
-
-    public byte GroupDigitCount { get; }
-
-    public byte TrailingMinDigits { get; }
-
-    public byte TrailingMaxDigits { get; }
-
-    public byte[] SeparatorBytes { get; }
-
-    public int MinimumLength => RepeatedGroupCount * (GroupDigitCount + 1) + TrailingMinDigits;
-
-    public int MaximumLength => RepeatedGroupCount * (GroupDigitCount + 1) + TrailingMaxDigits;
-
-    public bool HasValue => RepeatedGroupCount > 0 && GroupDigitCount > 0 && TrailingMinDigits > 0 && SeparatorBytes.Length > 0;
 }

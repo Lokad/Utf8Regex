@@ -482,17 +482,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledRepeatedDigitGroupCanAnswerIsMatchWithoutValidation()
-    {
-        var regex = new Utf8Regex(@"([0-9]{4}[- ]){3}[0-9]{3,4}", RegexOptions.Compiled);
-
-        var handled = regex.TryIsMatchAsciiSimplePatternWithoutValidation("1234-5678-1234-456"u8, out var isMatch);
-
-        Assert.True(handled);
-        Assert.True(isMatch);
-    }
-
-    [Fact]
     public void CompiledLiteralThenRunValidatorMatchesBaselineAcrossCorpus()
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -565,24 +554,6 @@ public sealed class Utf8RegexConstructionTests
         var handled = regex.TryMatchDirectWithoutValidation("éalpha"u8, out _);
 
         Assert.False(handled);
-    }
-
-    [Fact]
-    public void CompiledCreditCardMatcherMatchesBaselineAcrossCorpus()
-    {
-        AssertCompiledFastPathMatchesBaseline(
-            "([0-9]{4}[- ]){3}[0-9]{3,4}",
-            RegexOptions.None,
-            expectHandledWithoutValidation: true,
-            [
-                [],
-                "1234-5678-1234-456"u8.ToArray(),
-                "1234 5678 1234 4567"u8.ToArray(),
-                "x1234-5678-1234-456y"u8.ToArray(),
-                "1234-5678-1234"u8.ToArray(),
-                "1234-5678-1234-45x"u8.ToArray(),
-                [ (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-', 0xD9, 0xA1, (byte)'2' ],
-            ]);
     }
 
     [Fact]

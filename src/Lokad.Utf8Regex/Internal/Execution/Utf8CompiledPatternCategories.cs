@@ -17,8 +17,7 @@ internal static class Utf8CompiledPatternCategories
         return family.Kind switch
         {
             Utf8CompiledPatternFamilyKind.AnchoredValidator or
-            Utf8CompiledPatternFamilyKind.AnchoredBoundedDate or
-            Utf8CompiledPatternFamilyKind.RepeatedDigitGroup
+            Utf8CompiledPatternFamilyKind.AnchoredBoundedDate
                 => Utf8CompiledPatternCategory.AnchoredWhole,
 
             _ => Utf8CompiledPatternCategory.None,

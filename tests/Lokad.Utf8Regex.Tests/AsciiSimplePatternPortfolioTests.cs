@@ -23,15 +23,6 @@ public sealed class AsciiSimplePatternPortfolioTests
         Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
-    [Fact]
-    public void RepeatedDigitGroupPlanCountsAsWholeInputCompiledSpecialization()
-    {
-        var regex = new Utf8Regex(@"^([0-9]{4}[- ]){3}[0-9]{3,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
-        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
-    }
-
     [Theory]
     [InlineData(RegexOptions.IgnoreCase)]
     [InlineData(RegexOptions.ECMAScript)]

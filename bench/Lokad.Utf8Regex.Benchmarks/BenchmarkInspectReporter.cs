@@ -2799,7 +2799,6 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"BranchLengths     : {string.Join(",", context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Select(static branch => branch.Length))}");
                 Console.WriteLine($"HasAnchoredValidator : {simplePatternPlan.AnchoredValidatorPlan.HasValue}");
                 Console.WriteLine($"HasAnchoredHeadTail  : {simplePatternPlan.AnchoredHeadTailRunPlan.HasValue}");
-                Console.WriteLine($"HasRepeatedDigitGroup: {simplePatternPlan.RepeatedDigitGroupPlan.HasValue}");
                 Console.WriteLine($"CanDirectFixedLength : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
                 Console.WriteLine($"CanDirectFixedAlt    : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
             }
@@ -2827,12 +2826,6 @@ internal static partial class BenchmarkInspectReporter
                         Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex, context.InputBytes, out var matchedLength)
                             ? matchedLength
                             : 0);
-                }
-
-                if (simplePatternPlan.RepeatedDigitGroupPlan.HasValue)
-                {
-                    Measure("RepeatedDigitGroupWhole", iterations, context.ExecuteRepeatedDigitGroupWholeOnly);
-                    Measure("RepeatedDigitGroupFind", iterations, context.ExecuteRepeatedDigitGroupFindOnly);
                 }
             }
         }
