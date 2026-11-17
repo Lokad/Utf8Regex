@@ -38,6 +38,14 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 | Replace / Subn | Python template expansion into owned UTF-8 bytes; Subn includes replacement count |
 | SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
+Value/context operations, Count, FindAllToUtf8 and derived byte outputs use one
+token-bearing signature per supported input/template representation. Byte offsets,
+replacement/split counts default to zero; cancellation defaults to None. Entry
+cancellation remains before program use and argument/input work. Ordinary short
+source calls are unchanged; recompile old binaries and adapt shorter delegates
+with explicit lambdas when needed. The explicit cursor working-allowance overload
+still rejects null and preserves original-token precedence; no uncapped retry.
+
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
 and suffix context. FullMatch covers [pos,end). There is no `endpos` parameter.

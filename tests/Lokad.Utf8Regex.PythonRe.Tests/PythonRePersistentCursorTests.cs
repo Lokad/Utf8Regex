@@ -225,7 +225,7 @@ public sealed class PythonRePersistentCursorTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor("a"u8.ToArray(), 2));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.CreateMatchCursor(new byte[] { 0xff }, -1, token.Token)).CancellationToken);
-        Func<ReadOnlyMemory<byte>, Utf8PythonMatchCursor> create = regex.CreateMatchCursor;
+        Func<ReadOnlyMemory<byte>, Utf8PythonMatchCursor> create = subject => regex.CreateMatchCursor(subject);
         using var empty = create(default); Assert.False(empty.MoveNext(out _));
         using var atEnd = regex.CreateMatchCursor("a"u8.ToArray(), 1, CancellationToken.None); Assert.False(atEnd.MoveNext(out _));
         using var legacy = new Utf8PythonRegex("", default).CreateMatchCursor(default); Assert.True(legacy.MoveNext(out _));

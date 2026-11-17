@@ -7,12 +7,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed partial class Utf8PythonRegex
 {
 
-    /// <summary>Returns Python <c>findall</c> values as owned UTF-8 byte arrays.</summary>
-    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input) => FindAllToUtf8(input, 0);
-
-    /// <summary>Returns shaped UTF-8 <c>findall</c> values after a byte offset.</summary>
-    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes) => FindAllToUtf8Core(input, startOffsetInBytes, CancellationToken.None);
-
     private Utf8PythonFindAllUtf8Result FindAllToUtf8Core(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         using var programUse = EnterProgramUse();
@@ -56,7 +50,7 @@ public sealed partial class Utf8PythonRegex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return FindAllToUtf8Core(input, startOffsetInBytes, cancellationToken);

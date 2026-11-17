@@ -14,12 +14,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>Substitution entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    /// <summary>Replaces all matches and returns owned UTF-8 bytes.</summary>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement) => Replace(input, replacement, 0, 0);
-
-    /// <summary>Replaces at most the requested number of matches and returns owned UTF-8 bytes.</summary>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count) =>
-        Replace(input, replacement, count, 0);
 
     // replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
     private PythonReReplacementPlan GetReplacementPlan(string replacement, out Utf8FundedStorage.Use? memoryUse) =>
@@ -266,12 +260,6 @@ public sealed partial class Utf8PythonRegex
         }
     }
 
-    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
-    {
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None, out _).ResultBytes;
-    }
-
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation during matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
@@ -279,26 +267,11 @@ public sealed partial class Utf8PythonRegex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _).ResultBytes;
     }
-
-    /// <summary>Replaces all matches and returns UTF-8 bytes plus replacement count.</summary>
-    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement) =>
-        Subn(input, replacement, 0, 0);
-
-    /// <summary>Replaces a bounded number of matches and returns UTF-8 bytes plus count.</summary>
-    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count) =>
-        Subn(input, replacement, count, 0);
-
-    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count.</summary>
-    public Utf8PythonSubnUtf8Result Subn(
-        ReadOnlySpan<byte> input,
-        string replacement,
-        int count,
-        int startOffsetInBytes) => SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None, out _);
 
     /// <summary>Substitutes into owned UTF-8 bytes whose charge remains reserved until the returned receipt is disposed.</summary>
     /// <remarks>Requires caller-funded Compile. Reuses template preparation and native/scalar execution. No output copy or Release/TryReserve gap is added at publication. Dispose after retained users finish, or take over admission for byte-array aliases kept afterward. Numeric limits and the original token/deadline remain authoritative.</remarks>
@@ -347,7 +320,7 @@ public sealed partial class Utf8PythonRegex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _);

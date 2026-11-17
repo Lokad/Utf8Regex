@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Consolidate PythonRe short operation overloads onto existing optional
+  token-bearing signatures. Recompile old callers and adapt shorter method-group
+  delegates; preserve cancellation, funding, scalar and byte-output controls.
+
 - Consolidate constructors to one optional signature per supported pattern
   representation. Recompile old callers; a bare default timeout now inherits the
   profile default, while an explicitly zero TimeSpan remains invalid. Preserve

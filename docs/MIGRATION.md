@@ -397,3 +397,17 @@ An omitted or null timeout inherits DefaultMatchTimeout (infinite for POSIX).
 A positional bare default in that nullable slot now has the same meaning.
 TimeSpan.Zero and default(TimeSpan) still fail timeout validation. Options,
 resource-policy ordering, strict pattern checks and scalar matching are unchanged.
+
+### PythonRe operation signatures
+
+Redundant short overloads are removed from value/context/count, FindAllToUtf8,
+string replacement/substitution, SplitRanges and cursor creation. Their existing
+long token-bearing entries now default offsets/counts to zero and cancellation to
+None. Ordinary short source calls still work. Previously compiled callers must
+be recompiled; method groups targeting shorter delegates need an explicit lambda,
+such as `subject => regex.CreateMatchCursor(subject)`.
+
+Matching/output workers and limits are unchanged. Cancellation still precedes
+program use and input/offset work. The separate explicit cursor allowance entry
+continues to reject null, preserve original-token precedence and refuse storage
+without an uncapped retry. No public validation policy or new execution mode.

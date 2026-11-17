@@ -92,6 +92,16 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 and [MIGRATION.md](../../docs/MIGRATION.md).
 
+Value/context/count and byte-output calls now take optional offsets/counts and
+cancellation on their existing long signature. For example,
+`regex.Search(subject.Span, cancellationToken: token)` starts at byte zero.
+Recompile old callers; adapt a short method-group delegate with an explicit
+lambda. Cursor funding overloads retain their distinct account/null contracts.
+Managed benchmark lanes that bind removed short overloads have new protocol
+identities. Their output/consumption is unchanged; explicit context/cursor/split
+lanes retain their existing identities. Recorded tables remain historical until
+the coherent refresh, without rewriting old samples.
+
 `cursor.MoveNext(out Utf8PythonRangeMatch match, token = default)` discovers
 capture byte ranges without captured strings or a whole-subject coordinate map.
 Keep the returned value; the cursor has no text `Current` or no-output advance.

@@ -5,22 +5,13 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>Persistent scalar discovery for hosts that retain a cursor across calls.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    /// <summary>Creates an incremental cursor over one unchanged, well-formed UTF-8 memory subject.</summary>
-    /// <remarks>Returned ranges own immutable metadata and borrow the subject. Keep its bytes unchanged and its manager alive while reading any returned bytes.</remarks>
-    public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input)
-        => CreateMatchCursor(input, 0, CancellationToken.None);
-
-    /// <summary>Creates an incremental cursor beginning at a scalar-aligned byte offset.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">The byte offset is outside the subject or inside a scalar.</exception>
-    public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes)
-        => CreateMatchCursor(input, startOffsetInBytes, CancellationToken.None);
 
     /// <summary>Creates an incremental cursor retaining one cumulative invocation token and deadline.</summary>
-    /// <remarks>Funded expressions use their program account for temporary working/result staging. Work and result capacity are cumulative through moves and snapshots. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity and growth overlap. Exclusive scratch releases synchronously; result traffic is never refunded. Sequential advances may cross asynchronous host waits.</remarks>
+    /// <remarks>Funded expressions use their program account for temporary working/result staging. Work and result capacity are cumulative through moves and snapshots. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity and growth overlap. Exclusive scratch releases synchronously; result traffic is never refunded. Sequential advances may cross asynchronous host waits. Returned metadata survives advances/disposal; keep borrowed subject bytes unchanged and their manager alive while reading them.</remarks>
     /// <exception cref="OperationCanceledException">The invocation token is canceled.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The byte offset is outside the subject or inside a scalar.</exception>
-    public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken)
+    public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes = 0,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var programUse = EnterProgramUse();

@@ -22,7 +22,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -31,7 +31,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Search(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Search(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -40,7 +40,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -49,7 +49,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatch(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatch(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -58,7 +58,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Count(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Count(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -67,7 +67,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SearchDetailed(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.SearchDetailed(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -76,7 +76,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -85,16 +85,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatchDetailed(s_input, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeFindAll()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatchDetailed(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -103,32 +94,25 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeFindIterDetailed()
+    public void PreCanceledTokenThrowsBeforeCursorCreation()
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => {
-            var collectedRanges1 = new List<Utf8PythonRangeMatch>();
-            using (var rangeCursor1 = regex.CreateMatchCursor(s_input, 4, token))
-            {
-                while (rangeCursor1.MoveNext(out var rangeMatch1))
-                    collectedRanges1.Add(rangeMatch1);
-            }
-});
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+            regex.CreateMatchCursor(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
-
     [Fact]
     public void PreCanceledTokenThrowsBeforeSplitRanges()
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(s_input, 1, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -137,7 +121,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "pet", 0, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "pet", cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -146,7 +130,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Subn(s_input, "pet", 0, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Subn(s_input, "pet", cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -161,13 +145,14 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void UncanceledTokenMatchesTokenlessResults()
+    public void OptionalArgumentsPreserveNamedOffsetsAndDefaultCounts()
     {
         var regex = Create();
         var token = CancellationToken.None;
-        Assert.Equal(regex.IsMatch(s_input, 4), regex.IsMatch(s_input, 4, token));
-        Assert.Equal(regex.Count(s_input, 4), regex.Count(s_input, 4, token));
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 4).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 4, token).GetValueBytes()));
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "pet", 0, 4)), System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "pet", 0, 4, token)));
+        Assert.True(regex.IsMatch(s_input, startOffsetInBytes: 4, cancellationToken: token));
+        Assert.Equal(1, regex.Count(s_input, startOffsetInBytes: 4, cancellationToken: token));
+        Assert.Equal("horse", Encoding.UTF8.GetString(regex.Match(s_input, startOffsetInBytes: 4).GetValueBytes()));
+        Assert.Equal("cat pet", Encoding.UTF8.GetString(regex.Replace(s_input, "pet", startOffsetInBytes: 4)));
+        Assert.Equal("pet pet", Encoding.UTF8.GetString(regex.Replace(s_input, "pet", cancellationToken: token)));
     }
 }
