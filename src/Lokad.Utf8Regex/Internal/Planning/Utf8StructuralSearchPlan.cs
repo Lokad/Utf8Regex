@@ -6,29 +6,12 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal enum Utf8StructuralSearchYieldKind : byte
 {
-    None = 0,
-    Start = 1,
-    Window = 2,
+    None = 0, Start = 1, Window = 2
 }
 
 internal enum Utf8StructuralSearchStageKind : byte
 {
-    FindLiteralFamily = 0,
-    FindAscii = 1,
-    FindWindow = 2,
-    TransformCandidateStart = 3,
-    RequireByteAtOffset = 4,
-    RequireLiteralAtOffset = 5,
-    RequireMinLength = 6,
-    RequireWithinByteSpan = 7,
-    RequireWithinLineSpan = 8,
-    RequireLeadingBoundary = 9,
-    RequireTrailingBoundary = 10,
-    RequireTrailingLiteral = 11,
-    RequireExactLength = 12,
-    BoundMaxLength = 13,
-    YieldStart = 14,
-    YieldWindow = 15,
+    FindLiteralFamily = 0, FindAscii = 1, FindWindow = 2, TransformCandidateStart = 3, RequireByteAtOffset = 4, RequireLiteralAtOffset = 5, RequireMinLength = 6, RequireWithinByteSpan = 7, RequireWithinLineSpan = 8, RequireLeadingBoundary = 9, RequireTrailingBoundary = 10, RequireTrailingLiteral = 11, RequireExactLength = 12, BoundMaxLength = 13, YieldStart = 14, YieldWindow = 15
 }
 
 internal readonly struct Utf8StructuralSearchStage
@@ -169,26 +152,17 @@ internal readonly struct Utf8StructuralSearchPlan
     public bool HasValue => Stages is { Length: > 0 };
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts,
-        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
-        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
         => Create(kind, distance, canGuideFallbackStarts, null, preparedSearcher,
             windowSearch, fixedDistanceSets, fallbackStartTransform);
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8,
-        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
-        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
         => Create(kind, distance, canGuideFallbackStarts, literalUtf8, preparedSearcher,
             windowSearch, fixedDistanceSets, fallbackStartTransform, default, default, null, null, null);
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8,
-        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
-        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
-        Utf8BoundaryRequirement leadingBoundary,
-        Utf8BoundaryRequirement trailingBoundary,
-        byte[]? trailingLiteralUtf8, int? exactLength, int? maxLength)
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary, byte[]? trailingLiteralUtf8, int? exactLength, int? maxLength)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -264,10 +238,7 @@ internal readonly struct Utf8StructuralSearchPlan
     // Searchers and literal payloads retain their own loans; this owns only the
     // final stage vector. Native stages share byte admission, not scalar VM slots.
     private static Utf8StructuralSearchPlan Build(
-        Utf8StructuralSearchStage first, Utf8StructuralSearchYieldKind yieldKind,
-        Utf8FallbackStartTransform transform, Utf8BoundaryRequirement leading,
-        Utf8BoundaryRequirement trailing, byte[]? trailingLiteral,
-        int? exactLength, int? maxLength, int? maxLines)
+        Utf8StructuralSearchStage first, Utf8StructuralSearchYieldKind yieldKind, Utf8FallbackStartTransform transform, Utf8BoundaryRequirement leading, Utf8BoundaryRequirement trailing, byte[]? trailingLiteral, int? exactLength, int? maxLength, int? maxLines)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -307,74 +278,6 @@ internal readonly struct Utf8StructuralSearchPlan
             return new(yieldKind, stages);
         }
         finally { budget.LeaveDepth(); }
-    }
-
-    // The original plan may still be retained by its caller. Borrow it and all
-    // guard payloads, and transfer one new vector rather than a chain of copies.
-    public Utf8StructuralSearchPlan WithVerificationGuards(Utf8DeterministicVerifierGuards guards)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start || Stages is not { Length: > 0 } stages) return this;
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            var yieldIndex = FindLastYield(stages, Utf8StructuralSearchStageKind.YieldStart, budget);
-            if (yieldIndex < 0) return this;
-            var count = guards.PrefixGuards?.Length ?? 0;
-            if (guards.PrefixGuards is { } prefix)
-                foreach (var guard in prefix)
-                {
-                    budget.ChargeWork(1);
-                    if (guard.Literal is null && guard.CharClass is null)
-                        throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
-                }
-            var fixedBytes = guards.FixedLiteralUtf8 ?? [];
-            var literal = fixedBytes.Length > 0;
-            if (literal) count = checked(count + 1);
-            if (guards.FixedDistanceSets is { } sets)
-                foreach (var set in sets)
-                { budget.ChargeWork(1); if (!set.ByteSet.Negated && !set.ByteSet.IsEmpty) count = checked(count + 1); }
-            if (guards.MinRequiredLength > 0) count = checked(count + 1);
-            if (count == 0) return this;
-            var enriched = budget.AllocateArray<Utf8StructuralSearchStage>(checked(stages.Length + count), false);
-            budget.ChargeWork((ulong)stages.Length);
-            Array.Copy(stages, 0, enriched, 0, yieldIndex);
-            var index = yieldIndex;
-            if (guards.PrefixGuards is { } prefixGuards)
-                foreach (var guard in prefixGuards)
-                {
-                    if (guard.Literal is { } value) enriched[index++] = Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, value);
-                    else if (guard.CharClass is { } set) enriched[index++] = Utf8StructuralSearchStage.RequireAsciiClassAtOffset(guard.Offset, set);
-                    else throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
-                }
-            if (literal) enriched[index++] = Utf8StructuralSearchStage.RequireLiteralAtOffset(guards.FixedLiteralOffset, fixedBytes);
-            if (guards.FixedDistanceSets is { } fixedSets)
-                foreach (var set in fixedSets)
-                {
-                    budget.ChargeWork(1);
-                    if (set.ByteSet.Negated || set.ByteSet.IsEmpty) continue;
-                    // Canonical masks answer cardinality and the sole byte without
-                    // acquiring a projected member array.
-                    enriched[index++] = set.ByteSet.Count == 1
-                        ? Utf8StructuralSearchStage.RequireByteAtOffset(set.Distance, set.ByteSet.LowMask != 0
-                            ? (byte)BitOperations.TrailingZeroCount(set.ByteSet.LowMask)
-                            : (byte)(64 + BitOperations.TrailingZeroCount(set.ByteSet.HighMask)))
-                        : Utf8StructuralSearchStage.RequireAsciiClassAtOffset(set.Distance, set.ByteSet);
-                }
-            if (guards.MinRequiredLength > 0) enriched[index++] = Utf8StructuralSearchStage.RequireMinLength(guards.MinRequiredLength);
-            Array.Copy(stages, yieldIndex, enriched, index, stages.Length - yieldIndex);
-            scope.Complete();
-            return new(YieldKind, enriched);
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
-    private static int FindLastYield(Utf8StructuralSearchStage[] stages, Utf8StructuralSearchStageKind kind, Utf8ConstructionBudget budget)
-    {
-        for (var index = stages.Length - 1; index >= 0; index--)
-        { budget.ChargeWork(1); if (stages[index].Kind == kind) return index; }
-        return -1;
     }
 
     public bool ProducesBoundedCandidates
@@ -433,29 +336,14 @@ internal readonly struct Utf8StructuralSearchPlan
 }
 
 internal readonly record struct Utf8StructuralCandidate(
-    int StartIndex,
-    int EndIndex,
-    int MatchLength,
-    int LiteralId,
-    int TrailingIndex,
-    int TrailingMatchLength,
-    int TrailingLiteralId)
+    int StartIndex, int EndIndex, int MatchLength, int LiteralId, int TrailingIndex, int TrailingMatchLength, int TrailingLiteralId)
 {
     public static Utf8StructuralCandidate Start(
-        int startIndex,
-        int endIndex,
-        int matchLength,
-        int literalId) =>
+        int startIndex, int endIndex, int matchLength, int literalId) =>
         new(startIndex, endIndex, matchLength, literalId, -1, -1, -1);
 
     public static Utf8StructuralCandidate Window(
-        int startIndex,
-        int endIndex,
-        int matchLength,
-        int literalId,
-        int trailingIndex,
-        int trailingMatchLength,
-        int trailingLiteralId) =>
+        int startIndex, int endIndex, int matchLength, int literalId, int trailingIndex, int trailingMatchLength, int trailingLiteralId) =>
         new(
             startIndex,
             endIndex,

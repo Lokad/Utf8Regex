@@ -2,7 +2,5 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal enum Utf8ExecutionBackend : byte
 {
-    FallbackRegex = 0,
-    NativeLiteral = 1,
-    NativeStructural = 2,
+    FallbackRegex = 0, NativeLiteral = 1
 }

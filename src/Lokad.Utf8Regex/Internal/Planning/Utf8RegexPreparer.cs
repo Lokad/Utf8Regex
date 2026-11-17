@@ -21,49 +21,18 @@ internal static class Utf8RegexPreparer
             var fallbackReason = analyzedRegex.FallbackReason;
             if (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
                 string.Equals(fallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
-                anchoredLiteral.HasValue &&
-                anchoredLiteral.IsExact)
-            {
+                anchoredLiteral.HasValue && anchoredLiteral.IsExact)
                 fallbackReason = null;
-            }
 
-            var executionBackend = analyzedRegex.ExecutionKind switch
-            {
-                NativeExecutionKind.ExactAsciiLiteral or
-                NativeExecutionKind.AsciiLiteralIgnoreCase or
-                NativeExecutionKind.ExactUtf8Literal or
-                NativeExecutionKind.ExactUtf8Literals or
-                NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => Utf8ExecutionBackend.NativeLiteral,
-                NativeExecutionKind.FallbackRegex => Utf8ExecutionBackend.FallbackRegex,
-                _ => Utf8ExecutionBackend.NativeStructural,
-            };
-            // General scalar execution and capture-free literal search do not
-            // consume this copied tree. Captured/native shape preparation still does.
+            var executionBackend = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex
+                ? Utf8ExecutionBackend.FallbackRegex : Utf8ExecutionBackend.NativeLiteral;
+            // Grouped literal captures and anchored replacement still consume
+            // this tree. General scalar execution needs only its admitted program.
             var tree = (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !anchoredLiteral.HasValue) ||
                 (executionBackend == Utf8ExecutionBackend.NativeLiteral && scalarProgram is { GroupCount: 0 })
                 ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
-            var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
-            var structuralSearchPlan = searchPlan.StructuralSearchPlan
-                .WithVerificationGuards(deterministicGuards);
-            if (!structuralSearchPlan.HasValue &&
-                analyzedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                searchPlan.PreparedSearcher.HasValue)
-            {
-                structuralSearchPlan = Utf8StructuralSearchPlan.CreateStartPlan(searchPlan.PreparedSearcher);
-            }
-            var structuralVerifier = PrepareStructuralVerifier(analyzedRegex.StructuralIdentifierFamilyPlan);
-
-            var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
-                analyzedRegex.ExecutionKind,
-                analyzedRegex.StructuralIdentifierFamilyPlan,
-                structuralVerifier,
-                searchPlan,
-                structuralSearchPlan);
-            var compiledPatternCategory = Utf8CompiledPatternCategories.GetNativeCategory(analyzedRegex.ExecutionKind);
-
-            var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan, structuralLinearProgram,
-structuralSearchPlan, structuralVerifier.AsciiProgram);
+            var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
                     analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,
@@ -72,13 +41,10 @@ structuralSearchPlan, structuralVerifier.AsciiProgram);
                 analyzedRegex.ExecutionPattern,
                 analyzedRegex.ExecutionKind,
                 executionBackend,
-                compiledPatternCategory,
+                Utf8CompiledPatternCategories.GetNativeCategory(analyzedRegex.ExecutionKind),
                 tree,
                 scalarProgram,
                 operationPlans,
-                structuralSearchPlan,
-                structuralVerifier,
-                analyzedRegex.StructuralIdentifierFamilyPlan,
                 analyzedRegex.LiteralUtf8,
                 fallbackReason,
                 anchoredLiteral);
@@ -87,15 +53,4 @@ structuralSearchPlan, structuralVerifier.AsciiProgram);
         }
         finally { budget.LeaveDepth(); }
     }
-
-    private static Utf8StructuralVerifierPlan PrepareStructuralVerifier(
-        AsciiStructuralIdentifierFamilyPlan structuralFamilyPlan)
-    {
-        return structuralFamilyPlan.VerifierProgram.HasValue
-            ? new Utf8StructuralVerifierPlan(
-                Utf8StructuralVerifierKind.AsciiStructuralProgram,
-                structuralFamilyPlan.VerifierProgram)
-            : default;
-    }
-
 }

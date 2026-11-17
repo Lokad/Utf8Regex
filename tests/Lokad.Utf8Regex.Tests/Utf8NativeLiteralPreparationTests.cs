@@ -49,27 +49,9 @@ public sealed class Utf8NativeLiteralPreparationTests
         return root;
     }
     private static void Run(int route, Utf8TreeNode root)
-    {
-        var name = route switch { 0 => "TryExtractLiteralFamilyStrings", 1 => "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings",
-            2 => "TryGetInvariantIgnoreCaseAsciiLiteralText", 3 => "TryExtractLiteralFamily", _ => "TryGetLiteralText" };
-        object?[] args = [root, null];
-        Assert.True(Assert.IsType<bool>(Call(name, args)));
-        switch (route)
-        {
-            case 0: Assert.Equal(new[] { "ABD", "ACD" }, Assert.IsType<string[]>(args[1])); break;
-            case 1: Assert.Equal(new[] { "abd", "acd" }, Assert.IsType<string[]>(args[1])); break;
-            case 2: Assert.Equal("ab", Assert.IsType<string>(args[1])); break;
-            case 3: Assert.Equal(new[] { "ABD", "ACD" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString)); break;
-            default: Assert.Equal("x", Assert.IsType<string>(args[1])); break;
-        }
-    }
-
+{ var name=route switch { 1 => "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings", 2 => "TryGetInvariantIgnoreCaseAsciiLiteralText", 4 => "TryGetLiteralText", _ => throw new ArgumentOutOfRangeException(nameof(route)) }; object?[] args=[root,null]; Assert.True(Assert.IsType<bool>(Call(name,args))); if(route==1) Assert.Equal(new[]{"abd","acd"},Assert.IsType<string[]>(args[1])); else Assert.Equal(route==2?"ab":"x",Assert.IsType<string>(args[1])); }
     public static IEnumerable<object[]> RootDenials()
-    {
-        for (var route = 0; route < 5; route++)
-        for (var denial = 0; denial < 3; denial++) yield return [route, denial];
-    }
-    [Theory]
+{ foreach(var route in new[]{1,2,4}) for(var denial=0;denial<3;denial++)yield return [route,denial]; }    [Theory]
     [MemberData(nameof(RootDenials))]
     public void RootDenialPrecedesResultOrTraversalAcquisition(int route, int denial)
     {
@@ -88,8 +70,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void ChildDepthDenialKeepsParentAndAllowsLaterConstruction(int route)
+[InlineData(1)] [InlineData(2)]     public void ChildDepthDenialKeepsParentAndAllowsLaterConstruction(int route)
     {
         var root = Input(route, 32);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
@@ -107,7 +88,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+[InlineData(1)] [InlineData(2)] [InlineData(4)]
     public void EveryWorkCutoffBalancesScratchAndRetainsOnlySuccessfulResults(int route)
     {
         var root = Input(route, 0); ulong work;
@@ -135,9 +116,8 @@ public sealed class Utf8NativeLiteralPreparationTests
             Assert.Equal(17, parent.Value);
         }
     }
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void FailedCartesianProductRestoresAllOwnedStringsAndArrays(bool folded)
+    [Fact]
+    public void FailedCartesianProductRestoresAllOwnedStringsAndArrays()
     {
         var root = Node(Utf8TreeNodeKind.Concatenate, "",
             Node(Utf8TreeNodeKind.Alternate, "", One('a'), One('b')),
@@ -147,27 +127,12 @@ public sealed class Utf8NativeLiteralPreparationTests
         var parent = owner.Budget.AllocateObject(17, static n => new ParentValue(n));
         var checkpoint = owner.Budget.ReservedBytes;
         object?[] args = [root, null];
-        Assert.False(Assert.IsType<bool>(Call(folded ? "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings" : "TryExtractLiteralFamilyStrings", args)));
+        Assert.False(Assert.IsType<bool>(Call("TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings" , args)));
         Assert.Empty(Assert.IsType<string[]>(args[1]));
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > 2);
-        Assert.Equal(17, parent.Value);
-    }
-    [Fact]
-    public void NonAsciiProjectionDeclineRestoresItsSuccessfulStringFamily()
-    {
-        var root = Node(Utf8TreeNodeKind.Multi, "é😀");
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static n => new ParentValue(n));
-        var checkpoint = owner.Budget.ReservedBytes;
-        object?[] args = [root, null];
-        Assert.False(Assert.IsType<bool>(Call("TryExtractLiteralFamily", args)));
-        Assert.Empty(Assert.IsType<byte[][]>(args[1]));
-        Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
     [Theory]
@@ -234,9 +199,8 @@ public sealed class Utf8NativeLiteralPreparationTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void NestedAlternatesKeepCartesianOrderAndDeclineMultiValuedBranches(bool folded)
+    [Fact]
+    public void NestedAlternatesKeepCartesianOrderAndDeclineMultiValuedBranches()
     {
         var root = Node(Utf8TreeNodeKind.Concatenate, "",
             Node(Utf8TreeNodeKind.Alternate, "", One('A'), One('B')),
@@ -244,9 +208,9 @@ public sealed class Utf8NativeLiteralPreparationTests
         var declining = Node(Utf8TreeNodeKind.Alternate, "", root, One('x'));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         object?[] args = [root, null];
-        var method = folded ? "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings" : "TryExtractLiteralFamilyStrings";
+        var method = "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings" ;
         Assert.True(Assert.IsType<bool>(Call(method, args)));
-        Assert.Equal(folded ? new[] { "ac", "ad", "bc", "bd" } : new[] { "AC", "AD", "BC", "BD" },
+        Assert.Equal(new[] { "ac", "ad", "bc", "bd" } ,
             Assert.IsType<string[]>(args[1]));
         var checkpoint = owner.Budget.ReservedBytes;
         var held = owner.Budget.ReservedBytes;
@@ -268,7 +232,6 @@ public sealed class Utf8NativeLiteralPreparationTests
         foreach (var pattern in new[] { "([^a])", "([^a])(?=!)", "([aA-[a]])" })
         {
             var regex = new Utf8Regex(pattern, options);
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var subtracted = pattern == "([aA-[a]])";
             // Folding [aA] before subtracting folded [a] yields an empty class.
             var input = Encoding.UTF8.GetBytes(subtracted ? "Aa" : "A😀!");

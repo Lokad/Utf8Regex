@@ -32,7 +32,6 @@ public sealed class Utf8FixedPolicyPreparationTests
                 var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
                 var program = (Utf8RegexProgram)typeof(Utf8Regex)
                     .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-                Assert.Null(program.VerifierRuntime);
                 Assert.Null(program.CompiledEngineRuntime);
                 Assert.NotNull(program.PreparedRegex.ScalarProgram);
                 Assert.Equal(options, regex.Options);

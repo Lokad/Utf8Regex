@@ -44,9 +44,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(
             Utf8OperationMatchCursor.DebugSizeInBytes <
             Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes);
-        Assert.True(
-            Utf8OperationMatchCursor.DebugSizeInBytes <
-            Utf8OperationMatchCursor.DebugStructuralLinearProgramSizeInBytes);
     }
 
     [Fact]

@@ -44,31 +44,4 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index)), match.StartOffsetInBytes);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
-
-    [Fact]
-    public void ModifierToTypePairStaysOnStructuralEngine()
-    {
-        var regex = new Utf8Regex(@"\b(?:public|private|internal)\s+class\b", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-    }
-
-    [Fact]
-    public void MethodFamilyGenericCallStaysOnStructuralEngine()
-    {
-        var regex = new Utf8Regex(@"\b(?:AddSingleton|AddScoped|AddTransient)\s*<", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-    }
-
-    [Fact]
-    public void MethodFamilyCallBuildsSharedPrefixStructuralKernel()
-    {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-    }
 }

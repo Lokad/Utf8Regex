@@ -588,20 +588,14 @@ use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
 
-Finite-policy zero-origin LTR ASCII `Count` can reuse the existing structural
-family search and linear verifier when the family's leading word-boundary proof
-resolves proper-start prefix overlap, for example declaration keywords followed
-by identifiers. Subject preparation under the selected policy, search, verification
-and publication share the original work/token/deadline scope. Same-start or
-unproved overlaps,
-mixed Unicode, folding, RTL and NonBacktracking retain their existing routes.
-Avoiding scalar VM scratch can lower route-dependent work, depth and working
-requirements; invocation metadata still allocates.
-
-Finite structural `Count` needs the valid-text guarantee and ASCII eligibility,
-not UTF-16 lengths or supplementary-scalar metadata. Only the route's actual ASCII
-eligibility checks remain. Original work/interruption and admission stay active.
-Unicode subjects retain scalar matching.
+Nonliteral identifier families use their existing scalar program for all public
+operations, including finite-policy counting and cursors. They no longer prepare
+a separate ASCII verifier, classify subjects to select that verifier, or retain
+family cursor state. Their helper-only construction charges disappear; major
+program/search buffers and instruction/state expansion retain construction admission.
+Scalar execution can require more work, depth or scratch than the retired counters.
+Search, matching and publication retain one original work/token/deadline scope.
+Literal search/emission and shared candidate-window searches remain independent.
 
 Nonliteral facade shortcuts (URI/IP, identifier/query/reference validators,
 word/category and delimiter counters) are retired. These languages execute the

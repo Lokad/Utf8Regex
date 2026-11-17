@@ -40,9 +40,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8OperationMatchCursor(
                     input, regexPlan, regexPlan.ExecutionKind, budget),
-            NativeExecutionKind.AsciiStructuralIdentifierFamily when CanUseStructuralFamilyCursor(regexPlan, validation)
-                => new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
-            _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget),
+            _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget)
         };
     }
 
@@ -75,20 +73,9 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     new Utf8OperationMatchCursor(
                         input, regexPlan, regexPlan.ExecutionKind, budget),
                     count),
-            NativeExecutionKind.AsciiStructuralIdentifierFamily when regexPlan.Features.CaptureCount <= 1 &&
-                CanUseStructuralFamilyCursor(regexPlan, validation)
-                => new Utf8ValueSplitEnumerator(input, new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)), count),
-            _ => CreateOwnedSplitEnumerator(regexPlan, input, count, budget),
+            _ => CreateOwnedSplitEnumerator(regexPlan, input, count, budget)
         };
     }
-
-    private static bool CanUseStructuralFamilyCursor(Utf8PreparedRegex regexPlan, Utf8ValidationResult validation)
-        => validation.IsAscii && regexPlan.StructuralSearchPlan.HasValue &&
-            regexPlan.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
-            !regexPlan.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
-            !regexPlan.SearchPlan.HasAlternateLiteralPrefixOverlap &&
-            (regexPlan.SemanticRegex.Options & (System.Text.RegularExpressions.RegexOptions.RightToLeft |
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.NonBacktracking)) == 0;
 
     private static Utf8OperationMatchCursor CreateOwnedMatchCursor(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
     {

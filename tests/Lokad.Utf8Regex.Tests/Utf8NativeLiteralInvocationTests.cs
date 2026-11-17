@@ -278,7 +278,6 @@ public sealed class Utf8NativeLiteralInvocationTests
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
         // Owned graph admission and verifier preparation borrow the scalar tree.
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         if (pattern.Length == 0)
             Utf8ScalarCountTests.AssertEmptyScalarOperations(regex, false);
         else
@@ -323,8 +322,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, options);
-        if ((options & RegexOptions.NonBacktracking) != 0) Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
-        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
+        if ((options & RegexOptions.NonBacktracking) != 0) ;        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
         {
             var input = Encoding.UTF8.GetBytes(text);
             var actual = regex.EnumerateMatches(input, source.Token);

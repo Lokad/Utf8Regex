@@ -155,7 +155,6 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("abc")]
     [InlineData("é")]
     [InlineData("(?:ab|xy)")]
-    [InlineData("(?:get|set)[A-Z][A-Za-z0-9_]*")]
 
     [InlineData("^abc")]
     [InlineData("abc$")]
@@ -296,7 +295,6 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("abc")]
     [InlineData("é")]
     [InlineData("(?:ab|xy)")]
-    [InlineData("(?:get|set)[A-Z][A-Za-z0-9_]*")]
 
     public void NativeFactoryKeepsValidationWorkAndBorrowedAdmission(string pattern)
     {

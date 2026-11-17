@@ -48,7 +48,7 @@ internal static class Utf8CandidateVerificationReplay
                 program.RightToLeft && candidate.EndIndex >= 0 && low != candidate.StartIndex)
                 return Utf8ExecutionLimitKind.None;
 
-            var plan = prepared.StructuralSearchPlan;
+            var plan = prepared.SearchPlan.StructuralSearchPlan;
             if (plan.RequiresCandidateEndCoverage && candidate.EndIndex >= 0 && high < candidate.EndIndex)
                 return Utf8ExecutionLimitKind.None;
             if (plan.YieldKind == Utf8StructuralSearchYieldKind.Window)

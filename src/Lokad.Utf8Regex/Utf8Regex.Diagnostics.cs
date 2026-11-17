@@ -69,14 +69,6 @@ public sealed partial class Utf8Regex
         public bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
             _owner._fusedAsciiBoundaryLiteralFamilyCounter is not null;
 
-        public Utf8StructuralLinearProgramKind StructuralLinearProgramKind =>
-            _owner.StructuralLinearProgramKind;
-
-        public Utf8StructuralVerifierPlan StructuralVerifierPlan => _owner.StructuralVerifierPlan;
-
-        public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan =>
-            _owner.StructuralIdentifierFamilyPlan;
-
         public string? FallbackReason => _owner.FallbackReason;
 
         public bool DebugCanUseFusedCompiledUtf8LiteralCount =>

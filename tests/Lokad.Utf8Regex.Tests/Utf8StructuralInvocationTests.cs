@@ -193,7 +193,7 @@ public sealed class Utf8StructuralInvocationTests
         foreach (var method in new[] { false, true })
         foreach (var compiled in new[] { false, true })
         foreach (var operation in new[] { "ismatch", "count", "match" })
-        foreach (var phase in new[] { "validation", "search", "verifier" })
+        foreach (var phase in new[] { "entry", "execution" })
         foreach (var expire in new[] { false, true }) yield return [method, compiled, operation, phase, expire];
     }
 
@@ -248,7 +248,6 @@ public sealed class Utf8StructuralInvocationTests
         var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
         var oracle = new Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(Prepared(regex).StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap);
         using var source = new CancellationTokenSource();
         var token = liveToken ? source.Token : default;
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
@@ -276,18 +275,13 @@ public sealed class Utf8StructuralInvocationTests
         var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" : @"(?:get|set)[A-Z][A-Za-z0-9_]*";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, Prepared(regex).ExecutionKind);
-        var text = phase == "verifier" ? (method ? "LogError" + new string(' ', 320000) + "(" : "getA" + new string('a', 320000))
+        var text = phase == "execution" ? (method ? "LogError" + new string(' ', 320000) + "(" : "getA" + new string('a', 320000))
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || phase == "search" && steps <= validationSteps ||
-                phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
+            if (entered || phase == "execution" && steps < 8) return;
             entered = true;
             if (expire) clock.Advance(250);
             else source.Cancel();
@@ -313,32 +307,6 @@ public sealed class Utf8StructuralInvocationTests
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(method ? "LogError(" : "getAlpha")));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SharedStructuralCountNeverPublishesPartialTotalAndIncludesValidationWork(bool method)
-    {
-        var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" : @"(?:get|set)[A-Z][A-Za-z0-9_]*";
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        var input = Encoding.UTF8.GetBytes(method ? "LogError ( LogWarning( LogInformation (" : "getAlpha setBeta getGamma");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
-        var validationSteps = baseline.Budget.Steps;
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(prepared.StructuralSearchPlan,
-            prepared.StructuralVerifier.AsciiProgram, input, ref baseline, out var count));
-        Assert.Equal(3, count);
-        for (var cap = validationSteps; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(prepared.StructuralSearchPlan,
-                prepared.StructuralVerifier.AsciiProgram, input, ref invocation, out var denied));
-            Assert.Equal(0, denied);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -424,15 +392,15 @@ public sealed class Utf8StructuralInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void PublicCountCancelsAfterAcceptedMatchesWithoutReturningPartialTotal(bool compiled)
+    public void PublicCountCancelsDuringRepeatedMatchesWithoutReturningPartialTotal(bool compiled)
     {
         var regex = new Utf8Regex(@"(?:get|set)[A-Z][A-Za-z0-9_]*",
             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("getAlpha setBeta ", 2000)));
         using var source = new CancellationTokenSource();
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ => {
-            if (entered || Utf8SearchDiagnosticsSession.Current!.VerifierMatches < 8) return;
+        var session = Utf8SearchDiagnosticsSession.Start(steps => {
+            if (entered || steps < 256) return;
             entered = true;
             source.Cancel();
         });

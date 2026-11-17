@@ -30,7 +30,6 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Count)
@@ -39,14 +38,12 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else
             {
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
-                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
         }
@@ -70,7 +67,6 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Prefilter={(context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }

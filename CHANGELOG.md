@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Retire the remaining nonliteral identifier-family engines, verifiers and cursor
+  mode, including their helper-only preparation accounting and benchmark replays.
+  Preserve shared search and literal paths; scalar execution retains captures,
+  interruption and major-buffer limits, with different work and scratch costs.
+
 - Correct identifier-family suffix matching when the suffix begins at the end of
   a greedy identifier tail, keeping Count and cursors consistent with Match.
 

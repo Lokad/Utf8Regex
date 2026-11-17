@@ -34,31 +34,6 @@ public sealed class Utf8CandidatePlanAdmissionTests
     }
 
     [Fact]
-    public void EnrichmentBorrowsTheOriginalAndFundsOneCombinedGuardArray()
-    {
-        var searcher = Searcher("a");
-        Utf8DeterministicByteGuard[] prefix = [new(0, (byte)'a'), new(1, AsciiCharClass.FromBytes("xy"u8))];
-        var literal = "!"u8.ToArray();
-        Utf8FixedDistanceSet[] sets = [Utf8FixedDistanceSet.FromMask(0, AsciiCharClass.ForByte((byte)'a')),
-            Utf8FixedDistanceSet.FromMask(1, AsciiCharClass.FromBytes("xy"u8)),
-            Utf8FixedDistanceSet.FromMask(2, AsciiCharClass.Empty),
-            Utf8FixedDistanceSet.FromMask(2, new AsciiCharClass(1, 0, true))];
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var original = Utf8StructuralSearchPlan.CreateStartPlan(searcher);
-        var enriched = original.WithVerificationGuards(new(prefix, literal, 2, sets, 3, false));
-        Assert.Equal(StageBytes(original) + StageBytes(enriched), owner.Budget.ReservedBytes);
-        Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
-        Assert.Equal(2, original.Stages.Length); Assert.Equal(8, enriched.Stages.Length);
-        Assert.Same(literal, enriched.Stages[3].LiteralUtf8);
-        Assert.Equal((byte)'a', enriched.Stages[4].LiteralByte); Assert.Equal(sets[1].ByteSet, enriched.Stages[5].Set);
-        Assert.Equal(Utf8StructuralSearchStageKind.RequireMinLength, enriched.Stages[6].Kind);
-        var state = default(Utf8StructuralSearchState);
-        Assert.True(enriched.TryFindNextCandidate("ax!"u8, ref state, out var candidate)); Assert.Equal(0, candidate.StartIndex);
-        state = default; Assert.False(enriched.TryFindNextCandidate("az!"u8, ref state, out _));
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-    }
-
-    [Fact]
     public void EveryByteAndWorkCutoffFundsTheWholeWindowOrRestoresItsParent()
     {
         var window = new PreparedWindowSearch(Searcher("a"), Searcher("z"), 32, true);

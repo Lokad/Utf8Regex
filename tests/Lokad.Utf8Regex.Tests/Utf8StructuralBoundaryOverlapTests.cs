@@ -10,18 +10,17 @@ public sealed class Utf8StructuralBoundaryOverlapTests
     private const string Declaration = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
 
     [Theory]
-    [InlineData(Declaration, "class Alpha struct Beta record Gamma", false)]
-    [InlineData(@"\b(?:ab|ba)\s+[A-Z][A-Za-z0-9_]+", "aba Wrong ab Good ba Right", false)]
-    [InlineData(@"\b(?:foobar|bar)\s+[A-Z][A-Za-z0-9_]+", "foobar Good bar Right", false)]
-    [InlineData(@"\b(?:foo|foobar)[A-Z][A-Za-z0-9_]*", "foobarAlpha fooBeta", true)]
-    [InlineData(@"\b(?:foo:|:bar)[A-Z][A-Za-z0-9_]*", "foo:barAlpha foo:Beta", true)]
-    [InlineData(@"(?:class|struct)\s+[A-Z][A-Za-z0-9_]+", "classstruct Good class Right", true)]
-    public void BoundaryProofDistinguishesUnresolvedPrefixRetries(string pattern, string text, bool needsRetry)
+    [InlineData(Declaration, "class Alpha struct Beta record Gamma")]
+    [InlineData(@"\b(?:ab|ba)\s+[A-Z][A-Za-z0-9_]+", "aba Wrong ab Good ba Right")]
+    [InlineData(@"\b(?:foobar|bar)\s+[A-Z][A-Za-z0-9_]+", "foobar Good bar Right")]
+    [InlineData(@"\b(?:foo|foobar)[A-Z][A-Za-z0-9_]*", "foobarAlpha fooBeta")]
+    [InlineData(@"\b(?:foo:|:bar)[A-Z][A-Za-z0-9_]*", "foo:barAlpha foo:Beta")]
+    [InlineData(@"(?:class|struct)\s+[A-Z][A-Za-z0-9_]+", "classstruct Good class Right")]
+    public void BoundariesAndOverlappingPrefixesPreservePublicCount(string pattern, string text)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options);
-            Assert.Equal(needsRetry, regex.Inspection.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap);
             Assert.Equal(new Regex(pattern).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
         }
     }

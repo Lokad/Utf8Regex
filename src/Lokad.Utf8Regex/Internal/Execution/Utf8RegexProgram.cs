@@ -8,13 +8,10 @@ internal sealed class Utf8RegexProgram
     // Conservative helper metadata; major program/search payloads are admitted separately.
     internal static ulong ObjectBytes => 128;
 
-    private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine,
-        Utf8VerifierRuntime? verifierRuntime, Utf8CompiledEngineRuntime? compiledEngineRuntime,
-        Utf8CaptureCatalog captureCatalog)
+    private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine, Utf8CompiledEngineRuntime? compiledEngineRuntime, Utf8CaptureCatalog captureCatalog)
     {
         PreparedRegex = preparedRegex;
         CompiledEngine = compiledEngine;
-        VerifierRuntime = verifierRuntime;
         CompiledEngineRuntime = compiledEngineRuntime;
         CaptureCatalog = captureCatalog;
     }
@@ -23,16 +20,12 @@ internal sealed class Utf8RegexProgram
 
     public Utf8CompiledEngine CompiledEngine { get; }
 
-    public Utf8VerifierRuntime? VerifierRuntime { get; }
-
     public Utf8CompiledEngineRuntime? CompiledEngineRuntime { get; }
 
     public Utf8CaptureCatalog CaptureCatalog { get; }
 
     public static Utf8RegexProgram Compile(
-        string pattern,
-        RegexOptions options,
-        bool prepareRuntime)
+        string pattern, RegexOptions options, bool prepareRuntime)
         => Compile(new Utf8ConstructionPattern(pattern), options, prepareRuntime);
 
     internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options, bool prepareRuntime)
@@ -47,11 +40,9 @@ internal sealed class Utf8RegexProgram
             var compiledEngine = Utf8CompiledEngineSelector.Select(preparedRegex);
             // General patterns execute the scalar program. Fixed numeric policies
             // also keep scalar/search payloads without an unmetered runtime.
-            // Neither path consumes a specialized verifier or emitted delegates.
-            var verifierRuntime = prepareRuntime && compiledEngine.Kind != Utf8CompiledEngineKind.FallbackRegex
-                ? Utf8VerifierRuntime.Create(preparedRegex) : null;
-            var compiledEngineRuntime = verifierRuntime is null ? null :
-                Utf8CompiledEngineRuntime.Create(compiledEngine, preparedRegex, verifierRuntime, options);
+            // Only literal engines prepare emitted delegates.
+            var compiledEngineRuntime = prepareRuntime && compiledEngine.Kind != Utf8CompiledEngineKind.FallbackRegex
+                ? Utf8CompiledEngineRuntime.Create(compiledEngine, preparedRegex, options) : null;
             // Successful owned parsing always finishes capture numbering before
             // publishing the tree. Borrow that catalog for every public route;
             // absent metadata would indicate broken internal preparation.
@@ -61,8 +52,7 @@ internal sealed class Utf8RegexProgram
             budget.CheckBytes(ObjectBytes);
             budget.ChargeWork(2);
             budget.ReserveBytes(ObjectBytes);
-            var result = new Utf8RegexProgram(preparedRegex, compiledEngine, verifierRuntime,
-                compiledEngineRuntime, captureCatalog);
+            var result = new Utf8RegexProgram(preparedRegex, compiledEngine, compiledEngineRuntime, captureCatalog);
             scope.Complete();
             return result;
         }

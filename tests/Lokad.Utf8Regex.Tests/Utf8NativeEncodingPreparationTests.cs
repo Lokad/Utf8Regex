@@ -235,7 +235,6 @@ public sealed class Utf8NativeEncodingPreparationTests
             (Pattern: "call|invoke", Subject: "😀call中invoke😀", Count: 2, Replaced: "😀X中X😀") })
         {
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var bytes = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(bytes)); Assert.Equal(row.Count, regex.Count(bytes));
             var match = regex.Match(bytes); Assert.True(match.Success);
             Assert.Equal(row.Pattern == "call|invoke" ? 4 : row.Subject.StartsWith('x') ? 1 : 0, match.StartOffsetInBytes);

@@ -294,19 +294,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-compiled-literal-family-case",
         args.Length >= 4 ? args[3] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-construction-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledConstructionReplicaCase(
-        args[1],
-        args.Length >= 3 ? args[2] : null,
-        args.Length >= 4 ? args[3] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-structural-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledStructuralReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-ignore-case-primitive-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureIgnoreCasePrimitiveReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
@@ -370,31 +357,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-bounded-repeat-case", StringCo
     return BenchmarkInspectReporter.RunMeasureBoundedRepeatReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-structural-family-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureStructuralFamilyCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-structural-family-lokad-code-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureStructuralFamilyLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-identifier-family-lokad-code-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureIdentifierFamilyLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-structural-family-lokad-code-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledStructuralFamilyLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-structural-linear-rebar-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureStructuralLinearRebarCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--dump-runtime-tree-pattern", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunDumpRuntimeTreePattern(args[1], args.Length >= 3 ? args[2] : null);
@@ -408,16 +370,6 @@ if (args.Length >= 2 && args[0].Equals("--dump-dotnet-generated-regex-case", Str
 if (args.Length >= 2 && args[0].Equals("--dump-dotnet-generated-regex-pattern", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunDumpDotNetGeneratedRegexPattern(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--dump-structural-linear-pattern", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunDumpStructuralLinearPattern(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--dump-structural-linear-utf8-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunDumpStructuralLinearUtf8Case(args[1]);
 }
 
 if (args.Length >= 2 && args[0].Equals("--dump-structural-search-rebar-case", StringComparison.Ordinal))

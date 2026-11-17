@@ -49,10 +49,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
             var previous = cursor.Current;
             Assert.False(cursor.MoveNext());
             Assert.False(cursor.MoveNext());
-            // The remaining native identifier cursor retains its last range.
-            if (regex.Inspection.ExecutionKind == Lokad.Utf8Regex.Internal.Planning.NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                Utf8Validation.Validate(input).IsAscii)
-                Assert.Equal(previous, cursor.Current);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

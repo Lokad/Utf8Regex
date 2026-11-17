@@ -8,7 +8,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8StructuralFamilyCursorInvocationTests
+public sealed class Utf8IdentifierCursorTests
 {
     [Theory]
     [InlineData(false, @"(?:call|invoke)[ \t]+[A-Z][a-z]*\(")]
@@ -114,41 +114,6 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options), Texts.Where(text => text.Length <= 128).ToArray());
     }
 
-    [Theory]
-    [InlineData(@"(?:get|set)[A-Z][A-Za-z0-9_]*")]
-    [InlineData(@"\b(?:get|set)[A-Z][A-Za-z0-9_]*\b")]
-    [InlineData(@"\b(?:LogError|LogWarning|LogInformation)\s*\(")]
-    [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+")]
-    public void EverySecondMoveCutoffRetainsPreviousRangeCandidateProgressAndBorrowedLease(string pattern)
-    {
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        var input = Encoding.UTF8.GetBytes(Texts[^1]);
-        var baselineInvocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref baselineInvocation);
-        var baseline = new Utf8OperationMatchCursor(input, prepared, baselineInvocation);
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextStructuralFamily(out var found));
-        Assert.True(found);
-        var firstSteps = baseline.DebugInvocationSteps;
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextStructuralFamily(out found));
-        Assert.True(found);
-        for (var cap = firstSteps; cap < baseline.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-            var cursor = new Utf8OperationMatchCursor(input, prepared, invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.TryMoveNextStructuralFamily(out found));
-            Assert.True(found);
-            var previous = cursor.CurrentValueMatch;
-            var previousState = cursor.DebugStructuralSearchState;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.TryMoveNextStructuralFamily(out var denied));
-            Assert.False(denied);
-            Assert.Equal(previous, cursor.CurrentValueMatch);
-            Assert.Equal(previousState, cursor.DebugStructuralSearchState);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-        }
-    }
-
     public static IEnumerable<object[]> OffsetCases()
     {
         foreach (var pattern in Patterns.Take(4))
@@ -183,29 +148,25 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     {
         foreach (var method in new[] { false, true })
         foreach (var compiled in new[] { false, true })
-        foreach (var phase in new[] { "validation", "search", "verifier" })
+        foreach (var phase in new[] { "entry", "execution" })
         foreach (var expire in new[] { false, true }) yield return [method, compiled, phase, expire];
     }
 
     [Theory]
     [MemberData(nameof(PhaseCases))]
-    public void EnumerationEntryAndOneLongMoveCarryValidationSearchAndVerifierInterruption(bool method, bool compiled, string phase, bool expire)
+    public void EnumerationEntryAndLongScalarMoveKeepOriginalInterruption(bool method, bool compiled, string phase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         var pattern = method ? Patterns[2] : Patterns[0];
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        var text = phase == "verifier" ? (method ? "LogError" + new string(' ', 160000) + "(" : "get" + new string('A', 160000))
+        var text = phase == "execution" ? (method ? "LogError" + new string(' ', 160000) + "(" : "get" + new string('A', 160000))
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || phase == "search" && steps <= validation.Budget.Steps ||
-                phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
-            if (phase == "validation") Assert.True(steps <= validation.Budget.Steps);
+            if (entered || phase == "execution" && steps < 8) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });
@@ -268,7 +229,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void WholeSubjectValidationAndPreCanceledIdentitySurviveNativeAdmission(bool compiled)
+    public void PreCanceledIdentitySurvivesEnumerationAdmission(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         using var source = new CancellationTokenSource();
@@ -315,9 +276,9 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var input = Encoding.UTF8.GetBytes(matches ? "getAlpha setBeta" : new string('x', 32000));
         using var source = new CancellationTokenSource();
         var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200)) : Utf8ExecutionDeadline.Infinite;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), deadline, source.Token);
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1 << 20), deadline, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation);
+        var cursor = new Utf8OperationMatchCursor(regex.Inspection.AvailableOwnedSliceProgram, input, invocation);
         while (cursor.MoveNext()) { }
         var previous = cursor.CurrentValueMatch;
         var terminal = cursor.DebugInvocationSteps;

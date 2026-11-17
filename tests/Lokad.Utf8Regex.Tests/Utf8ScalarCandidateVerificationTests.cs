@@ -19,32 +19,22 @@ public sealed class Utf8ScalarCandidateVerificationTests
     public void CandidateRuntimeCountStaysScalarBeyondTheFormerDemotionThreshold(string pattern, bool emitted)
     {
         const RegexOptions options = RegexOptions.CultureInvariant;
-        var prepared = Utf8FrontEnd.Compile(pattern, options);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
         var token = pattern.StartsWith("[A-Z]", StringComparison.Ordinal) ? "A😀😀 " : "foo😀😀 ";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(token, 40)));
-        var validation = Utf8Validation.Validate(input);
         var regex = new Utf8Regex(pattern, options | (emitted ? RegexOptions.Compiled : 0));
         Assert.Equal(40, regex.Count(input)); Assert.True(regex.IsMatch(input));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Fact]
     public void CompiledCandidateRuntimeProjectsScalarsWithoutItsFormerBclMatchPath()
     {
         const string pattern = @"foo(?<x>.)\k<x>";
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo😀😀 ", 40)));
-        var validation = Utf8Validation.Validate(input);
         Assert.True(runtime.IsMatch(input));
         Assert.Equal(40, runtime.Count(input));
         var match = runtime.Match(input);
-        Assert.True(match.Success); Assert.True(match.Success);
+        Assert.True(match.Success);
         Assert.Equal((0, 11), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 }

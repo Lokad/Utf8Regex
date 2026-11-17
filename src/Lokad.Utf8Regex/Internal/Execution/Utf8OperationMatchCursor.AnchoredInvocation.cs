@@ -28,7 +28,7 @@ internal ref partial struct Utf8OperationMatchCursor
         var breach = _sliceInvocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
+        if (_anchoredExhausted) return Utf8ExecutionLimitKind.None;
         var literal = _literal ?? throw new InvalidOperationException("An anchored cursor needs its literal.");
         var prefix = _mode is EnumeratorMode.AnchoredAsciiLiteralPrefix or EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix;
         var folded = _mode is EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix or
@@ -49,7 +49,7 @@ internal ref partial struct Utf8OperationMatchCursor
             breach = _sliceInvocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             _sliceInvocation.Budget.ThrowIfCancellationRequested();
-            _nativeStructuralExhausted = true;
+            _anchoredExhausted = true;
             return Utf8ExecutionLimitKind.None;
         }
         var consumed = (start) + (literal.Length);
@@ -60,7 +60,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _current = projected;
         _consumed = consumed;
-        _nativeStructuralExhausted = true;
+        _anchoredExhausted = true;
         found = true;
         return Utf8ExecutionLimitKind.None;
     }

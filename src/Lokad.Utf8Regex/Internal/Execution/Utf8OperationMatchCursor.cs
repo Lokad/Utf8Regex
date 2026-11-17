@@ -39,11 +39,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal bool IsRightToLeft => _sliceProgram is { RightToLeft: true } ||
         _mode is EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlExactUtf8Literal or EnumeratorMode.RtlAsciiLiteralIgnoreCase;
-
-    internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
     internal int DebugConsumed => _consumed;
-
-    internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
 
     internal static int DebugSearchPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchPlan>();
 
@@ -68,9 +64,8 @@ internal ref partial struct Utf8OperationMatchCursor
     private int _nonBacktrackingBoundary;
     // Native discovery/publication and the owned VM retain one invocation.
     private Utf8SliceInvocation _sliceInvocation;
-    private bool _nativeStructuralExhausted;
     private bool _preserveOffsetCurrent;
-    private Utf8StructuralSearchState _structuralSearchState;
+    private bool _anchoredExhausted;
     private int _slicePositionByte;
     private int _sliceOriginByte;
 
@@ -93,7 +88,7 @@ internal ref partial struct Utf8OperationMatchCursor
         {
             NativeExecutionKind.ExactAsciiLiteral => EnumeratorMode.ExactAsciiLiteral,
             NativeExecutionKind.AsciiLiteralIgnoreCase => EnumeratorMode.AsciiLiteralIgnoreCase,
-            _ => EnumeratorMode.Exhausted,
+            _ => EnumeratorMode.Exhausted
         };
     }
 
@@ -111,7 +106,7 @@ internal ref partial struct Utf8OperationMatchCursor
             (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
             (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
             (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
-            _ => throw new InvalidOperationException("The plan is not a single literal."),
+            _ => throw new InvalidOperationException("The plan is not a single literal.")
         };
     }
 
@@ -140,7 +135,7 @@ internal ref partial struct Utf8OperationMatchCursor
             (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
             (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
             (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
-            _ => EnumeratorMode.Exhausted,
+            _ => EnumeratorMode.Exhausted
         };
     }
 
@@ -283,7 +278,7 @@ internal ref partial struct Utf8OperationMatchCursor
             Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
             Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
             Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
-            _ => EnumeratorMode.Exhausted,
+            _ => EnumeratorMode.Exhausted
         };
     }
 
@@ -420,13 +415,6 @@ internal ref partial struct Utf8OperationMatchCursor
             return true;
         }
 
-        if (_mode == EnumeratorMode.AsciiStructuralIdentifierFamily)
-        {
-            var breach = TryMoveNextStructuralFamily(out var found);
-            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native structural cursor exceeded {breach}.");
-            return found;
-        }
-
         return _mode switch
         {
             EnumeratorMode.ExactAsciiLiteral => MoveNextLiteral(),
@@ -440,7 +428,7 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
             EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
-            _ => false,
+            _ => false
         };
     }
 
@@ -497,16 +485,11 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
     }
 
-    // Literal-family and structural cursors keep one original invocation.
+    // Literal-family cursors keep one original invocation.
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation)
         : this(input, regexPlan, regexPlan.ExecutionKind, invocation.Budget.Deadline)
     {
         _sliceInvocation = invocation;
-        if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
-        {
-            _program = default;
-            _mode = EnumeratorMode.AsciiStructuralIdentifierFamily;
-        }
     }
 
     public Utf8OperationMatchCursor(
@@ -583,41 +566,8 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;
         _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
-        _structuralSearchState = new Utf8StructuralSearchState(new PreparedSearchScanState(startByteOffset, default), default);
-        _nativeStructuralExhausted = false;
+        _anchoredExhausted = false;
         return this;
-    }
-
-    internal Utf8ExecutionLimitKind TryMoveNextStructuralFamily(out bool found)
-    {
-        found = false;
-        var breach = _sliceInvocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
-        // Candidate progress is tentative until its confirmation and publication
-        // both succeed. A denied move retains the previous public result.
-        var pending = _structuralSearchState;
-        breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_plans.StructuralSearchPlan,
-            _plans.StructuralVerifier, _input, _consumed, ref pending, ref _sliceInvocation, out var match, out var discovered);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (!discovered)
-        {
-            breach = _sliceInvocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            _sliceInvocation.Budget.ThrowIfCancellationRequested();
-            _structuralSearchState = pending;
-            _nativeStructuralExhausted = true;
-            return Utf8ExecutionLimitKind.None;
-        }
-        breach = Utf8SliceBufferWork.TryCreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation, out var projected);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        _structuralSearchState = pending;
-        _current = projected;
-        _consumed = match.Index + Math.Max(1, match.Length);
-        found = true;
-        return Utf8ExecutionLimitKind.None;
     }
 
     public Utf8OperationMatchCursor WithBaseOffset(int byteOffset)
@@ -756,24 +706,6 @@ internal ref partial struct Utf8OperationMatchCursor
 
     private enum EnumeratorMode : byte
     {
-        Exhausted = 0,
-        ExactAsciiLiteral = 1,
-        ExactUtf8Literal = 2,
-        ExactUtf8Literals = 3,
-        AsciiLiteralIgnoreCase = 4,
-        AsciiLiteralIgnoreCaseLiterals = 5,
-        EmptyLiteral = 10,
-        SmallAsciiLiteralFamily = 11,
-        OwnedSlice = 14,
-        AnchoredAsciiLiteralPrefix = 15,
-        AnchoredAsciiLiteralSuffix = 16,
-        AnchoredAsciiLiteralSuffixStrictEnd = 17,
-        AnchoredFoldedAsciiLiteralPrefix = 18,
-        AnchoredFoldedAsciiLiteralSuffix = 19,
-        AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
-        RtlExactAsciiLiteral = 22,
-        RtlAsciiLiteralIgnoreCase = 23,
-        RtlExactUtf8Literal = 24,
-        AsciiStructuralIdentifierFamily = 27,
+        Exhausted = 0, ExactAsciiLiteral = 1, ExactUtf8Literal = 2, ExactUtf8Literals = 3, AsciiLiteralIgnoreCase = 4, AsciiLiteralIgnoreCaseLiterals = 5, EmptyLiteral = 10, SmallAsciiLiteralFamily = 11, OwnedSlice = 14, AnchoredAsciiLiteralPrefix = 15, AnchoredAsciiLiteralSuffix = 16, AnchoredAsciiLiteralSuffixStrictEnd = 17, AnchoredFoldedAsciiLiteralPrefix = 18, AnchoredFoldedAsciiLiteralSuffix = 19, AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20, RtlExactAsciiLiteral = 22, RtlAsciiLiteralIgnoreCase = 23, RtlExactUtf8Literal = 24
     }
 }

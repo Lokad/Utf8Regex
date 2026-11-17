@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8FiniteStructuralFamilyCountTests
+public sealed class Utf8FiniteIdentifierCountTests
 {
     private const string MethodPattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
     private const string IdentifierPattern = @"(?:get|set)[A-Z][A-Za-z0-9_]*";
@@ -23,14 +23,14 @@ public sealed class Utf8FiniteStructuralFamilyCountTests
     [InlineData(KeywordPattern, "class A struct Z record A1", 1)]
     [InlineData(@"\b(?:ab|ba)\s+[A-Z][A-Za-z0-9_]+", "aba Wrong ab Good ba Right", 2)]
     [InlineData(@"\b(?:foobar|bar)\s+[A-Z][A-Za-z0-9_]+", "foobar Good bar Right", 2)]
-    public void CountNeedsNoVmSlotsOrFrames(string pattern, string text, int expected)
+    public void FiniteCountPreservesValuesWithAdmittedScalarScratch(string pattern, string text, int expected)
     {
         var input = Encoding.UTF8.GetBytes("pad" + text + "tail");
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
             var slice = input.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             Assert.Equal(expected, regex.Count(slice));
             Assert.Equal(expected, regex.Count(slice, cancellation.Token));
@@ -55,17 +55,21 @@ public sealed class Utf8FiniteStructuralFamilyCountTests
     [Theory]
     [InlineData(MethodPattern, "LogError", "(")]
     [InlineData(KeywordPattern, "class", "Alpha")]
-    public void ValidationAndDiscoveryShareOneWorkAllowance(string pattern, string prefix, string suffix)
+    public void FiniteCountEnforcesWorkAndWorkingStorage(string pattern, string prefix, string suffix)
     {
         var input = Encoding.UTF8.GetBytes(prefix + new string(' ', 4096) + suffix);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = invocation.Budget.Steps, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+            new() { MaxWorkSteps = 1, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
         var tiny = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1, MaxResultBytes = 1000000 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                using var cursor = tiny.CreateMatchCursor(input);
+                _ = cursor.MoveNext(out _);
+            }).ResourceKind);
     }
 
     [Theory]
@@ -82,13 +86,10 @@ public sealed class Utf8FiniteStructuralFamilyCountTests
         using var clock = Utf8DeadlineTestClock.Start();
         using var cancellation = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(verifier ? prefix + new string(' ', 320000) + suffix : new string('x', 320000));
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (entered || steps <= validationSteps || verifier && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
+            if (entered || steps < 8) return;
             entered = true;
             if (expire) clock.Advance(250);
             else cancellation.Cancel();
@@ -97,7 +98,7 @@ public sealed class Utf8FiniteStructuralFamilyCountTests
         {
             var regex = new Utf8Regex(pattern, RegexOptions.None,
                 expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 10000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 10000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
             if (expire)
             {
                 var timeout = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, cancellation.Token));

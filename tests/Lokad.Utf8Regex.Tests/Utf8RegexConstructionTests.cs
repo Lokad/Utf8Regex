@@ -87,19 +87,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorClassifiesAsciiStructuralIdentifierFamilyAsNative()
-    {
-        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, regex.Inspection.StructuralLinearProgramKind);
-    }
-
-    [Fact]
     public void StructuralIdentifierFamilyMatchesAsyncSuffixCase()
     {
         var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
@@ -115,134 +102,6 @@ public sealed class Utf8RegexConstructionTests
         var input = Encoding.UTF8.GetBytes("await using var scope = await resource");
 
         Assert.True(regex.IsMatch(input));
-    }
-
-    [Fact]
-    public void ConstructorClassifiesAsciiDeclarationIdentifierFamilyAsNative()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
-    }
-
-    [Fact]
-    public void ConstructorCompilesVerifierProgramForDeclarationIdentifierFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var steps = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
-        var linearInstructions = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
-
-        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.Inspection.StructuralVerifierPlan.Kind);
-        Assert.Equal(
-            [
-                AsciiStructuralVerifierStepKind.ConsumeSeparator,
-                AsciiStructuralVerifierStepKind.RequireIdentifierStart,
-                AsciiStructuralVerifierStepKind.ConsumeIdentifierTail,
-                AsciiStructuralVerifierStepKind.Accept,
-            ],
-            steps.Select(static step => step.Kind));
-        Assert.Equal(
-            [
-                AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop,
-                AsciiStructuralLinearVerifierInstructionKind.RequireSetByte,
-                AsciiStructuralLinearVerifierInstructionKind.ConsumeSetTail,
-                AsciiStructuralLinearVerifierInstructionKind.Accept,
-            ],
-            linearInstructions.Select(static instruction => instruction.Kind));
-    }
-
-    [Fact]
-    public void ConstructorDetectsUpperWordTailKernelForDeclarationIdentifierFamily()
-    {
-        var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var logging = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-
-        Assert.True(declaration.Inspection.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
-        Assert.False(logging.Inspection.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
-    }
-
-    [Fact]
-    public void ConstructorMakesDeclarationIdentifierKernelEligibleForWhitespaceSeparator()
-    {
-        var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-
-        Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(
-            declaration.Inspection.StructuralIdentifierFamilyPlan, Utf8ExecutionDeadline.Infinite));
-    }
-
-    [Fact]
-    public void DeclarationIdentifierDirectCountMatchesExpected()
-    {
-        const string input = "record CustomerExportJob struct worker_state class Worker_State";
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var bytes = Encoding.UTF8.GetBytes(input);
-
-        Assert.Equal(
-            2,
-            Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier(
-                bytes,
-                regex.Inspection.StructuralIdentifierFamilyPlan,
-                budget: Utf8ExecutionDeadline.Infinite));
-    }
-
-    [Fact]
-    public void ConstructorClassifiesAsciiLoggingInvocationFamilyAsNative()
-    {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
-    }
-
-    [Fact]
-    public void ConstructorCompilesVerifierProgramForLoggingInvocationFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-        var steps = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
-        var linearInstructions = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
-
-        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.Inspection.StructuralVerifierPlan.Kind);
-        Assert.Equal(
-            [
-                AsciiStructuralVerifierStepKind.ConsumeSeparator,
-                AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent,
-                AsciiStructuralVerifierStepKind.Accept,
-            ],
-            steps.Select(static step => step.Kind));
-        Assert.Equal(
-            [
-                AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop,
-                AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAtCurrent,
-                AsciiStructuralLinearVerifierInstructionKind.Accept,
-            ],
-            linearInstructions.Select(static instruction => instruction.Kind));
-    }
-
-    [Fact]
-    public void StructuralVerifierProgramMatchesDeclarationIdentifierFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var program = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram;
-        var input = System.Text.Encoding.UTF8.GetBytes("record CustomerExportJob");
-
-        Assert.True(program.TryMatch(input, 0, "record".Length, out var matchedLength));
-        Assert.Equal(input.Length, matchedLength);
-    }
-
-    [Fact]
-    public void StructuralVerifierProgramMatchesLoggingInvocationFamily()
-    {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-        var program = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram;
-        var input = System.Text.Encoding.UTF8.GetBytes("LogInformation (");
-
-        Assert.True(program.TryMatch(input, 0, "LogInformation".Length, out var matchedLength));
-        Assert.Equal(input.Length, matchedLength);
     }
 
     [Fact]
@@ -2146,8 +2005,6 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "LogWarningx LogInformation ("u8;
-
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -2307,32 +2164,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);
         Assert.Equal(7, match.EndOffsetInBytes - match.StartOffsetInBytes);
-    }
-
-    [Fact]
-    public void StructuralIdentifierFamilyVerifierSharesCanonicalSuffixParts()
-    {
-        // The owning plan, verifier steps and linear instructions share one canonical suffix array.
-        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
-        var plan = regex.Inspection.StructuralIdentifierFamilyPlan;
-
-        Assert.NotEmpty(plan.SuffixParts);
-        var suffixInstruction = plan.VerifierProgram.LinearProgram.Instructions.First(
-            static instruction => instruction.SuffixParts.Length > 0);
-        Assert.Same(plan.SuffixParts, suffixInstruction.SuffixParts);
-        Assert.Same(plan.SuffixParts, plan.VerifierProgram.Steps.First(static step => step.SuffixParts.Length > 0).SuffixParts);
-        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("prefix TryGetCustomerAsync suffix")));
-        // An absent identifier and a present empty ASCII intersection carry
-        // different grammar. The latter must reject the prefix-only subject.
-        var absent = new AsciiStructuralIdentifierFamilyPlan(plan.Prefixes, null, 0, null, null,
-            0, 0, null, [], Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None);
-        var empty = new AsciiStructuralIdentifierFamilyPlan(plan.Prefixes, null, 0, AsciiCharClass.Empty, AsciiCharClass.Empty,
-            0, 0, null, [], Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None);
-        Assert.False(absent.HasIdentifier);
-        Assert.True(empty.HasIdentifier);
-        Assert.True(absent.VerifierProgram.TryMatch("Get"u8, 0, 3, out var length));
-        Assert.Equal(3, length);
-        Assert.False(empty.VerifierProgram.TryMatch("Get"u8, 0, 3, out _));
     }
 
 }

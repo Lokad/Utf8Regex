@@ -9,10 +9,7 @@ internal static class Utf8NativeExecutionAnalyzer
     private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
 
     public static bool TryAnalyze(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         if (semanticRegex.RuntimeTree is { UsesIgnoreCase: true } foldedTree &&
             Utf8SliceCaseEquivalences.GetBehavior(foldedTree.Culture, executionOptions) != Utf8ScalarCaseBehavior.Invariant)
@@ -31,11 +28,6 @@ internal static class Utf8NativeExecutionAnalyzer
             return false;
         }
         if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
-        {
-            return true;
-        }
-
-        if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
@@ -92,10 +84,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryAnalyzeLiteralTree(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
@@ -268,8 +257,7 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
-    private static bool TryCreateLiteralAnalyzedRegex(Utf8SemanticRegex semanticRegex, byte[] literalUtf8,
-        RegexOptions options, out Utf8RegexAnalysis analyzedRegex, byte[]? trailingLiteralUtf8 = null)
+    private static bool TryCreateLiteralAnalyzedRegex(Utf8SemanticRegex semanticRegex, byte[] literalUtf8, RegexOptions options, out Utf8RegexAnalysis analyzedRegex, byte[]? trailingLiteralUtf8 = null)
     {
         var ascii = IsPlainAsciiLiteral(literalUtf8);
         var folded = (options & RegexOptions.IgnoreCase) != 0;
@@ -292,10 +280,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex,
-        string literalPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex) =>
+        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex) =>
         TryCreateLiteralAnalyzedRegex(
             semanticRegex,
             literalPattern,
@@ -306,11 +291,7 @@ internal static class Utf8NativeExecutionAnalyzer
             Utf8BoundaryRequirement.None);
 
     private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex,
-        string literalPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex,
-        byte[] trailingLiteralUtf8) =>
+        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, byte[] trailingLiteralUtf8) =>
         TryCreateLiteralAnalyzedRegex(
             semanticRegex,
             literalPattern,
@@ -321,12 +302,7 @@ internal static class Utf8NativeExecutionAnalyzer
             Utf8BoundaryRequirement.None);
 
     private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex,
-        string literalPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex,
-        Utf8BoundaryRequirement leadingBoundary,
-        Utf8BoundaryRequirement trailingBoundary) =>
+        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary) =>
         TryCreateLiteralAnalyzedRegex(
             semanticRegex,
             literalPattern,
@@ -337,13 +313,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingBoundary);
 
     private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex,
-        string literalPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex,
-        byte[] trailingLiteralUtf8,
-        Utf8BoundaryRequirement leadingBoundary,
-        Utf8BoundaryRequirement trailingBoundary)
+        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, byte[] trailingLiteralUtf8, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
@@ -377,10 +347,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryAnalyzeFiniteLiteralTree(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
@@ -588,9 +555,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree(
-        Utf8SemanticRegex semanticRegex, RegexOptions executionOptions,
-        out byte[][] alternateLiteralsUtf8, out byte[] trailingLiteralUtf8,
-        out NativeExecutionKind executionKind, out Utf8SearchKind searchKind)
+        Utf8SemanticRegex semanticRegex, RegexOptions executionOptions, out byte[][] alternateLiteralsUtf8, out byte[] trailingLiteralUtf8, out NativeExecutionKind executionKind, out Utf8SearchKind searchKind)
     {
         alternateLiteralsUtf8 = []; trailingLiteralUtf8 = []; executionKind = default; searchKind = default;
         using var construction = Utf8ConstructionScope.Enter();
@@ -622,10 +587,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractPositiveLiteralLookahead(
-        Utf8TreeNode body,
-        RegexOptions executionOptions,
-        out Utf8TreeNode substantiveNode,
-        out byte[] trailingLiteral)
+        Utf8TreeNode body, RegexOptions executionOptions, out Utf8TreeNode substantiveNode, out byte[] trailingLiteral)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -748,8 +710,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractUtf8LiteralAlternationTree(
-        Utf8SemanticRegex semanticRegex, out byte[][] alternateLiteralsUtf8,
-        out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
+        Utf8SemanticRegex semanticRegex, out byte[][] alternateLiteralsUtf8, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
     {
         alternateLiteralsUtf8 = []; leadingBoundary = Utf8BoundaryRequirement.None; trailingBoundary = Utf8BoundaryRequirement.None;
         using var construction = Utf8ConstructionScope.Enter();
@@ -801,10 +762,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryUnwrapLiteralAlternationWithBoundaries(
-        Utf8TreeNode node,
-        out byte[][] literals,
-        out Utf8BoundaryRequirement leadingBoundary,
-        out Utf8BoundaryRequirement trailingBoundary)
+        Utf8TreeNode node, out byte[][] literals, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -886,8 +844,7 @@ internal static class Utf8NativeExecutionAnalyzer
         literals = result; construction.Complete(); return true;
     }
 
-    private static bool TryGetScalarClassLiteralPair(Utf8ScalarClass? scalarClass,
-        Utf8ConstructionBudget owner, out byte[][] literals)
+    private static bool TryGetScalarClassLiteralPair(Utf8ScalarClass? scalarClass, Utf8ConstructionBudget owner, out byte[][] literals)
     {
         literals = [];
         if (scalarClass is null) return false;
@@ -936,10 +893,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractBoundaryWrappedLiteralTree(
-        Utf8SemanticRegex semanticRegex,
-        out string literal,
-        out Utf8BoundaryRequirement leadingBoundary,
-        out Utf8BoundaryRequirement trailingBoundary)
+        Utf8SemanticRegex semanticRegex, out string literal, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -977,10 +931,7 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractBoundaryWrappedLiteral(
-        Utf8TreeNode body,
-        out string literal,
-        out Utf8BoundaryRequirement leadingBoundary,
-        out Utf8BoundaryRequirement trailingBoundary)
+        Utf8TreeNode body, out string literal, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -1030,365 +981,10 @@ internal static class Utf8NativeExecutionAnalyzer
         {
             Utf8TreeNodeKind.Boundary => Utf8BoundaryRequirement.Boundary,
             Utf8TreeNodeKind.NonBoundary => Utf8BoundaryRequirement.NonBoundary,
-            _ => Utf8BoundaryRequirement.None,
+            _ => Utf8BoundaryRequirement.None
         };
 
         return requirement != Utf8BoundaryRequirement.None;
-    }
-
-    private static bool TryAnalyzeAsciiStructuralIdentifierFamilyTree(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget; owner.EnterDepth();
-        try
-        {
-            owner.ChargeWork(1);
-            analyzedRegex = default;
-            if (!SupportsNativeOptions(executionOptions) ||
-                (executionOptions & RegexOptions.IgnoreCase) != 0 ||
-                semanticRegex.RuntimeTree?.Root is not { } root ||
-                root.Kind != Utf8TreeNodeKind.Capture ||
-                root.ChildCount != 1 ||
-                !TryExtractAsciiStructuralIdentifierFamily(root.Child(0), out var prefixes, out var separatorSet, out var separatorMinCount, out var identifierStartSet, out var identifierTailSet, out var identifierTailMinCount, out var identifierTailMaxCount, out var suffixUtf8, out var suffixParts, out var leadingBoundary, out var trailingBoundary) ||
-                prefixes.Length <= 1)
-            {
-                return false;
-            }
-
-            // Separator steps do not rewind. Their following consuming atom must
-            // be disjoint; identifier-tail rewinding has its own existing verifier.
-            if (separatorSet is { } separator && identifierStartSet is { } start &&
-                !separator.IsDisjoint(start))
-                return false;
-            AsciiCharClass? previousSeparator = identifierStartSet.HasValue ? null : separatorSet;
-            foreach (var part in suffixParts)
-            {
-                owner.ChargeWork(1);
-                if (previousSeparator is { } previous &&
-                    (part.IsLiteral && part.LiteralUtf8 is { Length: > 0 } literal && previous.Contains(literal[0]) ||
-                     part.IsSeparator && !previous.IsDisjoint(part.SeparatorCharClass)))
-                    return false;
-                previousSeparator = part.IsSeparator ? part.SeparatorCharClass : null;
-            }
-            // Literal-only shortcuts do not retain terminal separator progression
-            // or rewind it for a trailing boundary. Keep the complete owned plan.
-            if (previousSeparator.HasValue) return false;
-
-            var plan = new AsciiStructuralIdentifierFamilyPlan(
-                prefixes,
-                separatorSet,
-                separatorMinCount,
-                identifierStartSet,
-                identifierTailSet,
-                identifierTailMinCount,
-                identifierTailMaxCount,
-                suffixUtf8,
-                suffixParts,
-                leadingBoundary,
-                trailingBoundary);
-
-            analyzedRegex = Utf8RegexAnalysis.CreateStructuralIdentifier(
-                semanticRegex,
-                executionPattern,
-                Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                Utf8SearchFacts.Create(
-                    Utf8SearchKind.ExactAsciiLiterals,
-                    new Utf8SearchFactData
-                    {
-                        AlternateLiteralsUtf8 = prefixes,                        // every admitted branch starts with one of these literals.
-                        CanGuideFallbackStarts = true,
-                        LeadingBoundary = leadingBoundary
-                    }),
-                plan);
-            construction.Complete(); return true;
-        }
-        finally { owner.LeaveDepth(); }
-    }
-
-    private static bool TryExtractAsciiStructuralIdentifierFamily(
-        Utf8TreeNode node,
-        out byte[][] prefixes,
-        out AsciiCharClass? separatorSet,
-        out int separatorMinCount,
-        out AsciiCharClass? identifierStartSet,
-        out AsciiCharClass? identifierTailSet,
-        out int identifierTailMinCount,
-        out int identifierTailMaxCount,
-        out byte[]? suffixUtf8,
-        out AsciiStructuralSuffixPart[] suffixParts,
-        out Utf8BoundaryRequirement leadingBoundary,
-        out Utf8BoundaryRequirement trailingBoundary)
-    {
-        prefixes = [];
-        separatorSet = null;
-        separatorMinCount = 0;
-        identifierStartSet = null;
-        identifierTailSet = null;
-        identifierTailMinCount = 0;
-        identifierTailMaxCount = 0;
-        suffixUtf8 = null;
-        suffixParts = [];
-        leadingBoundary = Utf8BoundaryRequirement.None;
-        trailingBoundary = Utf8BoundaryRequirement.None;
-
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
-        while (true)
-        {
-            owner.ChargeWork(1);
-            if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || node.ChildCount != 1) break;
-            node = node.Child(0); frames.Push(new(node, 0, false));
-        }
-        if (node.Kind != Utf8TreeNodeKind.Concatenate)
-        {
-            return false;
-        }
-
-        var startChildIndex = 0;
-        var endChildIndex = node.ChildCount - 1;
-        if (startChildIndex <= endChildIndex &&
-            TryGetBoundaryRequirement(node.Child(startChildIndex).Kind, out leadingBoundary))
-        {
-            startChildIndex++;
-        }
-
-        if (startChildIndex <= endChildIndex &&
-            TryGetBoundaryRequirement(node.Child(endChildIndex).Kind, out trailingBoundary))
-        {
-            endChildIndex--;
-        }
-
-        if (startChildIndex > endChildIndex)
-        {
-            return false;
-        }
-
-        if (!TryExtractLiteralFamily(node.Child(startChildIndex), out prefixes))
-        {
-            return false;
-        }
-
-        var currentIndex = startChildIndex + 1;
-        if (currentIndex <= endChildIndex &&
-            TryGetIdentifierSeparatorLoop(node.Child(currentIndex), out var separatorCandidateSet, out var separatorCandidateMinCount))
-        {
-            separatorSet = separatorCandidateSet;
-            separatorMinCount = separatorCandidateMinCount;
-            currentIndex++;
-        }
-
-        if (currentIndex > endChildIndex)
-        {
-            var accepted = (leadingBoundary != Utf8BoundaryRequirement.None ||
-                    trailingBoundary != Utf8BoundaryRequirement.None) &&
-                   GetCommonPrefixLength(prefixes) >= 3;
-            if (accepted) construction.Complete();
-            return accepted;
-        }
-
-        if (!TryGetAsciiSet(node.Child(currentIndex), out identifierStartSet))
-        {
-            if (separatorSet is not null &&
-                TryExtractAsciiStructuralSuffixParts(node, currentIndex, endChildIndex, out suffixParts))
-            {
-                if (suffixParts.Length == 1 && suffixParts[0].IsLiteral)
-                {
-                    suffixUtf8 = suffixParts[0].LiteralUtf8;
-                }
-
-                construction.Complete(); return true;
-            }
-
-            ResetAsciiStructuralIdentifierFamilyExtraction(out prefixes, out separatorSet, out separatorMinCount, out identifierStartSet, out identifierTailSet, out identifierTailMinCount, out identifierTailMaxCount, out suffixUtf8, out suffixParts, out leadingBoundary, out trailingBoundary);
-            return false;
-        }
-
-        currentIndex++;
-        if (currentIndex > endChildIndex ||
-            !TryGetAsciiBoundedSetLoop(node.Child(currentIndex), out identifierTailSet, out identifierTailMinCount, out identifierTailMaxCount))
-        {
-            ResetAsciiStructuralIdentifierFamilyExtraction(out prefixes, out separatorSet, out separatorMinCount, out identifierStartSet, out identifierTailSet, out identifierTailMinCount, out identifierTailMaxCount, out suffixUtf8, out suffixParts, out leadingBoundary, out trailingBoundary);
-            return false;
-        }
-
-        currentIndex++;
-        if (currentIndex <= endChildIndex)
-        {
-            if (!TryExtractAsciiStructuralSuffixParts(node, currentIndex, endChildIndex, out suffixParts))
-            {
-                ResetAsciiStructuralIdentifierFamilyExtraction(out prefixes, out separatorSet, out separatorMinCount, out identifierStartSet, out identifierTailSet, out identifierTailMinCount, out identifierTailMaxCount, out suffixUtf8, out suffixParts, out leadingBoundary, out trailingBoundary);
-                return false;
-            }
-
-            if (suffixParts.Length == 1 && suffixParts[0].IsLiteral)
-            {
-                suffixUtf8 = suffixParts[0].LiteralUtf8;
-            }
-        }
-
-        construction.Complete(); return true;
-    }
-
-    private static void ResetAsciiStructuralIdentifierFamilyExtraction(
-        out byte[][] prefixes,
-        out AsciiCharClass? separatorSet,
-        out int separatorMinCount,
-        out AsciiCharClass? identifierStartSet,
-        out AsciiCharClass? identifierTailSet,
-        out int identifierTailMinCount,
-        out int identifierTailMaxCount,
-        out byte[]? suffixUtf8,
-        out AsciiStructuralSuffixPart[] suffixParts,
-        out Utf8BoundaryRequirement leadingBoundary,
-        out Utf8BoundaryRequirement trailingBoundary)
-    {
-        prefixes = [];
-        separatorSet = null;
-        separatorMinCount = 0;
-        identifierStartSet = null;
-        identifierTailSet = null;
-        identifierTailMinCount = 0;
-        identifierTailMaxCount = 0;
-        suffixUtf8 = null;
-        suffixParts = [];
-        leadingBoundary = Utf8BoundaryRequirement.None;
-        trailingBoundary = Utf8BoundaryRequirement.None;
-    }
-
-    private static int GetCommonPrefixLength(byte[][] prefixes)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget; owner.ChargeWork(1);
-        if (prefixes.Length == 0)
-        {
-            return 0;
-        }
-
-        var commonPrefixLength = prefixes[0].Length;
-        for (var i = 1; i < prefixes.Length && commonPrefixLength > 0; i++)
-        {
-            commonPrefixLength = Math.Min(commonPrefixLength, prefixes[i].Length);
-            owner.ChargeWork((ulong)commonPrefixLength + 1);
-            var prefix = prefixes[i];
-            var matchLength = 0;
-            while (matchLength < commonPrefixLength &&
-                   prefixes[0][matchLength] == prefix[matchLength])
-            {
-                matchLength++;
-            }
-
-            commonPrefixLength = matchLength;
-        }
-
-        return commonPrefixLength;
-    }
-
-    private static bool TryGetAsciiSeparatorSet(Utf8ScalarClass? scalarClass, out AsciiCharClass separatorSet)
-    {
-        return Utf8ScalarAsciiProjector.TryProjectStructuralClass(scalarClass, out separatorSet) &&
-            IsAsciiWhitespaceOnlyMask(separatorSet);
-    }
-
-    private static bool IsAsciiWhitespaceOnlyMask(AsciiCharClass charClass)
-    {
-        var sawMatch = false;
-        for (var value = 0; value < 128; value++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!charClass.Contains((byte)value)) continue;
-            sawMatch = true;
-            if (!Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value)) return false;
-        }
-        return sawMatch;
-    }
-
-    private static bool TryExtractAsciiStructuralSuffixParts(
-        Utf8TreeNode node,
-        int startChildIndex,
-        int endChildIndex,
-        out AsciiStructuralSuffixPart[] suffixParts)
-    {
-        suffixParts = [];
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
-        owner.ChargeWork(1);
-        if (startChildIndex < 0 || endChildIndex >= node.ChildCount || endChildIndex < startChildIndex) return false;
-        using var parts = Utf8ConstructionBuffer<AsciiStructuralSuffixPart>.Create(owner);
-        for (var index = startChildIndex; index <= endChildIndex; index++)
-        {
-            owner.ChargeWork(1);
-            var child = node.Child(index);
-            if (TryGetIdentifierSeparatorLoop(child, out var separatorSet, out var separatorMinCount))
-                parts.Add(AsciiStructuralSuffixPart.CreateSeparator(separatorSet, separatorMinCount));
-            else if (TryGetAsciiLiteral(child, out var literalUtf8))
-                parts.Add(AsciiStructuralSuffixPart.CreateLiteral(literalUtf8));
-            else return false;
-        }
-        suffixParts = parts.Take(); construction.Complete(); return true;
-    }
-
-    private static bool TryGetAsciiSet(Utf8TreeNode node, out AsciiCharClass? runtimeSet)
-    {
-        runtimeSet = null;
-        if (node.Kind != Utf8TreeNodeKind.Set ||
-            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
-        runtimeSet = charClass;
-        return true;
-    }
-
-    private static bool TryGetAsciiBoundedSetLoop(Utf8TreeNode node, out AsciiCharClass? runtimeSet, out int minCount, out int maxCount)
-    {
-        // The identifier verifier can rewind this tail for a suffix/boundary.
-        // Do not erase an atomic wrapper and admit a loop that cannot rewind.
-        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            node = node.Child(0);
-        }
-        runtimeSet = null; minCount = 0; maxCount = 0;
-        if (node.Kind != Utf8TreeNodeKind.Setloop ||
-            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
-        runtimeSet = charClass;
-        // The preceding identifier-start atom is separate from this tail loop.
-        minCount = node.M;
-        maxCount = node.N;
-        return true;
-    }
-
-    private static bool TryGetIdentifierSeparatorLoop(Utf8TreeNode node, out AsciiCharClass runtimeSet, out int minCount)
-    {
-        runtimeSet = default; minCount = 0;
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
-        while (true)
-        {
-            owner.ChargeWork(1);
-            if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || node.ChildCount != 1) break;
-            node = node.Child(0); frames.Push(new(node, 0, false));
-        }
-        var min = node.M; var unbounded = node.IsUnboundedRepeat;
-        if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop && node.ChildCount == 1)
-        {
-            node = node.Child(0); frames.Push(new(node, 0, false));
-            while (true)
-            {
-                owner.ChargeWork(1);
-                if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || node.ChildCount != 1) break;
-                node = node.Child(0); frames.Push(new(node, 0, false));
-            }
-            if (node.Kind != Utf8TreeNodeKind.Set) return false;
-        }
-        else if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy)) return false;
-        if (min < 0 || !unbounded ||
-            !TryGetAsciiSeparatorSet(node.ScalarClass, out var separatorSet)) return false;
-        runtimeSet = separatorSet; minCount = min; return true;
     }
 
 
@@ -1407,70 +1003,6 @@ internal static class Utf8NativeExecutionAnalyzer
         }
         return true;
     }
-
-    private static bool TryGetAsciiLiteral(Utf8TreeNode node, out byte[] literalUtf8)
-    {
-        literalUtf8 = [];
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
-        while (true)
-        {
-            owner.ChargeWork(1);
-            if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || node.ChildCount != 1) break;
-            node = node.Child(0); frames.Push(new(node, 0, false));
-        }
-        if (node.Kind == Utf8TreeNodeKind.One && node.Ch <= 0x7f)
-        {
-            var result = owner.AllocateArray<byte>(1, false);
-            owner.ChargeWork(1); result[0] = (byte)node.Ch;
-            literalUtf8 = result; construction.Complete(); return true;
-        }
-        if (node.Kind != Utf8TreeNodeKind.Multi || node.Str is not { Length: > 0 } text) return false;
-        owner.ChargeWork((ulong)text.Length);
-        if (!IsAsciiLiteralText(text)) return false;
-        var bytes = owner.AllocateArray<byte>(text.Length, false);
-        owner.ChargeWork((ulong)text.Length);
-        for (var index = 0; index < bytes.Length; index++) bytes[index] = (byte)text[index];
-        literalUtf8 = bytes; construction.Complete(); return true;
-    }
-
-    private static bool IsAsciiLiteralText(string literal)
-    {
-        foreach (var ch in literal)
-        {
-            if (ch > 0x7F)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool TryExtractLiteralFamily(Utf8TreeNode node, out byte[][] literalsUtf8)
-    {
-        literalsUtf8 = [];
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        if (!TryExtractLiteralFamilyStrings(node, out var literals) || literals.Length == 0) return false;
-        using var arena = Utf8ConstructionArena.Create(owner);
-        var result = arena.Allocate<byte[]>(literals.Length, true);
-        for (var index = 0; index < literals.Length; index++)
-        {
-            var literal = literals[index]; owner.ChargeWork((ulong)literal.Length);
-            if (!IsPlainAsciiLiteral(literal)) return false;
-            var bytes = arena.Allocate<byte>(literal.Length, true);
-            owner.ChargeWork((ulong)literal.Length);
-            for (var position = 0; position < bytes.Length; position++) bytes[position] = (byte)literal[position];
-            result[index] = bytes;
-        }
-        owner.ReleaseArray(literals, false);
-        literalsUtf8 = result; arena.Complete(); construction.Complete(); return true;
-    }
-
-    private static bool TryExtractLiteralFamilyStrings(Utf8TreeNode node, out string[] literals)
-        => TryExtractLiteralFamilyStringsCore(node, false, out literals);
 
     private static bool TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings(Utf8TreeNode node, out string[] literals)
         => TryExtractLiteralFamilyStringsCore(node, true, out literals);
@@ -1545,17 +1077,17 @@ internal static class Utf8NativeExecutionAnalyzer
                 if (!familyBudget.TryReserveProduct(frame.Values.Length, values.Length, 256, out var product)) return false;
                 var next = arena.Allocate<string>(product, false); var output = 0;
                 foreach (var left in frame.Values)
-                foreach (var right in values)
-                {
-                    owner.ChargeWork(1);
-                    if (left.Length == 0) next[output++] = right;
-                    else if (right.Length == 0) next[output++] = left;
-                    else
+                    foreach (var right in values)
                     {
-                        using var text = Utf8ConstructionText.Create();
-                        text.Append(left); text.Append(right); next[output++] = text.ToText();
+                        owner.ChargeWork(1);
+                        if (left.Length == 0) next[output++] = right;
+                        else if (right.Length == 0) next[output++] = left;
+                        else
+                        {
+                            using var text = Utf8ConstructionText.Create();
+                            text.Append(left); text.Append(right); next[output++] = text.ToText();
+                        }
                     }
-                }
                 frame.Values = next;
             }
             if (frame.NextChild == node.ChildCount) { values = frame.Values; frames.Pop(); continue; }

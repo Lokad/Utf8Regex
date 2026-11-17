@@ -16,21 +16,7 @@ internal sealed class Utf8PreparedRegex
     internal static ulong ObjectBytes => 2048;
 
     private Utf8PreparedRegex(
-        Utf8AnchoredLiteralPlan anchoredLiteral,
-        Utf8OperationMatchCursorPlans operationMatchCursorPlans,
-        Utf8PreparedSemanticRegex semanticRegex,
-        Utf8RegexFeatures features,
-        string? executionPattern,
-        NativeExecutionKind executionKind,
-        Utf8ExecutionBackend executionBackend,
-        Utf8CompiledPatternCategory compiledPatternCategory,
-        Utf8ExecutionTree? executionTree,
-        Utf8SliceProgram? scalarProgram,
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8StructuralVerifierPlan structuralVerifier,
-        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        byte[]? literalUtf8,
-        string? fallbackReason)
+        Utf8AnchoredLiteralPlan anchoredLiteral, Utf8OperationMatchCursorPlans operationMatchCursorPlans, Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern, NativeExecutionKind executionKind, Utf8ExecutionBackend executionBackend, Utf8CompiledPatternCategory compiledPatternCategory, Utf8ExecutionTree? executionTree, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason)
     {
         _anchoredLiteral = anchoredLiteral;
         _operationMatchCursorPlans = operationMatchCursorPlans;
@@ -42,50 +28,19 @@ internal sealed class Utf8PreparedRegex
         CompiledPatternCategory = compiledPatternCategory;
         ExecutionTree = executionTree;
         ScalarProgram = scalarProgram;
-        StructuralSearchPlan = structuralSearchPlan;
-        StructuralVerifier = structuralVerifier;
-        StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
     }
 
     internal static Utf8PreparedRegex Create(
-        Utf8PreparedSemanticRegex semanticRegex,
-        Utf8RegexFeatures features,
-        string? executionPattern,
-        NativeExecutionKind executionKind,
-        Utf8ExecutionBackend executionBackend,
-        Utf8CompiledPatternCategory compiledPatternCategory,
-        Utf8ExecutionTree? executionTree,
-        Utf8SliceProgram? scalarProgram,
-        Utf8OperationMatchCursorPlans operationMatchCursorPlans,
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8StructuralVerifierPlan structuralVerifier,
-        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        byte[]? literalUtf8,
-        string? fallbackReason,
-        Utf8AnchoredLiteralPlan anchoredLiteral)
+        Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern, NativeExecutionKind executionKind, Utf8ExecutionBackend executionBackend, Utf8CompiledPatternCategory compiledPatternCategory, Utf8ExecutionTree? executionTree, Utf8SliceProgram? scalarProgram, Utf8OperationMatchCursorPlans operationMatchCursorPlans, byte[]? literalUtf8, string? fallbackReason, Utf8AnchoredLiteralPlan anchoredLiteral)
     {
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CheckBytes(ObjectBytes);
         scope.Budget.ChargeWork(2);
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
-            anchoredLiteral,
-            operationMatchCursorPlans,
-            semanticRegex,
-            features,
-            executionPattern,
-            executionKind,
-            executionBackend,
-            compiledPatternCategory,
-            executionTree,
-            scalarProgram,
-            structuralSearchPlan,
-            structuralVerifier,
-            structuralIdentifierFamilyPlan,
-            literalUtf8,
-            fallbackReason);
+            anchoredLiteral, operationMatchCursorPlans, semanticRegex, features, executionPattern, executionKind, executionBackend, compiledPatternCategory, executionTree, scalarProgram, literalUtf8, fallbackReason);
         scope.Complete();
         return result;
     }
@@ -108,15 +63,7 @@ internal sealed class Utf8PreparedRegex
 
     public ref readonly Utf8SearchPlan SearchPlan => ref _operationMatchCursorPlans.SearchPlan;
 
-    public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
-
-    public Utf8StructuralVerifierPlan StructuralVerifier { get; }
-
-    public ref readonly Utf8StructuralLinearProgram StructuralLinearProgram => ref _operationMatchCursorPlans.StructuralLinearProgram;
-
     public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
-
-    public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
 
     public byte[]? LiteralUtf8 { get; }
 

@@ -31,8 +31,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     if (literals[index].Length == 0) return false;
                 }
                 return true;
-            case NativeExecutionKind.AsciiStructuralIdentifierFamily:
-                return CanUseStructuralFamilyCursor(prepared, validation);
             default: return false;
         }
     }
@@ -46,9 +44,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, prepared, false, invocation),
             NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8OperationMatchCursor(input, prepared, invocation),
-            NativeExecutionKind.AsciiStructuralIdentifierFamily
-                => new Utf8OperationMatchCursor(input, prepared, invocation),
-            _ => throw new InvalidOperationException("The prepared plan cannot transfer a native invocation cursor."),
+            _ => throw new InvalidOperationException("The prepared plan cannot transfer a native invocation cursor.")
         };
         return cursor.WithStartFloor(byteFloor);
     }

@@ -14,7 +14,6 @@ public sealed class Utf8SubstringPreparationQualificationTests
     private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     private static object? Field(PreparedSubstringSearch search, string name) =>
         typeof(PreparedSubstringSearch).GetField(name, Fields)!.GetValue(search);
-    private delegate int ReverseCount(ReadOnlySpan<byte> input, in AsciiStructuralIdentifierFamilyPlan plan, byte[] suffix, int minimum);
 
 
     [Fact]
@@ -179,31 +178,6 @@ public sealed class Utf8SubstringPreparationQualificationTests
             }
         }
         static byte Fold(byte b) => b is >= (byte)'A' and <= (byte)'Z' ? (byte)(b + 32) : b;
-    }
-
-    [Fact]
-    public void SuffixPartsBorrowLiteralBytesWithoutPreparation()
-    {
-        var literal = "suffix"u8.ToArray();
-        using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
-        var part = AsciiStructuralSuffixPart.CreateLiteral(literal);
-        Assert.Same(literal, part.LiteralUtf8);
-        Assert.Equal(0ul, zero.Budget.WorkSteps);
-        Assert.Equal(0ul, zero.Budget.PeakBytes);
-        Assert.Equal(0ul, zero.Budget.Depth);
-    }
-
-    [Fact]
-    public void ReverseSuffixKernelDoesNotPrepareDuringExecution()
-    {
-        var literal = "tail"u8.ToArray();
-        var family = new AsciiStructuralIdentifierFamilyPlan(["head"u8.ToArray()], AsciiCharClass.ForByte((byte)' '), 1,
-            null, null, 0, 0, literal, null, Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary);
-        var reverse = typeof(Utf8AsciiStructuralIdentifierFamilyExecutor).GetMethod("CountSuffixOnlyReverseLiteral",
-            BindingFlags.NonPublic | BindingFlags.Static)!.CreateDelegate<ReverseCount>();
-        using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
-        Assert.Equal(2, reverse("head tail; head tail"u8, family, literal, 1));
-        Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.PeakBytes); Assert.Equal(0ul, zero.Budget.Depth);
     }
 
     [Fact]

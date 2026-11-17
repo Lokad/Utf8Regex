@@ -49,7 +49,6 @@ public sealed class Utf8StructuralPublicControlsTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue, ulong.MaxValue);
         var engine = Utf8CompiledEngineSelector.Select(regex.Inspection.PreparedRegex);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, engine.Kind);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
     }
 }

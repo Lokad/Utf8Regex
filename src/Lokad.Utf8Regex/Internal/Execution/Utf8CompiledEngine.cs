@@ -4,17 +4,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal enum Utf8CompiledEngineKind : byte
 {
-    FallbackRegex = 0,
-    ExactLiteral = 3,
-    LiteralFamily = 4,
-    StructuralLinearAutomaton = 7,
+    FallbackRegex = 0, ExactLiteral = 3, LiteralFamily = 4
 }
 
 internal enum Utf8CompiledExecutionBackend : byte
 {
-    Legacy = 0,
-    InterpretedInstruction = 1,
-    EmittedInstruction = 2,
+    Legacy = 0, InterpretedInstruction = 1, EmittedInstruction = 2
 }
 
 internal readonly struct Utf8CompiledEngine
@@ -50,12 +45,6 @@ internal static class Utf8CompiledEngineSelector
                 Utf8CompiledBackendCapability.CanUseEmittedLiteralFamily(regexPlan.SearchPlan)
                     ? Utf8CompiledExecutionBackend.EmittedInstruction
                     : Utf8CompiledExecutionBackend.InterpretedInstruction);
-        }
-
-        if (regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.DeterministicLinear &&
-            (regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily))
-        {
-            return new(Utf8CompiledEngineKind.StructuralLinearAutomaton);
         }
 
         return new(Utf8CompiledEngineKind.FallbackRegex);

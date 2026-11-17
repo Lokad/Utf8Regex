@@ -318,9 +318,6 @@ public sealed class Utf8SharedStatePoolTests
             field.SetValue(null, originalGate);
             Assert.Equal(bytes, Inspect().Bytes);
             Assert.Same(original, Utf8ExactStatePool<ReferenceState>.Rent(16, false));
-            // The live native verifier retains its zero-byte warm guard once
-            // optional pool retention is available without contention.
-            new Utf8AsciiStructuralRuntimeTests().WarmAsciiRuntimeBorrowsAllStorageWithoutTemporaryAllocation();
             new ReplacementInfrastructureTests().DestinationReplacementHasBoundedWarmedAllocationIndependentOfMatchCount();
         }
         finally
