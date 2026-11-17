@@ -94,11 +94,6 @@ sealed class Utf8RegexProgramOwner : IDisposable
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Void Dispose()
-ref struct Utf8ReplacementWriter
-  method Void Append(Text.Rune value)
-  method Void Append(scoped ReadOnlySpan<Byte> utf8)
-  method Void Append(scoped ReadOnlySpan<Char> utf16)
-  method Void AppendAsciiByte(Byte value)
 sealed class Utf8ResourceLimitExceededException : InvalidOperationException, Runtime.Serialization.ISerializable
   property UInt64 Limit { get; }
   property UInt64 Requested { get; }

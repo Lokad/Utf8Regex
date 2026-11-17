@@ -123,13 +123,10 @@ public sealed class Pcre2ResultPolicyTests
     }
 
     [Fact]
-    public void CallbackResultFailureIsStructuredAndFreshCallsReset()
-    {
-        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).ReplaceToString("A😀"u8, 0,
-            static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
+    public void TemplateResultFailureIsStructuredAndFreshCallsReset()
+{
+        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).Replace("A😀"u8, "!"));
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
         var regex = Create(@"(?<v>\x41)😀", 1 << 20);
-        Assert.Equal("!", regex.ReplaceToString("A😀"u8, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
-        Assert.Equal("!", regex.ReplaceToString("A😀"u8, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
-    }
-}
+        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));
+        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));    }}

@@ -25,8 +25,8 @@ useful work/depth/working/result limits remain active. Byte starts must be scala
 boundaries in the original subject; lookbehind and anchors retain prefix context.
 Results expose byte endpoints without UTF-16 projection or prefix scans. Explicit
 `\C` byte atoms and `\K` can still produce slices requiring their own decoding
-checks. Assembled text and callback outputs keep their independent well-formedness
-requirements.
+checks. Pattern/template preparation and byte-template output controls remain
+independent of the subject contract.
 
 Execution strategies are internal. Matching preserves scalar boundaries, capture
 priority, global empty/nonempty retries, newline/options and original resource
@@ -42,8 +42,7 @@ execution where Core semantics differ.
 Work, depth and covered storage are route-dependent. Numerical requirements and
 operating costs can increase or decrease as strategies change. Fixed-scratch or
 direct byte-range operations need no mandatory heap loan; major growing buffers
-and program expansion still require admission. Group-zero callbacks can avoid a
-temporary group array. These controls bound modeled work and admitted storage,
+and program expansion still require admission. These controls bound modeled work and admitted storage,
 not total heap, stack or process memory.
 
 ## Surface and admission
@@ -222,12 +221,13 @@ position-table capacity can exceed the corresponding UTF-16 source capacity;
 fixed work/instruction/byte backstops remain. These modeled costs are not stable
 per-template quotas or aggregate host-retention guarantees.
 
-Discovery, actual yielded captures/Mark, callback context, output growth and final
-copy/decode share one invocation; callbacks do not rematch at reported starts.
-Evaluators must be non-null, including misses, after pre-cancellation.
-The shared callback writer accepts scoped stack spans and is valid only during
-the callback. Arbitrary callback execution cannot be preempted or charged as
-library allocations.
+Discovery, actual yielded captures/Mark, output growth and final byte copying
+share one invocation. Callback/evaluator replacement and the shared public writer
+are removed. Hosts compute custom replacements over `CreateMatchCursor` ranges
+and capture memories. Each advance retains the regex controls; host computation,
+buffers, final cancellation checks and admission belong to the host. Ordinary
+cursor progression retains its documented reset-empty disposition; byte-template
+replacement retains its separate PCRE2 substitution disposition for `\K`.
 
 TryReplace supports overlapping output by staging where required. Destination
 shortage leaves it unchanged with zero bytes written, or the required length
@@ -238,7 +238,7 @@ for ownership and exclusions.
 ## Interruption and resource controls
 
 Execution twins preserve the original token. Checks cover bounded input inspection,
-search/VM/grapheme work, projection, output, callback boundaries and publication.
+search/VM/grapheme work, projection, byte output and publication.
 One absolute deadline spans lazy advances and controlled preparation.
 Pre-cancellation wins; timeout reports `Pcre2MatchException` / Timeout.
 
@@ -308,8 +308,8 @@ scans retain their own admission and normal publication checks.
 Depth admits live frames/assertion state
 before growth. Working admission includes major workspace/output growth overlap;
 result admission cumulatively covers owned capture/probe roots, staging and
-returned bytes/text without refunds. Fixed values/inline partials need no result
-payload. Standalone getters, caller storage/retention, callbacks and metadata have
+returned bytes without refunds. Fixed values/inline partials need no result
+payload. Host decoding, caller storage/retention, custom computation and metadata have
 separate scope; these are not total heap/RSS bounds.
 
 Copied value cursors retain independent positions and shared allowance/deadline.
@@ -467,7 +467,7 @@ Template `ReplaceToString` overloads are removed. `Replace` with a string or UTF
 template and `TryReplace` preserve substitution semantics and byte output controls.
 Hosts decode valid byte results explicitly; that string allocation and any final
 host cancellation check fall outside the regex invocation. Callback replacement
-still has its existing contract pending its separate surface retirement.
+and evaluator delegates are removed as well; use the range cursor for host output.
 
 All PCRE2-specific implementation/types/namespaces/test fixtures remain in the
 Pcre2 slice. Unavoidable Core hooks carry PCRE2-INTEGRATION-POINT.

@@ -77,7 +77,7 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void OutputGrowthAndFinalMaterializationAdmitOverlapAndBalanceAfterDenial()
     {
         const ulong controls = 2 * Utf8SliceByteOutputScope.ControlBytes;
-        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 111), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, 0, controls + 111), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = scope.CreateBuffer();
         try
         {
@@ -98,25 +98,22 @@ public sealed class Utf8OwnedReplacementInteropTests
         finally { scope.Release(); }
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
 
-        foreach (var encode in new[] { false, true })
         foreach (var exact in new[] { false, true })
         {
-            var finalBytes = encode ? 48UL : 80UL;
-            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 48 + finalBytes - (exact ? 0UL : 1UL)),
-                Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var finalBytes = 48UL;
+            scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, 0, controls + 48 + finalBytes - (exact ? 0UL : 1UL)),
+                Regex.InfiniteMatchTimeout, CancellationToken.None));
             writer = scope.CreateBuffer();
             try
             {
                 writer.Append("abcdefghijklmnop"u8);
                 if (exact)
                 {
-                    if (encode) Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
-                    else Assert.Equal("abcdefghijklmnop", writer.ToValidatedString());
+                    Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
                 }
                 else Assert.Throws<InvalidOperationException>(() =>
                 {
-                    if (encode) _ = writer.ToArray();
-                    else _ = writer.ToValidatedString();
+                    _ = writer.ToArray();
                 });
                 Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             }
@@ -126,33 +123,17 @@ public sealed class Utf8OwnedReplacementInteropTests
     }
 
     [Fact]
-    public void ReversePiecesAndEncodingBlockBoundariesPreserveCompleteScalars()
+    public void ReversePiecesPreserveCompleteScalars()
     {
-        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = scope.CreateBuffer();
         try
         {
-            writer.Append("\ude00".AsSpan());
-            writer.MarkPiece();
-            writer.Append("\ud83d".AsSpan());
-            writer.MarkPiece();
-            writer.ReversePieces();
-            Assert.Equal("\ufffd\ufffd", writer.ToValidatedString());
-            Assert.Equal("\ufffd\ufffd"u8.ToArray(), writer.ToArray());
-            writer.Release();
-            writer = scope.CreateBuffer();
-            var text = new string('x', 2047) + "\U0001f600" + new string('y', 2047) + "\ud83d";
-            writer.Append(text.AsSpan());
-            Assert.Equal(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text)), writer.ToValidatedString());
-            Assert.Equal(Encoding.UTF8.GetBytes(text), writer.ToArray());
-            writer.Release();
-            writer = scope.CreateBuffer();
             writer.Append("\U0001f600"u8);
             writer.MarkPiece();
             writer.Append("\u00e9"u8);
             writer.MarkPiece();
             writer.ReversePieces();
-            Assert.Equal("\u00e9\U0001f600", writer.ToValidatedString());
         }
         finally { scope.Release(); }
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
@@ -162,14 +143,14 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void DestinationCopyRetainsItsByteBufferAndChecksCancellationBetweenBlocks()
     {
         using var source = new CancellationTokenSource();
-        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token));
         var writer = scope.CreateBuffer();
         var destination = new byte[300000];
         Array.Fill(destination, (byte)0xa5);
         var written = -1;
         try
         {
-            writer.Append(new string('x', destination.Length).AsSpan());
+            writer.Append(Encoding.UTF8.GetBytes(new string('x', destination.Length)));
             var held = scope.Invocation.Ledger.ReservedBytes;
             var entered = false;
             // Cancel only after destination copying has begun, not during the
@@ -197,18 +178,17 @@ public sealed class Utf8OwnedReplacementInteropTests
 
     [Theory]
     [InlineData("append")]
-    [InlineData("string")]
     [InlineData("bytes")]
     [InlineData("reverse")]
     public void OutputWorkObservesCancellationAndReleasesTemporaryReservations(string operation)
     {
         using var source = new CancellationTokenSource();
-        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token));
         var writer = scope.CreateBuffer();
         try
         {
             var text = new string('x', 300000);
-            if (operation != "append") writer.Append(text.AsSpan());
+            if (operation != "append") writer.Append(Encoding.UTF8.GetBytes(text));
             if (operation == "reverse") writer.MarkPiece();
             var held = scope.Invocation.Ledger.ReservedBytes;
             var entered = false;
@@ -217,8 +197,7 @@ public sealed class Utf8OwnedReplacementInteropTests
             {
                 switch (operation)
                 {
-                    case "append": writer.Append(text.AsSpan()); break;
-                    case "string": _ = writer.ToValidatedString(); break;
+                    case "append": writer.Append(Encoding.UTF8.GetBytes(text)); break;
                     case "bytes": _ = writer.ToArray(); break;
                     case "reverse": writer.ReversePieces(); break;
                 }

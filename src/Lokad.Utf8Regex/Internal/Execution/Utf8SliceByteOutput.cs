@@ -1,33 +1,20 @@
-using System.Text;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>One authoritative invocation for callback output. Default writers
-/// created synchronously inside the operation join this scope, including resets.
-/// Nested operations restore the previous scope. Callback-local aliases remain
-/// live until the callback returns; only its returned writer survives that boundary.</summary>
+/// <summary>Owns the invocation and admitted buffers for one byte-template operation.</summary>
 internal sealed class Utf8SliceByteOutputScope
 {
     // Conservative fixed control-storage charges, in addition to array payloads.
     internal const ulong ControlBytes = 256;
-    [ThreadStatic] private static Utf8SliceByteOutputScope? s_current;
-    private readonly Utf8SliceByteOutputScope? _previous;
     private Utf8SliceByteOutputBuffer? _buffers;
     private bool _closed;
     internal Utf8SliceInvocation Invocation;
-    internal static Utf8SliceByteOutputScope? Current => s_current;
 
     private Utf8SliceByteOutputScope(Utf8SliceInvocation initialInvocation)
     {
         // This moves freshly initialized state once. Every subsequent phase
         // borrows the field by reference; budgets are never copied during work.
         Invocation = initialInvocation;
-        _previous = s_current;
-        s_current = this;
     }
-
-    internal static Utf8SliceByteOutputScope Enter(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
-        => Enter(new Utf8SliceInvocation(limits, timeout, token));
 
     // Controlled callers retain the same authority when scope admission fails.
     internal static Utf8SliceByteOutputScope Enter(Utf8SliceInvocation invocation)
@@ -70,9 +57,8 @@ internal sealed class Utf8SliceByteOutputScope
 
     internal void Retain(Utf8SliceByteOutputBuffer? returnedBuffer)
     {
-        // Public writers are ref structs: aliases created in the callback
-        // cannot escape through its heap-capable TState. Reclaim discarded
-        // buffers here, after all aliases could have finished writing them.
+        // Keep the selected template buffer and release other owned storage.
+        // Published byte arrays have independent storage and lifetime.
         var buffer = _buffers;
         _buffers = returnedBuffer;
         while (buffer is not null)
@@ -86,21 +72,20 @@ internal sealed class Utf8SliceByteOutputScope
 
     internal void ThrowIfClosed()
     {
-        if (_closed) throw new InvalidOperationException("The callback output scope has ended.");
+        if (_closed) throw new InvalidOperationException("The replacement output scope has ended.");
     }
 
     internal void Release()
     {
         if (_closed) return;
         _closed = true;
-        s_current = _previous;
         Retain(null);
         Invocation.Ledger.Release(ControlBytes);
     }
 }
 
-/// <summary>Shared byte-buffer identity for writer copies. All payload and
-/// growth overlap is admitted before allocation; reset creates a new identity.
+/// <summary>Byte-buffer storage owned by a template invocation. Payload and
+/// growth overlap are admitted before allocation.
 /// Reverse replacement records byte-piece lengths without validating fragments.</summary>
 internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
 {
@@ -122,32 +107,6 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         var buffer = EnsureCapacity((long)_length + bytes.Length);
         Utf8SliceBufferWork.Copy(bytes, buffer.AsSpan(_length), ref scope.Invocation);
         _length += bytes.Length;
-    }
-
-    internal void Append(ReadOnlySpan<char> text)
-    {
-        CheckLive();
-        Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-        long needed = _length;
-        var written = _length;
-        for (var offset = 0; offset < text.Length;)
-        {
-            Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-            var count = Utf8SliceBufferWork.Utf16BlockLength(text[offset..]);
-            needed += Encoding.UTF8.GetByteCount(text.Slice(offset, count));
-            offset += count;
-        }
-        if (text.IsEmpty) return;
-        var buffer = EnsureCapacity(needed);
-        for (var offset = 0; offset < text.Length;)
-        {
-            Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-            var count = Utf8SliceBufferWork.Utf16BlockLength(text[offset..]);
-            written += Encoding.UTF8.GetBytes(text.Slice(offset, count), buffer.AsSpan(written));
-            offset += count;
-        }
-        Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-        _length = written;
     }
 
     private byte[] EnsureCapacity(long needed)
@@ -268,9 +227,6 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         return System.Buffers.OperationStatus.Done;
     }
 
-    internal string ToValidatedString()
-        => Utf8SliceBufferWork.DecodeUtf8(GetValidatedBytes(), ref scope.Invocation);
-
     internal void Release()
     {
         if (_released) return;
@@ -286,6 +242,6 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
     private void CheckLive()
     {
         scope.ThrowIfClosed();
-        if (_released) throw new InvalidOperationException("The callback output buffer has ended.");
+        if (_released) throw new InvalidOperationException("The replacement output buffer has ended.");
     }
 }

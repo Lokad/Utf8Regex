@@ -261,16 +261,12 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal("é😀 ", view.GetValueString());
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LargeOutputGrowthIsDeniedBeforeAcquisition(bool text)
+    [Fact]
+    public void LargeOutputGrowthIsDeniedBeforeAcquisition()
     {
         var bytes = new byte[1000000];
-        var chars = new string('x', 1000000);
         var invocation = new Utf8SliceInvocation(new(0, 0, 0, 512), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var previous = Utf8SliceByteOutputScope.Current;
         var scope = Utf8SliceByteOutputScope.Enter(invocation);
         try
         {
@@ -278,7 +274,7 @@ public sealed class Utf8CoreResultPolicyTests
             var before = GC.GetAllocatedBytesForCurrentThread();
             try
             {
-                if (text) output.Append(chars.AsSpan()); else output.Append(bytes);
+                output.Append(bytes);
                 Assert.Fail("Output growth must deny before acquiring a large buffer.");
             }
             catch (InvalidOperationException) { Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.Budget.LimitBreach); }
@@ -286,7 +282,6 @@ public sealed class Utf8CoreResultPolicyTests
             Assert.True(allocated < 16384, $"Denied output allocated {allocated} bytes.");
         }
         finally { scope.Release(); }
-        Assert.Same(previous, Utf8SliceByteOutputScope.Current);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         Assert.True(invocation.Budget.ResultBytes > 512);
     }

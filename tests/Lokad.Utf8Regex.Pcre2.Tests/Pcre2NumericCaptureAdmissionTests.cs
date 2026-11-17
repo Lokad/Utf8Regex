@@ -100,7 +100,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     [InlineData(@"(?<x>a)(b)\1\2", "abab", "a", "b", 1)]
     [InlineData("(é)(?<x>😀)", "é😀", "é", "😀", 2)]
     [InlineData("(?<x>😀)(é)?", "😀", "😀", null, 1)]
-    public void ValidNumericSlotsNamesAndCallbackViewsKeepPcre2DeclarationOrder(
+    public void ValidNumericSlotsNamesAndRangeViewsKeepPcre2DeclarationOrder(
         string pattern, string text, string left, string? right, int nameSlot)
     {
         var regex = new Utf8Pcre2Regex(pattern);
@@ -119,19 +119,15 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         Assert.Equal(nameSlot, names[0].Number);
         Assert.True(match.TryGetFirstSetGroup("x", out var named));
         Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
-        var replaced = regex.Replace(input, (Left: left, Right: right, Text: text),
-            static (in Utf8Pcre2MatchContext context, ref Utf8ReplacementWriter writer, ref (string Left, string? Right, string Text) state) =>
-            {
-                Assert.Equal(3, context.CaptureSlotCount);
-                AssertGroup(context.GetGroup(1), state.Left, state.Text);
-                AssertGroup(context.GetGroup(2), state.Right, state.Text);
-                writer.Append(context.GetGroup(1).GetValueBytes());
-                writer.Append("|"u8);
-                if (context.GetGroup(2).Success) writer.Append(context.GetGroup(2).GetValueBytes());
-                else writer.Append("-"u8);
-            });
-        Assert.Equal("z" + left + "|" + (right ?? "-") + "z", Encoding.UTF8.GetString(replaced));
-    }
+        {
+            using var cursor = regex.CreateMatchCursor(input);
+            Assert.True(cursor.MoveNext(out var range));
+            Assert.Equal(3, range.Groups.Length);
+            Assert.Equal(left, Encoding.UTF8.GetString(range.GetGroupMemory(1).Span));
+            Assert.Equal(right ?? "", Encoding.UTF8.GetString(range.GetGroupMemory(2).Span));
+            Assert.Equal(right is not null, range.Groups[2].Success);
+            Assert.Equal(nameSlot, range.NameEntries[0].Number);
+        }    }
 
     [Theory]
     [InlineData(1)]

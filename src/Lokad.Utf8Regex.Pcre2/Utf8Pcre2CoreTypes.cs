@@ -488,19 +488,6 @@ public readonly struct Utf8Pcre2Analysis
     public bool MayFailIterativeExecutionAtRuntime { get; init; }
 }
 
-/// <summary>Represents a stateful callback that appends one PCRE2 replacement directly as UTF-8.</summary>
-public delegate void Pcre2MatchEvaluator<TState>(
-    in Utf8Pcre2MatchContext match,
-    ref Utf8ReplacementWriter writer,
-    ref TState state);
-
-/// <summary>Represents a stateful callback that returns UTF-16 replacement text for one PCRE2 match.</summary>
-/// <remarks>Each return is encoded independently as UTF-8. Valid surrogate pairs within
-/// that string denote one scalar; unpaired surrogates become U+FFFD.</remarks>
-public delegate string Pcre2Utf16MatchEvaluator<TState>(
-    in Utf8Pcre2MatchContext match,
-    ref TState state);
-
 /// <summary>Advances through non-overlapping PCRE2 matches without allocating a public match collection.</summary>
 /// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.
 /// Copies retain independent positions. Controlled native and owned-slice copies share their original cumulative

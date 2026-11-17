@@ -113,12 +113,11 @@ Replacement strings use PCRE2 substitution syntax. Templates return owned bytes
 through `Replace` or write caller storage through `TryReplace`. Decode valid output
 in the host when text is needed; the extra string is outside regex resource
 controls. Opt-in `\C` can produce raw malformed UTF-8, so check that output first.
-Callback replacement remains pending a separate API cleanup. Detailed numeric-slot/
-name-table results and explicit compile/execution settings remain available.
-
-Replacement evaluator delegates must be non-null, even on misses; otherwise
-`ArgumentNullException` names `evaluator`. An already-cancelled explicit token
-still takes precedence. Return-value rules for valid callbacks are unchanged.
+Callback replacement, evaluator delegates and the public callback writer are
+removed. Custom computation uses `CreateMatchCursor` and host-owned buffers.
+Detailed numeric-slot/name-table results and explicit compile/execution settings
+remain available. Cursor advances preserve regex controls; host computation and
+final output admission/cancellation checks belong to the host.
 
 ## Delivery evidence
 
@@ -150,7 +149,7 @@ deadline. Cancellation throws with the original token. Deadline/resource denial
 uses `Pcre2MatchException` with `Timeout`, `MatchLimit`, `DepthLimit`, `HeapLimit`
 or `ResultLimit`; no silently truncated success is returned. Terminal cursor
 advances also check interruption. The original deadline includes host waits.
-Caller callback execution cannot be forcibly interrupted.
+Host computation between advances is outside regex interruption controls.
 
 Concurrent cold replacements can share template preparation. A waiting call
 observes its own cancellation, deadline and resource allowance; another
@@ -162,7 +161,7 @@ allocation. Result/staging capacity is cumulatively charged without refunds;
 scalar value/boolean/count and inline partial results need no owned payload.
 This is a modeled capacity policy, not total managed heap, process RSS or arbitrary
 retained-storage containment. Subject/destination memory, incidental owners,
-compiled/cache retention, standalone getters and callback allocations have
+compiled/cache retention, host decoding and custom-output allocations have
 separate scope. Basic bounded state, backtracking and interruption metering
 remain active even when they have a measurable execution cost.
 

@@ -156,20 +156,11 @@ public sealed class Pcre2SliceLookaroundTests
     }
 
     [Fact]
-    public void OwnedReplaceEvaluatorSeesRetriedNonEmptyMatch()
-    {
-        // Empty-then-nonempty yields project the retried captures, not the
-        // empty first success.
+    public void OwnedRangeCursorSeesRetriedNonEmptyMatch()
+{
         var regex = new Utf8Pcre2Regex("(?<=abc)(|def)", Pcre2CompileOptions.None);
-        var actual = regex.ReplaceToString(
-            Utf8("abcdefabc"),
-            0,
-            static (in Utf8Pcre2MatchContext match, ref int state) =>
-            {
-                state++;
-                return "[" + match.Value.StartOffsetInBytes + ":" + System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()) + "]";
-            });
-        Assert.Equal("abc[3:][3:def]abc[9:]", actual);
-        Assert.True(regex.DebugCompiledProgram is not null);
-    }
-}
+        using var cursor = regex.CreateMatchCursor(Utf8("abcdefabc"));
+        var observations = new List<string>();
+        while (cursor.MoveNext(out var match))
+            observations.Add($"{match.Value.StartOffsetInBytes}:{Encoding.UTF8.GetString(match.GetValueMemory().Span)}");
+        Assert.Equal(["3:", "3:def", "9:"], observations);    }}

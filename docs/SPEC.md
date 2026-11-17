@@ -367,8 +367,9 @@ Scalar templates use last-capture byte ranges without callback history or subjec
 Scalar byte/destination output does not request whole-input UTF-16 totals. Hosts decode
 returned bytes when text materialization is needed; that allocation and its cost
 belong to the host rather than the regex invocation's output budget.
-The shared `Utf8ReplacementWriter` remains for the PCRE2 adapter's live callbacks;
-its contract is described by that profile.
+The former shared `Utf8ReplacementWriter` is removed now that all evaluator APIs
+are retired. Byte-template output keeps its owned scope and admitted buffers;
+there is no thread-local callback writer or implicit output-scope discovery.
 
 `TryReplace` returns `Done` or `DestinationTooSmall`. Shortage writes zero
 bytes and leaves the destination unchanged. Input/template overlap is supported;

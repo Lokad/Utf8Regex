@@ -9,7 +9,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
 {
     public static IEnumerable<object[]> Routes()
     {
-        foreach (var mode in new[] { "Bytes", "Text", "Utf8Template", "CallbackBytes", "CallbackText" })
+        foreach (var mode in new[] { "Bytes", "Utf8Template" })
         {
             yield return ["abc", "xabc", mode];
             yield return ["(?<x>a)b", "xab", mode];
@@ -73,15 +73,5 @@ public sealed class Pcre2ReplacementEntryInvocationTests
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
 
     private static string Run(Utf8Pcre2Regex regex, byte[] input, string mode, CancellationToken token = default, int start = 0)
-        => mode switch
-        {
-            "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
-            "Text" => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
-            "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
-            "CallbackBytes" => Encoding.UTF8.GetString(regex.Replace(input, 0,
-                static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => writer.Append("Z"u8),
-                start, Pcre2MatchOptions.None, token)),
-            _ => regex.ReplaceToString(input, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "Z",
-                start, Pcre2MatchOptions.None, token),
-        };
+=>mode switch { "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), _ => throw new ArgumentOutOfRangeException(nameof(mode)) };
 }

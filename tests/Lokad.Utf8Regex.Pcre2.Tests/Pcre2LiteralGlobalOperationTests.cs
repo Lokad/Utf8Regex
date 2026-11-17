@@ -281,24 +281,10 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
-    public void LiteralEvaluatorUsesTheProducedMatchWithoutRerunning()
-    {
+    public void LiteralTemplateUsesTheProducedMatch()
+{
         var regex = new Utf8Pcre2Regex("é");
-        var calls = 0;
-        var result = regex.Replace(
-            "xéé"u8,
-            calls,
-            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
-            {
-                state++;
-                writer.AppendAsciiByte((byte)'[');
-                writer.Append(match.Value.GetValueBytes());
-                writer.AppendAsciiByte((byte)']');
-            });
-
-        Assert.True(result.AsSpan().SequenceEqual("x[é][é]"u8));
-    }
-
+        Assert.Equal("x[é][é]"u8.ToArray(), regex.Replace("xéé"u8, "[$0]"));    }
     [Fact]
     public void LiteralProbeSupportsFullPartialAndNoMatchResults()
     {

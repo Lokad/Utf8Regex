@@ -683,50 +683,6 @@ public sealed partial class Utf8Pcre2Regex
         return ReplaceUtf8TemplateCore(input, replacementPatternUtf8, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken).Bytes;
     }
 
-    /// <summary>Replaces matches through a stateful callback that writes UTF-8 replacement content.</summary>
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
-        => Replace(input, state, evaluator, 0, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options.</summary>
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-        => ReplaceCallback(input, state, new Pcre2ByteCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
-            CancellationToken.None, false).Bytes;
-
-    /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options, observing cancellation during validation, matching and output shaping.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="state">Additional state passed to the evaluator.</param>
-    /// <param name="evaluator">The callback invoked for each match.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The original token retained through validation, matching and output shaping.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-        => ReplaceCallback(input, state, new Pcre2ByteCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
-            cancellationToken, false).Bytes;
-
-    /// <summary>Replaces matches through a stateful callback that returns UTF-16 replacement text.</summary>
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
-        => ReplaceToString(input, state, evaluator, 0, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options.</summary>
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-        => ReplaceCallback(input, state, new Pcre2StringCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
-            CancellationToken.None, true).Text;
-
-    /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options, observing cancellation during validation, matching and output shaping.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="state">Additional state passed to the evaluator.</param>
-    /// <param name="evaluator">The callback invoked for each match.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The original token retained through validation, matching and output shaping.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-        => ReplaceCallback(input, state, new Pcre2StringCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
-            cancellationToken, true).Text;
-
     /// <summary>Attempts to write a UTF-8 replacement result into a caller-provided destination.</summary>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten)
         => TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
@@ -1060,13 +1016,13 @@ public sealed partial class Utf8Pcre2Regex
             {
                 var bytes = Utf8InvocationOutput.AllocateBytes(replacementOnly ? 0 : input.Length, cursor.WorkingBufferControl, out outputReservation);
                 if (!replacementOnly) Utf8InvocationOutput.Copy(input, bytes, cursor.WorkingBufferControl);
-                result = new(string.Empty, bytes);
+                result = new(bytes);
                 return true;
             }
 
             var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
             EmitLiteralDriverReplacement(input, plan, replacementOnly, output, ledger.WrittenRanges, cursor.WorkingBufferControl);
-            result = new(string.Empty, output);
+            result = new(output);
             return true;
         }
         finally
@@ -1301,16 +1257,16 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private enum Pcre2ReplacementResultKind : byte { Bytes, Destination }
-    private readonly record struct Pcre2ReplacementResult(string Text, byte[] Bytes,
+    private readonly record struct Pcre2ReplacementResult(byte[] Bytes,
         OperationStatus Status = OperationStatus.Done, int BytesWritten = 0);
 
     private static Pcre2ReplacementResult CompleteReplacementWriter(ref Pcre2ReplacementTemplateWriter writer,
         Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2SubstitutionOptions options)
     {
-        if (kind == Pcre2ReplacementResultKind.Bytes) return new(string.Empty, writer.Complete());
+        if (kind == Pcre2ReplacementResultKind.Bytes) return new(writer.Complete());
         var status = writer.CompleteToDestination(destination,
             (options & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0, out var written);
-        return new(string.Empty, [], status, written);
+        return new([], status, written);
     }
 
     private static Pcre2ReplacementResult CompleteUnchangedReplacement(ReadOnlySpan<byte> input,
@@ -1318,13 +1274,13 @@ public sealed partial class Utf8Pcre2Regex
         ref Utf8SliceInvocation invocation)
     {
         if (kind == Pcre2ReplacementResultKind.Bytes)
-            return new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref invocation));
+            return new(Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref invocation));
         Pcre2SliceDriver.CheckInvocation(ref invocation);
         if (input.Length > destination.Length)
-            return new(string.Empty, [], OperationStatus.DestinationTooSmall,
+            return new([], OperationStatus.DestinationTooSmall,
                 (options & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0 ? input.Length : 0);
         Utf8SliceBufferWork.Copy(input, destination, ref invocation);
-        return new(string.Empty, [], OperationStatus.Done, input.Length);
+        return new([], OperationStatus.Done, input.Length);
     }
 
     private Pcre2ReplacementResult ReplaceCore(
@@ -1494,7 +1450,7 @@ public sealed partial class Utf8Pcre2Regex
                 invocation, collectDiagnostics: false));
         if (!cursor.MoveNext())
         {
-            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
+            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new([]);
             return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
         }
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
@@ -1532,7 +1488,7 @@ public sealed partial class Utf8Pcre2Regex
         var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request, null);
         if (!cursor.MoveNext())
         {
-            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
+            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new([]);
             return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
         }
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;

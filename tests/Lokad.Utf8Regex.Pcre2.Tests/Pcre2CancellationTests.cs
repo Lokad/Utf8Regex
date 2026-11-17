@@ -89,33 +89,6 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceEvaluator()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, 0, static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { writer.Append("bar"u8); }, 0, Pcre2MatchOptions.None, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceToString()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceToStringEvaluator()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(s_input, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "bar", 0, Pcre2MatchOptions.None, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeTryReplace()
     {
         var regex = Create();
@@ -161,73 +134,5 @@ public sealed class Pcre2CancellationTests
         Assert.Equal(regex.Count(s_input, 0, Pcre2MatchOptions.None), regex.Count(s_input, 0, Pcre2MatchOptions.None, token));
         Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None, token).GetValueBytes()));
         Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None)), System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)));
-    }
-
-    [Fact]
-    public void CancelInsideEvaluatorAbortsLiteralReplace()
-    {
-        var regex = new Utf8Pcre2Regex("foo", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("foo foo foo");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("bar"u8); },
-            0,
-            Pcre2MatchOptions.None,
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void CancelInsideEvaluatorAbortsBacktrackingReplace()
-    {
-        var regex = new Utf8Pcre2Regex("cat|horse", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("cat horse cat");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
-            input,
-            0,
-            (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("bar"u8); },
-            0,
-            Pcre2MatchOptions.None,
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void CancelInsideEvaluatorAbortsReplaceToString()
-    {
-        var regex = new Utf8Pcre2Regex("foo", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-        using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("foo foo foo");
-        var calls = 0;
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.ReplaceToString(
-            input,
-            0,
-            (in Utf8Pcre2MatchContext match, ref int state) => { if (++calls == 1) { canceled.Cancel(); } return "bar"; },
-            0,
-            Pcre2MatchOptions.None,
-            canceled.Token));
-        Assert.Equal(canceled.Token, exception.CancellationToken);
-        Assert.Equal(1, calls);
-    }
-
-    [Fact]
-    public void UncanceledEvaluatorParity()
-    {
-        var regex = new Utf8Pcre2Regex("foo", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-        var token = CancellationToken.None;
-        var input = Encoding.UTF8.GetBytes("foo foo foo");
-        var plainCalls = 0;
-        var tokenCalls = 0;
-        var plain = regex.Replace(input, 0, (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { plainCalls++; writer.Append("bar"u8); }, 0, Pcre2MatchOptions.None);
-        var withToken = regex.Replace(input, 0, (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => { tokenCalls++; writer.Append("bar"u8); }, 0, Pcre2MatchOptions.None, token);
-        Assert.Equal(plain, withToken);
-        Assert.Equal(plainCalls, tokenCalls);
     }
 }

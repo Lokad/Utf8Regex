@@ -5,7 +5,6 @@ class Pcre2CompileException : Exception, Runtime.Serialization.ISerializable
   property Pcre2ErrorKind ErrorKind { get; }
 [Flags] enum Pcre2CompileOptions : Int32 { Anchored = 32, Caseless = 1, DollarEndOnly = 128, DotAll = 4, EndAnchored = 64, Extended = 8, ExtendedMore = 16, FirstLine = 2048, Multiline = 2, NoAutoCapture = 512, None = 0, Ucp = 1024, Ungreedy = 256 }
 enum Pcre2ErrorKind : Int32 { BackslashCDisabled = 10, BackslashCInUtfLookbehind = 11, BadOption = 28, BadReplacementEscape = 17, CalloutUnsupported = 14, ClassRangeOrder = 6, DepthLimit = 25, DisallowedLookaroundBackslashK = 13, EscapeInvalidInClass = 5, HeapLimit = 26, InvalidAfterParensQuery = 1, InvalidReplacementReference = 18, LookaroundBackslashKDisabled = 12, MalformedReplacementPattern = 19, MatchLimit = 24, MissingCharacterClassTerminator = 4, MissingClosingParenthesis = 8, MissingClosingReplacementBrace = 20, MissingCommentClosing = 9, PartialMatch = 15, PartialSubs = 16, QuantifierInvalid = 7, QuantifierNumbersOutOfOrder = 2, QuantifierTooBig = 3, ResultLimit = 27, Timeout = 23, UnknownReplacementGroup = 21, UnrecognizedEscape = 0, UnsetReplacementGroup = 22 }
-delegate Void Pcre2MatchEvaluator<TState>(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
 class Pcre2MatchException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2MatchException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
@@ -19,7 +18,6 @@ class Pcre2SubstitutionException : Exception, Runtime.Serialization.ISerializabl
   ctor Pcre2SubstitutionException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
 [Flags] enum Pcre2SubstitutionOptions : Int32 { Extended = 1, None = 0, SubstituteLiteral = 16, SubstituteMatched = 8, SubstituteOverflowLength = 32, SubstituteReplacementOnly = 64, UnknownUnset = 4, UnsetEmpty = 2 }
-delegate String Pcre2Utf16MatchEvaluator<TState>(in Utf8Pcre2MatchContext match, ref TState state)
 readonly struct Utf8Pcre2Analysis
   property Boolean HasDuplicateNames { get; init; }
   property Boolean IsExactLiteral { get; init; }
@@ -139,9 +137,6 @@ sealed class Utf8Pcre2Regex
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
-  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
-  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
-  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
   method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
@@ -153,9 +148,6 @@ sealed class Utf8Pcre2Regex
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
-  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
-  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
-  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
   method Utf8Pcre2Analysis Analyze()
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input)
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)

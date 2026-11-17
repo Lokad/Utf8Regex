@@ -179,24 +179,15 @@ public sealed class Pcre2CaptureBackreferenceTests
     }
 
     [Fact]
-    public void CaptureReplacementSupportsNumericNamedAndEvaluatorForms()
+    public void CaptureReplacementSupportsNumericAndNamedTemplates()
     {
         var regex = new Utf8Pcre2Regex("(?<left>a)(?<right>b)");
         var input = "ab ab"u8;
 
         Assert.Equal("b-a b-a", Encoding.UTF8.GetString(regex.Replace(input, "${right}-$1")));
 
-        var evaluatorResult = regex.Replace(
-            input,
-            0,
-            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
-            {
-                writer.Append(match.GetGroup(2).GetValueBytes());
-                writer.Append("/"u8);
-                writer.Append(match.GetGroup(1).GetValueBytes());
-                state++;
-            });
-        Assert.Equal("b/a b/a", Encoding.UTF8.GetString(evaluatorResult));
+        var numericResult = regex.Replace(input, "$2/$1");
+        Assert.Equal("b/a b/a", Encoding.UTF8.GetString(numericResult));
     }
 
     [Fact]

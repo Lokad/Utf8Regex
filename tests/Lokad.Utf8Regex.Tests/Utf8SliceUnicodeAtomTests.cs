@@ -210,7 +210,6 @@ public sealed class Utf8SliceUnicodeAtomTests
             finally { session.Complete(); }
             Assert.Equal(recoveryCount, regex.Count("\U0001f600\u00e9"u8));
             AssertOwned(regex);
-            Assert.Null(Utf8SliceByteOutputScope.Current);
         }
     }
 

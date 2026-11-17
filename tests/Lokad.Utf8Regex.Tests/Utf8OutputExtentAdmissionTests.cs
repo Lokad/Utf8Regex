@@ -174,8 +174,8 @@ public sealed class Utf8OutputExtentAdmissionTests
     {
         const ulong controls = 2 * Utf8SliceByteOutputScope.ControlBytes;
         // Byte capacity 16 (48), int capacities 16 (96) and 32 (160).
-        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 13 + 304 - (allow ? 0UL : 1UL)),
-            Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, 0, controls + 13 + 304 - (allow ? 0UL : 1UL)),
+            Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(scope.Invocation.Ledger.TryReserve(13));
         try
         {

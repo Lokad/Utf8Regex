@@ -2,9 +2,14 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 callback replacement, evaluator delegates and Core's former shared
+  callback writer. Hosts compute custom output over range cursors. Byte templates
+  retain their controls and substitution behavior; obsolete thread-local writer
+  discovery and buffer text-conversion helpers are removed.
+
 - Remove PCRE2 template-to-string replacement and its text-only accounting.
   Byte-template replacement and destination output retain their controls; hosts
-  decode valid output explicitly. Callback forms remain pending separate cleanup.
+  decode valid output explicitly.
 
 - Remove PCRE2 standalone value/group/match string getters. Byte views and slice
   status remain; hosts decode valid slices explicitly.
@@ -39,7 +44,7 @@
 - Remove PCRE2's standalone token-repeat program, counters and cursor variant.
   Existing shared scalar/profile programs preserve quantifier and global-empty
   semantics, grapheme/newline/byte-token behavior, captures and controls. Resource
-  requirements can change; value callbacks can avoid a temporary group-zero array.
+  requirements can change.
 
 - Retire PCRE2's multiline-prefix, prefix/repeat and alternation/repeat overlays,
   including their global cursor state. Keep shared literal helpers with their real

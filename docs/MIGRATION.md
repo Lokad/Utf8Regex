@@ -237,8 +237,8 @@ performed by the host are outside regex resource controls.
 
 Cancellation is synchronous and retains the original token. One absolute deadline
 covers required input inspection, matching, shaping and cursor waits. Compatibility
-profile callbacks cannot be forcibly interrupted; library copying/encoding
-afterward remains covered.
+profiles expose cursors for host computation. The regex controls each advance;
+host computation and final output checks are the host's responsibility.
 Byte-capped Core/PythonRe timeout diagnostics omit subject text.
 
 Use Compile for separate construction caps/timeout/token. Ordinary constructors
@@ -310,14 +310,17 @@ callback replacement forms, both evaluator delegates, `ReplaceToString`,
 `SubnRetained` for controlled library output. Custom output uses the real range
 cursor and host-owned buffers; each advance preserves regex controls, while host
 callback execution, final output/cancellation checks and memory admission belong
-to the host. PCRE2 callbacks remain pending their separate surface cleanup.
+to the host. PCRE2 likewise removes both callback overload families/evaluator
+delegates, and the now-unused Core `Utf8ReplacementWriter` is removed.
 
 For text output, decode `regex.Replace(input, template)` in the host with
 `Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the
 additional string allocation and any host-level admission for it.
 PCRE2 likewise removes its template `ReplaceToString` overloads while retaining
 byte `Replace`/`TryReplace`. With opt-in `\C`, byte output may be malformed UTF-8;
-validate it before decoding. PCRE2 callback forms are still pending retirement.
+validate it before decoding. Byte templates preserve PCRE2 substitution's special
+`\K` empty-match disposition; ordinary host range iteration keeps the cursor's
+documented disposition.
 
 ## Profile scope and other compatibility changes
 

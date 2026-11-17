@@ -191,7 +191,7 @@ public sealed class Pcre2ExecutionRouteTests
     }
 
     [Fact]
-    public void LiteralFamilyCursorFeedsMatchManyAndEveryReplacementShape()
+    public void LiteralFamilyCursorFeedsMatchManyAndByteTemplates()
     {
         var regex = new Utf8Pcre2Regex("tempus|magna|semper");
         var input = "é tempus magna semper tempus"u8;
@@ -209,23 +209,6 @@ public sealed class Pcre2ExecutionRouteTests
         const string expected = "é <tempus> <magna> <semper> <tempus>";
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
-        Assert.Equal(
-            expected,
-            regex.ReplaceToString(
-                input,
-                0,
-                static (in Utf8Pcre2MatchContext match, ref int _) => $"<{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}>"));
-
-        var evaluatorBytes = regex.Replace(
-            input,
-            0,
-            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int _) =>
-            {
-                writer.AppendAsciiByte((byte)'<');
-                writer.Append(match.Value.GetValueBytes());
-                writer.AppendAsciiByte((byte)'>');
-            });
-        Assert.Equal(expected, Encoding.UTF8.GetString(evaluatorBytes));
 
         var expectedFixed = "é x x x x"u8;
         Span<byte> destination = stackalloc byte[expectedFixed.Length];
@@ -318,29 +301,6 @@ public sealed class Pcre2ExecutionRouteTests
         var replaced = regex.Replace("fooBAR x"u8, "<$0|$Bar>");
 
         Assert.Equal("<fooBAR|BAR> x", Encoding.UTF8.GetString(replaced));
-    }
-
-    [Fact]
-    public void OptionalBarGenericEvaluatorReplacementUsesDetailedCapturesWithoutManagedRegex()
-    {
-        var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
-
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
-
-        var state = 0;
-        var replaced = regex.ReplaceToString(
-            "foo fooBAR x"u8,
-            state,
-            static (in Utf8Pcre2MatchContext match, ref int _) =>
-            {
-                var bar = match.TryGetFirstSetGroup("Bar", out var named) && named.Success
-                    ? System.Text.Encoding.UTF8.GetString(named.GetValueBytes())
-                    : "none";
-                return $"<{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}|{bar}>";
-            });
-
-        Assert.Equal("<foo|none> <fooBAR|BAR> x", replaced);
     }
 
     [Fact]

@@ -42,9 +42,6 @@ public sealed class Pcre2AnchoredEmptyIterationTests
             Assert.Equal(expectedRanges, string.Join("|", ranges));
             Assert.Equal(replacement, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X", start,
                 Pcre2SubstitutionOptions.None, options, token.Token)));
-            Assert.Equal(replacement, regex.ReplaceToString(input, 0,
-                static (in Utf8Pcre2MatchContext _, ref int state) => { state++; return "X"; },
-                start, options, token.Token));
         }
     }
 
@@ -57,39 +54,6 @@ public sealed class Pcre2AnchoredEmptyIterationTests
         // that ordinary Count/enumeration suppresses. Anchoring still stops bumping.
         Assert.Equal("aXXb", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "X", 0,
             Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void InterruptedAnchoredReplacementStillReleasesScratchAndRetainsResults(bool cancel)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a*)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
-        var retained = regex.MatchDetailed("aaa"u8);
-        Utf8SliceByteOutputScope? scope = null;
-        Exception? failure = null;
-        try
-        {
-            _ = regex.ReplaceToString("bbb"u8, 0,
-                (in Utf8Pcre2MatchContext _, ref int state) =>
-                {
-                    scope = Utf8SliceByteOutputScope.Current;
-                    if (cancel) token.Cancel(); else ticks = 25;
-                    return "X";
-                }, 0, Pcre2MatchOptions.Anchored, token.Token);
-        }
-        catch (Exception error) { failure = error; }
-        if (cancel)
-            Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        else
-            Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.NotNull(scope);
-        Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Pcre2CompileOptions compile, bool finite) =>

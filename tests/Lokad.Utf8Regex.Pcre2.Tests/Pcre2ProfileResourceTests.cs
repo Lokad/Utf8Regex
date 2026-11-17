@@ -1,6 +1,7 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -155,27 +156,6 @@ public sealed class Pcre2ProfileResourceTests
     }
 
     [Fact]
-    public void CallbackCancellationUsesTheOriginalTokenAndLeavesRetainedCaptureValid()
-    {
-        using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?<v>\x{41})😀");
-        var state = new CallbackState(source);
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.Replace("A😀A😀"u8, state,
-            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref CallbackState state) =>
-            {
-                Assert.True(match.TryGetFirstSetGroup("v", out var capture));
-                state.Capture = capture._data;
-                state.Calls++;
-                writer.Append("!"u8);
-                state.Source.Cancel();
-            }, 0, Pcre2MatchOptions.None, source.Token));
-        Assert.Equal(source.Token, failure.CancellationToken);
-        Assert.Equal(1, state.Calls);
-        Assert.Equal((0, 1), (state.Capture.StartOffsetInBytes, state.Capture.EndOffsetInBytes));
-        Assert.Equal("A😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("A😀"u8).Value.GetValueBytes()));
-    }
-
-    [Fact]
     public void ExtendedNativeTemplatesRetainGrammarAndFiniteControls()
     {
         const string template = @"\Ué\E$0";
@@ -189,10 +169,20 @@ public sealed class Pcre2ProfileResourceTests
         }
     }
 
-    private sealed class CallbackState(CancellationTokenSource source)
+    [Fact]
+    public void ExpiredNativePublicationReportsTheProfileTimeout()
     {
-        internal CancellationTokenSource Source = source;
-        internal Pcre2GroupData Capture;
-        internal int Calls;
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(20), CancellationToken.None);
+        var budget = new Pcre2ResourceBudget(default, invocation, false);
+        var input = Utf8ValidatedInput.Create("éx"u8);
+        ticks = 25;
+        Pcre2MatchException? failure = null;
+        try { Pcre2MatchPublication.Publish(2, 3, ref input, ref budget); }
+        catch (Pcre2MatchException error) { failure = error; }
+        Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
     }
 }

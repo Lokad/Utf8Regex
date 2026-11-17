@@ -8,60 +8,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Utf8Pcre2RegexReplaceApiTests
 {
-    [Fact]
-    public void ReplaceEvaluatorSupportsManagedRegexExecution()
-    {
-        var regex = new Utf8Pcre2Regex("(?<word>\\w+)");
-        var count = 0;
-
-        var actual = regex.Replace(
-            "foo bar"u8,
-            count,
-            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
-            {
-                state++;
-                writer.Append(System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()).AsSpan());
-                writer.AppendAsciiByte((byte)'!');
-            });
-
-        Assert.Equal("foo! bar!"u8.ToArray(), actual);
-    }
-
-    [Fact]
-    public void ReplaceToStringEvaluatorSupportsManagedRegexExecution()
-    {
-        var regex = new Utf8Pcre2Regex("(?<word>\\w+)");
-        var count = 0;
-
-        var actual = regex.ReplaceToString(
-            "foo bar"u8,
-            count,
-            static (in Utf8Pcre2MatchContext match, ref int state) =>
-            {
-                state++;
-                return $"<{System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes())}>";
-            });
-
-        Assert.Equal("<foo> <bar>", actual);
-    }
-
-    [Fact]
-    public void ReplaceEvaluatorSupportsNativeGlobalMatches()
-    {
-        var regex = new Utf8Pcre2Regex("(?<=abc)(|def)");
-        var count = 0;
-
-        var actual = regex.ReplaceToString(
-            "abcdefabc"u8,
-            count,
-            static (in Utf8Pcre2MatchContext match, ref int state) =>
-            {
-                state++;
-                return $"[{match.Value.StartOffsetInBytes}:{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}]";
-            });
-
-        Assert.Equal("abc[3:][3:def]abc[9:]", actual);
-    }
 
     [Fact]
     public void TryReplaceWritesWhenDestinationIsLargeEnough()
