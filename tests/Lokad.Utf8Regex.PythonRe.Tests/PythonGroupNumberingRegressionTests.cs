@@ -16,6 +16,7 @@ public sealed class PythonGroupNumberingRegressionTests
     [InlineData(true, false)] [InlineData(true, true)]
     public void ManyMixedGroupsKeepPythonOrderAndLastCompletion(bool trailingGroup, bool finite)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var pieces = Enumerable.Range(0, 70).Select(index => index % 2 == 0 ? "é" : "😀").ToArray();
         var body = string.Concat(pieces);
         var pattern = "(?P<outer>" + string.Concat(Enumerable.Range(0, pieces.Length)
@@ -37,11 +38,11 @@ public sealed class PythonGroupNumberingRegressionTests
         AssertGroups(regex.FullMatchDetailedData(input));
         Assert.Equal(values.Skip(1), Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        Assert.False(cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        Assert.False(cursor.MoveNext(out cursorRange));
         cursor.Dispose();
-        AssertGroups(retained);
+        PythonReRangeAssert.Equal(regex.SearchDetailedData(input), retained);
     }
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 

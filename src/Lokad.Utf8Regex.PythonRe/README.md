@@ -92,18 +92,18 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 and [MIGRATION.md](../../docs/MIGRATION.md).
 
-`Utf8PythonMatchCursor.MoveNext(token)` accepts a token for one advance without
-retaining it for later advances. The creation token, original deadline and
-cumulative budgets still apply. Cancellation faults the cursor and releases its
-scratch; previously returned owned snapshots remain valid.
+`cursor.MoveNext(out Utf8PythonRangeMatch match, token = default)` discovers
+capture byte ranges without captured strings or a whole-subject coordinate map.
+Keep the returned value; the cursor has no text `Current` or no-output advance.
+Its optional token applies to one advance. The creation token, original deadline
+and cumulative budgets still apply. Cancellation faults the cursor and releases
+scratch; earlier range metadata remains valid.
 
-Use `cursor.MoveNext(out Utf8PythonRangeMatch match)` for capture byte ranges
-without captured strings or a whole-subject coordinate map. Range metadata stays
-valid after advances/disposal; byte memory remains borrowed and must stay unchanged
-with its manager alive. A range advance clears the text-based `Current`.
-Results expose byte coordinates only; callers derive character positions from
-their text when needed. Regex operations prepare no scalar-coordinate index.
-Published arrays and strings retain their separate result charges.
+Range metadata survives advances/disposal. Byte memory remains borrowed and must
+stay unchanged with its manager alive while any returned bytes are read. Results
+expose byte coordinates; hosts derive character positions and decode or copy
+bytes under their own resource and interruption policy. Regex operations prepare
+no scalar-coordinate index. Published arrays retain their result charges.
 `SplitRanges` provides ordinary segments and captured separators as byte ranges,
 including unmatched captures, without decoding or copying their text. These paths
 retain finite limits and synchronous cancellation.
@@ -175,26 +175,25 @@ stable, unchanged subject memory; the host owns collected arrays/strings and
 their final admission/cancellation checks. `ReplaceToString`
 and `SubnToString` are removed too; decode the owned byte-template output when needed.
 
-`CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
-`MoveNext` instead of materializing the complete `FindIterDetailed` array:
+`CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one range result per
+advance without materializing a complete collection:
 
 ```csharp
 ReadOnlyMemory<byte> subject = System.Text.Encoding.UTF8.GetBytes("é😀");
 using var cursor = new Utf8PythonRegex("(?P<scalar>.)").CreateMatchCursor(subject);
-while (cursor.MoveNext())
+while (cursor.MoveNext(out var match))
 {
-    Utf8PythonDetailedMatchData match = cursor.Current;
     // The supplementary scalar occupies four bytes and is one match.
-    Console.WriteLine(match.Value.ValueText);
+    Console.WriteLine(System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
 }
 ```
 
-Keep the subject unchanged and its memory manager alive until exhaustion or
-disposal. Dispose when stopping early. The cursor has one shared position and
+Keep the subject unchanged and its memory manager alive while reading borrowed
+bytes, including after the cursor closes. Dispose when stopping early. The cursor has one shared position and
 lifetime across reference aliases, rejects concurrent/reentrant access, and has
 no finalizer. EOF and failure release scratch and subject references immediately.
-Returned snapshots own their arrays and text and remain valid after advance or
-disposal. Sequential advances may cross host calls or asynchronous waits; those
+Returned ranges own immutable metadata and borrow subject bytes; metadata remains
+valid after advance or disposal. Sequential advances may cross host calls or asynchronous waits; those
 waits count against the original absolute match deadline. The offset/token
 overloads preserve scalar-aligned byte offsets and the original invocation token.
 Existing span APIs retain their existing contracts.

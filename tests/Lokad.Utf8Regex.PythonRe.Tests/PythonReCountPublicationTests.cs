@@ -50,6 +50,7 @@ public sealed class PythonReCountPublicationTests
     [Fact]
     public void CursorTerminalWorkDenialFaultsWithoutInvalidatingOwnedSnapshots()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = "😀x"u8.ToArray();
         const string pattern = "(😀*)";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 };
@@ -59,7 +60,7 @@ public sealed class PythonReCountPublicationTests
         using (var measured = regex.CreateMatchCursor(input))
         {
             var observer = measured.WorkingInvocation;
-            while (measured.MoveNext()) matches++;
+            while (measured.MoveNext(out _)) matches++;
             work = observer.Budget.Steps;
         }
         var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
@@ -67,16 +68,16 @@ public sealed class PythonReCountPublicationTests
         using var cursor = bounded.CreateMatchCursor(input);
         var invocation = cursor.WorkingInvocation;
         Assert.True(invocation.Ledger.TryReserve(13));
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        for (var index = 1; index < matches; index++) Assert.True(cursor.MoveNext());
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        for (var index = 1; index < matches; index++) Assert.True(cursor.MoveNext(out cursorRange));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         cursor.Dispose();
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("😀", retained.Value.ValueText);
-        Assert.Equal("😀", retained.Groups[1].ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Theory]
@@ -86,6 +87,7 @@ public sealed class PythonReCountPublicationTests
     [InlineData(true, true)]
     public void TerminalCursorFailureKeepsOriginalAuthorityAndRetainedSnapshots(bool finite, bool expire)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
@@ -108,7 +110,7 @@ public sealed class PythonReCountPublicationTests
             using var measured = regex.CreateMatchCursor(input, 0, token.Token);
             var observer = measured.WorkingInvocation;
             var count = 0;
-            while (measured.MoveNext()) count++;
+            while (measured.MoveNext(out _)) count++;
             terminal = observer.Budget.Steps;
             if ((terminal & 63) == 0) expected = count;
         }
@@ -124,7 +126,7 @@ public sealed class PythonReCountPublicationTests
             entered = true;
             if (expire) ticks = 50; else token.Cancel();
         };
-        Utf8PythonDetailedMatchData retained = default;
+        Utf8PythonRangeMatch retained = default;
         Exception? failure = null;
         bool? exhausted = null;
         try
@@ -132,10 +134,10 @@ public sealed class PythonReCountPublicationTests
             while (true)
             {
                 bool next;
-                try { next = cursor.MoveNext(); }
+                try { next = cursor.MoveNext(out cursorRange); }
                 catch (Exception error) { failure = error; break; }
                 if (!next) { exhausted = true; break; }
-                retained = cursor.Current;
+                retained = cursorRange;
             }
             Assert.True(entered);
             Assert.Null(exhausted);
@@ -146,13 +148,13 @@ public sealed class PythonReCountPublicationTests
                 if (finite) Assert.Empty(error.Input);
             }
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         }
         finally { cursor.Dispose(); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.True(retained.Success);
-        Assert.Equal(string.Empty, retained.Value.ValueText);
-        Assert.Equal(string.Empty, retained.Groups[1].ValueText);
+        Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+        Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Theory]

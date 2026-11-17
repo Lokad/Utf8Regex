@@ -26,6 +26,7 @@ public sealed class PythonRePrefixDiscoveryTests
     [InlineData("^abc[0-9]+", "xxabc1\nabc2\nabcX\nabc3")]
     public void PublicDiscoveryMatchesUnguidedProfileVerification(string pattern, string subject)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
         var plain = new PythonReScalarMatchCursor(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
@@ -49,7 +50,7 @@ public sealed class PythonRePrefixDiscoveryTests
         Assert.Equal(expected.Count, finite.Count(input));
         using var cursor = finite.CreateMatchCursor(input);
         var index = 0;
-        while (cursor.MoveNext()) Assert.Equal(expected[index++].Groups, cursor.Current.Groups);
+        while (cursor.MoveNext(out cursorRange)) PythonReRangeAssert.Equal(expected[index++], cursorRange);
         Assert.Equal(expected.Count, index);
     }
 
@@ -171,11 +172,11 @@ public sealed class PythonRePrefixDiscoveryTests
         Assert.True(observer.Ledger.TryReserve(13));
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
-        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
+        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
         Assert.True(entered);
         Assert.Equal(13UL, observer.Ledger.ReservedBytes);
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         Assert.Equal(1, new Utf8PythonRegex("(ab|cd)+").Count("abcd"u8));
     }
 
@@ -191,7 +192,7 @@ public sealed class PythonRePrefixDiscoveryTests
             var observer = measured.WorkingInvocation;
             var before = measured.WorkingInvocation.Budget.Steps;
             measured.WorkingInvocation.CheckpointHook = _ => { };
-            Assert.False(measured.MoveNext());
+            Assert.False(measured.MoveNext(out _));
             work = observer.Budget.Steps - before;
         }
         using var token = new CancellationTokenSource();
@@ -204,7 +205,7 @@ public sealed class PythonRePrefixDiscoveryTests
         {
             if (steps == terminal) { entered = true; token.Cancel(); }
         };
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
         Assert.True(entered);
     }
 }

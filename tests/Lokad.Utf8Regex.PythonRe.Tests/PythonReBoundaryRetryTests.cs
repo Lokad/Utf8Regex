@@ -11,6 +11,7 @@ public sealed class PythonReBoundaryRetryTests
     [InlineData(PythonReCompileOptions.None)]
     public void BoundarySnapshotsAndAliasesKeepScalarPositionsAfterExhaustion(PythonReCompileOptions options)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var program = PythonReScalarCompiler.Compile(new PythonReParser(@"\b").Parse(options));
         var input = "éA😀B _0"u8.ToArray();
         var expected = options == PythonReCompileOptions.Ascii
@@ -21,25 +22,25 @@ public sealed class PythonReBoundaryRetryTests
         var cursor = new Utf8PythonMatchCursor(input, program, [], 0,
             Regex.InfiniteMatchTimeout, @"\b", invocation, null);
         var alias = cursor;
-        var snapshots = new List<Utf8PythonDetailedMatchData>();
+        var snapshots = new List<Utf8PythonRangeMatch>();
         try
         {
             foreach (var offset in expected)
             {
-                Assert.True(alias.MoveNext());
-                Assert.Equal(offset, cursor.Current.Value.StartOffsetInBytes);
-                Assert.Equal(offset, cursor.Current.Value.EndOffsetInBytes);
-                snapshots.Add(cursor.Current);
+                Assert.True(alias.MoveNext(out cursorRange));
+                Assert.Equal(offset, cursorRange.Value.StartOffsetInBytes);
+                Assert.Equal(offset, cursorRange.Value.EndOffsetInBytes);
+                snapshots.Add(cursorRange);
             }
-            Assert.False(cursor.MoveNext());
-            Assert.False(alias.MoveNext());
+            Assert.False(cursor.MoveNext(out cursorRange));
+            Assert.False(alias.MoveNext(out cursorRange));
         }
         finally { cursor.Dispose(); alias.Dispose(); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         for (var i = 0; i < snapshots.Count; i++)
         {
             Assert.Equal(expected[i], snapshots[i].Value.StartOffsetInBytes);
-            Assert.Equal(string.Empty, snapshots[i].Value.ValueText);
+            Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(snapshots[i].GetValueMemory().Span));
         }
         invocation.Ledger.Release(13);
     }
@@ -57,6 +58,7 @@ public sealed class PythonReBoundaryRetryTests
     [InlineData(false)] [InlineData(true)]
     public void FinalEmptyRetryKeepsOriginalInterruptionAndParentLoan(bool expire)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var program = PythonReScalarCompiler.Compile(new PythonReParser(@"\b").Parse(PythonReCompileOptions.Ascii));
         using var source = new CancellationTokenSource();
         long ticks = 0;
@@ -77,15 +79,15 @@ public sealed class PythonReBoundaryRetryTests
             var cursor = new Utf8PythonMatchCursor("a"u8.ToArray(), program, [], 0, timeout, @"\b", invocation, null);
             try
             {
-                Assert.True(cursor.MoveNext());
-                Assert.True(cursor.MoveNext());
-                Assert.Equal(1, cursor.Current.Value.StartOffsetInBytes);
+                Assert.True(cursor.MoveNext(out cursorRange));
+                Assert.True(cursor.MoveNext(out cursorRange));
+                Assert.Equal(1, cursorRange.Value.StartOffsetInBytes);
                 while ((invocation.Budget.Steps & 63) != 63) invocation.TryChargeStep();
                 armed = true;
                 if (expire)
-                    Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext()).MatchTimeout);
+                    Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)).MatchTimeout);
                 else
-                    Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
+                    Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
                 Assert.True(observed);
             }
             finally { cursor.Dispose(); }

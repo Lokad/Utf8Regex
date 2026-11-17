@@ -596,34 +596,28 @@ and decoding are outside regex controls. Borrowed views expose bytes only.
 ## Cursor and result lifetime
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` retains one invocation across moves,
-including host waits within its absolute deadline. Keep subject bytes unchanged
-and the memory manager alive. Reference aliases share position and disposal;
-concurrent/reentrant access rejects. `Current` is valid after a successful move.
-EOF, failure or Dispose synchronously release exclusive scratch/subject references;
+including host waits within its absolute deadline. Reference aliases share
+position and disposal; concurrent/reentrant access rejects. Advance with
+`MoveNext(out Utf8PythonRangeMatch match, token = default)` and keep the returned
+value. There is no text `Current` or no-output advance. EOF, failure or Dispose
+synchronously release exclusive scratch and the cursor's subject references;
 dispose when stopping early. There is no finalizer.
 
-`MoveNext(CancellationToken)` adds interruption authority for that synchronous
-advance, including discovery and required projection. It retains the original
-creation token/deadline and cumulative budgets. The move token is detached before
-return, so canceling it afterward cannot affect later moves. Cancellation faults
-the cursor and releases scratch; earlier owned snapshots remain valid. When both
+The optional move token adds interruption authority for that synchronous advance,
+including discovery and required range publication. The original creation token,
+deadline and cumulative budgets remain authoritative. The move token is detached
+before return, so canceling it afterward cannot affect later moves. Cancellation
+faults the cursor and releases scratch; earlier ranges remain valid. When both
 tokens are canceled, the original token takes precedence in the exception.
 Two distinct cancellable tokens require a temporary linked source, disposed before
-return; a sole move token or the same token needs no linked source. The ordinary
-parameterless path retains its original controls. Already-ended cursors return
-false; disposed, faulted and concurrent/reentrant access retain their failures.
+return; a sole move token or the same token needs no linked source. Omitting the
+move token retains the original controls. Already-ended cursors return false;
+disposed, faulted and concurrent/reentrant access retain their failures.
 
-Independent owned snapshots remain valid after moves, denial and disposal.
-They do not refund cumulative result traffic or bound external host retention.
-Existing borrowed span/value contracts remain unchanged. A new call gets an
+Host decoding, copying and collection are outside regex controls and need their
+own admission and final interruption checks. Neither ordinary range publication
+nor one-shot owned results bound external host retention. A new call gets an
 independent allowance and needs independent host admission.
-
-`MoveNext(out Utf8PythonRangeMatch)` (also with a per-advance token) publishes byte
-ranges instead of text. It uses the same discovery position, captures, last-closed
-metadata, interruption and cumulative budgets. Each successful range advance
-clears the text-based `Current`; accessing it then throws. Owned advances may
-resume on that same cursor and populate `Current` normally. Existing snapshots
-remain valid across either kind of advance.
 
 Range snapshots own immutable capture/name arrays and borrow the unchanged
 `ReadOnlyMemory<byte>` subject. Their metadata survives cursor moves/disposal;

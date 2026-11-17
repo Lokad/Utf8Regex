@@ -131,6 +131,7 @@ public sealed class PythonReCaptureCompletionTests
     [MemberData(nameof(GlobalCases))]
     public void GlobalCursorAliasesPublishCompleteRetainableCaptures(int id, string json)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var document = JsonDocument.Parse(json); var row = document.RootElement;
         var regex = new Utf8PythonRegex(row.GetProperty("pattern").GetString()!);
         var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
@@ -138,21 +139,21 @@ public sealed class PythonReCaptureCompletionTests
         var array = regex.FindIterDetailed(input);
         Assert.Equal(expected.GetArrayLength(), array.Length);
         Assert.Equal(expected.GetArrayLength(), regex.Count(input));
-        var retained = new List<Utf8PythonDetailedMatchData>();
+        var retained = new List<Utf8PythonRangeMatch>();
         using (var cursor = regex.CreateMatchCursor(input))
         {
             var alias = cursor;
             for (var index = 0; index < array.Length; index++)
             {
-                Assert.True((index % 2 == 0 ? cursor : alias).MoveNext());
-                retained.Add(alias.Current);
+                Assert.True((index % 2 == 0 ? cursor : alias).MoveNext(out cursorRange));
+                retained.Add(cursorRange);
             }
-            Assert.False(alias.MoveNext());
+            Assert.False(alias.MoveNext(out cursorRange));
         }
         for (var index = 0; index < array.Length; index++)
         {
             AssertOwned(expected[index], array[index]);
-            AssertOwned(expected[index], retained[index]);
+            PythonReRangeAssert.Equal(array[index], retained[index]);
         }
     }
     [Theory]
@@ -192,20 +193,21 @@ public sealed class PythonReCaptureCompletionTests
     [InlineData(true, "(?:(?(2)(😀)|()))+", "😀😀", null)]
     public void MetadataPublicationRetainsOriginalTokenAndDeadline(bool expire, string pattern, string text, string? lastGroup)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token);
         var invocation = cursor.WorkingInvocation;
-        ticks = 15; Assert.True(cursor.MoveNext()); var retained = cursor.Current;
+        ticks = 15; Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Assert.Equal(1, retained.LastIndex); Assert.Equal(lastGroup, retained.LastGroup);
         if (expire)
-        { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext()); }
+        { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)); }
         else
-        { source.Cancel(); var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()); Assert.Equal(source.Token, error.CancellationToken); }
+        { source.Cancel(); var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)); Assert.Equal(source.Token, error.CancellationToken); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("😀", retained.Groups[1].ValueText); Assert.Equal(lastGroup, retained.LastGroup);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span)); Assert.Equal(lastGroup, retained.LastGroup);
     }
     [Fact]
     public void DefaultDetailedResultsHaveNoCompletion()

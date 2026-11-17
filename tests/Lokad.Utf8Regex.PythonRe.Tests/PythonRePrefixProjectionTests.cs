@@ -11,6 +11,7 @@ public sealed class PythonRePrefixProjectionTests
     [InlineData("(?<=(é))(😀)","é😀",2,6)]
     public void EarlyDetailedCursorAndCollectionIgnoreUnusedSuffix(string pattern,string prefix,        int start,int endBytes)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(prefix + new string('界', 200000));
         using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
         {
@@ -18,18 +19,19 @@ public sealed class PythonRePrefixProjectionTests
         });
         var account = new Allowance(4096); Assert.True(account.TryReserve(17));
         using var cursor = regex.CreateMatchCursor(input, start, default, account);
-        Assert.True(cursor.MoveNext()); var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Assert.Equal((start,endBytes),            (retained.Value.StartOffsetInBytes,retained.Value.EndOffsetInBytes));
         var collection = Assert.Single(regex.FindIterDetailed(input, start));
         var oneShot = regex.SearchDetailedData(input, start);
-        Assert.Equal(oneShot.Groups, retained.Groups); Assert.Equal(oneShot.Groups, collection.Groups);
+        PythonReRangeAssert.Equal(oneShot, retained); Assert.Equal(oneShot.Groups, collection.Groups);
         cursor.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
-        Assert.Equal(oneShot.Groups, retained.Groups);
+        PythonReRangeAssert.Equal(oneShot, retained);
     }
 
     [Fact]
     public void MixedRangeAndDetailedAdvancesKeepPrefixIndependentResultTraffic()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         ulong? traffic = null;
         using var regex = new Utf8PythonRegex("(a)", resourcePolicy: new()
         {
@@ -40,14 +42,14 @@ public sealed class PythonRePrefixProjectionTests
             var account = new Allowance(65536);
             using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(prefix + "aa"), 0, default, account);
             Assert.True(cursor.MoveNext(out var first));
-            Assert.True(cursor.MoveNext()); var detail = cursor.Current;
+            Assert.True(cursor.MoveNext(out cursorRange)); var detail = cursorRange;
             var current = cursor.WorkingInvocation.Budget.ResultBytes;
             if (traffic is { } previous) Assert.Equal(previous, current);
             traffic = current;
             var start = Encoding.UTF8.GetByteCount(prefix) + 1;
             Assert.Equal((start, start + 1), (detail.Groups[1].StartOffsetInBytes, detail.Groups[1].EndOffsetInBytes));
             cursor.Dispose(); Assert.Equal(0UL, account.Used);
-            Assert.Equal("a", detail.Groups[1].ValueText);
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detail.GetGroupMemory(1).Span));
             Assert.Equal("a", Encoding.UTF8.GetString(first.GetValueMemory().Span));
         }
     }
@@ -56,12 +58,13 @@ public sealed class PythonRePrefixProjectionTests
     [InlineData(253)] [InlineData(255)] [InlineData(256)]
     public void LookaroundCaptureBytesCrossFormerIndexCuts(int prefixLength)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var text = new string('x', prefixLength) + "éa😀" + new string('界', 10000);
         using var cursor = new Utf8PythonRegex("(?<=(é))a(?=(😀))", resourcePolicy: new()
             { MaxWorkingBytes = 4096, MaxResultBytes = 4096 }).CreateMatchCursor(Encoding.UTF8.GetBytes(text));
-        Assert.True(cursor.MoveNext()); var result = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var result = cursorRange;
         Assert.Equal((prefixLength,prefixLength + 2),            (result.Groups[1].StartOffsetInBytes,result.Groups[1].EndOffsetInBytes));
         Assert.Equal((prefixLength + 3,prefixLength + 7),            (result.Groups[2].StartOffsetInBytes,result.Groups[2].EndOffsetInBytes));
-        cursor.Dispose(); Assert.Equal("😀", result.Groups[2].ValueText);
+        cursor.Dispose(); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroupMemory(2).Span));
     }
 }

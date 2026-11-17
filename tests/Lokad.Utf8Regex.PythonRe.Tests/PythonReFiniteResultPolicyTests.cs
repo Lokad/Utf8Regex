@@ -33,23 +33,24 @@ public sealed class PythonReFiniteResultPolicyTests
     [Fact]
     public void CursorTimeoutKeepsPriorSnapshotAndReleasesScratchWithoutDiagnosticCopy()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(".", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200),
             new() { MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray());
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         var invocation = cursor.WorkingInvocation;
         ticks = 250;
-        var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
         Assert.Empty(error.Input);
         Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         cursor.Dispose();
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Fact]
@@ -179,36 +180,37 @@ public sealed class PythonReFiniteResultPolicyTests
     [Fact]
     public void CursorTrafficSurvivesPublicationAndAliasesShareFailureCleanup()
     {
+        Utf8PythonRangeMatch cursorRange = default;
+        Utf8PythonRangeMatch cursorRange_fresh = default;
         var input = "😀a"u8.ToArray();
         ulong firstBytes;
         using (var probe = Create("(?P<x>.)", ulong.MaxValue).CreateMatchCursor(input))
         {
-            Assert.True(probe.MoveNext()); firstBytes = probe.WorkingInvocation.Budget.ResultBytes;
-            Assert.True(probe.MoveNext()); Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
+            Assert.True(probe.MoveNext(out _)); firstBytes = probe.WorkingInvocation.Budget.ResultBytes;
+            Assert.True(probe.MoveNext(out _)); Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
         }
         var regex = Create("(?P<x>.)", firstBytes);
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
         var authority = cursor.WorkingInvocation;
-        Assert.True(alias.MoveNext()); var retained = cursor.Current;
-        Assert.Equal("😀", retained.Value.ValueText);
-        Denied(() => cursor.MoveNext(), firstBytes);
+        Assert.True(alias.MoveNext(out cursorRange)); var retained = cursorRange;
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+        Denied(() => cursor.MoveNext(out cursorRange), firstBytes);
         Assert.Equal(0UL, authority.Ledger.ReservedBytes);
         Assert.True(authority.Budget.ResultBytes > firstBytes);
-        Assert.Throws<InvalidOperationException>(() => alias.MoveNext());
+        Assert.Throws<InvalidOperationException>(() => alias.MoveNext(out _));
         alias.Dispose(); cursor.Dispose();
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
 
         // The instance policy is per invocation, not a shared host allowance.
         // A fresh cursor can publish again while the first snapshot is retained.
         using var fresh = regex.CreateMatchCursor(input);
-        Assert.True(fresh.MoveNext());
-        var secondRetained = fresh.Current;
+        Assert.True(fresh.MoveNext(out cursorRange_fresh));
+        var secondRetained = cursorRange_fresh;
         Assert.Equal(firstBytes, fresh.WorkingInvocation.Budget.ResultBytes);
-        Assert.NotSame(retained.Groups, secondRetained.Groups);
         fresh.Dispose();
-        Assert.Equal("😀", retained.Value.ValueText);
-        Assert.Equal("😀", secondRetained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(secondRetained.GetValueMemory().Span));
     }
 
     [Fact]
@@ -237,7 +239,7 @@ public sealed class PythonReFiniteResultPolicyTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cursor = Create(".", 1, timeout: TimeSpan.FromMilliseconds(200)).CreateMatchCursor("😀"u8.ToArray());
         ticks = 250;
-        Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
+        Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
     }
 
     [Fact]

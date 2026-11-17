@@ -41,18 +41,19 @@ public sealed class PythonReDirectNegatedClassTests
     [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
     public void CapturesAndRetainedCursorSnapshotsSurviveOffsetsAndTails(int length)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var value = new string('x', length) + "é😀";
         var input = Encoding.UTF8.GetBytes("ab" + value + "a𝒜a");
         using var regex = new Utf8PythonRegex(@"(?P<x>[^ab]+)a");
         using var cursor = regex.CreateMatchCursor(input, 2);
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        Assert.Equal(value, retained.Groups[1].ValueText);
-        Assert.True(alias.MoveNext());
-        Assert.Equal("𝒜", alias.Current.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
         cursor.Dispose();
-        Assert.Equal(value, retained.Groups[1].ValueText);
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input, 2));
         Assert.Equal(value + "a", regex.SearchDetailedData(input, 2).Value.ValueText);
     }
@@ -74,6 +75,7 @@ public sealed class PythonReDirectNegatedClassTests
     [InlineData(false)] [InlineData(true)]
     public void InterruptedDiscoveryKeepsOriginalTokenDeadlineAndRetainedResult(bool expire)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -90,15 +92,15 @@ public sealed class PythonReDirectNegatedClassTests
             using var regex = new Utf8PythonRegex(@"[^ab]+a", default, TimeSpan.FromMilliseconds(20));
             var input = Encoding.UTF8.GetBytes("xa" + new string('é', 100000) + "a");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
-            Assert.True(cursor.MoveNext());
-            var retained = cursor.Current;
+            Assert.True(cursor.MoveNext(out cursorRange));
+            var retained = cursorRange;
             armed = true;
-            var failure = Record.Exception(() => cursor.MoveNext());
+            var failure = Record.Exception(() => cursor.MoveNext(out _));
             Assert.True(interrupted);
             if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             cursor.Dispose();
-            Assert.Equal("xa", retained.Value.ValueText);
+            Assert.Equal("xa", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         }
         finally { session.Complete(); }
     }

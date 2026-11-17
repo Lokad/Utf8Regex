@@ -270,20 +270,20 @@ public sealed class PythonReClassDelimiterWindowTests
     [Fact]
     public void ShortWindowAliasesKeepOwnedSnapshotsAfterAdvanceAndDisposal()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = "prefix item-123 other-45"u8.ToArray();
         using var owner = new Utf8PythonRegex("(?P<n>[a-z]+)-([0-9]+)");
         var cursor = owner.CreateMatchCursor(input); var alias = cursor;
         try
         {
-            Assert.True(cursor.MoveNext()); var first = alias.Current;
-            Assert.True(alias.MoveNext()); var second = cursor.Current;
-            Assert.False(cursor.MoveNext()); alias.Dispose();
-            input.AsSpan().Fill((byte)'x');
-            Assert.Equal("item-123", first.Value.ValueText);
-            Assert.Equal("other-45", second.Value.ValueText);
-            first.Groups[1] = default; first.NameEntries[0] = default;
+            Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
+            Assert.True(alias.MoveNext(out cursorRange)); var second = cursorRange;
+            Assert.False(cursor.MoveNext(out cursorRange)); alias.Dispose();
+
+            Assert.Equal("item-123", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
+            Assert.Equal("other-45", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
             Assert.True(second.TryGetFirstSetGroup("n", out var group));
-            Assert.Equal("other", group.ValueText);
+            Assert.Equal("other", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
         }
         finally { cursor.Dispose(); }
     }

@@ -79,18 +79,19 @@ public sealed class PythonReTerminalClassRepeatTests
     [Fact]
     public void CursorAliasesAndRetainedCompletionSurviveTheNextRunAndDisposal()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = Create(@"\w+", 1, 1 << 20);
         using var cursor = regex.CreateMatchCursor("é²!😀ab"u8.ToArray());
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var first = alias.Current;
-        Assert.Equal("é²", first.Value.ValueText);
-        Assert.True(alias.MoveNext());
-        Assert.Equal("ab", cursor.Current.Value.ValueText);
-        Assert.Equal(9, cursor.Current.Value.StartOffsetInBytes);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var first = cursorRange;
+        Assert.Equal("é²", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
+        Assert.Equal(9, cursorRange.Value.StartOffsetInBytes);
         alias.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());
-        Assert.Equal("é²", first.Value.ValueText);
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        Assert.Equal("é²", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
     }
 
     [Fact]

@@ -84,22 +84,23 @@ public sealed class PythonReAsciiBoundaryTests
     [Fact]
     public void CapturesEmptyAlternativesAndCursorAliasesRemainOwned()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"(?P<b>\b)|(?P<a>a)", PythonReCompileOptions.Ascii);
         var control = new Utf8PythonRegex("(?P<b>" + PythonReParser.AsciiWordBoundary + ")|(?P<a>a)", PythonReCompileOptions.Ascii);
         var input = "a éa😀a"u8.ToArray();
         Assert.Equal(control.FindIterDetailed(input).Select(x => x.Groups), regex.FindIterDetailed(input).Select(x => x.Groups));
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange));
         var alias = cursor;
-        var retained = cursor.Current;
-        var groups = retained.Groups;
-        Assert.True(alias.MoveNext());
-        Assert.Equal(alias.Current, cursor.Current);
-        while (cursor.MoveNext()) { }
-        Assert.Equal(groups, retained.Groups);
-        Assert.False(alias.MoveNext());
+        var retained = cursorRange;
+        var groups = retained.Groups.ToArray();
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.Equal(cursorRange, cursorRange);
+        while (cursor.MoveNext(out cursorRange)) { }
+        Assert.Equal(groups, retained.Groups.ToArray());
+        Assert.False(alias.MoveNext(out cursorRange));
         cursor.Dispose();
-        Assert.Equal(groups, retained.Groups);
+        Assert.Equal(groups, retained.Groups.ToArray());
     }
 
     [Theory]

@@ -15,6 +15,7 @@ public sealed class PythonReDetailedPublicationContractTests
     public void DetailedSnapshotsKeepScalarValuesCoordinatesAndOwnership(
         string pattern, string subject, int expectedCount, int firstLastIndex, string firstLastGroup)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(subject);
         var unlimited = new Utf8PythonRegex(pattern).FindIterDetailed(input);
         var finiteRegex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
@@ -34,35 +35,31 @@ public sealed class PythonReDetailedPublicationContractTests
             }
         }
         using var cursor = finiteRegex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         if (expectedCount > 1)
         {
-            Assert.True(cursor.MoveNext());
-            Assert.NotSame(retained.Groups, cursor.Current.Groups);
-            Assert.NotSame(retained.NameEntries, cursor.Current.NameEntries);
+            Assert.True(cursor.MoveNext(out cursorRange));
         }
-        else Assert.False(cursor.MoveNext());
+        else Assert.False(cursor.MoveNext(out cursorRange));
         cursor.Dispose();
-        Assert.Equal(finite[0].Groups, retained.Groups);
-        retained.Groups[0] = default;
-        retained.NameEntries[0] = default;
-        Assert.True(finiteRegex.FindIterDetailed(input)[0].Success);
+        PythonReRangeAssert.Equal(finite[0], retained);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void RetainedCursorSnapshotsKeepNumberingAndIndependentSlots(bool named)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = "é😀"u8.ToArray();
-        var retained = new List<Utf8PythonDetailedMatchData>();
+        var retained = new List<Utf8PythonRangeMatch>();
         using (var regex = new Utf8PythonRegex(named ? "(?P<outer>(?P<inner>.))" : "((.))",
             resourcePolicy: new() { MaxWorkSteps = 10000, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }))
         {
             using var cursor = regex.CreateMatchCursor(input);
-            while (cursor.MoveNext()) retained.Add(cursor.Current);
+            while (cursor.MoveNext(out cursorRange)) retained.Add(cursorRange);
         }
-        input.AsSpan().Fill((byte)'x');
+
         Assert.Equal(2, retained.Count);
         foreach (var (match, ordinal) in retained.Select((value, index) => (value, index)))
         {
@@ -72,16 +69,13 @@ public sealed class PythonReDetailedPublicationContractTests
             for (var group = 0; group < 3; group++)
             {
                 var value = match.Groups[group];
-                Assert.Equal(group, value.Number); Assert.True(value.Success);                 Assert.Equal(ordinal == 0 ? "é" : "😀", value.ValueText);
+                Assert.Equal(group, value.Number); Assert.True(value.Success); Assert.Equal(ordinal == 0 ? "é" : "😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(group).Span));
             }
         }
-        Assert.NotSame(retained[0].Groups, retained[1].Groups);
-        retained[0].Groups[0] = default;
-        Assert.Equal("é", retained[0].Groups[1].ValueText); Assert.Equal("😀", retained[1].Value.ValueText);
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained[0].GetGroupMemory(1).Span)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained[1].GetValueMemory().Span));
         if (named)
         {
-            retained[0].NameEntries[0] = default;
-            Assert.True(retained[1].TryGetFirstSetGroup("outer", out var outer)); Assert.Equal("😀", outer.ValueText);
+            Assert.True(retained[1].TryGetFirstSetGroup("outer", out var outer)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((outer.Success ? retained[1].GetGroupMemory(outer.Number) : default).Span));
         }
     }
 

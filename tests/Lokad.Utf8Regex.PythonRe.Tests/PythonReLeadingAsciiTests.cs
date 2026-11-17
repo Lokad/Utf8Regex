@@ -85,21 +85,21 @@ public sealed class PythonReLeadingAsciiTests
     [Fact]
     public void CursorAliasesAndRetainedCapturesSurviveSkippedStartsAndExhaustion()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes("π😀" + new string('x', 2047) + "😀needle१२ xx needle\U0001D7CE");
         var regex = new Utf8PythonRegex(@"needle(?P<n>\d+)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
         var cursor = regex.CreateMatchCursor(input, 6);
         var alias = cursor;
         try
         {
-            Assert.True(cursor.MoveNext()); var first = alias.Current;
+            Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
             Assert.Equal(2057, first.Value.StartOffsetInBytes);
-            Assert.True(alias.MoveNext()); var second = cursor.Current;
-            Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => cursor.Current);
-            alias.Dispose(); input.AsSpan().Fill((byte)'x');
-            Assert.True(first.TryGetFirstSetGroup("n", out var group)); Assert.Equal("१२", group.ValueText);
-            Assert.True(second.TryGetFirstSetGroup("n", out group)); Assert.Equal("\U0001D7CE", group.ValueText);
-            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());
+            Assert.True(alias.MoveNext(out cursorRange)); var second = cursorRange;
+            Assert.False(cursor.MoveNext(out cursorRange)); Assert.False(alias.MoveNext(out cursorRange));
+            alias.Dispose();
+            Assert.True(first.TryGetFirstSetGroup("n", out var group)); Assert.Equal("१२", System.Text.Encoding.UTF8.GetString((group.Success ? first.GetGroupMemory(group.Number) : default).Span));
+            Assert.True(second.TryGetFirstSetGroup("n", out group)); Assert.Equal("\U0001D7CE", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         }
         finally { cursor.Dispose(); }
     }

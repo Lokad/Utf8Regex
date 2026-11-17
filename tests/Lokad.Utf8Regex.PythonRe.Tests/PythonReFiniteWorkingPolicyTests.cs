@@ -104,24 +104,25 @@ public sealed class PythonReFiniteWorkingPolicyTests
     [Fact]
     public void OwnedCursorWorkingFailureReleasesScratchAndPreservesPublishedSnapshot()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         const string pattern = "(?P<x>ab)|(😀|😀😀)+ab";
         var input = Encoding.UTF8.GetBytes("ab " + string.Concat(Enumerable.Repeat("😀", 70)) + "ab");
         ulong cap;
         using (var probe = Create(pattern, ulong.MaxValue, false).CreateMatchCursor(input))
         {
-            Assert.True(probe.MoveNext());
+            Assert.True(probe.MoveNext(out _));
             cap = Discovery(probe).WorkingInvocation.Budget.PeakWorkingBytes;
         }
         var regex = Create(pattern, cap, false);
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         var authority = Discovery(cursor).WorkingInvocation;
-        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext()), cap);
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
+        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)), cap);
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         cursor.Dispose(); cursor.Dispose();
         Assert.Equal(0UL, authority.Ledger.ReservedBytes);
-        Assert.Equal("ab", retained.Value.ValueText);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(regex.IsMatch("ab"u8));
     }
 

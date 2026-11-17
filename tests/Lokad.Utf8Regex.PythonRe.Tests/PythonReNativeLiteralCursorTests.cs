@@ -37,22 +37,23 @@ public sealed class PythonReNativeLiteralCursorTests
     public void GlobalSnapshotsRetainGroupZeroAndNoLastCapture(string pattern, string text,
         string firstValue, string secondValue)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
         var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
         try
         {
-            Assert.True(cursor.MoveNext());
-            var first = alias.Current;
-            Assert.True(alias.MoveNext());
-            var second = cursor.Current;
-            Assert.False(cursor.MoveNext());
+            Assert.True(cursor.MoveNext(out cursorRange));
+            var first = cursorRange;
+            Assert.True(alias.MoveNext(out cursorRange));
+            var second = cursorRange;
+            Assert.False(cursor.MoveNext(out cursorRange));
             alias.Dispose();
-            input.AsSpan().Fill((byte)'x');
-            Assert.Equal(firstValue, first.Value.ValueText);
-            Assert.Equal(secondValue, second.Value.ValueText);
-            Assert.Single(first.Groups); Assert.Single(second.Groups);
+
+            Assert.Equal(firstValue, System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
+            Assert.Equal(secondValue, System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
+            Assert.Single(first.Groups.ToArray()); Assert.Single(second.Groups.ToArray());
             Assert.Null(first.LastIndex); Assert.Null(second.LastIndex);
             Assert.Null(first.LastGroup); Assert.Null(second.LastGroup);
         }
@@ -95,6 +96,7 @@ public sealed class PythonReNativeLiteralCursorTests
     [InlineData(false)] [InlineData(true)]
     public void LongNativeSearchKeepsOriginalInterruptionAndPriorSnapshot(bool timeout)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -113,11 +115,11 @@ public sealed class PythonReNativeLiteralCursorTests
                 new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 4000000, MaxResultBytes = 4000000 });
             var input = Encoding.UTF8.GetBytes("cat" + new string('x', 262144) + "dog");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
-            Assert.True(cursor.MoveNext());
-            var retained = cursor.Current;
+            Assert.True(cursor.MoveNext(out cursorRange));
+            var retained = cursorRange;
             armedAt = cursor.WorkingInvocation.Budget.Steps;
             armed = true;
-            var failure = Record.Exception(() => cursor.MoveNext());
+            var failure = Record.Exception(() => cursor.MoveNext(out _));
             Assert.True(interrupted);
             if (timeout)
             {
@@ -127,7 +129,7 @@ public sealed class PythonReNativeLiteralCursorTests
             }
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             cursor.Dispose();
-            Assert.Equal("cat", retained.Value.ValueText);
+            Assert.Equal("cat", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         }
         finally { diagnostics.Complete(); }
     }

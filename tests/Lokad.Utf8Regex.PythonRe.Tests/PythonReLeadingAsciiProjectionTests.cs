@@ -48,16 +48,17 @@ public sealed class PythonReLeadingAsciiProjectionTests
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
     public void BlockEdgesKeepScalarCandidatesAndDurableCaptureResults(int prefixLength)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(new string('!', prefixLength) + "😀١ 123");
         using var regex = new Utf8PythonRegex(@"(?P<n>\d+)");
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        Assert.Equal("١", retained.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        Assert.Equal("١", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(prefixLength + 4, retained.Value.StartOffsetInBytes);
-        Assert.True(cursor.MoveNext()); Assert.Equal("123", cursor.Current.Value.ValueText);
-        Assert.False(cursor.MoveNext()); cursor.Dispose();
-        Assert.Equal("١", retained.Groups[1].ValueText); Assert.Equal(1, retained.LastIndex);
+        Assert.True(cursor.MoveNext(out cursorRange)); Assert.Equal("123", System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
+        Assert.False(cursor.MoveNext(out cursorRange)); cursor.Dispose();
+        Assert.Equal("١", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span)); Assert.Equal(1, retained.LastIndex);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search(input, prefixLength + 1));
     }
 

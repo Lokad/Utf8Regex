@@ -17,13 +17,14 @@ public sealed class PythonReAtomLoweringTests
     [InlineData(@"([a\d]+)", "a١2😀", new[] { "a١2" })]
     public void ResolvedBracketOperandsPreserveFoldingComplementsAndCaptures(string pattern, string text, string[] expected)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(text);
         {
             using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkSteps = 1000000 });
             Assert.Equal(expected.Length, regex.Count(input));
             using var cursor = regex.CreateMatchCursor(input);
             var values = new List<string>();
-            while (cursor.MoveNext()) values.Add(cursor.Current.Value.ValueText);
+            while (cursor.MoveNext(out cursorRange)) values.Add(System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
             Assert.Equal(expected, values);
         }
     }

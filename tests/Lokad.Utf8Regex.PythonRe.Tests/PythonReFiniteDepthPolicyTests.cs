@@ -55,11 +55,12 @@ public sealed class PythonReFiniteDepthPolicyTests
     [Fact]
     public void ExplicitCursorOwnerPreservesSnapshotsOnDepthFailureAndDisposal()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         // The overlapping emoji tail requires rewinding the greedy run.
         var regex = Create("(?P<x>ab)|😀+😀ab", 1, false); using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray());
-        Assert.True(cursor.MoveNext()); var retained = cursor.Current;
-        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext()), 1);
-        cursor.Dispose(); cursor.Dispose(); Assert.Equal("ab", retained.Value.ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
+        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)), 1);
+        cursor.Dispose(); cursor.Dispose(); Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(regex.IsMatch("ab"u8));
     }
 
@@ -87,6 +88,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     [InlineData(true)]
     public void OriginalInterruptionWinsOnTheNextOwnedCursorMove(bool deadline)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
@@ -94,20 +96,20 @@ public sealed class PythonReFiniteDepthPolicyTests
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxDepth = 1 });
         using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray(), 0, source.Token);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         if (deadline)
         {
             ticks = 250;
-            Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
+            Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
         }
         else
         {
             source.Cancel();
-            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
         }
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
-        Assert.Equal("ab", retained.Value.ValueText);
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Theory]

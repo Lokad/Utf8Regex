@@ -26,6 +26,7 @@ public sealed class PythonReNullableCaptureTests
     public void NullableCapturesKeepScalarRetryOrderAndRetainedSnapshots(string pattern, string subject,
         bool finite, (int Start, int End)[] expectedRanges, string?[] expectedCaptures, bool fullMatch)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var policy = finite ? new Utf8ResourcePolicy
         {
             MaxWorkSteps = 1_000_000,
@@ -48,26 +49,26 @@ public sealed class PythonReNullableCaptureTests
             Assert.Equal(expectedRanges, detailed.Select(value => (value.Value.StartOffsetInBytes, value.Value.EndOffsetInBytes)));
             using var cursor = regex.CreateMatchCursor(input, 0, token);
             var alias = cursor;
-            var retained = new List<Utf8PythonDetailedMatchData>();
+            var retained = new List<Utf8PythonRangeMatch>();
             for (var index = 0; index < expectedRanges.Length; index++)
             {
-                Assert.True((index % 2 == 0 ? cursor : alias).MoveNext());
-                var snapshot = alias.Current;
+                Assert.True((index % 2 == 0 ? cursor : alias).MoveNext(out cursorRange));
+                var snapshot = cursorRange;
                 retained.Add(snapshot);
-                Assert.Equal(detailed[index].Groups, snapshot.Groups);
+                PythonReRangeAssert.Equal(detailed[index], snapshot);
                 Assert.True(snapshot.TryGetFirstSetGroup("x", out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
-                if (expectedCaptures[index] is { } text) Assert.Equal(text, capture.ValueText);
+                if (expectedCaptures[index] is { } text) Assert.Equal(text, System.Text.Encoding.UTF8.GetString((capture.Success ? snapshot.GetGroupMemory(capture.Number) : default).Span));
             }
-            Assert.False(alias.MoveNext());
+            Assert.False(alias.MoveNext(out cursorRange));
             alias.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
             for (var index = 0; index < retained.Count; index++)
             {
                 Assert.True(retained[index].TryGetFirstSetGroup("x", out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
-                if (expectedCaptures[index] is { } text) Assert.Equal(text, capture.ValueText);
-                Assert.Equal(detailed[index].Groups, retained[index].Groups);
+                if (expectedCaptures[index] is { } text) Assert.Equal(text, System.Text.Encoding.UTF8.GetString((capture.Success ? retained[index].GetGroupMemory(capture.Number) : default).Span));
+                PythonReRangeAssert.Equal(detailed[index], retained[index]);
             }
         }
         var invalid = input.Concat(new byte[] { 0xff }).ToArray();

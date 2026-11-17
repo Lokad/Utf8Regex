@@ -110,23 +110,24 @@ public sealed class PythonReFiniteWorkPolicyTests
     [Fact]
     public void CursorSharesItsCapAcrossMovesAndRetainedResultsSurviveFailure()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = "😀a"u8.ToArray();
         ulong firstSteps;
         using (var probe = RegexWith(".", ulong.MaxValue).CreateMatchCursor(input))
         {
-            Assert.True(probe.MoveNext()); firstSteps = probe.WorkingInvocation.Budget.Steps;
-            Assert.True(probe.MoveNext()); Assert.True(probe.WorkingInvocation.Budget.Steps > firstSteps);
+            Assert.True(probe.MoveNext(out _)); firstSteps = probe.WorkingInvocation.Budget.Steps;
+            Assert.True(probe.MoveNext(out _)); Assert.True(probe.WorkingInvocation.Budget.Steps > firstSteps);
         }
         using var cursor = RegexWith(".", firstSteps).CreateMatchCursor(input);
         var alias = cursor;
         var authority = cursor.WorkingInvocation;
-        Assert.True(cursor.MoveNext()); var retained = alias.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Assert.Equal(4, retained.Value.EndOffsetInBytes);
-        Exhausted(() => alias.MoveNext(), firstSteps);
+        Exhausted(() => alias.MoveNext(out cursorRange), firstSteps);
         Assert.Equal(0UL, authority.Ledger.ReservedBytes);
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext());
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         alias.Dispose(); cursor.Dispose();
-        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Fact]

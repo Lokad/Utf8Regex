@@ -22,9 +22,8 @@ public sealed class PythonReRangeResultTests
         foreach (var match in expected)
         {
             Assert.True(alias.MoveNext(out var ranges)); retained.Add(ranges);
-            Assert.Throws<InvalidOperationException>(() => cursor.Current);
             Assert.Equal(match.LastIndex, ranges.LastIndex); Assert.Equal(match.LastGroup, ranges.LastGroup);
-            Assert.Equal(match.NameEntries, ranges.NameEntries.ToArray());
+            Assert.Equal(match.NameEntries, ranges.NameEntries.ToArray().ToArray());
             Assert.Equal(match.Groups.Length, ranges.Groups.Length);
             for (var number = 0; number < match.Groups.Length; number++)
             {
@@ -81,14 +80,14 @@ public sealed class PythonReRangeResultTests
     }
 
     [Fact]
-    public void OwnedAndRangeAdvancesShareOnePositionWithoutChangingRetainedValues()
+    public void RangeAdvancesShareOnePositionWithoutChangingEarlierResults()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var cursor = new Utf8PythonRegex("(?P<x>.)").CreateMatchCursor("é😀a"u8.ToArray());
-        Assert.True(cursor.MoveNext()); var owned = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var earlier = cursorRange;
         Assert.True(cursor.MoveNext(out var ranges)); Assert.Equal("😀", Encoding.UTF8.GetString(ranges.GetValueMemory().Span));
-        Assert.Throws<InvalidOperationException>(() => cursor.Current);
-        Assert.True(cursor.MoveNext()); Assert.Equal("a", cursor.Current.Value.ValueText);
-        cursor.Dispose(); Assert.Equal("é", owned.Value.ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange)); Assert.Equal("a", System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
+        cursor.Dispose(); Assert.Equal("é", System.Text.Encoding.UTF8.GetString(earlier.GetValueMemory().Span));
         Assert.Equal("😀", Encoding.UTF8.GetString(ranges.GetGroupMemory(1).Span));
     }
 

@@ -21,6 +21,7 @@ public sealed class PythonReGreedyEmptyRetryTests
     [InlineData("x*(?=y)|é", "éxy😀", 0)]
     public void GlobalOperationsKeepEmptyRetriesAndScalarRanges(string pattern, string text, int start)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(text);
         // The empty assertion preserves the language while keeping the reference
         // on the general retry path, including its distinct assertion workspace.
@@ -44,17 +45,17 @@ public sealed class PythonReGreedyEmptyRetryTests
 
             using var cursor = regex.CreateMatchCursor(input, start);
             var alias = cursor;
-            Utf8PythonDetailedMatchData? first = null;
+            Utf8PythonRangeMatch? first = null;
             for (var i = 0; i < expected.Length; i++)
             {
-                Assert.True(alias.MoveNext());
-                var match = cursor.Current;
+                Assert.True(alias.MoveNext(out cursorRange));
+                var match = cursorRange;
                 first ??= match;
-                Assert.Equal(expected[i].Value, match.Value);
+                PythonReRangeAssert.Equal(expected[i], match);
             }
-            Assert.False(cursor.MoveNext());
-            Assert.False(alias.MoveNext());
-            if (first is { } retained) Assert.Equal(expected[0].Value, retained.Value);
+            Assert.False(cursor.MoveNext(out cursorRange));
+            Assert.False(alias.MoveNext(out cursorRange));
+            if (first is { } retained) PythonReRangeAssert.Equal(expected[0], retained);
         }
     }
 }

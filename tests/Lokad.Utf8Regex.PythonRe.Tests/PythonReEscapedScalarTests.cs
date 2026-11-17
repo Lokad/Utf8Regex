@@ -49,6 +49,7 @@ public sealed class PythonReEscapedScalarTests
     [Fact]
     public void EscapedScalarRangesRetainOwnedCapturesAcrossCursorAliasesAndBulkOperations()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var input = "π😀😁é 😀"u8.ToArray();
         var regex = new Utf8PythonRegex(@"(?P<x>[\😀-\😁]+)", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 100000, MaxDepth = 128,
@@ -56,20 +57,20 @@ public sealed class PythonReEscapedScalarTests
         using var cancellation = new CancellationTokenSource();
         var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
         var alias = cursor;
-        Utf8PythonDetailedMatchData retained;
+        Utf8PythonRangeMatch retained;
         try
         {
-            Assert.True(cursor.MoveNext());
-            retained = alias.Current;
+            Assert.True(cursor.MoveNext(out cursorRange));
+            retained = cursorRange;
             Assert.Equal((2, 10), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
             Assert.Equal(1, retained.LastIndex);
             Assert.Equal("x", retained.LastGroup);
-            Assert.True(alias.MoveNext());
-            Assert.Equal((13, 17), (alias.Current.Value.StartOffsetInBytes, alias.Current.Value.EndOffsetInBytes));
-            Assert.False(cursor.MoveNext());
+            Assert.True(alias.MoveNext(out cursorRange));
+            Assert.Equal((13, 17), (cursorRange.Value.StartOffsetInBytes, cursorRange.Value.EndOffsetInBytes));
+            Assert.False(cursor.MoveNext(out cursorRange));
         }
         finally { alias.Dispose(); }
-        Assert.Equal("😀😁", retained.Groups[1].ValueText);
+        Assert.Equal("😀😁", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input, 0, cancellation.Token));
         var values = regex.FindAllToUtf8(input, 0, cancellation.Token);
         Assert.Equal(2, values.Count);
@@ -77,7 +78,7 @@ public sealed class PythonReEscapedScalarTests
         cancellation.Cancel();
         Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, cancellation.Token)).CancellationToken);
-        Assert.Equal("😀😁", retained.Groups[1].ValueText);
+        Assert.Equal("😀😁", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
 

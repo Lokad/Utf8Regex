@@ -168,15 +168,15 @@ public sealed class PythonReRetainedRangeTests
     [Fact]
     public void RetainedAndLegacyAdvancesKeepTheirOriginalSnapshotContracts()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var account = new Allowance(16 << 20); using var regex = Compile(".", account);
         using var cursor = regex.CreateMatchCursor("abc"u8.ToArray());
         Assert.True(cursor.MoveNextRetained(out var retained));
-        Assert.Throws<InvalidOperationException>(() => cursor.Current);
-        Assert.True(cursor.MoveNext()); var ownedText = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var ownedText = cursorRange;
         Assert.True(cursor.MoveNext(out var range));
         Assert.False(cursor.MoveNextRetained(out _));
         Assert.Equal("a", Encoding.UTF8.GetString(retained.Match.GetValueMemory().Span));
-        Assert.Equal("b", ownedText.Groups[0].ValueText); Assert.Equal("c", Encoding.UTF8.GetString(range.GetValueMemory().Span));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(ownedText.GetGroupMemory(0).Span)); Assert.Equal("c", Encoding.UTF8.GetString(range.GetValueMemory().Span));
         retained.Dispose();
     }
 

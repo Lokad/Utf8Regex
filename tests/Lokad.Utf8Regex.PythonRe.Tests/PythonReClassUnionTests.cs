@@ -63,14 +63,15 @@ public sealed class PythonReClassUnionTests
     [Fact]
     public void CapturesAliasesAndEmptyProgressionKeepTheirOriginalOwnership()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"([\w.]+)@");
         using var cursor = regex.CreateMatchCursor("😀é.a@ word.@"u8.ToArray());
         var alias = cursor;
-        Assert.True(cursor.MoveNext()); var first = alias.Current;
-        Assert.Equal("é.a", first.Groups[1].ValueText);
-        Assert.True(alias.MoveNext()); Assert.Equal("word.@", cursor.Current.Value.ValueText);
-        alias.Dispose(); Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());
-        Assert.Equal("é.a", first.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
+        Assert.Equal("é.a", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+        Assert.True(alias.MoveNext(out cursorRange)); Assert.Equal("word.@", System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
+        alias.Dispose(); Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        Assert.Equal("é.a", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(3, new Utf8PythonRegex(@"[\w.]*").Count("😀a."u8));
     }
 }

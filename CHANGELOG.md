@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe's cursor text Current and no-output MoveNext overloads. Advance
+  into byte ranges with an optional token; retained ranges and cumulative controls
+  remain. Hosts own text decoding and keep borrowed subjects unchanged while read.
+
 - Remove PythonRe's legacy structural FindAll collector and Utf8PythonMatchData.
   Use range cursors for whole-match metadata and FindAllToUtf8 for Python-shaped
   byte values. Host aggregates and decoding remain outside regex controls.

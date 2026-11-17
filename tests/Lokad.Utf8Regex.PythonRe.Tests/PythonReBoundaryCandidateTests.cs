@@ -61,6 +61,7 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void BoundedWordRunsPreserveOriginalInterruptionAndRetainedResult(bool timeout, bool interiorRun)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -81,15 +82,15 @@ public sealed class PythonReBoundaryCandidateTests
                 ? "22X a" + new string('1', 200000) + "X 33X"
                 : "1234 " + string.Concat(Enumerable.Repeat("123A ", 4096)) + "5678");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
-            Assert.True(cursor.MoveNext());
-            var retained = cursor.Current;
+            Assert.True(cursor.MoveNext(out cursorRange));
+            var retained = cursorRange;
             armed = true;
-            var failure = Record.Exception(() => cursor.MoveNext());
+            var failure = Record.Exception(() => cursor.MoveNext(out _));
             Assert.True(interrupted);
             if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             cursor.Dispose();
-            Assert.Equal(interiorRun ? "22X" : "1234", retained.Value.ValueText);
+            Assert.Equal(interiorRun ? "22X" : "1234", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         }
         finally { session.Complete(); }
     }
@@ -204,11 +205,11 @@ public sealed class PythonReBoundaryCandidateTests
         // Bounded ASCII blocks need enough input to reach the diagnostic
         // hook's unchanged 64-work-unit cadence after construction.
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('1', 200000)), 0, token.Token);
-        if (pattern == @"\b") Assert.True(cursor.MoveNext());
+        if (pattern == @"\b") Assert.True(cursor.MoveNext(out _));
         var interrupted = false;
         cursor.WorkingInvocation.CheckpointHook = _ => { interrupted = true; if (expire) ticks = 30; else token.Cancel(); };
-        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken);
+        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
         Assert.True(interrupted);
     }
 

@@ -203,18 +203,19 @@ public sealed class PythonReLeadingAsciiRangeTests
     [Fact]
     public void OptionalCaptureAliasesKeepMissingGroupsAndRetainedValues()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var cursor = new Utf8PythonRegex("(?P<sep>,)?;").CreateMatchCursor("x😀,;y;z;"u8.ToArray());
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var first = alias.Current;
-        Assert.Equal(",", first.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var first = cursorRange;
+        Assert.Equal(",", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(5, first.Value.StartOffsetInBytes);
-        Assert.True(alias.MoveNext());
-        Assert.False(cursor.Current.Groups[1].Success);
-        while (cursor.MoveNext()) { }
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.False(cursorRange.Groups[1].Success);
+        while (cursor.MoveNext(out cursorRange)) { }
         alias.Dispose();
-        Assert.Equal(",;", first.Value.ValueText);
-        Assert.Equal(",", first.Groups[1].ValueText);
+        Assert.Equal(",;", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.Equal(",", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
 
     [Theory]
@@ -317,17 +318,18 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?>(?P<word>[a-z]+))")]
     public void DurableAliasesSharePositionAndRetainedCapturesSurviveEofAndDisposal(string pattern)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(pattern);
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("999😀alpha 123 beta"));
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var first = alias.Current;
-        Assert.True(alias.MoveNext());
-        Assert.Equal("beta", cursor.Current.Groups[1].ValueText);
-        Assert.False(cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var first = cursorRange;
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.Equal("beta", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
+        Assert.False(cursor.MoveNext(out cursorRange));
         alias.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext());
-        Assert.Equal("alpha", first.Groups[1].ValueText);
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(7, first.Value.StartOffsetInBytes);
         Assert.Equal("word", first.LastGroup);
     }

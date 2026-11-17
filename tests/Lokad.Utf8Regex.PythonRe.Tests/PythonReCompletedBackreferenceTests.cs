@@ -48,6 +48,7 @@ public sealed class PythonReCompletedBackreferenceTests
     [InlineData(true)]
     public void RetainedCaptureAndAliasesSurviveOriginalInterruption(bool expire)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
@@ -55,13 +56,13 @@ public sealed class PythonReCompletedBackreferenceTests
         using var cursor = regex.CreateMatchCursor("token-token token-token"u8.ToArray(), 0, source.Token);
         var alias = cursor;
         ref var invocation = ref cursor.WorkingInvocation;
-        ticks = 15; Assert.True(cursor.MoveNext()); var retained = alias.Current;
-        Assert.Equal("token", retained.Groups[1].ValueText);
+        ticks = 15; Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
+        Assert.Equal("token", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(1, retained.LastIndex); Assert.Equal("word", retained.LastGroup);
-        if (expire) { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => alias.MoveNext()); }
-        else { source.Cancel(); Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => alias.MoveNext()).CancellationToken); }
+        if (expire) { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => alias.MoveNext(out _)); }
+        else { source.Cancel(); Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => alias.MoveNext(out _)).CancellationToken); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("token", retained.Groups[1].ValueText);
+        Assert.Equal("token", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Fact]

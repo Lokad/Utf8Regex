@@ -16,6 +16,7 @@ public sealed class PythonReTerminalCaptureRootTests
     [InlineData(65536)]
     public void FirstSeparatedRootPreservesLongRunsAndFailedCandidates(int length)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
         var word = new string('a', length);
         var text = "é😀bad-! " + word + "-12 tail-345";
@@ -26,36 +27,38 @@ public sealed class PythonReTerminalCaptureRootTests
         Assert.Equal(new[] { "tail", "345" }, values[1]);
         Assert.Empty(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(word + "!"))).TupleValues);
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var first = cursor.Current;
-        Assert.Equal(word, first.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var first = cursorRange;
+        Assert.Equal(word, System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(Encoding.UTF8.GetByteCount("é😀bad-! "), first.Groups[1].StartOffsetInBytes);
         Assert.Equal(2, first.LastIndex);
-        Assert.True(cursor.MoveNext());
-        Assert.Equal("tail", cursor.Current.Groups[1].ValueText);
-        Assert.False(cursor.MoveNext());
-        Assert.Equal(word, first.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        Assert.Equal("tail", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
+        Assert.False(cursor.MoveNext(out cursorRange));
+        Assert.Equal(word, System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
 
     [Fact]
     public void CompleteRootPreservesStringsBytesLastIndexAndRetainedCursorAliases()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex("item-([0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 item-345!");
         Assert.Equal(new[] { "12", "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         var bytes = regex.FindAllToUtf8(input).ScalarValues;
         Assert.Equal("12"u8.ToArray(), bytes[0]); Assert.Equal("345"u8.ToArray(), bytes[1]);
         var cursor = regex.CreateMatchCursor(input); var alias = cursor;
-        Assert.True(cursor.MoveNext()); var first = alias.Current;
-        Assert.Equal(1, first.LastIndex); Assert.Equal("12", first.Groups[1].ValueText);
+        Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
+        Assert.Equal(1, first.LastIndex); Assert.Equal("12", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(11, first.Groups[1].StartOffsetInBytes);
-        Assert.True(alias.MoveNext()); Assert.Equal("345", cursor.Current.Groups[1].ValueText);
-        Assert.Equal(1, cursor.Current.LastIndex); Assert.False(cursor.MoveNext());
-        alias.Dispose(); cursor.Dispose(); Assert.Equal("12", first.Groups[1].ValueText);
+        Assert.True(alias.MoveNext(out cursorRange)); Assert.Equal("345", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
+        Assert.Equal(1, cursorRange.LastIndex); Assert.False(cursor.MoveNext(out cursorRange));
+        alias.Dispose(); cursor.Dispose(); Assert.Equal("12", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
     [Fact]
     public void SeparatedRootPreservesTuplesClosingOrderAndRetainedAliases()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)-(?P<number>[0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 other-345!");
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
@@ -63,12 +66,12 @@ public sealed class PythonReTerminalCaptureRootTests
         var bytes = regex.FindAllToUtf8(input).TupleValues;
         Assert.Equal("item"u8.ToArray(), bytes[0][0]); Assert.Equal("12"u8.ToArray(), bytes[0][1]);
         var cursor = regex.CreateMatchCursor(input); var alias = cursor;
-        Assert.True(cursor.MoveNext()); var first = alias.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
         Assert.Equal(2, first.LastIndex); Assert.Equal("number", first.LastGroup);
         Assert.Equal(6, first.Groups[1].StartOffsetInBytes); Assert.Equal(11, first.Groups[2].StartOffsetInBytes);
-        Assert.True(alias.MoveNext()); Assert.Equal("other", cursor.Current.Groups[1].ValueText);
-        Assert.Equal("345", cursor.Current.Groups[2].ValueText); Assert.Equal(2, cursor.Current.LastIndex);
-        alias.Dispose(); cursor.Dispose(); Assert.Equal("12", first.Groups[2].ValueText);
+        Assert.True(alias.MoveNext(out cursorRange)); Assert.Equal("other", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
+        Assert.Equal("345", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(2).Span)); Assert.Equal(2, cursorRange.LastIndex);
+        alias.Dispose(); cursor.Dispose(); Assert.Equal("12", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(2).Span));
         Assert.Equal(2, first.LastIndex); Assert.Equal("number", first.LastGroup);
     }
     [Theory]

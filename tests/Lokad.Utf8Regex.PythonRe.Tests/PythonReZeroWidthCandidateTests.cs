@@ -81,17 +81,18 @@ public sealed class PythonReZeroWidthCandidateTests
     [Fact]
     public void PythonWordBoundaryAndRetainedCapturesKeepTheirOwnUnicodeDefinition()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"\b(?P<n>\d+)\b");
         var input = Encoding.UTF8.GetBytes("a1 12_ 3é ٤٥ ६७ 𝟙𝟚 9\u0301");
         var matches = regex.FindIterDetailed(input);
         Assert.Equal(new[] { "٤٥", "६७", "𝟙𝟚", "9" }, matches.Select(match => match.Groups[1].ValueText));
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var retained = alias.Current;
-        while (alias.MoveNext()) { }
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        while (alias.MoveNext(out cursorRange)) { }
         alias.Dispose();
-        Assert.Equal("٤٥", retained.Groups[1].ValueText);
+        Assert.Equal("٤٥", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal("n", retained.LastGroup);
     }
 

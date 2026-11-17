@@ -104,6 +104,7 @@ public sealed class PythonUnicodeVersionTests
     [InlineData(false)] [InlineData(true)]
     public void CapturedCursorsKeepTheirOriginalDeadlineTokenAndSnapshots(bool expire)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
@@ -113,14 +114,14 @@ public sealed class PythonUnicodeVersionTests
             TimeSpan.FromMilliseconds(20), policy);
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("😀\u1C89é\U0001E5D0中"), 0, token.Token);
         var alias = cursor;
-        ticks = 5; Assert.True(alias.MoveNext()); var retained = cursor.Current;
-        Assert.Equal("é", retained.Groups[1].ValueText);
+        ticks = 5; Assert.True(alias.MoveNext(out cursorRange)); var retained = cursorRange;
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal((7, 9), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         if (expire)
-        { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext()); }
+        { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)); }
         else
-        { token.Cancel(); Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()).CancellationToken); }
-        Assert.Equal("é", retained.Groups[1].ValueText);
+        { token.Cancel(); Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken); }
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal("w", retained.LastGroup);
     }
 
@@ -159,7 +160,7 @@ public sealed class PythonUnicodeVersionTests
         Assert.Equal(expected, regex.SearchDetailed(input).Success);
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.Equal(expected, cursor.MoveNext());
+        Assert.Equal(expected, cursor.MoveNext(out _));
     }
 
     [Theory]
@@ -177,11 +178,12 @@ public sealed class PythonUnicodeVersionTests
     [Fact]
     public void NonBoundaryEmptyMatchesAdvanceAcrossWholeScalars()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"\B");
         Assert.Equal(0, regex.Count(""u8));
         using var cursor = regex.CreateMatchCursor("😀"u8.ToArray());
-        Assert.True(cursor.MoveNext()); Assert.Equal(0, cursor.Current.Value.StartOffsetInBytes);
-        Assert.True(cursor.MoveNext()); Assert.Equal(4, cursor.Current.Value.StartOffsetInBytes);
-        Assert.False(cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange)); Assert.Equal(0, cursorRange.Value.StartOffsetInBytes);
+        Assert.True(cursor.MoveNext(out cursorRange)); Assert.Equal(4, cursorRange.Value.StartOffsetInBytes);
+        Assert.False(cursor.MoveNext(out cursorRange));
     }
 }

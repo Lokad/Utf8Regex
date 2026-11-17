@@ -47,6 +47,7 @@ public sealed class PythonReLaterAsciiCandidateTests
     [Fact]
     public void OutputAndCursorConsumersKeepCapturesAndRetainedAliases()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var prefix = new string('a', 63);
         using var regex = new Utf8PythonRegex(prefix + "([0-9]+)");
         var skipped = "😀" + new string('a', 2049);
@@ -55,14 +56,14 @@ public sealed class PythonReLaterAsciiCandidateTests
         Assert.Equal(new[] { skipped, "12", "!", "34", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var retained = alias.Current;
-        Assert.Equal("12", retained.Groups[1].ValueText);
-        Assert.True(alias.MoveNext());
-        Assert.Equal("34", cursor.Current.Groups[1].ValueText);
-        Assert.False(cursor.MoveNext());
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+        Assert.True(alias.MoveNext(out cursorRange));
+        Assert.Equal("34", System.Text.Encoding.UTF8.GetString(cursorRange.GetGroupMemory(1).Span));
+        Assert.False(cursor.MoveNext(out cursorRange));
         alias.Dispose();
-        Assert.Equal("12", retained.Groups[1].ValueText);
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Theory]

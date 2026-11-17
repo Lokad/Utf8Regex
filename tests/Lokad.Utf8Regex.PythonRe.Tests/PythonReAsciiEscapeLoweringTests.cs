@@ -84,6 +84,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
     [InlineData(true)]
     public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults( bool union)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         using var regex = new Utf8PythonRegex(union ? @"(?ai:([\w-]))(?u:([\w-]))(?a:([^\w-]))"
             : @"(?ai:(\w))(?u:(\w))(?a:(\W))");
         var input = "aé😀 bé😀"u8.ToArray();
@@ -95,10 +96,10 @@ public sealed class PythonReAsciiEscapeLoweringTests
         var cursor = regex.CreateMatchCursor(input);
         try
         {
-            Assert.True(cursor.MoveNext());
-            Assert.Equal((3, 7), (cursor.Current.Groups[3].StartOffsetInBytes, cursor.Current.Groups[3].EndOffsetInBytes));
-            Assert.True(cursor.MoveNext());
-            Assert.False(cursor.MoveNext());
+            Assert.True(cursor.MoveNext(out cursorRange));
+            Assert.Equal((3, 7), (cursorRange.Groups[3].StartOffsetInBytes, cursorRange.Groups[3].EndOffsetInBytes));
+            Assert.True(cursor.MoveNext(out cursorRange));
+            Assert.False(cursor.MoveNext(out cursorRange));
         }
         finally { cursor.Dispose(); }
     }

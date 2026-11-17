@@ -60,6 +60,7 @@ internal static partial class BenchmarkInspectReporter
     // or a Status qualification. Outputs remain owned until the next invocation.
     public static int RunMeasurePythonReHandoffBulk(string? iterationsText, string? samplesText)
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var iterations = string.IsNullOrWhiteSpace(iterationsText) ? 20 : ParseIterations(iterationsText);
         var samples = Math.Clamp(ParseSamples(samplesText), 1, 9);
         var policy = new Utf8ResourcePolicy
@@ -108,9 +109,9 @@ internal static partial class BenchmarkInspectReporter
             {
                 using var cursor = pattern.CreateMatchCursor(input);
                 var found = 0;
-                while (found < maximum && cursor.MoveNext())
+                while (found < maximum && cursor.MoveNext(out cursorRange))
                 {
-                    if (cursor.Current.Value.ValueText != "ab")
+                    if (!cursorRange.GetValueMemory().Span.SequenceEqual("ab"u8))
                         throw new InvalidOperationException("Unexpected cursor value.");
                     found++;
                 }

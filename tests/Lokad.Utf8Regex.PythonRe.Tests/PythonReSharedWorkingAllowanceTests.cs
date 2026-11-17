@@ -108,12 +108,13 @@ public sealed class PythonReSharedWorkingAllowanceTests
     [Fact]
     public void OwnedProjectionRefundsItsIndexAndScratchWithoutInvalidatingItsSnapshot()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var allowance = new Allowance(1 << 20);
         using var cursor = new Utf8PythonRegex("(?P<x>.)").CreateMatchCursor("é😀"u8.ToArray(), 0, default, allowance);
-        Assert.True(cursor.MoveNext()); var retained = cursor.Current;
+        Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Assert.True(allowance.Used > 0);
         cursor.Dispose(); Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("é", retained.Groups[1].ValueText);
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Fact]

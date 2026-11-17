@@ -353,3 +353,17 @@ Consult the [Core](SPEC.md), [PythonRe](SPEC-PYTHONRE.md), [PCRE2](SPEC-PCRE2.md
 and [POSIX](SPEC-POSIX.md) contracts for exact admission and lifetime rules.
 Historical benchmark rows retain their versions; they are not a universal speed
 or full-equivalence promise for a new package.
+
+### PythonRe cursor ranges
+
+`Utf8PythonMatchCursor.Current` and no-output `MoveNext` overloads are removed.
+Use `MoveNext(out Utf8PythonRangeMatch match, token = default)` and keep that
+value, or use `MoveNextRetained` with a caller-owned working allowance. Both
+advance the same cursor position. Capture/last-closed metadata, original and
+per-advance cancellation, deadlines and cumulative limits remain in force.
+
+Range metadata survives advances, failure and disposal. Its byte views borrow the
+subject, which must stay unchanged with its manager alive while read. Decode or
+copy selected bytes in the host when owned text is needed; host allocation and
+final publication checks are outside regex controls. One-shot owned detailed
+results remain available pending their separate API reduction.

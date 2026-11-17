@@ -52,6 +52,7 @@ public sealed class PythonReFamilyByteUnionTests
     [Fact]
     public void EveryWorkCutoffAndCursorAliasRetainsTheCallerLoan()
     {
+        Utf8PythonRangeMatch cursorRange_durable = default;
         var regex = new Utf8PythonRegex("item-([0-9]+)");
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var program = (Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram", flags)!.GetValue(regex)!;
@@ -88,9 +89,9 @@ public sealed class PythonReFamilyByteUnionTests
 
         using var durable = regex.CreateMatchCursor(input);
         var alias = durable;
-        Assert.True(durable.MoveNext()); var retained = alias.Current;
-        Assert.False(alias.MoveNext()); alias.Dispose();
-        Assert.Equal("12", retained.Groups[1].ValueText);
+        Assert.True(durable.MoveNext(out cursorRange_durable)); var retained = cursorRange_durable;
+        Assert.False(alias.MoveNext(out cursorRange_durable)); alias.Dispose();
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Theory]

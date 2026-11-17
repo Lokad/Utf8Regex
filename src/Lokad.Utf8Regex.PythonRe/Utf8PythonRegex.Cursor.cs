@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Creates an incremental cursor over one unchanged, well-formed UTF-8 memory subject.</summary>
-    /// <remarks>The memory and its manager must remain valid until exhaustion or disposal. Returned snapshots own their values.</remarks>
+    /// <remarks>Returned ranges own immutable metadata and borrow the subject. Keep its bytes unchanged and its manager alive while reading any returned bytes.</remarks>
     public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input)
         => CreateMatchCursor(input, 0, CancellationToken.None);
 

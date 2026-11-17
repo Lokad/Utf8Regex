@@ -82,16 +82,17 @@ public sealed class PythonReUnicodeBoundaryTests
     [Fact]
     public void CapturesEmptyAlternativesAndCursorAliasesStayOwned()
     {
+        Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(@"(?P<b>\b)|(?P<a>a)");
         var control = new Utf8PythonRegex(@"(?P<b>(?:(?<!\w)(?=\w)|(?<=\w)(?!\w)))|(?P<a>a)");
         var input = "a éa😀a"u8.ToArray();
         Assert.Equal(control.FindIterDetailed(input).Select(x => x.Groups), regex.FindIterDetailed(input).Select(x => x.Groups));
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.True(cursor.MoveNext());
-        var alias = cursor; var retained = cursor.Current; var groups = retained.Groups;
-        Assert.True(alias.MoveNext()); Assert.Equal(alias.Current, cursor.Current);
-        while (cursor.MoveNext()) { }
-        cursor.Dispose(); Assert.Equal(groups, retained.Groups);
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var alias = cursor; var retained = cursorRange; var groups = retained.Groups.ToArray();
+        Assert.True(alias.MoveNext(out cursorRange)); Assert.Equal(cursorRange, cursorRange);
+        while (cursor.MoveNext(out cursorRange)) { }
+        cursor.Dispose(); Assert.Equal(groups, retained.Groups.ToArray());
     }
 
     [Theory]
