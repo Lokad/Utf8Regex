@@ -36,9 +36,9 @@ public sealed class Utf8SingleCategoryCountTests
             Assert.Equal(expected, diagnostic.Result); Assert.Equal(LetterRoute, diagnostic.ExecutionRoute);
         }
         // Count's proof does not change scalar capture materialization.
-        var captured = new Utf8Regex(@"(\p{L})").MatchDetailed("😀𐐀"u8);
-        Assert.Equal(4, captured.IndexInBytes); Assert.Equal(4, captured.LengthInBytes);
-        Assert.Equal(4, captured.GetGroup(1).IndexInBytes); Assert.Equal(4, captured.GetGroup(1).LengthInBytes);
+        var captured = Utf8MatchSequence.First(new Utf8Regex(@"(\p{L})").CreateMatchCursor("😀𐐀"u8.ToArray()));
+        Assert.Equal(4, captured.Value.StartOffsetInBytes); Assert.Equal(4, (captured.Value.EndOffsetInBytes - captured.Value.StartOffsetInBytes));
+        Assert.Equal(4, (captured.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default)); Assert.Equal(4, ((captured.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (captured.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default)));
     }
 
     [Theory]

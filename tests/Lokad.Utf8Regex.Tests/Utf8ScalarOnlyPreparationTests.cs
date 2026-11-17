@@ -18,9 +18,9 @@ public sealed class Utf8ScalarOnlyPreparationTests
         const string text = "😀abababab中abababab";
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal((4, 8), (match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal("abab", match.GetGroup("x").GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((4, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         var count = 0;
         foreach (var value in regex.EnumerateMatches(input))
         { Assert.Equal(8, value.LengthInBytes); count++; }
@@ -33,7 +33,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
         using var source = new CancellationTokenSource(); source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("abab", match.GetGroup("x").GetValueString());
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
     }
 
     [Theory]
@@ -45,9 +45,9 @@ public sealed class Utf8ScalarOnlyPreparationTests
         AssertScalarPreparation(regex);
         var input = "😀abababab中"u8;
         Assert.Equal(1, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal((4, 8), (match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal("abab", match.GetGroup("x").GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
+        Assert.Equal((4, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
     }
 
     [Theory]
@@ -59,10 +59,10 @@ public sealed class Utf8ScalarOnlyPreparationTests
         AssertScalarPreparation(regex);
         var input = "😀A𐐀中"u8;
         Assert.Equal(1, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal((4, 5), (match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal("𐐀", match.GetGroup("x").GetValueString());
-        Assert.Equal(1, match.GetGroup("x").CaptureCount);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
+        Assert.Equal((4, 5), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.Equal("𐐀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
     }
 
     [Theory]

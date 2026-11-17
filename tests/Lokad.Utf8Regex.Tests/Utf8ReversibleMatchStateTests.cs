@@ -10,38 +10,38 @@ public sealed class Utf8ReversibleMatchStateTests
     public void ScalarRollbackKeepsEarlierCapturesAndDiscardsFailedBranchHistory()
     {
         var regex = new Utf8Regex("(?<x>😀)(?:(?<x>𐐨)(?<y>a)q|(?<x>𐐨)(?<y>a))z", RegexOptions.CultureInvariant);
-        var match = regex.MatchDetailed("😀𐐨az"u8);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀𐐨az"u8.ToArray()));
         Assert.True(match.Success);
-        Assert.Equal((0, 10), (match.IndexInBytes, match.LengthInBytes));
-        var x = match.GetGroup("x");
-        Assert.Equal(2, x.CaptureCount);
-        Assert.Equal((0, 4), (x.GetCapture(0).IndexInBytes, x.GetCapture(0).LengthInBytes));
-        Assert.Equal((4, 4), (x.GetCapture(1).IndexInBytes, x.GetCapture(1).LengthInBytes));
-        var y = match.GetGroup("y");
-        Assert.Equal(1, y.CaptureCount);
-        Assert.Equal((8, 1), (y.IndexInBytes, y.LengthInBytes));
+        Assert.Equal((0, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.True(match.TryGetGroup("x", out var x));
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal((0, 4), (match.GetCaptures(regex.GroupNumberFromName("x"))[0].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromName("x"))[0].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromName("x"))[0].StartOffsetInBytes)));
+        Assert.Equal((4, 4), (match.GetCaptures(regex.GroupNumberFromName("x"))[1].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromName("x"))[1].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromName("x"))[1].StartOffsetInBytes)));
+        Assert.True(match.TryGetGroup("y", out var y));
+        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromName("y")).Length);
+        Assert.Equal((8, 1), (y.StartOffsetInBytes, (y.EndOffsetInBytes - y.StartOffsetInBytes)));
     }
 
     [Fact]
     public void HugeSyntacticRepeatUsesReachableSubjectBound()
     {
         var regex = new Utf8Regex("((?:a|b){0,2147483647})z", RegexOptions.CultureInvariant);
-        var match = regex.MatchDetailed("abz"u8);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("abz"u8.ToArray()));
         Assert.True(match.Success);
-        Assert.Equal(3, match.LengthInBytes);
-        Assert.Equal((0, 2), (match.GetGroup(1).IndexInBytes, match.GetGroup(1).LengthInBytes));
+        Assert.Equal(3, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.Equal((0, 2), ((match.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default), ((match.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default))));
     }
 
     [Fact]
     public void FailedAlternativeRestoresScalarCaptures()
     {
         var regex = new Utf8Regex("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-        var match = regex.MatchDetailed("bd"u8);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("bd"u8.ToArray()));
         Assert.True(match.Success);
-        Assert.Equal(2, match.LengthInBytes);
-        Assert.False(match.GetGroup(1).Success);
-        Assert.Equal(0, match.GetGroup(1).CaptureCount);
-        Assert.Equal((0, 1), (match.GetGroup(2).IndexInBytes, match.GetGroup(2).LengthInBytes));
+        Assert.Equal(2, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.False((match.TryGetGroup(1, out var range4) ? range4.Success : default));
+        Assert.Equal(0, match.GetCaptures(1).Length);
+        Assert.Equal((0, 1), ((match.TryGetGroup(2, out var range5) ? range5.StartOffsetInBytes : default), ((match.TryGetGroup(2, out var range6) ? range6.EndOffsetInBytes : default) - (match.TryGetGroup(2, out var range7) ? range7.StartOffsetInBytes : default))));
     }
 
     [Fact]

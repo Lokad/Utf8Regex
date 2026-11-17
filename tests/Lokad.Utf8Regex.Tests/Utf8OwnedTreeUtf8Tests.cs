@@ -49,7 +49,7 @@ public sealed class Utf8OwnedTreeUtf8Tests
         foreach (var subject in subjects)
         {
             var input = Encoding.UTF8.GetBytes(subject);
-            var expected = text.MatchDetailed(input);
+            var expected = Utf8MatchSequence.First(text.CreateMatchCursor(input));
             var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
             var actual = Utf8SliceRunner.TryFindFirst(program, input, program.RightToLeft ? input.Length : 0,
@@ -57,14 +57,14 @@ public sealed class Utf8OwnedTreeUtf8Tests
             Assert.Equal(Utf8ExecutionLimitKind.None, actual.Breach);
             Assert.Equal(expected.Success, actual.Found);
             if (!actual.Found) continue;
-            Assert.Equal((expected.IndexInBytes, expected.IndexInBytes + expected.LengthInBytes), (actual.StartByte, actual.EndByte));
+            Assert.Equal((expected.Value.StartOffsetInBytes, expected.Value.StartOffsetInBytes + (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)), (actual.StartByte, actual.EndByte));
             var numbers = tree.CaptureCatalog.GroupNumbers;
             for (var slot = 0; slot < numbers.Length - 1; slot++)
             {
-                var group = expected.GetGroup(numbers[slot + 1]);
+                Assert.True(expected.TryGetGroup(numbers[slot + 1], out var group));
                 Assert.Equal(group.Success, starts[slot] >= 0 && ends[slot] >= 0);
                 if (group.Success)
-                    Assert.Equal((group.IndexInBytes, group.IndexInBytes + group.LengthInBytes),
+                    Assert.Equal((group.StartOffsetInBytes, group.StartOffsetInBytes + (group.EndOffsetInBytes - group.StartOffsetInBytes)),
                         (Math.Min(starts[slot], ends[slot]), Math.Max(starts[slot], ends[slot])));
             }
         }

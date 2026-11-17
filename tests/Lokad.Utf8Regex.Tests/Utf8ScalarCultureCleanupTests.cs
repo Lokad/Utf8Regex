@@ -44,13 +44,13 @@ public sealed class Utf8ScalarCultureCleanupTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
             Assert.Equal(input.Length, regex.Match(input).LengthInBytes);
-            var detailed = regex.MatchDetailed(input);
-            Assert.Equal((0, input.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
-            Assert.Equal(text, detailed.GetValueString());
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
             Assert.Equal(patternId == 0 ? "\u0130" : "\U0001f600",
-                detailed.GetGroup(patternId == 0 ? "col" : "before").GetValueString());
+                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName(patternId == 0 ? "col" : "before")).Span));
             Assert.Equal(patternId == 0 ? "23" : "\U0001f600",
-                detailed.GetGroup(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name").GetValueString());
+                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name")).Span));
             Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
@@ -93,9 +93,9 @@ public sealed class Utf8ScalarCultureCleanupTests
                 Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
                 Assert.Equal(oracle.Count(text), regex.Count(input));
                 var wanted = oracle.Match(text);
-                var found = regex.MatchDetailed(input);
+                var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                 Assert.Equal(wanted.Success, found.Success);
-                if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, found.GetGroup("x").GetValueString());
+                if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
                 Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
                 var positions = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInUtf16, match.LengthInUtf16));

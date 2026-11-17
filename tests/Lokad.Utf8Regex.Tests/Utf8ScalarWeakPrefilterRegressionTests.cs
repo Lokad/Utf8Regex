@@ -22,11 +22,11 @@ public sealed class Utf8ScalarWeakPrefilterRegressionTests
             var regex = new Utf8Regex("(?<value>" + item.Item1 + ")", RegexOptions.CultureInvariant | lane);
             var input = Encoding.UTF8.GetBytes(item.Item2);
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
+            var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal((item.Item3, item.Item4), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal((item.Item3, item.Item4), (detailed.IndexInBytes, detailed.LengthInBytes));
-            var capture = detailed.GetGroup("value");
-            Assert.Equal((item.Item3, item.Item4), (capture.IndexInBytes, capture.LengthInBytes));
+            Assert.Equal((item.Item3, item.Item4), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            Assert.True(detailed.TryGetGroup("value", out var capture));
+            Assert.Equal((item.Item3, item.Item4), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Equal(cancelled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token)).CancellationToken);

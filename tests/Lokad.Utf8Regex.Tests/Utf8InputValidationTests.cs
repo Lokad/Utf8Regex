@@ -108,7 +108,7 @@ public sealed class Utf8InputValidationTests
             Assert.Equal(Observe(strict, () => strict.IsMatch(input)), Observe(assumed, () => assumed.IsMatch(input)));
             Assert.Equal(Observe(strict, () => strict.Count(input)), Observe(assumed, () => assumed.Count(input)));
             Assert.Equal(Observe(strict, () => strict.Match(input)), Observe(assumed, () => assumed.Match(input)));
-            Assert.Equal(Observe(strict, () => strict.MatchDetailed(input).Success), Observe(assumed, () => assumed.MatchDetailed(input).Success));
+            Assert.Equal(Observe(strict, () => Utf8MatchSequence.First(strict.CreateMatchCursor(input)).Success), Observe(assumed, () => Utf8MatchSequence.First(assumed.CreateMatchCursor(input)).Success));
             Assert.Equal(Observe(strict, () => strict.Replace(input, "X")), Observe(assumed, () => assumed.Replace(input, "X")));
             Assert.Equal(Observe(strict, () => strict.Replace(input, "X"u8)), Observe(assumed, () => assumed.Replace(input, "X"u8)));
             Assert.Equal(Observe(strict, () => Encoding.UTF8.GetString(strict.Replace(input, "X"))), Observe(assumed, () => Encoding.UTF8.GetString(assumed.Replace(input, "X"))));
@@ -131,7 +131,7 @@ public sealed class Utf8InputValidationTests
         Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
         Assert.Throws<ArgumentException>(() => regex.Count(input));
         Assert.Throws<ArgumentException>(() => regex.Match(input));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         Assert.Throws<ArgumentException>(() => regex.Replace(input, "x"));
         Assert.Throws<ArgumentException>(() => Splits(regex, input));
         Assert.Throws<ArgumentException>(() => Matches(regex, input));
@@ -212,7 +212,7 @@ public sealed class Utf8InputValidationTests
         var work = new Utf8Regex(@"(a+)\1", resourcePolicy: new() { MaxWorkSteps = 1 }, inputValidation: Utf8InputValidation.AssumeValid);
         Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count("aaaa"u8));
         var memory = new Utf8Regex(@"(a+)\1", resourcePolicy: new() { MaxWorkingBytes = 1 }, inputValidation: Utf8InputValidation.AssumeValid);
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => memory.MatchDetailed("aaaa"u8));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(memory.CreateMatchCursor("aaaa"u8.ToArray())));
     }
 
     [Theory]

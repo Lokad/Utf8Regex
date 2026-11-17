@@ -151,14 +151,10 @@ public sealed class Utf8AnchoredLiteralSuffixTests
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var expected = oracle.Match(inputText);
             var regex = new Utf8Regex(pattern, options);
-            var actual = regex.MatchDetailed(input);
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, actual.Success);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            if (expected.Success)
-            {
-                Assert.Equal(expected.Index, actual.GetGroup(0).IndexInUtf16);
-                Assert.Equal(expected.Length, actual.GetGroup(0).LengthInUtf16);
-            }
+            Utf8MatchSequence.AssertCaptures(expected, actual, input, inputText);
         }
     }
 
@@ -252,7 +248,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         var regex = new Utf8Regex(pattern, options);
 
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+        Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
         var expectedCount = 0;
         foreach (System.Text.RegularExpressions.Match _ in oracle.Matches(inputText))
         {

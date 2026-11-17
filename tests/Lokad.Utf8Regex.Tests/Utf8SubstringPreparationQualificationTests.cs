@@ -238,12 +238,12 @@ public sealed class Utf8SubstringPreparationQualificationTests
             var regex = new Utf8Regex("(abcdefghijkl)", options | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var input = "😀aBcDeFgHiJkL中ABcDEFGHIJKLé"u8.ToArray();
             Assert.Equal(2, regex.Count(input));
-            var match = regex.MatchDetailed(input);
-            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? 19 : 4, match.IndexInBytes);
-            Assert.Equal(12, match.LengthInBytes); Assert.Equal(12, match.LengthInUtf16);
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? 19 : 4, match.Value.StartOffsetInBytes);
+            Assert.Equal(12, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
             var unicode = new Utf8Regex("(éabcdefghijkl)", options | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var scalarMatch = unicode.MatchDetailed("😀ÉABCDEFGHIJKL中"u8);
-            Assert.Equal((4, 14, 13), (scalarMatch.IndexInBytes, scalarMatch.LengthInBytes, scalarMatch.LengthInUtf16));
+            var scalarMatch = Utf8MatchSequence.First(unicode.CreateMatchCursor("😀ÉABCDEFGHIJKL中"u8.ToArray()));
+            Assert.Equal((4, 18), (scalarMatch.Value.StartOffsetInBytes, scalarMatch.Value.EndOffsetInBytes));
             Assert.Equal(3, new Utf8Regex(".", options | RegexOptions.CultureInvariant).Count("😀中é"u8));
             var malformed = input.Concat(new byte[] { 0xff }).ToArray();
             Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));

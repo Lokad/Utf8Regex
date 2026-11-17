@@ -1,17 +1,6 @@
 interface IUtf8MemoryAllowance
   method abstract Boolean TryReserve(UInt64 bytes)
   method abstract Void Release(UInt64 bytes)
-readonly ref struct Utf8CaptureContext
-  property Boolean IsByteAligned { get; }
-  property Boolean Success { get; }
-  property Int32 IndexInBytes { get; }
-  property Int32 IndexInUtf16 { get; }
-  property Int32 LengthInBytes { get; }
-  property Int32 LengthInUtf16 { get; }
-  method Boolean TryGetByteRange(out Int32 indexInBytes, out Int32 lengthInBytes)
-  method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
-  method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
 readonly struct Utf8CaptureRange
   property Boolean Success { get; }
   property Int32 EndOffsetInBytes { get; }
@@ -28,35 +17,7 @@ readonly struct Utf8ConstructionPolicy : IEquatable<Utf8ConstructionPolicy>
   method virtual Boolean Equals(Object obj)
   method virtual Int32 GetHashCode()
   method virtual String ToString()
-readonly ref struct Utf8GroupContext
-  property Boolean IsByteAligned { get; }
-  property Boolean Success { get; }
-  property Int32 CaptureCount { get; }
-  property Int32 IndexInBytes { get; }
-  property Int32 IndexInUtf16 { get; }
-  property Int32 LengthInBytes { get; }
-  property Int32 LengthInUtf16 { get; }
-  method Boolean TryGetByteRange(out Int32 indexInBytes, out Int32 lengthInBytes)
-  method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
-  method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
-  method Utf8CaptureContext GetCapture(Int32 index)
 enum Utf8InputValidation : Int32 { AssumeValid = 1, Validate = 0 }
-readonly ref struct Utf8MatchContext
-  property Boolean IsByteAligned { get; }
-  property Boolean Success { get; }
-  property Int32 GroupCount { get; }
-  property Int32 IndexInBytes { get; }
-  property Int32 IndexInUtf16 { get; }
-  property Int32 LengthInBytes { get; }
-  property Int32 LengthInUtf16 { get; }
-  method Boolean TryGetByteRange(out Int32 indexInBytes, out Int32 lengthInBytes)
-  method Boolean TryGetGroup(Int32 number, out Utf8GroupContext group)
-  method Boolean TryGetGroup(String name, out Utf8GroupContext group)
-  method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
-  method String GetValueString()
-  method Utf8GroupContext GetGroup(Int32 number)
-  method Utf8GroupContext GetGroup(String name)
 sealed class Utf8MemoryAdmissionException : Exception, Runtime.Serialization.ISerializable
   ctor Utf8MemoryAdmissionException(UInt64 requestedBytes)
   property UInt64 RequestedBytes { get; }
@@ -105,8 +66,6 @@ sealed class Utf8Regex
   method String GroupNameFromNumber(Int32 i)
   method String[] GetGroupNames()
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
-  method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input)
-  method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)

@@ -14,14 +14,10 @@ public sealed class Utf8CaptureSlotRetirementTests
     }
 
     [Theory]
-    [InlineData("(?<outer>a(?<inner>😀)b)", false)]
-    [InlineData("(a)(?<outer>(?<inner>😀))", false)]
-    [InlineData("(?<outer>a(?<inner>😀)?b)", false)]
-    [InlineData("(?<outer>a(?<inner>é|😀)b)", true)]
-    [InlineData("(?<outer>(?<inner>a|b)(?:é|😀))", true)]
-    [InlineData("(?<outer>(?<left>a)?(?<right>😀)??b)", true)]
-    [InlineData("(?<piece>é|😀){2}", true)]
-    public void CaptureMapsPreserveAlreadyFinalizedCatalogNumbers(string pattern, bool alternation)
+    [InlineData("(?<outer>a(?<inner>😀)b)")]
+    [InlineData("(a)(?<outer>(?<inner>😀))")]
+    [InlineData("(?<outer>a(?<inner>😀)?b)")]
+    public void CaptureMapsPreserveAlreadyFinalizedCatalogNumbers(string pattern)
     {
         var analyzed = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
         var prepared = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(analyzed);
@@ -32,12 +28,6 @@ public sealed class Utf8CaptureSlotRetirementTests
         Assert.False(catalog.HasSharedCaptureDeclarations);
         Assert.False(catalog.HasExplicitCaptureNumbers);
         IEnumerable<int> mapped;
-        if (alternation)
-        {
-            var map = Assert.IsType<Utf8AlternationBranchSpanMap>(Utf8AlternationBranchSpanMap.TryCreate(tree, prepared.ScalarProgram!));
-            mapped = map.WholeMatchGroups.Concat(map.BranchGroups.SelectMany(static groups => groups));
-        }
-        else
         {
             var table = Assert.IsType<Utf8GroupedLiteralSpanTable>(Utf8GroupedLiteralSpanTable.TryCreate(tree, prepared.ScalarProgram!));
             mapped = table.Groups;
@@ -73,7 +63,6 @@ public sealed class Utf8CaptureSlotRetirementTests
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(tree, program));
-        Assert.Null(Utf8AlternationBranchSpanMap.TryCreate(tree, program));
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(1ul, owner.Budget.WorkSteps);
@@ -117,11 +106,7 @@ public sealed class Utf8CaptureSlotRetirementTests
         foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         var input = Encoding.UTF8.GetBytes(text);
-        var hit = regex.MatchDetailed(input);
-        for (var ordinal = 0; ordinal < regex.GetGroupNumbers().Length; ordinal++)
-        {
-            var group = hit.GetGroup(regex.GetGroupNumbers()[ordinal]);
-            for (var capture = 0; capture < group.CaptureCount; capture++) Assert.True(group.GetCapture(capture).IsByteAligned);
-        }
+        var hit = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(oracle.Match(text), hit, input, text);
     }
 }

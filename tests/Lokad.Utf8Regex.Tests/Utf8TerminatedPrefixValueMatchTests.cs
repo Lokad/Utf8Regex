@@ -56,14 +56,14 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         Assert.Equal((4, 6), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var captured = new Utf8Regex(@"\G(?<prefix>///)(?<body>[^\n]*)\n");
         var input = "///value\n///next\n"u8.ToArray();
-        var value = captured.Match(input); var detailed = captured.MatchDetailed(input);
-        Assert.Equal("value", detailed.GetGroup("body").GetValueString());
+        var value = captured.Match(input); var detailed = Utf8MatchSequence.First(captured.CreateMatchCursor(input));
+        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("body")).Span));
         Utf8MatchSequence.EqualValue(value, captured.Match(input, 0, []));
         var cursor = captured.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         _ = captured.Match("///other\n"u8);
-        Assert.Equal("value", detailed.GetGroup("body").GetValueString());
+        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("body")).Span));
         foreach (var pattern in new[] { Pattern, @"\Ghello[^;]*;", @"\G///[^\n]*\nEND" })
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase, RegexOptions.RightToLeft })
         foreach (var text in new[] { "///é😀\nrest", "helloé;tail;", "///hi\nEND", "///hi\nwrong" })

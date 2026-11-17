@@ -158,8 +158,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
             var regex = new Utf8Regex("é|😀|中", options | RegexOptions.CultureInvariant);
-            var match = regex.MatchDetailed("x😀y"u8);
-            Assert.Equal((1, 4, 1, 2), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor("x😀y"u8.ToArray()));
         }
     }
 

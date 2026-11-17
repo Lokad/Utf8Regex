@@ -33,7 +33,7 @@ The original token, deadline and cumulative limits apply through every advance.
 This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. Offset
 existence uses `Match(input, startOffsetInBytes, captures, cancellationToken).Success`;
 All `FromUtf16Offset` matching APIs are removed. Derived UTF-16 coordinates on
-the legacy whole-subject result types have not yet been removed.
+the legacy whole-subject `Utf8ValueMatch` have not yet been removed.
 
 `CountFromUtf16Offset` is also removed. Whole-subject `Count` remains. To count from
 a byte start, consume one `EnumerateMatches(input, startOffsetInBytes, token)`
@@ -74,6 +74,12 @@ must remain valid and unchanged. A first-match caller can dispose immediately af
 the first advance. This replaces `MatchDetailedFromUtf16Offset`; it avoids its dense
 coordinate map and retains original-subject lookbehind/anchor context. Numeric
 working/result requirements follow cursor scratch and snapshot publication.
+Core `MatchDetailed`, `Utf8MatchContext`, `Utf8GroupContext` and
+`Utf8CaptureContext` are removed. The memory cursor is the capture-history API
+for whole subjects as well as byte-start searches. `Utf8RangeMatch.Value` holds
+the whole byte range; `TryGetGroup` and `GetCaptures` expose last captures and
+closing-order histories. Metadata is available from the compiled regex even on
+a miss; the cursor returns a default result on a miss, with no group catalog.
 
 No match or a failure after matching entry clears the defined output window.
 Pre-cancellation leaves it unchanged. Interrupted publication clears the whole
@@ -352,19 +358,12 @@ separate Unicode 15.1 rules.
 `Utf8ValueMatch` is storable coordinate data; default means no match, distinct
 from a successful empty match. Unsuccessful values have zero UTF-16 coordinates;
 `TryGetByteRange` returns false/zero, and byte properties throw without a range.
-Default borrowed match/capture views expose empty values and zero coordinates.
-An unsuccessful operation retains unsuccessful group zero; a default view has no
-groups. Detailed results expose the owned capture history.
-
-After scalar matching, `MatchDetailed` can reuse the identity coordinate map
-when every returned capture history endpoint lies in a proved ASCII prefix.
-Validate still checks the complete subject; AssumeValid trusts the caller. Borrowed
-bytes remain unchanged. Lookaround captures beyond the whole match are included
-in the proof; Unicode in the
-required prefix retains full mapping, as do already admitted UTF-16 offset maps.
-History and prefix scans have bounded interruption/work checkpoints. Avoiding
-map arrays can lower working/result charges and admit formerly denied calls;
-failed proofs can add time and work. Capture arrays remain admitted before allocation.
+Capture cursors publish immutable byte-range snapshots without UTF-16 coordinate
+maps or captured strings. Capture storage is admitted before allocation and
+publication observes the original cancellation, deadline and cumulative limits.
+Modeled budget needs follow cursor scratch and snapshot storage, and can differ
+from the removed detailed views. A cursor timeout retains pattern and timeout
+identity but omits decoded input from the exception.
 
 Borrowed views require unchanged subject bytes and a live owner. Returned
 histories and owned snapshots remain valid after later discovery, denial or cursor

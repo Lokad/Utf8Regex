@@ -344,19 +344,17 @@ public sealed class Utf8SliceInlineOperationTests
         Assert.Equal(expected.Groups.Count - 1, groupStarts.Length);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal(expectedStart, detailed.IndexInUtf16);
-        Assert.Equal(expectedLength, detailed.LengthInUtf16);
-        Assert.Equal(groupStarts.Length, detailed.GroupCount - 1);
+        Utf8MatchSequence.AssertRange(detailed.Value, inputText, expectedStart, expectedLength);
+        Assert.Equal(groupStarts.Length, detailed.GroupNumbers.Length - 1);
         for (var group = 1; group <= groupStarts.Length; group++)
         {
-            var actual = detailed.GetGroup(group);
+            Assert.True(detailed.TryGetGroup(group, out var actual));
             var wanted = expected.Groups[group];
+            if (actual.Success) Utf8MatchSequence.AssertRange(actual, inputText, groupStarts[group - 1], groupLengths[group - 1]);
             Assert.Equal(wanted.Success, actual.Success);
-            Assert.Equal(groupStarts[group - 1], actual.IndexInUtf16);
-            Assert.Equal(groupLengths[group - 1], actual.LengthInUtf16);
-            Assert.Equal(wanted.Value, actual.GetValueString());
+            Assert.Equal(wanted.Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(group).Span));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

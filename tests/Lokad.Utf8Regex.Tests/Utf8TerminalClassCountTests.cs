@@ -154,10 +154,10 @@ public sealed class Utf8TerminalClassCountTests
         foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8Regex(pattern, resourcePolicy: Funded, inputValidation: validation);
-            var retained = regex.MatchDetailed(input);
-            Assert.Equal("abc", retained.GetGroup(groups).GetValueString());
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(groups).Span));
             Assert.Equal(3, regex.Count(input));
-            Assert.Equal("abc", retained.GetGroup(groups).GetValueString());
+            Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(groups).Span));
         }
     }
 

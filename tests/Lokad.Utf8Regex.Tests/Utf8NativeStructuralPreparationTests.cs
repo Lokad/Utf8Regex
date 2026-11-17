@@ -346,8 +346,8 @@ public sealed class Utf8NativeStructuralPreparationTests
             var rtl = (options & RegexOptions.RightToLeft) != 0; var match = regex.Match(input);
             Assert.True(match.Success); Assert.Equal(rtl ? 7 + row.First.Length : 4, match.IndexInBytes);
             Assert.Equal(rtl ? row.Second.Length : row.First.Length, match.LengthInBytes);
-            var detailed = regex.MatchDetailed(input); Assert.Equal(match.IndexInBytes, detailed.IndexInBytes);
-            Assert.Equal(rtl ? "Other" : "Name", detailed.GetGroup(1).GetValueString());
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.Equal(match.IndexInBytes, detailed.Value.StartOffsetInBytes);
+            Assert.Equal(rtl ? "Other" : "Name", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(2, count); Assert.Equal("😀X中X😀", Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

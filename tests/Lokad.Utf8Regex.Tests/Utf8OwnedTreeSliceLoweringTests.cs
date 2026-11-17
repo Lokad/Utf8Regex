@@ -66,9 +66,8 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
             Assert.Equal((0, 10), (regex.Match(input).IndexInBytes, regex.Match(input).LengthInBytes));
-            var detailed = regex.MatchDetailed(input);
-            Assert.Equal("\U0001f600ab\U0001f600", detailed.GetValueString());
-            Assert.Equal(6, detailed.LengthInUtf16);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal("\U0001f600ab\U0001f600", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
             Assert.Equal("<\U0001f600ab\U0001f600>", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var positions = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInBytes, match.LengthInBytes));

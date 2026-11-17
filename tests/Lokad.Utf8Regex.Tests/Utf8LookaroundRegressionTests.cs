@@ -39,7 +39,7 @@ public sealed class Utf8LookaroundRegressionTests
         Assert.Equal(oracleMatch.Success, match.Success);
         Assert.Equal(oracle.Matches(input).Count, regex.Count(inputBytes));
 
-        var detailed = regex.MatchDetailed(inputBytes);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(inputBytes));
         Assert.Equal(oracleMatch.Success, detailed.Success);
 
         var enumerated = 0;

@@ -75,6 +75,22 @@ internal static class Utf8MatchSequence
         }
     }
 
+    internal static void AssertScalarCaptures(Utf8RangeMatch match, byte[] input)
+    {
+        Assert.True(match.Success);
+        foreach (var number in match.GroupNumbers)
+        {
+            Assert.True(match.TryGetGroup(number, out var group));
+            if (group.Success) Assert.True(System.Text.Unicode.Utf8.IsValid(match.GetGroupMemory(number).Span));
+            foreach (var capture in match.GetCaptures(number))
+            {
+                Assert.True(capture.Success);
+                Assert.True(System.Text.Unicode.Utf8.IsValid(input.AsSpan(capture.StartOffsetInBytes,
+                    capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
+            }
+        }
+    }
+
     internal static void AssertRange(Utf8CaptureRange actual, string text, int index, int length)
     {
         Assert.True(actual.Success);

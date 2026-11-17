@@ -57,17 +57,17 @@ public sealed class Utf8CompletedBackreferenceTests
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), actual.IndexInBytes);
         }
         Assert.Equal(expected.Count, index);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Count != 0, detailed.Success);
         if (!detailed.Success) return;
-        var group = detailed.GetGroup(1);
+        Assert.True(detailed.TryGetGroup(1, out var group));
         var wantedGroup = expected[0].Groups[1];
-        Assert.Equal(wantedGroup.Value, group.GetValueString());
-        Assert.Equal(wantedGroup.Captures.Count, group.CaptureCount);
-        for (var capture = 0; capture < group.CaptureCount; capture++)
-            Assert.Equal(wantedGroup.Captures[capture].Value, group.GetCapture(capture).GetValueString());
+        Assert.Equal(wantedGroup.Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal(wantedGroup.Captures.Count, detailed.GetCaptures(1).Length);
+        for (var capture = 0; capture < detailed.GetCaptures(1).Length; capture++)
+            Assert.Equal(wantedGroup.Captures[capture].Value, System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(detailed.GetCaptures(1)[capture].StartOffsetInBytes, detailed.GetCaptures(1)[capture].EndOffsetInBytes - detailed.GetCaptures(1)[capture].StartOffsetInBytes)));
         // A later operation cannot rewrite retained history.
         _ = regex.Match(input);
-        Assert.Equal(wantedGroup.Value, group.GetValueString());
+        Assert.Equal(wantedGroup.Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
     }
 }

@@ -73,13 +73,13 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         Assert.Equal((5, 2), (selected.StartOffsetInBytes, selected.EndOffsetInBytes - selected.StartOffsetInBytes));
         Assert.False(offsetRegex.Match(offsetInput, 4, []).Success);
         var captured = new Utf8Regex(@"\G(?<op>[=+\-^*/.*<>~!&|?]+)");
-        var bytes = "+=-x"u8.ToArray(); var value = captured.Match(bytes); var detailed = captured.MatchDetailed(bytes);
+        var bytes = "+=-x"u8.ToArray(); var value = captured.Match(bytes); var detailed = Utf8MatchSequence.First(captured.CreateMatchCursor(bytes));
         var cursor = captured.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         _ = captured.Match("++"u8);
-        Assert.Equal("+=-", detailed.GetGroup("op").GetValueString());
+        Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("op")).Span));
         Assert.Equal(1, captured.Count(bytes));
         var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), RegexOptions.NonBacktracking, Timeout.InfiniteTimeSpan, Policy);
         Assert.Equal(3, nonBacktracking.Match(bytes, token.Token).LengthInBytes);

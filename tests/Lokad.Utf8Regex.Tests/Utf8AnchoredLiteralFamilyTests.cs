@@ -593,14 +593,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Value, actual.GetValueString());
+            Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -754,12 +753,9 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
         Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
-        if (expectedDetailed.Success)
-        {
-            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
-        }
+        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }

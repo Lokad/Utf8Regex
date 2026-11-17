@@ -62,10 +62,10 @@ public sealed class Utf8IdentifierValueMatchTests
         foreach (var pattern in new[] { "(?i:" + Pattern + ")", "[a-zA-Z][a-zA-Z0-9]*?", Pattern + "x" })
             Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern), new Regex(pattern), ["!!Abc12x.def", "Ka1!x"]);
         var regex = new Utf8Regex("(?<id>" + Pattern + ")"); var bytes = "!!abc12!de"u8.ToArray();
-        var retained = regex.MatchDetailed(bytes); var cursor = regex.EnumerateMatches(bytes); var alias = cursor;
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)); var cursor = regex.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext()); var first = alias.Current;
         Assert.Equal(first, cursor.Current); Assert.True(cursor.MoveNext()); Assert.Equal(first, alias.Current);
-        _ = regex.Match("other"u8); Assert.Equal("abc12", retained.GetGroup("id").GetValueString());
+        _ = regex.Match("other"u8); Assert.Equal("abc12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("id")).Span));
         var offset = new Utf8Regex(Pattern).Match("😀!abc!de"u8, 4, []);
         Assert.Equal((5, 3), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
     }

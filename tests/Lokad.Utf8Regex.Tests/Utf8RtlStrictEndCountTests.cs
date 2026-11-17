@@ -44,7 +44,7 @@ public sealed class Utf8RtlStrictEndCountTests
             var regex = new Utf8Regex(pattern, options | (compiled ? RegexOptions.Compiled : 0),
                 Regex.InfiniteMatchTimeout, finite ? Limits() : default);
             var expected = oracle.Match(text);
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
             Assert.Equal(expected.Success, retained.Success);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             Assert.Equal(oracle.Count(text), regex.Count(input, token.Token));
@@ -58,10 +58,10 @@ public sealed class Utf8RtlStrictEndCountTests
             }
             if (expected.Success)
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), retained.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), retained.LengthInBytes);
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), retained.Value.StartOffsetInBytes);
+                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
                 if (pattern.Contains("?<g>"))
-                    Assert.Equal(expected.Groups["g"].Value, retained.GetGroup("g").GetValueString());
+                    Assert.Equal(expected.Groups["g"].Value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("g")).Span));
             }
             Assert.Throws<ArgumentException>(() => regex.Count([.. bytes, 255]));
             Assert.Throws<ArgumentException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches([.. bytes, 255], Encoding.UTF8.GetByteCount(text.AsSpan(0, 0)))));

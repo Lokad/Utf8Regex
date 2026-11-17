@@ -79,9 +79,9 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(match.Success);
         Assert.Equal((options & RegexOptions.RightToLeft) != 0 ? 13 : 1, match.IndexInBytes);
         Assert.Equal(11, match.LengthInBytes);
-        var detailed = regex.MatchDetailed(input);
-        Assert.Equal(match.IndexInBytes, detailed.IndexInBytes);
-        Assert.Equal(match.LengthInBytes, detailed.LengthInBytes);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(match.IndexInBytes, detailed.Value.StartOffsetInBytes);
+        Assert.Equal(match.LengthInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes));
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.DebugIsOwnedSlice);
         var count = 0;

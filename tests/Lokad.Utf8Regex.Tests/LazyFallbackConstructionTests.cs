@@ -118,7 +118,7 @@ public sealed class LazyFallbackConstructionTests
         _ = regex.Match(input);
         foreach (var item in regex.EnumerateMatches(input)) { _ = item; }
         foreach (var item in regex.EnumerateSplits(input)) { _ = item; }
-        Touch(regex.MatchDetailed(input));
+        Touch(Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 0))));
 
         _ = regex.Replace(input, "X");
@@ -417,21 +417,19 @@ public sealed class LazyFallbackConstructionTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
-        var actualDetailed = detailedRegex.MatchDetailed(input);
+        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
         Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
         if (expectedDetailed.Success)
         {
-            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+            Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
             for (var number = 0; number < expectedDetailed.Groups.Count; number++)
             {
                 var expectedGroup = expectedDetailed.Groups[number];
-                var actualGroup = actualDetailed.GetGroup(number);
+                Assert.True(actualDetailed.TryGetGroup(number, out var actualGroup));
                 Assert.Equal(expectedGroup.Success, actualGroup.Success);
                 if (expectedGroup.Success)
                 {
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                    Assert.Equal(expectedGroup.Value, System.Text.Encoding.UTF8.GetString(actualDetailed.GetGroupMemory(number).Span));
                 }
             }
         }
@@ -501,10 +499,8 @@ public sealed class LazyFallbackConstructionTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var expected = oracle.Match(inputText);
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -580,19 +576,17 @@ public sealed class LazyFallbackConstructionTests
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog), "pattern=" + pattern + " options=" + options.ToString() + " offset=" + offset.ToString());
     }
 
-    private static void Touch(Utf8MatchContext match)
+    private static void Touch(Utf8RangeMatch match)
     {
+
         _ = match.Success;
-        _ = match.IndexInUtf16;
-        _ = match.GetValueString();
-        for (var i = 0; i < match.GroupCount; i++)
+        _ = match.Value;
+        _ = match.GetValueMemory();
+        foreach (var number in match.GroupNumbers)
         {
-            var group = match.GetGroup(i);
-            _ = group.GetValueString();
-            for (var j = 0; j < group.CaptureCount; j++)
-            {
-                _ = group.GetCapture(j).GetValueString();
-            }
+            Assert.True(match.TryGetGroup(number, out _));
+            _ = match.GetGroupMemory(number);
+            foreach (var capture in match.GetCaptures(number)) _ = capture.StartOffsetInBytes;
         }
     }
 }

@@ -186,7 +186,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
             Assert.Equal(17, parent.Value);
             var recovered = new Utf8Regex("(?<x>a)", options);
             Assert.Equal(1, recovered.Count("😀a"u8));
-            Assert.Equal("a", recovered.MatchDetailed("😀a"u8).GetGroup("x").GetValueString());
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(recovered.CreateMatchCursor("😀a"u8.ToArray())).GetGroupMemory(recovered.GroupNumberFromName("x")).Span));
             return;
         }
         var regex = new Utf8Regex("(?<x>a)", options);
@@ -201,7 +201,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
             Assert.Same(prepared, regex.Inspection.PreparedRegex);
             Assert.Same(scalar, regex.Inspection.AvailableOwnedSliceProgram);
             Assert.True(regex.IsMatch("😀a"u8));
-            Assert.Equal("a", regex.MatchDetailed("😀a"u8).GetGroup("x").GetValueString());
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         });
     }
 

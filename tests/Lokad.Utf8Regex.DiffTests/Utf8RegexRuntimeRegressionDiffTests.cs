@@ -144,19 +144,15 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.False(expectedCompiled.Groups[1].Success);
         Assert.Equal(!fixedOracle, expectedCompiled.Groups[2].Success);
 
-        var actual = context.Utf8.MatchDetailed(bytes);
+        var actual = global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.First(context.Utf8.CreateMatchCursor(bytes));
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.AssertCaptures(expected, actual, bytes, input);
 
-        var actualCompiled = context.Utf8Compiled.MatchDetailed(bytes);
+        var actualCompiled = global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.First(context.Utf8Compiled.CreateMatchCursor(bytes));
         Assert.Equal(expected.Success, actualCompiled.Success);
-        Assert.Equal(expected.Index, actualCompiled.IndexInUtf16);
-        Assert.Equal(expected.Length, actualCompiled.LengthInUtf16);
-        Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
-        Assert.False(actualCompiled.GetGroup(1).Success);
-        Assert.False(actualCompiled.GetGroup(2).Success);
+        global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.AssertCaptures(expected, actualCompiled, bytes, input);
+        Assert.False((actualCompiled.TryGetGroup(1, out var range1) ? range1.Success : default));
+        Assert.False((actualCompiled.TryGetGroup(2, out var range2) ? range2.Success : default));
         Assert.True(context.Utf8.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(context.Utf8Compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -186,19 +182,15 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(!fixedOracle, expectedCompiled.Groups[2].Success);
         Assert.Equal(fixedOracle ? "" : "a", expectedCompiled.Groups[2].Value);
 
-        var actual = context.Utf8.MatchDetailed(bytes);
+        var actual = global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.First(context.Utf8.CreateMatchCursor(bytes));
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.AssertCaptures(expected, actual, bytes, input);
 
-        var actualCompiled = context.Utf8Compiled.MatchDetailed(bytes);
+        var actualCompiled = global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.First(context.Utf8Compiled.CreateMatchCursor(bytes));
         Assert.Equal(expected.Success, actualCompiled.Success);
-        Assert.Equal(expected.Index, actualCompiled.IndexInUtf16);
-        Assert.Equal(expected.Length, actualCompiled.LengthInUtf16);
-        Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
-        Assert.False(actualCompiled.GetGroup(1).Success);
-        Assert.False(actualCompiled.GetGroup(2).Success);
+        global::Lokad.Utf8Regex.Tests.Utf8MatchSequence.AssertCaptures(expected, actualCompiled, bytes, input);
+        Assert.False((actualCompiled.TryGetGroup(1, out var range3) ? range3.Success : default));
+        Assert.False((actualCompiled.TryGetGroup(2, out var range4) ? range4.Success : default));
         Assert.True(context.Utf8.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(context.Utf8Compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }

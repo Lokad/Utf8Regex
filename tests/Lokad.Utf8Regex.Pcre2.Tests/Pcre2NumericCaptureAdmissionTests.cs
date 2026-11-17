@@ -140,10 +140,15 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     {
         var pattern = $"(?<{number}>😀)";
         var oracle = new Regex(pattern).Match("z😀z").Groups[number];
-        var match = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes("z😀z"));
-        var group = match.GetGroup(number);
+        var regex = new Utf8Regex(pattern);
+        var input = Encoding.UTF8.GetBytes("z😀z");
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        Assert.True(regex.Match(input, 0, slots).Success);
+        Assert.Equal(number, regex.GroupNumberFromCaptureSlot(1));
+        var group = slots[1];
         Assert.True(group.Success);
-        Assert.Equal(oracle.Value, group.GetValueString());
+        Assert.Equal(oracle.Value, Encoding.UTF8.GetString(input.AsSpan(
+            group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes)));
     }
 
     private static void AssertGroup(Utf8Pcre2GroupContext group, string? value, string text)

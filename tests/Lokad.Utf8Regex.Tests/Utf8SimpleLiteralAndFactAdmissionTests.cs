@@ -428,7 +428,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var input = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var match = regex.Match(input); Assert.Equal(4, match.IndexInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, match.LengthInBytes);
-            Assert.Equal(match.IndexInBytes, regex.MatchDetailed(input).IndexInBytes);
+            Assert.Equal(match.IndexInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.StartOffsetInBytes);
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal(match.LengthInBytes, item.LengthInBytes); count++; }
             Assert.Equal(2, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

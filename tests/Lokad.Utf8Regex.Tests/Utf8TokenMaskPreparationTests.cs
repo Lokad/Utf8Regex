@@ -118,8 +118,8 @@ public sealed class Utf8TokenMaskPreparationTests
             var regex = new Utf8Regex("[a-z]+:[a-z]+[0-9]+", options);
             var input = "😀 a:abc12 é"u8;
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
-            Assert.Equal((5, 7), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((5, 7), (detailed.IndexInBytes, detailed.LengthInBytes));
+            var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
+            Assert.Equal((5, 7), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((5, 7), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(1, regex.Count("a:abc12"u8));
             Assert.Equal(7, regex.Match("a:abc12"u8).LengthInBytes);
         }

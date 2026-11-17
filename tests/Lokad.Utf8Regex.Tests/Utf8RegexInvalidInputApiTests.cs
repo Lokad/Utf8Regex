@@ -16,7 +16,7 @@ public sealed class Utf8RegexInvalidInputApiTests
 
         Assert.Throws<ArgumentException>(() => regex.IsMatch(s_invalidUtf8));
         Assert.Throws<ArgumentException>(() => regex.Match(s_invalidUtf8));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailed(s_invalidUtf8));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(s_invalidUtf8)));
         Assert.Throws<ArgumentException>(() => regex.Count(s_invalidUtf8));
     }
 
@@ -144,7 +144,7 @@ public sealed class Utf8RegexInvalidInputApiTests
         Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
         Assert.Throws<ArgumentException>(() => regex.Count(input));
         Assert.Throws<ArgumentException>(() => regex.Match(input));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         Assert.Throws<ArgumentException>(() =>
         {
             var enumerator = regex.EnumerateMatches(input);

@@ -40,8 +40,8 @@ public sealed class Utf8ProfileTokenQualificationTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant); Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
-            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
     private static void AsciiOracle(string pattern, IEnumerable<string> subjects, Utf8FallbackDirectFamilyPlan plan)
@@ -112,8 +112,8 @@ public sealed class Utf8ProfileTokenQualificationTests
         Assert.Equal((1, 2, 1, 2, 2, 4), ((int)plan.FirstFieldMinCount, plan.FirstFieldMaxCount, plan.SecondFieldMinCount, plan.SecondFieldMaxCount, plan.ThirdFieldMinCount, plan.ThirdFieldMaxCount));
         Assert.True(plan.RequireLeadingBoundary); Assert.True(plan.RequireTrailingBoundary);
         Range(pattern, "😀 ١/2-٢٠ ", 5, 9);
-        var captured = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ ")).GetGroup("day");
-        Assert.Equal((5, 2), (captured.IndexInBytes, captured.LengthInBytes));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ "))).TryGetGroup("day", out var captured));
+        Assert.Equal((5, 2), (captured.StartOffsetInBytes, (captured.EndOffsetInBytes - captured.StartOffsetInBytes)));
         var input = Encoding.UTF8.GetBytes("𐐀1/2-20"); Assert.False(new Utf8Regex(pattern).IsMatch(input));
         var method = Classifier();
         foreach (var unproved in new[] { @"\d{0,2}/\d{1}/\d{1}", @"\d{1,2}?/\d{1}/\d{1}", @"(?:\d{2}){2}/\d{1}/\d{1}", @"[\dA]{1}/\d{1}/\d{1}", @"\d{1}.\d{1}/\d{1}" })
@@ -144,9 +144,9 @@ public sealed class Utf8ProfileTokenQualificationTests
         {
             var regex = new Utf8Regex(reordered, options | RegexOptions.CultureInvariant);
             var expectedLength = (options & RegexOptions.RightToLeft) != 0 ? 12 : 11;
-            var match = regex.Match("00.11.22.255"u8); var detailed = regex.MatchDetailed("00.11.22.255"u8);
+            var match = regex.Match("00.11.22.255"u8); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor("00.11.22.255"u8.ToArray()));
             Assert.Equal((0, expectedLength), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal((0, expectedLength), (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal((0, expectedLength), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.True(regex.IsMatch("00.11.22.255"u8)); Assert.Equal(1, regex.Count("00.11.22.255"u8));
         }
         Assert.False(Classify(Classifier(), Tree(Ip.Replace("[0-5]", "[0-6]"))).HasValue);

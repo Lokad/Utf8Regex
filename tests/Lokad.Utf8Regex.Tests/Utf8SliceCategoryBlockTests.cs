@@ -204,16 +204,14 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.True(expected.Success);
         var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal(expectedStart, detailed.IndexInUtf16);
-        Assert.Equal(expectedLength, detailed.LengthInUtf16);
-        Assert.Equal(1, detailed.GroupCount - 1);
-        var group = detailed.GetGroup(1);
+        Utf8MatchSequence.AssertRange(detailed.Value, inputText, expectedStart, expectedLength);
+        Assert.Equal(1, detailed.GroupNumbers.Length - 1);
+        Assert.True(detailed.TryGetGroup(1, out var group));
         Assert.True(group.Success);
-        Assert.Equal(expectedStart, group.IndexInUtf16);
-        Assert.Equal(expectedLength, group.LengthInUtf16);
-        Assert.Equal(expected.Groups[1].Value, group.GetValueString());
+        Utf8MatchSequence.AssertRange(group, inputText, expectedStart, expectedLength);
+        Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

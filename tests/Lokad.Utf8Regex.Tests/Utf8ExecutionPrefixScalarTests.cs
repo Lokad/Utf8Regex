@@ -85,9 +85,9 @@ public sealed class Utf8ExecutionPrefixScalarTests
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | mode);
             var input = Encoding.UTF8.GetBytes(row.Subject);
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
+            var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal((0, input.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
 

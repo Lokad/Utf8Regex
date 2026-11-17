@@ -213,11 +213,11 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     public void ScalarSharedDeclarationsRetainEveryCaptureAndTheFinalByteRange()
     {
         var regex = new Utf8Regex("(?<x>a)(?<x>😀)", RegexOptions.CultureInvariant);
-        var match = regex.MatchDetailed("a😀"u8);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("a😀"u8.ToArray()));
         Assert.True(match.Success);
-        var group = match.GetGroup("x");
-        Assert.Equal(2, group.CaptureCount);
-        Assert.Equal((1, 4), (group.IndexInBytes, group.LengthInBytes));
-        Assert.Equal("😀", group.GetValueString());
+        Assert.True(match.TryGetGroup("x", out var group));
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal((1, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
     }
 }

@@ -179,10 +179,11 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes("é😀中");
         var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking;
-        var context = Create("(?<x>.)+", 1000000, options).MatchDetailed(input);
-        Assert.Equal(1, context.GetGroup("x").CaptureCount);
-        Assert.Equal("中", context.GetGroup("x").GetValueString());
-        AssertResultFailure(() => Create("(?<x>.)+", 1, options).MatchDetailed(input), 1);
+        var regex = Create("(?<x>.)+", 1000000, options);
+        var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(1, context.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal("中", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        AssertResultFailure(() => Utf8MatchSequence.First(Create("(?<x>.)+", 1, options).CreateMatchCursor(input)), 1);
     }
 
     [Fact]
@@ -200,25 +201,6 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal(0UL, reservation);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         Assert.True(allocated < 16384, $"Denied map allocated {allocated} bytes.");
-    }
-
-    [Fact]
-    public void MajorCaptureProjectionIsDeniedBeforeArrayAcquisition()
-    {
-        var small = new Utf8SliceSearchOutcome(true, 0, 1, [[0]], [[1]], Utf8ExecutionLimitKind.None);
-        var map = Utf8BoundaryMap.Create("a"u8);
-        var warm = new Utf8SliceInvocation(new(0, 0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        var prepared = Utf8SliceCaptureProjection.Create(small, map, ref warm);
-        prepared.Release(ref warm);
-        var large = new Utf8SliceSearchOutcome(true, 0, 1, [new int[1000000]], [new int[1000000]], Utf8ExecutionLimitKind.None);
-        var invocation = new Utf8SliceInvocation(new(0, 0, 0, 1), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        try { Utf8SliceCaptureProjection.Create(large, map, ref invocation); Assert.Fail("Projection must deny before large arrays."); }
-        catch (InvalidOperationException) { Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.Budget.LimitBreach); }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        Assert.True(allocated < 16384, $"Denied projection allocated {allocated} bytes.");
     }
 
     [Fact]
@@ -379,9 +361,9 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = "é😀ab"u8.ToArray();
         var regex = Create("ab", 1000000);
-        var context = regex.MatchDetailed(input);
+        var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1).Replace(input, "Z")), 1);
-        Assert.Equal("ab", context.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
         var destination = new byte[] { 0x7f };
         Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace(input, "longer", destination, out var written));
         Assert.Equal(0, written);

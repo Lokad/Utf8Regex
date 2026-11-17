@@ -39,7 +39,7 @@ public sealed class Utf8CaretPrefixScopeTests
             if (expected.Success)
             {
                 Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), match.IndexInBytes);
-                Assert.Equal(expected.Value, regex.MatchDetailed(input).GetValueString());
+                Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetValueMemory().Span));
             }
             var ranges = new List<(int Start, int Length)>();
             foreach (var item in regex.EnumerateMatches(input))

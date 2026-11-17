@@ -210,10 +210,10 @@ public sealed class Utf8WindowByteBoundsTests
             Assert.True(match.Success);
             Assert.Equal(rtl ? row.First + 2 : 1, match.IndexInBytes);
             Assert.Equal(rtl ? row.Second : row.First, match.LengthInBytes);
-            var context = regex.MatchDetailed(input);
-            Assert.Equal(match.IndexInBytes, context.IndexInBytes);
-            Assert.Equal(match.LengthInBytes, context.LengthInBytes);
-            Assert.Equal(rtl ? "second" : "first", context.GetGroup(1).GetValueString());
+            var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal(match.IndexInBytes, context.Value.StartOffsetInBytes);
+            Assert.Equal(match.LengthInBytes, (context.Value.EndOffsetInBytes - context.Value.StartOffsetInBytes));
+            Assert.Equal(rtl ? "second" : "first", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(1).Span));
             var enumerator = regex.EnumerateMatches(input);
             var count = 0;
             while (enumerator.MoveNext())

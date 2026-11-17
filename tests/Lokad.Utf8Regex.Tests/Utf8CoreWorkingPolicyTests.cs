@@ -100,7 +100,7 @@ public sealed class Utf8CoreWorkingPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
         };
         var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed("😀😀😀ab"u8));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor("😀😀😀ab"u8.ToArray())));
         Assert.Equal(kind, error.ResourceKind); Assert.Equal(1UL, error.Limit); Assert.True(error.Requested > 1);
     }
 

@@ -27,18 +27,16 @@ public sealed class AnchoredUnicodeMatchRegressionTests
 
             var expectedMatch = expected.Match(input);
             var actualMatch = actual.Match(utf8);
-            var actualDetailed = actual.MatchDetailed(utf8);
+            var actualDetailed = Utf8MatchSequence.First(actual.CreateMatchCursor(utf8));
 
             Assert.Equal(expected.IsMatch(input), actual.IsMatch(utf8));
             Assert.Equal(expected.Count(input), actual.Count(utf8));
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
-            Assert.Equal(expectedMatch.Success, actualDetailed.Success);
+            Utf8MatchSequence.AssertCaptures(expectedMatch, actualDetailed, utf8, input);
             if (expectedMatch.Success)
             {
                 Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-                Assert.Equal(expectedMatch.Index, actualDetailed.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualDetailed.LengthInUtf16);
                 Assert.True(actualMatch.TryGetByteRange(out var byteIndex, out var byteLength));
                 Assert.Equal(0, byteIndex);
                 Assert.Equal(utf8.Length, byteLength);

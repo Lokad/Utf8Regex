@@ -41,9 +41,9 @@ public sealed class Utf8LinePrefixQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
+            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
     private static IEnumerable<string> Subjects(string alphabet, int maximum)
@@ -82,8 +82,8 @@ public sealed class Utf8LinePrefixQualificationTests
             Assert.Equal(text.Length, length); PublicRange(Trimmed, RegexOptions.CultureInvariant, text, 0, length, false);
         }
         PublicRange(Trimmed, RegexOptions.CultureInvariant, " /// 😀", 0, 11, false);
-        var group = new Utf8Regex(Trimmed).MatchDetailed("///\n😀"u8).GetGroup("doc");
-        Assert.Equal((4, 4), (group.IndexInBytes, group.LengthInBytes));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(Trimmed).CreateMatchCursor("///\n😀"u8.ToArray())).TryGetGroup("doc", out var group));
+        Assert.Equal((4, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
     }
 
     [Fact]
@@ -109,8 +109,8 @@ public sealed class Utf8LinePrefixQualificationTests
         const string alias = @"^\s*(?:\x2f/)(?<title>/\x23[^\n]*)$";
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
             Assert.Equal(2, new Utf8Regex(alias, options).Count(input));
-        var capture = new Utf8Regex(alias, RegexOptions.Multiline).MatchDetailed(input).GetGroup("title");
-        Assert.Equal((5, 6), (capture.IndexInBytes, capture.LengthInBytes));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias, RegexOptions.Multiline).CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray())).TryGetGroup("title", out var capture));
+        Assert.Equal((5, 6), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
         Assert.Equal(1, new Utf8Regex(@"^a\na.*$", RegexOptions.Multiline).Count("a\na\na\n"u8));
     }
 

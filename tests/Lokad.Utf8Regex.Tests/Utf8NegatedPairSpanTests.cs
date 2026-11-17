@@ -17,10 +17,10 @@ public sealed class Utf8NegatedPairSpanTests
         var text = "skip!" + value + "a tail";
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex(@"!(?<run>[^ab]*)a");
-        var match = regex.MatchDetailed(input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
-        Assert.Equal("!" + value + "a", match.GetValueString());
-        Assert.Equal(value, match.GetGroup(regex.GroupNumberFromName("run")).GetValueString());
+        Assert.Equal("!" + value + "a", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.Match(input).Success);
@@ -42,9 +42,9 @@ public sealed class Utf8NegatedPairSpanTests
     public void MinimaMasksAndRewindKeepTheirSemantics(string pattern, string text, string? expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var match = new Utf8Regex(pattern).MatchDetailed(input);
+        var match = Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(input));
         Assert.Equal(expected is not null, match.Success);
-        if (match.Success) Assert.Equal(expected, match.GetGroup(1).GetValueString());
+        if (match.Success) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
 
     [Theory]
@@ -55,8 +55,8 @@ public sealed class Utf8NegatedPairSpanTests
     {
         var regex = new Utf8Regex(@"([^ab]+)a", options);
         var input = "é😀a 𝒜a"u8.ToArray();
-        var match = regex.MatchDetailed(input);
-        Assert.Equal(options == RegexOptions.RightToLeft ? " 𝒜" : "é😀", match.GetGroup(1).GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(options == RegexOptions.RightToLeft ? " 𝒜" : "é😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input));
     }
 

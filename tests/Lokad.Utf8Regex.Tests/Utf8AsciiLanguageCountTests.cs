@@ -118,12 +118,12 @@ public sealed class Utf8AsciiLanguageCountTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(10));
-        var retained = regex.MatchDetailed("😀00.11.22.255é"u8);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀00.11.22.255é"u8.ToArray()));
         var bytes = Encoding.UTF8.GetBytes(new string('x', 65536));
         var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 20);
         try { Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes)); }
         finally { session.Complete(); }
-        Assert.Equal("00.11.22.255", retained.GetGroup(0).GetValueString());
+        Assert.Equal("00.11.22.255", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(0).Span));
     }
 
     [Fact]

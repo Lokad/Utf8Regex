@@ -19,18 +19,10 @@ public sealed class Utf8PreparationFrameAdmissionTests
     private static Utf8ExecutionTree Tree(int route, int depth = 0)
     {
         var a = Node(Utf8ExecutionNodeKind.One);
-        var b = Node(Utf8ExecutionNodeKind.Multi, text: "bb");
         // Put transparent wrappers inside an actually visited branch/loop body;
         // table admission intentionally unwraps groups surrounding the whole shape.
         for (var index = 0; index < depth; index++) a = Node(Utf8ExecutionNodeKind.Group, [a]);
-        var body = route switch
-        {
-            4 => Node(Utf8ExecutionNodeKind.Alternate, [a, b]),
-            5 => Node(Utf8ExecutionNodeKind.Concatenate, [Node(Utf8ExecutionNodeKind.Loop, [a]), Node(Utf8ExecutionNodeKind.LazyLoop, [b])]),
-            6 => Node(Utf8ExecutionNodeKind.Concatenate, [Node(Utf8ExecutionNodeKind.Alternate, [a, b]), Node(Utf8ExecutionNodeKind.Alternate, [a, b])]),
-            _ => a,
-        };
-        return new(Node(Utf8ExecutionNodeKind.Capture, [route == 7 ? body : Node(Utf8ExecutionNodeKind.Capture, [body], capture: 1)]));
+        return new(Node(Utf8ExecutionNodeKind.Capture, [route == 7 ? a : Node(Utf8ExecutionNodeKind.Capture, [a], capture: 1)]));
     }
 
     private static Utf8TreeNode FindTree(int depth = 0)
@@ -49,12 +41,12 @@ public sealed class Utf8PreparationFrameAdmissionTests
         2 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
         3 => Utf8GroupedLiteralSpanTable.TryCreate(execution, CaptureProgram),
         7 => ContainsCapture(execution.Root),
-        _ => Utf8AlternationBranchSpanMap.TryCreate(execution, CaptureProgram),
+        _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
 
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 8; route++)
+        foreach (var route in new[] { 0, 1, 2, 3, 7 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -79,7 +71,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(7)]
     public void DeepChildDenialRestoresParentAndAllowsSameOwnerRecovery(int route)
     {
         var find = FindTree(32);
@@ -104,7 +96,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(7)]
     public void EveryWorkCutoffRestoresBorrowedPreparation(int route)
     {
         var find = FindTree(3);
@@ -171,7 +163,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(7)]
     public void SuccessfulPreparationKeepsRetainedPayloadLoansUntilOwnerCloses(int route)
     {
         var find = FindTree(3);
@@ -210,7 +202,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(7)]
     public void ChildArrayGrowthDenialRestoresParentBytes(int route)
     {
         var find = FindTree(128);

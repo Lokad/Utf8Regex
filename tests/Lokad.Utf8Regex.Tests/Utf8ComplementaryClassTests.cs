@@ -28,7 +28,7 @@ public sealed class Utf8ComplementaryClassTests
             var regex = Utf8Regex.Compile("(?<g>" + emptyClass + "){1000000000}", options,
                 Timeout.InfiniteTimeSpan, invocation, construction, Timeout.InfiniteTimeSpan, default);
             Assert.Equal(0, regex.Count("a😀b"u8));
-            Assert.False(regex.MatchDetailed("a😀b"u8).Success);
+            Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor("a😀b"u8.ToArray())).Success);
         }
     }
 
@@ -68,12 +68,12 @@ public sealed class Utf8ComplementaryClassTests
 
             var optional = new Utf8Regex("(?<g>" + emptyClass + "){0,2147483646}", options);
             Assert.Equal(4, optional.Count("a😀b"u8));
-            Assert.False(optional.MatchDetailed("a😀b"u8).GetGroup("g").Success);
+            Assert.False((Utf8MatchSequence.First(optional.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var range1) ? range1.Success : default));
 
             var alternative = new Utf8Regex("(?<g>" + emptyClass + "){1000000000}|(?<g>😀)", options);
-            var group = alternative.MatchDetailed("a😀b"u8).GetGroup("g");
-            Assert.Equal("😀", group.GetValueString());
-            Assert.Equal((1, 4, 1), (group.IndexInBytes, group.LengthInBytes, group.CaptureCount));
+            Assert.True(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var group));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetGroupMemory(alternative.GroupNumberFromName("g")).Span));
+            Assert.Equal((1, 4, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes), Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetCaptures(alternative.GroupNumberFromName("g")).Length));
         }
     }
 
@@ -110,7 +110,7 @@ public sealed class Utf8ComplementaryClassTests
             var regex = new Utf8Regex(pattern, options);
             Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
             Assert.Throws<ArgumentException>(() => regex.Count(input));
-            Assert.Throws<ArgumentException>(() => { _ = regex.MatchDetailed(input); });
+            Assert.Throws<ArgumentException>(() => { _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); });
             Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "x")));
             Assert.Throws<ArgumentException>(() => { foreach (var item in regex.EnumerateSplits(input)) { } });
         }

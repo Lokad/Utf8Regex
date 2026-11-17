@@ -107,12 +107,12 @@ public sealed class Utf8AstralSemanticsTests
                 Assert.False(match.TryGetByteRange(out _, out _));
             }
 
-            var detailed = regex.MatchDetailed(input, token);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token));
             Assert.Equal(expected.Length != 0, detailed.Success);
             if (detailed.Success)
             {
-                Assert.Equal(expected[0], (detailed.IndexInBytes, detailed.LengthInBytes));
-                AssertAlignedCaptures(in detailed);
+                Assert.Equal(expected[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+                AssertAlignedCaptures(input, in detailed);
                 AssertDeclaredCaptures(pattern, text, input, expected[0], in detailed);
             }
 
@@ -171,25 +171,13 @@ public sealed class Utf8AstralSemanticsTests
         Assert.Equal(Utf16Range(input, expected), (actual.IndexInUtf16, actual.LengthInUtf16));
     }
 
-    private static void AssertAlignedCaptures(in Utf8MatchContext context)
+    private static void AssertAlignedCaptures(byte[] input, in Utf8RangeMatch context)
     {
-        Assert.True(context.IsByteAligned);
-        for (var number = 0; number < context.GroupCount; number++)
-        {
-            var group = context.GetGroup(number);
-            if (!group.Success) continue;
-            Assert.True(group.IsByteAligned);
-            Assert.Equal(Encoding.UTF8.GetBytes(group.GetValueString()), group.GetValueBytes().ToArray());
-            for (var index = 0; index < group.CaptureCount; index++)
-            {
-                var capture = group.GetCapture(index);
-                Assert.True(capture.IsByteAligned);
-                Assert.Equal(Encoding.UTF8.GetBytes(capture.GetValueString()), capture.GetValueBytes().ToArray());
-            }
-        }
+
+        Utf8MatchSequence.AssertScalarCaptures(context, input);
     }
 
-    private static void AssertDeclaredCaptures(string pattern, string text, byte[] input, (int Index, int Length) first, in Utf8MatchContext context)
+    private static void AssertDeclaredCaptures(string pattern, string text, byte[] input, (int Index, int Length) first, in Utf8RangeMatch context)
     {
         (int Number, (int Index, int Length)[] Ranges)[] groups = pattern switch
         {
@@ -202,17 +190,16 @@ public sealed class Utf8AstralSemanticsTests
         };
         foreach (var expected in groups)
         {
-            var group = context.GetGroup(expected.Number);
+            Assert.True(context.TryGetGroup(expected.Number, out var group));
             Assert.True(group.Success);
-            Assert.Equal(expected.Ranges.Length, group.CaptureCount);
-            Assert.Equal(expected.Ranges[^1], (group.IndexInBytes, group.LengthInBytes));
+            Assert.Equal(expected.Ranges.Length, context.GetCaptures(expected.Number).Length);
+            Assert.Equal(expected.Ranges[^1], (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
             for (var index = 0; index < expected.Ranges.Length; index++)
             {
-                var capture = group.GetCapture(index);
+                var capture = context.GetCaptures(expected.Number)[index];
                 var range = expected.Ranges[index];
-                Assert.Equal(range, (capture.IndexInBytes, capture.LengthInBytes));
-                Assert.Equal(Utf16Range(input, range), (capture.IndexInUtf16, capture.LengthInUtf16));
-                Assert.Equal(Value(input, range), capture.GetValueString());
+                Assert.Equal(range, (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
+                Assert.Equal(Value(input, range), System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
             }
         }
     }

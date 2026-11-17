@@ -28,8 +28,8 @@ public sealed class Utf8LiteralEdgeQualificationTests
     private static void Range(string pattern, string text, RegexOptions options, int index, int length)
     {
         var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
-        Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+        Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
     }
 
     [Fact]
@@ -41,11 +41,11 @@ public sealed class Utf8LiteralEdgeQualificationTests
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             Range(pattern, "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
-            var match = new Utf8Regex(pattern, RegexOptions.CultureInvariant | compiled).MatchDetailed("ab😀"u8);
-            var group = match.GetGroup("x"); Assert.Equal((0, 1), (group.IndexInBytes, group.LengthInBytes));
+            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray()));
+            Assert.True(match.TryGetGroup("x", out var group)); Assert.Equal((0, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
             Range("^(ab)", "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
-            var aliasGroup = new Utf8Regex("^(ab)", RegexOptions.CultureInvariant | compiled).MatchDetailed("ab😀"u8).GetGroup(1);
-            Assert.Equal((0, 2), (aliasGroup.IndexInBytes, aliasGroup.LengthInBytes));
+            Assert.True(Utf8MatchSequence.First(new Utf8Regex("^(ab)", RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray())).TryGetGroup(1, out var aliasGroup));
+            Assert.Equal((0, 2), (aliasGroup.StartOffsetInBytes, (aliasGroup.EndOffsetInBytes - aliasGroup.StartOffsetInBytes)));
         }
     }
 

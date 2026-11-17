@@ -277,15 +277,15 @@ public sealed class Utf8NativeLiteralPreparationTests
             Assert.Equal(expected, regex.Count(input));
             var match = regex.Match(input);
             Assert.Equal(expected != 0, match.Success);
-            var detailed = regex.MatchDetailed(input);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(match.Success, detailed.Success);
             if (expected != 0)
             {
                 var last = expected == 2 && (options & RegexOptions.RightToLeft) != 0;
                 Assert.Equal(last ? 5 : 1, match.IndexInBytes);
                 Assert.Equal(last ? 1 : 4, match.LengthInBytes);
-                Assert.Equal(match.IndexInBytes, detailed.GetGroup(1).IndexInBytes);
-                Assert.Equal(match.LengthInBytes, detailed.GetGroup(1).LengthInBytes);
+                Assert.Equal(match.IndexInBytes, (detailed.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default));
+                Assert.Equal(match.LengthInBytes, ((detailed.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (detailed.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default)));
             }
             var count = 0;
             foreach (var item in regex.EnumerateMatches(input)) { Assert.True(item.LengthInBytes is 1 or 4); count++; }

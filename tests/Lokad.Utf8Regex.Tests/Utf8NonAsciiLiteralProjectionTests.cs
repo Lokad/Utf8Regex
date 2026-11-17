@@ -103,13 +103,9 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
                 Assert.Equal(expected.Length, actual.LengthInUtf16);
             }
 
-            var detailed = regex.MatchDetailed(input);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, detailed.Success);
-            if (expected.Success)
-            {
-                Assert.Equal(expected.Index, detailed.GetGroup(0).IndexInUtf16);
-                Assert.Equal(expected.Length, detailed.GetGroup(0).LengthInUtf16);
-            }
+            Utf8MatchSequence.AssertCaptures(expected, detailed, input, text);
 
             // The mapping stays owned: no fallback engine is constructed.
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -199,9 +195,8 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedFirst = oracle.Match(text);
-            var actualFirst = detailedRegex.MatchDetailed(input);
+            var actualFirst = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
-            Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
             // Detailed captures borrow the same catalog as the scalar program.
             Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             const int count = int.MaxValue;

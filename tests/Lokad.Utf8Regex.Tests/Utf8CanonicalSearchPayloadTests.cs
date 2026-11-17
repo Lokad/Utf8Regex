@@ -199,8 +199,8 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var regex = new Utf8Regex(@"(?:é|😀)[\s\S]{0,2}中", options | RegexOptions.CultureInvariant);
             var input = "xéa😀中z😀中"u8.ToArray();
             Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
-            var match = regex.MatchDetailed(input);
-            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (12, 7) : (1, 10), (match.IndexInBytes, match.LengthInBytes));
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (12, 7) : (1, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             var expected = options.HasFlag(RegexOptions.RightToLeft) ? new[] { (12, 7), (1, 10) } : new[] { (1, 10), (12, 7) };
             var cursor = regex.EnumerateMatches(input); var ranges = new List<(int, int)>();
             while (cursor.MoveNext()) ranges.Add((cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));

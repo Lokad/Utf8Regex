@@ -82,9 +82,9 @@ public sealed class Utf8SliceAtomicTests
     {
         var regex = new Utf8Regex("(?>(a+))b", RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aaab"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aaab")));
         Assert.True(detailed.Success);
-        Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -118,7 +118,7 @@ public sealed class Utf8SliceAtomicTests
         Assert.Equal(expected, oracle.Match(inputText).Value);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(0).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

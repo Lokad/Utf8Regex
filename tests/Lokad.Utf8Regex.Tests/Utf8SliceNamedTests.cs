@@ -150,10 +150,10 @@ public sealed class Utf8SliceNamedTests
         Assert.Equal(oracle.Success, actual.Success);
         Assert.True(actual.Success);
         Assert.Equal(expectedValue, inputText.Substring(actual.IndexInUtf16, actual.LengthInUtf16));
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal(oracle.Groups[1].Value, detailed.GetGroup(1).GetValueString());
-        Assert.Equal(expectedGroup1, detailed.GetGroup(1).GetValueString());
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal(expectedGroup1, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         foreach (var item in regex.EnumerateMatches(input))
         {
             Assert.Equal(expectedValue, inputText.Substring(item.IndexInUtf16, item.LengthInUtf16));
@@ -175,11 +175,11 @@ public sealed class Utf8SliceNamedTests
         Assert.Equal("1", regex.GroupNameFromNumber(1));
         Assert.Equal("b", regex.GroupNameFromNumber(2));
         Assert.Equal(string.Empty, regex.GroupNameFromNumber(9));
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("acc"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("acc")));
         Assert.True(detailed.Success);
-        Assert.Equal("c", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("a", detailed.GetGroup(2).GetValueString());
-        Assert.Equal("a", detailed.GetGroup("b").GetValueString());
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("b")).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

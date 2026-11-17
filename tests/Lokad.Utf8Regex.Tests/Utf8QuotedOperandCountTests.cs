@@ -35,16 +35,16 @@ public sealed class Utf8QuotedOperandCountTests
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
             var expected = oracle.Match(text);
             var whole = regex.Match(input);
-            var actual = regex.MatchDetailed(input);
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
             Assert.Equal(expected.Success, whole.Success);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success)
             {
                 Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.Slice(whole.IndexInBytes, whole.LengthInBytes)));
                 for (var group = 0; group < expected.Groups.Count; group++)
-                    Assert.Equal(expected.Groups[group].Value, actual.GetGroup(group).GetValueString());
+                    Assert.Equal(expected.Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(group).Span));
                 Assert.Equal(oracle.Count(text), regex.Count(input));
-                Assert.Equal(expected.Value, actual.GetGroup(0).GetValueString());
+                Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(0).Span));
             }
         }
     }

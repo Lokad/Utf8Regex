@@ -27,8 +27,8 @@ public sealed class Utf8ClassFamilyQualificationTests
     private static void ScalarRange(string pattern, string text, RegexOptions options, int index, int length)
     {
         var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
-        Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+        Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
     }
     private static void TrustedPublicCount(string pattern, ReadOnlySpan<byte> input, int expected)
     {

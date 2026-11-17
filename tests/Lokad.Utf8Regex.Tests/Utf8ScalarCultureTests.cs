@@ -45,19 +45,18 @@ public sealed class Utf8ScalarCultureTests
                     Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
                     Assert.Equal(oracle.Count(text), regex.Count(input));
                     var wanted = oracle.Match(text);
-                    var found = regex.MatchDetailed(input);
+                    var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                     Assert.Equal(wanted.Success, found.Success);
                     if (wanted.Success)
                     {
                         Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), Encoding.UTF8.GetByteCount(wanted.Value)),
-                            (found.IndexInBytes, found.LengthInBytes));
-                        Assert.Equal((wanted.Index, wanted.Length), (found.IndexInUtf16, found.LengthInUtf16));
+                            (found.Value.StartOffsetInBytes, (found.Value.EndOffsetInBytes - found.Value.StartOffsetInBytes)));
                         foreach (var number in oracle.GetGroupNumbers())
                         {
                             var expectedGroup = wanted.Groups[number];
-                            var group = found.GetGroup(number);
+                            Assert.True(found.TryGetGroup(number, out var group));
                             Assert.Equal(expectedGroup.Success, group.Success);
-                            if (group.Success) Assert.Equal(expectedGroup.Value, group.GetValueString());
+                            if (group.Success) Assert.Equal(expectedGroup.Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(number).Span));
                         }
                     }
                     var positions = new List<(int Index, int Length)>();
@@ -102,10 +101,10 @@ public sealed class Utf8ScalarCultureTests
                 Assert.True(regex.IsMatch(input, source.Token));
                 Assert.Equal(1, regex.Count(input, source.Token));
                 Assert.Equal(length, regex.Match(input).LengthInBytes);
-                var found = regex.MatchDetailed(input, source.Token);
-                Assert.Equal((0, length, 0, all ? 5 : 3), (found.IndexInBytes, found.LengthInBytes, found.IndexInUtf16, found.LengthInUtf16));
-                Assert.Equal(value, found.GetValueString());
-                Assert.Equal(body.Contains('+') ? "\U0001f600\U0001f600" : "\U0001f600", found.GetGroup(1).GetValueString());
+                var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+                Assert.Equal((0, length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
+                Assert.Equal(value, System.Text.Encoding.UTF8.GetString(found.GetValueMemory().Span));
+                Assert.Equal(body.Contains('+') ? "\U0001f600\U0001f600" : "\U0001f600", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
                 var cursor = regex.EnumerateMatches(input, source.Token);
                 Assert.True(cursor.MoveNext());
                 Assert.Equal(length, cursor.Current.LengthInBytes);
@@ -126,9 +125,10 @@ public sealed class Utf8ScalarCultureTests
                 var regex = new Utf8Regex(scoped ? "(?i:" + body + ")" : body, Options(compiled, rtl, scoped));
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 var input = Encoding.UTF8.GetBytes(prefix + "\U00010428");
-                var found = regex.MatchDetailed(input, source.Token);
-                Assert.Equal(input.Length, found.LengthInBytes);
-                Assert.Equal("\U00010428", found.GetGroup(1).GetValueString());
+                var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+                Assert.Equal((0, input.Length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
+                Assert.Equal(input.Length, (found.Value.EndOffsetInBytes - found.Value.StartOffsetInBytes));
+                Assert.Equal("\U00010428", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
                 Assert.Equal(1, regex.Count(input, source.Token));
                 Assert.Equal("\U00010428", Encoding.UTF8.GetString(regex.Replace(input, "$1", source.Token)));
                 AssertOwned(regex);
@@ -141,9 +141,9 @@ public sealed class Utf8ScalarCultureTests
             var referenceInput = Encoding.UTF8.GetBytes(referencePrefix +
                 (rtl ? "\U00010400\U00010428" : "\U00010428\U00010400"));
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
-            var referenceMatch = referenceRegex.MatchDetailed(referenceInput, source.Token);
-            Assert.Equal(referenceInput.Length, referenceMatch.LengthInBytes);
-            Assert.Equal("\U00010428", referenceMatch.GetGroup("x").GetValueString());
+            var referenceMatch = Utf8MatchSequence.First(referenceRegex.CreateMatchCursor(referenceInput, cancellationToken: source.Token));
+            Assert.Equal(referenceInput.Length, (referenceMatch.Value.EndOffsetInBytes - referenceMatch.Value.StartOffsetInBytes));
+            Assert.Equal("\U00010428", System.Text.Encoding.UTF8.GetString(referenceMatch.GetGroupMemory(referenceRegex.GroupNumberFromName("x")).Span));
             AssertOwned(referenceRegex);
         }
         finally { CultureInfo.CurrentCulture = saved; }
@@ -168,9 +168,9 @@ public sealed class Utf8ScalarCultureTests
                 var prefix = culture == "tr-TR" && !invariant ? "\u0130" : "I";
                 var input = Encoding.UTF8.GetBytes(prefix + "\U0001f600");
                 AssertOwned(regex);
-                var found = regex.MatchDetailed(input);
-                Assert.Equal(input.Length, found.LengthInBytes);
-                Assert.Equal("\U0001f600", found.GetGroup(1).GetValueString());
+                var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                Assert.Equal(input.Length, (found.Value.EndOffsetInBytes - found.Value.StartOffsetInBytes));
+                Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
                 Assert.Equal(!invariant && culture == "en-US",
                     regex.IsMatch(Encoding.UTF8.GetBytes((prefix == "I" ? "\u0130" : "I") + "\U0001f600")));
                 AssertOwned(regex);

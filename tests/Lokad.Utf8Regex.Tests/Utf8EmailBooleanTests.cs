@@ -95,12 +95,12 @@ public sealed class Utf8EmailBooleanTests
     {
         var regex = new Utf8Regex(Pattern);
         var input = "a_b@x.ab\n"u8.ToArray();
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal("a_b", retained.GetGroup(1).GetValueString());
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal("a_b", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Match(input, 0, []).Success);
         Assert.False(regex.Match(input, 1, []).Success);
-        Assert.Equal("a_b", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a_b", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();

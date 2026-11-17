@@ -200,7 +200,7 @@ public sealed class Utf8SliceClassAdmissionTests
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);
-        Assert.Equal("a", regex.MatchDetailed(input).GetGroup("x").GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.False(regex.IsMatch("b"u8));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

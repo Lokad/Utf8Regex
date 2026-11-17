@@ -157,10 +157,10 @@ public sealed class Utf8SliceIgnoreCaseTests
     {
         var regex = new Utf8Regex("(a)+(b)+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("AB"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("AB")));
         Assert.True(detailed.Success);
-        Assert.Equal("A", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("B", detailed.GetGroup(2).GetValueString());
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("B", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

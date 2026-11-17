@@ -80,13 +80,13 @@ public sealed class PublicOperationConsistencyTests
         Assert.Equal(ranges.Count, regex.Count(input));
         Assert.Equal(ranges.Count != 0, regex.IsMatch(input));
         var first = regex.Match(input);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(ranges.Count != 0, first.Success);
         Assert.Equal(first.Success, detailed.Success);
         if (first.Success)
         {
             Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
-            Assert.Equal(ranges[0], (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal(ranges[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
         using var cursor = regex.CreateMatchCursor(input,
             (options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);

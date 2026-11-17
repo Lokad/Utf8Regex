@@ -132,8 +132,8 @@ public sealed class Utf8AsciiClassAndBoundaryTests
             Assert.Equal(expected, actual);
             var first = regex.Match(input);
             Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
-            var detailed = regex.MatchDetailed(input);
-            Assert.Equal(expected[0], (detailed.IndexInBytes, detailed.LengthInBytes));
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal(expected[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(value.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "Q")));
             Assert.Equal(Encoding.UTF8.GetBytes(value.Replaced), regex.Replace(input, "Q"u8));
         }

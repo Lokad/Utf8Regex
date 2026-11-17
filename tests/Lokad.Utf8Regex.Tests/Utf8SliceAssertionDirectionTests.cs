@@ -122,7 +122,7 @@ public sealed class Utf8SliceAssertionDirectionTests
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(1, regex.Count(input));
-        Assert.False(regex.MatchDetailed(input).GetGroup("o").Success);
+        Assert.False((Utf8MatchSequence.First(regex.CreateMatchCursor(input)).TryGetGroup("o", out var range1) ? range1.Success : default));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

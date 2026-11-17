@@ -50,7 +50,7 @@ public sealed class Utf8UnobservedValueCaptureTests
         Assert.Equal(2, value.IndexInBytes);
         Assert.Equal(9, value.LengthInBytes);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
         using var cursor = regex.CreateMatchCursor(input);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)).ResourceKind);
@@ -84,7 +84,7 @@ public sealed class Utf8UnobservedValueCaptureTests
         Assert.True(admitted.IsMatch(input));
         Assert.Equal(9, admitted.Match(input).LengthInBytes);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => admitted.MatchDetailed(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(admitted.CreateMatchCursor(input))).ResourceKind);
         var denied = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1, MaxWorkSteps = 100000 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,

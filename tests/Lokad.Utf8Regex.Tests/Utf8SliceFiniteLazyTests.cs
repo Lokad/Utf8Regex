@@ -150,9 +150,9 @@ public sealed class Utf8SliceFiniteLazyTests
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);
         Assert.False(regex.IsMatch(input));
-        var recovered = regex.MatchDetailed("aaabac"u8);
-        Assert.Equal("aaab", recovered.GetGroup("x").GetValueString());
-        Assert.Equal(4, recovered.GetGroup("x").CaptureCount);
+        var recovered = Utf8MatchSequence.First(regex.CreateMatchCursor("aaabac"u8.ToArray()));
+        Assert.Equal("aaab", System.Text.Encoding.UTF8.GetString(recovered.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal(4, recovered.GetCaptures(regex.GroupNumberFromName("x")).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

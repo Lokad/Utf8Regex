@@ -94,7 +94,6 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput()));
     }
 
-
     [Fact]
     public void TimedOutInstanceRemainsUsableForSubsequentOperations()
     {
@@ -184,7 +183,7 @@ public sealed class Utf8RegexTimeoutTests
         }
 
         Assert.Equal(2, splits);
-        Assert.True(regex.MatchDetailed(input).Success);
+        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
     }
 
     [Theory]
@@ -248,8 +247,8 @@ public sealed class Utf8RegexTimeoutTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var detailed = Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailed(input));
-        Assert.Equal(text, detailed.Input);
+        var detailed = Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
+        Assert.Empty(detailed.Input);
         var light = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         Assert.Equal(text, light.Input);
         Assert.Throws<RegexMatchTimeoutException>(() =>
@@ -292,8 +291,8 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(text, matchException.Input);
         Assert.Equal("(a+)+$", matchException.Pattern);
         Assert.Equal(timeout, matchException.MatchTimeout);
-        var detailedException = Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailed(input));
-        Assert.Equal(text, detailedException.Input);
+        var detailedException = Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
+        Assert.Empty(detailedException.Input);
         Assert.Equal("(a+)+$", detailedException.Pattern);
         Assert.Equal(timeout, detailedException.MatchTimeout);
         var enumerateException = Assert.Throws<RegexMatchTimeoutException>(() =>

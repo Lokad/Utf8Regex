@@ -70,9 +70,9 @@ public sealed class Utf8AnchoredProfileQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
+            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            Assert.Equal((0, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((0, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal((0, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((0, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
 
@@ -142,9 +142,9 @@ public sealed class Utf8AnchoredProfileQualificationTests
         var cellPlan = Plan(cell, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole);
         Oracle(cell, RegexOptions.CultureInvariant, cellPlan, Subjects("aA09:\n", 4));
         PublicRange(cell, RegexOptions.CultureInvariant, "K١٢\n", 7, true);
-        var match = new Utf8Regex(cell, RegexOptions.CultureInvariant).MatchDetailed("K١٢\n"u8);
-        var col = match.GetGroup("col"); var row = match.GetGroup("row");
-        Assert.Equal((0, 3), (col.IndexInBytes, col.LengthInBytes)); Assert.Equal((3, 4), (row.IndexInBytes, row.LengthInBytes));
+        var match = Utf8MatchSequence.First(new Utf8Regex(cell, RegexOptions.CultureInvariant).CreateMatchCursor("K١٢\n"u8.ToArray()));
+        Assert.True(match.TryGetGroup("col", out var col)); Assert.True(match.TryGetGroup("row", out var row));
+        Assert.Equal((0, 3), (col.StartOffsetInBytes, (col.EndOffsetInBytes - col.StartOffsetInBytes))); Assert.Equal((3, 4), (row.StartOffsetInBytes, (row.EndOffsetInBytes - row.StartOffsetInBytes)));
     }
 
     [Fact]

@@ -12,18 +12,12 @@ public sealed class Utf8CaptureMapAdmissionTests
 
     public static IEnumerable<object[]> Shapes()
     {
-        yield return [0, "(?<outer>é|😀)"];
-        yield return [0, "(?:(?<left>é)|(?<right>😀))"];
-        yield return [1, "(?<outer>a(?<inner>😀)b)"];
-        yield return [1, "(?<outer>a(?<inner>😀)?b)"];
-        yield return [1, "(?<outer>(?<inner>ab|cd)e)"];
-        yield return [2, "(?<outer>a(?<inner>é|😀)b)"];
-        yield return [2, "(?<outer>a(?<left>é)?(?<right>😀)??b)"];
-        yield return [2, "(?<outer>a(?<left>é|😀)(?<right>b|cc)d)"];
-        yield return [2, "(?<piece>é|😀){2}"];
+        yield return ["(?<outer>a(?<inner>😀)b)"];
+        yield return ["(?<outer>a(?<inner>😀)?b)"];
+        yield return ["(?<outer>(?<inner>ab|cd)e)"];
     }
 
-    // The map producers still serve native literal families. Exercise their
+    // The grouped table still serves native literal consumers. Exercise its
     // production inputs directly; scalar-only dispatch need not retain a tree.
     private static (Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) Prepare(string pattern, RegexOptions options)
     {
@@ -34,20 +28,16 @@ public sealed class Utf8CaptureMapAdmissionTests
         return (tree, scalar);
     }
 
-    private static object? Create(int producer, (Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) prepared) => producer switch
-    {
-        0 => Utf8LiteralFamilyCaptureMap.TryCreate(prepared.ExecutionTree),
-        1 => Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!),
-        _ => Utf8AlternationBranchSpanMap.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!),
-    };
+    private static object? Create((Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) prepared) =>
+        Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram);
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void ReturnedProjectionMajorStorageFitsConservativeAdmission(int producer, string pattern)
+    public void ReturnedProjectionMajorStorageFitsConservativeAdmission(string pattern)
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
-        var result = Create(producer, prepared);
+        var result = Create(prepared);
         Assert.NotNull(result);
         Assert.True(owner.Budget.ReservedBytes >= 128ul);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -75,13 +65,13 @@ public sealed class Utf8CaptureMapAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void EveryWorkCutoffRestoresTheParentWithoutRefundingWork(int producer, string pattern)
+    public void EveryWorkCutoffRestoresTheParentWithoutRefundingWork(string pattern)
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            Assert.NotNull(Create(producer, prepared));
+            Assert.NotNull(Create(prepared));
             work = measured.Budget.WorkSteps;
         }
         for (var cutoff = 0ul; cutoff <= work; cutoff++)
@@ -91,7 +81,7 @@ public sealed class Utf8CaptureMapAdmissionTests
             var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
-                var failure = Record.Exception(() => Assert.NotNull(Create(producer, prepared)));
+                var failure = Record.Exception(() => Assert.NotNull(Create(prepared)));
                 if (cutoff < work)
                 {
                     var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
@@ -107,7 +97,7 @@ public sealed class Utf8CaptureMapAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void CapacityDenialsRestoreParentAndAllowRecovery(int producer, string pattern)
+    public void CapacityDenialsRestoreParentAndAllowRecovery(string pattern)
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         var recoveryInput = Prepare("(a)", RegexOptions.CultureInvariant);
@@ -115,14 +105,14 @@ public sealed class Utf8CaptureMapAdmissionTests
         using (var measured = Utf8ConstructionScope.Enter())
         {
             measured.Budget.AllocateObject(17, static value => new ParentValue(value));
-            Assert.NotNull(Utf8LiteralFamilyCaptureMap.TryCreate(recoveryInput.ExecutionTree));
+            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
             recoveryPeak = measured.Budget.PeakBytes;
         }
         ulong peak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             measured.Budget.AllocateObject(17, static value => new ParentValue(value));
-            Assert.NotNull(Create(producer, prepared));
+            Assert.NotNull(Create(prepared));
             peak = measured.Budget.PeakBytes;
         }
         foreach (var cap in new[] { 128ul, 256ul, 1024ul, peak - 16, peak - 1, peak }.Distinct())
@@ -132,7 +122,7 @@ public sealed class Utf8CaptureMapAdmissionTests
             var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
-                var failure = Record.Exception(() => Assert.NotNull(Create(producer, prepared)));
+                var failure = Record.Exception(() => Assert.NotNull(Create(prepared)));
                 if (failure is not null)
                 {
                     var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
@@ -149,7 +139,7 @@ public sealed class Utf8CaptureMapAdmissionTests
             {
                 var spent = owner.Budget.WorkSteps;
                 using (var recovered = Utf8ConstructionScope.Enter())
-                    Assert.NotNull(Utf8LiteralFamilyCaptureMap.TryCreate(recoveryInput.ExecutionTree));
+                    Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
                 Assert.True(owner.Budget.WorkSteps > spent);
                 AssertParent(owner.Budget, checkpoint, parent);
             }
@@ -160,21 +150,21 @@ public sealed class Utf8CaptureMapAdmissionTests
     {
         foreach (var shape in Shapes())
         {
-            yield return [shape[0], shape[1], false];
-            yield return [shape[0], shape[1], true];
+            yield return [shape[0], false];
+            yield return [shape[0], true];
         }
     }
 
     [Theory]
     [MemberData(nameof(Interruptions))]
-    public void EveryCheckpointRetainsParentCancellationAndDeadline(int producer, string pattern, bool timeout)
+    public void EveryCheckpointRetainsParentCancellationAndDeadline(string pattern, bool timeout)
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             measured.Budget.CheckpointHook = _ => checkpoints++;
-            Assert.NotNull(Create(producer, prepared));
+            Assert.NotNull(Create(prepared));
         }
         Assert.True(checkpoints > 0);
         for (var target = 1; target <= checkpoints; target++)
@@ -195,7 +185,7 @@ public sealed class Utf8CaptureMapAdmissionTests
                 if (timeout) ticks = 30000;
                 else cancellation.Cancel();
             };
-            var failure = Record.Exception(() => Create(producer, prepared));
+            var failure = Record.Exception(() => Create(prepared));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Same(deadline, owner.Budget.Deadline);
@@ -203,7 +193,7 @@ public sealed class Utf8CaptureMapAdmissionTests
             owner.Budget.CheckpointHook = null;
             owner.Budget.CancellationToken = default;
             owner.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
-            using (var recovered = Utf8ConstructionScope.Enter()) Assert.NotNull(Create(producer, prepared));
+            using (var recovered = Utf8ConstructionScope.Enter()) Assert.NotNull(Create(prepared));
             AssertParent(owner.Budget, checkpoint, parent);
         }
     }
@@ -219,40 +209,23 @@ public sealed class Utf8CaptureMapAdmissionTests
     }
 
     [Theory]
-    [InlineData(0, "(?<outer>a+)")]
-    [InlineData(1, "(?<outer>a(?<inner>b|cd))")]
-    [InlineData(2, "(?<outer>a(b)?(c)?(d)?(e)?(f)?(g)?(h)?z)")]
-    [InlineData(2, "(?<outer>(?:ab|c)(?:ab|c)(?:ab|c)(?:ab|c)(?:ab|c)(?:ab|c)(?:ab|c))")]
-    [InlineData(2, "(?<piece>ab|c){7}")]
-    public void UnsupportedShapesReleaseScratchAndRetainSpentWork(int producer, string pattern)
+
+    [InlineData("(?<outer>a(?<inner>b|cd))")]
+    public void UnsupportedShapesReleaseScratchAndRetainSpentWork(string pattern)
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         var recoveryInput = Prepare("(a)", RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Null(Create(producer, prepared));
+        Assert.Null(Create(prepared));
         Assert.True(owner.Budget.WorkSteps > 2);
         AssertParent(owner.Budget, checkpoint, parent);
         var spent = owner.Budget.WorkSteps;
         using (var recovered = Utf8ConstructionScope.Enter())
-            Assert.NotNull(Utf8LiteralFamilyCaptureMap.TryCreate(recoveryInput.ExecutionTree));
+            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
         Assert.True(owner.Budget.WorkSteps > spent);
         AssertParent(owner.Budget, checkpoint, parent);
     }
 
-    [Fact]
-    public void OptionalScalarExpansionRetainsRightmostUnwindingAndSourcePreference()
-    {
-        var prepared = Prepare("(?<whole>a(?<x>é)?(?<y>😀)??(?<z>b)?c)", RegexOptions.CultureInvariant);
-        using var owner = Utf8ConstructionScope.Enter();
-        var result = Utf8AlternationBranchSpanMap.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!);
-        Assert.NotNull(result);
-        Assert.Equal(new[] { "aébc", "aéc", "aé😀bc", "aé😀c", "abc", "ac", "a😀bc", "a😀c" }, result.BranchExpansions);
-        Assert.Equal(new[] { 1 }, result.WholeMatchGroups);
-        Assert.Equal(new[] { 2, 4 }, result.BranchGroups[0]);
-        Assert.Equal(new[] { 2, 3, 4 }, result.BranchGroups[2]);
-        Assert.Equal(new[] { 1, 2, 4 }, result.BranchStarts[2]);
-        Assert.Equal(new[] { 1, 2, 1 }, result.BranchLengths[2]);
-    }
 }

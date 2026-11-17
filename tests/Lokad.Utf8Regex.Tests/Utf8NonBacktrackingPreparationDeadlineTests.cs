@@ -144,7 +144,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
             var regex = new Utf8Regex("(?<x>a+)|$", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
             Assert.Throws<ArgumentException>(() => regex.Count(input));
             Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-            Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
             Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(input); _ = cursor.MoveNext(); });
             using var live = new CancellationTokenSource();

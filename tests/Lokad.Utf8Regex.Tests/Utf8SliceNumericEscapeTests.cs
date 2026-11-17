@@ -193,9 +193,9 @@ public sealed class Utf8SliceNumericEscapeTests
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);
-        var recovered = regex.MatchDetailed(input);
-        Assert.Equal(text, recovered.GetGroup(12).GetValueString());
-        Assert.Equal(17, recovered.GetGroup(12).CaptureCount);
+        var recovered = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(recovered.GetGroupMemory(12).Span));
+        Assert.Equal(17, recovered.GetCaptures(12).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

@@ -41,7 +41,6 @@ public sealed class Utf8SliceBoundaryTests
         }
     }
 
-
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "x\\b!", "ax!by", true };
@@ -142,9 +141,9 @@ public sealed class Utf8SliceBoundaryTests
         Assert.Equal(oracle.Success, actual.Success);
         Assert.True(actual.Success);
         Assert.Equal(expectedValue, inputText.Substring(actual.IndexInUtf16, actual.LengthInUtf16));
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal(expectedGroup, detailed.GetGroup(1).GetValueString());
+        Assert.Equal(expectedGroup, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         foreach (var item in regex.EnumerateMatches(input))
         {
             Assert.Equal(expectedValue, inputText.Substring(item.IndexInUtf16, item.LengthInUtf16));

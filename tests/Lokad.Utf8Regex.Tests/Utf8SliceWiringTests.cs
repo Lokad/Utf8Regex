@@ -101,9 +101,9 @@ public sealed class Utf8SliceWiringTests
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Match(input).Success);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         var enumerated = 0;
         foreach (var item in regex.EnumerateMatches(input))
         {

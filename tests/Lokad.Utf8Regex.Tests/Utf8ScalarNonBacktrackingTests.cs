@@ -65,18 +65,17 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
         if (actual.Success)
         {
-            Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
             foreach (var number in oracle.GetGroupNumbers())
             {
                 var wanted = expected.Groups[number];
-                var found = actual.GetGroup(number);
+                Assert.True(actual.TryGetGroup(number, out var found));
                 Assert.Equal(wanted.Success, found.Success);
-                Assert.Equal(wanted.Captures.Count, found.CaptureCount);
-                if (found.Success) Assert.Equal(wanted.Value, found.GetValueString());
+                Assert.Equal(wanted.Captures.Count, actual.GetCaptures(number).Length);
+                if (found.Success) Assert.Equal(wanted.Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
             }
         }
         var ranges = new List<(int, int)>();
@@ -97,9 +96,9 @@ public sealed class Utf8ScalarNonBacktrackingTests
         // shared with ordinary owned execution; do not reproduce that defect.
         Assert.Equal("abc", new Regex(pattern, options).Match("abc").Groups["x"].Value);
         var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
-        var group = regex.MatchDetailed("abc"u8).GetGroup("x");
-        Assert.Equal("abc", group.GetValueString());
-        Assert.Equal(1, group.CaptureCount);
+        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).TryGetGroup("x", out var group));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal(1, Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).GetCaptures(regex.GroupNumberFromName("x")).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -111,12 +110,12 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var input = "a😀😀b"u8.ToArray();
         var regex = new Utf8Regex("(?<x>😀)+", options);
         Assert.Equal(1, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal((1, 8), (match.IndexInBytes, match.LengthInBytes));
-        var group = match.GetGroup("x");
-        Assert.Equal(1, group.CaptureCount);
-        Assert.Equal((5, 4), (group.IndexInBytes, group.LengthInBytes));
-        Assert.Equal("😀", group.GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((1, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.True(match.TryGetGroup("x", out var group));
+        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal((5, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal("aQb", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
         using var cursor = regex.CreateMatchCursor(input, 5);
         Assert.True(cursor.MoveNext(out var fromOffset));

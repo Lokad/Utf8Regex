@@ -12,7 +12,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 {
     private const string Digits = "[0-9]";
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private sealed record Input(Utf8TreeNode Find, Utf8ExecutionNode Execution, Utf8SemanticRegex Semantic);
+    private sealed record Input(Utf8TreeNode Find, Utf8SemanticRegex Semantic);
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
@@ -34,9 +34,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
         return node;
     }
 
-    private static Utf8ExecutionNode ExecutionNode(Utf8ExecutionNodeKind kind, params Utf8ExecutionNode[] children)
-        => new(kind, RegexOptions.None, children, "a", 'a', 0, 0, 1);
-
     private static Utf8SemanticRegex Semantic(Utf8TreeNode root)
         => new("a", RegexOptions.None, "a", RegexOptions.None,
             Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false));
@@ -51,10 +48,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
             3 or 4 => Node(Utf8TreeNodeKind.Multi, "ab\r\n"),
             _ => Node(Utf8TreeNodeKind.Multi, "ab"),
         };
-        var execution = route == 8
-            ? ExecutionNode(Utf8ExecutionNodeKind.Alternate, ExecutionNode(Utf8ExecutionNodeKind.One), ExecutionNode(Utf8ExecutionNodeKind.One))
-            : ExecutionNode(Utf8ExecutionNodeKind.Concatenate, ExecutionNode(Utf8ExecutionNodeKind.Loop, ExecutionNode(Utf8ExecutionNodeKind.One)),
-                ExecutionNode(Utf8ExecutionNodeKind.LazyLoop, ExecutionNode(Utf8ExecutionNodeKind.One)));
         for (var index = 0; index < depth; index++)
         {
             find = route switch
@@ -63,9 +56,8 @@ public sealed class Utf8FrontEndScanAdmissionTests
                 5 => Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Backreference, ""), find),
                 _ => Node(Utf8TreeNodeKind.Concatenate, "", find, Node(Utf8TreeNodeKind.Multi, "c")),
             };
-            execution = ExecutionNode(Utf8ExecutionNodeKind.Concatenate, execution, ExecutionNode(Utf8ExecutionNodeKind.One));
         }
-        return new(find, execution, Semantic(find));
+        return new(find, Semantic(find));
     }
 
     private static object? Call(Type type, string name, params object?[] args)
@@ -95,8 +87,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
             case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
             case 5: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractTrailingLiteral", input.Find, ""))); break;
             case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
-            case 7: Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", input.Execution, 0, 0))); break;
-            case 8: Call(typeof(Utf8AlternationBranchSpanMap), "CountAlternates", input.Execution, null, 0); break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
             case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
         }
@@ -104,7 +94,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 11; route++)
+        foreach (var route in new[] { 0, 1, 2, 3, 4, 5, 6, 9, 10 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -129,7 +119,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
-    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ChildDepthDenialRestoresParentAndAllowsRecovery(int route)
     {
         var input = Make(route, 32);
@@ -153,7 +143,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
-    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ArrayGrowthDenialReleasesEveryScratchLoan(int route)
     {
         var input = Make(route, 128);
@@ -172,7 +162,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
-    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void EveryWorkCutoffRestoresScratchWithoutRefundingWork(int route)
     {
         var input = Make(route, 3);
@@ -272,25 +262,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.Equal("atomic groups", Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(root));
         root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Atomic, ""), Node(Utf8TreeNodeKind.Backreference, ""));
         Assert.Equal("backreferences", Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(root));
-    }
-
-    [Fact]
-    public void LoopDiscoveryIsOpaqueWhileAlternateDiscoveryTraversesLoopBodies()
-    {
-        var alternate = ExecutionNode(Utf8ExecutionNodeKind.Alternate, ExecutionNode(Utf8ExecutionNodeKind.One));
-        var root = ExecutionNode(Utf8ExecutionNodeKind.Concatenate, ExecutionNode(Utf8ExecutionNodeKind.Loop, alternate),
-            ExecutionNode(Utf8ExecutionNodeKind.LazyLoop, ExecutionNode(Utf8ExecutionNodeKind.One)));
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        object?[] loops = [root, 0, 0];
-        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", loops)));
-        Assert.Equal(2, loops[1]);
-        Assert.Equal(1, loops[2]);
-        object?[] args = [root, null, 0];
-        Call(typeof(Utf8AlternationBranchSpanMap), "CountAlternates", args);
-        Assert.Same(alternate, args[1]);
-        Assert.Equal(1, args[2]);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     [Fact]

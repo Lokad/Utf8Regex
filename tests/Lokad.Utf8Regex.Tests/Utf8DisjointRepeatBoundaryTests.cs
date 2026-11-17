@@ -46,13 +46,13 @@ public sealed class Utf8DisjointRepeatBoundaryTests
         var pattern = captureTail ? "([a-z]+)" + new string('(', groups) + "-" + new string(')', groups)
             : new string('(', groups) + "[a-z]+" + new string(')', groups) + "-";
         var regex = new Utf8Regex(pattern);
-        var match = regex.MatchDetailed("é😀abc-"u8);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("é😀abc-"u8.ToArray()));
         Assert.True(match.Success);
-        Assert.Equal("abc-", match.GetValueString());
+        Assert.Equal("abc-", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
         for (var group = 1; group <= (captureTail ? groups + 1 : groups); group++)
         {
-            Assert.Equal(captureTail && group > 1 ? "-" : "abc", match.GetGroup(group).GetValueString());
-            Assert.Equal(1, match.GetGroup(group).CaptureCount);
+            Assert.Equal(captureTail && group > 1 ? "-" : "abc", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(group).Span));
+            Assert.Equal(1, match.GetCaptures(group).Length);
         }
     }
 }

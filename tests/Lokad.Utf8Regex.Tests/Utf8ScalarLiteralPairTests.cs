@@ -33,11 +33,11 @@ public sealed class Utf8ScalarLiteralPairTests
         var text = pair == "[,，]" ? "中，x,😀" : "中😀x😁，";
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex("(?<separator>" + pair + ")");
-        var snapshot = regex.MatchDetailed(input);
+        var snapshot = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(snapshot.Success);
-        var captured = snapshot.GetGroup(1).GetValueString();
+        var captured = System.Text.Encoding.UTF8.GetString(snapshot.GetGroupMemory(1).Span);
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal(captured, snapshot.GetGroup(1).GetValueString());
+        Assert.Equal(captured, System.Text.Encoding.UTF8.GetString(snapshot.GetGroupMemory(1).Span));
         byte[] malformed = [.. input, 0xFF];
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         Assert.Throws<ArgumentException>(() => regex.Match(malformed));

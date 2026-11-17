@@ -213,9 +213,9 @@ public sealed class Utf8SliceLookaroundTests
         Assert.True(actual.Success);
         Assert.Equal(expectedIndex, actual.IndexInUtf16);
         Assert.Equal(expectedLength, actual.LengthInUtf16);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
-        Assert.Equal(expectedGroup, detailed.GetGroup(1).GetValueString());
+        Assert.Equal(expectedGroup, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         foreach (var item in regex.EnumerateMatches(input))
         {
             Assert.Equal(expectedIndex, item.IndexInUtf16);
@@ -235,15 +235,17 @@ public sealed class Utf8SliceLookaroundTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match(inputText);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(oracle.Success, detailed.Success);
         Assert.True(detailed.Success);
+        Utf8MatchSequence.AssertRange(detailed.Value, inputText, expectedIndex, expectedLength);
+        Utf8MatchSequence.AssertCaptures(oracle, detailed, input, inputText);
         for (var group = 1; group <= groups; group++)
         {
-            Assert.Equal(oracle.Groups[group].Success, detailed.GetGroup(group).Success);
+            Assert.Equal(oracle.Groups[group].Success, (detailed.TryGetGroup(group, out var range1) ? range1.Success : default));
             if (oracle.Groups[group].Success)
             {
-                Assert.Equal(oracle.Groups[group].Value, detailed.GetGroup(group).GetValueString());
+                Assert.Equal(oracle.Groups[group].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(group).Span));
             }
         }
 

@@ -84,12 +84,12 @@ public sealed class Utf8SliceNonCapturingTests
     {
         var regex = new Utf8Regex("(a)(?:b)(c)", RegexOptions.CultureInvariant);
         var oracle = new Regex("(a)(?:b)(c)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("abc");
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("abc"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("abc")));
         Assert.True(detailed.Success);
-        Assert.Equal(oracle.Groups[1].Value, detailed.GetGroup(1).GetValueString());
-        Assert.Equal(oracle.Groups[2].Value, detailed.GetGroup(2).GetValueString());
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("c", detailed.GetGroup(2).GetValueString());
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
         // Detailed shaping preserves the owned capture numbering on native and
         // scalar routes, including skipped noncapturing groups.
     }

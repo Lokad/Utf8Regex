@@ -8,7 +8,7 @@ public sealed class Utf8BoundaryProjectionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void BoundaryWrappedUtf8LiteralProjectsUtf16AndByteCoordinates(bool compiled)
+    public void BoundaryWrappedUtf8LiteralReturnsByteCoordinates(bool compiled)
     {
         const string pattern = @"\bé\b";
         const string input = "é z é";
@@ -16,15 +16,13 @@ public sealed class Utf8BoundaryProjectionTests
         var regex = CreateUtf8Regex(pattern, compiled);
         var runtime = CreateRuntimeRegex(pattern, compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
-        var match = regex.MatchDetailed(bytes);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
         var expected = runtime.Match(input);
 
         Assert.True(match.Success);
-        Assert.Equal(expected.Index, match.IndexInUtf16);
-        Assert.Equal(expected.Length, match.LengthInUtf16);
-        Assert.Equal(expected.Value, match.GetValueString());
-        Assert.True(match.IsByteAligned);
-        Assert.True(match.TryGetByteRange(out var indexInBytes, out var lengthInBytes));
+        Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        var indexInBytes = match.Value.StartOffsetInBytes;
+        var lengthInBytes = match.Value.EndOffsetInBytes - indexInBytes;
         Assert.Equal(Encoding.UTF8.GetByteCount(input[..expected.Index]), indexInBytes);
         Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), lengthInBytes);
     }
@@ -40,16 +38,14 @@ public sealed class Utf8BoundaryProjectionTests
         var regex = CreateUtf8Regex(pattern, compiled);
         var runtime = CreateRuntimeRegex(pattern, compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
-        var match = regex.MatchDetailed(bytes);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
         var expected = runtime.Match(input);
 
         Assert.True(match.Success);
         Assert.Equal("אבג", expected.Value);
-        Assert.Equal(expected.Index, match.IndexInUtf16);
-        Assert.Equal(expected.Length, match.LengthInUtf16);
-        Assert.Equal(expected.Value, match.GetValueString());
-        Assert.True(match.IsByteAligned);
-        Assert.True(match.TryGetByteRange(out var indexInBytes, out var lengthInBytes));
+        Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        var indexInBytes = match.Value.StartOffsetInBytes;
+        var lengthInBytes = match.Value.EndOffsetInBytes - indexInBytes;
         Assert.Equal(Encoding.UTF8.GetByteCount(input[..expected.Index]), indexInBytes);
         Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), lengthInBytes);
     }
@@ -65,16 +61,14 @@ public sealed class Utf8BoundaryProjectionTests
         var regex = CreateUtf8Regex(pattern, compiled);
         var runtime = CreateRuntimeRegex(pattern, compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
-        var match = regex.MatchDetailed(bytes);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
         var expected = runtime.Match(input);
 
         Assert.True(match.Success);
         Assert.Equal("١٢٣", expected.Value);
-        Assert.Equal(expected.Index, match.IndexInUtf16);
-        Assert.Equal(expected.Length, match.LengthInUtf16);
-        Assert.Equal(expected.Value, match.GetValueString());
-        Assert.True(match.IsByteAligned);
-        Assert.True(match.TryGetByteRange(out var indexInBytes, out var lengthInBytes));
+        Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        var indexInBytes = match.Value.StartOffsetInBytes;
+        var lengthInBytes = match.Value.EndOffsetInBytes - indexInBytes;
         Assert.Equal(Encoding.UTF8.GetByteCount(input[..expected.Index]), indexInBytes);
         Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), lengthInBytes);
     }

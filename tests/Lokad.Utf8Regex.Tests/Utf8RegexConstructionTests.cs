@@ -308,8 +308,8 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
-        var path = regex.MatchDetailed("import \"😀\nx\"tail"u8).GetGroup("path");
-        Assert.Equal((8, 6), (path.IndexInBytes, path.LengthInBytes));
+        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("import \"😀\nx\"tail"u8.ToArray())).TryGetGroup("path", out var path));
+        Assert.Equal((8, 6), (path.StartOffsetInBytes, (path.EndOffsetInBytes - path.StartOffsetInBytes)));
     }
 
     [Fact]
@@ -321,7 +321,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal("#😀", regex.MatchDetailed("///#😀"u8).GetGroup("title").GetValueString());
+        Assert.Equal("#😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("///#😀"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("title")).Span));
     }
 
     [Fact]
@@ -524,7 +524,6 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-
         AssertCompiledFastPathMatchesBaseline(
             "^ab[0-9]{2}$",
             RegexOptions.CultureInvariant,
@@ -544,7 +543,6 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledIgnoreCaseLiteralThenRunValidatorMatchesBaselineAcrossCorpus()
     {
         var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-
 
         AssertCompiledFastPathMatchesBaseline(
             "^ab[a-f0-9]{2}$",
@@ -1202,10 +1200,10 @@ public sealed class Utf8RegexConstructionTests
         Assert.True((compiled.Options & RegexOptions.Compiled) != 0);
         Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram);
         var input = Encoding.UTF8.GetBytes("BEGINBEGIN\U0001f600ENDEND");
-        var match = compiled.MatchDetailed(input);
+        var match = Utf8MatchSequence.First(compiled.CreateMatchCursor(input));
         Assert.True(match.Success);
-        Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
-        Assert.False(match.GetGroup("open").Success);
+        Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+        Assert.False((match.TryGetGroup("open", out var range1) ? range1.Success : default));
         Assert.Equal(1, compiled.Count(input));
         Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(compiled.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, compiled.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -1251,8 +1249,6 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
-
-
 
     [Fact]
     public void CompiledWeakEmailPrefilterLoopCountMatchesDotNet()

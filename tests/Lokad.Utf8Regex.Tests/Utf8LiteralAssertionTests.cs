@@ -32,14 +32,14 @@ public sealed class Utf8LiteralAssertionTests
                 "éfoobar😀", "😀bar", "foobarbazfoobar", "fobar", "foo", "bar\n" })
             {
                 var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
-                var expected = oracle.Match(text); var actual = regex.MatchDetailed(storage.AsSpan(1, input.Length));
+                var expected = oracle.Match(text); var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(storage.AsMemory(1, input.Length)));
                 Assert.Equal(expected.Success, actual.Success);
                 Assert.Equal(expected.Success, regex.IsMatch(input));
                 Assert.Equal(oracle.Count(text), regex.Count(input));
                 if (!actual.Success) continue;
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
-                Assert.Equal(expected.Value, actual.GetValueString());
-                if (expected.Groups.Count > 1) Assert.Equal(expected.Groups[1].Value, actual.GetGroup(1).GetValueString());
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Value.StartOffsetInBytes);
+                Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
+                if (expected.Groups.Count > 1) Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(1).Span));
             }
         }
     }

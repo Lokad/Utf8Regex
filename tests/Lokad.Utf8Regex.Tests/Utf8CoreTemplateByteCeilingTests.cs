@@ -67,7 +67,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     public void FundedScalarResultsSurviveAnUnrelatedPreparationFailure()
     {
         var regex = Create("(?<x>😀|a)", 1 << 20);
-        var retained = regex.MatchDetailed("😀a"u8);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray()));
         Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"));
         Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
         var count = Cache(regex).Count;
@@ -75,7 +75,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
             regex.Replace([], new string('x', 1 << 20)));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(count, Cache(regex).Count);
-        Assert.Equal("😀", retained.GetGroup("x").GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal("<😀><a>", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<${x}>")));
     }
 

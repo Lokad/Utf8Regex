@@ -210,7 +210,7 @@ public sealed class Utf8SliceAnchorTests
         Assert.True(actual.Success);
         Assert.Equal(expectedStart, actual.IndexInUtf16);
         Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
-        var detailed = regex.MatchDetailed(input);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
         foreach (var item in regex.EnumerateMatches(input))
         {

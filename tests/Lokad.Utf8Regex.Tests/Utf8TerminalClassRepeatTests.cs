@@ -46,7 +46,7 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(2, Create(@"\w+", 1).Count("abc ééé"u8));
         Assert.Equal(2, Create(@"(\w+)", 1).Count("abc ééé"u8));
         Assert.Equal(2, Create(@"(\w)+", 1).Count("abc ééé"u8));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+", 1).MatchDetailed("abc ééé"u8));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(Create(@"(\w)+", 1).CreateMatchCursor("abc ééé"u8.ToArray())));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, failure.ResourceKind);
         var dependent = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+\1", 1).Count("aaa"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, dependent.ResourceKind);
@@ -101,7 +101,7 @@ public sealed class Utf8TerminalClassRepeatTests
         var detailed = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
             policy with { MaxResultBytes = 1 << 20 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => detailed.MatchDetailed("abc ééé"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(detailed.CreateMatchCursor("abc ééé"u8.ToArray()))).ResourceKind);
     }
 
     [Theory]

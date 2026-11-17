@@ -21,7 +21,7 @@ public sealed class Utf8FixedPolicyPreparationTests
         {
             var options = RegexOptions.CultureInvariant | mode | (compiled ? RegexOptions.Compiled : 0);
             var baseline = new Utf8Regex(pattern, options);
-            var expected = baseline.MatchDetailed(input);
+            var expected = Utf8MatchSequence.First(baseline.CreateMatchCursor(input));
             Assert.True(expected.Success);
             foreach (var policy in new[] {
                 new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 },
@@ -38,11 +38,10 @@ public sealed class Utf8FixedPolicyPreparationTests
                 Assert.Equal(options, regex.Options);
                 Assert.True(regex.IsMatch(input));
                 Assert.Equal(baseline.Count(input), regex.Count(input));
-                var actual = regex.MatchDetailed(input);
-                Assert.Equal((expected.IndexInBytes, expected.LengthInBytes, expected.IndexInUtf16, expected.LengthInUtf16),
-                    (actual.IndexInBytes, actual.LengthInBytes, actual.IndexInUtf16, actual.LengthInUtf16));
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                Utf8MatchSequence.EqualCaptures(expected, actual);
                 if (pattern.Contains("?<x>"))
-                    Assert.Equal(expected.GetGroup("x").CaptureCount, actual.GetGroup("x").CaptureCount);
+                    Assert.Equal(expected.GetCaptures(baseline.GroupNumberFromName("x")).Length, actual.GetCaptures(regex.GroupNumberFromName("x")).Length);
                 Assert.Throws<ArgumentException>(() => regex.Count([0xff]));
                 using var canceled = new CancellationTokenSource();
                 canceled.Cancel();

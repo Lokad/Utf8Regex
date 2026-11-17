@@ -149,7 +149,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
         using var token = new CancellationTokenSource();
         var regex = new Utf8Regex("(?<n>a?b[0-9]{2})", options, TimeSpan.FromMilliseconds(20), Funded);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 256)));
-        var retained = regex.MatchDetailed(input);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         var measured = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20), Regex.InfiniteMatchTimeout, default);
         _ = Utf8Validation.Validate(input, ref measured);
         var validation = measured.Budget.Steps;
@@ -168,7 +168,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }
         finally { diagnostics.Complete(); }
-        Assert.Equal("b12", retained.GetGroup("n").GetValueString());
+        Assert.Equal("b12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("n")).Span));
         Assert.Equal(512, regex.Count(input));
     }
 }

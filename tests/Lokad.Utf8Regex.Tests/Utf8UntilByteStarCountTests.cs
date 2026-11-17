@@ -86,11 +86,11 @@ public sealed class Utf8UntilByteStarCountTests
         var input = Encoding.UTF8.GetBytes("😀\nété\n");
         var regex = new Utf8Regex(@"(?<line>[^\n]*)");
         Assert.Equal(5, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal(4, match.LengthInBytes);
-        Assert.Equal(4, match.GetGroup("line").LengthInBytes);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(4, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.Equal(4, ((match.TryGetGroup("line", out var range1) ? range1.EndOffsetInBytes : default) - (match.TryGetGroup("line", out var range2) ? range2.StartOffsetInBytes : default)));
         Assert.Equal(5, regex.Count(input));
-        Assert.Equal(4, match.GetGroup("line").LengthInBytes);
+        Assert.Equal(4, ((match.TryGetGroup("line", out var range3) ? range3.EndOffsetInBytes : default) - (match.TryGetGroup("line", out var range4) ? range4.StartOffsetInBytes : default)));
     }
 
     [Theory]

@@ -64,13 +64,13 @@ public sealed class Utf8QuotedPrefixValueMatchTests
             Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(Pattern, options), new Regex(Pattern, options),
                 ["\"é😀\\😀x\"tail", "\"abc\"😀", "😀\"abc\"", "\"a\\\nb\"", "\"a\nb\""]);
         var regex = new Utf8Regex(Pattern); var bytes = "\"abc\"\"def\""u8.ToArray();
-        var retained = regex.MatchDetailed(bytes);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
         var cursor = regex.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(cursor.Current, alias.Current); var first = alias.Current;
         Assert.True(cursor.MoveNext()); Assert.Equal(first, alias.Current);
         _ = regex.Match("\"other\""u8);
-        Assert.Equal("c", retained.GetGroup(1).GetValueString());
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         var offset = regex.Match("😀x\"abc\"tail"u8, 5, []);
         Assert.Equal((5, 5), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var nbPattern = Pattern.Replace(@"\G", @"\A");

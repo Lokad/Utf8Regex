@@ -39,10 +39,9 @@ public sealed class Utf8SliceCaptureCatalogTests
             Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
             foreach (var name in oracle.GetGroupNames())
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
-            var context = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+            var context = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             var expected = oracle.Match(text);
-            foreach (var name in oracle.GetGroupNames())
-                Assert.Equal(expected.Groups[name].Value, context.GetGroup(name).GetValueString());
+            Utf8MatchSequence.AssertCaptures(expected, context, Encoding.UTF8.GetBytes(text), text);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
@@ -99,7 +98,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(input));
-        Assert.Equal(literal, regex.MatchDetailed(input).GetGroup(name).GetValueString());
+        Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(regex.GroupNumberFromName(name)).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

@@ -165,26 +165,18 @@ public sealed class Utf8ScalarSubjectTests
                 Assert.Equal(expected[0], (index, length));
             }
 
-            var detailed = regex.MatchDetailed(input, token);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token));
             Assert.Equal(expected.Length != 0, detailed.Success);
             if (detailed.Success)
             {
-                Assert.True(detailed.IsByteAligned);
-                Assert.Equal(expected[0], (detailed.IndexInBytes, detailed.LengthInBytes));
-                for (var number = 0; number < detailed.GroupCount; number++)
-                {
-                    var group = detailed.GetGroup(number);
-                    if (!group.Success) continue;
-                    Assert.True(group.IsByteAligned);
-                    for (var capture = 0; capture < group.CaptureCount; capture++)
-                        Assert.True(group.GetCapture(capture).IsByteAligned);
-                }
+                Assert.Equal(expected[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+                Utf8MatchSequence.AssertScalarCaptures(detailed, input);
                 if (pattern.Contains("(.)", StringComparison.Ordinal))
                 {
-                    var group = detailed.GetGroup(1);
-                    Assert.Equal("\U0001f600", group.GetValueString());
+                    Assert.True(detailed.TryGetGroup(1, out var group));
+                    Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
                     Assert.Equal(pattern == @"^\1(.)$" ? (4, 4) : (0, 4),
-                        (group.IndexInBytes, group.LengthInBytes));
+                        (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
                 }
             }
 
@@ -237,15 +229,14 @@ public sealed class Utf8ScalarSubjectTests
     {
         var input = Encoding.UTF8.GetBytes("a\U0001f600\u0301");
         var regex = new Utf8Regex("^((.)+)$", RegexOptions.CultureInvariant);
-        var context = regex.MatchDetailed(input);
-        var group = context.GetGroup(2);
-        Assert.Equal(3, group.CaptureCount);
+        var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.True(context.TryGetGroup(2, out var group));
+        Assert.Equal(3, context.GetCaptures(2).Length);
         (int Index, int Length)[] expected = [(0, 1), (1, 4), (5, 2)];
         for (var index = 0; index < expected.Length; index++)
         {
-            var capture = group.GetCapture(index);
-            Assert.True(capture.IsByteAligned);
-            Assert.Equal(expected[index], (capture.IndexInBytes, capture.LengthInBytes));
+            var capture = context.GetCaptures(2)[index];
+            Assert.Equal(expected[index], (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
         }
     }
 
@@ -321,7 +312,7 @@ public sealed class Utf8ScalarSubjectTests
             case "bool": _ = regex.IsMatch(input, token); break;
             case "count": _ = regex.Count(input, token); break;
             case "value": _ = regex.Match(input, token); break;
-            case "detailed": _ = regex.MatchDetailed(input, token); break;
+            case "detailed": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)); break;
             case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
             case "split": _ = regex.EnumerateSplits(input, token).MoveNext(); break;
             case "offset-bool": _ = regex.Match(input, 4, [], token).Success; break;

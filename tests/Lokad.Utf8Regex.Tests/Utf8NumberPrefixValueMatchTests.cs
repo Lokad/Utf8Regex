@@ -115,16 +115,16 @@ public sealed class Utf8NumberPrefixValueMatchTests
     {
         var regex = new Utf8Regex(Pattern);
         var input = "-12.34e-5!"u8.ToArray(); var value = regex.Match(input);
-        var detailed = regex.MatchDetailed(input);
-        Assert.Equal(".34", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("e-5", detailed.GetGroup(2).GetValueString());
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(".34", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("e-5", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
         Utf8MatchSequence.EqualValue(value, regex.Match(input, 0, []));
         Assert.Equal(1, regex.Count(input));
         var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-        Assert.Equal(".34", detailed.GetGroup(1).GetValueString());
+        Assert.Equal(".34", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.Equal(9, value.LengthInBytes);
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Match(malformed));

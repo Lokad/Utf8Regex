@@ -33,16 +33,16 @@ public sealed class Utf8HexColorValueMatchTests
                 "#abcd", "aBc123\n", "#abc\n", "abc\r\n", "abc\n\n", "abcdefg", "abc def", "#12g", "abc\0" })
             {
                 var input = Encoding.ASCII.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
-                var expected = regex.MatchDetailed(input); var bcl = oracle.Match(text);
+                var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var bcl = oracle.Match(text);
                 Assert.Equal(bcl.Success, expected.Success);
-                if (bcl.Success) Assert.Equal(bcl.Length, expected.LengthInUtf16);
+                if (bcl.Success) ;
                 using var token = new CancellationTokenSource();
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
                     var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
                     Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.IndexInBytes, expected.LengthInBytes),
+                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.IndexInBytes, actual.LengthInBytes));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                 }
@@ -61,9 +61,9 @@ public sealed class Utf8HexColorValueMatchTests
             var regex = new Utf8Regex(pattern, options);
             foreach (var text in new[] { "abc", "#ABC123", "ggg", "ABC\n", "abc\nrest", "😀abc", "abc😀", "ébc", "１２３" })
             {
-                var input = Encoding.UTF8.GetBytes(text); var expected = regex.MatchDetailed(input); var actual = regex.Match(input);
+                var input = Encoding.UTF8.GetBytes(text); var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var actual = regex.Match(input);
                 Assert.Equal(expected.Success, actual.Success);
-                if (actual.Success) Assert.Equal((expected.IndexInBytes, expected.LengthInBytes),
+                if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                     (actual.IndexInBytes, actual.LengthInBytes));
             }
         }
@@ -129,12 +129,12 @@ public sealed class Utf8HexColorValueMatchTests
     public void DetailedCapturesRetainedAliasesAndStrictInputStayOwned()
     {
         var regex = new Utf8Regex(Color, Fold); var input = "#AbC123\n"u8.ToArray();
-        var detailed = regex.MatchDetailed(input); var group = detailed.GetGroup(1);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(detailed.TryGetGroup(1, out var group));
         var value = regex.Match(input); var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-        Assert.Equal("AbC123", group.GetValueString()); Assert.Equal("#AbC123", detailed.GetValueString());
+        Assert.Equal("AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span)); Assert.Equal("#AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();

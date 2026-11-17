@@ -23,14 +23,14 @@ public sealed class Utf8SliceBalanceTests
         {
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
                 new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
-            var retained = regex.MatchDetailed("z😀é😀é"u8, cancellation.Token);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("z😀é😀é"u8.ToArray(), cancellationToken: cancellation.Token));
             Assert.True(retained.Success);
-            Assert.Equal(1, retained.IndexInBytes);
-            Assert.Equal(6, retained.LengthInBytes);
-            Assert.False(retained.GetGroup("p").Success);
+            Assert.Equal(1, retained.Value.StartOffsetInBytes);
+            Assert.Equal(6, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
+            Assert.False((retained.TryGetGroup("p", out var range1) ? range1.Success : default));
             Assert.Equal(2, regex.Count("z😀é😀é"u8, cancellation.Token));
-            Assert.Equal("😀é", retained.GetValueString());
-            Assert.False(retained.GetGroup("p").Success);
+            Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+            Assert.False((retained.TryGetGroup("p", out var range2) ? range2.Success : default));
         }
     }
 
@@ -169,13 +169,13 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex("(?<open>a)+(?<-open>b)+", RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(?<open>a)+(?<-open>b)+", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("aab");
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aab"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aab")));
         Assert.True(detailed.Success);
-        Assert.Equal(oracle.Groups[1].Value, detailed.GetGroup(1).GetValueString());
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal(oracle.Groups[1].Captures.Count, detailed.GetGroup(1).CaptureCount);
-        Assert.Equal(1, detailed.GetGroup(1).CaptureCount);
-        Assert.Equal("a", detailed.GetGroup(1).GetCapture(0).GetValueString());
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal(oracle.Groups[1].Captures.Count, detailed.GetCaptures(1).Length);
+        Assert.Equal(1, detailed.GetCaptures(1).Length);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(((global::System.ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes("aab")).Span.Slice(detailed.GetCaptures(1)[0].StartOffsetInBytes, detailed.GetCaptures(1)[0].EndOffsetInBytes - detailed.GetCaptures(1)[0].StartOffsetInBytes)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -184,11 +184,11 @@ public sealed class Utf8SliceBalanceTests
     {
         var regex = new Utf8Regex("(?<a>x)(?<b-a>y)(?<c-b>z)", RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("xyz"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xyz")));
         Assert.True(detailed.Success);
-        Assert.False(detailed.GetGroup(1).Success);
-        Assert.False(detailed.GetGroup(2).Success);
-        Assert.Equal("y", detailed.GetGroup(3).GetValueString());
+        Assert.False((detailed.TryGetGroup(1, out var range3) ? range3.Success : default));
+        Assert.False((detailed.TryGetGroup(2, out var range4) ? range4.Success : default));
+        Assert.Equal("y", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(3).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

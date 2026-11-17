@@ -22,10 +22,10 @@ public sealed class Utf8PreparedAsciiIntervalTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var regex = new Utf8Regex(pattern, options, inputValidation: policy);
-            var match = regex.MatchDetailed(input);
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(match.Success);
-            Assert.Equal((6, 2), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(wanted, match.GetGroup(1).GetValueString());
+            Assert.Equal((6, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
+            Assert.Equal(wanted, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
             Assert.Equal(1, regex.Count(input));
             if (policy == Utf8InputValidation.Validate)
                 Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
@@ -43,9 +43,9 @@ public sealed class Utf8PreparedAsciiIntervalTests
         foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8Regex(pattern, inputValidation: policy);
-            var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             Assert.True(match.Success);
-            Assert.Equal(expected, match.GetGroup(1).GetValueString());
+            Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         }
     }
 }

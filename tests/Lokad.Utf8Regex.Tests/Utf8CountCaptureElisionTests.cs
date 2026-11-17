@@ -23,7 +23,7 @@ public sealed class Utf8CountCaptureElisionTests
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, cancellation.Token));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
         Assert.Equal(2, regex.Count(input));
     }
 
@@ -53,7 +53,7 @@ public sealed class Utf8CountCaptureElisionTests
             Assert.True(regex.IsMatch(input, cancellation.Token));
             Assert.True(regex.Match(input, cancellation.Token).Success);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input)).ResourceKind);
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
             Assert.Equal(expected, regex.Count(input));
         }
     }
@@ -104,14 +104,14 @@ public sealed class Utf8CountCaptureElisionTests
         var regex = new Utf8Regex(pattern);
         var oracle = new Regex(pattern);
         var expected = oracle.Match(text);
-        var retained = regex.MatchDetailed(input);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));
         foreach (var number in oracle.GetGroupNumbers())
         {
             if (number == 0) continue;
-            var group = retained.GetGroup(number);
-            Assert.Equal(expected.Groups[number].Value, group.GetValueString());
-            Assert.Equal(expected.Groups[number].Captures.Count, group.CaptureCount);
+            Assert.True(retained.TryGetGroup(number, out var group));
+            Assert.Equal(expected.Groups[number].Value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(number).Span));
+            Assert.Equal(expected.Groups[number].Captures.Count, retained.GetCaptures(number).Length);
         }
     }
 

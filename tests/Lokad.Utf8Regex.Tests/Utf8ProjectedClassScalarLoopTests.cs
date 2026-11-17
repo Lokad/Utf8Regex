@@ -21,7 +21,6 @@ public sealed class Utf8ProjectedClassScalarLoopTests
         return shape == 2 ? "^a" + body + "7$" : "^" + body + "$";
     }
 
-
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void OverlappingSuffixStillDeclinesTheDeterministicProjection(bool compiled)
@@ -58,18 +57,18 @@ public sealed class Utf8ProjectedClassScalarLoopTests
             Assert.Equal(expected ? 1 : 0, regex.Count(input));
             var match = regex.Match(input);
             Assert.Equal(expected, match.Success);
-            var detailed = regex.MatchDetailed(input);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected, detailed.Success);
             if (expected)
             {
                 Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
-                Assert.Equal((0, input.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
+                Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
                 if (capture)
                 {
-                    var group = detailed.GetGroup("x");
+                    Assert.True(detailed.TryGetGroup("x", out var group));
                     Assert.True(group.Success);
-                    Assert.Equal((shape == 2 ? 1 : 0, Encoding.UTF8.GetByteCount(body)), (group.IndexInBytes, group.LengthInBytes));
-                    Assert.Equal(body, group.GetValueString());
+                    Assert.Equal((shape == 2 ? 1 : 0, Encoding.UTF8.GetByteCount(body)), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
+                    Assert.Equal(body, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
                 }
             }
             var cursor = regex.EnumerateMatches(input);

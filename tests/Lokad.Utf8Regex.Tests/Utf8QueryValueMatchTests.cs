@@ -35,15 +35,15 @@ public sealed class Utf8QueryValueMatchTests
                 "~" + tail + " ~" + tail + "\n", "~" + tail + "\n~" + tail })
             {
                 var input = Encoding.ASCII.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
-                var expected = control.MatchDetailed(input); var bcl = oracle.Match(text);
-                Assert.Equal((bcl.Success, bcl.Length), (expected.Success, expected.LengthInUtf16));
+                var expected = Utf8MatchSequence.First(control.CreateMatchCursor(input)); var bcl = oracle.Match(text);
+                Utf8MatchSequence.AssertCaptures(bcl, expected, input, text);
                 using var token = new CancellationTokenSource();
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
                     var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
                     Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.IndexInBytes, expected.LengthInBytes),
+                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.IndexInBytes, actual.LengthInBytes));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(actual, regex.Match(input));
@@ -81,10 +81,10 @@ public sealed class Utf8QueryValueMatchTests
                 foreach (var text in new[] { "HTTPS://GO.TESTING.LOKAD.COM/d/12?t=x", "😀~/d/١?t=é\n",
                     "~/d/1?t=😀", "~/d/1?t=x\n", new string('x', 2049) + "~/d/1?t=x" })
                 {
-                    var input = Encoding.UTF8.GetBytes(text); var expected = regex.MatchDetailed(input);
+                    var input = Encoding.UTF8.GetBytes(text); var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                     var actual = regex.Match(input);
                     Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.IndexInBytes, expected.LengthInBytes),
+                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.IndexInBytes, actual.LengthInBytes));
                 }
             }
@@ -150,12 +150,12 @@ public sealed class Utf8QueryValueMatchTests
     public void DetailedCapturesAliasesAndStrictTailsRemainOwned()
     {
         var regex = new Utf8Regex(Digits, Fold); var input = "~/ABC/d/12?t=tab"u8.ToArray();
-        var retained = regex.MatchDetailed(input); var tab = retained.GetGroup("tab");
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(retained.TryGetGroup("tab", out var tab));
         var value = regex.Match(input); var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-        Assert.Equal("12", retained.GetGroup("topicId").GetValueString()); Assert.Equal("tab", tab.GetValueString());
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("topicId")).Span)); Assert.Equal("tab", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("tab")).Span));
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();

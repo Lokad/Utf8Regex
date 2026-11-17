@@ -391,17 +391,15 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         {
             Assert.Equal(expected.Index, match.IndexInUtf16);
             Assert.Equal(expected.Length, match.LengthInUtf16);
-            var actualDetailed = product.MatchDetailed(input);
+            var actualDetailed = Utf8MatchSequence.First(product.CreateMatchCursor(input));
             for (var g = 0; g < expected.Groups.Count; g++)
             {
                 var expectedGroup = expected.Groups[g];
-                var actualGroup = actualDetailed.GetGroup(g);
+                Assert.True(actualDetailed.TryGetGroup(g, out var actualGroup));
                 Assert.Equal(expectedGroup.Success, actualGroup.Success);
                 if (expectedGroup.Success)
                 {
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
-                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                    Assert.Equal(expectedGroup.Value, System.Text.Encoding.UTF8.GetString(actualDetailed.GetGroupMemory(g).Span));
                 }
             }
         }

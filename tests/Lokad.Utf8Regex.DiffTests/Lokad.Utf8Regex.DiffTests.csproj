@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
+    <Compile Include="..\Lokad.Utf8Regex.Tests\Utf8MatchSequence.cs" Link="Common\Utf8MatchSequence.cs" />
   </ItemGroup>
 
 </Project>

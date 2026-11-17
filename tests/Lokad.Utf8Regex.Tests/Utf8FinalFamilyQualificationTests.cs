@@ -44,9 +44,9 @@ public sealed class Utf8FinalFamilyQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = regex.MatchDetailed(input);
+            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
     private static bool NativeQuery(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan plan, out int length) =>
@@ -60,8 +60,8 @@ public sealed class Utf8FinalFamilyQualificationTests
         var alias = Email.Replace("^", @"\A").Replace("@", @"(?<at>\x40)").Replace("[0-9]", @"\p{Nd}").Replace("$", @"\Z");
         Plan(alias, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole);
         PublicRange(alias, RegexOptions.CultureInvariant, "a@[١.٢.٣.٤]", 0, 15, true);
-        var group = new Utf8Regex(alias).MatchDetailed("a@a.ab"u8).GetGroup("at");
-        Assert.Equal((1, 1), (group.IndexInBytes, group.LengthInBytes));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias).CreateMatchCursor("a@a.ab"u8.ToArray())).TryGetGroup("at", out var group));
+        Assert.Equal((1, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
     }
 
     [Fact]

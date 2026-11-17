@@ -2,6 +2,12 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core `MatchDetailed` and its three legacy match/group/capture views.
+  Use the memory capture cursor for immutable byte ranges and capture histories.
+  Delete detailed-only UTF-16 projections and capture-map preparation. Misses
+  return default results; regex metadata remains available from the instance.
+  Cursor timeout diagnostics omit decoded input, and budget needs follow the cursor.
+
 - Remove the duplicate non-literal replacement worker and its UTF-16 capture
   shaping. These replacements use the existing scalar byte-template engine;
   literal replacement paths remain. Route-dependent costs and budget needs can change.

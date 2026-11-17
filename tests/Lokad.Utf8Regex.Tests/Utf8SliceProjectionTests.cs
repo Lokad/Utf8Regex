@@ -44,14 +44,14 @@ public sealed class Utf8SliceProjectionTests
     {
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         var oracle = new Regex("(a+)(b+)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("xxaaabbyy");
         Assert.True(actual.Success);
-        Assert.Equal(3, actual.GroupCount);
-        Assert.Equal(oracle.Groups[0].Value, actual.GetGroup(0).GetValueString());
-        Assert.Equal(oracle.Groups[1].Value, actual.GetGroup(1).GetValueString());
-        Assert.Equal(oracle.Groups[2].Value, actual.GetGroup(2).GetValueString());
-        Assert.Equal(oracle.Groups[1].Index, actual.GetGroup(1).IndexInUtf16);
+        Assert.Equal(3, actual.GroupNumbers.Length);
+        Utf8MatchSequence.AssertCaptures(oracle, actual, input, "xxaaabbyy");
+        Assert.Equal(oracle.Groups[0].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(0).Span));
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(1).Span));
+        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(2).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -59,20 +59,20 @@ public sealed class Utf8SliceProjectionTests
     public void OwnedDetailedReportsUnmatchedGroups()
     {
         var regex = new Utf8Regex("(a)|(b)", RegexOptions.CultureInvariant);
-        var actual = regex.MatchDetailed(Encoding.UTF8.GetBytes("xb"));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xb")));
         var oracle = new Regex("(a)|(b)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("xb");
         Assert.True(actual.Success);
-        Assert.False(actual.GetGroup(1).Success);
-        Assert.True(actual.GetGroup(2).Success);
-        Assert.Equal(oracle.Groups[2].Value, actual.GetGroup(2).GetValueString());
-        Assert.Equal("b", actual.GetGroup("2").GetValueString());
+        Assert.False((actual.TryGetGroup(1, out var range1) ? range1.Success : default));
+        Assert.True((actual.TryGetGroup(2, out var range2) ? range2.Success : default));
+        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(2).Span));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("2")).Span));
     }
 
     [Fact]
     public void OwnedDetailedMissIsUnsuccessful()
     {
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
-        Assert.False(regex.MatchDetailed(Encoding.UTF8.GetBytes("xyz")).Success);
+        Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xyz"))).Success);
     }
 
     [Theory]

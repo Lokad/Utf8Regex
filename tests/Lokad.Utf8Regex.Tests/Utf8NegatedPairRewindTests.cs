@@ -34,9 +34,9 @@ public sealed class Utf8NegatedPairRewindTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
-        if (actual.Success) Assert.Equal(expected.Value, actual.GetValueString());
+        if (actual.Success) Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
     }
 
     [Theory]

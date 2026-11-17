@@ -63,12 +63,12 @@ public sealed class Utf8FiniteLiteralMatchTests
         var tiny = Create(pattern);
         AssertRange(tiny.Match("é😀dog"u8), "é😀dog", 3, 3);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.MatchDetailed("é😀dog"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(tiny.CreateMatchCursor("é😀dog"u8.ToArray()))).ResourceKind);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
-        var retained = regex.MatchDetailed("é😀dog"u8);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("é😀dog"u8.ToArray()));
         AssertRange(regex.Match("😀cat"u8), "😀cat", 2, 3);
-        Assert.Equal("dog", retained.GetGroup("animal").GetValueString());
+        Assert.Equal("dog", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("animal")).Span));
     }
 
     private static void AssertRange(Utf8CaptureRange actual, string text, int start, int length)
@@ -148,8 +148,8 @@ public sealed class Utf8FiniteLiteralMatchTests
                     MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
             var expected = new Regex(pattern, options).Match(text);
             AssertRange(regex.Match(input, source.Token), text, expected.Index, length);
-            var detailed = regex.MatchDetailed(input, source.Token);
-            Assert.Equal(literal, detailed.GetGroup("hit").GetValueString());
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
+            Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("hit")).Span));
             Assert.Equal(2, regex.Count(input, source.Token));
         }
     }
@@ -172,9 +172,9 @@ public sealed class Utf8FiniteLiteralMatchTests
             if (expected.Success) AssertRange(actual, text, expected.Index, expected.Length);
         }
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 3, []));
-        var detailed = regex.MatchDetailed(input, source.Token);
-        Assert.Equal("nee", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("dle", detailed.GetGroup("suffix").GetValueString());
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+        Assert.Equal("nee", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
+        Assert.Equal("dle", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("suffix")).Span));
 
         var tiny = Create(regex.Pattern, options: options);
         AssertRange(tiny.Match(input), text, 3, 6);
@@ -185,7 +185,7 @@ public sealed class Utf8FiniteLiteralMatchTests
                     MaxWorkingBytes = working ? 1UL : 1UL << 20,
                     MaxResultBytes = working ? 1UL << 20 : 1UL });
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchDetailed(input)).ResourceKind);
+            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(limited.CreateMatchCursor(input))).ResourceKind);
             if (working)
                 Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 0, []).Success).ResourceKind);
             else

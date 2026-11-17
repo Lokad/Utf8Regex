@@ -140,19 +140,19 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
                 if (expected.Success)
                 {
-                    var actualDetailed = p.MatchDetailed(bytes);
+                    var actualDetailed = Utf8MatchSequence.First(p.CreateMatchCursor(bytes));
                     for (var g = 0; g < expectedNumbers.Length; g++)
                     {
                         var expectedGroup = expected.Groups[g];
-                        var actualGroup = actualDetailed.GetGroup(g);
+                        Assert.True(actualDetailed.TryGetGroup(g, out var actualGroup));
                         if (expectedGroup.Success != actualGroup.Success)
                         {
                             return tag + "group " + g + " success bcl=" + expectedGroup.Success + "/product=" + actualGroup.Success + " on input [" + input + "]";
                         }
 
-                        if (expectedGroup.Success && (!string.Equals(expectedGroup.Value, actualGroup.GetValueString(), StringComparison.Ordinal) || expectedGroup.Index != actualGroup.IndexInUtf16 || expectedGroup.Length != actualGroup.LengthInUtf16))
+                        if (expectedGroup.Success && (!string.Equals(expectedGroup.Value, System.Text.Encoding.UTF8.GetString(actualDetailed.GetGroupMemory(g).Span), StringComparison.Ordinal) || Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedGroup.Index)) != actualGroup.StartOffsetInBytes || Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedGroup.Index + expectedGroup.Length)) != actualGroup.EndOffsetInBytes))
                         {
-                            return tag + "group " + g + " value bcl=[" + expectedGroup.Value + "]/product=[" + actualGroup.GetValueString() + "] on input [" + input + "]";
+                            return tag + "group " + g + " value bcl=[" + expectedGroup.Value + "]/product=[" + System.Text.Encoding.UTF8.GetString(actualDetailed.GetGroupMemory(g).Span) + "] on input [" + input + "]";
                         }
                     }
                 }

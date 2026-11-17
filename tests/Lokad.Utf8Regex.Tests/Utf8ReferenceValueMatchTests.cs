@@ -95,14 +95,14 @@ public sealed class Utf8ReferenceValueMatchTests
     public void DetailedDigitHistoriesAliasesDeclinesAndStrictTailsRemainOwned()
     {
         var regex = new Utf8Regex(Cell, RegexOptions.IgnoreCase);
-        var bytes = "a123"u8.ToArray(); var value = regex.Match(bytes); var detailed = regex.MatchDetailed(bytes);
-        Assert.Equal("123", detailed.GetGroup("row").GetValueString());
-        Assert.Equal(3, detailed.GetGroup(1).CaptureCount);
-        Assert.Equal("2", detailed.GetGroup(1).GetCapture(1).GetValueString());
+        var bytes = "a123"u8.ToArray(); var value = regex.Match(bytes); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("row")).Span));
+        Assert.Equal(3, detailed.GetCaptures(1).Length);
+        Assert.Equal("2", System.Text.Encoding.UTF8.GetString(bytes.AsSpan().Slice(detailed.GetCaptures(1)[1].StartOffsetInBytes, detailed.GetCaptures(1)[1].EndOffsetInBytes - detailed.GetCaptures(1)[1].StartOffsetInBytes)));
         var cursor = regex.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
-        _ = regex.Match("b456"u8); Assert.Equal("123", detailed.GetGroup("row").GetValueString());
+        _ = regex.Match("b456"u8); Assert.Equal("123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("row")).Span));
         Assert.False(regex.Match(bytes, 1, []).Success);
         foreach (var mode in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {

@@ -96,19 +96,17 @@ public sealed class Utf8ScalarMinimumOverlapTests
                 Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
             }
 
-            var detailed = regex.MatchDetailed(input);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, detailed.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Groups.Count, detailed.GroupCount);
+                Utf8MatchSequence.AssertCaptures(expected, detailed, input, text);
                 for (var group = 0; group < expected.Groups.Count; group++)
                 {
                     var expectedGroup = expected.Groups[group];
-                    var actualGroup = detailed.GetGroup(group);
+                    Assert.True(detailed.TryGetGroup(group, out var actualGroup));
                     Assert.Equal(expectedGroup.Success, actualGroup.Success);
-                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
-                    Assert.Equal((expectedGroup.Index, expectedGroup.Length),
-                        (actualGroup.IndexInUtf16, actualGroup.LengthInUtf16));
+                    Assert.Equal(expectedGroup.Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(group).Span));
                 }
             }
 
@@ -219,7 +217,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             var regex = new Utf8Regex(pattern, options);
             Assert.False(regex.IsMatch(input));
             Assert.Equal(0, regex.Count(input));
-            Assert.False(regex.MatchDetailed(input).Success);
+            Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
             Assert.False(regex.EnumerateMatches(input).GetEnumerator().MoveNext());
             Assert.Equal(text, Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
             AssertOwned(regex);

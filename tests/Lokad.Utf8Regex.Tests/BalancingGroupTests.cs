@@ -87,9 +87,9 @@ public sealed class BalancingGroupTests
                 Assert.Equal(oracle.Matches(text).Count, regex.Count(Encoding.UTF8.GetBytes(text)));
             }
         }
-        var retained = new Utf8Regex(alias).MatchDetailed("BEGIN😀END"u8);
+        var retained = Utf8MatchSequence.First(new Utf8Regex(alias).CreateMatchCursor("BEGIN😀END"u8.ToArray()));
         Assert.True(retained.Success);
-        Assert.False(retained.GetGroup("stack").Success);
+        Assert.False((retained.TryGetGroup("stack", out var range1) ? range1.Success : default));
     }
 
     [Theory]
@@ -116,11 +116,11 @@ public sealed class BalancingGroupTests
         var regex = new Utf8Regex(pattern);
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(deep)));
         var input = "BEGIN😀BEGINéEND tail END BEGINxEND"u8.ToArray();
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal("BEGIN😀BEGINéEND tail END", retained.GetValueString());
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal("BEGIN😀BEGINéEND tail END", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("BEGIN😀BEGINéEND tail END", retained.GetValueString());
-        Assert.False(retained.GetGroup("open").Success);
+        Assert.Equal("BEGIN😀BEGINéEND tail END", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+        Assert.False((retained.TryGetGroup("open", out var range2) ? range2.Success : default));
     }
 
     [Fact]

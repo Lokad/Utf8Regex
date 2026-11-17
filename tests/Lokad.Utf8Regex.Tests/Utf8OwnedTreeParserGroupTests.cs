@@ -376,21 +376,9 @@ public sealed class Utf8OwnedTreeParserGroupTests
             Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
             var expected = oracle.Match(inputText);
-            var context = product.MatchDetailed(input);
-            Assert.Equal(expected.Value, context.GetValueString());
-            foreach (var number in oracle.GetGroupNumbers())
-            {
-                var group = context.GetGroup(number);
-                Assert.Equal(expected.Groups[number].Value, group.GetValueString());
-                Assert.Equal(expected.Groups[number].Captures.Count, group.CaptureCount);
-                for (var index = 0; index < group.CaptureCount; index++)
-                {
-                    var capture = group.GetCapture(index);
-                    Assert.Equal(expected.Groups[number].Captures[index].Index, capture.IndexInUtf16);
-                    Assert.Equal(expected.Groups[number].Captures[index].Length, capture.LengthInUtf16);
-                    Assert.Equal(expected.Groups[number].Captures[index].Value, capture.GetValueString());
-                }
-            }
+            var context = Utf8MatchSequence.First(product.CreateMatchCursor(input));
+            Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
+            Utf8MatchSequence.AssertCaptures(expected, context, input, inputText);
             Assert.True(product.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }

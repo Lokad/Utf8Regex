@@ -116,8 +116,8 @@ public sealed class Utf8SearchDispositionQualificationTests
         {
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
             var input = "aé😀中z"u8.ToArray(); Assert.Equal(3, regex.Count(input));
-            var match = regex.MatchDetailed(input);
-            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (7, 3) : (1, 2), (match.IndexInBytes, match.LengthInBytes));
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (7, 3) : (1, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             var enumerator = regex.EnumerateMatches(input); var count = 0;
             while (enumerator.MoveNext()) { count++; Assert.True(enumerator.Current.LengthInBytes > 0); }
             Assert.Equal(3, count);

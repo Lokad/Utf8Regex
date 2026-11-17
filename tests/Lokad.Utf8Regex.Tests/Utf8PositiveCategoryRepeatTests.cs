@@ -27,12 +27,12 @@ public sealed class Utf8PositiveCategoryRepeatTests
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             var expected = oracle.Match(text);
-            var actual = regex.MatchDetailed(input);
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Value, actual.GetValueString());
-                Assert.Equal(expected.Groups[1].Value, actual.GetGroup(1).GetValueString());
+                Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
+                Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(1).Span));
             }
         }
     }

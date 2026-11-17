@@ -168,15 +168,9 @@ public sealed class Utf8ProgramContinuationTests
                 Assert.Equal(expected.Index, actual.IndexInUtf16);
                 Assert.Equal(expected.Length, actual.LengthInUtf16);
             }
-            var detailed = regex.MatchDetailed(input);
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, detailed.Success);
-            foreach (var number in oracle.GetGroupNumbers())
-            {
-                var group = detailed.GetGroup(number);
-                Assert.Equal(expected.Groups[number].Success, group.Success);
-                Assert.Equal(expected.Groups[number].Value, group.GetValueString());
-                Assert.Equal(expected.Groups[number].Captures.Count, group.CaptureCount);
-            }
+            Utf8MatchSequence.AssertCaptures(expected, detailed, input, text);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

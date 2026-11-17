@@ -276,11 +276,11 @@ public sealed class Utf8SliceNonBacktrackingTests
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedDetailed = oracle.Match(text);
-            var actualDetailed = detailedRegex.MatchDetailed(input);
+            var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
             Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
             if (expectedDetailed.Success)
             {
-                Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+                Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
             }
             Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var enumerateRegex = new Utf8Regex(pattern, options);

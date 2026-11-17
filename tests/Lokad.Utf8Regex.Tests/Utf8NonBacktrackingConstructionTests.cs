@@ -34,22 +34,22 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
         Assert.Equal(ordinary.Count(input), regex.Count(input));
-        var expected = ordinary.MatchDetailed(input);
-        var actual = regex.MatchDetailed(input);
+        var expected = Utf8MatchSequence.First(ordinary.CreateMatchCursor(input));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
         if (actual.Success)
         {
-            Assert.Equal((expected.IndexInBytes, expected.LengthInBytes), (actual.IndexInBytes, actual.LengthInBytes));
+            Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
             foreach (var number in ordinary.GetGroupNumbers())
             {
-                var wanted = expected.GetGroup(number);
-                var found = actual.GetGroup(number);
+                Assert.True(expected.TryGetGroup(number, out var wanted));
+                Assert.True(actual.TryGetGroup(number, out var found));
                 Assert.Equal(wanted.Success, found.Success);
-                Assert.Equal(wanted.Success ? 1 : 0, found.CaptureCount);
+                Assert.Equal(wanted.Success ? 1 : 0, actual.GetCaptures(number).Length);
                 if (found.Success)
                 {
-                    Assert.Equal((wanted.IndexInBytes, wanted.LengthInBytes), (found.IndexInBytes, found.LengthInBytes));
-                    Assert.Equal(wanted.GetValueString(), found.GetValueString());
+                    Assert.Equal((wanted.StartOffsetInBytes, (wanted.EndOffsetInBytes - wanted.StartOffsetInBytes)), (found.StartOffsetInBytes, (found.EndOffsetInBytes - found.StartOffsetInBytes)));
+                    Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.GetGroupMemory(number).Span), System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
                 }
             }
         }
@@ -73,10 +73,10 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.Equal(small.Inspection.AvailableOwnedSliceProgram?.Instructions.Length,
             huge.Inspection.AvailableOwnedSliceProgram?.Instructions.Length);
         Assert.Equal(2, huge.Count("😀"u8));
-        var group = huge.MatchDetailed("😀"u8).GetGroup("x");
+        Assert.True(Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup("x", out var group));
         Assert.True(group.Success);
-        Assert.Equal(1, group.CaptureCount);
-        Assert.Equal((0, 0), (group.IndexInBytes, group.LengthInBytes));
+        Assert.Equal(1, Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).GetCaptures(huge.GroupNumberFromName("x")).Length);
+        Assert.Equal((0, 0), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
         Assert.Equal("Q😀Q", Encoding.UTF8.GetString(huge.Replace("😀"u8, "Q")));
         Assert.True(huge.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -95,7 +95,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
             Assert.InRange(program.Instructions.Length, 1, depth + 4);
             Assert.Equal(2, regex.Count("😀"u8));
-            Assert.True(regex.MatchDetailed("😀"u8).GetGroup("x").Success);
+            Assert.True((Utf8MatchSequence.First(regex.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup("x", out var range1) ? range1.Success : default));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
@@ -151,16 +151,16 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(ordinary.Count(input), regex.Count(input));
-        var expected = ordinary.MatchDetailed(input);
-        var actual = regex.MatchDetailed(input);
+        var expected = Utf8MatchSequence.First(ordinary.CreateMatchCursor(input));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal((expected.IndexInBytes, expected.LengthInBytes), (actual.IndexInBytes, actual.LengthInBytes));
+        Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
         foreach (var number in ordinary.GetGroupNumbers())
         {
-            var wanted = expected.GetGroup(number); var found = actual.GetGroup(number);
+            Assert.True(expected.TryGetGroup(number, out var wanted)); Assert.True(actual.TryGetGroup(number, out var found));
             Assert.Equal(wanted.Success, found.Success);
-            Assert.Equal(wanted.Success ? 1 : 0, found.CaptureCount);
-            if (found.Success) Assert.Equal(wanted.GetValueString(), found.GetValueString());
+            Assert.Equal(wanted.Success ? 1 : 0, actual.GetCaptures(number).Length);
+            if (found.Success) Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.GetGroupMemory(number).Span), System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
         }
         Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:$1>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
         if (!text.Any(char.IsSurrogate))
@@ -170,9 +170,9 @@ public sealed class Utf8NonBacktrackingConstructionTests
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             var wanted = oracle.Match(text);
-            Assert.Equal((wanted.Index, wanted.Length), (actual.IndexInBytes, actual.LengthInBytes));
+            Assert.Equal((wanted.Index, wanted.Length), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
             foreach (var number in oracle.GetGroupNumbers())
-                Assert.Equal(wanted.Groups[number].Value, actual.GetGroup(number).GetValueString());
+                Assert.Equal(wanted.Groups[number].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -197,8 +197,8 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.Equal(1, regex.Count(input));
         var first = regex.Match(input);
         Assert.Equal((0, input.Length), (first.IndexInBytes, first.LengthInBytes));
-        var detailed = regex.MatchDetailed(input);
-        Assert.Equal(text, detailed.GetValueString());
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         Assert.Equal(new[] { (0, input.Length) }, ranges);

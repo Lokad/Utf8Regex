@@ -69,7 +69,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
                     if (actual.Success) Assert.Equal((expected.Index, expected.Length,
                         Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
                         (actual.IndexInUtf16, actual.LengthInUtf16, actual.IndexInBytes, actual.LengthInBytes));
-                    Assert.Equal(expected.Value, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+                    Utf8MatchSequence.AssertCaptures(expected, Utf8MatchSequence.First(regex.CreateMatchCursor(input)), input, text);
                 }
             }
         }
@@ -96,11 +96,11 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
             Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern, Options | mode), new Regex(pattern, Options | mode),
                 ["AbC12x_tail", "Kabc_9", "a😀tail", "no match", "0bad"]);
         var captured = new Utf8Regex(@"\G(?<id>[a-z][a-z0-9_]*)", Options);
-        var bytes = "AbC_9!tail"u8.ToArray(); var retained = captured.MatchDetailed(bytes);
+        var bytes = "AbC_9!tail"u8.ToArray(); var retained = Utf8MatchSequence.First(captured.CreateMatchCursor(bytes));
         var cursor = captured.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext()); var first = alias.Current;
         Assert.Equal(first, cursor.Current); Assert.False(cursor.MoveNext()); Assert.Equal(first, alias.Current);
-        _ = captured.Match("Other"u8); Assert.Equal("AbC_9", retained.GetGroup("id").GetValueString());
+        _ = captured.Match("Other"u8); Assert.Equal("AbC_9", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(captured.GroupNumberFromName("id")).Span));
         var offset = new Utf8Regex(Pattern, Options).Match("😀!AbC9!tail"u8, 5, []);
         Assert.Equal((5, 4), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var nbPattern = Pattern.Replace(@"\G", @"\A");

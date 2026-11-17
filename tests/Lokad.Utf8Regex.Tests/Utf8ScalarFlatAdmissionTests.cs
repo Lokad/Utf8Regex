@@ -28,7 +28,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
         Assert.False(regex.IsMatch(input, source.Token));
         Assert.Equal(0, regex.Count(input));
         Assert.False(regex.Match(input).Success);
-        Assert.False(regex.MatchDetailed(input).Success);
+        Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
         var cursor = regex.EnumerateMatches(input);
         Assert.False(cursor.MoveNext());
         Assert.Equal(input, regex.Replace(input, "Q"));
@@ -49,11 +49,11 @@ public sealed class Utf8ScalarFlatAdmissionTests
             AssertOwned(regex);
             Assert.True(regex.IsMatch("\U0001f600"u8, source.Token));
             Assert.Equal(1, regex.Count("\U0001f600"u8, source.Token));
-            var match = regex.MatchDetailed("\U0001f600"u8, source.Token);
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor("\U0001f600"u8.ToArray(), cancellationToken: source.Token));
             Assert.True(match.Success);
-            Assert.Equal((0, 4, 0, 2), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
-            Assert.Equal("\U0001f600", match.GetValueString());
-            if (regex.GetGroupNumbers().Length > 1) Assert.Equal("\U0001f600", match.GetGroup(1).GetValueString());
+            Assert.Equal((0, 4), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+            Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+            if (regex.GetGroupNumbers().Length > 1) Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
             Assert.Equal("<\U0001f600>"u8.ToArray(), regex.Replace("\U0001f600"u8, "<$&>", source.Token));
             AssertOwned(regex);
         }

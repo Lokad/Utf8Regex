@@ -79,9 +79,9 @@ public sealed class Utf8SliceExplicitCaptureTests
         Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
         Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
         Assert.Equal(new[] { 0, 1 }, regex.GetGroupNumbers());
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("ab"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("ab")));
         Assert.True(detailed.Success);
-        Assert.Equal("b", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -95,9 +95,9 @@ public sealed class Utf8SliceExplicitCaptureTests
         Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
         Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
         Assert.Equal(new[] { 0, 1 }, regex.GetGroupNumbers());
-        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aby"));
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aby")));
         Assert.True(detailed.Success);
-        Assert.Equal("y", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("y", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

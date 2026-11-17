@@ -30,14 +30,14 @@ public sealed class Utf8OrdinalBackreferenceTests
             byte[] storage = [255, 255, .. bytes, 255];
             var input = storage.AsSpan(2, bytes.Length);
             Assert.Equal(1, regex.Count(input));
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
             Assert.True(retained.Success);
-            Assert.Equal((0, bytes.Length), (retained.IndexInBytes, retained.LengthInBytes));
-            var group = retained.GetGroup(1);
+            Assert.Equal((0, bytes.Length), (retained.Value.StartOffsetInBytes, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes)));
+            Assert.True(retained.TryGetGroup(1, out var group));
             Assert.True(group.Success);
             Assert.Equal((rtl ? bytes.Length / 2 : 0, bytes.Length / 2),
-                (group.IndexInBytes, group.LengthInBytes));
-            Assert.Equal(segment, group.GetValueString());
+                (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
+            Assert.Equal(segment, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
             var value = cursor.Current;
@@ -48,7 +48,7 @@ public sealed class Utf8OrdinalBackreferenceTests
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
                 regex.Count(bytes, source.Token)).CancellationToken);
             Assert.Throws<ArgumentException>(() => regex.Count([.. bytes, 255]));
-            Assert.Equal(segment, retained.GetGroup(1).GetValueString());
+            Assert.Equal(segment, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
             Assert.Equal(1, regex.Count(input));
         }
     }
@@ -67,7 +67,7 @@ public sealed class Utf8OrdinalBackreferenceTests
             {
                 var input = Encoding.UTF8.GetBytes(rtl ? changed + segment : segment + changed);
                 Assert.Equal(0, regex.Count(input));
-                Assert.False(regex.MatchDetailed(input).Success);
+                Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
                 Assert.False(regex.EnumerateMatches(input).MoveNext());
             }
         }
@@ -82,10 +82,10 @@ public sealed class Utf8OrdinalBackreferenceTests
         var input = Encoding.UTF8.GetBytes(rtl ? reference + captured : captured + reference);
         var regex = new Utf8Regex(Pattern(2049, rtl), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
             (rtl ? RegexOptions.RightToLeft : 0), Regex.InfiniteMatchTimeout, Limits());
-        var match = regex.MatchDetailed(input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
-        Assert.Equal(input.Length, match.LengthInBytes);
-        Assert.Equal(captured, match.GetGroup(1).GetValueString());
+        Assert.Equal(input.Length, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.Equal(captured, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         Assert.Equal(1, regex.Count(input));
     }
 

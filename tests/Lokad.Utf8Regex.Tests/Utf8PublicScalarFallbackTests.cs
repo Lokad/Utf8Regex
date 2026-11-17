@@ -43,12 +43,10 @@ public sealed class Utf8PublicScalarFallbackTests
             Assert.True(match.IsByteAligned);
             Assert.Equal(start, match.IndexInBytes);
             Assert.Equal(length, match.LengthInBytes);
-            var detailed = regex.MatchDetailed(input, token);
-            Assert.Equal(match.IndexInBytes, detailed.IndexInBytes);
-            Assert.Equal(match.LengthInBytes, detailed.LengthInBytes);
-            Assert.Equal(match.IndexInUtf16, detailed.IndexInUtf16);
-            Assert.Equal(match.LengthInUtf16, detailed.LengthInUtf16);
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(start, length)), detailed.GetValueString());
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token));
+            Assert.Equal(match.IndexInBytes, detailed.Value.StartOffsetInBytes);
+            Assert.Equal(match.LengthInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes));
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(start, length)), System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

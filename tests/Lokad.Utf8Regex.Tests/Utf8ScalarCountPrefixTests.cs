@@ -55,13 +55,13 @@ public sealed class Utf8ScalarCountPrefixTests
         var storage = "prefix😀 x😀tail"u8.ToArray();
         var input = storage.AsSpan(6, 10);
         using var source = new CancellationTokenSource();
-        var retained = regex.MatchDetailed(input, source.Token);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
         Assert.True(retained.Success);
-        Assert.Equal(6, retained.IndexInBytes);
-        Assert.Equal(4, retained.LengthInBytes);
-        Assert.Equal("😀", retained.GetGroup("x").GetValueString());
+        Assert.Equal(6, retained.Value.StartOffsetInBytes);
+        Assert.Equal(4, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal(2, regex.Count(input, source.Token));
-        Assert.Equal("😀", retained.GetGroup("x").GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         var malformed = input.ToArray().Concat(new byte[] { 0xff }).ToArray();
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         source.Cancel();

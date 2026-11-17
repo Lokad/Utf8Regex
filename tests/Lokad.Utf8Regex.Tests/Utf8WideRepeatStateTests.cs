@@ -75,9 +75,9 @@ public sealed class Utf8WideRepeatStateTests
         var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
         Assert.Equal(2, regex.Count("😀a"u8));
-        var retained = regex.MatchDetailed("😀a"u8);
-        Assert.Equal((0, 5), (retained.IndexInBytes, retained.LengthInBytes));
-        Assert.Equal((options & RegexOptions.RightToLeft) == 0 ? "a" : "😀", retained.GetGroup("x").GetValueString());
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray()));
+        Assert.Equal((0, 5), (retained.Value.StartOffsetInBytes, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes)));
+        Assert.Equal((options & RegexOptions.RightToLeft) == 0 ? "a" : "😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal("XX", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "X")));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -87,7 +87,7 @@ public sealed class Utf8WideRepeatStateTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("😀a"u8)).ResourceKind);
         Assert.Equal(2, regex.Count("😀a"u8));
-        Assert.Equal("😀a", retained.GetValueString());
+        Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     [Theory]
@@ -106,7 +106,7 @@ public sealed class Utf8WideRepeatStateTests
         // Existing compact zero-width finite repeats still need no expansion.
         var empty = new Utf8Regex("(?<x>){0,2147483647}", options);
         Assert.Equal(3, empty.Count("😀a"u8));
-        Assert.True(empty.MatchDetailed("😀a"u8).GetGroup("x").Success);
+        Assert.True((Utf8MatchSequence.First(empty.CreateMatchCursor("😀a"u8.ToArray())).TryGetGroup("x", out var range1) ? range1.Success : default));
     }
 
     [Theory]

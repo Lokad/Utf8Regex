@@ -81,11 +81,11 @@ public sealed class Utf8SimplePrefixCountTests
         var regex = new Utf8Regex("((?:AB|XY)([0-9]{2}))", Options(compiled));
         var input = "😀ABxxXY12 AB34 XY"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
-        var match = regex.MatchDetailed(input);
-        Assert.Equal("XY12", match.GetValueString());
-        Assert.Equal("12", match.GetGroup(2).GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal("XY12", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("12", match.GetGroup(2).GetValueString());
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
     }
 
     [Fact]

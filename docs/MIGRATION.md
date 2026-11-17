@@ -120,7 +120,8 @@ to actual group numbers, including sparse numbers. Short spans do not change the
 selected match. The optional end is a scalar boundary and the matching end, with
 byte offsets relative to the original subject. Pass the token and working-memory
 allowance to this one signature; funded program owners expose it too.
-`MatchDetailedFromUtf16Offset` is also removed. Use the memory cursor for capture
+`MatchDetailed` and `MatchDetailedFromUtf16Offset` are removed, along with
+`Utf8MatchContext`, `Utf8GroupContext` and `Utf8CaptureContext`. Use the memory cursor for capture
 history, with a scalar-aligned byte start:
 
 ```csharp

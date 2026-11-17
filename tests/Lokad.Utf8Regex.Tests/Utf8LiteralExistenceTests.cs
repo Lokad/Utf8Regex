@@ -89,7 +89,7 @@ public sealed class Utf8LiteralExistenceTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
         var regex = Limited(4096, timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
-        var retained = new Utf8Regex(".*(?<x>ss)").MatchDetailed("éss"u8);
+        var retained = Utf8MatchSequence.First(new Utf8Regex(".*(?<x>ss)").CreateMatchCursor("éss"u8.ToArray()));
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -104,7 +104,7 @@ public sealed class Utf8LiteralExistenceTests
         Assert.True(entered);
         if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal("ss", retained.GetGroup("x").GetValueString());
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(retained.GroupNumbers[retained.GroupNames.IndexOf("x")]).Span));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Equal(canceled.Token,

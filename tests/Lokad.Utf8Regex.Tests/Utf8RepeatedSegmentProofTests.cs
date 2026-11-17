@@ -27,7 +27,7 @@ public sealed class Utf8RepeatedSegmentProofTests
             {
                 var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
                 var expected = oracle.Matches(text).Cast<Match>().ToArray();
-                var actual = regex.Match(storage.AsSpan(1, input.Length)); var detailed = regex.MatchDetailed(input);
+                var actual = regex.Match(storage.AsSpan(1, input.Length)); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                 Assert.Equal(expected.Length, regex.Count(input)); Assert.Equal(expected.Length != 0, regex.IsMatch(input));
                 Assert.Equal(expected.Length != 0, actual.Success); Assert.Equal(actual.Success, detailed.Success);
                 if (actual.Success)
@@ -35,8 +35,8 @@ public sealed class Utf8RepeatedSegmentProofTests
                     var first = expected[0];
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first.Index)), actual.IndexInBytes);
                     Assert.Equal(Encoding.UTF8.GetByteCount(first.Value), actual.LengthInBytes);
-                    Assert.Equal(first.Value, detailed.GetValueString());
-                    if (first.Groups.Count > 1) Assert.Equal(first.Groups[1].Value, detailed.GetGroup(1).GetValueString());
+                    Assert.Equal(first.Value, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
+                    if (first.Groups.Count > 1) Assert.Equal(first.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
                 }
                 var cursor = regex.EnumerateMatches(input); var alias = cursor; var count = 0;
                 while (cursor.MoveNext())

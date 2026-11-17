@@ -50,13 +50,13 @@ public sealed class Utf8LeadingAsciiCandidateTests
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
                 Regex.InfiniteMatchTimeout, Funded);
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             using var cancellation = new CancellationTokenSource();
             foreach (var start in new[] { 0, 3, 4, text.Length })
                 Assert.Equal(oracle.Matches(text, start).Count,
                     Utf8MatchSequence.Count(regex.EnumerateMatches(storage.AsSpan(1, input.Length), Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), cancellation.Token)));
             Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
-            Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
+            Assert.Equal(oracle.Match(text).Value, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         }
         var nonBacktracking = new Utf8Regex(StraightPrefixPattern, RegexOptions.NonBacktracking,
             Regex.InfiniteMatchTimeout, Funded);
@@ -111,7 +111,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         {
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             using var live = new CancellationTokenSource();
             foreach (var start in new[] { 0, 1, Math.Min(2, text.Length), text.Length })
             {
@@ -126,7 +126,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), live.Token)));
             }
             Assert.Equal(oracle.Count(text), regex.Count(input, live.Token));
-            Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
+            Assert.Equal(oracle.Match(text).Value, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
             Assert.Throws<ArgumentException>(() => regex.Count(input.Append((byte)255).ToArray()));
         }
     }
@@ -174,7 +174,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         }
         var captured = new Utf8Regex(@"(?<w>[A-Z]+)[a-z]\k<w>", RegexOptions.None, Regex.InfiniteMatchTimeout, Funded);
         Assert.Equal(1, captured.Count("éABaB😀"u8));
-        Assert.Equal("B", captured.MatchDetailed("éABaB😀"u8).GetGroup("w").GetValueString());
+        Assert.Equal("B", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor("éABaB😀"u8.ToArray())).GetGroupMemory(captured.GroupNumberFromName("w")).Span));
     }
 
     [Theory]

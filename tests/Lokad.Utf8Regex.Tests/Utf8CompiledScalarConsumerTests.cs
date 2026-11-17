@@ -65,7 +65,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             var regex = new Utf8Regex(pattern, options | mode);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected != 0, regex.IsMatch(input));
-            Assert.Equal(expected != 0, regex.MatchDetailed(input).Success);
+            Assert.Equal(expected != 0, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
         }
     }
 

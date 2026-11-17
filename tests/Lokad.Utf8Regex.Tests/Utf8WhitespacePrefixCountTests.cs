@@ -108,7 +108,7 @@ public sealed class Utf8WhitespacePrefixCountTests
             Funded with { MaxWorkSteps = 4096 });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
-        Assert.Equal("\u2003", regex.MatchDetailed("x\u2003#NoQa!"u8).GetGroup("space").GetValueString());
+        Assert.Equal("\u2003", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("x\u2003#NoQa!"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("space")).Span));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,

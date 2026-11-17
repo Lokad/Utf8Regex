@@ -163,7 +163,7 @@ public sealed class Utf8SliceEscapeTests
         Assert.Equal(expected, oracle.Match(inputText).Value);
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(0).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -176,7 +176,7 @@ public sealed class Utf8SliceEscapeTests
         Assert.Equal(expected, oracle.Match(inputText).Value);
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(0).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -284,7 +284,7 @@ public sealed class Utf8SliceEscapeTests
         Assert.Equal(expected, oracle.Match(inputText).Value);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(0).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

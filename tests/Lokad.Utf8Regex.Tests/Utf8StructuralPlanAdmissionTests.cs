@@ -284,7 +284,7 @@ public sealed class Utf8StructuralPlanAdmissionTests
                 : pattern.Contains("?=") ? "😀call Result中call Result" : "😀call xResult中call xResult";
             var bytes = Encoding.UTF8.GetBytes(subject); Assert.True(regex.IsMatch(bytes)); Assert.Equal(2, regex.Count(bytes));
             var match = regex.Match(bytes); Assert.True(match.Success); Assert.Equal(4, match.IndexInBytes);
-            Assert.Equal(match.IndexInBytes, regex.MatchDetailed(bytes).IndexInBytes);
+            Assert.Equal(match.IndexInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).Value.StartOffsetInBytes);
             var count = 0; foreach (var item in regex.EnumerateMatches(bytes)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(2, count); Assert.Contains("X", Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

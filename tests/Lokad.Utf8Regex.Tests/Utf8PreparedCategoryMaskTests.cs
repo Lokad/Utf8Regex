@@ -40,13 +40,13 @@ public sealed class Utf8PreparedCategoryMaskTests
             var regex = new Utf8Regex(@"([+\p{L}]+)-[+\p{Nd}]+", resourcePolicy: new()
                 { MaxWorkSteps = 10000, MaxWorkingBytes = 65536, MaxResultBytes = 65536 },
                 inputValidation: validation);
-            var match = regex.MatchDetailed("😀 é+𝒜-𝟙+ !"u8);
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀 é+𝒜-𝟙+ !"u8.ToArray()));
             Assert.True(match.Success);
-            Assert.Equal(5, match.IndexInBytes);
-            Assert.Equal(13, match.LengthInBytes);
-            Assert.Equal("é+𝒜", match.GetGroup(1).GetValueString());
-            Assert.Equal(5, match.GetGroup(1).IndexInBytes);
-            Assert.Equal(7, match.GetGroup(1).LengthInBytes);
+            Assert.Equal(5, match.Value.StartOffsetInBytes);
+            Assert.Equal(13, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+            Assert.Equal("é+𝒜", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+            Assert.Equal(5, (match.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default));
+            Assert.Equal(7, ((match.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default)));
         }
     }
 

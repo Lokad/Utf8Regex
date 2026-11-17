@@ -138,10 +138,10 @@ public sealed class Utf8ScalarCountTests
         Assert.True(regex.IsMatch(input));
         Assert.Equal(boundaries.Length, regex.Count(input));
         Assert.Equal(reverse ? input.Length : 0, regex.Match(input).IndexInBytes);
-        var detailed = regex.MatchDetailed(input);
-        Assert.Equal(1, detailed.GroupCount);
-        Assert.Equal(reverse ? input.Length : 0, detailed.IndexInBytes);
-        Assert.Equal(0, detailed.LengthInBytes);
+        var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(1, detailed.GroupNumbers.Length);
+        Assert.Equal(reverse ? input.Length : 0, detailed.Value.StartOffsetInBytes);
+        Assert.Equal(0, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes));
         var expectedBytes = reverse ? boundaries.Reverse() : boundaries;
         using var source = new CancellationTokenSource();
         foreach (var live in new[] { false, true })

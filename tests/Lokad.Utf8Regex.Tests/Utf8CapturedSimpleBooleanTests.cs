@@ -88,14 +88,14 @@ public sealed class Utf8CapturedSimpleBooleanTests
     {
         var regex = new Utf8Regex(Pattern);
         var input = "1234-5678-1234-4567"u8.ToArray();
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal(3, retained.GetGroup(1).CaptureCount);
-        Assert.Equal("1234-", retained.GetGroup(1).GetCapture(0).GetValueString());
-        Assert.Equal("5678-", retained.GetGroup(1).GetCapture(1).GetValueString());
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal(3, retained.GetCaptures(1).Length);
+        Assert.Equal("1234-", System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(retained.GetCaptures(1)[0].StartOffsetInBytes, retained.GetCaptures(1)[0].EndOffsetInBytes - retained.GetCaptures(1)[0].StartOffsetInBytes)));
+        Assert.Equal("5678-", System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(retained.GetCaptures(1)[1].StartOffsetInBytes, retained.GetCaptures(1)[1].EndOffsetInBytes - retained.GetCaptures(1)[1].StartOffsetInBytes)));
         Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Match(input, 0, []).Success);
         Assert.False(regex.Match(input, 1, []).Success);
-        Assert.Equal("1234-", retained.GetGroup(1).GetCapture(0).GetValueString());
+        Assert.Equal("1234-", System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(retained.GetCaptures(1)[0].StartOffsetInBytes, retained.GetCaptures(1)[0].EndOffsetInBytes - retained.GetCaptures(1)[0].StartOffsetInBytes)));
         foreach (var prefix in new[] { "1234-5678-1234-456", "no match" })
         {
             byte[] malformed = [.. Encoding.UTF8.GetBytes(prefix), 0xff];

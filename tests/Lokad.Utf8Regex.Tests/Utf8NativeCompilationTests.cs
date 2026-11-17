@@ -27,16 +27,16 @@ public sealed class Utf8NativeCompilationTests
             Assert.Equal(text.IsMatch(input), native.IsMatch(input));
             Assert.Equal(text.Count(input), native.Count(input));
             Assert.Equal(text.Match(input), native.Match(input));
-            var expectedDetailed = text.MatchDetailed(input);
-            var actualDetailed = native.MatchDetailed(input);
+            var expectedDetailed = Utf8MatchSequence.First(text.CreateMatchCursor(input));
+            var actualDetailed = Utf8MatchSequence.First(native.CreateMatchCursor(input));
             Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
             if (expectedDetailed.Success)
                 foreach (var number in text.GetGroupNumbers())
                 {
-                    var group = expectedDetailed.GetGroup(number);
-                    var nativeGroup = actualDetailed.GetGroup(number);
-                    Assert.Equal((group.Success, group.IndexInBytes, group.LengthInBytes),
-                        (nativeGroup.Success, nativeGroup.IndexInBytes, nativeGroup.LengthInBytes));
+                    Assert.True(expectedDetailed.TryGetGroup(number, out var group));
+                    Assert.True(actualDetailed.TryGetGroup(number, out var nativeGroup));
+                    Assert.Equal((group.Success, group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)),
+                        (nativeGroup.Success, nativeGroup.StartOffsetInBytes, (nativeGroup.EndOffsetInBytes - nativeGroup.StartOffsetInBytes)));
                 }
             using var expected = text.CreateMatchCursor(input);
             using var actual = native.CreateMatchCursor(input);

@@ -240,8 +240,8 @@ public sealed class Utf8NativeEncodingPreparationTests
             var match = regex.Match(bytes); Assert.True(match.Success);
             Assert.Equal(row.Pattern == "call|invoke" ? 4 : row.Subject.StartsWith('x') ? 1 : 0, match.IndexInBytes);
             Assert.Equal(row.Pattern == "call|invoke" ? 4 : 6, match.LengthInBytes);
-            Assert.Equal(match.IndexInBytes, regex.MatchDetailed(bytes).IndexInBytes);
-            if (row.Pattern == "(é😀)") Assert.Equal("é😀", regex.MatchDetailed(bytes).GetGroup(1).GetValueString());
+            Assert.Equal(match.IndexInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).Value.StartOffsetInBytes);
+            if (row.Pattern == "(é😀)") Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).GetGroupMemory(1).Span));
             var count = 0; foreach (var item in regex.EnumerateMatches(bytes)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(row.Count, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

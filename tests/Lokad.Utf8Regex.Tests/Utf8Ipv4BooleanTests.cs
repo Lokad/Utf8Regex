@@ -73,11 +73,11 @@ public sealed class Utf8Ipv4BooleanTests
         }
         var owner = new Utf8Regex("(" + Pattern + ")");
         var bytes = "é012.200.033.199😀"u8.ToArray();
-        var retained = owner.MatchDetailed(bytes);
+        var retained = Utf8MatchSequence.First(owner.CreateMatchCursor(bytes));
         Assert.True(owner.IsMatch(bytes)); Assert.Equal(1, owner.Count(bytes));
         Assert.True(owner.Match(bytes, 2, []).Success);
         Assert.False(owner.Match(bytes, 6, []).Success);
-        Assert.Equal("012.200.033.199", retained.GetGroup(1).GetValueString());
+        Assert.Equal("012.200.033.199", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Fact]

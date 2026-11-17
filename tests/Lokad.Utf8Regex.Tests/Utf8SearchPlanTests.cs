@@ -331,14 +331,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(1, window.Count("public async"u8));
     }
 
-
-
-
-
-
-
-
-
     [Fact]
     public void RegexPlanCarriesExplicitPrimaryExecutionEngineKinds()
     {
@@ -631,8 +623,8 @@ public sealed class Utf8SearchPlanTests
             Assert.Equal(1, regex.Count(bytes));
             var match = regex.Match(bytes);
             Assert.Equal((0, bytes.Length), (match.IndexInBytes, match.LengthInBytes));
-            var detailed = regex.MatchDetailed(bytes);
-            Assert.Equal((0, bytes.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
+            Assert.Equal((0, bytes.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
         var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
         var input = Encoding.UTF8.GetBytes("   # NOQA: ABC123");
@@ -840,9 +832,6 @@ public sealed class Utf8SearchPlanTests
         Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
     }
 
-
-
-
     [Fact]
     public void StructuralWindowPlanCanApplyBoundaryStages()
     {
@@ -864,8 +853,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Encoding.UTF8.GetByteCount("xfoo bar foo barz "), candidate.StartIndex);
         Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
-
-
 
     [Fact]
     public void ExactLengthFallbackSliceVerificationRequiresFullCandidateCoverage()
@@ -905,7 +892,7 @@ public sealed class Utf8SearchPlanTests
         }
 
         var expectedDetailed = oracle.Match(inputText);
-        var actualDetailed = regex.MatchDetailed(input);
+        var actualDetailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
     }
 
@@ -919,7 +906,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal((2, 6), (first.IndexInBytes, first.LengthInBytes));
         Assert.Equal((10, 6), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
     }
-
 
     [Fact]
     public void AnalyzerCanExtractFiniteOrderedWindowGap()

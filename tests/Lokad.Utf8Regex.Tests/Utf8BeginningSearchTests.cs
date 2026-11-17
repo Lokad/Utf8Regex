@@ -25,10 +25,9 @@ public sealed class Utf8BeginningSearchTests
             var oracle = new Regex("^(a+)", options);
             Assert.Equal(2, regex.Count(input));
             Assert.True(regex.IsMatch(input));
-            var actual = regex.MatchDetailed(input);
-            Assert.Equal(oracle.Match(text).Index, actual.IndexInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, actual.IndexInUtf16)), actual.IndexInBytes);
-            Assert.Equal("aaa", actual.GetGroup(1).GetValueString());
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
+            Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(1).Span));
             foreach (var offset in new[] { 0, padding, padding + 3, padding + 5, padding + 6, text.Length })
                 Assert.Equal(oracle.Matches(text, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
             var positions = new List<int>();
@@ -72,13 +71,13 @@ public sealed class Utf8BeginningSearchTests
         var options = RegexOptions.Multiline | RegexOptions.CultureInvariant;
         var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Policy(100000));
         Assert.Equal(2, regex.Count(input));
-        var actual = regex.MatchDetailed(input);
-        Assert.Equal("é\n😀", actual.GetGroup("path").GetValueString());
-        Assert.Equal(new Regex(pattern, options).Match(text).Value, actual.GetValueString());
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal("é\n😀", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("path")).Span));
+        Assert.Equal(new Regex(pattern, options).Match(text).Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
         var scalar = new Utf8Regex("^(.)", options, Regex.InfiniteMatchTimeout, Policy(100000));
-        var scalarMatch = scalar.MatchDetailed("xx\n😀x"u8);
+        var scalarMatch = Utf8MatchSequence.First(scalar.CreateMatchCursor("xx\n😀x"u8.ToArray()));
         Assert.Equal(2, scalar.Count("xx\n😀x"u8));
-        Assert.Equal(1, scalarMatch.LengthInBytes);
+        Assert.Equal(1, (scalarMatch.Value.EndOffsetInBytes - scalarMatch.Value.StartOffsetInBytes));
         using var cursor = scalar.CreateMatchCursor("xx\n😀x"u8.ToArray(), 2);
         Assert.True(cursor.MoveNext(out var afterFirst));
         Assert.Equal((3, 7), (afterFirst.Value.StartOffsetInBytes, afterFirst.Value.EndOffsetInBytes));

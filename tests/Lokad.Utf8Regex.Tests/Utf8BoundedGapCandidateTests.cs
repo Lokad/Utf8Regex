@@ -92,10 +92,10 @@ public sealed class Utf8BoundedGapCandidateTests
             var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
             var expected = ScalarCount(regex, input, 0);
             Assert.True(expected > 0);
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected, regex.Count(input));
             Assert.True(retained.Success);
-            Assert.False(string.IsNullOrEmpty(retained.GetGroup("w").GetValueString()));
+            Assert.False(string.IsNullOrEmpty(System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("w")).Span)));
         }
     }
 
