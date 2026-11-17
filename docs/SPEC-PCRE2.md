@@ -46,6 +46,12 @@ profile and shared scalar programs retain captures, option semantics and origina
 controls. Numerical construction/execution requirements and operating costs change
 with the selected program.
 
+Multiline-prefix, prefix/repeat and alternation/repeat overlays and their cursor
+variants are retired. Existing profile/shared scalar execution owns these calls;
+literal helpers with genuine consumers remain. Fixed-scratch line discovery and
+Count can now succeed under depth/heap budgets that previously refused the
+backtracking fallback. Growing state still requires admission and obeys its limits.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,

@@ -68,24 +68,6 @@ public sealed class Pcre2PatternByteSetQualificationTests
     }
 
     [Fact]
-    public void Pcre2LiteralRepeatLeadingSetAdmitsWithoutTemporaryClassArrays()
-    {
-        static Pcre2AsciiLiteralAlternationRepeatDirectProgram Create() => new(null!,
-            ["ab"u8.ToArray(), "ac"u8.ToArray(), "xy"u8.ToArray()], "!"u8.ToArray());
-        for (var denial = 0; denial < 3; denial++)
-        {
-            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 0ul : ulong.MaxValue,
-                denial == 1 ? 0ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create());
-            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-                1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
-            Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-        }
-        var repeat = Create().FirstBytes;
-        Assert.Equal(1, repeat.IndexOf("!xyabc"u8)); Assert.Equal(-1, repeat.IndexOf("!😀"u8));
-    }
-
-    [Fact]
     public void Pcre2RepeatAndBoundedPublicRoutesPreserveScalarStops()
     {
         foreach (var pattern in new[] { "[^x]++x", "[a-z]+x", "(?:ab|cd)+!", "(?:ab|[cd]{2})!" })

@@ -3,17 +3,13 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2LiteralPrefixRepeatCompilerTests
+public sealed class Pcre2PrefixRepeatTests
 {
     [Fact]
-    public void CapturedPrefixAndLiteralRepeatShareOneDirectValueStream()
+    public void CapturedPrefixAndRepeatKeepPublicValueAndOutputSemantics()
     {
         var regex = new Utf8Pcre2Regex("(a)b+");
         var input = "ab abb abbb x ab"u8;
-
-        Assert.Equal(
-            "IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Slice",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input));
         Assert.Equal(4, regex.Count(input));
 
@@ -40,7 +36,7 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
     [InlineData("(ab)c*", "ababcabccccx")]
     [InlineData("((ab))c++", "abcc x abc ab")]
     [InlineData("(a)(b)c+", "abc abcc x abccc")]
-    public void LiteralPrefixRepeatMatchesTheMeteredVmAtEveryValidStart(string pattern, string inputText)
+    public void PrefixRepeatsMatchAnIndependentOracleAtValidStarts(string pattern, string inputText)
     {
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = new Utf8Pcre2Regex(
@@ -49,9 +45,8 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 },
             Regex.InfiniteMatchTimeout);
-        Assert.IsType<Pcre2LiteralPrefixRepeatDirectProgram>(direct.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2LiteralPrefixRepeatDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
 
+        var oracle = new Regex(pattern.Replace("c++", "(?>c+)", StringComparison.Ordinal), RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         for (var start = 0; start <= input.Length; start++)
         {
@@ -60,9 +55,15 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
                 continue;
             }
 
-            Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
-            Assert.Equal(vm.Count(input, start), direct.Count(input, start));
-            Assert.Equal(CollectRanges(vm, input, start), CollectRanges(direct, input, start));
+            var expected = oracle.Matches(inputText, Encoding.UTF8.GetCharCount(input.AsSpan(0, start)));
+            var ranges = expected.Select(m => (
+                Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)),
+                Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index + m.Length)))).ToList();
+            Assert.Equal(expected.Count != 0, direct.IsMatch(input, start));
+            Assert.Equal(expected.Count, direct.Count(input, start));
+            Assert.Equal(expected.Count, vm.Count(input, start));
+            Assert.Equal(ranges, CollectRanges(direct, input, start));
+            Assert.Equal(ranges, CollectRanges(vm, input, start));
         }
 
         static List<(int Start, int End)> CollectRanges(Utf8Pcre2Regex regex, byte[] input, int start)
@@ -79,7 +80,7 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
     }
 
     [Fact]
-    public void LiteralPrefixRepeatFallsBackForMatchOptionsAndLimits()
+    public void PrefixRepeatsObserveOptionsAndLimits()
     {
         const string Pattern = "(a)b+";
         var input = "ab abb abbb x ab"u8.ToArray();
@@ -111,27 +112,5 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.Count(input)).ErrorKind);
-    }
-
-    [Fact]
-    public void LiteralPrefixRepeatAnalyzerRejectsDifferentSemantics()
-    {
-        foreach (var regex in new[]
-                 {
-                     new Utf8Pcre2Regex("b+"),
-                     new Utf8Pcre2Regex("éb+"),
-                     new Utf8Pcre2Regex("aé+"),
-                     new Utf8Pcre2Regex("(a)b+c"),
-                     new Utf8Pcre2Regex("(a|x)b+"),
-                     new Utf8Pcre2Regex("(a)[b]+"),
-                     new Utf8Pcre2Regex("(a)(?=b)b+"),
-                     new Utf8Pcre2Regex("(a)(bc)+"),
-                     new Utf8Pcre2Regex("^(a)b+"),
-                     new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.Caseless),
-                 })
-        {
-            Assert.IsNotType<Pcre2LiteralPrefixRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-            Assert.IsNotType<Pcre2LiteralPrefixRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
-        }
     }
 }

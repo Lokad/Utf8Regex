@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Retire PCRE2's multiline-prefix, prefix/repeat and alternation/repeat overlays,
+  including their global cursor state. Keep shared literal helpers with their real
+  consumer. Existing scalar/backtracking paths preserve results and controls;
+  numerical costs change, and fixed-scratch line matching can need less depth/heap.
+
 - Remove PCRE2's bounded-ASCII, regular-ASCII and anchored-DFA Boolean overlays,
   including the private DFA compiler. Existing profile and shared scalar programs
   preserve supported matching and controls; numerical resource needs and costs

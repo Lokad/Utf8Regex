@@ -34,9 +34,6 @@ public sealed class Pcre2SliceNamedTests
         }
 
         var prefixed = new Utf8Pcre2Regex("(?<a>x)(?<b>y)+", Pcre2CompileOptions.None);
-        Assert.Equal(
-            "IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Slice",
-            prefixed.DebugDescribeExecutionPlan());
     }
 
     [Theory]

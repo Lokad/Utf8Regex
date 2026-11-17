@@ -3,18 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2MultilinePrefixCompilerTests
+public sealed class Pcre2MultilineSearchTests
 {
     [Fact]
-    public void ExactLinePrefixSharesOneDirectValueStream()
+    public void ExactLinePrefixKeepsPublicValueAndOutputSemantics()
     {
         var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(
             "INFO: boot\nERROR: first\nERROR: \nERROR: \r\nERROR: café\n");
-
-        Assert.Equal(
-            "IsMatch=Pcre2MultilinePrefix, Count=Pcre2MultilinePrefix, Enumerate=Pcre2MultilinePrefix, Match=Pcre2Slice, Replace=Pcre2Slice",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
         Assert.Equal("ERROR: first", regex.Match(input).GetValueString());
@@ -46,8 +42,6 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             Regex.InfiniteMatchTimeout);
         var input = "ERROR: zero\nINFO: one\nERROR: two\r\nERROR: three"u8;
         var secondMatchStart = "ERROR: zero\nINFO: one\n"u8.Length;
-
-        Assert.IsType<Pcre2MultilinePrefixDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         Assert.Equal(2, regex.Count(input, 1));
         Assert.Equal(2, regex.Count(input, secondMatchStart));
         Assert.Equal("ERROR: two\r", regex.Match(input, secondMatchStart).GetValueString());
@@ -56,7 +50,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
     }
 
     [Fact]
-    public void ExactLinePrefixFallsBackToTheVmForMeteredExecution()
+    public void ExactLinePrefixSupportsFiniteLimits()
     {
         var regex = new Utf8Pcre2Regex(
             "^ERROR: .+$",
@@ -64,19 +58,16 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Regex.InfiniteMatchTimeout);
-
-        Assert.IsType<Pcre2MultilinePrefixDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("INFO: ok\nERROR: boom"u8)).ErrorKind);
     }
 
     [Fact]
-    public void ExactLinePrefixMatchesEquivalentOwnedAcrossAsciiOffsets()
+    public void ExactLinePrefixMatchesBclAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
-        var owned = new Utf8Pcre2Regex("^(ERROR: ).+$", Pcre2CompileOptions.Multiline);
-        Assert.IsType<Pcre2SliceDirectProgram>(owned.DebugCompiledProgram.Operations.Count);
+        var oracle = new Regex("^ERROR: .+$", RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
                  {
@@ -91,8 +82,9 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             var input = Encoding.UTF8.GetBytes(inputText);
             for (var start = 0; start <= input.Length; start++)
             {
-                Assert.Equal(owned.IsMatch(input, start), direct.IsMatch(input, start));
-                Assert.Equal(owned.Count(input, start), direct.Count(input, start));
+                var expected = oracle.Matches(inputText, start);
+                Assert.Equal(expected.Count != 0, direct.IsMatch(input, start));
+                Assert.Equal(expected.Count, direct.Count(input, start));
 
                 var directRanges = new List<(int Start, int End)>();
                 var directMatches = direct.EnumerateMatches(input, start);
@@ -103,54 +95,20 @@ public sealed class Pcre2MultilinePrefixCompilerTests
                         directMatches.Current.EndOffsetInBytes));
                 }
 
-                var ownedRanges = new List<(int Start, int End)>();
-                var ownedMatches = owned.EnumerateMatches(input, start);
-                while (ownedMatches.MoveNext())
-                {
-                    ownedRanges.Add((
-                        ownedMatches.Current.StartOffsetInBytes,
-                        ownedMatches.Current.EndOffsetInBytes));
-                }
-
-                Assert.Equal(ownedRanges, directRanges);
+                Assert.Equal(expected.Select(m => (m.Index, m.Index + m.Length)).ToList(), directRanges);
             }
         }
     }
 
     [Fact]
-    public void ExactLinePrefixAnalyzerRejectsDifferentSemantics()
+    public void ExplicitCrLineConventionPreservesItsOwnBoundaries()
     {
-        var explicitCr = new Utf8Pcre2Regex(
-            "^ERROR: .+$",
-            Pcre2CompileOptions.Multiline,
+        var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline,
             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-            default(Utf8Pcre2ExecutionLimits),
-            Regex.InfiniteMatchTimeout);
-
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(explicitCr.DebugCompiledProgram.Operations.Count);
-        // R03 anchor slice: star, lazy, and DotAll line shapes decline the
-        // prefix program in the analyzer but land on the shared slice
-        // runner instead of backtracking. None route MultilinePrefix.
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("^ERROR: .*$", Pcre2CompileOptions.Multiline)
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("^ERROR: .+?$", Pcre2CompileOptions.Multiline)
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("^ÉCHEC: .+$", Pcre2CompileOptions.Multiline)
-                .DebugCompiledProgram.Operations.Count);
-        // The explicit-LF shape joins the slice set now that bare C0
-        // control escapes route owned (core IsMatch/Count parity is
-        // pinned by ExplicitLfLineShapeMatchesOracleOnSlice below).
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("^ERROR\\n.+$", Pcre2CompileOptions.Multiline)
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex(
-                "^ERROR: .+$",
-                Pcre2CompileOptions.Multiline | Pcre2CompileOptions.DotAll)
-                .DebugCompiledProgram.Operations.Count);
+            default(Utf8Pcre2ExecutionLimits), Regex.InfiniteMatchTimeout);
+        Assert.Equal(2, regex.Count("ERROR: first\rERROR: second"u8));
+        Assert.True(regex.IsMatch("ERROR: \n"u8));
+        Assert.False(regex.IsMatch("ERROR: \r"u8));
     }
 
     [Fact]

@@ -43,9 +43,7 @@ internal static partial class Pcre2Runner
                     Pcre2LiteralFamilyDirectProgram literals => literals.Fallback,
                     _ => compiled.Operations.Enumerate switch
                     {
-                        Pcre2MultilinePrefixDirectProgram prefix => prefix.Fallback,
                         Pcre2SameStartLiteralDirectProgram same => same.Fallback,
-                        Pcre2LiteralPrefixRepeatDirectProgram literalPrefix => literalPrefix.Fallback,
                         _ => throw new NotSupportedException("SPEC-PCRE2 does not support this pattern for range discovery.")
                     }
                 };

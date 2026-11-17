@@ -4,11 +4,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// Depth/heap enforcement on IsMatch-only specializations: every stepwise
-// specialization meters both budgets, except the frameless bounded scan,
-// which succeeds under DepthLimit=1 while still breaching HeapLimit=1.
-// Unlimited sanity asserts prove each row is a hit, so breaches reflect
-// metering rather than misses.
+// Exercise real growing workspace and backtracking depth. Fixed-scratch line
+// runs are covered separately; numerical needs follow the selected program.
 public sealed class Pcre2IsMatchSpecializationLimitTests
 {
     private static Utf8Pcre2Regex Create(string pattern, Pcre2CompileOptions options, Utf8Pcre2ExecutionLimits limits)
@@ -21,8 +18,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
     [InlineData(".*(ss)", Pcre2CompileOptions.None, "xxss")]
     [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "12.5")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
-    [InlineData("^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: bad")]
-    public void StepwiseSpecializationsBreachDepth(string pattern, Pcre2CompileOptions options, string inputText)
+    public void GrowingSearchBreachesDepth(string pattern, Pcre2CompileOptions options, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.True(Create(pattern, options, default).IsMatch(input));
@@ -45,8 +41,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
     [InlineData("(\\d{4}[- ]){3}\\d{3,4}", Pcre2CompileOptions.None, "4111-1111-1111-1111")]
     [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "12.5")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
-    [InlineData("^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: bad")]
-    public void EverySpecializationBreachesHeap(string pattern, Pcre2CompileOptions options, string inputText)
+    public void AllocatingSearchBreachesHeap(string pattern, Pcre2CompileOptions options, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.True(Create(pattern, options, default).IsMatch(input));

@@ -350,7 +350,6 @@ public sealed class Pcre2ExecutionRouteTests
         var regex = new Utf8Pcre2Regex("(a)b+");
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxabbbzz"u8));
         Assert.Equal(2, regex.Count("ab abb"u8));
 

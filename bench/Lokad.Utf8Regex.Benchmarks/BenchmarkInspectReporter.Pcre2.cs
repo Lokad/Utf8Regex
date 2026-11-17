@@ -27,8 +27,6 @@ internal static partial class BenchmarkInspectReporter
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
             Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
-            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
-            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
@@ -58,8 +56,6 @@ internal static partial class BenchmarkInspectReporter
         var backtrackingProgram = program.Operations.Enumerate switch
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
-            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
-            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)

@@ -37,7 +37,7 @@ internal static class Pcre2SameStartLiteralAnalyzer
                 AssertionKind: Pcre2AssertionKind.PositiveLookbehind,
                 Body: var lookbehindBody,
             } ||
-            !Pcre2AsciiLiteralAlternationRepeatAnalyzer.IsNonEmptyAsciiLiteral(lookbehindBody))
+            !IsNonEmptyAsciiLiteral(lookbehindBody))
         {
             return null;
         }
@@ -52,18 +52,55 @@ internal static class Pcre2SameStartLiteralAnalyzer
                 .. var nonEmptyAlternatives,
             ] ||
             nonEmptyAlternatives.Length == 0 ||
-            !nonEmptyAlternatives.All(Pcre2AsciiLiteralAlternationRepeatAnalyzer.IsNonEmptyAsciiLiteral))
+            !nonEmptyAlternatives.All(IsNonEmptyAsciiLiteral))
         {
             return null;
         }
 
         return new Pcre2SameStartLiteralDirectProgram(
-            Pcre2AsciiLiteralAlternationRepeatAnalyzer.ExtractAsciiLiteral(lookbehindBody),
+            ExtractAsciiLiteral(lookbehindBody),
             nonEmptyAlternatives
-                .Select(Pcre2AsciiLiteralAlternationRepeatAnalyzer.ExtractAsciiLiteral)
+                .Select(ExtractAsciiLiteral)
                 .ToArray(),
             fallback);
     }
+
+    private static bool IsNonEmptyAsciiLiteral(IPcre2BacktrackingNode node)
+    {
+        if (node is Pcre2TokenBacktrackingNode token)
+        {
+            return IsAsciiLiteralToken(token);
+        }
+
+        return node is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence &&
+            sequence.Children.All(IsAsciiLiteralToken);
+    }
+
+    private static bool IsAsciiLiteralToken(IPcre2BacktrackingNode node) =>
+        node is Pcre2TokenBacktrackingNode
+        {
+            Token:
+            {
+                Kind: Pcre2CharacterTokenKind.Literal,
+                Options: Pcre2CharacterOptions.None,
+                Literal.IsAscii: true,
+            },
+        };
+
+    private static byte[] ExtractAsciiLiteral(IPcre2BacktrackingNode node)
+    {
+        if (node is Pcre2TokenBacktrackingNode token)
+        {
+            return [ExtractAsciiLiteralByte(token)];
+        }
+
+        return ((Pcre2SequenceBacktrackingNode)node).Children
+            .Select(ExtractAsciiLiteralByte)
+            .ToArray();
+    }
+
+    private static byte ExtractAsciiLiteralByte(IPcre2BacktrackingNode node) =>
+        (byte)((Pcre2TokenBacktrackingNode)node).Token.Literal.Value;
 }
 
 internal static class Pcre2SameStartLiteralRunner

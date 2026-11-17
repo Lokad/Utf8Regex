@@ -27,7 +27,7 @@ public sealed partial class Utf8Pcre2Regex
 
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
-    private readonly IPcre2DirectProgram? _unmeteredIsMatchProgram;
+    private readonly Pcre2FiniteLiteralLanguageDirectProgram? _unmeteredLiteralLanguage;
     private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _replacementCache;
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -91,12 +91,10 @@ public sealed partial class Utf8Pcre2Regex
             defaultExecutionLimits,
             validatedTimeout);
         _program = Pcre2Compiler.Compile(request);
-        var isMatchProgram = _program.Operations.IsMatch;
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
-            isMatchProgram is Pcre2FiniteLiteralLanguageDirectProgram or
-                Pcre2LiteralPrefixRepeatDirectProgram)
+            _program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram literalLanguage)
         {
-            _unmeteredIsMatchProgram = isMatchProgram;
+            _unmeteredLiteralLanguage = literalLanguage;
         }
         _replacementCache = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(
             16, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
@@ -193,20 +191,8 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Determines whether the well-formed UTF-8 subject contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
-        if (_unmeteredIsMatchProgram is not null)
-        {
-            switch (_unmeteredIsMatchProgram.Kind)
-            {
-                case Pcre2DirectProgramKind.Pcre2LiteralFamily:
-                    return ((Pcre2FiniteLiteralLanguageDirectProgram)_unmeteredIsMatchProgram)
-                        .BooleanSearch.IsMatch(input, 0);
-                case Pcre2DirectProgramKind.Pcre2LiteralPrefixRepeat:
-                    return Pcre2LiteralPrefixRepeatRunner.IsMatch(
-                        (Pcre2LiteralPrefixRepeatDirectProgram)_unmeteredIsMatchProgram,
-                        input,
-                        0);
-            }
-        }
+        if (_unmeteredLiteralLanguage is { } literalLanguage)
+            return literalLanguage.BooleanSearch.IsMatch(input, 0);
 
         return IsMatch(input, 0, Pcre2MatchOptions.None);
     }

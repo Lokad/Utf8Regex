@@ -57,24 +57,6 @@ public sealed class Pcre2LimitEnforcementTests
         Assert.Throws<Pcre2MatchException>(() => regex.MatchMany(Encoding.UTF8.GetBytes(inputText), destination, out _));
     }
 
-    [Fact]
-    public void CountRowsSpanEveryProgramKind()
-    {
-        var kinds = new System.Collections.Generic.HashSet<string>();
-        foreach (var row in CountRows())
-        {
-            var regex = new Utf8Pcre2Regex((string)row[0]!, (Pcre2CompileOptions)row[1]!, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-            foreach (var part in regex.DebugDescribeExecutionPlan().Split(", "))
-            {
-                if (part.StartsWith("Count=", System.StringComparison.Ordinal))
-                {
-                    kinds.Add(part.Substring("Count=".Length));
-                }
-            }
-        }
-        Assert.Equal(new[] { "Pcre2AsciiLiteralAlternationRepeat", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2LiteralPrefixRepeat", "Pcre2MultilinePrefix", "Pcre2SameStartLiteral", "Pcre2SingleTokenRepeat", "Pcre2Slice" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
-    }
-
     [Theory]
     [MemberData(nameof(CountRows))]
     public void UnlimitedCountMatchesExpected(string pattern, Pcre2CompileOptions options, string inputText, int expected)
@@ -168,7 +150,6 @@ public sealed class Pcre2LimitEnforcementTests
 
     public static IEnumerable<object?[]> MeteredHeapRows()
     {
-        yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
         yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
         yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
         yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "abb abb", 2 };
@@ -187,6 +168,7 @@ public sealed class Pcre2LimitEnforcementTests
 
     public static IEnumerable<object?[]> WorkspaceFreeHeapRows()
     {
+        yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
         yield return new object?[] { "[ab]+", Pcre2CompileOptions.None, "ab ab ab", 3 };
         yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
         yield return new object?[] { "foo", Pcre2CompileOptions.None, "foo foo foo", 3 };

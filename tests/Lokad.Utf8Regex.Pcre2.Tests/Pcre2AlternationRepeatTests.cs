@@ -3,19 +3,13 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-[Collection(Pcre2AllocationTestCollection.Name)]
-public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
+public sealed class Pcre2AlternationRepeatTests
 {
     [Fact]
-    public void LiteralAlternationRepeatReusesPreparedCountOnly()
+    public void AlternationRepeatsKeepPublicValuesAndOutputs()
     {
         var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
         var input = Encoding.UTF8.GetBytes("az abz aabz ababaz abax éababaz夏");
-
-        Assert.Equal(
-        // The core slice owns transparent groups, so every op except the prepared Count rides the slice overlay now.
-            "IsMatch=Pcre2Slice, Count=Pcre2AsciiLiteralAlternationRepeat, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-            regex.DebugDescribeExecutionPlan());
         Assert.Equal(5, regex.Count(input));
 
         var values = new List<string>();
@@ -70,9 +64,6 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
         var direct = new Utf8Pcre2Regex(directPattern);
         var vm = new Utf8Pcre2Regex(vmPattern);
         var input = Encoding.UTF8.GetBytes("aaaaaa abaabab foofoobarbaz miss éfoofoobarbaz夏");
-
-        Assert.IsType<Pcre2AsciiLiteralAlternationRepeatDirectProgram>(
-            direct.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
         for (var start = 0; start <= input.Length; start++)
         {
@@ -86,34 +77,7 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
     }
 
     [Fact]
-    public void LiteralAlternationRepeatCountIsAllocationFreeAfterWarmup()
-    {
-        var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ababaz ", 1024)));
-
-        for (var index = 0; index < 32; index++)
-        {
-            Assert.Equal(1024, regex.Count(input));
-        }
-
-        for (var index = 0; index < 256; index++)
-        {
-            _ = regex.Count(input);
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var total = 0;
-        for (var index = 0; index < 256; index++)
-        {
-            total += regex.Count(input);
-        }
-
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.Equal(256 * 1024, total);
-    }
-
-    [Fact]
-    public void LiteralAlternationRepeatFallsBackForOptionsAndLimits()
+    public void AlternationRepeatsObserveOptionsAndLimits()
     {
         var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
         Assert.Equal(0, regex.Count("xababaz"u8, 0, Pcre2MatchOptions.Anchored));
@@ -125,30 +89,9 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Regex.InfiniteMatchTimeout);
-        Assert.IsType<Pcre2AsciiLiteralAlternationRepeatDirectProgram>(
-            metered.DebugCompiledProgram.Operations.Count);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => metered.Count("ababaz"u8)).ErrorKind);
-    }
-
-    // The analyzer still rejects lazy, star, and capturing branches, but the slice overlay now serves them.
-    [Fact]
-    public void LiteralAlternationRepeatAnalyzerRejectsDifferentSemantics()
-    {
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("(?:ab|a)+?z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("(?:ab|a)*z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex("(?:ab|a)++z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("(?:áb|a)+z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("(?:(ab)|a)+z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex("(?:ab|a)+z", Pcre2CompileOptions.Caseless)
-                .DebugCompiledProgram.Operations.Count);
     }
 
     [Theory]
