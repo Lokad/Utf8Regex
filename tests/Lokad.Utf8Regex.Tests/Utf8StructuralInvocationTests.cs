@@ -226,7 +226,7 @@ public sealed class Utf8StructuralInvocationTests
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
                 Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.StartOffsetInBytes, (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes))));
                 var expected = oracle.EnumerateMatches(text);
-            var actual = regex.EnumerateMatches(input, token);
+            var actual = regex.EnumerateMatches(input, cancellationToken: token);
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
@@ -256,7 +256,7 @@ public sealed class Utf8StructuralInvocationTests
         Assert.True(match.Success);
         Assert.Equal(oracle.Match(text).Value, Encoding.UTF8.GetString(input.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         var expected = oracle.EnumerateMatches(text);
-        var actual = regex.EnumerateMatches(input, token);
+        var actual = regex.EnumerateMatches(input, cancellationToken: token);
         while (expected.MoveNext())
         {
             Assert.True(actual.MoveNext());

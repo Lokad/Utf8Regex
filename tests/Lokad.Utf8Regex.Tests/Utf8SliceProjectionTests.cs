@@ -108,7 +108,7 @@ public sealed class Utf8SliceProjectionTests
     {
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
         using var source = new CancellationTokenSource();
-        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab aabb aaabbb"), source.Token);
+        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab aabb aaabbb"), cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
         source.Cancel();
         try
@@ -128,6 +128,6 @@ public sealed class Utf8SliceProjectionTests
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        Assert.Throws<OperationCanceledException>(() => regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab"), canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab"), cancellationToken: canceled.Token));
     }
 }

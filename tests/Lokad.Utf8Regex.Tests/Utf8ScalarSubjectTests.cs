@@ -183,7 +183,7 @@ public sealed class Utf8ScalarSubjectTests
             }
 
             var ranges = new List<(int, int)>();
-            foreach (var value in regex.EnumerateMatches(input, token))
+            foreach (var value in regex.EnumerateMatches(input, cancellationToken: token))
             {
                 var index = value.StartOffsetInBytes;
                 var length = (value.EndOffsetInBytes - value.StartOffsetInBytes);
@@ -202,7 +202,7 @@ public sealed class Utf8ScalarSubjectTests
             }
             output.AddRange(input.AsSpan(edge).ToArray());
             Assert.Equal(output, regex.Replace(input, "X", token));
-            foreach (var split in regex.EnumerateSplits(input, token)) Assert.Equal(split.GetValueBytes().ToArray(), Encoding.UTF8.GetBytes(split.GetValueString()));
+            foreach (var split in regex.EnumerateSplits(input, cancellationToken: token)) Assert.Equal(split.GetValueBytes().ToArray(), Encoding.UTF8.GetBytes(split.GetValueString()));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -317,8 +317,8 @@ public sealed class Utf8ScalarSubjectTests
             case "count": _ = regex.Count(input, token); break;
             case "value": _ = regex.Match(input, cancellationToken: token); break;
             case "detailed": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)); break;
-            case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
-            case "split": _ = regex.EnumerateSplits(input, token).MoveNext(); break;
+            case "enumerate": _ = regex.EnumerateMatches(input, cancellationToken: token).MoveNext(); break;
+            case "split": _ = regex.EnumerateSplits(input, cancellationToken: token).MoveNext(); break;
             case "offset-bool": _ = regex.Match(input, 4, [], token).Success; break;
             case "offset-captures": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, 4, token)); break;
             case "offset-enumerate": _ = regex.EnumerateMatches(input, 4, token).MoveNext(); break;

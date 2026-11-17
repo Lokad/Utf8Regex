@@ -35,7 +35,7 @@ RegexOptions options)
         (int, int)[] Enumerate()
         {
             var ranges = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input, lifetime.Token)) ranges.Add(Range(match));
+            foreach (var match in regex.EnumerateMatches(input, cancellationToken: lifetime.Token)) ranges.Add(Range(match));
             return ranges.ToArray();
         }
     }

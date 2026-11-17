@@ -45,7 +45,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
                     var storage = new byte[offset + bytes.Length + 3];
                     bytes.CopyTo(storage, offset);
                     var actual = new List<(int, int)>();
-                    foreach (var match in regex.EnumerateMatches(storage.AsSpan(offset, bytes.Length), source.Token))
+                    foreach (var match in regex.EnumerateMatches(storage.AsSpan(offset, bytes.Length), cancellationToken: source.Token))
                         actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                     Assert.Equal(expected, actual);
                 }
@@ -133,7 +133,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
         try
         {
             var regex = new Utf8Regex("a?b[0-9]{2}", options, TimeSpan.FromMilliseconds(20), Funded());
-            var cursor = regex.EnumerateMatches(input, source.Token);
+            var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
             Assert.True(cursor.MoveNext()); Assert.True(cursor.MoveNext());
             var retained = cursor.Current;
             var invocation = cursor.ExportWorkingInvocation();
@@ -166,7 +166,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
-        { var cursor = regex.EnumerateMatches(input, source.Token); cursor.MoveNext(); }).CancellationToken);
+        { var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token); cursor.MoveNext(); }).CancellationToken);
         // Abandoning one cursor does not lend its allowance to a new invocation.
         var abandoned = regex.EnumerateMatches(input);
         Assert.True(abandoned.MoveNext());

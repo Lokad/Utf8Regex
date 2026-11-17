@@ -32,13 +32,13 @@ public sealed class Utf8CallerValidTextTests
                 Assert.True(cursor.MoveNext(out var first));
                 Assert.Equal(whole, first.Value);
             }
-            var matches = regex.EnumerateMatches(input, source.Token);
+            var matches = regex.EnumerateMatches(input, cancellationToken: source.Token);
             Assert.True(matches.MoveNext());
             Assert.Equal(whole, matches.Current);
             var offsetMatches = regex.EnumerateMatches(input, 0, source.Token);
             Assert.True(offsetMatches.MoveNext());
             Assert.Equal(whole, offsetMatches.Current);
-            var splits = regex.EnumerateSplits(input, source.Token);
+            var splits = regex.EnumerateSplits(input, cancellationToken: source.Token);
             Assert.True(splits.MoveNext());
             Assert.Equal("é", splits.Current.GetValueString());
             }

@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Consolidate Core operation signatures, retaining native/token-aware workers.
+  IsMatch/Count accept optional shared working admission; null uses numeric engine
+  limits and non-null refusal remains terminal. Name positional enumeration tokens
+  and recompile old binaries.
+
 - Unify Core Match with optional caller-owned capture slots and direction-aware
   byte starts. Preserve whole-match fast paths; recompile old callers and name
   positional cancellation tokens.

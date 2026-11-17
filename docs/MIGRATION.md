@@ -433,3 +433,19 @@ existing capture slots with a direction-aware default start. Explicit byte start
 end-bound context, capture history on cursors, funding and interruption remain.
 Recompile old binaries. Change an old positional token call to
 `regex.Match(subject, cancellationToken: token)`.
+
+### Core operation signatures and optional working allowance
+
+Core IsMatch/Count, span match/split enumeration and text/UTF-8 template outputs
+now expose one optional token-bearing signature per supported form. Recompile old
+binaries. Name an old positional enumeration token with `cancellationToken:`.
+Match enumeration's null start selects the direction's default; explicit byte
+starts retain their meaning. Split count defaults to int.MaxValue, and zero
+continues to mean unlimited. Ordinary short source calls keep their forms.
+
+IsMatch/Count's optional null working allowance now selects the existing engine
+numeric-policy route; the former explicit-null rejection is removed. Numeric
+limits/deadlines still apply. Non-null funding uses the existing admitted worker;
+refusal is terminal with no uncapped retry, and covered loans refund synchronously.
+Program owners continue to supply their account when no separate working account
+is specified. Captures, original cancellation, byte output and aliases are unchanged.

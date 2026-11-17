@@ -105,7 +105,7 @@ public sealed class Utf8ScalarCultureTests
                 Assert.Equal((0, length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
                 Assert.Equal(value, System.Text.Encoding.UTF8.GetString(found.GetValueMemory().Span));
                 Assert.Equal(body.Contains('+') ? "\U0001f600\U0001f600" : "\U0001f600", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
-                var cursor = regex.EnumerateMatches(input, source.Token);
+                var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
                 Assert.True(cursor.MoveNext());
                 Assert.Equal(length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
                 Assert.False(cursor.MoveNext());

@@ -48,7 +48,7 @@ internal static class Utf8ScalarNullableOperationAssertions
             var token = live ? source.Token : default;
             Utf8MatchSequence.AssertCaptures(oracle.Match(text),
                 Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)), input, text);
-            var cursor = regex.EnumerateMatches(input, token);
+            var cursor = regex.EnumerateMatches(input, cancellationToken: token);
             foreach (var row in rows)
             {
                 Assert.True(cursor.MoveNext());

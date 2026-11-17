@@ -286,7 +286,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, options);
         const string text = "é target needle foo foobar xa-b a-b b niño café noir!";
-        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), source.Token);
+        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
         foreach (Match expected in new Regex(pattern, options).Matches(text))
         {
             Assert.True(enumerator.MoveNext());
@@ -320,7 +320,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         });
         try
         {
-            var enumerator = regex.EnumerateMatches(input, source.Token);
+            var enumerator = regex.EnumerateMatches(input, cancellationToken: source.Token);
             armed = true;
             var failed = false;
             try { _ = enumerator.MoveNext(); }
@@ -359,7 +359,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None) | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
-        var enumerator = regex.EnumerateMatches("é target needle"u8, source.Token);
+        var enumerator = regex.EnumerateMatches("é target needle"u8, cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
         source.Cancel();
         var failed = false;
@@ -491,7 +491,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, oracle.Match(text).Index)), regex.Match(input, cancellationToken: source.Token).StartOffsetInBytes);
-        var enumerator = regex.EnumerateMatches(input, source.Token);
+        var enumerator = regex.EnumerateMatches(input, cancellationToken: source.Token);
         foreach (Match expected in oracle.Matches(text))
         {
             Assert.True(enumerator.MoveNext());

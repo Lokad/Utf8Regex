@@ -86,6 +86,11 @@ using var cancellation = new CancellationTokenSource();
 int count = bounded.Count("café tea"u8, cancellation.Token); // 2
 ```
 
+Core operations have optional cancellation parameters. IsMatch/Count also accept
+`workingMemoryAllowance:` for shared temporary-storage admission. Omitting it or
+passing null keeps the engine's numeric limits; a refused non-null account fails
+without retry. For span enumeration, name the token `cancellationToken:`.
+
 These caps are examples. Defaults have unlimited invocation
 budgets. Byte limits cover modeled engine/result capacities, not total process
 memory. `Compile` offers separate construction controls.

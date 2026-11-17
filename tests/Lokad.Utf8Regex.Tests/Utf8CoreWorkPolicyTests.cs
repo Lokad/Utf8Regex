@@ -260,7 +260,7 @@ public sealed class Utf8CoreWorkPolicyTests
         try { cursor.MoveNext(); Assert.Fail("Waiting must not renew the invocation deadline."); }
         catch (RegexMatchTimeoutException) { }
         using var source = new CancellationTokenSource();
-        var canceled = Create("ab", 100000).EnumerateMatches("ab ab"u8, source.Token);
+        var canceled = Create("ab", 100000).EnumerateMatches("ab ab"u8, cancellationToken: source.Token);
         Assert.True(canceled.MoveNext());
         source.Cancel();
         try { canceled.MoveNext(); Assert.Fail("The original token remains authoritative."); }
@@ -321,7 +321,7 @@ public sealed class Utf8CoreWorkPolicyTests
             case "matches-offset":
                 var matches = operation == "matches-offset"
                     ? (live ? regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), token) : regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset))))
-                    : (live ? regex.EnumerateMatches(input, token) : regex.EnumerateMatches(input));
+                    : (live ? regex.EnumerateMatches(input, cancellationToken: token) : regex.EnumerateMatches(input));
                 var ranges = new List<string>();
                 while (matches.MoveNext()) ranges.Add(Range(matches.Current));
                 return string.Join("|", ranges);
@@ -329,7 +329,7 @@ public sealed class Utf8CoreWorkPolicyTests
             case "split-count":
                 var split = operation == "split-count"
                     ? (live ? regex.EnumerateSplits(input, 2, token) : regex.EnumerateSplits(input, 2))
-                    : (live ? regex.EnumerateSplits(input, token) : regex.EnumerateSplits(input));
+                    : (live ? regex.EnumerateSplits(input, cancellationToken: token) : regex.EnumerateSplits(input));
                 var pieces = new List<string>();
                 while (split.MoveNext()) pieces.Add(Convert.ToHexString(split.Current.GetValueBytes()));
                 return string.Join("|", pieces);

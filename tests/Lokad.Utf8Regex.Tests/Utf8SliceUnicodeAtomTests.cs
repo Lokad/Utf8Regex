@@ -95,7 +95,7 @@ public sealed class Utf8SliceUnicodeAtomTests
             Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
             AssertMatch(subject, oracle.Match(subject.Projected), regex.Match(input, cancellationToken: source.Token));
             AssertDetailed(subject, oracle.Match(subject.Projected), Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)));
-            AssertSequence(subject, oracle.EnumerateMatches(subject.Projected), regex.EnumerateMatches(input, source.Token));
+            AssertSequence(subject, oracle.EnumerateMatches(subject.Projected), regex.EnumerateMatches(input, cancellationToken: source.Token));
             foreach (var count in new[] { 0, 2 })
                 AssertSplits(subject, oracle.EnumerateSplits(subject.Projected, count), regex.EnumerateSplits(input, count, source.Token));
             for (var offset = 0; offset <= text.Length; offset++)
@@ -200,7 +200,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                     {
                         case 0: _ = regex.Count(input, source.Token); break;
                         case 1: _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)); break;
-                        case 2: _ = regex.EnumerateMatches(input, source.Token).MoveNext(); break;
+                        case 2: _ = regex.EnumerateMatches(input, cancellationToken: source.Token).MoveNext(); break;
                         case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q", source.Token)); break;
                     }
                 });
@@ -359,7 +359,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         using var source = new CancellationTokenSource();
         Assert.Equal(expected.Length != 0, regex.IsMatch(input, source.Token));
         Assert.Equal(expected.Length, regex.Count(input, source.Token));
-        var cursor = regex.EnumerateMatches(input, source.Token);
+        var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
         foreach (var range in expected)
         {
             Assert.True(cursor.MoveNext());

@@ -196,7 +196,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Assert.Equal(1, regex.Count("abxc"u8, recovery.Token));
         Assert.True(regex.Match("abxc"u8, cancellationToken: recovery.Token).Success);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("abxc"u8.ToArray(), cancellationToken: recovery.Token)).Success);
-        Assert.True(regex.EnumerateMatches("abxc"u8, recovery.Token).MoveNext());
+        Assert.True(regex.EnumerateMatches("abxc"u8, cancellationToken: recovery.Token).MoveNext());
     }
 
     private static void Invoke(Utf8Regex regex, byte[] input, string operation, CancellationToken token)
@@ -207,7 +207,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
             case "count": _ = regex.Count(input, token); break;
             case "value": _ = regex.Match(input, cancellationToken: token); break;
             case "detailed": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)); break;
-            case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
+            case "enumerate": _ = regex.EnumerateMatches(input, cancellationToken: token).MoveNext(); break;
             default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
     }

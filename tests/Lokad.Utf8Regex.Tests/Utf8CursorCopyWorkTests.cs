@@ -167,7 +167,7 @@ public sealed class Utf8CursorCopyWorkTests
     {
         var regex = new Utf8Regex(pattern, Options(compiled, rtl));
         using var source = new CancellationTokenSource();
-        var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), source.Token);
+        var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
         var copy = original.GetEnumerator();
         var entrySteps = copy.DebugInvocationSteps;
         var expected = new Regex(pattern, Options(compiled, rtl)).Matches(text).Cast<Match>()
@@ -221,7 +221,7 @@ public sealed class Utf8CursorCopyWorkTests
         });
         try
         {
-            var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), source.Token);
+            var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
             var entrySteps = original.DebugInvocationSteps;
             active = true;
             var canceled = false;

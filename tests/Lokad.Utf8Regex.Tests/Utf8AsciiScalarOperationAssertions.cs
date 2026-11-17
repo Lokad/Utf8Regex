@@ -151,8 +151,8 @@ internal static class Utf8AsciiScalarOperationAssertions
         Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected),
             Utf8MatchSequence.First(live.CreateMatchCursor(subject.Input, cancellationToken: source.Token)),
             subject.Input, index => subject.ByteBoundaries[index]);
-        Sequence(subject, expected, live.EnumerateMatches(subject.Input, source.Token));
-        Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, source.Token));
+        Sequence(subject, expected, live.EnumerateMatches(subject.Input, cancellationToken: source.Token));
+        Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, cancellationToken: source.Token));
         Assert.Equal(bytes, live.Replace(subject.Input, template, source.Token));
     }
 

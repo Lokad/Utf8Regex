@@ -40,7 +40,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         {
             var subject = new Utf8ScalarCaptureFixture.Subject(text);
             var input = subject.Input;
-            var cursor = regex.EnumerateMatches(input, live ? source.Token : default);
+            var cursor = regex.EnumerateMatches(input, cancellationToken: live ? source.Token : default);
             foreach (Match expected in oracle.Matches(subject.Projected))
             {
                 Assert.True(cursor.MoveNext());
@@ -124,7 +124,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         });
         try
         {
-            void Run() { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
+            void Run() { var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token); _ = cursor.MoveNext(); }
             if (expire)
             {
                 var timeout = Assert.Throws<RegexMatchTimeoutException>(Run);
@@ -157,7 +157,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, Options(compiled), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        var cursor = regex.EnumerateMatches(input, source.Token);
+        var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
         if (expire) clock.Advance(250); else source.Cancel();
@@ -184,7 +184,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         using var source = new CancellationTokenSource();
         var malformed = "ab12"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
         source.Cancel();
-        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); }).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(malformed, cancellationToken: source.Token); _ = cursor.MoveNext(); }).CancellationToken);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

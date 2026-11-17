@@ -325,7 +325,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         if ((options & RegexOptions.NonBacktracking) != 0) ;        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
         {
             var input = Encoding.UTF8.GetBytes(text);
-            var actual = regex.EnumerateMatches(input, source.Token);
+            var actual = regex.EnumerateMatches(input, cancellationToken: source.Token);
             // A lone surrogate denotes no scalar on strict UTF-8 subjects.
             // Keep its syntax/owned-route controls; half matches are superseded.
             if (patternId <= 3)
@@ -369,7 +369,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None) | (reverse ? RegexOptions.RightToLeft : RegexOptions.None));
-        var enumerator = regex.EnumerateMatches("target target"u8, source.Token);
+        var enumerator = regex.EnumerateMatches("target target"u8, cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
         Assert.Equal(reverse ? 7 : 0, enumerator.Current.StartOffsetInBytes);
         source.Cancel();
@@ -390,7 +390,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         {
             var regex = new Utf8Regex(pattern, options);
             var input = Encoding.UTF8.GetBytes(text);
-            var actual = regex.EnumerateMatches(input, source.Token);
+            var actual = regex.EnumerateMatches(input, cancellationToken: source.Token);
             foreach (Match expected in new Regex(pattern, options).Matches(text))
             {
                 Assert.True(actual.MoveNext());
@@ -419,7 +419,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (armed && !entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } });
         try
         {
-            var enumerator = regex.EnumerateMatches(input, source.Token);
+            var enumerator = regex.EnumerateMatches(input, cancellationToken: source.Token);
             armed = true;
             var cancelled = false;
             try { _ = enumerator.MoveNext(); }

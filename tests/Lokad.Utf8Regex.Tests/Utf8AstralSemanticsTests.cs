@@ -116,7 +116,7 @@ public sealed class Utf8AstralSemanticsTests
                 AssertDeclaredCaptures(pattern, text, input, expected[0], in detailed);
             }
 
-            var cursor = regex.EnumerateMatches(input, token);
+            var cursor = regex.EnumerateMatches(input, cancellationToken: token);
             foreach (var range in expected)
             {
                 Assert.True(cursor.MoveNext());

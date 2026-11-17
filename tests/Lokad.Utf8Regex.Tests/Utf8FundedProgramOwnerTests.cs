@@ -10,6 +10,42 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FundedProgramOwnerTests
 {
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void NullWorkingAllowanceUsesNumericPolicyAndKeepsOriginalCancellation(bool exists)
+    {
+        var ordinary = new Utf8Regex("a+");
+        if (exists) Assert.True(ordinary.IsMatch("aaaa"u8, workingMemoryAllowance: null));
+        else Assert.Equal(1, ordinary.Count("aaaa"u8, workingMemoryAllowance: null));
+        var bounded = new Utf8Regex("(?=(a+))a+", resourcePolicy: new() { MaxWorkSteps = 1 });
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            if (exists) _ = bounded.IsMatch("aaaa"u8, workingMemoryAllowance: null);
+            else _ = bounded.Count("aaaa"u8, workingMemoryAllowance: null);
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
+        using var source = new CancellationTokenSource(); source.Cancel();
+        var canceled = Assert.Throws<OperationCanceledException>(() =>
+        {
+            if (exists) _ = bounded.IsMatch("aaaa"u8, source.Token, null);
+            else _ = bounded.Count("aaaa"u8, source.Token, null);
+        });
+        Assert.Equal(source.Token, canceled.CancellationToken);
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void OptionalNonNullWorkingRefusalRemainsTerminal(bool exists)
+    {
+        var root = new SharedRoot(); var account = new Account(root) { Maximum = 0 };
+        var regex = new Utf8Regex("(?=(a+))a+");
+        Assert.Throws<Utf8MemoryAdmissionException>(() =>
+        {
+            if (exists) _ = regex.IsMatch("aaaa"u8, workingMemoryAllowance: account);
+            else _ = regex.Count("aaaa"u8, workingMemoryAllowance: account);
+        });
+        Assert.Equal(1, account.Attempts);
+        Assert.Equal(0UL, root.Used);
+    }
+
     private static Utf8RegexProgramOwner Compile(string pattern, Account account, RegexOptions options = RegexOptions.None,
         Utf8ResourcePolicy policy = default, CancellationToken token = default) => Utf8Regex.Compile(pattern,
             options, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, token, account);

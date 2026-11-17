@@ -144,7 +144,7 @@ public sealed class Utf8ScalarCountTests
         using var source = new CancellationTokenSource();
         foreach (var live in new[] { false, true })
         {
-            var cursor = live ? regex.EnumerateMatches(input, source.Token) : regex.EnumerateMatches(input);
+            var cursor = live ? regex.EnumerateMatches(input, cancellationToken: source.Token) : regex.EnumerateMatches(input);
             foreach (var position in expectedBytes)
             {
                 Assert.True(cursor.MoveNext());

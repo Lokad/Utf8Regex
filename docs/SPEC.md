@@ -6,14 +6,16 @@ for upgrade guidance. This contract describes supported behavior; the
 [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) and executable
 fixtures establish the implemented surface.
 
-Core Match has one public entry: optional byte start, caller-owned capture slots,
-cancellation token, working allowance and end bound. Null start selects zero
-forward or the selected end for RTL. Omitting capture storage preserves the
-default whole-match paths; explicit storage uses the established capture contract.
-Old binaries must recompile, and old positional token calls become named
-`cancellationToken:` calls. Subject-only and explicit capture calls keep their
-usual form; scalar boundaries, original interruption, admission and cursor history
-are unchanged.
+Core matching/output operations use one signature per supported input/template form. IsMatch and
+Count accept optional cancellation and working allowance. A null allowance uses
+the engine numeric-policy route; non-null shared storage refusal is terminal and
+covered loans refund synchronously. Numeric limits/deadlines still apply.
+Match accepts optional byte start, caller-owned capture slots, cancellation,
+working allowance and end bound. Null start selects zero forward or the selected
+end for RTL; default whole-match requests keep their existing execution paths.
+Span enumeration also uses a direction-aware nullable byte start. Splits default
+to int.MaxValue segments; explicit zero also means unlimited. Live tokens retain
+the original invocation through every advance. These APIs do not validate subjects.
 
 ## Matching and coordinates
 

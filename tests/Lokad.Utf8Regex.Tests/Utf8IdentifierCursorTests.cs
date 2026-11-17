@@ -37,7 +37,7 @@ public sealed class Utf8IdentifierCursorTests
                 var token = live ? source.Token : default;
                 Assert.Equal(oracle.Count(text), regex.Count(input, token));
                 Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
-                var cursor = regex.EnumerateMatches(input, token);
+                var cursor = regex.EnumerateMatches(input, cancellationToken: token);
                 foreach (Match expected in oracle.Matches(text))
                 {
                     Assert.True(cursor.MoveNext());
@@ -81,7 +81,7 @@ public sealed class Utf8IdentifierCursorTests
         foreach (var text in Texts)
         {
             var input = Encoding.UTF8.GetBytes(text);
-            var cursor = regex.EnumerateMatches(input, live ? source.Token : default);
+            var cursor = regex.EnumerateMatches(input, cancellationToken: live ? source.Token : default);
             foreach (Match expected in oracle.Matches(text))
             {
                 Assert.True(cursor.MoveNext());
@@ -172,7 +172,7 @@ public sealed class Utf8IdentifierCursorTests
         });
         try
         {
-            void Run() { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
+            void Run() { var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token); _ = cursor.MoveNext(); }
             if (expire)
             {
                 var exception = Assert.Throws<RegexMatchTimeoutException>(Run);
@@ -206,7 +206,7 @@ public sealed class Utf8IdentifierCursorTests
         var text = mixed ? "é😀 " + Texts[^1] : Texts[^1];
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
-        var cursor = regex.EnumerateMatches(input, source.Token);
+        var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
         if (expire) clock.Advance(250); else source.Cancel();
@@ -241,7 +241,7 @@ public sealed class Utf8IdentifierCursorTests
         }
         source.Cancel();
         var canceled = new Utf8Regex(Patterns[0], options);
-        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = canceled.EnumerateMatches(new byte[] { 0xff }, source.Token); _ = cursor.MoveNext(); }).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = canceled.EnumerateMatches(new byte[] { 0xff }, cancellationToken: source.Token); _ = cursor.MoveNext(); }).CancellationToken);
     }
 
     [Theory]

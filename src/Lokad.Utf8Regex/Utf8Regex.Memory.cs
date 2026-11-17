@@ -43,13 +43,17 @@ public sealed partial class Utf8Regex
         finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
     }
 
-    /// <summary>Tests for a match with caller-owned admission for temporary matching storage.</summary>
-    /// <remarks>Compilation and borrowed input keep their separate owners. The existing numeric limits, original token and deadline still apply. Covered loans refund synchronously; refusal does not retry under another allowance.</remarks>
-    public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken,
-        IUtf8MemoryAllowance workingMemoryAllowance)
+    /// <summary>Tests for a match with optional shared admission for temporary matching storage.</summary>
+    /// <remarks>Null allowance uses the engine numeric-policy route. Non-null allowance admits temporary storage separately from compilation and borrowed input. Numeric limits, original token and deadline still apply. Covered loans refund synchronously; refusal is terminal.</remarks>
+    public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
+        if (workingMemoryAllowance is null)
+        {
+            try { return IsMatchCore(input, cancellationToken); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
@@ -73,13 +77,17 @@ public sealed partial class Utf8Regex
         finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
     }
 
-    /// <summary>Counts matches with caller-owned admission for temporary matching storage.</summary>
-    /// <remarks>Compilation and borrowed input keep their separate owners. Work and result traffic remain cumulative numeric policies, distinct from live shared funding. Covered loans refund synchronously on success, failure and interruption.</remarks>
-    public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken,
-        IUtf8MemoryAllowance workingMemoryAllowance)
+    /// <summary>Counts matches with optional shared admission for temporary matching storage.</summary>
+    /// <remarks>Null allowance uses the engine numeric-policy route. Non-null allowance admits temporary storage separately from compilation and borrowed input. Work/result policies stay cumulative; covered loans refund synchronously on success, failure and interruption. Refusal is terminal.</remarks>
+    public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
+        if (workingMemoryAllowance is null)
+        {
+            try { return CountCore(input, cancellationToken); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {

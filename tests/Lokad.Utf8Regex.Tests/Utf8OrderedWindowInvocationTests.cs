@@ -78,7 +78,7 @@ public sealed class Utf8OrderedWindowInvocationTests
                 Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.StartOffsetInBytes, (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes))));
             }
             var expected = oracle.EnumerateMatches(text);
-            var actual = regex.EnumerateMatches(input, token);
+            var actual = regex.EnumerateMatches(input, cancellationToken: token);
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
@@ -148,7 +148,7 @@ public sealed class Utf8OrderedWindowInvocationTests
             if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
             else if (operation == "count") _ = regex.Count(input, source.Token);
             else if (operation == "match") _ = regex.Match(input, cancellationToken: source.Token);
-            else { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
+            else { var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token); _ = cursor.MoveNext(); }
         }
         reads = 0; Run(); Assert.True(reads >= 2); trigger = Math.Max(2, reads / 2); reads = 0;
         if (expire)

@@ -269,24 +269,6 @@ public sealed partial class Utf8Regex
         return _program.CaptureCatalog.GroupNumbers.AsSpan().ToArray();
     }
 
-    /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
-    public bool IsMatch(ReadOnlySpan<byte> input)
-    {
-        // The entry shortcuts below prove their answer without polling. A finite
-        // deadline must start before validation/search under the existing owner.
-        if (MatchTimeout != Regex.InfiniteMatchTimeout)
-            return IsMatch(input, CancellationToken.None);
-
-        try
-        {
-            return IsMatchCore(input, CancellationToken.None);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
     // Preserve qualified native lanes; the shared owned VM traverses the original
     // UTF-8 subject. Coordinate conversion belongs to result interoperability.
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)
@@ -419,23 +401,6 @@ public sealed partial class Utf8Regex
         return IsMatchViaCompiledEngine(input, validation, budget);
     }
 
-    /// <summary>Determines whether the well-formed UTF-8 input contains a match, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
-        {
-            return IsMatchCore(input, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
@@ -506,36 +471,6 @@ public sealed partial class Utf8Regex
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Required literal screening breached the invocation budget.");
         return !found;
-    }
-
-    /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
-    public int Count(ReadOnlySpan<byte> input)
-    {
-        try
-        {
-            return CountCore(input, CancellationToken.None);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
-    /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
-        {
-            return CountCore(input, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
     }
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
@@ -955,7 +890,7 @@ public sealed partial class Utf8Regex
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
-    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
+    private Utf8ValueMatchEnumerator EnumerateMatchesWithoutToken(ReadOnlySpan<byte> input)
     {
         if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, this);
@@ -1070,7 +1005,7 @@ public sealed partial class Utf8Regex
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    private Utf8ValueMatchEnumerator EnumerateMatchesWithToken(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (HasFiniteExecutionLimits)
@@ -1118,35 +1053,24 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, this);
         }
 
-        return EnumerateMatches(input);
+        return EnumerateMatchesWithoutToken(input);
     }
 
     /// <summary>Enumerates non-overlapping matches from a scalar-aligned byte offset in the original input.</summary>
-    /// <remarks>The complete subject remains available to anchors, boundaries and lookbehind. The original token, deadline and resource limits apply throughout enumeration. Keep borrowed input unchanged.</remarks>
+    /// <remarks>Null start selects zero forward or the subject end for RTL; explicit starts are scalar-aligned bytes. The complete subject remains available to anchors, boundaries and lookbehind. Original token, deadline and limits apply throughout enumeration. Keep borrowed input unchanged.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">The start is outside the subject or inside a UTF-8 scalar.</exception>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken = default)
+    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int? startOffsetInBytes = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return CreateOwnedByteOffsetEnumerator(input, startOffsetInBytes, cancellationToken);
+        if (startOffsetInBytes is { } start)
+            return CreateOwnedByteOffsetEnumerator(input, start, cancellationToken);
+        return cancellationToken.CanBeCanceled
+            ? EnumerateMatchesWithToken(input, cancellationToken)
+            : EnumerateMatchesWithoutToken(input);
     }
-
-    /// <summary>Enumerates all split segments, including the final tail.</summary>
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input) =>
-        EnumerateSplits(input, int.MaxValue);
-
-    /// <summary>Enumerates all split segments, including the final tail, observing cancellation when enumeration begins.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, int.MaxValue, cancellationToken);
-    }
-
     /// <summary>Enumerates at most the requested number of split segments.</summary>
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count)
+    private Utf8ValueSplitEnumerator EnumerateSplitsWithoutToken(ReadOnlySpan<byte> input, int count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
@@ -1227,9 +1151,10 @@ public sealed partial class Utf8Regex
     /// <param name="count">The maximum number of split segments to return.</param>
     /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count, CancellationToken cancellationToken)
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count = int.MaxValue, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (!cancellationToken.CanBeCanceled) return EnumerateSplitsWithoutToken(input, count);
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, cancellationToken);
     }
@@ -1252,27 +1177,12 @@ public sealed partial class Utf8Regex
         }
     }
 
-    /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes.</summary>
-    /// <param name="input">The well-formed UTF-8 input.</param>
-    /// <param name="replacement">A .NET replacement pattern expressed as UTF-16 text.</param>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
-    {
-        try
-        {
-            return ReplaceStringCore(input, replacement);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
     /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
@@ -1285,11 +1195,6 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement)
-    {
-        return ReplaceStringCore(input, replacement, CancellationToken.None);
-    }
-
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var deadline = CreateExecutionBudget();
@@ -1297,25 +1202,12 @@ public sealed partial class Utf8Regex
         return ReplaceCore(input, analyzed, cancellationToken, deadline);
     }
 
-    /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
-    {
-        try
-        {
-            return ReplaceUtf8Core(input, replacementPatternUtf8);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacementPatternUtf8">The replacement pattern encoded as well-formed UTF-8.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
@@ -1326,11 +1218,6 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
-    }
-
-    private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
-    {
-        return ReplaceUtf8Core(input, replacementPatternUtf8, CancellationToken.None);
     }
 
     private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
@@ -1382,30 +1269,12 @@ public sealed partial class Utf8Regex
         return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
-    /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
-    /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
-    /// <remarks>An overlapping input and destination use staged output. An insufficient destination remains unchanged.</remarks>
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten)
-    {
-        return TryReplace(input, replacement, destination, out bytesWritten, CancellationToken.None);
-    }
-
     private OperationStatus TryReplaceStringCore(
         ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
     {
         var deadline = CreateExecutionBudget();
         var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
         return TryReplaceCore(input, analyzed, destination, out bytesWritten, cancellationToken, deadline);
-    }
-
-    /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
-    /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
-    /// <remarks>Input and replacement spans may overlap the destination. Overlapping input uses staged output; an insufficient destination remains unchanged.</remarks>
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten)
-    {
-        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, CancellationToken.None);
     }
 
     private OperationStatus TryReplaceUtf8Core(
@@ -1442,7 +1311,7 @@ public sealed partial class Utf8Regex
     /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
@@ -1462,7 +1331,7 @@ public sealed partial class Utf8Regex
     /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try

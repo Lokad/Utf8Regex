@@ -52,7 +52,7 @@ public sealed class Utf8SeparatorSuffixOverlapTests
                     Assert.Equal(expected[0].Value, Encoding.UTF8.GetString(input.AsSpan(first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes))));
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index)), first.StartOffsetInBytes);
                 }
-            var actual = regex.EnumerateMatches(input, cancellation.Token);
+            var actual = regex.EnumerateMatches(input, cancellationToken: cancellation.Token);
             var index = 0;
             while (actual.MoveNext())
             {
