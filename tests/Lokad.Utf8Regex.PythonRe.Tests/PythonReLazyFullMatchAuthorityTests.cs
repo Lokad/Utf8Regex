@@ -11,7 +11,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     private const int CopyCheckpoint = 3;
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void ColdFullMatchDoesNotRestartDeadlineAfterPreparation(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
@@ -35,7 +35,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void ColdPreparationCancellationUsesOriginalTokenAndAllowsFreshCall(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+");
@@ -165,7 +165,6 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     {
         if (result == 0) _ = regex.FullMatch("😀a"u8, 0, token);
         else if (result == 1) _ = regex.FullMatchDetailed("😀a"u8, 0, token);
-        else if (result == 2) _ = regex.FullMatchDetailedData("😀a"u8, 0, token);
-        else _ = regex.FullMatchToString("😀a"u8, 0, token);
+        else _ = regex.FullMatchDetailedData("😀a"u8, 0, token);
     }
 }

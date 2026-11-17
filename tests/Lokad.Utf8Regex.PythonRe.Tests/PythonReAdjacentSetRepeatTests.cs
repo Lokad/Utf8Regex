@@ -30,7 +30,7 @@ public sealed class PythonReAdjacentSetRepeatTests
             var value = owner.FullMatch(input);
             Assert.True(value.Success);
             Assert.Equal((0,input.Length),                (value.StartOffsetInBytes,value.EndOffsetInBytes));
-            Assert.Equal(text, owner.FullMatchToString(input));
+            PythonReMatchAssert.Equal(text, owner.FullMatch(input));
             var retained = owner.FullMatchDetailedData(input);
             Assert.Equal(text, retained.Value.ValueText);
             Assert.Equal(1, owner.Count(input));

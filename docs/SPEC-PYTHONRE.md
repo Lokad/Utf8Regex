@@ -314,17 +314,15 @@ each capture, including absent groups, instead of checking again immediately
 afterward. Decoding, capacity admission, next discovery and final publication
 retain their checks; numerical work can decrease by one step per captured value.
 
-One-shot `SearchToString`, `MatchToString` and `FullMatchToString` pass only the
-returned scalar range to the same result ledger. They request no coordinate or
-character-count metadata first. Up to4096 UTF-8 bytes use conservative byte-derived
-string admission; larger results retain bounded exact sizing. Short Unicode
-one-shot results can require more modeled working/result capacity and deny earlier
-than older builds that counted their UTF-16 units first. No unrelated suffix is
-described and whole-subject character counts are not required.
-Native one-shot discovery returns byte endpoints over caller-guaranteed valid text.
-Text output sizes its selected range; value output derives prefix/range
-coordinates after a hit. Batch output reuses facts requested by discovery or
-projection within the same operation.
+One-shot `Search`, `Match` and `FullMatch` return borrowed byte ranges over
+caller-guaranteed valid text. `SearchToString`, `MatchToString` and
+`FullMatchToString` are removed, together with their separate decoding/admission
+path. Check `Success` to distinguish no match from a successful empty range.
+The host can decode `GetValueBytes()` when needed; that caller allocation is
+outside the regex invocation's memory/work/interruption controls. Discovery and
+publication retain their original authority and useful limits. No whole-subject
+coordinate or character-count scan is required for these values. Other output
+operations keep their documented allocation and decoding admission until removed.
 Exact ASCII-literal substitution does not describe the subject or replacement
 in UTF-16 before byte discovery/output. Replacement validity remains checked
 independently. String output uses the shared ledger on its actual completed

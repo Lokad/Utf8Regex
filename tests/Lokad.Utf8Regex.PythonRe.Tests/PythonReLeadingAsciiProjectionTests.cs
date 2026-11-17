@@ -18,7 +18,7 @@ public sealed class PythonReLeadingAsciiProjectionTests
         {
             MaxWorkSteps = 200, MaxWorkingBytes = 65536, MaxResultBytes = 65536
         });
-        Assert.Equal("1", regex.SearchToString(input, 0, token.Token));
+        PythonReMatchAssert.Equal("1", regex.Search(input, 0, token.Token));
         var owned = regex.SearchDetailedData(input, 0, token.Token);
         Assert.Equal("1", owned.Value.ValueText);
         Assert.Equal((0,1),(owned.Value.StartOffsetInBytes,owned.Value.EndOffsetInBytes));
@@ -39,7 +39,7 @@ public sealed class PythonReLeadingAsciiProjectionTests
     {
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(expected, regex.SearchToString(input));
+        PythonReMatchAssert.Equal(expected, regex.Search(input));
         Assert.Equal(expected, regex.SearchDetailedData(input).Value.ValueText);
     }
 
@@ -58,7 +58,7 @@ public sealed class PythonReLeadingAsciiProjectionTests
         Assert.True(cursor.MoveNext()); Assert.Equal("123", cursor.Current.Value.ValueText);
         Assert.False(cursor.MoveNext()); cursor.Dispose();
         Assert.Equal("١", retained.Groups[1].ValueText); Assert.Equal(1, retained.LastIndex);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.SearchToString(input, prefixLength + 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search(input, prefixLength + 1));
     }
 
     [Theory]
@@ -78,13 +78,13 @@ public sealed class PythonReLeadingAsciiProjectionTests
         });
         try
         {
-            var failure = Record.Exception(() => regex.SearchToString(input, 0, token.Token));
+            var failure = Record.Exception(() => regex.Search(input, 0, token.Token));
             Assert.True(entered);
             if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }
         finally { session.Complete(); }
-        Assert.Equal("١", regex.SearchToString("١"u8));
+        PythonReMatchAssert.Equal("١", regex.Search("١"u8));
     }
 
     [Fact]
@@ -92,12 +92,11 @@ public sealed class PythonReLeadingAsciiProjectionTests
     {
         using var work = new Utf8PythonRegex(@"\d+", resourcePolicy: new() { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => work.SearchToString("1"u8)).ResourceKind);
+            () => work.Search("1"u8)).ResourceKind);
         using var working = new Utf8PythonRegex(@"(?P<n>\d+)", resourcePolicy: new() { MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => working.SearchToString("1"u8)).ResourceKind);
+            () => working.Search("1"u8)).ResourceKind);
         using var result = new Utf8PythonRegex(@"\d+", resourcePolicy: new() { MaxResultBytes = 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => result.SearchToString("1"u8)).ResourceKind);
+        PythonReMatchAssert.Equal("1", result.Search("1"u8));
     }
 }

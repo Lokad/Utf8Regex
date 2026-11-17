@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe SearchToString, MatchToString and FullMatchToString. Use the
+  corresponding byte-result operation and decode in the host when needed.
+
 - Remove PCRE2's static IsMatch, Match and Replace convenience overloads. Retain
   compiled instances in the host; their matching and resource controls are unchanged.
 

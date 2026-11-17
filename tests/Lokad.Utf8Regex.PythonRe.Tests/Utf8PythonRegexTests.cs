@@ -1635,11 +1635,10 @@ public sealed class Utf8PythonRegexTests
     public void ScalarSearchHelpersProvideHostFriendlySurface()
     {
         var regex = new Utf8PythonRegex("foo");
-
-        Assert.Equal("foo", regex.SearchToString("xxfooyy"u8));
-        Assert.Equal("foo", regex.MatchToString("fooyy"u8));
-        Assert.Equal("foo", regex.FullMatchToString("foo"u8));
-        Assert.Null(regex.MatchToString("xxfoo"u8));
+        PythonReMatchAssert.Equal("foo", regex.Search("xxfooyy"u8));
+        PythonReMatchAssert.Equal("foo", regex.Match("fooyy"u8));
+        PythonReMatchAssert.Equal("foo", regex.FullMatch("foo"u8));
+        Assert.False(regex.Match("xxfoo"u8).Success);
     }
 
     [Fact]

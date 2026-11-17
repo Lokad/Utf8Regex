@@ -147,6 +147,11 @@ pre-cancellation and excess entries leave caller storage unchanged.
 
 ### Caller-owned compiled expressions
 
+PythonRe removes `SearchToString`, `MatchToString` and `FullMatchToString`.
+Call `Search`, `Match` or `FullMatch`, check `Success`, then use the borrowed
+`GetValueBytes()` span. Optional host decoding is outside regex resource limits
+and cancellation; keep the subject unchanged while accessing the result.
+
 Core removes the static `IsMatch`, `Count`, `Match`, `MatchDetailed`,
 `EnumerateMatches`, `EnumerateSplits` and `Replace` families and their global
 pattern cache. PCRE2 also removes its static `IsMatch`, `Match` and `Replace`

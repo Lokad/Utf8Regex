@@ -219,8 +219,8 @@ public sealed class PythonReFiniteResultPolicyTests
         var range = Create(".", 1).Search("😀"u8);
         Assert.Equal(4, range.EndOffsetInBytes);
         Denied(() => Create(".", 1).SearchDetailedData("😀"u8), 1);
-        Assert.Equal("", Create("", 1).SearchToString("😀"u8));
-        Assert.Null(Create("missing", 1).SearchToString("😀"u8));
+        PythonReMatchAssert.Equal("", Create("", 1).Search("😀"u8));
+        Assert.False(Create("missing", 1).Search("😀"u8).Success);
         var regex = Create(".*?", 1000000);
         Assert.Equal(new[] { "", "😀", "", "a", "" }, regex.FindIterDetailed("😀a"u8).Select(x => x.Value.ValueText));
         Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);

@@ -125,7 +125,7 @@ public sealed class PythonReTranslationLifetimeTests
             typeof(Utf8PythonRegex).GetField("_scalarProgram", fields)!.GetValue(regex));
         Assert.True(core.CanFindNativeLiteralForResult);
         Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
-        Assert.Equal("needle", regex.SearchToString("xxneedlebar"u8));
+        PythonReMatchAssert.Equal("needle", regex.Search("xxneedlebar"u8));
         Assert.Equal(1, regex.Count("xxneedlebar"u8));
         Assert.Equal(["needle"], regex.FindAllToStrings("xxneedlebar"u8).ScalarValues);
         Assert.False(regex.IsMatch("needlex"u8));

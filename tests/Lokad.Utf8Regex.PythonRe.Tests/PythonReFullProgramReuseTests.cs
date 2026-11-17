@@ -65,7 +65,7 @@ public sealed class PythonReFullProgramReuseTests
         Assert.Equal(success, regex.FullMatch(bytes).Success);
         Assert.Equal(success, regex.FullMatchDetailed(bytes).Success);
         Assert.Equal(success, regex.FullMatchDetailedData(bytes).Success);
-        Assert.Equal(success ? input : null, regex.FullMatchToString(bytes));
+        PythonReMatchAssert.Equal(success ? input : null, regex.FullMatch(bytes));
     }
 
     [Theory]

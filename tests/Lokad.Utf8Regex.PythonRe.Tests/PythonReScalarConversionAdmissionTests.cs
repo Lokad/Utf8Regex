@@ -148,9 +148,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(program.GroupNames.Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[1].Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[2].Length));
-        // Exercise the actual compiled capture and full-match anchor behavior,
-        // instead of requiring temporary IR nodes in an accounting registry.
-        Assert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").FullMatchToString("ab😀"u8));
+        PythonReMatchAssert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").FullMatch("ab😀"u8));
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 

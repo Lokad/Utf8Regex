@@ -65,7 +65,7 @@ public sealed class PythonReOneShotProjectionTests
             Assert.True(value.Success);
             Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             Assert.True(value.GetValueBytes().SequenceEqual(bytes));
-            Assert.Equal(text, regex.FullMatchToString(input));
+            PythonReMatchAssert.Equal(text, regex.FullMatch(input));
         }
     }
 

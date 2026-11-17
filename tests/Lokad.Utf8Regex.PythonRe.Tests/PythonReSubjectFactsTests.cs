@@ -24,7 +24,7 @@ public sealed class PythonReSubjectFactsTests
     [InlineData("x", "needle")]
     [InlineData("é", "é😀")]
     [InlineData("😀", "needle")]
-    public void OneShotTextSizesOnlyTheReturnedTrustedRange(string suffixScalar, string value)
+    public void ByteValuesKeepTheReturnedTrustedRange(string suffixScalar, string value)
     {
         var input = Encoding.UTF8.GetBytes("é😀" + value + string.Concat(Enumerable.Repeat(suffixScalar, 1 << 20)));
         using var regex = new Utf8PythonRegex($"({value})",
@@ -35,11 +35,11 @@ public sealed class PythonReSubjectFactsTests
                 MaxResultBytes = 128
             });
         using var cancellation = new CancellationTokenSource();
-        Assert.Equal(value, regex.MatchToString(input, 6, cancellation.Token));
-        Assert.Equal(value, regex.SearchToString(input, 6, cancellation.Token));
+        PythonReMatchAssert.Equal(value, regex.Match(input, 6, cancellation.Token));
+        PythonReMatchAssert.Equal(value, regex.Search(input, 6, cancellation.Token));
 
         cancellation.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.MatchToString(input, 6, cancellation.Token));
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.Match(input, 6, cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 
@@ -59,20 +59,7 @@ public sealed class PythonReSubjectFactsTests
     }
     [Fact]
 
-    public void OneShotTextAdmitsTheActualStringBeforeAllocation()
-    {
-        const string text = "é😀";
-        var required = Utf8ConstructionBudget.StringBytes(text.Length);
-        using var regex = new Utf8PythonRegex($"({text})",
-            resourcePolicy: new Utf8ResourcePolicy { MaxWorkingBytes = 32768, MaxResultBytes = required - 1 });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchToString("é😀tail"u8));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
-        Assert.Equal(required - 1, failure.Limit);
-        Assert.Equal(required, failure.Requested);
-    }
-    [Fact]
-
-    public void OneShotTextKeepsLargeScalarRangesAndExactAdmission()
+    public void ByteValuesKeepLargeScalarRangesWithoutTextAdmission()
     {
         var expected = new string('a', 4093) + "é😀";
         var input = Encoding.UTF8.GetBytes("é😀" + expected);
@@ -80,18 +67,18 @@ public sealed class PythonReSubjectFactsTests
             resourcePolicy: new Utf8ResourcePolicy
             {
                 MaxWorkingBytes = 32768,
-                MaxResultBytes = Utf8ConstructionBudget.StringBytes(expected.Length)
+                MaxResultBytes = 1
             });
-        var retained = regex.MatchToString(input, 6);
-        Assert.Equal(expected, retained);
-        Assert.Equal(expected, regex.SearchToString(input, 6));
-        Assert.Equal(expected, regex.FullMatchToString(input, 6));
-        Assert.Equal(expected, regex.FullMatchToString(Encoding.UTF8.GetBytes(expected)));
-        Assert.Equal(expected, retained);
+        var retained = regex.Match(input, 6);
+        PythonReMatchAssert.Equal(expected, retained);
+        PythonReMatchAssert.Equal(expected, regex.Search(input, 6));
+        PythonReMatchAssert.Equal(expected, regex.FullMatch(input, 6));
+        PythonReMatchAssert.Equal(expected, regex.FullMatch(Encoding.UTF8.GetBytes(expected)));
+        PythonReMatchAssert.Equal(expected, retained);
     }
     [Fact]
 
-    public void OneShotOwnedTextReturnsProgramFundingAndSurvivesClosure()
+    public void ByteValuesReturnProgramFundingAndSurviveClosure()
     {
         var allowance = new Allowance(16 << 20);
         Assert.True(allowance.TryReserve(17));
@@ -99,17 +86,17 @@ public sealed class PythonReSubjectFactsTests
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default,
             allowance);
         var held = allowance.Used;
-        var retained = regex.MatchToString("é😀suffix"u8);
-        Assert.Equal("é😀", retained);
+        var retained = regex.Match("é😀suffix"u8);
+        PythonReMatchAssert.Equal("é😀", retained);
         Assert.Equal(held, allowance.Used);
         regex.Dispose();
         Assert.Equal(17UL, allowance.Used);
-        Assert.Equal("é😀", retained);
+        PythonReMatchAssert.Equal("é😀", retained);
         allowance.Release(17);
     }
     [Fact]
 
-    public void ValuesAtSubjectEndsKeepRealUtf16Coordinates()
+    public void ValuesAtSubjectEndsKeepByteCoordinates()
     {
         var input = "é😀 item-1234"u8.ToArray();
         var regex = new Utf8PythonRegex("(item)-([0-9]+)");

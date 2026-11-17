@@ -36,12 +36,12 @@ public sealed class PythonReNativeLiteralValidationTests
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
                 mode == 3 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, policy);
             Check(regex.Search(input, 0, token), pattern, text, start);
-            Assert.Equal(start >= 0 ? pattern : null, regex.SearchToString(input, 0, token));
+            PythonReMatchAssert.Equal(start >= 0 ? pattern : null, regex.Search(input, 0, token));
             Check(regex.Match(input, 0, token), pattern, text, start == 0 ? 0 : -1);
-            Assert.Equal(start == 0 ? pattern : null, regex.MatchToString(input, 0, token));
+            PythonReMatchAssert.Equal(start == 0 ? pattern : null, regex.Match(input, 0, token));
             var full = text == pattern;
             Check(regex.FullMatch(input, 0, token), pattern, text, full ? 0 : -1);
-            Assert.Equal(full ? pattern : null, regex.FullMatchToString(input, 0, token));
+            PythonReMatchAssert.Equal(full ? pattern : null, regex.FullMatch(input, 0, token));
         }
     }
 
@@ -82,12 +82,12 @@ public sealed class PythonReNativeLiteralValidationTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var regex = new Utf8PythonRegex("Шерлок");
-        for (var operation = 0; operation < 6; operation++)
+        for (var operation = 0; operation < 6; operation += 2)
         {
             var error = Assert.Throws<OperationCanceledException>(() => Run(regex, [0xff], operation, cancellation.Token));
             Assert.Equal(cancellation.Token, error.CancellationToken);
         }
-        Assert.Equal("Шерлок", regex.SearchToString("xx Шерлок"u8));
+        PythonReMatchAssert.Equal("Шерлок", regex.Search("xx Шерлок"u8));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class PythonReNativeLiteralValidationTests
     }
 
     [Theory]
-    [InlineData(4)] [InlineData(5)]
+    [InlineData(4)]
     public void ImmediateMissStillChecksTheOriginalDeadline(int operation)
     {
         var regex = new Utf8PythonRegex("Шерлок", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1),
@@ -134,11 +134,9 @@ public sealed class PythonReNativeLiteralValidationTests
         switch (operation)
         {
             case 0: _ = regex.Search(input, 0, token); break;
-            case 1: _ = regex.SearchToString(input, 0, token); break;
             case 2: _ = regex.Match(input, 0, token); break;
-            case 3: _ = regex.MatchToString(input, 0, token); break;
             case 4: _ = regex.FullMatch(input, 0, token); break;
-            default: _ = regex.FullMatchToString(input, 0, token); break;
+            default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
     }
 }

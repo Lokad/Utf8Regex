@@ -41,9 +41,7 @@ public sealed class PythonReScalarOneShotTests
                     var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, index));
                     var expected = oracle.Match(text, index);
                     var actual = full ? regex.FullMatch(input, start, token) : regex.Match(input, start, token);
-                    var rendered = full ? regex.FullMatchToString(input, start, token) : regex.MatchToString(input, start, token);
                     Assert.Equal(expected.Success, actual.Success);
-                    Assert.Equal(expected.Success ? expected.Value : null, rendered);
                     if (!expected.Success) continue;
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length)), actual.EndOffsetInBytes);

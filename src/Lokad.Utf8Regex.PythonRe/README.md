@@ -163,8 +163,11 @@ var iter = regex.FindIterDetailed("foo-foo xx foo-foo"u8);
 string?[] parts = regex.SplitToStrings("foo-foo xx foo-foo"u8);
 ```
 
-String-returning helpers such as `SearchToString(...)`, `ReplaceToString(...)`, and `FindAllToStrings(...)`
-are also available as host-friendly conveniences when a runtime needs scalar string results.
+`Search`, `Match` and `FullMatch` return borrowed byte ranges. Their former
+`ToString` operation variants are removed. Check `Success`, then decode
+`GetValueBytes()` in the host if text is needed; caller decoding is outside the
+regex invocation's resource and cancellation scope. `ReplaceToString` and
+`FindAllToStrings` still provide their documented aggregate output forms.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
 `MoveNext` instead of materializing the complete `FindIterDetailed` array:

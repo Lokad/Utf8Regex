@@ -19,7 +19,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     }
     public static IEnumerable<object[]> Operations()
     {
-        for (var operation = 0; operation < 25; operation++) foreach (var bytes in new[] { false, true }) yield return [operation, bytes];
+        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
+            foreach (var bytes in new[] { false, true }) yield return [operation, bytes];
     }
     [Theory]
     [MemberData(nameof(Operations))]
@@ -47,7 +48,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     public void ScalarLookbehindCapturesReferencesAndEmptyProgressRemainExact(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        for (var operation = 0; operation < 25; operation++)
+        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
             Assert.Equal(PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation),
                 PythonReFiniteWorkPolicyTests.Run(Create(pattern, 4096, false), input, operation));
     }

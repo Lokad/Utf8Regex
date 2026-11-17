@@ -47,12 +47,12 @@ public sealed class PythonReShortFoldedPrefixTests
         {
             using var owner = new Utf8PythonRegex("(?P<n>" + pattern + ")", PythonReCompileOptions.IgnoreCase,
                 Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(expected, owner.SearchToString(Encoding.UTF8.GetBytes(text)));
+            PythonReMatchAssert.Equal(expected, owner.Search(Encoding.UTF8.GetBytes(text)));
         }
     }
 
     [Fact]
-    public void SmallPoliciesAllowFixedValuesButStillAdmitPublishedText()
+    public void SmallPoliciesAllowBorrowedValuesWithoutTextAdmission()
     {
         using var token = new CancellationTokenSource();
         using var owner = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase,
@@ -61,9 +61,7 @@ public sealed class PythonReShortFoldedPrefixTests
             });
         Assert.False(owner.Search("prefix watson suffix"u8, 0, token.Token).Success);
         Assert.True(owner.Search("SHERLOCK"u8, 0, token.Token).Success);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(
-                () => owner.SearchToString("SHERLOCK"u8, 0, token.Token)).ResourceKind);
+        PythonReMatchAssert.Equal("SHERLOCK", owner.Search("SHERLOCK"u8, 0, token.Token));
     }
 
     [Fact]

@@ -6,13 +6,19 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFiniteWorkPolicyTests
 {
+    internal static IEnumerable<int> OperationIds()
+    {
+        for (var operation = 0; operation < 25; operation++)
+            if (operation is not (5 or 6 or 7)) yield return operation;
+    }
+
     public static IEnumerable<object[]> Operations()
     {
         // Exact literal, two native-specialized forms, and general scalar discovery.
         foreach (var (pattern, input) in new[] { ("cat", "cat"), ("cat\\d+", "cat123"),
             ("(?s:cat.*dog)", "cat😀dog"), ("(?P<x>a|ab)+(?P=x)", "abab"), (".*?", "😀a"),
             ("foo(?=bar)", "foobar") })
-            for (var operation = 0; operation < 25; operation++)
+            foreach (var operation in OperationIds())
                 yield return [operation, pattern, input];
     }
 
@@ -32,9 +38,6 @@ public sealed class PythonReFiniteWorkPolicyTests
         2 => regex.Match(input, start, token).Success.ToString(),
         3 => regex.FullMatch(input, start, token).Success.ToString(),
         4 => regex.Count(input, start, token).ToString(),
-        5 => regex.SearchToString(input, start, token) ?? "<none>",
-        6 => regex.MatchToString(input, start, token) ?? "<none>",
-        7 => regex.FullMatchToString(input, start, token) ?? "<none>",
         8 => regex.SearchDetailed(input, start, token).Success.ToString(),
         9 => regex.MatchDetailed(input, start, token).Success.ToString(),
         10 => regex.FullMatchDetailed(input, start, token).Success.ToString(),

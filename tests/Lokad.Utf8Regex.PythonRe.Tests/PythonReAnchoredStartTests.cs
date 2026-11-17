@@ -20,7 +20,7 @@ public sealed class PythonReAnchoredStartTests
             using var regex = new Utf8PythonRegex(pattern);
             Assert.False(regex.Match(input).Success);
             Assert.False(regex.FullMatch(input).Success);
-            Assert.Null(regex.MatchToString(input));
+            Assert.False(regex.Match(input).Success);
             Assert.False(regex.MatchDetailedData(input).Success);
             Assert.True(regex.Search(input).Success);
         }
@@ -44,7 +44,7 @@ public sealed class PythonReAnchoredStartTests
             Assert.Equal(start, match.StartOffsetInBytes);
             Assert.Equal(start + Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes);
             Assert.Equal(expected, regex.MatchDetailedData(input, start).Value.ValueText);
-            Assert.Equal(expected, regex.FullMatchToString(input, start));
+            PythonReMatchAssert.Equal(expected, regex.FullMatch(input, start));
         }
     }
     [Fact]
@@ -59,7 +59,7 @@ public sealed class PythonReAnchoredStartTests
             MaxResultBytes = 1
         });
         Assert.False(regex.Match(input).Success);
-        Assert.Null(regex.MatchToString(input));
+        Assert.False(regex.Match(input).Success);
         using var strict = new Utf8PythonRegex("(needle)", resourcePolicy: new() { MaxWorkSteps = 64 });
         Assert.False(strict.Match(input).Success);
     }

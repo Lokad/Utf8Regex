@@ -23,7 +23,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
 
     private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes, int operation)
     {
-        if (operation is 3 or 7 or 10 or 13 or 20 or 21 && error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
+        if (operation is 3 or 10 or 13 or 20 or 21 && error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
         {
             // Cold FullMatch/template preparation has a byte ceiling before
             // execution. Its diagnostic totals include the enclosing cache
@@ -36,8 +36,8 @@ public sealed class PythonReFiniteWorkingPolicyTests
 
     public static IEnumerable<object[]> Operations()
     {
-        for (var operation = 0; operation < 25; operation++)
-        foreach (var bytePattern in new[] { false, true }) yield return [operation, bytePattern];
+        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
+            foreach (var bytePattern in new[] { false, true }) yield return [operation, bytePattern];
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
     public void NativeEligibleScalarAndEmptyRoutesCannotBypassWorkingPolicy(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        for (var operation = 0; operation < 25; operation++)
+        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
             Assert.Equal(PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation),
                 PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1_048_576, false), input, operation));
     }

@@ -82,7 +82,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         var detailed = regex.FullMatchDetailedData(Utf8("xfoo"), 1);
         Assert.True(detailed.Success);
         Assert.Equal("foo", detailed.Value.ValueText);
-        Assert.Equal("foo", regex.FullMatchToString(Utf8("xfoo"), 1));
+        PythonReMatchAssert.Equal("foo", regex.FullMatch(Utf8("xfoo"), 1));
     }
 
     [Theory]

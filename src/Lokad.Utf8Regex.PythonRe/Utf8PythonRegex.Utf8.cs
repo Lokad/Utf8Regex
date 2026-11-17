@@ -371,32 +371,6 @@ public sealed partial class Utf8PythonRegex
         finally { results.Release(ref invocation); }
     }
 
-    internal string? MaterializeNativeMatchText(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results)
-    {
-        try
-        {
-            var control = new Utf8InvocationBufferControl(ref invocation);
-            Utf8InvocationOutput.Checkpoint(control);
-            if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
-                out var start, out var end))
-            {
-                Utf8InvocationOutput.Checkpoint(control);
-                return null;
-            }
-            return MaterializeMatchText(input, start, end, ref invocation, ref results);
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            throw invocation.Budget.CreateResourceFailure();
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input, Pattern);
-        }
-    }
-
     internal Utf8PythonValueMatch MaterializeNativeMatchValue(ReadOnlySpan<byte> input, int startOffsetInBytes,
         int kind, scoped ref Utf8SliceInvocation invocation)
     {

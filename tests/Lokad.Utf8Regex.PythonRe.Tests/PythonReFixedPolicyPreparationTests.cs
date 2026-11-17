@@ -24,7 +24,7 @@ public sealed class PythonReFixedPolicyPreparationTests
         var input = "é😀 abc xyz abc"u8.ToArray();
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
-        Assert.Equal("abc", regex.SearchToString(input));
+        PythonReMatchAssert.Equal("abc", regex.Search(input));
         Assert.Equal(["abc", "xyz", "abc"], regex.FindAllToStrings(input).ScalarValues);
         Assert.Equal("é😀 ! ! !", regex.ReplaceToString(input, "!"));
         Assert.Equal("abc", regex.SearchDetailedData(input).Value.ValueText);
@@ -44,6 +44,6 @@ public sealed class PythonReFixedPolicyPreparationTests
         var full = new Utf8PythonRegex("pre.*post", PythonReCompileOptions.DotAll, Timeout.InfiniteTimeSpan, policy);
         Assert.True(prefix.Match("prefix123"u8).Success);
         Assert.True(full.FullMatch("pre😀post"u8).Success);
-        Assert.Equal("pre😀post", full.FullMatchToString("pre😀post"u8));
+        PythonReMatchAssert.Equal("pre😀post", full.FullMatch("pre😀post"u8));
     }
 }

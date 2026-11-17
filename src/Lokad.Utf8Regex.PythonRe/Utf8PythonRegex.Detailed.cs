@@ -76,66 +76,6 @@ public sealed partial class Utf8PythonRegex
         return FullMatchDetailedCore(input, startOffsetInBytes, cancellationToken);
     }
 
-    /// <summary>Returns the first matched value as a string, or <see langword="null"/>.</summary>
-    public string? SearchToString(ReadOnlySpan<byte> input) => SearchToString(input, 0);
-
-    /// <summary>Returns the first matched value after a UTF-8 byte offset, or <see langword="null"/>.</summary>
-    public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchToStringCore(input, startOffsetInBytes, 0, CancellationToken.None);
-    }
-
-    /// <summary>Returns the first matched value after a UTF-8 byte offset as a string, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return MatchToStringCore(input, startOffsetInBytes, 0, cancellationToken);
-    }
-
-    /// <summary>Returns the prefix match as a string, or <see langword="null"/>.</summary>
-    public string? MatchToString(ReadOnlySpan<byte> input) => MatchToString(input, 0);
-
-    /// <summary>Returns the match at a UTF-8 byte offset as a string, or <see langword="null"/>.</summary>
-    public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchToStringCore(input, startOffsetInBytes, 1, CancellationToken.None);
-    }
-
-    /// <summary>Returns the match at a UTF-8 byte offset as a string, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return MatchToStringCore(input, startOffsetInBytes, 1, cancellationToken);
-    }
-
-    /// <summary>Returns the complete-input match as a string, or <see langword="null"/>.</summary>
-    public string? FullMatchToString(ReadOnlySpan<byte> input) => FullMatchToString(input, 0);
-
-    /// <summary>Returns the complete-suffix match as a string, or <see langword="null"/>.</summary>
-    public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchToStringCore(input, startOffsetInBytes, 2, CancellationToken.None);
-    }
-
-    /// <summary>Returns the complete-suffix match as a string, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return MatchToStringCore(input, startOffsetInBytes, 2, cancellationToken);
-    }
-
     /// <summary>Finds and materializes the first match and all capture data.</summary>
     public Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<byte> input) => SearchDetailedData(input, 0);
 

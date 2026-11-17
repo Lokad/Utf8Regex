@@ -82,7 +82,7 @@ public sealed class PythonReNativeOneShotInvocationTests
     [InlineData(2,"ab.*xy","éab😀xz",2,0,0,null)]
     [InlineData(2,"ab.*xy","abxy",0,0,4,"abxy")]
     [InlineData(2,".*","",0,0,0,"")]
-    public void NativeValueAndTextOutcomesAgreeWithScalarEdges(int kind,string pattern,string subject,        int start,int first,int last,string? expected)
+    public void NativeValueOutcomesAgreeWithScalarEdges(int kind,string pattern,string subject,        int start,int first,int last,string? expected)
     {
         var input = Encoding.UTF8.GetBytes(subject);
         using var token = new CancellationTokenSource();
@@ -96,13 +96,7 @@ public sealed class PythonReNativeOneShotInvocationTests
                 1 => regex.Match(input, start, cancellation),
                 _ => regex.FullMatch(input, start, cancellation),
             };
-            var text = kind switch
-            {
-                0 => regex.SearchToString(input, start, cancellation),
-                1 => regex.MatchToString(input, start, cancellation),
-                _ => regex.FullMatchToString(input, start, cancellation),
-            };
-            Assert.Equal(expected, text); Assert.Equal(expected is not null, value.Success);
+            Assert.Equal(expected is not null, value.Success);
             Assert.Equal((first, last), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             if (expected is not null) Assert.Equal(Encoding.UTF8.GetBytes(expected), value.GetValueBytes().ToArray());
         }
@@ -111,13 +105,10 @@ public sealed class PythonReNativeOneShotInvocationTests
 
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-    [InlineData(3, false)]
-    [InlineData(3, true)]
-    [InlineData(4, false)]
-    [InlineData(4, true)]
-    public void EveryNativeValueOrTextWorkCutoffIsCumulativeAndUnpublished(int kind, bool text)
+    [InlineData(0)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void EveryNativeValueWorkCutoffIsCumulativeAndUnpublished(int kind)
     {
         var pattern = kind switch { 0 => "Шерлок", 4 => "needle", _ => "é😀" };
         var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 4 => "needle", _ => "xé😀z" });
@@ -133,36 +124,25 @@ public sealed class PythonReNativeOneShotInvocationTests
         const ulong seed = 7;
         var measured = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
         for (var index = 0; index < (int)seed; index++) Assert.Equal(Utf8ExecutionLimitKind.None, measured.TryChargeInputStep());
-        Utf8InvocationResultLedger measurement = default;
-        if (text) Assert.Equal(expected, regex.MaterializeNativeMatchText(input, start, operationKind, ref measured, ref measurement));
-        else Assert.True(regex.MaterializeNativeMatchValue(input, start, operationKind, ref measured).Success);
+        PythonReMatchAssert.Equal(expected, regex.MaterializeNativeMatchValue(input, start, operationKind, ref measured));
         var required = measured.Budget.Steps - seed;
-        measurement.Release(ref measured);
         Assert.InRange(required, 1UL, 100000UL);
         for (ulong cutoff = 0; cutoff <= required; cutoff++)
         {
             var invocation = new Utf8SliceInvocation(new(seed + cutoff, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             for (var index = 0; index < (int)seed; index++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            Utf8InvocationResultLedger results = default;
             var published = false;
             Exception? failure = null;
             try
             {
-                try
-                {
-                    if (text) Assert.Equal(expected, regex.MaterializeNativeMatchText(input, start, operationKind, ref invocation, ref results));
-                    else Assert.True(regex.MaterializeNativeMatchValue(input, start, operationKind, ref invocation).Success);
-                    published = true;
-                }
-                catch (InvalidOperationException error) { failure = error; }
-                Assert.Equal(cutoff == required, published);
-                if (published) Assert.Null(failure); else Assert.NotNull(failure);
-                Assert.Equal(13 + results.ReservedBytes, invocation.Ledger.ReservedBytes);
-                if (!text) Assert.Equal(0UL, results.ReservedBytes);
-                Assert.True(invocation.Budget.Steps >= seed + cutoff);
+                PythonReMatchAssert.Equal(expected, regex.MaterializeNativeMatchValue(input, start, operationKind, ref invocation));
+                published = true;
             }
-            finally { results.Release(ref invocation); }
+            catch (InvalidOperationException error) { failure = error; }
+            Assert.Equal(cutoff == required, published);
+            if (published) Assert.Null(failure); else Assert.NotNull(failure);
+            Assert.True(invocation.Budget.Steps >= seed + cutoff);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
         }
     }
