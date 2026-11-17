@@ -74,7 +74,7 @@ internal static class Utf8FallbackReplay
     {
         if (!regex.Inspection.DebugCanGuideFallbackVerification || Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
-        var validation = Utf8Validation.Validate(input, ref invocation);
+        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.AnchorOriginByte = 0;
         return TryFindNextVerifiedMatch(regex.Inspection.SearchPlan.FallbackCandidatePlans ?? [], regex.Inspection.PreparedRegex,
             input, validation, 0, ref invocation, out _, out _);
@@ -83,7 +83,7 @@ internal static class Utf8FallbackReplay
     internal static int Count(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
-        var validation = Utf8Validation.Validate(input, ref invocation);
+        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.AnchorOriginByte = 0;
         var count = 0;
         var position = 0;

@@ -266,7 +266,7 @@ public sealed partial class Utf8PythonRegex
         {
             try
             {
-                var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy, Utf8InputValidation.AssumeValid);
+                var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
                 // Preparation can discover useful native result lanes or exact
                 // start hints. Discard roots declined by every current consumer;
                 // their transient construction remains conservatively admitted.
@@ -438,7 +438,7 @@ public sealed partial class Utf8PythonRegex
             entries[index++] = new PythonReNameEntry
             {
                 Name = pair.Key,
-                Number = pair.Value,
+                Number = pair.Value
             };
         }
 

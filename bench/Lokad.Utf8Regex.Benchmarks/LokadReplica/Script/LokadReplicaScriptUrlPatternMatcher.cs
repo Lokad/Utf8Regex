@@ -85,10 +85,6 @@ internal static class LokadScriptUrlPatternMatcher
         if (TryConsumeOptionalTrigram(input, ref index) && Consume(input, ref index, DownloadMarker))
         {
             ConsumeHexDigits(input, ref index);
-            if (TryConsumeOptionalPath(input, ref index))
-            {
-                // consumed
-            }
 
             if (!TryConsumeName(input, ref index))
             {

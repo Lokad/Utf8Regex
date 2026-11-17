@@ -40,7 +40,7 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination, CancellationToken token,
         Utf8ExecutionDeadline deadline)
     {
-        var initialInvocation = new Utf8SliceInvocation(InvocationLimits, deadline, token) { InputValidation = InputValidation };
+        var initialInvocation = new Utf8SliceInvocation(InvocationLimits, deadline, token);
         return OwnedSliceReplace(input, program, replacement, resultKind, destination, initialInvocation);
     }
 
@@ -57,7 +57,7 @@ public sealed partial class Utf8Regex
         var boundary = 0;
         try
         {
-            Utf8Validation.CheckSubject(input, ref invocation);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             if (program.IsNonBacktracking)
             {
                 var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);

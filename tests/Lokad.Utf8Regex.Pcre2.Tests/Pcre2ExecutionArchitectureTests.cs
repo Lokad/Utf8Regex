@@ -366,7 +366,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(optionalCapture.IsMatch("xx fooBAR"u8));
         Assert.True(optionalCapture.IsMatch("xx foo"u8, 3));
         Assert.False(optionalCapture.IsMatch("xx foo"u8, 4));
-        Assert.Throws<ArgumentException>(() => optionalCapture.IsMatch([0xFF]));
         var optionalMatch = optionalCapture.MatchDetailed("fooBAR"u8);
         Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
         Assert.Equal("BAR", optionalGroup.GetValueString());

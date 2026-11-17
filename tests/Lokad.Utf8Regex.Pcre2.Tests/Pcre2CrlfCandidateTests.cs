@@ -109,7 +109,6 @@ public sealed class Pcre2CrlfCandidateTests
         source.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => regex.Count("\r\n😀x"u8, 0, default, source.Token));
         Assert.Equal(source.Token, error.CancellationToken);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { 13, 10, (byte)'x', 0xff }));
     }
 
     private static Utf8Pcre2Regex Create(string pattern, bool finite) => new(pattern, default,

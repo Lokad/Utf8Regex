@@ -96,7 +96,7 @@ internal static partial class BenchmarkInspectReporter
             BenchmarkFileWriter.WriteTextAtomically(path, JsonSerializer.Serialize(new {
                 Environment = CaptureBenchmarkEnvironment(), ElapsedSeconds = started.Elapsed.TotalSeconds,
                 Profile = "Core", Filter = filter, OperationFilter = operationFilter,
-                InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core AssumeValid. DecodeThenRegex includes decoding.",
+                InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
                 OutputContract = "Byte ranges and complete capture histories; BCL coordinate map is prepared outside timing. No string materialization.",
                 Policy = "Token, 10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result; caller working allowance in combined lane.",
@@ -119,7 +119,11 @@ internal static partial class BenchmarkInspectReporter
         private readonly int _start;
         private readonly GeneralityAllowance _allowance = new();
         private static readonly Utf8ResourcePolicy Limits = new() {
-            MaxWorkSteps = 50_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+            MaxWorkSteps = 50_000_000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 16 << 20,
+            MaxResultBytes = 16 << 20
+        };
 
         internal GeneralityContext(string pattern, string text, CancellationToken token)
         {
@@ -133,10 +137,7 @@ internal static partial class BenchmarkInspectReporter
             _numbers = _oracle.GetGroupNumbers();
         }
 
-        private Utf8Regex Create(bool timeout = false, bool limits = false, bool compiled = false) => new(_pattern,
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0),
-            matchTimeout: timeout ? TimeSpan.FromSeconds(10) : null,
-            resourcePolicy: limits ? Limits : default, inputValidation: Utf8InputValidation.AssumeValid);
+        private Utf8Regex Create(bool timeout = false, bool limits = false, bool compiled = false) => new(_pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0), matchTimeout: timeout ? TimeSpan.FromSeconds(10) : null, resourcePolicy: limits ? Limits : default);
 
         internal int Execute(string operation, string lane)
         {

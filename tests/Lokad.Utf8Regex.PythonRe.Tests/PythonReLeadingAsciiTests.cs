@@ -10,8 +10,10 @@ public sealed class PythonReLeadingAsciiTests
 {
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 1024,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
 
     [Theory]

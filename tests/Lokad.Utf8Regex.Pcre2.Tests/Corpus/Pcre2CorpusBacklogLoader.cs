@@ -7,7 +7,7 @@ public static class Pcre2CorpusBacklogLoader
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true,
+        PropertyNameCaseInsensitive = true
     };
     private const string BacklogFilePattern = "local-backlog-*.json";
 
@@ -42,7 +42,7 @@ public static class Pcre2CorpusBacklogLoader
             manifests.Add(new Pcre2CorpusBacklogManifest
             {
                 ManifestName = Path.GetFileNameWithoutExtension(file),
-                Entries = entries,
+                Entries = entries
             });
         }
 

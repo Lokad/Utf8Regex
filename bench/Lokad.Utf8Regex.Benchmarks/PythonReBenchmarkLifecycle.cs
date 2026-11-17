@@ -41,7 +41,7 @@ internal static partial class PythonReBenchmarkReporter
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
             Lifecycle = measurements,
-            ScalingFamilies = snapshot.ScalingFamilies,
+            ScalingFamilies = snapshot.ScalingFamilies
         });
         Console.WriteLine(
             $"Updated {measurements.Count} PythonRe lifecycle families on {processorScope.Policy}.");
@@ -109,7 +109,7 @@ internal static partial class PythonReBenchmarkReporter
                 iterations,
                 samples)),
             CpythonCompile = cpython.Lifecycle.Compile,
-            CpythonCompileFirstSearch = cpython.Lifecycle.CompileFirstSearch,
+            CpythonCompileFirstSearch = cpython.Lifecycle.CompileFirstSearch
         };
     }
 
@@ -120,7 +120,7 @@ internal static partial class PythonReBenchmarkReporter
         MaximumMicroseconds = measurement.MaximumMicroseconds,
         ManagedAllocatedBytes = measurement.MedianAllocatedBytes,
         WarmupCalls = measurement.WarmupCalls,
-        WarmupMilliseconds = measurement.WarmupMilliseconds,
+        WarmupMilliseconds = measurement.WarmupMilliseconds
     };
 }
 

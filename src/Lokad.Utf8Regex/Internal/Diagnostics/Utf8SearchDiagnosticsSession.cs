@@ -49,10 +49,6 @@ internal sealed class Utf8SearchDiagnosticsSession
 
     public int EngineDemotions { get; private set; }
 
-    internal int SubjectValidations { get; private set; }
-
-    internal void CountSubjectValidation() => SubjectValidations++;
-
     public Utf8ExecutionRoute ExecutionRoute { get; private set; }
 
     public void CountSearchCandidate()

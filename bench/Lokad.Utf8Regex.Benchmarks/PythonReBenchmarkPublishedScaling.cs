@@ -345,7 +345,7 @@ internal static partial class PythonReBenchmarkReporter
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
             Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = measurements,
+            ScalingFamilies = measurements
         });
         Console.WriteLine(
             $"Updated {measurements.Count} PythonRe scaling families on {processorScope.Policy}.");
@@ -425,7 +425,7 @@ internal static partial class PythonReBenchmarkReporter
                 cpythonFit,
                 maximumOrderEffect,
                 minimumLaneElapsedMilliseconds),
-            Points = points,
+            Points = points
         };
     }
 
@@ -616,9 +616,9 @@ internal static partial class PythonReBenchmarkReporter
                     CpythonElapsedMilliseconds = cpythonMilliseconds[index],
                     ManagedAllocatedBytes = allocations[index],
                     ManagedGcCollections = managedGcCollections[index],
-                    CpythonGcCollections = cpythonGcCollections[index],
+                    CpythonGcCollections = cpythonGcCollections[index]
                 })
-                .ToList(),
+                .ToList()
         };
     }
 

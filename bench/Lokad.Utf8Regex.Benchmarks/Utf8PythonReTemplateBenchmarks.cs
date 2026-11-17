@@ -30,8 +30,10 @@ public class Utf8PythonReTemplateBenchmarks
         _finite = new Utf8PythonRegex("(?P<word>[a-z]+)", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50_000_000, MaxDepth = 8192,
-                MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20,
+                MaxWorkSteps = 50_000_000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 64 << 20,
+                MaxResultBytes = 128 << 20
             });
         _regex = new Regex("(?<word>[a-z]+)", RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();

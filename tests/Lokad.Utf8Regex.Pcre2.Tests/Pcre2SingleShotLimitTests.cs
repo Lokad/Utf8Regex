@@ -32,33 +32,35 @@ public sealed class Pcre2SingleShotLimitTests
     }
 
     [Theory]
-    [InlineData("foo", "xxfoo", 6u)]
-    [InlineData("(?#comment)ab", "xxab", 6u)]
-    public void DirectSingleShotsUseValidationDiscoveryAndProjectionAllowance(string pattern, string inputText, uint valueSteps)
+    [InlineData("foo", "xxfoo", 3u)]
+    [InlineData("(?#comment)ab", "xxab", 3u)]
+    public void DirectSingleShotsShareAdmissionAndDiscoveryWork(string pattern, string inputText, uint valueSteps)
     {
-        // A native literal first-hit uses one candidate plus two projected
-        // endpoints after three validation units. A comment does not change that authority.
+        // Entry, discovery and final result checkpoints share one allowance. Byte
+        // results need no coordinate projection. Comments do not change the work.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var limited = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 4 });
+        var limited = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 });
         var unlimited = Create(pattern, default);
 
-        Assert.True(limited.IsMatch(input));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
         var expected = unlimited.Match(input);
         if (valueSteps > 1)
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Match(input)).ErrorKind);
         var actual = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = valueSteps }).Match(input);
         Assert.True(actual.Success);
+        Assert.Equal((expected.StartOffsetInBytes, expected.EndOffsetInBytes),
+            (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
     [Theory]
     [InlineData("abc", "xxABCxx", true)]
     [InlineData("^ERROR", "ERROR a", false)]
     public void CharacterSingleShotsMeterEveryProbe(string pattern, string inputText, bool breaches)
     {
-        // Three validation units precede each candidate probe. A first-position
-        // boolean hit fits four units; value projection needs two more.
+        // The entry checkpoint and each candidate share the same allowance.
+        // A later hit needs more candidate work than an anchored first hit.
         var options = pattern.StartsWith("^") ? Pcre2CompileOptions.Multiline : Pcre2CompileOptions.Caseless;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 4 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 3 }, Utf8Pcre2Regex.DefaultMatchTimeout);
         if (breaches)
         {
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
@@ -68,7 +70,7 @@ public sealed class Pcre2SingleShotLimitTests
         {
             Assert.True(regex.IsMatch(input));
             var value = new Utf8Pcre2Regex(pattern, options, default,
-                new Utf8Pcre2ExecutionLimits { MatchLimit = 6 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+                new Utf8Pcre2ExecutionLimits { MatchLimit = 4 }, Utf8Pcre2Regex.DefaultMatchTimeout);
             Assert.True(value.Match(input).Success);
         }
     }

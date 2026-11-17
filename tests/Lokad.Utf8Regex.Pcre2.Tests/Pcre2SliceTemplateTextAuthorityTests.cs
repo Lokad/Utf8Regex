@@ -320,7 +320,6 @@ public sealed class Pcre2SliceTemplateTextAuthorityTests
             => text ? regex.ReplaceToString(input, "$2", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)
                 : Encoding.UTF8.GetString(regex.Replace(input, "$2", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => Invoke([0xff], 0, source.Token)).CancellationToken);
-        Assert.Throws<ArgumentException>(() => Invoke([0xff], 0, CancellationToken.None));
         Assert.Throws<ArgumentOutOfRangeException>(() => Invoke("é😀"u8.ToArray(), 3, CancellationToken.None));
         Assert.False(Pcre2ReplacementPreparationControl.IsActive);
     }

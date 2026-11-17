@@ -30,7 +30,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var oracle = new Regex(pattern, options);
         var regex = new Utf8Regex(pattern, options, resourcePolicy: controlled
             ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
-            : default, inputValidation: Utf8InputValidation.AssumeValid);
+            : default);
         using var source = new CancellationTokenSource();
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, regex.GetGroupNumbers());
@@ -105,7 +105,6 @@ public sealed class Utf8CaptureSlotMatchTests
         foreach (var end in new[] { -1, 1, 3, 4, 5, 8, int.MaxValue })
             Assert.Equal("endOffsetInBytes", Assert.Throws<ArgumentOutOfRangeException>(() =>
                 regex.Match("é😀a"u8, 0, [], endOffsetInBytes: end)).ParamName);
-        Assert.Throws<ArgumentException>(() => regex.Match(new byte[] { (byte)'a', 0xff }, 0, [], endOffsetInBytes: 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 2, [], endOffsetInBytes: 1));
     }
 

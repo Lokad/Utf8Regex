@@ -28,8 +28,10 @@ public sealed class PythonReNullableCaptureTests
     {
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 4_194_304,
+            MaxWorkSteps = 1_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 4_194_304
         } : Utf8ResourcePolicy.Unlimited;
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
         var input = Encoding.UTF8.GetBytes(subject);

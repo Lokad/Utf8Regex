@@ -10,8 +10,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 [Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReAdjacentSetRepeatTests
 {
-    private static Utf8ResourcePolicy Generous => new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-        MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 };
+    private static Utf8ResourcePolicy Generous => new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 };
 
     [Theory]
     [InlineData(@"item \s+ [0-9]+", "item   12345", PythonReCompileOptions.Verbose)]
@@ -85,7 +84,7 @@ public sealed class PythonReAdjacentSetRepeatTests
         const string pattern = @"item\s+[0-9]+";
         var input = Encoding.UTF8.GetBytes("item" + new string(' ', 8192) + "12345");
         var validation = new Utf8SliceInvocation(new(1_000_000, 1024, 1 << 24, 1 << 24), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var cutoff = validation.Budget.Steps + 128;
         using var token = new CancellationTokenSource();
         long ticks = 0;

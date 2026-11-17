@@ -110,20 +110,6 @@ public sealed class Pcre2FastPathTimeoutTests
         Assert.True(reads >= expireAtRead);
     }
 
-    [Fact]
-    public void LiteralSingleProjectionJoinsValidationAndCandidateWorkAllowance()
-    {
-        var tight = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 4 }, Timeout.InfiniteTimeSpan);
-        Assert.True(tight.IsMatch("xxabcxx"u8));
-        var failure = Assert.Throws<Pcre2MatchException>(() => tight.Match("xxabcxx"u8));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-        var admitted = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 6 }, Timeout.InfiniteTimeSpan);
-        var result = admitted.Match("xxabcxx"u8);
-        Assert.True(result.Success); Assert.Equal(2, result.StartOffsetInBytes);
-        Assert.Equal(5, result.EndOffsetInBytes);     }
-
     private static int Run(Utf8Pcre2Regex regex, byte[] input, int operation)
     {
         switch (operation)

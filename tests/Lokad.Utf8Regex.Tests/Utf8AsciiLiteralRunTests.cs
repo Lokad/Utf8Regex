@@ -101,8 +101,5 @@ public sealed class Utf8AsciiLiteralRunTests
         Assert.Equal("item-12", Encoding.UTF8.GetString(first.GetValueMemory().Span));
         Assert.Equal("12", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal("item-345", Encoding.UTF8.GetString(second.GetValueMemory().Span));
-        var malformed = Encoding.ASCII.GetBytes("item-12").Concat(new byte[] { 255 }).ToArray();
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(malformed)));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
     }
 }

@@ -4,7 +4,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-internal static class Utf8InputAnalyzer
+internal static partial class Utf8InputAnalyzer
 {
     public static bool IsAscii(ReadOnlySpan<byte> input)
     {
@@ -25,7 +25,6 @@ internal static class Utf8InputAnalyzer
             containsKelvinSign = false;
             return new Utf8ValidationResult(
                 input.Length,
-                input.Length,
                 isAscii: true,
                 containsSupplementaryScalars: false);
         }
@@ -41,7 +40,6 @@ internal static class Utf8InputAnalyzer
 
         return new Utf8ValidationResult(
             input.Length,
-            firstNonAscii + validation.Utf16Length,
             isAscii: false,
             validation.ContainsSupplementaryScalars);
     }

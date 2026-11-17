@@ -64,8 +64,10 @@ internal static partial class BenchmarkInspectReporter
         var samples = Math.Clamp(ParseSamples(samplesText), 1, 9);
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 50_000_000, MaxDepth = 1_024,
-            MaxWorkingBytes = 64 * 1_048_576, MaxResultBytes = 128 * 1_048_576,
+            MaxWorkSteps = 50_000_000,
+            MaxDepth = 1_024,
+            MaxWorkingBytes = 64 * 1_048_576,
+            MaxResultBytes = 128 * 1_048_576
         };
         var regex = new Utf8PythonRegex("(a)(b)");
         var finite = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None,
@@ -180,7 +182,7 @@ internal static partial class BenchmarkInspectReporter
             MaxWorkSteps = 1_000_000,
             MaxDepth = 1_024,
             MaxWorkingBytes = 1_048_576,
-            MaxResultBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
         };
         var coreFinite = new Utf8Regex(
             sliceCase.Pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, policy);

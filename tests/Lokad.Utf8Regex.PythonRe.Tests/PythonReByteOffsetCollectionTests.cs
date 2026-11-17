@@ -89,7 +89,9 @@ public sealed class PythonReByteOffsetCollectionTests
     private static Utf8PythonRegex Create(string pattern, bool finite) => new(pattern, default,
         Timeout.InfiniteTimeSpan, finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-            MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20,
+            MaxWorkSteps = 1_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 16 << 20,
+            MaxResultBytes = 16 << 20
         } : default);
 }

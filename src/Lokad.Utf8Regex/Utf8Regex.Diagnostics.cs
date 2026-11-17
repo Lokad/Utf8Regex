@@ -92,8 +92,6 @@ public sealed partial class Utf8Regex
         public bool DebugWellFormedOnlyMatchMissIsDefinitive =>
             CompiledRuntime?.WellFormedOnlyMatchMissIsDefinitive ?? false;
 
-        public bool DebugSupportsThrowIfInvalidOnlyCount =>
-            CompiledRuntime?.SupportsThrowIfInvalidOnlyCount ?? false;
 
         public bool DebugCanGuideFallbackVerification => _owner.CanGuideFallbackVerification();
 

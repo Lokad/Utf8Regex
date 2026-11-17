@@ -245,8 +245,6 @@ public sealed class Utf8SubstringPreparationQualificationTests
             var scalarMatch = Utf8MatchSequence.First(unicode.CreateMatchCursor("😀ÉABCDEFGHIJKL中"u8.ToArray()));
             Assert.Equal((4, 18), (scalarMatch.Value.StartOffsetInBytes, scalarMatch.Value.EndOffsetInBytes));
             Assert.Equal(3, new Utf8Regex(".", options | RegexOptions.CultureInvariant).Count("😀中é"u8));
-            var malformed = input.Concat(new byte[] { 0xff }).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token));
         }

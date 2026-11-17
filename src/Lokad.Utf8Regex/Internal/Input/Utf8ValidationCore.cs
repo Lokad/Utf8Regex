@@ -7,9 +7,8 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static partial class Utf8ValidationCore
 {
-    // Metadata consumers need an exact UTF-16 length and scalar flags. The
-    // validity-only entry point lives in Utf8InputAnalyzer and does not compute
-    // coordinates; this decoder also supplies its first-error offsets.
+    // Strict pattern/output validation reports scalar flags and first-error
+    // offsets. Subject inspection has a separate caller-valid contract.
     public static bool TryValidate(
         ReadOnlySpan<byte> input,
         out Utf8ValidationResult validation,
@@ -22,22 +21,18 @@ internal static partial class Utf8ValidationCore
         out int errorOffset,
         out bool containsKelvinSign)
     {
-        var utf16Length = 0;
         var containsSupplementaryScalars = false;
         containsKelvinSign = false;
         var isAscii = true;
         var offset = 0;
         while (offset < input.Length)
         {
-            var asciiStart = offset;
             offset = DrainAscii(input, offset);
-            utf16Length += offset - asciiStart;
 
             if (offset >= input.Length)
             {
                 validation = new Utf8ValidationResult(
                     input.Length,
-                    utf16Length,
                     isAscii,
                     containsSupplementaryScalars);
                 errorOffset = -1;
@@ -63,8 +58,7 @@ internal static partial class Utf8ValidationCore
                 }
 
                 offset += 2;
-                utf16Length++;
-                offset = ConsumeTwoByteRun(input, offset, ref utf16Length);
+                offset = ConsumeTwoByteRun(input, offset);
 
                 continue;
             }
@@ -95,9 +89,8 @@ internal static partial class Utf8ValidationCore
                 containsKelvinSign |= b0 == 0xE2 && b1 == 0x84 && b2 == 0xAA;
 
                 offset += 3;
-                utf16Length++;
                 if (b0 is >= 0xE1 and <= 0xEC or >= 0xEE and <= 0xEF)
-                    offset = ConsumeThreeByteRun(input, offset, ref utf16Length, ref containsKelvinSign);
+                    offset = ConsumeThreeByteRun(input, offset, ref containsKelvinSign);
 
                 continue;
             }
@@ -128,7 +121,6 @@ internal static partial class Utf8ValidationCore
 
                 offset += 4;
                 containsSupplementaryScalars = true;
-                utf16Length += 2;
 
                 continue;
             }
@@ -140,7 +132,6 @@ internal static partial class Utf8ValidationCore
 
         validation = new Utf8ValidationResult(
             input.Length,
-            utf16Length,
             isAscii,
             containsSupplementaryScalars);
         errorOffset = -1;
@@ -204,7 +195,7 @@ internal static partial class Utf8ValidationCore
         return offset;
     }
 
-    private static int ConsumeTwoByteRun(ReadOnlySpan<byte> input, int offset, ref int utf16Length)
+    private static int ConsumeTwoByteRun(ReadOnlySpan<byte> input, int offset)
     {
         while (offset + 1 < input.Length)
         {
@@ -215,13 +206,12 @@ internal static partial class Utf8ValidationCore
             }
 
             offset += 2;
-            utf16Length++;
         }
 
         return offset;
     }
 
-    private static int ConsumeThreeByteRun(ReadOnlySpan<byte> input, int offset, ref int utf16Length, ref bool containsKelvinSign)
+    private static int ConsumeThreeByteRun(ReadOnlySpan<byte> input, int offset, ref bool containsKelvinSign)
     {
         while (offset + 2 < input.Length)
         {
@@ -235,7 +225,6 @@ internal static partial class Utf8ValidationCore
 
             containsKelvinSign |= b0 == 0xE2 && input[offset + 1] == 0x84 && input[offset + 2] == 0xAA;
             offset += 3;
-            utf16Length++;
         }
 
         return offset;

@@ -14,12 +14,11 @@ public sealed partial class Utf8Regex
         cancellationToken.ThrowIfCancellationRequested();
         var output = captures[..Math.Min(captures.Length, _program.CaptureCatalog.GroupNumbers.Length)];
         var invocation = workingMemoryAllowance is null
-            ? new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) { InputValidation = InputValidation }
-            : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
+            ? new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         var slots = new Utf8SliceSlots([], []);
         try
         {
-            Utf8Validation.CheckSubject(input, ref invocation);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             var end = endOffsetInBytes ?? input.Length;
             if ((uint)end > (uint)input.Length || end < input.Length && (input[end] & 0xc0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(endOffsetInBytes));

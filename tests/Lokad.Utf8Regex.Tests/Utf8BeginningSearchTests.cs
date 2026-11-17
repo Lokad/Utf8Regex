@@ -85,8 +85,10 @@ public sealed class Utf8BeginningSearchTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void OriginalInterruptionCoversLongSearchAfterValidation(bool findFirst, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
@@ -95,7 +97,7 @@ public sealed class Utf8BeginningSearchTests
         var regex = new Utf8Regex("^(a+)", RegexOptions.CultureInvariant | RegexOptions.Multiline,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, Policy(1_000_000));
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
         var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -155,15 +157,5 @@ public sealed class Utf8BeginningSearchTests
         Assert.Equal(1, denied.Count("aaa"u8));
         var admitted = new Utf8Regex("^(a+)", RegexOptions.Multiline, Regex.InfiniteMatchTimeout, Policy(low));
         Assert.Equal(1, admitted.Count(input)); Assert.Equal(1, admitted.Count(input));
-    }
-
-    [Fact]
-    public void ImpossibleAnchorStillValidatesTheCompleteSubject()
-    {
-        var regex = new Utf8Regex("^(a+)", RegexOptions.Multiline, Regex.InfiniteMatchTimeout, Policy(100000));
-        byte[] input = [.. "aaa\nxx"u8, 0xF0, 0x9F];
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-        Assert.Throws<ArgumentException>(() => regex.Match(input));
     }
 }

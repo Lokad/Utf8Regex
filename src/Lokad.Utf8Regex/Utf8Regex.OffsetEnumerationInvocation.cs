@@ -11,19 +11,19 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatchEnumerator CreateOwnedByteOffsetEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken token)
     {
         var program = _ownedSliceProgram;
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token) { InputValidation = InputValidation };
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
-            _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            _ = Utf8BytePosition.CreateChecked(input.Length, startOffsetInBytes, nameof(startOffsetInBytes));
             if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
-            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
+            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(input, ref invocation, out var anchored, out var validation))
             {
 
                 cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startOffsetInBytes)
+                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, invocation).WithStartFloor(startOffsetInBytes)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
             }
             else
@@ -40,7 +40,7 @@ public sealed partial class Utf8Regex
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
     }
 
-    private bool CanUseNativeOffsetCursor(Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out bool anchored)
+    private bool CanUseNativeOffsetCursor(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, out bool anchored, out Utf8ValidationResult validation)
     {
         var program = _ownedSliceProgram;
         // Borrowed adapter invocations keep native eligibility even when their
@@ -50,6 +50,17 @@ public sealed partial class Utf8Regex
             (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor;
+        anchored = false;
+        validation = default;
+        if (!eligible) return false;
+        // Only live ASCII-dependent cursors need input facts. Literal discovery
+        // and the general scalar program use original bytes without this pass.
+        var needsFacts = _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiOrderedLiteralWindow or
+            NativeExecutionKind.AsciiStructuralIdentifierFamily or NativeExecutionKind.AsciiSimplePattern ||
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix or
+                Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or
+                Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
+        if (needsFacts) validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
             (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd ||
@@ -61,22 +72,22 @@ public sealed partial class Utf8Regex
         return anchored || native;
     }
 
-    // Python bulk collection borrows this invocation through validation, byte-floor
+    // Python bulk collection borrows this invocation through admission, byte-floor
     // discovery and publication. Native search keeps its existing algorithm.
     internal Utf8ValueMatchEnumerator EnumerateMatchesForResult(ReadOnlySpan<byte> input, int startOffsetInBytes, scoped ref Utf8SliceInvocation invocation)
     {
         try
         {
-            var validation = Utf8Validation.Subject(input, ref invocation);
-            _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            _ = Utf8BytePosition.CreateChecked(input.Length, startOffsetInBytes, nameof(startOffsetInBytes));
             if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
-            if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
+            if (CanUseNativeOffsetCursor(input, ref invocation, out var anchored, out var validation))
             {
 
                 cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startOffsetInBytes)
+                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, invocation).WithStartFloor(startOffsetInBytes)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
             }
             else

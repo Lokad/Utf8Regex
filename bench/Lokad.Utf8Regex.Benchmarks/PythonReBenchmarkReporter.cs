@@ -301,7 +301,7 @@ internal static partial class PythonReBenchmarkReporter
                 Corpus = CaptureCorpusProvenance(),
                 Cases = snapshot.Cases,
                 Lifecycle = snapshot.Lifecycle,
-                ScalingFamilies = snapshot.ScalingFamilies,
+                ScalingFamilies = snapshot.ScalingFamilies
             });
         }
         Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
@@ -346,7 +346,7 @@ internal static partial class PythonReBenchmarkReporter
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
             Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies,
+            ScalingFamilies = snapshot.ScalingFamilies
         });
         Console.WriteLine();
         Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
@@ -387,7 +387,7 @@ internal static partial class PythonReBenchmarkReporter
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
             Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies,
+            ScalingFamilies = snapshot.ScalingFamilies
         });
         Console.WriteLine($"Invalidated {invalidated} PythonRe paired qualifications.");
         return 0;
@@ -1397,7 +1397,7 @@ internal static partial class PythonReBenchmarkReporter
             DecodeThenRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: true), effectiveIterations, samples, pythonResult),
             PredecodedRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: false), effectiveIterations, samples, pythonResult),
             Cpython = cpython,
-            Qualification = PythonReQualificationMeasurement.CreateHistoricalUnqualified(),
+            Qualification = PythonReQualificationMeasurement.CreateHistoricalUnqualified()
         };
     }
 
@@ -1419,7 +1419,7 @@ internal static partial class PythonReBenchmarkReporter
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow = true
         };
         startInfo.ArgumentList.Add("-I");
         startInfo.ArgumentList.Add(FindRepositoryFile(CpythonRunnerRelativePath));
@@ -1438,7 +1438,7 @@ internal static partial class PythonReBenchmarkReporter
             ReplacementCount = benchmarkCase.Coverage.ReplacementCount,
             MaxSplit = benchmarkCase.Coverage.MaxSplit,
             Iterations = iterations,
-            Samples = samples,
+            Samples = samples
         };
         process.StandardInput.Write(JsonSerializer.Serialize(request));
         process.StandardInput.Close();
@@ -1580,7 +1580,7 @@ internal static partial class PythonReBenchmarkReporter
             EffectiveIterations = iterations,
             SampleMicroseconds = rawMicroseconds,
             WarmupCalls = warmupCalls,
-            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
+            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds
         };
     }
 
@@ -1628,7 +1628,7 @@ internal static partial class PythonReBenchmarkReporter
             MaximumMicroseconds = microseconds[^1],
             MedianAllocatedBytes = allocations[allocations.Length / 2],
             WarmupCalls = warmupCalls,
-            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
+            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds
         };
     }
 
@@ -1678,7 +1678,7 @@ internal static partial class PythonReBenchmarkReporter
             MaximumMicroseconds = microseconds[^1],
             MedianAllocatedBytes = allocations[allocations.Length / 2],
             WarmupCalls = warmupCalls,
-            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
+            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds
         };
     }
 
@@ -1771,7 +1771,7 @@ internal static partial class PythonReBenchmarkReporter
             Runtime = RuntimeInformation.FrameworkDescription,
             OperatingSystem = RuntimeInformation.OSDescription,
             Processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ??
-                RuntimeInformation.ProcessArchitecture.ToString(),
+                RuntimeInformation.ProcessArchitecture.ToString()
         };
     }
 
@@ -1787,7 +1787,7 @@ internal static partial class PythonReBenchmarkReporter
             Sha256 = Convert.ToHexString(hash),
             VectorCount = corpus.RootElement.GetArrayLength(),
             UpstreamCpythonRevision = "not-recorded-in-repository",
-            Limitation = "The original upstream CPython version was not recorded; do not infer one from local vector names.",
+            Limitation = "The original upstream CPython version was not recorded; do not infer one from local vector names."
         };
     }
 
@@ -1815,7 +1815,7 @@ internal static partial class PythonReBenchmarkReporter
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow = true
         };
         foreach (var argument in arguments)
         {
@@ -3054,7 +3054,7 @@ internal sealed class PythonReBenchmarkContext
         {
             Shape = Utf8PythonFindAllShape.SingleGroup,
             ScalarValues = values.ToArray(),
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -3085,7 +3085,7 @@ internal sealed class PythonReBenchmarkContext
         {
             Shape = Utf8PythonFindAllShape.GroupTuple,
             ScalarValues = [],
-            TupleValues = values.ToArray(),
+            TupleValues = values.ToArray()
         };
     }
 
@@ -3112,7 +3112,7 @@ internal sealed class PythonReBenchmarkContext
         {
             Shape = Utf8PythonFindAllShape.SingleGroup,
             ScalarValues = values.ToArray(),
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -3125,7 +3125,7 @@ internal sealed class PythonReBenchmarkContext
         ScalarValues = [.. _preparedCapturedStrings.ScalarValues],
         TupleValues = _preparedCapturedStrings.TupleValues
             .Select(static tuple => tuple.ToArray())
-            .ToArray(),
+            .ToArray()
     };
 
     internal Utf8PythonFindAllUtf8Result ShapePreparedCapturedUtf8() => new()
@@ -3134,7 +3134,7 @@ internal sealed class PythonReBenchmarkContext
         ScalarValues = [.. _preparedCapturedUtf8.ScalarValues],
         TupleValues = _preparedCapturedUtf8.TupleValues
             .Select(static tuple => tuple.ToArray())
-            .ToArray(),
+            .ToArray()
     };
 
     internal BclFindAllResult ProjectPredecodedCapturedStrings()
@@ -3252,7 +3252,7 @@ internal sealed class PythonReBenchmarkContext
             {
                 Shape = Utf8PythonFindAllShape.SingleGroup,
                 ScalarValues = values,
-                TupleValues = [],
+                TupleValues = []
             };
         }
 
@@ -3276,7 +3276,7 @@ internal sealed class PythonReBenchmarkContext
         {
             Shape = Utf8PythonFindAllShape.GroupTuple,
             ScalarValues = [],
-            TupleValues = tuples,
+            TupleValues = tuples
         };
     }
 
@@ -3297,7 +3297,7 @@ internal sealed class PythonReBenchmarkContext
             {
                 Shape = Utf8PythonFindAllShape.SingleGroup,
                 ScalarValues = values,
-                TupleValues = [],
+                TupleValues = []
             };
         }
 
@@ -3320,7 +3320,7 @@ internal sealed class PythonReBenchmarkContext
         {
             Shape = Utf8PythonFindAllShape.GroupTuple,
             ScalarValues = [],
-            TupleValues = tuples,
+            TupleValues = tuples
         };
     }
 
@@ -3405,7 +3405,7 @@ internal sealed class PythonReBenchmarkContext
         }
 
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(InputBytes, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(InputBytes, ref invocation);
         var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
         return end == 0
             ? default
@@ -3934,7 +3934,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = values,
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -3958,7 +3958,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = values,
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -4008,7 +4008,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = values.ToArray(),
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -4031,7 +4031,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = byteValues.ToArray(),
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -4091,7 +4091,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = values,
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -4109,7 +4109,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             Shape = Utf8PythonFindAllShape.FullMatch,
             ScalarValues = byteValues,
-            TupleValues = [],
+            TupleValues = []
         };
     }
 
@@ -4367,7 +4367,7 @@ var indexInBytes = match.StartOffsetInBytes;
                 Success = true,
                 StartOffsetInBytes = utf8Offsets is null ? match.Index : utf8Offsets[match.Index],
                 EndOffsetInBytes = utf8Offsets is null ? match.Index + match.Length : utf8Offsets[match.Index + match.Length],
-                ValueText = match.Value,
+                ValueText = match.Value
             });
         }
 
@@ -4523,7 +4523,7 @@ var indexInBytes = match.StartOffsetInBytes;
             {
                 ValueText = input[lastIndex..match.Index],
                 IsCapture = false,
-                CaptureGroupNumber = 0,
+                CaptureGroupNumber = 0
             });
             for (var groupNumber = 1; groupNumber < match.Groups.Count; groupNumber++)
             {
@@ -4532,7 +4532,7 @@ var indexInBytes = match.StartOffsetInBytes;
                 {
                     ValueText = group.Success ? group.Value : null,
                     IsCapture = true,
-                    CaptureGroupNumber = groupNumber,
+                    CaptureGroupNumber = groupNumber
                 });
             }
 
@@ -4544,7 +4544,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             ValueText = input[lastIndex..],
             IsCapture = false,
-            CaptureGroupNumber = 0,
+            CaptureGroupNumber = 0
         });
         return parts.ToArray();
     }
@@ -5335,7 +5335,7 @@ internal sealed class PythonReQualificationMeasurement
         EngineEvidenceBasis = "Not engine-comparable",
         EngineConclusion = "NotApplicable",
         EngineConclusionReason = "Historical evidence has no engine-comparable control.",
-        PairedEvidence = null,
+        PairedEvidence = null
     };
 
     internal static PythonReQualificationMeasurement CreateUnqualified(string reason) => new()
@@ -5345,7 +5345,7 @@ internal sealed class PythonReQualificationMeasurement
         EngineEvidenceBasis = "Not engine-comparable",
         EngineConclusion = "NotApplicable",
         EngineConclusionReason = reason,
-        PairedEvidence = null,
+        PairedEvidence = null
     };
 }
 

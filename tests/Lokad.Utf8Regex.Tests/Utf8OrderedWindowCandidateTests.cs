@@ -10,8 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8OrderedWindowCandidateTests
 {
     private const string Pattern = @"Tom.{10,25}river|river.{10,25}Tom";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000,
-        MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
 
     private static int ScalarCount(Utf8Regex regex, byte[] input, int fromByte)
     {
@@ -97,7 +96,6 @@ public sealed class Utf8OrderedWindowCandidateTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(observedTail,
                 RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(observedInput)).ResourceKind);
         byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
     }

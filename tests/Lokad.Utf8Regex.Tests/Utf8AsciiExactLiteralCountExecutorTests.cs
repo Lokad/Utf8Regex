@@ -134,7 +134,6 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, Literal, options), regex.Count(bytes));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. LiteralUtf8, 0xFF]));
     }
 
     [Fact]

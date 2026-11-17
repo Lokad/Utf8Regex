@@ -10,12 +10,11 @@ public sealed class Pcre2ProbeValidationAuthorityTests
     [Theory]
     [InlineData("abc")]
     [InlineData("(a)b+")]
-    public void InitialValidationCannotReachMalformedTailAfterWorkDenial(string pattern)
+    public void SearchStopsAtWorkDenial(string pattern)
     {
         var regex = Create(pattern, 3);
         var input = new byte[16385];
         input.AsSpan().Fill((byte)'a');
-        input[^1] = 0xff;
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
     }
@@ -23,7 +22,7 @@ public sealed class Pcre2ProbeValidationAuthorityTests
     [Theory]
     [InlineData("abc", false)] [InlineData("abc", true)]
     [InlineData("(a)b+", false)] [InlineData("(a)b+", true)]
-    public void InitialValidationObservesOriginalInterruption(string pattern, bool cancel)
+    public void SearchObservesOriginalInterruption(string pattern, bool cancel)
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
@@ -37,7 +36,6 @@ public sealed class Pcre2ProbeValidationAuthorityTests
         });
         var input = new byte[16385];
         input.AsSpan().Fill((byte)'a');
-        input[^1] = 0xff;
         Exception? failure = null;
         try { _ = regex.Probe(input, Pcre2PartialMode.Soft, 0, Pcre2MatchOptions.None, source.Token); }
         catch (Exception error) { failure = error; }
@@ -46,21 +44,8 @@ public sealed class Pcre2ProbeValidationAuthorityTests
     }
 
     [Theory]
-    [InlineData("abc", "abc")]
-    [InlineData("(a)b+", "abbb")]
-    public void ValidationAndMatchingDoNotReceiveSeparateWorkAllowances(string pattern, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        // Three input steps admit this short validation, leaving no discovery
-        // or projection allowance. A fresh sufficient invocation still succeeds.
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(pattern, 3).Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, Create(pattern, 10000).Probe(input, Pcre2PartialMode.Soft).Kind);
-    }
-
-    [Theory]
     [InlineData("abc")] [InlineData("(a)b+")]
-    public void ValidationPreservesScalarBoundariesCoordinatesAndRetainedResults(string pattern)
+    public void ScalarBoundariesAndRetainedResultsStayValid(string pattern)
     {
         var regex = Create(pattern, 100000);
         foreach (var scalar in new[] { "é", "€", "😀" })
@@ -78,25 +63,6 @@ public sealed class Pcre2ProbeValidationAuthorityTests
             { _ = regex.Probe(input, Pcre2PartialMode.Soft, lead + 1); });
             Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("zzz"u8, Pcre2PartialMode.Soft).Kind);
             Assert.Equal(body, retained.GetValueString());
-        }
-    }
-
-    [Theory]
-    [InlineData("abc")] [InlineData("(a)b+")]
-    public void MalformedBoundaryOffsetsAndWholeSubjectValidationStayPrecise(string pattern)
-    {
-        var regex = Create(pattern, 100000);
-        foreach (var offset in new[] { 2046, 2047, 2048, 2049, 4095 })
-        foreach (var malformed in new byte[][] { [0xff], [0xf0, 0x9f, 0x98], [0xe0, 0x80, 0x80], [0xc2, 0x61] })
-        {
-            var input = new byte[offset + malformed.Length];
-            input.AsSpan().Fill((byte)'x');
-            (pattern == "abc" ? "abc"u8 : "abbb"u8).CopyTo(input);
-            malformed.CopyTo(input, offset);
-            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-            var actual = Assert.Throws<ArgumentException>(() =>
-            { _ = regex.Probe(input, Pcre2PartialMode.Soft); });
-            Assert.Equal(expected.Message, actual.Message);
         }
     }
 

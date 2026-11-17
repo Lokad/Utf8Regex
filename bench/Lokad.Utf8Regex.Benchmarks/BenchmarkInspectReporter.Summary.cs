@@ -21,7 +21,7 @@ internal static partial class BenchmarkInspectReporter
         var summary = new BenchmarkSummary
         {
             Profile = "Core",
-            Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(ReadmeBenchmarkSnapshotFileName)),
+            Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(ReadmeBenchmarkSnapshotFileName))
         };
         foreach (var row in BuildReadmeParityReport(snapshot, BenchmarkSnapshotHash.HashNormalizedFile(rawPath)).Rows)
         {
@@ -37,7 +37,7 @@ internal static partial class BenchmarkInspectReporter
                 Reason = row.StatusReason,
                 ManagedBytes = row.Utf8AllocatedBytes,
                 ReferenceBytes = row.PredecodedRegexAllocatedBytes,
-                DecodeBytes = row.DecodeThenRegexAllocatedBytes,
+                DecodeBytes = row.DecodeThenRegexAllocatedBytes
             });
         }
         summary.Write(repository);
@@ -63,7 +63,7 @@ internal static partial class BenchmarkInspectReporter
                     DecodeThenCompiledRegex = row.DecodeUs ?? 0,
                     Utf8CompiledAllocatedBytes = row.ManagedBytes ?? 0,
                     CompiledRegexAllocatedBytes = row.ReferenceBytes ?? 0,
-                    DecodeThenCompiledRegexAllocatedBytes = row.DecodeBytes ?? 0,
+                    DecodeThenCompiledRegexAllocatedBytes = row.DecodeBytes ?? 0
                 } : new()
                 {
                     Utf8Regex = row.ManagedUs,
@@ -71,7 +71,7 @@ internal static partial class BenchmarkInspectReporter
                     DecodeThenRegex = row.DecodeUs ?? 0,
                     Utf8RegexAllocatedBytes = row.ManagedBytes ?? 0,
                     PredecodedRegexAllocatedBytes = row.ReferenceBytes ?? 0,
-                    DecodeThenRegexAllocatedBytes = row.DecodeBytes ?? 0,
+                    DecodeThenRegexAllocatedBytes = row.DecodeBytes ?? 0
                 };
             }
         }
@@ -95,8 +95,8 @@ internal static partial class BenchmarkInspectReporter
                 PackageVersion = dependency.PackageVersion,
                 Engine = dependency.NativePcre2Version,
                 License = dependency.License,
-                BuildFingerprintSha256 = dependency.BuildFingerprint?.Sha256,
-            },
+                BuildFingerprintSha256 = dependency.BuildFingerprint?.Sha256
+            }
         };
         foreach (var (section, data) in snapshot.Sections)
         {
@@ -115,7 +115,7 @@ internal static partial class BenchmarkInspectReporter
                     Status = row.PcreNetNativeStatus.ToString(),
                     Reason = row.PcreNetNativeStatusReason ?? row.PcreNetNativeUnavailableReason,
                     ManagedBytes = pair?.ManagedAllocatedBytesPerOperation ?? row.WarmAllocatedBytes,
-                    ReferenceBytes = pair?.ComparatorManagedAllocatedBytesPerOperation,
+                    ReferenceBytes = pair?.ComparatorManagedAllocatedBytesPerOperation
                 });
             }
         }
@@ -124,7 +124,7 @@ internal static partial class BenchmarkInspectReporter
             summary.Scaling[id] = new()
             {
                 Operation = family.Operation,
-                Points = family.Points.Count,
+                Points = family.Points.Count
             };
         }
         summary.Write(repository);
@@ -155,7 +155,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             Profile = "PythonRe",
             Evidence = BenchmarkSummary.DescribeEvidence(repository, Path.GetFileName(SnapshotFileName)),
-            CatalogSha256 = snapshot.CatalogSha256,
+            CatalogSha256 = snapshot.CatalogSha256
         };
         foreach (var (caseId, row) in snapshot.Cases)
         {
@@ -178,7 +178,7 @@ internal static partial class PythonReBenchmarkReporter
                 Upper95 = pair?.StrongRatioUpper95,
                 Status = row.Qualification?.Status ?? "Unqualified",
                 Reason = row.Qualification?.StatusReason,
-                ManagedBytes = pair?.ManagedMedianAllocatedBytes ?? row.PythonRe.MedianAllocatedBytes,
+                ManagedBytes = pair?.ManagedMedianAllocatedBytes ?? row.PythonRe.MedianAllocatedBytes
             });
         }
         foreach (var (id, row) in snapshot.Lifecycle)
@@ -189,7 +189,7 @@ internal static partial class PythonReBenchmarkReporter
                 Managed = Timing(row.AdapterConstruction),
                 Reference = Timing(row.CpythonCompile),
                 ManagedFirst = Timing(row.ConstructFirstSearch),
-                ReferenceFirst = Timing(row.CpythonCompileFirstSearch),
+                ReferenceFirst = Timing(row.CpythonCompileFirstSearch)
             };
         }
         foreach (var (id, row) in snapshot.ScalingFamilies)
@@ -201,7 +201,7 @@ internal static partial class PythonReBenchmarkReporter
                 Dimension = row.Dimension,
                 Points = row.Points.Count,
                 FitGate = row.FitGate,
-                FitGateReason = row.FitGateReason,
+                FitGateReason = row.FitGateReason
             };
         }
         summary.Write(repository);
@@ -209,7 +209,7 @@ internal static partial class PythonReBenchmarkReporter
         static BenchmarkSummaryTiming Timing(PythonReLifecycleTiming row) => new()
         {
             Microseconds = row.MedianMicroseconds,
-            AllocatedBytes = row.ManagedAllocatedBytes,
+            AllocatedBytes = row.ManagedAllocatedBytes
         };
     }
 }

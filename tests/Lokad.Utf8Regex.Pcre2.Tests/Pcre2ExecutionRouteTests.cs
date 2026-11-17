@@ -178,7 +178,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(expectedCount, program.Regex.ByteOffsetExecution.CountPrepared(countInput, new Utf8BytePosition(7)));
         Assert.Equal(expectedCount, regex.Count(view, 7));
         Assert.Equal(1, regex.Count(view, 7, Pcre2MatchOptions.Anchored));
-        var trusted = new Utf8Pcre2Regex(pattern, inputValidation: Utf8InputValidation.AssumeValid);
+        var trusted = new Utf8Pcre2Regex(pattern);
         Assert.Equal(expectedCount, trusted.Count(view, 7));
         var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
         var count = 0;
@@ -279,17 +279,6 @@ public sealed class Pcre2ExecutionRouteTests
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xxfoo"u8));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
-    }
-
-    [Fact]
-    public void LiteralFamilyCountStillValidatesTheEntireUtf8Subject()
-    {
-        var regex = new Utf8Pcre2Regex("foo|bar");
-        var malformedAfter = new byte[] { (byte)'f', (byte)'o', (byte)'o', 0xC3, 0x28 };
-        var malformedBefore = new byte[] { 0xC3, 0x28, (byte)'f', (byte)'o', (byte)'o' };
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedAfter));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedBefore));
     }
 
     [Fact]
@@ -638,12 +627,8 @@ public sealed class Pcre2ExecutionRouteTests
     public void CandidateSearchStillValidatesMalformedPrefixesAndSuffixes(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        var malformedPrefix = new byte[] { 0xC3, 0x28, (byte)'1', (byte)'9', (byte)'2', (byte)'.', (byte)'1' };
-        var malformedSuffix = new byte[] { (byte)'f', (byte)'o', (byte)'o', (byte)'@', (byte)'b', (byte)'a', (byte)'r', 0xC3, 0x28 };
 
         Assert.NotEqual(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedPrefix));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedSuffix));
     }
 
     [Fact]

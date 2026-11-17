@@ -164,7 +164,6 @@ public sealed class Utf8LinePrefixQualificationTests
         foreach (var item in new[] { (Trimmed, RegexOptions.Multiline), (Trimmed.Replace("*", "*?"), RegexOptions.None), (Until.Replace("*", "+"), RegexOptions.None),
             (Trimmed.Replace(@"\[\|", "///"), RegexOptions.None) })
             Assert.False(Classify(method, Tree(item.Item1, item.Item2)).HasValue);
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(Trimmed).IsMatch(new byte[] { 47, 47, 47, 0xff }));
     }
 
     [Fact]

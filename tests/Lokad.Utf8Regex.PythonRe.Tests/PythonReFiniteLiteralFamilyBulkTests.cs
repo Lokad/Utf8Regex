@@ -9,8 +9,10 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
 {
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 128,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 128,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
 
     [Theory]
@@ -125,9 +127,12 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void NativeCollectionAndShapingShareMonotonicWorkAndOriginalInterruption(int operation, bool expire)
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);

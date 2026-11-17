@@ -99,9 +99,8 @@ public sealed class Utf8WordRunCountTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, options);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.NonBacktracking).Count(input));
         }
@@ -118,8 +117,7 @@ public sealed class Utf8WordRunCountTests
         var input = Encoding.UTF8.GetBytes(text);
         byte[] storage = [0xff, 0xff, 0xff, .. input, 0xff];
         foreach (var pattern in new[] { @"\w{10,}", @"\b(\w{10,})\b" })
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
-            Assert.Equal(2, new Utf8Regex(pattern, inputValidation: policy).Count(storage.AsSpan(3, input.Length)));
+            Assert.Equal(2, new Utf8Regex(pattern).Count(storage.AsSpan(3, input.Length)));
     }
 
     [Fact]
@@ -143,21 +141,18 @@ public sealed class Utf8WordRunCountTests
         }
     }
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void MixedCountNeedsNoVmScratchAndPreservesCallerFunding(Utf8InputValidation policy)
+    [Fact]
+    public void MixedCountNeedsNoVmScratchAndPreservesCallerFunding()
     {
         const string pattern = @"\b(\w{10,})\b";
         var input = Encoding.UTF8.GetBytes(new string('é', 10) + " " + string.Concat(Enumerable.Repeat("𐐀", 10)));
-        var regex = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 100000,
-            MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, inputValidation: policy);
+        var regex = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var account = new Account();
         Assert.True(account.TryReserve(17));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, default, account));
         Assert.Equal(17UL, account.Used);
-        var denied = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1 }, inputValidation: policy);
+        var denied = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account));
         Assert.Equal(17UL, account.Used);
         using var source = new CancellationTokenSource(); source.Cancel();
@@ -187,8 +182,11 @@ public sealed class Utf8WordRunCountTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
 
-    [Theory] [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void NativeWorkObservesOriginalCancellationAndDeadline(bool timeout, bool wider)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

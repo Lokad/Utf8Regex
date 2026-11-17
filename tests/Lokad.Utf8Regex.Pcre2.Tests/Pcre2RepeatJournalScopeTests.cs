@@ -74,12 +74,12 @@ public sealed class Pcre2RepeatJournalScopeTests
             MatchLimit = limit == 0 ? 40U : 1000000U,
             DepthLimit = limit == 1 ? 1U : 1024U,
             HeapLimitInBytes = limit == 2 ? 256UL : 1048576UL,
-            ResultLimitInBytes = 1,
+            ResultLimitInBytes = 1
         });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         try
         {
             for (var attempt = 0; attempt < 2; attempt++)
@@ -105,7 +105,7 @@ public sealed class Pcre2RepeatJournalScopeTests
         var regex = Create("(?i)(a+)(b)");
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request.DefaultLimits, invocation, true);
         Assert.True(Pcre2GlobalOperationDriver.TryCreateCursor(regex.DebugCompiledProgram, input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, out var cursor, budget));
@@ -127,6 +127,9 @@ public sealed class Pcre2RepeatJournalScopeTests
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
         new(pattern, Pcre2CompileOptions.None, default, limits ?? new()
         {
-            MatchLimit = 1000000, DepthLimit = 1024, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1,
+            MatchLimit = 1000000,
+            DepthLimit = 1024,
+            HeapLimitInBytes = 1048576,
+            ResultLimitInBytes = 1
         }, Timeout.InfiniteTimeSpan);
 }

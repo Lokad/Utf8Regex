@@ -81,9 +81,6 @@ public sealed class Utf8LookupValidationTests
         CheckKernels(invalid, false);
         var regex = new Utf8Regex("needle");
         Assert.Equal(1, regex.Count(valid));
-        Assert.Throws<ArgumentException>(() => regex.Count(invalid));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(invalid));
-        Assert.Throws<ArgumentException>(() => regex.Match(invalid));
     }
 
     private static void CheckKernels(ReadOnlySpan<byte> input, bool expected)

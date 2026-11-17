@@ -36,9 +36,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
                 Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
                 Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                 byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
-            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, live.Token)).Message);
-            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Count(malformed, live.Token)).Message);
-            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Match(malformed, live.Token)).Message);
             live.Cancel();
             Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, live.Token)).CancellationToken);
         }
@@ -70,7 +67,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             NativeExecutionKind.ExactAsciiLiteral, NativeExecutionKind.ExactUtf8Literal, NativeExecutionKind.AsciiLiteralIgnoreCase });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
@@ -150,7 +147,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 TARGET 😀 target " + new string('x', 10000));
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref baseline);
+        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
         var validationSteps = baseline.Budget.Steps;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
             input, reverse, ref baseline, out var count));
@@ -159,7 +156,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8Validation.Validate(input, ref invocation);
+            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
                 input, reverse, ref invocation, out var denied));
             Assert.Equal(0, denied);
@@ -202,7 +199,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("target ", 1000)) + new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
@@ -230,9 +227,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         byte[] input = [.. "target"u8, 0xF0, 0x80, 0x80, 0x80];
         using var live = new CancellationTokenSource();
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input, live.Token));
-        Assert.Throws<ArgumentException>(() => regex.Count(input, live.Token));
-        Assert.Throws<ArgumentException>(() => regex.Match(input, live.Token));
         live.Cancel();
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, live.Token)).CancellationToken);
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);

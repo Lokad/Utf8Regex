@@ -117,7 +117,6 @@ public sealed class Utf8FinalFamilyQualificationTests
         foreach (var pattern in new[] { Email, Digits, Hex })
         {
             var regex = new Utf8Regex(pattern, pattern == Digits || pattern == Hex ? Fold | RegexOptions.Compiled : RegexOptions.Compiled);
-            Assert.Throws<ArgumentException>(() => regex.Count(invalid));
         }
     }
 

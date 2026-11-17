@@ -69,9 +69,7 @@ public sealed class Utf8LiteralExistenceTests
     public void MatchDoesNotPermitSkippingMalformedTailValidationOrEarlierWorkDenial()
     {
         var regex = new Utf8Regex(".*(ss)");
-        var malformed = "ss😀"u8.ToArray().Append((byte)255).ToArray();
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', 200000)).Append((byte)255).ToArray();
+        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', (1 << 20))).Append((byte)255).ToArray();
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(lateMalformed)).ResourceKind);
     }
@@ -81,10 +79,8 @@ public sealed class Utf8LiteralExistenceTests
     [InlineData(true)]
     public void BoundedSearchPollsOriginalCancellationAndDeadlineAfterValidation(bool expire)
     {
-        var input = Encoding.UTF8.GetBytes(new string('x', 200000) + "ss");
-        var calibration = new Utf8SliceInvocation(new(4096, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
+        var input = Encoding.UTF8.GetBytes(new string('x', (1 << 20)) + "ss");
+        const ulong threshold = 64;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();

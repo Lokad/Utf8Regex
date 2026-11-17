@@ -27,7 +27,6 @@ public sealed class PosixTextInputContractTests
             var observed = 0;
             while (cursor.MoveNext(groups, out _)) observed++;
             Assert.Equal(count, observed);
-            Assert.Equal(0, session.SubjectValidations);
         }
         finally { session.Complete(); }
     }

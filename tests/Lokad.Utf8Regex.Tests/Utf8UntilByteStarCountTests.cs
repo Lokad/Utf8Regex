@@ -116,7 +116,6 @@ public sealed class Utf8UntilByteStarCountTests
         byte[][] invalid = [[.. "hit\n"u8, 0xff], [.. "\n\n"u8, 0xf0, 0x9f, 0x98]];
         foreach (var input in invalid)
         {
-            Assert.Throws<ArgumentException>(() => regex.Count(input));
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
         }

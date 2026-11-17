@@ -8,9 +8,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeCountPublicationTests
 {
     [Theory]
-    [InlineData("", 0, false)] [InlineData("", 0, true)]
-    [InlineData("miss", 0, false)] [InlineData("miss", 0, true)]
-    [InlineData("needle needle", 2, false)] [InlineData("needle needle", 2, true)]
+    [InlineData("", 0, false)]
+    [InlineData("", 0, true)]
+    [InlineData("miss", 0, false)]
+    [InlineData("miss", 0, true)]
+    [InlineData("needle needle", 2, false)]
+    [InlineData("needle needle", 2, true)]
     public void FinalCounterCheckpointCannotPublishAfterInterruption(string text, int expected, bool expire)
     {
         var plan = new Utf8Regex("needle").Inspection.SearchPlan;
@@ -64,7 +67,10 @@ public sealed class Utf8NativeCountPublicationTests
         using var token = new CancellationTokenSource();
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1,
+            MaxWorkSteps = 100000,
+            MaxDepth = 1,
+            MaxWorkingBytes = 1,
+            MaxResultBytes = 1
         } : Utf8ResourcePolicy.Unlimited;
         var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20), policy);
         byte[] input = [];

@@ -11,7 +11,7 @@ public sealed class Pcre2FixedPolicyPreparationTests
             MaxWorkSteps = limit is 0 or 4 ? 1_000_000ul : null,
             MaxDepth = limit is 1 or 4 ? 2048u : null,
             MaxWorkingBytes = limit is 2 or 4 ? 1_048_576ul : null,
-            MaxResultBytes = limit is 3 or 4 ? 1_048_576ul : null,
+            MaxResultBytes = limit is 3 or 4 ? 1_048_576ul : null
         };
         foreach (var pattern in new[] { "abc|xyz", "(?<left>a)(b)" })
         {

@@ -122,7 +122,6 @@ public sealed class Pcre2MemoryCursorTests
     public void StrictValidationBoundaryAndNonMonotoneRejectionsPrecedePublication()
     {
         var regex = new Utf8Pcre2Regex(".");
-        Assert.Throws<ArgumentException>(() => regex.CreateMatchCursor(new byte[] { (byte)'a', 0xff }));
         foreach (var offset in new[] { -1, 1, 2, 3, 6 })
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor("😀x"u8.ToArray(), offset));
         var nonMonotone = new Utf8Pcre2Regex(@"(?=ab\K)", Pcre2CompileOptions.None,

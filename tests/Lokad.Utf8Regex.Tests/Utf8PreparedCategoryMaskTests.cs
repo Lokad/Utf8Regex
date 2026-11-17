@@ -21,25 +21,20 @@ public sealed class Utf8PreparedCategoryMaskTests
             previous = hit;
         }
         var bytes = Encoding.UTF8.GetBytes(text);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(@"[+\p{" + name + "}]+", options, inputValidation: validation);
+            var regex = new Utf8Regex(@"[+\p{" + name + "}]+", options);
             Assert.Equal(expected, regex.Count(bytes));
-            if (validation == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Count([.. bytes, 0xff]));
         }
     }
 
     [Fact]
     public void WiderCategoryCapturesKeepByteCoordinatesUnderFiniteLimits()
     {
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
             var regex = new Utf8Regex(@"([+\p{L}]+)-[+\p{Nd}]+", resourcePolicy: new()
-                { MaxWorkSteps = 10000, MaxWorkingBytes = 65536, MaxResultBytes = 65536 },
-                inputValidation: validation);
+            { MaxWorkSteps = 10000, MaxWorkingBytes = 65536, MaxResultBytes = 65536 });
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀 é+𝒜-𝟙+ !"u8.ToArray()));
             Assert.True(match.Success);
             Assert.Equal(5, match.Value.StartOffsetInBytes);

@@ -255,8 +255,9 @@ public sealed partial class Utf8PythonRegex
                 cursor.AddResult(ref list, new Utf8PythonMatchData
                 {
                     Success = true,
-                    StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                    ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
+                    StartOffsetInBytes = group.StartOffsetInBytes,
+                    EndOffsetInBytes = group.EndOffsetInBytes,
+                    ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes)
                 });
                 cursor.Checkpoint();
             }
@@ -318,7 +319,8 @@ public sealed partial class Utf8PythonRegex
             var completed = new Utf8PythonFindAllResult
             {
                 Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = cursor.CompleteResults(ref scalars), TupleValues = cursor.CompleteResults(ref tuples),
+                ScalarValues = cursor.CompleteResults(ref scalars),
+                TupleValues = cursor.CompleteResults(ref tuples)
             };
             cursor.Checkpoint();
             result = completed;
@@ -365,7 +367,8 @@ public sealed partial class Utf8PythonRegex
             var completed = new Utf8PythonFindAllUtf8Result
             {
                 Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = cursor.CompleteResults(ref scalars), TupleValues = cursor.CompleteResults(ref tuples),
+                ScalarValues = cursor.CompleteResults(ref scalars),
+                TupleValues = cursor.CompleteResults(ref tuples)
             };
             cursor.Checkpoint();
             result = completed;
@@ -391,7 +394,7 @@ public sealed partial class Utf8PythonRegex
             while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
             {
                 cursor.AddResult(ref parts, new Utf8PythonCaptureRange
-                    { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes });
+                { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes });
                 for (var number = 1; number <= CaptureGroupCount; number++)
                 {
                     cursor.AddResult(ref parts, cursor.TryGetCaptureByteRange(number, out var start, out var end)
@@ -403,7 +406,7 @@ public sealed partial class Utf8PythonRegex
                 splits++;
             }
             cursor.AddResult(ref parts, new Utf8PythonCaptureRange
-                { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length });
+            { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length });
             var completed = cursor.CompleteResults(ref parts);
             cursor.Checkpoint();
             return completed;
@@ -441,8 +444,9 @@ public sealed partial class Utf8PythonRegex
                     if (stringsOnly) cursor.AddResult(ref stringParts, capture);
                     else cursor.AddResult(ref parts, new Utf8PythonSplitItem
                     {
-                        IsCapture = true, CaptureGroupNumber = i,
-                        ValueText = capture,
+                        IsCapture = true,
+                        CaptureGroupNumber = i,
+                        ValueText = capture
                     });
                     // AddResult checks the original invocation before staging,
                     // including absent groups. The next decoder/discovery and

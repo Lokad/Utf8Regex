@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8BoundedDotCandidateTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000,
-        MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData("Watson")]
@@ -263,7 +262,7 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("A" + new string('x', 110), 64)));
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.Validate(input, ref validation);
+        Utf8InputAnalyzer.Describe(input, ref validation);
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex("A.{8,25}Z", RegexOptions.None, TimeSpan.FromMilliseconds(20), Funded);
@@ -298,8 +297,6 @@ public sealed class Utf8BoundedDotCandidateTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(
                 new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input)));
         byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(malformed)));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
     }

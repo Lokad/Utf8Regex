@@ -233,7 +233,10 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     }
 
     [Theory]
-    [InlineData("alpha", 0)] [InlineData("xxalpha", 2)] [InlineData("alpha|alpXX", 0)] [InlineData("alpXX", -1)]
+    [InlineData("alpha", 0)]
+    [InlineData("xxalpha", 2)]
+    [InlineData("alpha|alpXX", 0)]
+    [InlineData("alpXX", -1)]
     public void ReversePrefixWindowIncludesCompleteFinalCandidateAndExcludesRejectedStarts(string subject, int expected)
     {
         var search = new PreparedLiteralSetSearch(Bytes("alpha", "alpine"));
@@ -284,9 +287,8 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     {
         const string pattern = "Tom|Sawyer|Huckleberry|Finn";
         var reference = new Regex(pattern, options);
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, options);
             foreach (var text in new[] { "", "To", "Huckleberr", "ToxSawyeXHuckleberrXFixx/TomSawyerHuckleberryFinn/Huckleberr", "é😀FinnToméSawyer汉Huckleberry" })
             {
                 var input = Encoding.UTF8.GetBytes(text);

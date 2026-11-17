@@ -45,12 +45,4 @@ public sealed class Utf8NativeTemplateNoMatchTests
             Assert.All(shortDestination, value => Assert.Equal((byte)0xa5, value));
         }
     }
-
-    [Fact]
-    public void InvalidUtf8CannotReturnThroughTheNoMatchArm()
-    {
-        var regex = new Utf8Regex("^((cat))$", RegexOptions.Compiled);
-        var input = new byte[] { (byte)'d', (byte)'o', (byte)'g', 0xff };
-        Assert.Throws<ArgumentException>(() => regex.Replace(input, "$1-$2"));
-    }
 }

@@ -185,7 +185,7 @@ internal static class Utf8MatchInspection
 
     public static int ProjectWholeMatchOnly(int matchedLength)
     {
-        var match = new Utf8CaptureRange(0, (0) + (matchedLength));
+        var match = new Utf8CaptureRange(0, 0 + (matchedLength));
         return match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
     }
 

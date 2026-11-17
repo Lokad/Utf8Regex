@@ -70,7 +70,7 @@ public sealed partial class Utf8Regex
 
             if (matched)
             {
-                match = new Utf8CaptureRange(0, (0) + (dateLength));
+                match = new Utf8CaptureRange(0, 0 + (dateLength));
             }
 
             return true;
@@ -91,7 +91,7 @@ public sealed partial class Utf8Regex
 
             if (matched)
             {
-                match = new Utf8CaptureRange(0, (0) + (optionalFieldLength));
+                match = new Utf8CaptureRange(0, 0 + (optionalFieldLength));
             }
 
             return true;
@@ -110,7 +110,7 @@ public sealed partial class Utf8Regex
 
         if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
         {
-            match = new Utf8CaptureRange(0, (0) + (matchedLength));
+            match = new Utf8CaptureRange(0, 0 + (matchedLength));
         }
 
         return true;
@@ -231,7 +231,7 @@ public sealed partial class Utf8Regex
         {
             if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredPrefixLength))
             {
-                match = new Utf8CaptureRange(0, (0) + (anchoredPrefixLength));
+                match = new Utf8CaptureRange(0, 0 + (anchoredPrefixLength));
             }
 
             return true;
@@ -266,7 +266,7 @@ public sealed partial class Utf8Regex
                 return false;
             }
 
-            match = new Utf8CaptureRange(0, (0) + (signedDecimalLength));
+            match = new Utf8CaptureRange(0, 0 + (signedDecimalLength));
             return true;
         }
 

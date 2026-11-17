@@ -212,17 +212,6 @@ show scalar "y" with 2
     }
 
     [Fact]
-    public void IdentifierValidatorMatchRejectsMalformedUtf8()
-    {
-        const string pattern = "^[a-z][a-z0-9_]*$";
-        var invalid = new byte[] { (byte)'m', (byte)'o', 0xC3 };
-
-        var utf8 = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
-        Assert.Throws<ArgumentException>(() => utf8.Match(invalid));
-    }
-
-    [Fact]
     public void LexerIdentifierIsMatchMatchesDotNetOnPrefixInput()
     {
         const string pattern = "\\G[a-z][a-z0-9_]*";

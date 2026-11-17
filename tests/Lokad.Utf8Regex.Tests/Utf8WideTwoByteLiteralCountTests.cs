@@ -21,7 +21,6 @@ public sealed class Utf8WideTwoByteLiteralCountTests
                 var regex = new Utf8Regex(literal, option);
                 Assert.Equal(2, regex.Count(storage.AsSpan(1, input.Length)));
                 Assert.Equal(1, regex.Count(input.AsSpan(0, input.Length - 2)));
-                Assert.Throws<ArgumentException>(() => regex.Count(input.AsSpan(0, input.Length - 1)));
             }
         }
     }
@@ -56,12 +55,9 @@ public sealed class Utf8WideTwoByteLiteralCountTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шя ", 32768)));
         var regex = new Utf8Regex("Шя", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 256,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1024 });
+            new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1024 });
         using var live = new CancellationTokenSource();
         Assert.Equal(32768, regex.Count(input, live.Token));
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed, live.Token));
         live.Cancel();
         Assert.Equal(live.Token,
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);

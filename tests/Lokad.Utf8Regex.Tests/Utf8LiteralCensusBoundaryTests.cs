@@ -46,6 +46,5 @@ public sealed class Utf8LiteralCensusBoundaryTests
         var expected = new Regex("éé").Count(text);
         Assert.Equal(expected, regex.Count(input));
         Assert.Equal(expected, finite.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
     }
 }

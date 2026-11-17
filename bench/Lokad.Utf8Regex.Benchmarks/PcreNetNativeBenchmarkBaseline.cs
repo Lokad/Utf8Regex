@@ -38,7 +38,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             BackslashR = ToPcreNetBackslashR(benchmarkCase.CompileSettings.Bsr),
             ExtraCompileOptions = benchmarkCase.CompileSettings.AllowLookaroundBackslashK
                 ? PcreExtraCompileOptions.AllowLookaroundBsK
-                : PcreExtraCompileOptions.None,
+                : PcreExtraCompileOptions.None
         };
         _regex = new PcreRegexUtf8(benchmarkCase.Pattern, settings);
         _matchBuffer = _regex.CreateMatchBuffer();
@@ -87,7 +87,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             DefaultDepthLimit = PcreBuildInfo.DepthLimit,
             ParenthesesLimit = PcreBuildInfo.ParensLimit,
             CharacterTablesLengthBytes = PcreBuildInfo.TablesLength,
-            BackslashCPermanentlyDisabled = PcreBuildInfo.NeverBackslashC,
+            BackslashCPermanentlyDisabled = PcreBuildInfo.NeverBackslashC
         };
     }
 
@@ -98,7 +98,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         ConcurrencyContract = "The buffer is not thread-safe and not reentrant; a caller must provide a distinct buffer for overlapping operations.",
         RetainedMemoryContract = "The reusable buffer retains native match data between operations.",
         RetainedNativeHeapHighWaterUnavailableReason =
-            "PCRE.NET 1.5.0 does not expose retained match-data heap-frame high-water memory through its public API.",
+            "PCRE.NET 1.5.0 does not expose retained match-data heap-frame high-water memory through its public API."
     };
 
     internal PcreNetNativePlanFingerprint CapturePlanFingerprint()
@@ -158,7 +158,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             ExtraOptions = info.ExtraOptions.ToString(),
             PatternMatchLimit = patternMatchLimit,
             PatternDepthLimit = patternDepthLimit,
-            PatternHeapLimitKibibytes = patternHeapLimit,
+            PatternHeapLimitKibibytes = patternHeapLimit
         };
     }
 

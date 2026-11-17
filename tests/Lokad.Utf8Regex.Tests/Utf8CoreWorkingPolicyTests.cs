@@ -97,7 +97,7 @@ public sealed class Utf8CoreWorkingPolicyTests
             MaxWorkSteps = kind == Utf8ResourceLimitKind.ExecutionWorkSteps ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue,
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
-            MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
+            MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue
         };
         var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor("😀😀😀ab"u8.ToArray())));
@@ -168,7 +168,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8Validation.Validate(input, ref invocation);
+        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.ShareStorageForCursor();
         var probe = new Utf8OperationMatchCursor(program, input, invocation);
         Assert.True(probe.MoveNext());
@@ -192,7 +192,6 @@ public sealed class Utf8CoreWorkingPolicyTests
     public void FiniteWorkingPolicyStillValidatesMalformedTailsAndScalarOffsets(bool compiled)
     {
         var regex = Create("ab", 1_048_576, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([97, 98, 255]));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));
         Assert.Equal(4, regex.Match("😀ab"u8, 4, []).StartOffsetInBytes);
     }

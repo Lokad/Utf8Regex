@@ -165,13 +165,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                      ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                      new Utf8SearchFactData
                      {
-                         LiteralUtf8 = searchLiterals[0],
+                         LiteralUtf8 = searchLiterals[0]
                      }),
             > 1 when !ignoreCase && searchLiteralOffset == 0 => Utf8SearchFacts.Create(
                                                                     Utf8SearchKind.ExactAsciiLiterals,
                                                                     new Utf8SearchFactData
                                                                     {
-                                                                        AlternateLiteralsUtf8 = searchLiterals,
+                                                                        AlternateLiteralsUtf8 = searchLiterals
                                                                     }),
             _ => Utf8SearchFacts.Create(Utf8SearchKind.None),
         };

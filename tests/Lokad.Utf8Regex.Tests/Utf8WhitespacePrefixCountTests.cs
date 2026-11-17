@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8WhitespacePrefixCountTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData(@"(\s*)#x")]
@@ -63,8 +62,6 @@ public sealed class Utf8WhitespacePrefixCountTests
         cancellation.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => new Utf8Regex(pattern).Count(input, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        byte[] malformed = [.. input, 0xF0, 0x80];
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(malformed));
     }
 
     [Theory]

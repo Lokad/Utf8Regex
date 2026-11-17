@@ -710,15 +710,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(0, regex.Count("éab"u8.ToArray()));
     }
 
-    [Fact]
-    public void CompiledAsciiLiteralFamilyCountStillValidatesInvalidUtf8()
-    {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.Compiled);
-        byte[] invalid = [0xFF, (byte)'t', (byte)'e', (byte)'m', (byte)'p', (byte)'u', (byte)'s'];
-
-        Assert.Throws<ArgumentException>(() => regex.Count(invalid));
-    }
-
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
@@ -731,7 +722,6 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
-        Assert.Throws<ArgumentException>(() => regex.Count([(byte)'t', (byte)'e', 0xFF]));
     }
 
     [Theory]
@@ -746,7 +736,6 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. "Twain"u8, 0xFF]));
     }
 
     [Theory]
@@ -760,7 +749,6 @@ public sealed class Utf8RegexConstructionTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(pattern), 0xFF]));
     }
 
     [Theory]
@@ -777,7 +765,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(literal), 0xFF]));
     }
 
     [Theory]
@@ -1389,11 +1376,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         Assert.Equal(1, regex.Count(input, source.Token));
         Assert.Equal(1, new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1)).Count(input));
-        foreach (var malformed in new byte[][] { [0xff, .. input], [.. input, 0xff] })
-        {
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed, source.Token));
-        }
         source.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token));
         Assert.Throws<OperationCanceledException>(() => regex.Count(new byte[] { 0xff }, source.Token));
@@ -1612,16 +1594,6 @@ public sealed class Utf8RegexConstructionTests
         }
     }
 
-    [Fact]
-    public void Utf8UriTokenCountRejectsMalformedUtf8AfterAValidMatch()
-    {
-        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
-        byte[] input = [.. "https://host.example/path"u8, 0xFF];
-
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(input));
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, RegexOptions.Compiled).Count(input));
-    }
-
     [Theory]
     [InlineData(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", "été@example.org alpha@example.org")]
     [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "é://host.example/path https://atlas.example/path")]
@@ -1711,18 +1683,6 @@ public sealed class Utf8RegexConstructionTests
                 Assert.Equal(oracle.Count(input), regex.Count(bytes));
             }
         }
-    }
-
-    [Fact]
-    public void ExactTwoByteLiteralCorrelatedPrefixCountRejectsMalformedSuffix()
-    {
-        const string pattern = "Шерлок Холмс";
-        var bytes = Enumerable.Repeat((byte)'x', 132 * 1024).ToArray();
-        Encoding.UTF8.GetBytes(pattern).CopyTo(bytes, 64 * 1024 + 31);
-        bytes[^1] = 0xFF;
-
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(bytes));
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, RegexOptions.Compiled).Count(bytes));
     }
 
     [Fact]
@@ -1917,10 +1877,6 @@ public sealed class Utf8RegexConstructionTests
         var malformed = new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' };
         var eligible = new Utf8Regex("alpha|bravo|charlie", options);
         Assert.False(eligible.TryGetSmallAsciiLiteralFamilySearch(malformed, out _));
-        Assert.Throws<ArgumentException>(() =>
-        {
-            _ = eligible.EnumerateSplits(malformed);
-        });
     }
 
     private static int CountSplitValues(Utf8Regex regex, byte[] input)
@@ -2024,21 +1980,6 @@ public sealed class Utf8RegexConstructionTests
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             Assert.Equal(oracle.Count(input), regex.Count(bytes));
         }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void OneByteLiteralPairCountSelectorStillValidatesLargeMalformedUtf8(bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("a|needle", options);
-        var input = new byte[8192];
-        input.AsSpan().Fill((byte)'a');
-        input[^1] = 0xFF;
-
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
     }
 
     [Fact]
@@ -2264,22 +2205,6 @@ public sealed class Utf8RegexConstructionTests
         return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void LiteralFamilyIsMatchStillRejectsMalformedUtf8(bool ignoreCase, bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant |
-            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options);
-        byte[] malformed = [(byte)'x', 0xC3, 0x28, (byte)'a'];
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-    }
-
     [Fact]
     public void CompiledExactAsciiLiteralFamilyCanMatchWithoutValidation()
     {
@@ -2343,15 +2268,6 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match(bytes);
         Assert.True(match.Success);
         Assert.Equal(6, match.StartOffsetInBytes);
-    }
-
-    [Fact]
-    public void ExactAsciiLiteralFamilyDirectMatchStillRejectsMalformedSuffix()
-    {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
-        byte[] malformed = [.. "magna"u8, 0xFF];
-
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
     }
 
     [Theory]
@@ -2476,15 +2392,6 @@ public sealed class Utf8RegexConstructionTests
         {
             Assert.Equal(Regex.Count(input, pattern, options), new Utf8Regex(pattern, options).Count(bytes));
         }
-    }
-
-    [Fact]
-    public void SeparatorLiteralLookaheadCountStillValidatesAfterAnAsciiMatch()
-    {
-        var regex = new Utf8Regex("HttpClient(?=\\s+client)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        byte[] malformed = [.. "HttpClient client"u8, 0xFF];
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
     }
 
     [Fact]

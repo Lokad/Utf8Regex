@@ -38,9 +38,8 @@ public sealed class Utf8CompiledScalarConsumerTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
             var match = regex.Match(input);
@@ -217,8 +216,12 @@ public sealed class Utf8CompiledScalarConsumerTests
             : Utf8PreparedScalarExecutor.TryMatch(prepared, input, validation, ref invocation, out _);
 
     [Theory]
-    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)]
-    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
     public void CancellationAtFinalPublicationCannotPublishAResult(int operation, bool hit)
     {
         var prepared = Prepare("a");

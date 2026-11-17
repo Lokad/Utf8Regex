@@ -167,7 +167,6 @@ public sealed class Utf8FundedProgramOwnerTests
         using (var owner = Compile("alpha", account))
         {
             var held = account.Used;
-            Assert.Throws<ArgumentException>(() => owner.Count(malformed));
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.IsMatch(malformed, token.Token)).CancellationToken);
             Assert.Equal(held, account.Used);
@@ -196,7 +195,7 @@ public sealed class Utf8FundedProgramOwnerTests
         var held = programs.Used;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha-123 ", 1024)));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref validation); var validatedSteps = validation.Budget.Steps;
+        _ = Utf8InputAnalyzer.Describe(input, ref validation); var validatedSteps = validation.Budget.Steps;
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -320,7 +319,6 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal("é[a]😀é[a]😀"u8.ToArray(), bytes[..written]);
         var held = programs.Used;
         Assert.Throws<ArgumentException>(() => owner.TryReplace("none"u8, new byte[] { 0xff }, bytes, out _));
-        Assert.Throws<ArgumentException>(() => owner.TryReplace(new byte[] { 0xff }, "$1"u8, bytes, out _));
         Assert.Equal(held, root.Used);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>

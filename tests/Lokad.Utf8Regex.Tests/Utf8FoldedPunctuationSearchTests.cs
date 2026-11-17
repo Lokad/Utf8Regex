@@ -7,9 +7,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FoldedPunctuationSearchTests
 {
     [Theory]
-    [InlineData("John Watson", 4)] [InlineData("hello world", 5)]
-    [InlineData("ABC@DEFGHI", 3)] [InlineData("@abcdefghij", 4)]
-    [InlineData("\0abcdefghij", 5)] [InlineData("abcdefghi\0", 9)]
+    [InlineData("John Watson", 4)]
+    [InlineData("hello world", 5)]
+    [InlineData("ABC@DEFGHI", 3)]
+    [InlineData("@abcdefghij", 4)]
+    [InlineData("\0abcdefghij", 5)]
+    [InlineData("abcdefghi\0", 9)]
     [InlineData("1234567890", 5)]
     public void CorrelatedAnchorsKeepExactNonlettersAcrossBorrowedWindows(string literal, int compareIndex)
     {
@@ -68,15 +71,14 @@ public sealed class Utf8FoldedPunctuationSearchTests
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         var reference = new Regex(pattern, options);
         foreach (var prefix in new[] { 0, 31, 32, 2048 })
-        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         foreach (var finite in new[] { false, true })
         {
             var text = "é😀 " + new string('x', prefix) + literal.ToUpperInvariant() + " z " + literal.ToLowerInvariant() + "\0";
             var input = Encoding.UTF8.GetBytes(text);
             var policy = finite ? new Utf8ResourcePolicy
             { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default;
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: policy, inputValidation: validation);
-            Assert.Equal(reference.Count(text), regex.Count(input));
+                var regex = new Utf8Regex(pattern, options, resourcePolicy: policy);
+                Assert.Equal(reference.Count(text), regex.Count(input));
             Assert.Equal(reference.IsMatch(text), regex.IsMatch(input));
             var expected = reference.Match(text);
             var actual = regex.Match(input);
@@ -84,8 +86,6 @@ public sealed class Utf8FoldedPunctuationSearchTests
                     Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
                     Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(input, "X")));
-            if (validation == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
         }
     }
 

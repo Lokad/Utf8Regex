@@ -38,9 +38,9 @@ public sealed class Pcre2OutputInvocationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void InitialValidationCannotReachMalformedTailAfterWorkDenial(string pattern, string text, bool helper)
+    public void SearchStopsAtWorkDenial(string pattern, string text, bool helper)
     {
-        var input = new byte[16385]; input.AsSpan().Fill((byte)'x'); input[^1] = 0xff;
+        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         var destination = new Utf8Pcre2MatchData[4];
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Run(Create(pattern, 3), input, destination, helper); }).ErrorKind);
@@ -60,10 +60,6 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         var match = regex.MatchDetailed(input);
         Assert.True(match.TryGetFirstSetGroup("x", out var retained));
         var captured = retained.GetValueString();
-        var malformed = new byte[input.Length + 1]; input.CopyTo(malformed, 0); malformed[^1] = 0xff;
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(malformed));
-        var actual = Assert.Throws<ArgumentException>(() => { _ = Run(regex, malformed, destination, helper); });
-        Assert.Equal(expected.Message, actual.Message);
         Assert.Equal(1, Run(regex, input, destination, helper));
         Assert.Equal(captured, retained.GetValueString());
     }

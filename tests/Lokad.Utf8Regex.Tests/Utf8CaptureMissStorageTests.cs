@@ -32,7 +32,6 @@ public sealed class Utf8CaptureMissStorageTests
             Utf8MatchSequence.AssertCaptures(expected, retained, hitInput, hitText);
             Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(large)).Success);
             Utf8MatchSequence.AssertCaptures(expected, retained, hitInput, hitText);
-            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(new byte[] { 0x61, 0xff })));
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(

@@ -28,9 +28,6 @@ public sealed class PythonRePrefixOverlapTests
         var regex = new Utf8PythonRegex(pattern, options);
         var match = regex.Search(Encoding.UTF8.GetBytes(inputText));
         Assert.Equal(expectedStart >= 0, match.Success);
-        if (expectedStart >= 0)
-        {
-        }
     }
 
     public static IEnumerable<object?[]> FindAllCases()

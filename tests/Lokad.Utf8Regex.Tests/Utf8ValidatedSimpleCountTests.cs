@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValidatedSimpleCountTests
 {
     private static Utf8ResourcePolicy Limits => new()
-        { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", "", 0)]
@@ -27,11 +27,9 @@ public sealed class Utf8ValidatedSimpleCountTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         foreach (var mode in new[] { 0, 1, 2 })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant,
-                resourcePolicy: mode == 0 ? default : Limits, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, resourcePolicy: mode == 0 ? default : Limits);
             var account = new Account();
             account.TryReserve(17);
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -40,13 +38,10 @@ public sealed class Utf8ValidatedSimpleCountTests
                 var result = mode == 0 ? regex.Count(input) : mode == 1 ? regex.Count(input, token.Token)
                     : regex.Count(input, token.Token, account);
                 Assert.Equal(expected, result);
-                Assert.InRange(session.SubjectValidations, 0, policy == Utf8InputValidation.Validate ? 1 : 0);
                 Assert.Equal(17UL, account.Used);
             }
             finally { session.Complete(); account.Release(17); }
             Assert.Equal(0UL, account.Used);
-            if (policy == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], token.Token));
         }
     }
 
@@ -54,18 +49,17 @@ public sealed class Utf8ValidatedSimpleCountTests
     [InlineData(RegexOptions.RightToLeft)] [InlineData(RegexOptions.NonBacktracking)]
     public void OtherExecutionContractsKeepTheirScalarCounter(RegexOptions options)
     {
-        var regex = new Utf8Regex("([A-Z]{2})([0-9]{4})", options, resourcePolicy: Limits,
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var regex = new Utf8Regex("([A-Z]{2})([0-9]{4})", options, resourcePolicy: Limits);
         Assert.Equal(2, regex.Count("é😀AB1234 A😀1234 CD5678"u8));
     }
 
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, RegexOptions.None, false)]
-    [InlineData(Utf8InputValidation.Validate, RegexOptions.Compiled, true)]
-    [InlineData(Utf8InputValidation.AssumeValid, RegexOptions.None, true)]
-    [InlineData(Utf8InputValidation.AssumeValid, RegexOptions.Compiled, false)]
+    [InlineData(RegexOptions.None, false)]
+    [InlineData(RegexOptions.Compiled, true)]
+    [InlineData(RegexOptions.None, true)]
+    [InlineData(RegexOptions.Compiled, false)]
     public void CompleteClassRunsFitBoundedWorkWithoutExpandedBranchRetries(
-        Utf8InputValidation policy, RegexOptions options, bool unicodePrefix)
+RegexOptions options, bool unicodePrefix)
     {
         var input = Encoding.UTF8.GetBytes((unicodePrefix ? "é😀" : "") +
             string.Concat(Enumerable.Repeat("aaaaaaa ", 256)) + "abcdefghijklm");
@@ -73,7 +67,7 @@ public sealed class Utf8ValidatedSimpleCountTests
         foreach (var pattern in new[] { "[A-Za-z]{8,13}", "([A-Za-z]{8,13})", "([A-Za-z]){8,13}" })
         {
             var regex = new Utf8Regex(pattern, options, resourcePolicy: Limits with
-                { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxDepth = 1 }, inputValidation: policy);
+            { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxDepth = 1 });
             var account = new Account();
             account.TryReserve(17);
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -82,7 +76,6 @@ public sealed class Utf8ValidatedSimpleCountTests
                 Assert.Equal(1, regex.Count(input));
                 Assert.Equal(1, regex.Count(input, token.Token));
                 Assert.Equal(1, regex.Count(input, token.Token, account));
-                Assert.Equal(policy == Utf8InputValidation.Validate ? 3 : 0, session.SubjectValidations);
                 Assert.Equal(17UL, account.Used);
             }
             finally { session.Complete(); account.Release(17); }
@@ -94,11 +87,9 @@ public sealed class Utf8ValidatedSimpleCountTests
     public void CompleteAsciiBranchesDoNotNeedVmScratchAndStillRefuseWork()
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var regex = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkingBytes = 1, MaxDepth = 1 },
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var regex = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkingBytes = 1, MaxDepth = 1 });
         Assert.Equal(1, regex.Count("é😀ASIAABCDEFGHIJKLMNOP"u8));
-        var denied = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkSteps = 1 },
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var denied = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("é😀ASIAABCDEFGHIJKLMNOP"u8)).ResourceKind);
     }
@@ -111,8 +102,7 @@ public sealed class Utf8ValidatedSimpleCountTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var regex = new Utf8Regex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20), resourcePolicy: Limits,
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var regex = new Utf8Regex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20), resourcePolicy: Limits);
         var input = Encoding.UTF8.GetBytes("é😀" + new string('x', 262144) + "ASIAABCDEFGHIJKLMNOP");
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

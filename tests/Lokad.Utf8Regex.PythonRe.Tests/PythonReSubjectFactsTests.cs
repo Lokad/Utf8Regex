@@ -30,7 +30,9 @@ public sealed class PythonReSubjectFactsTests
         using var regex = new Utf8PythonRegex($"({value})",
             resourcePolicy: new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 128, MaxWorkingBytes = 32768, MaxResultBytes = 128,
+                MaxWorkSteps = 128,
+                MaxWorkingBytes = 32768,
+                MaxResultBytes = 128
             });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(value, regex.MatchToString(input, 6, cancellation.Token));
@@ -77,7 +79,8 @@ public sealed class PythonReSubjectFactsTests
         using var regex = new Utf8PythonRegex("(?s)(.+)",
             resourcePolicy: new Utf8ResourcePolicy
             {
-                MaxWorkingBytes = 32768, MaxResultBytes = Utf8ConstructionBudget.StringBytes(expected.Length),
+                MaxWorkingBytes = 32768,
+                MaxResultBytes = Utf8ConstructionBudget.StringBytes(expected.Length)
             });
         var retained = regex.MatchToString(input, 6);
         Assert.Equal(expected, retained);

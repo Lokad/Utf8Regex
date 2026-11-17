@@ -12,8 +12,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
     private static readonly byte[] Dense = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(" xx ab12 ab34 ", 1000)));
     private static Utf8Regex Create(string pattern, ulong work = 1000000, ulong working = 1 << 20,
         RegexOptions options = RegexOptions.None) => new(pattern, options | RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = work, MaxDepth = 1024,
-                MaxWorkingBytes = working, MaxResultBytes = 1 });
+            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = working, MaxResultBytes = 1 });
 
     [Theory]
     [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
@@ -39,8 +38,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
     [Fact]
     public void EligibleCountNeedsNoVmDepthOrWorkingStorage()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1,
-            MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         foreach (var option in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex("ab[0-9]{2}", option | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
@@ -70,7 +68,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = Create("ab[0-9]{2}");
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         var validation = invocation.Budget.Steps;
         Assert.False(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
             regex.Inspection.PreparedRegex.StructuralLinearProgram, input, ref invocation, out var count, out var breach));
@@ -86,7 +84,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
     {
         var regex = Create("ab[0-9]{2}");
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(Dense, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(Dense, ref invocation);
         var validation = invocation.Budget.Steps;
         var handled = Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
             regex.Inspection.PreparedRegex.StructuralLinearProgram, Dense, ref invocation, out var count, out var breach);
@@ -113,7 +111,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
         using var tokens = new CancellationTokenSource();
         var regex = Create("ab[0-9]{2}");
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1), TimeSpan.FromMilliseconds(20), tokens.Token);
-        _ = Utf8Validation.Validate(Dense, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(Dense, ref invocation);
         var validation = invocation.Budget.Steps;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) tokens.Cancel(); else ticks = 25; };
@@ -130,14 +128,5 @@ public sealed class Utf8FiniteFixedWidthCountTests
         if (cancel) Assert.Equal(tokens.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-    }
-
-    [Fact]
-    public void NativeCountCannotSkipMalformedSuffix()
-    {
-        var malformed = new byte[Dense.Length + 1];
-        Dense.CopyTo(malformed, 0);
-        malformed[^1] = 255;
-        Assert.Throws<ArgumentException>(() => Create("ab[0-9]{2}").Count(malformed));
     }
 }

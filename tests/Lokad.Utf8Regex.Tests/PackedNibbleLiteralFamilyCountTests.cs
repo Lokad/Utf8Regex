@@ -164,15 +164,6 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     }
 
     [Fact]
-    public void CountDoesNotBypassMalformedUtf8Rejection()
-    {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
-        byte[] malformed = [.. "夏洛克·福尔摩斯"u8, 0xFF, .. "阿德勒"u8];
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-    }
-
-    [Fact]
     public void FiniteTimeoutRetainsTheBudgetedCountRoute()
     {
         var regex = new Utf8Regex(
@@ -191,8 +182,10 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     {
         var regex = new Utf8Regex(Pattern, options, TimeSpan.FromSeconds(5), new()
         {
-            MaxWorkSteps = 100_000, MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+            MaxWorkSteps = 100_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
         });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("夏洛克·福尔摩斯和阿德勒"u8, cancellation.Token));
@@ -200,7 +193,6 @@ public sealed class PackedNibbleLiteralFamilyCountTests
         var error = Assert.Throws<OperationCanceledException>(() =>
             regex.Count("夏洛克·福尔摩斯和阿德勒"u8, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xFF }));
     }
 
     [Theory]

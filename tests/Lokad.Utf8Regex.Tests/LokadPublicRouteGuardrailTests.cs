@@ -149,9 +149,6 @@ public sealed class LokadPublicRouteGuardrailTests
             var finalOctet = $"012.200.033.{value:D3}";
             Assert.Equal(oracle.IsMatch(finalOctet), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(finalOctet)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'0', (byte)'1', (byte)'2', (byte)'.', (byte)'2', (byte)'0', (byte)'0', (byte)'.', (byte)'0', (byte)'3', (byte)'3', (byte)'.', (byte)'1', (byte)'9', 0xFF]));
     }
 
     [Theory]
@@ -181,8 +178,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'1', (byte)'2', (byte)'/', 0xFF]));
     }
 
     [Theory]
@@ -233,9 +228,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(oracle.IsMatch(input), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'x', 0xFF, (byte)' ', (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)'s', (byte)':', (byte)'/', (byte)'/', (byte)'a', (byte)'b']));
     }
 
     [Fact]
@@ -265,8 +257,6 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.TryIsMatchDirectWithoutValidation("no literal"u8, out var asciiMiss));
         Assert.False(asciiMiss);
         Assert.False(regex.TryIsMatchDirectWithoutValidation("é.ccc"u8, out _));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', 0xFF]));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', (byte)'c', 0xFF]));
     }
 
     [Fact]
@@ -288,7 +278,6 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.IsMatch("before a newline\nss"u8));
         Assert.True(regex.IsMatch("café ss"u8));
         Assert.False(regex.IsMatch("s\ns"u8));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'s', 0xFF, (byte)'s']));
 
         var noncapturing = new Utf8Regex(@".*(?:needle)", RegexOptions.Compiled);
         Assert.True(noncapturing.IsMatch("a needle in text"u8));
@@ -429,9 +418,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'1', (byte)'1', (byte)'/', (byte)'1', (byte)'8', (byte)'/', (byte)'2', (byte)'0', (byte)'1', (byte)'9', 0xFF]));
     }
 
     [Theory]
@@ -507,9 +493,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'A', (byte)'B', (byte)'0', (byte)'Z', (byte)' ', (byte)'1', (byte)'Z', (byte)'Z', 0xFF]));
     }
 
     [Theory]
@@ -540,8 +523,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'1', (byte)'.', (byte)'5', 0xFF]));
     }
 
     [Theory]
@@ -570,12 +551,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
-                (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'-',
-                (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
-                (byte)'4', (byte)'5', (byte)'6', 0xFF]));
     }
 
     [Theory]
@@ -609,9 +584,6 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
         }
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(
-            [(byte)'1', (byte)'0', (byte)'0', (byte)'-', 0xFF]));
     }
 
     [Theory]

@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8RtlStrictEndCountTests
 {
     private static Utf8ResourcePolicy Limits(ulong work = 1000000) => new()
-        { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     public static IEnumerable<object[]> Cases()
     {
@@ -63,8 +63,6 @@ public sealed class Utf8RtlStrictEndCountTests
                 if (pattern.Contains("?<g>"))
                     Assert.Equal(expected.Groups["g"].Value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("g")).Span));
             }
-            Assert.Throws<ArgumentException>(() => regex.Count([.. bytes, 255]));
-            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches([.. bytes, 255], Encoding.UTF8.GetByteCount(text.AsSpan(0, 0)))));
         }
     }
 
@@ -125,8 +123,10 @@ public sealed class Utf8RtlStrictEndCountTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void TerminalExhaustionKeepsOriginalAuthority(bool wrongFloor, bool expire)
     {
         var program = new Utf8Regex(@"\z", RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;

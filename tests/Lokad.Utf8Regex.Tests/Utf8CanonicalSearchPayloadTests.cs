@@ -30,7 +30,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             RequiredPrefilterAlternateLiteralsUtf8 = literals,
             SecondaryRequiredPrefilterQuotedAsciiSet = Quoted,
             SecondaryRequiredPrefilterQuotedAsciiLength = 3,
-            RequiredWindowPrefilters = windows ?? [],
+            RequiredWindowPrefilters = windows ?? []
         });
 
     [Fact]
@@ -127,9 +127,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Fallback(family, windows: [invalid, valid, invalid, valid]),
             Utf8SearchFacts.Create(Utf8SearchKind.None, new()
             {
-                OrderedWindowLeadingLiteralsUtf8 = Bytes("é", "😀"),
-                OrderedWindowTrailingLiteralUtf8 = "中"u8.ToArray(), OrderedWindowMaxGap = 8,
-            }),
+                OrderedWindowLeadingLiteralsUtf8 = Bytes("é", "😀"),                OrderedWindowTrailingLiteralUtf8 = "中"u8.ToArray(),OrderedWindowMaxGap = 8            }),
         })
         {
             ulong peak, work, depth;
@@ -205,7 +203,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var cursor = regex.EnumerateMatches(input); var ranges = new List<(int, int)>();
             while (cursor.MoveNext()) ranges.Add((cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             Assert.Equal(expected, ranges);
-            Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancelled.Token));
             var direct = new Utf8Regex("é|😀|中", options | RegexOptions.CultureInvariant);

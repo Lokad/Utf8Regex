@@ -60,7 +60,6 @@ public sealed class Utf8SimpleFamilyPreparationTests
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(64 * 512, count);
         Assert.InRange(allocated, 0, 8192);
-        Assert.Throws<ArgumentException>(() => regex.Count([.. input, 255]));
     }
 
     private static void Compare(Regex oracle, Utf8Regex regex, string text)

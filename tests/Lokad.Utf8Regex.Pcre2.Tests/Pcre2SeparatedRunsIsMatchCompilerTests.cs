@@ -113,7 +113,6 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-        Assert.Throws<ArgumentException>(() => direct.IsMatch([0xFF]));
     }
 
     [Fact]

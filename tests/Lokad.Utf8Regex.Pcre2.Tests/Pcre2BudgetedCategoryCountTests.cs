@@ -16,16 +16,11 @@ public sealed class Pcre2BudgetedCategoryCountTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
         using var token = new CancellationTokenSource();
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default,
-                new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 },
-                Timeout.InfiniteTimeSpan, validation);
+            var regex = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan);
             var allowance = new RejectStorage();
             Assert.Equal(expected, regex.Count(input, floor, default, token.Token, allowance));
             Assert.Equal(0, allowance.Attempts);
-            if (validation == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], floor));
         }
     }
 
@@ -33,11 +28,10 @@ public sealed class Pcre2BudgetedCategoryCountTests
     public void CategoryCountKeepsRealWorkDenialAndOriginalCancellation()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a+∑😀", 1 << 16)));
-        var limited = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default,
-            new() { MaxWorkSteps = 1 }, Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
+        var limited = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 1 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
         using var token = new CancellationTokenSource(); token.Cancel();
-        var unlimited = new Utf8Pcre2Regex(@"\p{Sm}", inputValidation: Utf8InputValidation.AssumeValid);
+        var unlimited = new Utf8Pcre2Regex(@"\p{Sm}");
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             unlimited.Count(input, 0, default, token.Token)).CancellationToken);
     }

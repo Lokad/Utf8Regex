@@ -146,7 +146,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant);
         var plan = Prepared(regex);
         var input = Encoding.UTF8.GetBytes("target" + new string('中', 5000) + "target" + new string('é', 5000) + "target");
-        var baseline = new Utf8OperationMatchCursor(input, plan, false, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var baseline = new Utf8OperationMatchCursor(input, plan, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var hits = 0;
         while (baseline.TryMoveNextLiteral(out var found) == Utf8ExecutionLimitKind.None && found) hits++;
         Assert.Equal(3, hits);
@@ -155,7 +155,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var cursor = new Utf8OperationMatchCursor(input, plan, false, reverse, invocation);
+            var cursor = new Utf8OperationMatchCursor(input, plan, reverse, invocation);
             Utf8ExecutionLimitKind breach;
             bool found;
             do { breach = cursor.TryMoveNextLiteral(out found); } while (breach == Utf8ExecutionLimitKind.None && found);
@@ -236,7 +236,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var options = RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), false, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         foreach (Match expected in new Regex(pattern, options).Matches(text))
         {
             Assert.True(cursor.MoveNext());

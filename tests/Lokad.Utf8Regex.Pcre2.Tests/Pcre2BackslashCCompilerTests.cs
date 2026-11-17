@@ -8,7 +8,7 @@ public sealed class Pcre2BackslashCCompilerTests
 {
     private static readonly Utf8Pcre2CompileSettings s_allowBackslashC = new()
     {
-        BackslashC = Pcre2BackslashCPolicy.Allow,
+        BackslashC = Pcre2BackslashCPolicy.Allow
     };
 
     [Fact]
@@ -100,7 +100,6 @@ public sealed class Pcre2BackslashCCompilerTests
         var regex = Create(@"\C");
 
         Assert.Equal("xx", Encoding.UTF8.GetString(regex.Replace("é"u8, "x")));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { 0xC3 }));
     }
 
     [Fact]

@@ -27,8 +27,6 @@ public sealed class Utf8TerminalSetCountTests
             var bytes = Encoding.UTF8.GetBytes(text); byte[] backing = [0xff, .. bytes, 0xff];
             Assert.Equal(expected, regex.Count(backing.AsSpan(1, bytes.Length), live.Token));
             Assert.Equal(expected, regex.Count(bytes));
-            byte[] malformed = [.. bytes, 0xff];
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         }
     }
 

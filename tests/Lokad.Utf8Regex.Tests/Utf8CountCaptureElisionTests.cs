@@ -46,8 +46,7 @@ public sealed class Utf8CountCaptureElisionTests
             // observed capture trail still needs its own admitted capacity.
             // This public allowance must not shrink with an elided trail.
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128,
-                    MaxWorkingBytes = 1280, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1280, MaxResultBytes = 1 });
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
             Assert.True(regex.IsMatch(input, cancellation.Token));
@@ -85,8 +84,7 @@ public sealed class Utf8CountCaptureElisionTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var tiny = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128,
-                    MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1, MaxResultBytes = 1000000 });
+                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1, MaxResultBytes = 1000000 });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(input)).ResourceKind);
             var funded = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
@@ -124,7 +122,7 @@ public sealed class Utf8CountCaptureElisionTests
         var regex = new Utf8Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(20),
             new() { MaxWorkSteps = 10000000, MaxDepth = 100000, MaxWorkingBytes = 16777216, MaxResultBytes = 1 });
         var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

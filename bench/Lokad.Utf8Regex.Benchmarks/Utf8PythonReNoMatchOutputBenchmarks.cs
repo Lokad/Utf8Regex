@@ -30,8 +30,10 @@ public class Utf8PythonReNoMatchOutputBenchmarks
         _finite = new Utf8PythonRegex(item.Pattern, item.Options, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50_000_000, MaxDepth = 1024,
-                MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20,
+                MaxWorkSteps = 50_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 64 << 20,
+                MaxResultBytes = 128 << 20
             });
         _regex = new Regex(item.Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();

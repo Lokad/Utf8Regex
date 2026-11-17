@@ -120,7 +120,7 @@ public sealed partial class Utf8Regex
             {
                 return scalarIsMatch;
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
@@ -154,11 +154,11 @@ public sealed partial class Utf8Regex
             {
                 // A default validation result does not prove the subject is
                 // mixed. Reuse this ASCII proof in the router below.
-                validation = new Utf8ValidationResult(input.Length, input.Length, true, false);
+                validation = new Utf8ValidationResult(input.Length, true, false);
             }
             else
             {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref invocation);
             }
         }
@@ -195,7 +195,7 @@ public sealed partial class Utf8Regex
             {
                 return scalarCount;
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             return OwnedSliceCountFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
@@ -227,9 +227,9 @@ public sealed partial class Utf8Regex
                     return default(Utf8CaptureRange);
                 }
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, validation, ref invocation);
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
 
         return _compiledEngine.Kind switch
@@ -248,14 +248,11 @@ public sealed partial class Utf8Regex
         {
             if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
             {
-                var analysis = Utf8ValidatedInput.Create(input, InputValidation);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, _preparedRegex, budget))
                     .WithTimeoutMapping(input, this);
             }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
-            if (validation.ByteLength != input.Length)
-                validation = Utf8Validation.Subject(input, ref invocation);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             invocation.ShareStorageForCursor();
             var cursor = new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);

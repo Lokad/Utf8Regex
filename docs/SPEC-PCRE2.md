@@ -10,33 +10,23 @@ See [release notes](../CHANGELOG.md), [migration](MIGRATION.md),
 [API snapshot](../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 Historical receipts retain their original product/runtime identities.
 
-## Subject input validation
+## Subject input contract
 
-The immutable constructor/factory `inputValidation` option and read-only
-`InputValidation` property select native UTF-mode checking. `Validate` is default:
-check from the requested start offset, extended backward by the pattern's maximum
-lookbehind in Unicode scalars, through the end of the subject. Native PCRE2 also
-records a one-scalar lookbehind for `\b`, `\B` and `\A`. Invalid bytes before this
-window do not cause rejection; an invalid suffix does, even after an early match.
-Errors report absolute byte offsets. Checking occurs at most once per operation
-or cursor lifetime, under the original cancellation/deadline and work budget.
-See [PCRE2 UTF support](https://www.pcre.org/current/doc/html/pcre2unicode.html).
+The host supplies already-valid UTF-8 subjects and keeps borrowed bytes unchanged
+throughout use. There is no subject-validity pass, maximum-lookbehind validation
+window, input policy or validation token. Validate external bytes at the host's
+text boundary. This deliberately differs from native PCRE2's default UTF checking;
+benchmark comparisons use native `PCRE2_NO_UTF_CHECK` with the same valid-text
+guarantee. Pattern and template validation remain independent.
 
-`AssumeValid` is the subject `PCRE2_NO_UTF_CHECK` equivalent: the caller guarantees
-valid UTF-8 and unchanged borrowed storage. It omits subject checking while
-retaining managed bounds and matching/output resource controls. Pattern and
-replacement validation remain independent. No invalid-UTF matching mode,
-per-call override or public validation token is introduced.
-
-Results expose byte endpoints without UTF-16 projection or a prefix scan.
-An ignored malformed prefix does not affect those byte endpoints. The match's
-own contiguous/well-formed value status remains independently identifiable.
-
-Byte-template `Replace`/`TryReplace` preserve an ignored malformed prefix as raw
-bytes; `SubstituteReplacementOnly` can omit it. Text output and completed callback
-writer output still require well-formed UTF-8 under the independent output
-contract. Rejection of a malformed assembled result does not widen the subject
-validation window. Use byte-template output when those original bytes must survive.
+Malformed subjects have unspecified matching results and no invalid-offset or
+rejection promise. Managed bounds checking, original cancellation/deadlines and
+useful work/depth/working/result limits remain active. Byte starts must be scalar
+boundaries in the original subject; lookbehind and anchors retain prefix context.
+Results expose byte endpoints without UTF-16 projection or prefix scans. Explicit
+`\C` byte atoms and `\K` can still produce slices requiring their own decoding
+checks. Assembled text and callback outputs keep their independent well-formedness
+requirements.
 
 ## Surface and admission
 
@@ -131,7 +121,7 @@ uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
 A lone default `\X` under unlimited Boolean matching can answer existence from
 validated nonempty scalar input, retaining the candidate charge without computing
-an unused cluster endpoint. Native UTF-window validation runs in Validate mode. Explicit
+an unused cluster endpoint. Explicit
 flags, finite/token/deadline/funded calls, hooks and range-returning operations
 retain the established execution and grapheme metering.
 
@@ -146,7 +136,7 @@ non-monotone result with `NotSupportedException`.
 `IsUtf8SliceWellFormed` can be false when explicitly allowed `\C` splits a
 scalar. Such ranges retain their bytes and reject string extraction.
 No result exposes UTF-16 offsets or a UTF-16 projection flag. `\C` consumes one byte,
-is forbidden in UTF lookbehind, and does not change the selected subject validation policy.
+is forbidden in UTF lookbehind, and retains the caller-valid subject contract.
 Successive global matches can expose individual bytes. Byte replacement can
 produce invalid UTF-8 in this mode; string replacement rejects invalid output.
 
@@ -223,7 +213,7 @@ for ownership and exclusions.
 
 ## Interruption and resource controls
 
-Execution twins preserve the original token. Checks cover validation, bounded
+Execution twins preserve the original token. Checks cover bounded input inspection,
 search/VM/grapheme work, projection, output, callback boundaries and publication.
 One absolute deadline spans lazy advances and controlled preparation.
 Pre-cancellation wins; timeout reports `Pcre2MatchException` / Timeout.
@@ -248,8 +238,7 @@ reject work that acquires none of that storage. Existing shared denials remain
 authoritative, including for an empty stream. Positive, nonnegated unions of
 ASCII ranges also admit mixed valid UTF-8: their members are scalar-aligned ASCII
 bytes and all bytes of other scalars are excluded. This needs no subject ASCII
-classification or VM workspace; native UTF validation still follows the instance
-policy. Eligibility scans immutable class terms with interruption/work checks
+classification or VM workspace. Eligibility scans immutable class terms with interruption/work checks
 at most 64 additional terms apart, without another retained program flag. An empty
 suffix is already ASCII and needs no such proof. Modeled work and working-state
 requirements can decrease; a large pattern's eligibility remains bounded.
@@ -328,8 +317,7 @@ retain their selection; nondefault match options keep their owned PCRE2 continua
 Bounded ASCII Boolean plans can include subroutine calls whose authoritative
 lowered body is exactly capture-start, one eligible ASCII token, capture-end and
 return. They reuse the existing 64-alternative/128-token limits and construction
-admission, without recursive expansion. Native UTF-window validation runs in Validate mode;
-controlled matching, match flags and capture-returning operations retain the
+admission, without recursive expansion. Controlled matching, match flags and capture-returning operations retain the
 owned VM and their original interruption/resource authority.
 The same Boolean plans can filter nonempty ASCII conditional branches guarded
 by one positive/negative lookahead token, including plain capture wrappers.
@@ -371,7 +359,7 @@ The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
 and each call's cancellation token. Temporary storage uses program funding by
 default; an explicit working allowance selects a separate host account. Ordinary
 expressions also accept shared working admission through their full IsMatch/Count
-signatures. Existing numeric limits, native UTF-window validation, original
+signatures. Existing numeric limits, original
 cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
 `Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
 Covered temporary loans refund on success, failure and interruption. Borrowed
@@ -404,10 +392,8 @@ and survives owner disposal. No new retained-output receipt or string overload i
 required for this funded route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
-on expressions and program owners returns `Utf8Pcre2MatchCursor`. In Validate
-mode, the native UTF checking window (creation start minus maximum scalar
-lookbehind through the subject end) is validated once for the cursor lifetime.
-AssumeValid omits that pass under the caller's valid-text guarantee. Explicit starts
+on expressions and program owners returns `Utf8Pcre2MatchCursor` over already-valid
+unchanged text. No validity pass precedes cursor creation. Explicit starts
 are scalar-aligned bytes; prefix/lookbehind/anchor context remains the original
 subject. Sequential advances
 can cross awaits under the creation token, absolute deadline and cumulative limits.

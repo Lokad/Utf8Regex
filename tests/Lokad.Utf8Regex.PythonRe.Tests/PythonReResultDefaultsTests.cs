@@ -14,13 +14,16 @@ public sealed class PythonReResultDefaultsTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)]
-    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
     public void PublicDetailedMissesAgreeWithBorrowedViews(int operation, bool controlled)
     {
         var regex = new Utf8PythonRegex("(?P<x>a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            controlled ? new() { MaxWorkSteps = 100000, MaxDepth = 64,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 } : default);
+            controlled ? new() { MaxWorkSteps = 100000, MaxDepth = 64, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 } : default);
         using var cancellation = new CancellationTokenSource();
         var token = controlled ? cancellation.Token : default;
         var data = operation switch
@@ -53,7 +56,9 @@ public sealed class PythonReResultDefaultsTests
         Assert.Empty(absent.ValueText);
         var supplied = new Utf8PythonDetailedMatchData
         {
-            Groups = retained.Groups, NameEntries = retained.NameEntries, LastIndex = retained.LastIndex,
+            Groups = retained.Groups,
+            NameEntries = retained.NameEntries,
+            LastIndex = retained.LastIndex
         };
         Assert.Same(retained.Groups, supplied.Groups);
         Assert.Same(retained.NameEntries, supplied.NameEntries);

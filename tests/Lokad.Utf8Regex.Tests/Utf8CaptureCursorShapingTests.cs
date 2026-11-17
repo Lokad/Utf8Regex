@@ -100,20 +100,4 @@ public sealed class Utf8CaptureCursorShapingTests
         }
     }
 
-    [Theory]
-    [InlineData("needle")]
-    [InlineData("(needle)")]
-    [InlineData("needle|other")]
-    public void ValidatingCursorsRejectMalformedTailsAfterHitsAndMisses(string pattern)
-    {
-        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
-                     RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
-        foreach (var prefix in new[] { "needle", "xxxxx" })
-        {
-            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
-            byte[] input = [.. Encoding.UTF8.GetBytes(prefix), 0xff];
-            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
-        }
-    }
-
 }

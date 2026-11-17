@@ -58,9 +58,7 @@ public sealed class Utf8UriExistenceTests
             }
         }
         Assert.InRange(firstSuccess, 2UL, 32UL);
-        var malformed = "x://ab😀"u8.ToArray().Append((byte)255).ToArray();
-        Assert.Throws<ArgumentException>(() => Limited(100000).IsMatch(malformed));
-        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', 200000)).Append((byte)255).ToArray();
+        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', (1 << 20))).Append((byte)255).ToArray();
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(lateMalformed)).ResourceKind);
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
@@ -68,23 +66,25 @@ public sealed class Utf8UriExistenceTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
-    [InlineData(3, false)] [InlineData(3, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    [InlineData(3, true)]
     public void OriginalInterruptionReachesDelimiterSchemeBodyAndFailedCandidateLoops(int phase, bool expire)
     {
         var text = phase switch
         {
-            0 => new string('x', 200000),
-            1 => new string('x', 200000) + "://ab",
-            2 => "x://" + new string('a', 200000),
-            _ => string.Concat(Enumerable.Repeat("x://a ", 40000)),
+            0 => new string('x', (1 << 20)),
+            1 => new string('x', (1 << 20)) + "://ab",
+            2 => "x://" + new string('a', (1 << 20)),
+            _ => string.Concat(Enumerable.Repeat("x://a ", 200000)),
         };
         var input = Encoding.UTF8.GetBytes(text);
-        var calibration = new Utf8SliceInvocation(new(1000000, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
+        const ulong threshold = 64;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

@@ -8,36 +8,27 @@ package version. Version 0.5 supplies `net10.0` and `net11.0` assets; published
 [global.json](../global.json). Benchmarks use .NET 11 as the primary baseline,
 while historical rows retain their actual producer/runtime identities.
 
-### Choose the subject input contract
+### Subjects are caller-valid text
 
-| Profile | Subject contract in 0.5.0 |
-|---|---|
-| Core | Default `Validate` checks the entire subject at most once per operation/cursor. Immutable `AssumeValid` trusts valid unchanged UTF-8. |
-| PythonRe | Models Python `re` over `str`: pass already-valid unchanged UTF-8 text; regex operations do not validate the whole subject. |
-| PCRE2 | Default UTF checking covers start minus maximum scalar lookbehind through subject end. Immutable `AssumeValid` is the explicit trusted-input bypass. |
-| POSIX | Pass already-valid unchanged UTF-8 text; malformed-suffix rejection is not an extra compatibility requirement. |
+All four profiles require already-valid, unchanged UTF-8 subjects. Remove
+`inputValidation` constructor/factory arguments and `InputValidation` property
+reads; `Utf8InputValidation` is removed. There is no policy replacement or public
+validation token. Regex operations no longer check entire subjects or PCRE2's
+former native UTF window.
 
-For PythonRe/POSIX, validate external bytes where they become text. Neither adapter
-has an input-validation option/property. Core and PCRE2 select their policy once:
+Validate untrusted bytes where they become text, for example with
+`System.Text.Unicode.Utf8.IsValid`, unless the host representation already guarantees
+validity. Keep borrowed storage alive and unchanged during use. Malformed subjects
+have unspecified matching results and no rejection/error-offset promise. Managed
+bounds, scalar semantics, byte coordinates, synchronous cancellation/deadlines and
+resource admission remain. Pattern, template, name and assembled-output checks
+retain their separate strict rules. Numerical work and capacity needs can decrease
+when validation, unit totals and obsolete preparation disappear.
 
-```csharp
-using Lokad.Utf8Regex;
-
-var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
-// regex.InputValidation is read-only; every operation inherits it.
-```
-
-`AssumeValid` requires the caller's validity and borrowed-storage guarantees.
-There is no per-call override or public validation token. Pattern, template,
-capture-name and compatibility-profile callback output checks remain independent.
-Managed bounds, scalar semantics, byte offsets, cancellation and admission stay
-active. Required coordinate/output work can still inspect input.
-
-PCRE2 can ignore malformed bytes before its native validation window. Its results
-now expose only byte endpoints, without UTF-16 offsets or `HasUtf16Projection`.
-Its byte-template substitution can preserve ignored prefix bytes;
-text and callback output retain their independent well-formed UTF-8 requirements.
-See the [PCRE2 input contract](SPEC-PCRE2.md#subject-input-validation).
+PCRE2's caller-valid input contract deliberately differs from native default UTF
+checking; equivalent native benchmarks use `PCRE2_NO_UTF_CHECK`. Explicit byte
+atoms and special ranges retain their documented slice-decoding requirements.
+See the [PCRE2 input contract](SPEC-PCRE2.md#subject-input-contract).
 
 ### Native patterns, replacements and metadata
 
@@ -185,7 +176,7 @@ byte APIs. The former FromUtf16Offset APIs are removed in 0.5 development.
 
 Version 0.4 required strict whole-subject UTF-8 in all three published packages.
 Version 0.5 uses the profile contracts above. Denial/interruption can precede a
-malformed tail even where validation is required. Opted-in PCRE2 `\C` consumes one
+malformed tail; current subjects must already be valid text. Opted-in PCRE2 `\C` consumes one
 byte and can split a scalar; `\K` can also produce special ranges. Consult their
 slice/projection flags before decoding or extracting text.
 
@@ -217,7 +208,7 @@ use a conservative byte-derived string charge, and distant Python scalar queries
 can require extra working space for a scalar prefix index.
 
 Cancellation is synchronous and retains the original token. One absolute deadline
-covers required validation, matching, shaping and cursor waits. Compatibility
+covers required input inspection, matching, shaping and cursor waits. Compatibility
 profile callbacks cannot be forcibly interrupted; library copying/encoding
 afterward remains covered.
 Byte-capped Core/PythonRe timeout diagnostics omit subject text.

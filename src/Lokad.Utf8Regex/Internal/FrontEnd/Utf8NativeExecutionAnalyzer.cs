@@ -200,7 +200,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         new Utf8SearchFactData
                         {
                             AlternateLiteralsUtf8 = lookaheadAlternates,
-                            TrailingLiteralUtf8 = alternationTrailingLiteralUtf8,
+                            TrailingLiteralUtf8 = alternationTrailingLiteralUtf8
                         }),
                     lookaheadAlternationExecutionKind);
                 construction.Complete();
@@ -220,7 +220,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         Utf8SearchKind.AsciiFoldedByteLiterals,
                         new Utf8SearchFactData
                         {
-                            AlternateLiteralsUtf8 = ignoreCaseAlternateLiterals,
+                            AlternateLiteralsUtf8 = ignoreCaseAlternateLiterals
                         }),
                     NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals);
                 construction.Complete();
@@ -261,7 +261,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         {
                             AlternateLiteralsUtf8 = alternateLiterals,
                             LeadingBoundary = alternationLeadingBoundary,
-                            TrailingBoundary = alternationTrailingBoundary,
+                            TrailingBoundary = alternationTrailingBoundary
                         }),
                     executionKind);
                 construction.Complete();
@@ -485,7 +485,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
                         new Utf8SearchFactData
                         {
-                            AlternateLiteralsUtf8 = literalBranches,
+                            AlternateLiteralsUtf8 = literalBranches
                         }),
                     ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals);
                 construction.Complete();
@@ -1211,11 +1211,9 @@ internal static class Utf8NativeExecutionAnalyzer
                     Utf8SearchKind.ExactAsciiLiterals,
                     new Utf8SearchFactData
                     {
-                        AlternateLiteralsUtf8 = prefixes,
-                        // Boundaries and suffixes still belong to verification;
-                        // every admitted branch starts with one of these literals.
+                        AlternateLiteralsUtf8 = prefixes,                        // every admitted branch starts with one of these literals.
                         CanGuideFallbackStarts = true,
-                        LeadingBoundary = leadingBoundary,
+                        LeadingBoundary = leadingBoundary
                     }),
                 plan);
             construction.Complete(); return true;
@@ -1379,7 +1377,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     new Utf8SearchFactData
                     {
                         LiteralUtf8 = plan.AnchorLiteralUtf8,
-                        MinRequiredLength = plan.LeadingLength + plan.SeparatorMinCount + plan.AnchorLiteralUtf8.Length + plan.SeparatorMinCount + plan.TrailingLength,
+                        MinRequiredLength = plan.LeadingLength + plan.SeparatorMinCount + plan.AnchorLiteralUtf8.Length + plan.SeparatorMinCount + plan.TrailingLength
                     }),
                 plan,
                 plan.AnchorLiteralUtf8);
@@ -1515,7 +1513,7 @@ internal static class Utf8NativeExecutionAnalyzer
                       {
                           AlternateLiteralsUtf8 = plan.LeadingLiteralsUtf8 ?? [],
                           CanGuideFallbackStarts = true,
-                          MinRequiredLength = plan.LeadingLiteralUtf8.Length + plan.TrailingLiteralUtf8.Length,
+                          MinRequiredLength = plan.LeadingLiteralUtf8.Length + plan.TrailingLiteralUtf8.Length
                       })
                 : Utf8SearchFacts.Create(
                       Utf8SearchKind.ExactAsciiLiteral,
@@ -1523,7 +1521,7 @@ internal static class Utf8NativeExecutionAnalyzer
                       {
                           LiteralUtf8 = plan.LeadingLiteralUtf8,
                           CanGuideFallbackStarts = true,
-                          MinRequiredLength = plan.LeadingLiteralUtf8.Length + plan.TrailingLiteralUtf8.Length,
+                          MinRequiredLength = plan.LeadingLiteralUtf8.Length + plan.TrailingLiteralUtf8.Length
                       });
 
             var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
@@ -1999,7 +1997,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     Utf8SearchKind.None,
                     new Utf8SearchFactData
                     {
-                        MinRequiredLength = plan.RepetitionMinCount * (1 + plan.TrailingMinCount + plan.SeparatorMinCount),
+                        MinRequiredLength = plan.RepetitionMinCount * (1 + plan.TrailingMinCount + plan.SeparatorMinCount)
                     }),
                 plan);
             construction.Complete(); return true;
@@ -2051,7 +2049,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
                 Utf8SearchFacts.Create(Utf8SearchKind.None, new Utf8SearchFactData
                 {
-                    RequiredPrefilterAlternateLiteralsUtf8 = quotedPrefixes,
+                    RequiredPrefilterAlternateLiteralsUtf8 = quotedPrefixes
                 }),
                 plan);
             construction.Complete(); return true;

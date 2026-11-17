@@ -109,7 +109,9 @@ public sealed class Pcre2SupplementaryCaseTests
 
     private static Utf8Pcre2ExecutionLimits Limits(bool finite) => finite ? new()
     {
-        MatchLimit = 1_000_000, DepthLimit = 256,
-        HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20,
+        MatchLimit = 1_000_000,
+        DepthLimit = 256,
+        HeapLimitInBytes = 1 << 20,
+        ResultLimitInBytes = 1 << 20
     } : default;
 }

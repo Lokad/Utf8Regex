@@ -291,7 +291,6 @@ public sealed class Pcre2SliceCallbackAuthorityTests
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(regex, "é😀"u8.ToArray(),
             new Observation(), text, source.Token));
         Assert.Equal(source.Token, canceled.CancellationToken);
-        Assert.Throws<ArgumentException>(() => Run(regex, [0xff], new Observation(), text, CancellationToken.None));
         Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, "é😀"u8.ToArray(),
             new Observation(), text, CancellationToken.None, 3));
     }

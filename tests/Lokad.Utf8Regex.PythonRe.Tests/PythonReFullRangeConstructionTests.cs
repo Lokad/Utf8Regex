@@ -9,8 +9,10 @@ public sealed class PythonReFullRangeConstructionTests
 {
     private static readonly Utf8ResourcePolicy Limits = new()
     {
-        MaxWorkSteps = 100000, MaxDepth = 64,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        MaxWorkSteps = 100000,
+        MaxDepth = 64,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
 
     private static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None)

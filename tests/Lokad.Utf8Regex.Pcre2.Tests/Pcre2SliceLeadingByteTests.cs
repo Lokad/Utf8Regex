@@ -114,7 +114,6 @@ public sealed class Pcre2SliceLeadingByteTests
         Assert.Equal((byte)'a', direct.Fallback.LeadingAsciiByte);
         var input = Encoding.UTF8.GetBytes(new string('x', prefix) + "abc123");
         Assert.True(regex.IsMatch(input, 0));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input.Concat(new byte[] { 0xc3 }).ToArray(), 0));
         using var live = new CancellationTokenSource(); live.Cancel();
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(input, 0, Pcre2MatchOptions.None, live.Token)).CancellationToken);

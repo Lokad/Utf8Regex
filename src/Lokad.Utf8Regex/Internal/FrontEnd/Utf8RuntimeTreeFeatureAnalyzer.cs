@@ -13,7 +13,7 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
         var state = new FeatureState
         {
             CaptureCount = semanticRegex.RuntimeTree.CaptureCount,
-            HasNamedCaptures = semanticRegex.RuntimeTree.CaptureNameToNumberMapping is { Count: > 0 },
+            HasNamedCaptures = semanticRegex.RuntimeTree.CaptureNameToNumberMapping is { Count: > 0 }
         };
 
         Visit(root, ref state);

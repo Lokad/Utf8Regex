@@ -181,7 +181,6 @@ public sealed class Utf8AnchoredProfileQualificationTests
             Assert.Equal((0, 6), (values.Current.StartOffsetInBytes, (values.Current.EndOffsetInBytes - values.Current.StartOffsetInBytes))); Assert.True(values.MoveNext());
             Assert.Equal((6, 3), (values.Current.StartOffsetInBytes, (values.Current.EndOffsetInBytes - values.Current.StartOffsetInBytes))); Assert.False(values.MoveNext());
         }
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(Quoted).IsMatch(new byte[] { 34, 34, 0xff }));
     }
 
     [Fact]

@@ -524,6 +524,6 @@ internal static partial class BenchmarkInspectReporter
         License = "BSD-3-Clause WITH PCRE2-exception",
         Profile = "UTF-8 standard NFA matcher, validation enabled, managed-profile LF newline and Unicode \\R, reusable match buffer, JIT disabled",
         BuildFingerprint = PcreNetNativeBenchmarkBaseline.CaptureBuildFingerprint(),
-        WorkspaceContract = PcreNetNativeBenchmarkBaseline.CaptureWorkspaceContract(),
+        WorkspaceContract = PcreNetNativeBenchmarkBaseline.CaptureWorkspaceContract()
     };
 }

@@ -35,16 +35,6 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
     }
 
-    [Fact]
-    public void FoldedFamilyRejectsMalformedSuffixAfterEarlyMatch()
-    {
-        var regex = new Utf8Regex("cat|horse", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        byte[] input = [.. "é😀 CAT"u8, 0xF0, 0x80];
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.Match(input));
-    }
-
     [Theory]
     [InlineData("kilo", false)]
     [InlineData("kilo", true)]
@@ -127,27 +117,6 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expectedRegex.Split(Subject), actualSplits);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void KelvinFallbackStillRejectsMalformedUtf8(bool compiled)
-    {
-        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        if (compiled)
-        {
-            options |= RegexOptions.Compiled;
-        }
-
-        var regex = new Utf8Regex("kilo|cat|dog", options);
-        var malformed = new byte[] { 0xE2, 0x84, 0xAA, 0xFF };
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
-        Assert.Throws<ArgumentException>(() => ConsumeMatches(regex, malformed));
-        Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "X"));
     }
 
     [Theory]
@@ -567,8 +536,5 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)
     {
-        foreach (var _ in regex.EnumerateMatches(input))
-        {
-        }
     }
 }

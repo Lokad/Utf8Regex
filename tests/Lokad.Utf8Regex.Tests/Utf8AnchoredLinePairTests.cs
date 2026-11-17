@@ -10,8 +10,10 @@ public sealed class Utf8AnchoredLinePairTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-        MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 1024,
+        MaxWorkingBytes = 1_000_000,
+        MaxResultBytes = 1_000_000
     };
 
     [Theory]
@@ -131,16 +133,5 @@ public sealed class Utf8AnchoredLinePairTests
             Assert.Equal(1, checkpoints);
         }
         finally { session.Complete(); }
-    }
-
-    [Fact]
-    public void WholeSubjectValidationPrecedesEarlyResults()
-    {
-        var regex = new Utf8Regex(@"^i[0-9]+x", RegexOptions.Multiline, Regex.InfiniteMatchTimeout, Policy);
-        foreach (var input in new byte[][] { [255, 10, 105, 55, 120], [105, 55, 120, 10, 255], [105, 55, 120, 0xf0, 0x9f] })
-        {
-            Assert.Throws<ArgumentException>(() => regex.Count(input));
-            Assert.Throws<ArgumentException>(() => regex.Match(input));
-        }
     }
 }

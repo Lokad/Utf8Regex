@@ -7,7 +7,7 @@ public static class Pcre2CorpusProvenanceLoader
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true,
+        PropertyNameCaseInsensitive = true
     };
 
     static Pcre2CorpusProvenanceLoader()

@@ -5,8 +5,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Input;
 
 /// <summary>
-/// Operation-local subject bytes and optional validation facts. The engine
-/// establishes validity or a caller guarantee for the relevant input range.
+/// Operation-local caller-valid subject bytes and optional eligibility facts. The engine
+/// relies on the caller to guarantee validity for the complete subject.
 /// </summary>
 internal ref struct Utf8ValidatedInput
 {
@@ -19,19 +19,11 @@ internal ref struct Utf8ValidatedInput
         _validation = validation;
     }
 
-    // PCRE2-INTEGRATION-POINT: the adapter has checked its native UTF window,
-    // or has an explicit trusted-input contract. Byte execution needs no whole
+    // PCRE2-INTEGRATION-POINT: the adapter requires caller-valid text.
+    // Byte execution needs no whole
     // subject description; genuine metadata consumers request it separately.
     internal static Utf8ValidatedInput BorrowBytes(ReadOnlySpan<byte> bytes, bool isAscii = false)
-        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, bytes.Length, true, false) : null);
-
-    internal void Describe(ref Utf8SliceInvocation invocation)
-    {
-        if (_validation.HasValue) return;
-        var breach = Utf8Validation.TryDescribeValid(_bytes, ref invocation, out var validation);
-        if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-        _validation = validation;
-    }
+        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, true, false) : null);
 
     public ReadOnlySpan<byte> Bytes => _bytes;
 
@@ -44,9 +36,8 @@ internal ref struct Utf8ValidatedInput
     public bool IsAscii => _validation?.IsAscii == true;
 
 
-    public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => new(input, Utf8Validation.Subject(input, inputValidation));
+    public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input)
+        => new(input, Utf8InputAnalyzer.Describe(input));
 
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
         => GetBytePosition(_bytes, value, parameterName);
@@ -74,7 +65,7 @@ internal ref struct Utf8ValidatedInput
     }
 
     public Utf8ValidationResult GetSuffixValidation(Utf8BytePosition start) =>
-        Utf8Validation.DescribeValid(_bytes[start.Value..]);
+        Utf8InputAnalyzer.Describe(_bytes[start.Value..]);
 
     public bool TryAdvanceScalar(Utf8BytePosition position, out Utf8BytePosition next)
     {
@@ -87,7 +78,7 @@ internal ref struct Utf8ValidatedInput
         var status = Rune.DecodeFromUtf8(_bytes[position.Value..], out _, out var consumed);
         if (status != OperationStatus.Done)
         {
-            throw new InvalidOperationException("Validated UTF-8 subject contained an invalid scalar boundary.");
+            throw new InvalidOperationException("Caller-valid UTF-8 subject contained an invalid scalar boundary.");
         }
 
         next = new Utf8BytePosition(position.Value + consumed);

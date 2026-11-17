@@ -37,7 +37,6 @@ public sealed class Utf8TemplateInputPreparationTests
             {
                 Assert.Equal(expected, utf8Template ? regex.Replace(input, "<$1>"u8) : regex.Replace(input, template));
             }
-            Assert.InRange(session.SubjectValidations, 0, 1);
         }
         finally { session.Complete(); }
     }

@@ -152,25 +152,6 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     }
 
     [Theory]
-    [MemberData(nameof(EntryCases))]
-    public void EntryCancellationPrecedesReturnAndUsesTheExactCallerToken(string pattern, bool compiled, bool mixed)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0), TimeSpan.FromSeconds(10));
-        var input = Encoding.UTF8.GetBytes(new string(mixed ? 'é' : 'x', 200000));
-        using var source = new CancellationTokenSource();
-        var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
-        var canceled = false;
-        try
-        {
-            try { _ = regex.EnumerateMatches(input, 1, source.Token); }
-            catch (OperationCanceledException exception) { Assert.Equal(source.Token, exception.CancellationToken); canceled = true; }
-            Assert.True(canceled);
-        }
-        finally { session.Complete(); }
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Theory]
     [InlineData("abc")]
     [InlineData("é")]
     [InlineData("(?:ab|xy)")]
@@ -222,7 +203,6 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
         byte[] malformed = [0xc3, 0xa9, 0xff];
-        Assert.Throws<ArgumentException>(() => { _ = regex.EnumerateMatches(malformed, -1, token); });
         foreach (var offset in new[] { -1, 1, 3, 4, 5, 7, int.MaxValue })
         {
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches("é😀"u8, offset, token); });
@@ -290,7 +270,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
-        var original = new Utf8OperationMatchCursor(input, literal, kind, validation, baseline);
+        var original = new Utf8OperationMatchCursor(input, literal, kind, baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, original.TryMoveNextAnchoredLiteral(out var found));
         Assert.True(found);
         var expected = new Regex((prefix ? "^" : "") + new string('a', 4097) + (prefix ? "" : kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix ? "$" : "\\z")).Match(text);
@@ -299,7 +279,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var cursor = new Utf8OperationMatchCursor(input, literal, kind, validation, invocation);
+            var cursor = new Utf8OperationMatchCursor(input, literal, kind, invocation);
             var previous = cursor.CurrentValueMatch;
             var floor = cursor.DebugConsumed;
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.TryMoveNextAnchoredLiteral(out found));
@@ -329,7 +309,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             input = Encoding.UTF8.GetBytes(new string('x', 8193) + "abc ab1d getAlpha");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8Validation.Validate(input, ref invocation);
+        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         Assert.True(Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(prepared, validation, ref invocation));
         var steps = invocation.Budget.Steps;
         var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, validation, invocation, 8193);

@@ -1001,7 +1001,7 @@ internal static partial class Utf8SliceRunner
                             Target = instruction.A,
                             InputIndex = inputIndex,
                             TrailCount = stacks.TrailCount,
-                            JournalCount = stacks.JournalCount,
+                            JournalCount = stacks.JournalCount
                         },
                         ref invocation))
                     {
@@ -1094,7 +1094,7 @@ internal static partial class Utf8SliceRunner
                             InputIndex = inputIndex,
                             TrailCount = stacks.TrailCount,
                             JournalCount = stacks.JournalCount,
-                            Aux = repeatId,
+                            Aux = repeatId
                         };
                         if (greedy)
                         {
@@ -1152,7 +1152,7 @@ internal static partial class Utf8SliceRunner
                     if (program.UsesCaptureOpeningJournal)
                     {
                         if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                            { failure = stacks.Breach; goto Failure; }
+                        { failure = stacks.Breach; goto Failure; }
                         programIndex++;
                         break;
                     }
@@ -1180,7 +1180,7 @@ internal static partial class Utf8SliceRunner
                             { failure = openingBreach; goto Failure; }
                         if (!stacks.PushRestoreTrail(instruction.A, captureStarts[instruction.A], opening, captureEnds[instruction.A], inputIndex, ref invocation) ||
                             !stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, OldValue = opening, NewValue = inputIndex, IsClosing = true }, ref invocation))
-                            { failure = stacks.Breach; goto Failure; }
+                        { failure = stacks.Breach; goto Failure; }
                         captureStarts[instruction.A] = opening;
                         captureEnds[instruction.A] = inputIndex;
                     }
@@ -1480,8 +1480,11 @@ internal static partial class Utf8SliceRunner
                     // Retain the body's opening without testing its source yet:
                     // the body can establish the capture popped at successful close.
                     if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry {
-                            Slot = instruction.B, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                        { failure = stacks.Breach; goto Failure; }
+                        Slot = instruction.B,
+                        NewValue = inputIndex,
+                        IsOpening = true
+                    }, ref invocation))
+                    { failure = stacks.Breach; goto Failure; }
                     programIndex++;
                     break;
 
@@ -1543,7 +1546,11 @@ internal static partial class Utf8SliceRunner
                             if (!stacks.PushRestoreTrail(captureSlot, captureStarts[captureSlot], gapStart,
                                     captureEnds[captureSlot], gapEnd, ref invocation) ||
                                 !stacks.PushTrailEntry(new Utf8SliceTrailEntry {
-                                    Slot = captureSlot, OldValue = gapStart, NewValue = gapEnd, IsClosing = true }, ref invocation) ||
+                                    Slot = captureSlot,
+                                    OldValue = gapStart,
+                                    NewValue = gapEnd,
+                                    IsClosing = true
+                                }, ref invocation) ||
                                 !stacks.PushBalance(gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
                                 !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
                                 { failure = stacks.Breach; goto Failure; }

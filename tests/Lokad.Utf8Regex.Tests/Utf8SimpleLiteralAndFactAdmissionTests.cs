@@ -25,14 +25,27 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             default, default, default, default, default, default, default, default, false, false);
     private static Utf8SearchFactData Data() => new()
     {
-        LiteralUtf8 = "one"u8.ToArray(), AlternateLiteralsUtf8 = ["two"u8.ToArray()], CanGuideFallbackStarts = true,
-        RequiredPrefilterLiteralUtf8 = "three"u8.ToArray(), RequiredPrefilterAlternateLiteralsUtf8 = ["four"u8.ToArray()],
-        SecondaryRequiredPrefilterQuotedAsciiSet = Utf8SearchAsciiSet.FromBytes("AB"u8), SecondaryRequiredPrefilterQuotedAsciiLength = 5,
-        FixedDistanceSets = [default], TrailingLiteralUtf8 = "five"u8.ToArray(), OrderedWindowLeadingLiteralsUtf8 = ["six"u8.ToArray()],
-        OrderedWindowTrailingLiteralUtf8 = "seven"u8.ToArray(), RequiredWindowPrefilters = [default], OrderedWindowMaxGap = 17,
-        OrderedWindowSameLine = true, FallbackStartTransform = new(11, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
-        Distance = 19, MinRequiredLength = 23, ExactRequiredLength = 29, MaxPossibleLength = 31,
-        LeadingBoundary = Utf8BoundaryRequirement.Boundary, TrailingBoundary = Utf8BoundaryRequirement.NonBoundary,
+        LiteralUtf8 = "one"u8.ToArray(),
+        AlternateLiteralsUtf8 = ["two"u8.ToArray()],
+        CanGuideFallbackStarts = true,
+        RequiredPrefilterLiteralUtf8 = "three"u8.ToArray(),
+        RequiredPrefilterAlternateLiteralsUtf8 = ["four"u8.ToArray()],
+        SecondaryRequiredPrefilterQuotedAsciiSet = Utf8SearchAsciiSet.FromBytes("AB"u8),
+        SecondaryRequiredPrefilterQuotedAsciiLength = 5,
+        FixedDistanceSets = [default],
+        TrailingLiteralUtf8 = "five"u8.ToArray(),
+        OrderedWindowLeadingLiteralsUtf8 = ["six"u8.ToArray()],
+        OrderedWindowTrailingLiteralUtf8 = "seven"u8.ToArray(),
+        RequiredWindowPrefilters = [default],
+        OrderedWindowMaxGap = 17,
+        OrderedWindowSameLine = true,
+        FallbackStartTransform = new(11, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
+        Distance = 19,
+        MinRequiredLength = 23,
+        ExactRequiredLength = 29,
+        MaxPossibleLength = 31,
+        LeadingBoundary = Utf8BoundaryRequirement.Boundary,
+        TrailingBoundary = Utf8BoundaryRequirement.NonBoundary
     };
     private static object Input(int route) => route switch
     {
@@ -312,7 +325,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
         Assert.Equal(513, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
     }
     [Fact]
     public void AsciiMetadataRejectsNonAsciiBeforeAcquisition()
@@ -395,8 +407,10 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     }
 
     [Theory]
-    [InlineData(false, 3000)] [InlineData(true, 3000)]
-    [InlineData(false, 4097)] [InlineData(true, 4097)]
+    [InlineData(false, 3000)]
+    [InlineData(true, 3000)]
+    [InlineData(false, 4097)]
+    [InlineData(true, 4097)]
     public void WrappedLiteralKeepsItsAdmittedPublicRoute(bool compiled, int length)
     {
         var suffix = new string('x', length);
@@ -413,7 +427,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(1, regex.Count(input));
         Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
         Assert.Equal(suffix.Length + 1, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]

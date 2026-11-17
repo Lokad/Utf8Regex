@@ -14,7 +14,10 @@ public sealed class Utf8HexColorValueMatchTests
     private const RegexOptions Fold = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
     private static readonly Utf8ResourcePolicy Funded = new()
     {
-        MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20
+        MaxWorkSteps = 100000,
+        MaxDepth = 256,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
 
     [Theory]
@@ -105,7 +108,7 @@ public sealed class Utf8HexColorValueMatchTests
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { validationReads++; return 0; }))
         {
             var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, default);
-            Utf8Validation.Validate(input, ref validation);
+            Utf8InputAnalyzer.Describe(input, ref validation);
         }
         using var token = new CancellationTokenSource(); var reads = 0; var entered = false;
         // This constant-width operation never reaches the 64-step diagnostic
@@ -136,7 +139,6 @@ public sealed class Utf8HexColorValueMatchTests
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         Assert.Equal("AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span)); Assert.Equal("#AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token,
             Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);

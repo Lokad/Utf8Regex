@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReUnicodeBoundaryTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Fact]
     public void UnicodeBoundaryKeepsThePinnedPredicateWithoutLookaroundPrograms()
@@ -107,7 +106,7 @@ public sealed class PythonReUnicodeBoundaryTests
         // cannot inject during validation instead of the subsequent word scan.
         var validation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20),
             Regex.InfiniteMatchTimeout, token.Token);
-        Utf8Validation.Validate(input, ref validation);
+        Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.None, timeout, Funded);
         var entered = false;

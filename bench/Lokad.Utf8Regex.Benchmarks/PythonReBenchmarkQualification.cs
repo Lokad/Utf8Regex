@@ -553,7 +553,7 @@ internal static partial class PythonReBenchmarkReporter
                     CpythonProcessCpuMilliseconds = cpythonProcessCpuMilliseconds[index],
                     ManagedGcCollections = managedGcCollections[index],
                     CpythonGcCollections = cpythonGcCollections[index],
-                    ManagedAllocatedBytes = managedAllocatedBytes[index],
+                    ManagedAllocatedBytes = managedAllocatedBytes[index]
                 })
                 .ToArray(),
             ManagedEmptyLoopMicroseconds = managedFloorMicroseconds.ToArray(),
@@ -562,7 +562,7 @@ internal static partial class PythonReBenchmarkReporter
             CpythonTrivialCallMicroseconds = cpythonTrivialMicroseconds.ToArray(),
             ByteControl = byteControlEvidence,
             CpythonEnvironment = worker.Environment,
-            ManagedEnvironment = managedEnvironment,
+            ManagedEnvironment = managedEnvironment
         };
         var qualification = new PythonReQualificationMeasurement
         {
@@ -574,7 +574,7 @@ internal static partial class PythonReBenchmarkReporter
             EngineConclusion = byteControlEvidence?.EngineConclusion ?? "NotApplicable",
             EngineConclusionReason = byteControlEvidence?.EngineConclusionReason ??
                 byteControlEligibility.Reason,
-            PairedEvidence = pairedEvidence,
+            PairedEvidence = pairedEvidence
         };
 
         Console.WriteLine($"CaseId             : {caseId}");
@@ -1252,11 +1252,11 @@ internal static partial class PythonReBenchmarkReporter
                     Ratio = ratios[index],
                     CpythonElapsedMilliseconds = byteMilliseconds[index],
                     CpythonProcessCpuMilliseconds = byteProcessCpuMilliseconds[index],
-                    CpythonGcCollections = byteGcCollections[index],
+                    CpythonGcCollections = byteGcCollections[index]
                 })
                 .ToArray(),
             CpythonEmptyLoopMicroseconds = byteEmptyMicroseconds.ToArray(),
-            CpythonTrivialCallMicroseconds = byteTrivialMicroseconds.ToArray(),
+            CpythonTrivialCallMicroseconds = byteTrivialMicroseconds.ToArray()
         };
     }
 
@@ -1986,7 +1986,7 @@ internal static partial class PythonReBenchmarkReporter
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
             Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies,
+            ScalingFamilies = snapshot.ScalingFamilies
         });
     }
 
@@ -2110,7 +2110,7 @@ internal static partial class PythonReBenchmarkReporter
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true,
+                CreateNoWindow = true
             };
             startInfo.ArgumentList.Add("-I");
             startInfo.ArgumentList.Add(FindRepositoryFile(CpythonRunnerRelativePath));
@@ -2168,7 +2168,7 @@ internal static partial class PythonReBenchmarkReporter
                 StartOffsetInBytes = benchmarkCase.Coverage.StartOffsetInBytes,
                 ReplacementCount = benchmarkCase.Coverage.ReplacementCount,
                 MaxSplit = benchmarkCase.Coverage.MaxSplit,
-                EnableByteControl = enableByteControl,
+                EnableByteControl = enableByteControl
             },
             "Prepared");
 
@@ -2182,7 +2182,7 @@ internal static partial class PythonReBenchmarkReporter
                     Kind = "Calibrate",
                     Lane = lane.ToString(),
                     TargetNanoseconds = checked((long)(targetMilliseconds * 1_000_000)),
-                    MaximumIterations = maximumIterations,
+                    MaximumIterations = maximumIterations
                 },
                 "Calibrated");
 
@@ -2200,7 +2200,7 @@ internal static partial class PythonReBenchmarkReporter
                     Iterations = iterations,
                     MinimumMilliseconds = minimumMilliseconds,
                     MinimumCalls = minimumCalls,
-                    MaximumBatches = maximumBatches,
+                    MaximumBatches = maximumBatches
                 },
                 "Warmed");
 
@@ -2210,7 +2210,7 @@ internal static partial class PythonReBenchmarkReporter
                 ProtocolVersion = PythonReQualificationProtocolVersion,
                 Kind = "Measure",
                 Lane = lane.ToString(),
-                Iterations = iterations,
+                Iterations = iterations
             },
             "Measured");
 
@@ -2228,7 +2228,7 @@ internal static partial class PythonReBenchmarkReporter
                 InputBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(input)),
                 Options = options,
                 Iterations = iterations,
-                Samples = samples,
+                Samples = samples
             },
             "LifecycleMeasured");
 
@@ -2247,7 +2247,7 @@ internal static partial class PythonReBenchmarkReporter
                         new CpythonStreamCommand
                         {
                             ProtocolVersion = PythonReQualificationProtocolVersion,
-                            Kind = "Shutdown",
+                            Kind = "Shutdown"
                         },
                         "Shutdown");
                     _process.StandardInput.Close();

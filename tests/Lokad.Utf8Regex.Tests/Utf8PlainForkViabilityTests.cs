@@ -40,13 +40,10 @@ public sealed class Utf8PlainForkViabilityTests
         const string pattern = """^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""";
         var input = Encoding.UTF8.GetBytes("import \"_Common\" as Common\nimport shared \"_Calendar\" as Calendar\n");
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1,
-                MaxWorkingBytes = 256, MaxResultBytes = 1 });
+            new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 1 });
         using var live = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input, live.Token));
         Assert.Equal(2, regex.Count(input));
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         live.Cancel();
         Assert.Equal(live.Token,
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);

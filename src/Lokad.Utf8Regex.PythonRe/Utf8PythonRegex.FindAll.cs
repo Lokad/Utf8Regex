@@ -80,7 +80,9 @@ public sealed partial class Utf8PythonRegex
                 ranges.Checkpoint();
                 return new Utf8PythonFindAllResult
                 {
-                    Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
+                    Shape = Utf8PythonFindAllShape.FullMatch,
+                    ScalarValues = values,
+                    TupleValues = []
                 };
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
@@ -133,7 +135,9 @@ public sealed partial class Utf8PythonRegex
                 ranges.Checkpoint();
                 return new Utf8PythonFindAllUtf8Result
                 {
-                    Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
+                    Shape = Utf8PythonFindAllShape.FullMatch,
+                    ScalarValues = values,
+                    TupleValues = []
                 };
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)

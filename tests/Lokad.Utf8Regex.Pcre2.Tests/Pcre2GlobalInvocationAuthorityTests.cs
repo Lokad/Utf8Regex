@@ -21,7 +21,7 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void GlobalValidationAndExecutionKeepOriginalToken(string pattern, string text, bool enumerate)
+    public void GlobalExecutionKeepsOriginalToken(string pattern, string text, bool enumerate)
     {
         foreach (var atRead in new[] { 2, 5 })
         foreach (var hit in new[] { false, true })
@@ -40,30 +40,11 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void InitialValidationCannotReachMalformedTailAfterWorkDenial(string pattern, string text, bool enumerate)
+    public void SearchStopsAtWorkDenial(string pattern, string text, bool enumerate)
     {
-        var input = new byte[16385]; input.AsSpan().Fill((byte)'x'); input[^1] = 0xff;
+        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Run(Create(pattern, 3), input, enumerate); }).ErrorKind);
-    }
-
-    [Theory]
-    [InlineData("abc", "abc", false)] [InlineData("abc", "abc", true)]
-    [InlineData("(?<x>a)b", "ab", false)] [InlineData("(?<x>a)b", "ab", true)]
-    [InlineData(@"(?<x>a)\k<x>", "aa", false)] [InlineData(@"(?<x>a)\k<x>", "aa", true)]
-    public void IndependentlyAdmissiblePhasesCannotResetCombinedAllowance(string pattern, string text, bool enumerate)
-    {
-        const uint work = 128;
-        var regex = Create(pattern, work);
-        var shortInput = Encoding.UTF8.GetBytes(text);
-        Assert.True(Run(regex, shortInput, enumerate, flags: Pcre2MatchOptions.Anchored) > 0);
-        var input = new byte[(work - 2) * 2048]; input.AsSpan().Fill((byte)'x'); shortInput.CopyTo(input, 0);
-        var validation = new Utf8SliceInvocation(new(work, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref validation, out _));
-        Assert.Equal((ulong)work, validation.Budget.Steps);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Run(regex, input, enumerate, flags: Pcre2MatchOptions.Anchored); }).ErrorKind);
-        Assert.True(Run(regex, shortInput, enumerate, flags: Pcre2MatchOptions.Anchored) > 0);
     }
 
     [Theory]
@@ -87,21 +68,12 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
         Assert.Equal(input.AsSpan(retained.StartOffsetInBytes, retained.EndOffsetInBytes - retained.StartOffsetInBytes).ToArray(), retained.GetValueBytes().ToArray());
     }
 
-    [Theory] [MemberData(nameof(Routes))]
-    public void SufficientAllowanceStillValidatesTheWholeSubject(string pattern, string text, bool enumerate)
-    {
-        var input = Encoding.UTF8.GetBytes(text + new string('x', 2047) + "😀"); input[^1] = 0xff;
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-        var actual = Assert.Throws<ArgumentException>(() => { _ = Run(Create(pattern, 100000), input, enumerate); });
-        Assert.Equal(expected.Message, actual.Message);
-    }
-
     [Theory]
     [InlineData("abc", "abc aa ab")]
     [InlineData("(?<x>a)b", "abc aa ab")]
     [InlineData(@"(?<x>a)\k<x>", "abc aa ab")]
     [InlineData(@"\x41+", "AAA AAA")]
-    public void CursorCopiesCannotForkSpentValidationOrLoseOriginalCancellation(string pattern, string subject)
+    public void CursorCopiesCannotForkSpentWorkOrLoseOriginalCancellation(string pattern, string subject)
     {
         using var source = new CancellationTokenSource();
         var regex = Create(pattern, 100000);
@@ -118,8 +90,7 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern,
-        Pcre2CompileOptions.None, default, new() { MatchLimit = work, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        Pcre2CompileOptions.None, default, new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
 
     private static int Run(Utf8Pcre2Regex regex, byte[] input, bool enumerate, CancellationToken token = default,
         Pcre2MatchOptions flags = Pcre2MatchOptions.None)

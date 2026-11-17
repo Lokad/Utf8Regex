@@ -71,9 +71,6 @@ public sealed class Pcre2TryReplaceInvocationTests
             4, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None));
         Assert.Equal(expectedBytes.Length, written);
         Assert.Equal(expectedBytes, destination);
-        var malformed = new byte[input.Length + 1]; input.CopyTo(malformed, 0); malformed[^1] = 0xff;
-        var error = Assert.Throws<ArgumentException>(() => regex.TryReplace(malformed, replacement, destination, out _));
-        Assert.Equal(Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(malformed)).Message, error.Message);
         Assert.Equal(OperationStatus.Done, regex.TryReplace(input, replacement, destination, out _, 4, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None));
     }
 

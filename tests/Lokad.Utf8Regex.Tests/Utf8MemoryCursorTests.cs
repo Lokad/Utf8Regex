@@ -77,7 +77,6 @@ public sealed class Utf8MemoryCursorTests
         Assert.True(dots.MoveNext(out var second)); Assert.Equal(4, second.Value.StartOffsetInBytes); Assert.Equal(6, second.Value.EndOffsetInBytes);
         foreach (var start in new[] { -1, 1, 2, 3, 8, bytes.Length + 1 })
             Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(".").CreateMatchCursor(bytes, start));
-        Assert.Throws<ArgumentException>(() => new Utf8Regex("x").CreateMatchCursor(new byte[] { (byte)'x', 0xff }));
     }
 
     [Fact]
@@ -202,7 +201,6 @@ public sealed class Utf8MemoryCursorTests
         Assert.Throws<Utf8MemoryAdmissionException>(() => owner.CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working));
         Assert.Equal(held, root.Used); Assert.Equal(1, working.Attempts);
         working.Maximum = 1 << 20;
-        Assert.Throws<ArgumentException>(() => owner.CreateMatchCursor(new byte[] { 0xff }, workingMemoryAllowance: working));
         Assert.Equal(held, root.Used);
     }
 

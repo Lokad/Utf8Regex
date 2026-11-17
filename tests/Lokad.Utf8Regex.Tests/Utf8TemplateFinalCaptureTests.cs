@@ -36,7 +36,6 @@ public sealed class Utf8TemplateFinalCaptureTests
         var output = new byte[bytes.Length];
         Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, output, out var written));
         Assert.Equal(bytes.Length, written); Assert.Equal(bytes, output);
-        Assert.Throws<ArgumentException>(() => regex.Replace([.. input, 0xff], template));
     }
 
 }

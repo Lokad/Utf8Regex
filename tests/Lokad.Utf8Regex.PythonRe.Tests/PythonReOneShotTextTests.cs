@@ -53,10 +53,11 @@ public sealed class PythonReOneShotTextTests
         {
             using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
             {
-                MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 24,
-                MaxResultBytes = extent - (allow ? 0UL : 1UL),
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1 << 24,
+                MaxResultBytes = extent - (allow ? 0UL : 1UL)
             });
-            for (var kind = 0; kind < 3; kind++)
+                for (var kind = 0; kind < 3; kind++)
             {
                 if (allow) Assert.Equal(text, Run(regex, input, 2, kind, default));
                 else
@@ -124,9 +125,12 @@ public sealed class PythonReOneShotTextTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void NativeStringLoanOverlapsItsParentUntilPublication(int kind, bool allow)
     {
         var regex = kind switch

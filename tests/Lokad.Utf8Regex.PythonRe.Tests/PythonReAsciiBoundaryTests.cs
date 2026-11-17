@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReAsciiBoundaryTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Fact]
     public void AsciiBoundaryLowersToTheOwnedPrimitiveWithoutLookaroundState()
@@ -112,7 +111,7 @@ public sealed class PythonReAsciiBoundaryTests
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string(' ', 320000) + "a");
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.Validate(input, ref validation);
+        Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii, timeout, Funded);
         var entered = false;

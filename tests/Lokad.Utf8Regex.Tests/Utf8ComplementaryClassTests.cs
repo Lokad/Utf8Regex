@@ -13,13 +13,17 @@ public sealed class Utf8ComplementaryClassTests
     {
         var construction = new Utf8ConstructionPolicy
         {
-            MaxWorkSteps = 20000, MaxDepth = 128,
-            MaxInstructionCapacity = 1024, MaxBytes = 1 << 20,
+            MaxWorkSteps = 20000,
+            MaxDepth = 128,
+            MaxInstructionCapacity = 1024,
+            MaxBytes = 1 << 20
         };
         var invocation = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 10000, MaxDepth = 128,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+            MaxWorkSteps = 10000,
+            MaxDepth = 128,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
         };
         foreach (var compiled in new[] { false, true })
         {
@@ -94,25 +98,6 @@ public sealed class Utf8ComplementaryClassTests
             foreach (var match in regex.EnumerateMatches("é😀b\n"u8))
                 ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(new[] { (0, 2), (2, 4), (6, 1), (7, 1) }, ranges);
-        }
-    }
-
-    [Theory]
-    [InlineData(@"[^\s\S]")]
-    [InlineData(@"[^\d\D]*")]
-    [InlineData(@"[\s\S]")]
-    public void NormalizedClassesStillRejectMalformedWholeSubjects(string pattern)
-    {
-        byte[] input = [(byte)'a', 0xff];
-        foreach (var options in new[] { RegexOptions.None, RegexOptions.NonBacktracking,
-            RegexOptions.Compiled | RegexOptions.NonBacktracking })
-        {
-            var regex = new Utf8Regex(pattern, options);
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-            Assert.Throws<ArgumentException>(() => regex.Count(input));
-            Assert.Throws<ArgumentException>(() => { _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); });
-            Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "x")));
-            Assert.Throws<ArgumentException>(() => { foreach (var item in regex.EnumerateSplits(input)) { } });
         }
     }
 

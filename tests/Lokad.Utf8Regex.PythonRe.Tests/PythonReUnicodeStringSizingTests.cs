@@ -39,8 +39,10 @@ public sealed class PythonReUnicodeStringSizingTests
         {
             var policy = funded ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
             } : default;
             using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
@@ -66,7 +68,7 @@ public sealed class PythonReUnicodeStringSizingTests
         var program = core.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes("x" + new string('é', 10_000) + "z");
         var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, null, ".+",
-            new(new(0, 0, 1UL << 20), timeout, token.Token) { InputValidation = Utf8InputValidation.AssumeValid });
+            new(new(0, 0, 1UL << 20), timeout, token.Token));
         try
         {
             Assert.True(cursor.MoveNext());

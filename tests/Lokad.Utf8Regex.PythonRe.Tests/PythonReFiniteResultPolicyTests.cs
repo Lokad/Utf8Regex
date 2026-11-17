@@ -17,7 +17,7 @@ public sealed class PythonReFiniteResultPolicyTests
             var policy = new Utf8ResourcePolicy
             {
                 MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
-                MaxResultBytes = kind != 0 ? 1_048_576ul : null,
+                MaxResultBytes = kind != 0 ? 1_048_576ul : null
             };
             var regex = new Utf8PythonRegex("z", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), policy);
             long ticks = 0;

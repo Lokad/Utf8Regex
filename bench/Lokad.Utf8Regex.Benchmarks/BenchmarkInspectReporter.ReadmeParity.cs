@@ -88,9 +88,9 @@ internal static partial class BenchmarkInspectReporter
                 Wins = rows.Count(static row => row.Status == "Win"),
                 TieCandidates = rows.Count(static row => row.Status == "TieCandidate"),
                 Gaps = rows.Count(static row => row.Status == "Gap"),
-                Unqualified = rows.Count(static row => row.Status == "Unqualified"),
+                Unqualified = rows.Count(static row => row.Status == "Unqualified")
             },
-            Rows = rows,
+            Rows = rows
         };
     }
 
@@ -179,7 +179,7 @@ internal static partial class BenchmarkInspectReporter
             EffectiveIterations = measurement.EffectiveIterations,
             Samples = measurement.Samples,
             MeasuredAtUtc = measurement.MeasuredAtUtc,
-            Environment = measurement.Environment,
+            Environment = measurement.Environment
         };
     }
 

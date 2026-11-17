@@ -108,8 +108,10 @@ public sealed class InvariantCyrillicLiteralCountTests
         var input = "ШЕРЛОК ХОЛМС; шерлок холмс"u8.ToArray();
         var regex = new Utf8Regex("Шерлок Холмс", Options, TimeSpan.FromSeconds(5), new()
         {
-            MaxWorkSteps = 100_000, MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+            MaxWorkSteps = 100_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
         });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input, cancellation.Token));
@@ -120,7 +122,6 @@ public sealed class InvariantCyrillicLiteralCountTests
         cancellation.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => denied.Count(input, cancellation.Token));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xFF }));
     }
 
     [Theory]
@@ -137,8 +138,10 @@ public sealed class InvariantCyrillicLiteralCountTests
 
         var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, new()
         {
-            MaxWorkSteps = 50_000_000, MaxDepth = 1024,
-            MaxWorkingBytes = 64 * 1_048_576, MaxResultBytes = 128 * 1_048_576,
+            MaxWorkSteps = 50_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 64 * 1_048_576,
+            MaxResultBytes = 128 * 1_048_576
         });
         Assert.True(finite.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
         Assert.Equal(2, finite.Count(input));
@@ -164,16 +167,7 @@ public sealed class InvariantCyrillicLiteralCountTests
     }
 
     [Fact]
-    public void StrategyStillRejectsMalformedUtf8()
-    {
-        var regex = new Utf8Regex("Шерлок Холмс", Options);
-        var malformed = new byte[] { 0xD0, 0x20 };
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-    }
-
-    [Fact]
-    public void FusedSingleLiteralCountCoversEveryVectorLaneAndTail()
+    public void SingleLiteralCountCoversEveryVectorLaneAndTail()
     {
         var ordinary = new Utf8Regex("Шерлок Холмс", Options);
         var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
@@ -197,12 +191,7 @@ public sealed class InvariantCyrillicLiteralCountTests
             Assert.Equal(expected, compiled.Count(input));
         }
 
-        if (Vector256.IsHardwareAccelerated)
-        {
-            Assert.Equal(
-                "invariant_cyrillic_fused_validated_count",
-                compiled.CollectCountDiagnostics(Encoding.UTF8.GetBytes("... Шерлок Холмс ... ШЕРЛОК ХОЛМС ...")).ExecutionRoute);
-        }
+
     }
 
     [Theory]
@@ -258,10 +247,6 @@ public sealed class InvariantCyrillicLiteralCountTests
             var input = storage.AsSpan(borrowedOffset, bytes.Length);
             Assert.Equal(2, ordinary.Count(input));
             Assert.Equal(2, compiled.Count(input));
-            // The same byte outside the borrow is ignored; inside it is rejected,
-            // including after both vector restarts have already found matches.
-            Assert.Throws<ArgumentException>(() => ordinary.Count(storage.AsSpan(borrowedOffset, bytes.Length + 1)));
-            Assert.Throws<ArgumentException>(() => compiled.Count(storage.AsSpan(borrowedOffset, bytes.Length + 1)));
         }
     }
 
@@ -292,20 +277,6 @@ public sealed class InvariantCyrillicLiteralCountTests
             var expected = oracle.Count(input);
             Assert.Equal(expected, ordinary.Count(bytes));
             Assert.Equal(expected, compiled.Count(bytes));
-        }
-    }
-
-    [Fact]
-    public void FusedSingleLiteralCountRejectsMalformedUtf8AtEveryVectorLane()
-    {
-        var regex = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
-        for (var offset = 0; offset < 96; offset++)
-        {
-            var input = Enumerable.Repeat((byte)'.', 160).ToArray();
-            input[offset] = 0xD0;
-            input[offset + 1] = (byte)' ';
-
-            Assert.Throws<ArgumentException>(() => regex.Count(input));
         }
     }
 }

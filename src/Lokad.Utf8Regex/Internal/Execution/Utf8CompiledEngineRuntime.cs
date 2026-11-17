@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal readonly record struct Utf8CompiledRuntimeCapabilities(
-    bool SupportsAsciiWellFormedOnlyMatch, bool SupportsWellFormedOnlyMatch, bool WellFormedOnlyMatchMissIsDefinitive, bool SupportsWellFormedOnlyCount, bool SupportsThrowIfInvalidOnlyCount, bool SkipRequiredPrefilterForMatch, bool SkipRequiredPrefilterForCount);
+    bool SupportsAsciiWellFormedOnlyMatch, bool SupportsWellFormedOnlyMatch, bool WellFormedOnlyMatchMissIsDefinitive, bool SupportsWellFormedOnlyCount, bool SkipRequiredPrefilterForMatch, bool SkipRequiredPrefilterForCount);
 
 internal interface IUtf8AsciiWellFormedMatchRuntime
 {
@@ -44,7 +44,7 @@ internal abstract class Utf8CompiledEngineRuntime
     {
         return validation.ByteLength == input.Length
             ? validation
-            : Utf8Validation.DescribeValid(input);
+            : Utf8InputAnalyzer.Describe(input);
     }
 
     /// <summary>
@@ -58,7 +58,6 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool SupportsWellFormedOnlyMatch => Capabilities.SupportsWellFormedOnlyMatch;
     public bool WellFormedOnlyMatchMissIsDefinitive => Capabilities.WellFormedOnlyMatchMissIsDefinitive;
     public bool SupportsWellFormedOnlyCount => Capabilities.SupportsWellFormedOnlyCount;
-    public bool SupportsThrowIfInvalidOnlyCount => Capabilities.SupportsThrowIfInvalidOnlyCount;
     public bool SkipRequiredPrefilterForMatch => Capabilities.SkipRequiredPrefilterForMatch;
     public bool SkipRequiredPrefilterForCount => Capabilities.SkipRequiredPrefilterForCount;
 
@@ -162,7 +161,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         SupportsWellFormedOnlyMatch: _canUseDirectAnchoredValidatorMatch,
         WellFormedOnlyMatchMissIsDefinitive: _canUseDirectAnchoredValidatorMatch,
         SupportsWellFormedOnlyCount: false,
-        SupportsThrowIfInvalidOnlyCount: false,
         SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch || _repeatedDigitGroupPlan.HasValue,
         SkipRequiredPrefilterForCount: false);
 
@@ -175,7 +173,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
                 input,
                 out var anchoredValidatorLength))
         {
-            match = new Utf8CaptureRange(0, (0) + (anchoredValidatorLength));
+            match = new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
             return true;
         }
 
@@ -216,7 +214,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
                 out var anchoredValidatorLength);
             if (direct == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
             {
-                match = new Utf8CaptureRange(0, (0) + (anchoredValidatorLength));
+                match = new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
                 return true;
             }
 
@@ -385,7 +383,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
                     input,
                     out var anchoredValidatorLength))
             {
-                return new Utf8CaptureRange(0, (0) + (anchoredValidatorLength));
+                return new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
             }
 
             if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
@@ -410,12 +408,12 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
             if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out var alternationMatchedLength))
             {
-                return new Utf8CaptureRange(0, (0) + (alternationMatchedLength));
+                return new Utf8CaptureRange(0, 0 + (alternationMatchedLength));
             }
 
             if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out var directMatchedLength))
             {
-                return new Utf8CaptureRange(0, (0) + (directMatchedLength));
+                return new Utf8CaptureRange(0, 0 + (directMatchedLength));
             }
 
             var index = Utf8ExecutionInterpreter.FindNextSimplePattern(
@@ -468,7 +466,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         SupportsWellFormedOnlyMatch: false,
         WellFormedOnlyMatchMissIsDefinitive: false,
         SupportsWellFormedOnlyCount: false,
-        SupportsThrowIfInvalidOnlyCount: false,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: false);
 

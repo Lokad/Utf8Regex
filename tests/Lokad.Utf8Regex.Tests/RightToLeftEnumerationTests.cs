@@ -47,20 +47,6 @@ public sealed class RightToLeftEnumerationTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EnumerationRejectsMalformedUtf8(bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant |
-            RegexOptions.RightToLeft |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(@"(?:café|niño|résumé)", options);
-        byte[] malformed = [.. Encoding.UTF8.GetBytes("café "), 0xFF];
-
-        Assert.Throws<ArgumentException>(() => regex.EnumerateMatches(malformed));
-    }
-
-    [Theory]
     [InlineData(0)]
     [InlineData(4)]
     [InlineData(10)]

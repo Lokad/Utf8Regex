@@ -26,9 +26,7 @@ public sealed class PythonReLiteralAtomRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var policy in new[] { default(Utf8ResourcePolicy), new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 256,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
-        } })
+            MaxWorkSteps = 1_000_000,MaxDepth = 256,            MaxWorkingBytes = 1 << 20,MaxResultBytes = 1 << 20        } })
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
                 Timeout.InfiniteTimeSpan, policy);

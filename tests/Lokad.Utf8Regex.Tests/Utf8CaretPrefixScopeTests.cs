@@ -27,10 +27,12 @@ public sealed class Utf8CaretPrefixScopeTests
             var oracle = new Regex(pattern, options);
             var policy = finite ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
             } : Utf8ResourcePolicy.Unlimited;
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+                var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             var expected = oracle.Match(text);
             Assert.Equal(expected.Success, regex.IsMatch(input));
             Assert.Equal(oracle.Count(text), regex.Count(input));

@@ -7,46 +7,19 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 public sealed partial class Utf8Pcre2Regex
 {
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2RegexProgramOwner Compile(string pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
-        => Compile(pattern, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: Utf8InputValidation.Validate);
-
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2RegexProgramOwner Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
-        => Compile(patternUtf8, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: Utf8InputValidation.Validate);
 
 
     /// <summary>Compiles a PCRE2 text pattern under caller-owned program admission.</summary>
     /// <remarks>The returned owner keeps compilation funded until explicit close and the final active call. Program admission also prepays the bounded replacement cache maximum. Null construction MaxBytes adds no private byte cap. Construction work/depth/instruction backstops and independent invocation controls remain.</remarks>
-    public static Utf8Pcre2RegexProgramOwner Compile(string pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => CompileFunded(new Utf8ConstructionPattern(pattern), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: inputValidation);
+    public static Utf8Pcre2RegexProgramOwner Compile(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        => CompileFunded(new Utf8ConstructionPattern(pattern), options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under caller-owned program admission.</summary>
     /// <remarks>Strict validation, an owned source-byte copy and direct scalar parsing share construction admission. Caller-buffer reuse is safe after return. The returned owner has the text factory's lifetime/resource contract; Pattern text is explicit interoperability.</remarks>
-    public static Utf8Pcre2RegexProgramOwner Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => CompileFunded(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance, inputValidation: inputValidation);
+    public static Utf8Pcre2RegexProgramOwner Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+        => CompileFunded(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
 
-    private static Utf8Pcre2RegexProgramOwner CompileFunded(Utf8ConstructionPattern pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings settings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
-        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken token,
-        IUtf8MemoryAllowance programMemoryAllowance,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+    private static Utf8Pcre2RegexProgramOwner CompileFunded(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings settings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken token, IUtf8MemoryAllowance programMemoryAllowance)
     {
         token.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(programMemoryAllowance);
@@ -56,7 +29,7 @@ public sealed partial class Utf8Pcre2Regex
         using var construction = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, programMemoryAllowance);
         try
         {
-            var regex = new Utf8Pcre2Regex(pattern, options, settings, limits, matchTimeout, inputValidation: inputValidation);
+            var regex = new Utf8Pcre2Regex(pattern, options, settings, limits, matchTimeout);
             // Prepay the existing bounded lazy cache, like the Core owner. This
             // conservative allowance covers publication without entry leases or
             // a later refund/reacquire handoff. Temporary preparation is separate.

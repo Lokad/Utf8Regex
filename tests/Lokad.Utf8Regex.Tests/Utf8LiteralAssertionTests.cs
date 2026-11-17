@@ -78,7 +78,8 @@ public sealed class Utf8LiteralAssertionTests
     }
 
     [Theory]
-    [InlineData("(?<=foo)bar", true)] [InlineData("(?<!foo)bar", false)]
+    [InlineData("(?<=foo)bar", true)]
+    [InlineData("(?<!foo)bar", false)]
     public void EveryWorkCutoffKeepsTheExistingLoan(string pattern, bool expected)
     {
         var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram!;
@@ -115,6 +116,5 @@ public sealed class Utf8LiteralAssertionTests
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.Throws<ArgumentException>(() => regex.Match([.. input, 0xff]));
     }
 }

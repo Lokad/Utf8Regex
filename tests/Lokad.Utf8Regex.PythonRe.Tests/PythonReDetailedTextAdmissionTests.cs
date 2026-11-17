@@ -18,8 +18,10 @@ public sealed class PythonReDetailedTextAdmissionTests
         var regex = new Utf8PythonRegex("((x+))", PythonReCompileOptions.None,
             Regex.InfiniteMatchTimeout, new()
             {
-                MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576,
-                MaxResultBytes = extent - (oneUnder ? 1UL : 0UL),
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = extent - (oneUnder ? 1UL : 0UL)
             });
         using var cursor = regex.CreateMatchCursor(input);
         if (oneUnder)
@@ -55,8 +57,10 @@ public sealed class PythonReDetailedTextAdmissionTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
             Regex.InfiniteMatchTimeout, new()
             {
-                MaxWorkSteps = 100000, MaxDepth = 8192,
-                MaxWorkingBytes = 1048576, MaxResultBytes = 1048576,
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
             });
         var snapshots = regex.FindIterDetailed(input);
         Assert.Equal(2, snapshots.Length);

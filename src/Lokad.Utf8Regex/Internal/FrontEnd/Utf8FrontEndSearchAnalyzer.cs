@@ -56,7 +56,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -81,7 +81,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -106,7 +106,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -132,7 +132,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -160,7 +160,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -189,7 +189,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -215,7 +215,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -240,7 +240,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                            LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary,
+                           TrailingBoundary = trailingBoundary
                        });
         }
 
@@ -259,7 +259,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        ExactRequiredLength = exactRequiredLength,
                        MaxPossibleLength = maxPossibleLength,
                        LeadingBoundary = leadingBoundary,
-                       TrailingBoundary = trailingBoundary,
+                       TrailingBoundary = trailingBoundary
                    });
     }
 
@@ -449,9 +449,9 @@ internal static class Utf8FrontEndSearchAnalyzer
                        CanGuideFallbackStarts = literalUtf8.Length > 0 &&
                            executionKind != NativeExecutionKind.AsciiLiteralIgnoreCase,
                        LiteralUtf8 = literalUtf8,
-                        TrailingLiteralUtf8 = trailingLiteralUtf8,
+                       TrailingLiteralUtf8 = trailingLiteralUtf8,
                        LeadingBoundary = leadingBoundary,
-                       TrailingBoundary = trailingBoundary,
+                       TrailingBoundary = trailingBoundary
                    });
     }
 
@@ -478,7 +478,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            {
                                MinRequiredLength = trailingLength,
                                ExactRequiredLength = exactRequiredLength,
-                               MaxPossibleLength = maxPossibleLength,
+                               MaxPossibleLength = maxPossibleLength
                            });
             }
 
@@ -494,7 +494,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                                    Distance = distance + 1,
                                    MinRequiredLength = minRequiredLength,
                                    ExactRequiredLength = exactRequiredLength,
-                                   MaxPossibleLength = maxPossibleLength,
+                                   MaxPossibleLength = maxPossibleLength
                                });
                 }
 
@@ -506,7 +506,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                                Distance = distance,
                                MinRequiredLength = minRequiredLength,
                                ExactRequiredLength = exactRequiredLength,
-                               MaxPossibleLength = maxPossibleLength,
+                               MaxPossibleLength = maxPossibleLength
                            });
             }
 
@@ -519,7 +519,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                                FixedDistanceSets = fixedDistanceSets,
                                MinRequiredLength = fixedDistanceMinRequiredLength,
                                ExactRequiredLength = exactRequiredLength,
-                               MaxPossibleLength = maxPossibleLength,
+                               MaxPossibleLength = maxPossibleLength
                            });
             }
         }
@@ -534,12 +534,10 @@ internal static class Utf8FrontEndSearchAnalyzer
                        searchKind,
                        new Utf8SearchFactData
                        {
-                           AlternateLiteralsUtf8 = alternateLiterals,
-                           // Covering prefixes prove possible starts, never
-                           // complete matches. Let the scalar VM verify them.
+                           AlternateLiteralsUtf8 = alternateLiterals,                           // complete matches. Let the scalar VM verify them.
                            CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                            ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
+                           MaxPossibleLength = maxPossibleLength
                        });
         }
 
@@ -558,7 +556,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                                CanGuideFallbackStarts = !simplePatternPlan.IgnoreCase &&
                                    CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                                ExactRequiredLength = exactRequiredLength,
-                               MaxPossibleLength = maxPossibleLength,
+                               MaxPossibleLength = maxPossibleLength
                            });
             }
         }
@@ -571,7 +569,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        {
                            LiteralUtf8 = EncodeLiteral(literal),
                            ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
+                           MaxPossibleLength = maxPossibleLength
                        });
         }
 
@@ -588,7 +586,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        ExactRequiredLength = fallbackSearchFacts.ExactRequiredLength,
                        MaxPossibleLength = fallbackSearchFacts.MaxPossibleLength,
                        LeadingBoundary = fallbackSearchFacts.LeadingBoundary,
-                       TrailingBoundary = fallbackSearchFacts.TrailingBoundary,
+                       TrailingBoundary = fallbackSearchFacts.TrailingBoundary
                    });
     }
 

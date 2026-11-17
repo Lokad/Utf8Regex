@@ -27,12 +27,10 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
         Assert.Equal("file listing", detailed.GetGroup(3).GetValueString());
     }
 
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void ExplicitZeroOffsetKeepsTheScalarBooleanRouteAndSubjectContract(Utf8InputValidation policy)
+    [Fact]
+    public void ExplicitZeroOffsetKeepsTheScalarBooleanRouteAndSubjectContract()
     {
-        var regex = new Utf8Pcre2Regex(FtpLinePattern, inputValidation: policy);
+        var regex = new Utf8Pcre2Regex(FtpLinePattern);
         var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.True(program.SupportsPreparedOffsets);
         Assert.Equal("FallbackRegex", program.Regex.Inspection.ExecutionKind.ToString());
@@ -43,11 +41,6 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
             var view = storage.AsSpan(1, bytes.Length);
             Assert.Equal(text.StartsWith("123-", StringComparison.Ordinal), regex.IsMatch(view, 0));
             Assert.Equal(regex.IsMatch(view), regex.IsMatch(view, 0));
-            if (policy == Utf8InputValidation.Validate)
-            {
-                byte[] malformed = [.. bytes, 0xff];
-                Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, 0));
-            }
         }
     }
 
@@ -126,7 +119,6 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
                 default(Utf8Pcre2ExecutionLimits),
                 Regex.InfiniteMatchTimeout)
                 .DebugCompiledProgram.Operations.IsMatch);
-        Assert.Throws<ArgumentException>(() => direct.IsMatch([0xFF]));
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

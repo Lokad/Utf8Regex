@@ -25,12 +25,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         var text = new string('x', offset) + scalar + string.Concat(Enumerable.Repeat("é中\U0001f600", 1000));
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = Metered();
-        var expected = Utf8Validation.Validate(input);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref invocation, out var actual));
-        Assert.Equal(expected.ByteLength, actual.ByteLength);
-        Assert.Equal(text.Length, actual.Utf16Length);
-        Assert.Equal(expected.IsAscii, actual.IsAscii);
-        Assert.Equal(expected.ContainsSupplementaryScalars, actual.ContainsSupplementaryScalars);
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref invocation));
         Assert.True(invocation.Budget.Steps >= (ulong)input.Length / 2048);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         var only = Metered();
@@ -53,7 +48,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         byte[] input = [.. Enumerable.Repeat((byte)'x', offset), .. invalid, .. "xyz"u8.ToArray()];
         var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
         var invocation = Metered();
-        var actual = Assert.Throws<ArgumentException>(() => Utf8Validation.TryValidate(input, ref invocation, out _));
+        var actual = Assert.Throws<ArgumentException>(() => Utf8Validation.TryValidateOnly(input, ref invocation));
         Assert.Equal(expected.ParamName, actual.ParamName);
         Assert.Equal(expected.Message, actual.Message);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -87,7 +82,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         var cursor = family switch
         {
             6 or 7 => new Utf8OperationMatchCursor(input, literal, budget, family == 6 ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix),
-            8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, false, true),
+            8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, true),
             _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
         };
         clock.Advance(250);

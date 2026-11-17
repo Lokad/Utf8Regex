@@ -15,8 +15,7 @@ public sealed class ProfileDifferentialTests
     public void SharedLanguagePreservesByteMatchesAndCaptures(string mode)
         => ProfileDifferential.Run(mode, (pattern, timeout, policy, groups) =>
         {
-            var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy,
-                timeout ?? Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
+            var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, timeout ?? Timeout.InfiniteTimeSpan);
             return (input, start, token) =>
             {
                 var exists = regex.IsMatch(input, 0, Pcre2MatchOptions.None, token);

@@ -181,7 +181,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
     }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
 
-    // The subject was strictly validated before discovery. EOF does not reset
+    // The caller guarantees a valid UTF-8 subject. EOF does not reset
     // its authority; publish the string without a second encoded byte root.
     internal static string DecodeUnchanged(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {

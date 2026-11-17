@@ -132,7 +132,5 @@ public sealed class Utf8SliceWiringTests
     {
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { 0x61, 0xFF, 0x62 }));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0x61, 0xFF, 0x62 }));
     }
 }

@@ -53,7 +53,10 @@ public sealed class PythonReAnchoredStartTests
         var input = Encoding.ASCII.GetBytes(new string('x', 1 << 20) + "needle");
         using var regex = new Utf8PythonRegex("(needle)", resourcePolicy: new()
         {
-            MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1,
+            MaxWorkSteps = 64,
+            MaxDepth = 1,
+            MaxWorkingBytes = 1,
+            MaxResultBytes = 1
         });
         Assert.False(regex.Match(input).Success);
         Assert.Null(regex.MatchToString(input));
@@ -66,7 +69,10 @@ public sealed class PythonReAnchoredStartTests
         var input = Encoding.ASCII.GetBytes("item-1234 " + new string('a', 1 << 20));
         using var regex = new Utf8PythonRegex("(?=bad)(bad)([0-9]+)", resourcePolicy: new()
         {
-            MaxWorkSteps = 64, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+            MaxWorkSteps = 64,
+            MaxDepth = 64,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
         });
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.FullMatch(input).Success);
@@ -79,7 +85,10 @@ public sealed class PythonReAnchoredStartTests
         var input = Encoding.ASCII.GetBytes(new string('a', 8192));
         using var regex = new Utf8PythonRegex("(a+)+missing", resourcePolicy: new()
         {
-            MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+            MaxWorkSteps = 1000,
+            MaxDepth = 64,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
         });
         Assert.False(full ? regex.FullMatch(input).Success : regex.Match(input).Success);
     }

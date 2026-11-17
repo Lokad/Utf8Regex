@@ -9,8 +9,10 @@ public sealed class PythonReNoMatchOutputTests
         new("(cat)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = resultBytes,
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = resultBytes
             });
 
     [Theory]

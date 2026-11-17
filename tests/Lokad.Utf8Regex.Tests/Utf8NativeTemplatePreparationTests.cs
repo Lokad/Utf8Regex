@@ -40,9 +40,6 @@ public sealed class Utf8NativeTemplatePreparationTests
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$1]"u8, destination, out var written));
             Assert.Equal(destination.Length, written);
             Assert.Equal(expectedBytes, destination);
-            var malformed = input.Concat(new byte[] { 0xff }).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "[$1]"));
-            Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "[$1]"u8));
         }
     }
 

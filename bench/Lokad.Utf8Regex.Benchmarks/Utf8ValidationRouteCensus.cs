@@ -71,7 +71,7 @@ internal sealed class Utf8ValidationRouteCensus
     {
         var census = new Utf8ValidationRouteCensus
         {
-            InputBytes = input.Length,
+            InputBytes = input.Length
         };
         census.AnalyzeScalars(input);
         census.AnalyzeBlocks(input);

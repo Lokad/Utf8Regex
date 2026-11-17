@@ -49,7 +49,7 @@ public static class Pcre2CorpusLoader
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = false,
-            ReadCommentHandling = JsonCommentHandling.Skip,
+            ReadCommentHandling = JsonCommentHandling.Skip
         };
         options.Converters.Add(new JsonStringEnumConverter());
         return options;
@@ -138,7 +138,7 @@ public static class Pcre2CorpusLoader
             Status = corpusCase.Status,
             Tags = corpusCase.Tags,
             Source = corpusCase.Source,
-            Notes = corpusCase.Notes,
+            Notes = corpusCase.Notes
         };
     }
 }

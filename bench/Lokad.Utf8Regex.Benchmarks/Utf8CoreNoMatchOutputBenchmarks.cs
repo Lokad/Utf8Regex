@@ -30,8 +30,10 @@ public class Utf8CoreNoMatchOutputBenchmarks
         _destination = new byte[_input.Length];
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 50_000_000, MaxDepth = 1024,
-            MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20,
+            MaxWorkSteps = 50_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 64 << 20,
+            MaxResultBytes = 128 << 20
         };
         _finite = new CoreRegex("(cat)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
         _native = new CoreRegex("cat", RegexOptions.CultureInvariant);

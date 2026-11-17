@@ -14,11 +14,11 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
     {
         var literal = "abc"u8.ToArray();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromSeconds(20), default);
-        var validation = Utf8Validation.Validate(literal, ref invocation);
-        var warm = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, validation, invocation);
+        var validation = Utf8InputAnalyzer.Describe(literal, ref invocation);
+        var warm = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, invocation);
         Assert.True(warm.MoveNext());
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var cursor = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, validation, invocation);
+        var cursor = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, invocation);
         var found = cursor.MoveNext();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(found);
@@ -90,49 +90,6 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         foreach (var compiled in new[] { false, true })
         foreach (var timeout in new[] { false, true })
             yield return [route.Pattern, route.Operation, compiled, timeout];
-    }
-
-    [Theory]
-    [MemberData(nameof(Cases))]
-    public void AnchoredOffsetMatchingObservesAuthorityAfterPreparation(string pattern, int operation, bool compiled, bool timeout)
-    {
-        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var duration = timeout ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8Regex(pattern, options, duration);
-        var input = Encoding.ASCII.GetBytes(new string('a', 60 * 2048));
-        using var source = new CancellationTokenSource();
-        var token = timeout ? CancellationToken.None : source.Token;
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-
-        // Calibrate only preparation, using the same existing primitives. The
-        // fixture puts the next diagnostic checkpoint in matching, never validation.
-        var preparation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, duration, token);
-        var validation = Utf8Validation.Validate(input, ref preparation);
-
-        Assert.True(preparation.Budget.Steps > 0);
-
-        Assert.True(Run(regex, input, operation, CancellationToken.None));
-        var entered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
-        {
-            Assert.True(steps > preparation.Budget.Steps);
-            entered = true;
-            if (timeout) ticks = 25; else source.Cancel();
-        });
-        Exception? failure;
-        try { failure = Record.Exception(() => Run(regex, input, operation, token)); }
-        finally { diagnostics.Complete(); }
-
-        Assert.True(entered, "Anchored matching returned without observing the operation's execution checkpoint.");
-        if (timeout)
-        {
-            var expired = Assert.IsType<RegexMatchTimeoutException>(failure);
-            Assert.Equal(duration, expired.MatchTimeout);
-        }
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        ticks = 0;
-        Assert.True(Run(regex, input, operation, CancellationToken.None));
     }
 
     private static bool Run(Utf8Regex regex, byte[] input, int operation, CancellationToken token)

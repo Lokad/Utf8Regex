@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteLiteralFamilyAdmissionTests
 {
     private static Utf8ResourcePolicy Small => new()
-        { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
@@ -26,7 +26,6 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         {
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Small);
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(storage.AsSpan(5, input.Length), token.Token));
-            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], token.Token));
         }
     }
 
@@ -146,11 +145,9 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         input.CopyTo(backing.AsSpan(5));
         backing[^1] = (byte)'y'; // The last needle's missing byte is outside the borrowed span.
         using var token = new CancellationTokenSource();
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         foreach (var count in new[] { 3, 4 })
         {
-            var regex = new Utf8Regex(string.Join('|', literals.Take(count)), RegexOptions.Compiled,
-                Regex.InfiniteMatchTimeout, Small, inputValidation: policy);
+            var regex = new Utf8Regex(string.Join('|', literals.Take(count)), RegexOptions.Compiled, Regex.InfiniteMatchTimeout, Small);
             Assert.Equal(count, regex.Count(backing.AsSpan(5, input.Length), token.Token));
         }
     }
@@ -179,8 +176,7 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         const string pattern = "Sawyer|Finn|Tom|Huckleberry";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Small,
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Small);
         var input = Encoding.ASCII.GetBytes(new string('x', 262144) + "Tom");
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

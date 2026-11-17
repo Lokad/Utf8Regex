@@ -62,8 +62,6 @@ public sealed class Utf8ScalarCountPrefixTests
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal(2, regex.Count(input, source.Token));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
-        var malformed = input.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count("😀 x😀"u8, source.Token)).CancellationToken);
@@ -94,7 +92,7 @@ public sealed class Utf8ScalarCountPrefixTests
         const string pattern = "a\\G|b";
         var input = Encoding.UTF8.GetBytes("b" + new string('x', 32768) + "b");
         var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft, TimeSpan.FromMilliseconds(20),
             new() { MaxWorkSteps = 10000000, MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
@@ -134,7 +132,6 @@ public sealed class Utf8ScalarCountPrefixTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(subject)));
-        Assert.Throws<ArgumentException>(() => regex.Count(Encoding.UTF8.GetBytes(subject).Concat(new byte[] { 0xff }).ToArray()));
     }
 
     [Fact]

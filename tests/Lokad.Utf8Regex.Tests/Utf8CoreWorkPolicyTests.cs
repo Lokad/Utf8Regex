@@ -140,7 +140,6 @@ public sealed class Utf8CoreWorkPolicyTests
         var token = live ? source.Token : default;
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var input = "ab x"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        Assert.Throws<ArgumentException>(() => Run(Create("ab", 100000, options), operation, input, token));
         AssertWorkFailure(() => Run(Create("ab", 1, options), operation, input, token), 1);
         source.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(Create("ab", 1, options), operation, input, source.Token));
@@ -170,7 +169,7 @@ public sealed class Utf8CoreWorkPolicyTests
 
     [Theory]
     [MemberData(nameof(InterruptedOperations))]
-    public void InterruptionDuringFullValidationWinsBeforeTheNextWorkDenial(string operation, bool deadline)
+    public void InterruptionDuringSearchWinsBeforeTheNextWorkDenial(string operation, bool deadline)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -184,7 +183,7 @@ public sealed class Utf8CoreWorkPolicyTests
         try
         {
             var regex = Create("ab", 64, timeout: deadline ? TimeSpan.FromMilliseconds(200) : null);
-            var input = Encoding.UTF8.GetBytes("ab" + new string('é', 200000));
+            var input = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "ab");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, operation, input, source.Token));
             else
             {

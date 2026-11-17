@@ -24,7 +24,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
 
-        var validation = Utf8Validation.Subject(input, InputValidation);
+        var validation = Utf8InputAnalyzer.Describe(input);
         var budget = deadline;
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
@@ -159,7 +159,7 @@ public sealed partial class Utf8Regex
             return result.Status;
         }
 
-        var validation = Utf8Validation.Subject(input, InputValidation);
+        var validation = Utf8InputAnalyzer.Describe(input);
         var budget = deadline;
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
@@ -219,7 +219,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
-        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         Utf8Validation.ThrowIfInvalidOnly(literalReplacementUtf8, ref invocation);
         // ASCII needles select complete scalar ranges. The caller's result
         // ledger sizes text only when requested; bytes need no UTF-16 metadata.

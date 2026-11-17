@@ -16,7 +16,7 @@ public sealed partial class Utf8Regex
     {
         token.ThrowIfCancellationRequested();
         bytesWritten = 0;
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working) { InputValidation = InputValidation };
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working);
         try
         {
             using var construction = Utf8ConstructionScope.Enter(
@@ -50,10 +50,10 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
-            Utf8Validation.CheckSubject(input, ref invocation);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             bool result;
             if (CanUseNativeLiteralSearch(_ownedSliceProgram))
             {
@@ -80,7 +80,7 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance) { InputValidation = InputValidation };
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
             int result;
@@ -89,7 +89,7 @@ public sealed partial class Utf8Regex
             if (!UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
             {
-                Utf8Validation.CheckSubject(input, ref invocation);
+                Utf8SliceBufferWork.Checkpoint(ref invocation);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
                     _fallbackDirectFamily, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
@@ -101,7 +101,7 @@ public sealed partial class Utf8Regex
                 var wordCandidate = !UsesRightToLeft() &&
                     (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
                     _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.WordRunCount, MinCount: > 0 };
-                Utf8Validation.CheckSubject(input, ref invocation);
+                Utf8SliceBufferWork.Checkpoint(ref invocation);
                 if (wordCandidate)
                 {
                     var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidated(input,

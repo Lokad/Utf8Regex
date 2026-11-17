@@ -96,7 +96,7 @@ public sealed partial class Utf8Regex
 
         if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
         {
-            match = new Utf8CaptureRange(0, (0) + (matchedLength));
+            match = new Utf8CaptureRange(0, 0 + (matchedLength));
         }
 
         return true;
@@ -380,7 +380,7 @@ public sealed partial class Utf8Regex
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input.Bytes)))
         {
-            var rtlCursor = new Utf8OperationMatchCursor(input.Bytes, _preparedRegex, literal, _preparedRegex.ExecutionKind, budget, Utf8InputAnalyzer.IsAscii(input.Bytes), rightToLeft: true);
+            var rtlCursor = new Utf8OperationMatchCursor(input.Bytes, _preparedRegex, literal, _preparedRegex.ExecutionKind, budget, rightToLeft: true);
             return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
@@ -390,7 +390,7 @@ public sealed partial class Utf8Regex
         {
             return new Utf8ValueMatchEnumerator(
                 Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false), budget, start.Value))
+                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, true, false), budget, start.Value))
                 .WithTimeoutMapping(input.Bytes, this);
         }
 
@@ -463,7 +463,7 @@ public sealed partial class Utf8Regex
 
             // Definitive byte kernels need no coordinate facts. Remaining
             // compiled routes request their existing description here.
-            var input = Utf8ValidatedInput.Create(bytes, Utf8InputValidation.AssumeValid);
+            var input = Utf8ValidatedInput.Create(bytes);
             if (_owner.ShouldFallbackForTrailingNewlineAnchoredValidator(bytes, input.Validation))
             {
                 return _owner.IsMatchAtByteOffset(input, new Utf8BytePosition(0));

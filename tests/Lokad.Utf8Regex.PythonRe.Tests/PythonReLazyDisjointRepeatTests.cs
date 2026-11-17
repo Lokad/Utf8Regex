@@ -57,7 +57,7 @@ public sealed class PythonReLazyDisjointRepeatTests
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "b");
         var validation = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var cutoff = validation.Budget.Steps + 128;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

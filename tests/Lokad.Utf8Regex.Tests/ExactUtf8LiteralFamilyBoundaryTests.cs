@@ -118,24 +118,6 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void BoundaryLiteralFamilyRejectsMalformedUtf8(bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(@"\b(?:café|niño|résumé)\b", options);
-        byte[] malformed = [0xFF, .. Encoding.UTF8.GetBytes(" café ")];
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => regex.EnumerateMatches(malformed));
-        Assert.Throws<ArgumentException>(() => regex.EnumerateSplits(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "<$&>"));
-    }
-
-    [Theory]
     [InlineData(false, 0)]
     [InlineData(false, 1)]
     [InlineData(false, 2)]

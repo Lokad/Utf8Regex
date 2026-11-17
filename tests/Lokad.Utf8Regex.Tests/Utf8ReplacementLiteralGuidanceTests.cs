@@ -12,8 +12,10 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
         new(pattern, options | RegexOptions.CultureInvariant, timeout ?? Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy
             {
-                MaxWorkSteps = work, MaxDepth = 256,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = work,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
             });
 
     [Theory]

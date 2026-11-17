@@ -105,8 +105,6 @@ public sealed class Utf8AnchoredCountPrefixTests
         var oracle = new Regex("^a.+$", RegexOptions.Multiline);
         foreach (var offset in new[] { 0, 1, 3, 4, 5, 8, 9, 10, 14, text.Length })
             Assert.Equal(oracle.Matches(text, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
-        byte[] malformed = [.. input, 0xF0, 0x9F];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
     }
 
     [Theory]

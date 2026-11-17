@@ -147,7 +147,6 @@ public sealed class Utf8NativeCompilationTests
         Assert.Equal(1, native.Count("😀😀"u8));
         using var invocation = new CancellationTokenSource(); invocation.Cancel();
         Assert.Equal(invocation.Token, Assert.Throws<OperationCanceledException>(() => native.Count("😀"u8, invocation.Token)).CancellationToken);
-        Assert.Throws<ArgumentException>(() => native.IsMatch(new byte[] { 0xf0, 0x9f, 0x98, 0x80, 0xff }));
     }
 
     [Fact]

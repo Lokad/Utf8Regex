@@ -37,18 +37,13 @@ public sealed class Utf8CaptureSnapshotBoundsTests
     {
         var text = "x中🙂" + target + new string('!', 1 << 20);
         var input = Encoding.UTF8.GetBytes(text);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 128,
-            MaxWorkingBytes = 64 << 10, MaxResultBytes = 8192 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 128, MaxWorkingBytes = 64 << 10, MaxResultBytes = 8192 };
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: policy,
-                inputValidation: Utf8InputValidation.AssumeValid);
+            var regex = new Utf8Regex(pattern, options, resourcePolicy: policy);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
-            var strict = new Utf8Regex(pattern, options, resourcePolicy: policy);
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(strict.CreateMatchCursor(input)));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         }
     }
 
@@ -63,9 +58,8 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         const string text = "é aaab aac 😀";
         var oracle = new Regex(pattern, option);
         var expected = oracle.Match(text);
-        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(pattern, option, inputValidation: validation);
+            var regex = new Utf8Regex(pattern, option);
             var input = Encoding.UTF8.GetBytes(text);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
@@ -84,7 +78,6 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         {
             var result = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
             Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromName("run")).ToArray());
-            Assert.Equal(1, session.SubjectValidations);
         }
         finally { session.Complete(); }
         var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
@@ -95,8 +88,6 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         var history = new Utf8Regex("(?<each>.)+", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(history.CreateMatchCursor(input)));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(malformed)));
         var working = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
@@ -107,9 +98,8 @@ public sealed class Utf8CaptureSnapshotBoundsTests
     public void RetainedRangesAndBorrowedMemorySurviveLaterCalls()
     {
         var input = Encoding.UTF8.GetBytes("éaaab other😀");
-        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", inputValidation: validation);
+            var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)");
             var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             var alias = first;
             var number = regex.GroupNumberFromName("run");

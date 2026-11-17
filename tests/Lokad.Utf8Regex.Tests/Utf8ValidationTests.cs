@@ -24,9 +24,8 @@ public sealed class Utf8ValidationTests
                 var expected = Utf8.IsValid(input);
                 Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out var scalar, out var scalarError));
                 Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
-                if (expected) Assert.Equal(Encoding.UTF8.GetString(input).Length, scalar.Utf16Length);
-                else Assert.Equal(scalarError, vectorError);
-            }
+                    if (!expected) Assert.Equal(scalarError, vectorError);
+                }
         }
     }
 
@@ -38,7 +37,6 @@ public sealed class Utf8ValidationTests
         var result = Utf8Validation.Validate(input);
 
         Assert.Equal(5, result.ByteLength);
-        Assert.Equal(5, result.Utf16Length);
         Assert.True(result.IsAscii);
         Assert.False(result.ContainsSupplementaryScalars);
     }
@@ -51,7 +49,6 @@ public sealed class Utf8ValidationTests
         var result = Utf8Validation.Validate(input);
 
         Assert.Equal(input.Length, result.ByteLength);
-        Assert.Equal("café".Length, result.Utf16Length);
         Assert.False(result.IsAscii);
         Assert.False(result.ContainsSupplementaryScalars);
     }
@@ -64,7 +61,6 @@ public sealed class Utf8ValidationTests
         var result = Utf8Validation.Validate(input);
 
         Assert.Equal(input.Length, result.ByteLength);
-        Assert.Equal("a😀b".Length, result.Utf16Length);
         Assert.False(result.IsAscii);
         Assert.True(result.ContainsSupplementaryScalars);
     }
@@ -83,7 +79,6 @@ public sealed class Utf8ValidationTests
         var validation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
 
         Assert.Equal(input.Length, validation.ByteLength);
-        Assert.Equal(text.Length, validation.Utf16Length);
         Assert.Equal(expected, containsKelvinSign);
     }
 
@@ -201,7 +196,6 @@ public sealed class Utf8ValidationTests
         var analysis = Utf8InputAnalyzer.Analyze(input);
 
         Assert.Equal(input.Length, analysis.Validation.ByteLength);
-        Assert.Equal("a😀b".Length, analysis.Validation.Utf16Length);
         Assert.False(analysis.Validation.IsAscii);
         Assert.True(analysis.Validation.ContainsSupplementaryScalars);
 

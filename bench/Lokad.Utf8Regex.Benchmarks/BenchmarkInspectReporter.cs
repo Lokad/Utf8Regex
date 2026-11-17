@@ -508,10 +508,6 @@ internal static partial class BenchmarkInspectReporter
             SumUtf8SplitsManual(context.Utf8Regex, context.InputBytes));
         MeasureUtf8CaseLane("Utf8ManualCompiled", samples, iterations, () =>
             SumUtf8SplitsManual(context.CompiledUtf8Regex, context.InputBytes));
-        MeasureUtf8CaseLane("LegacyDuplicateValidationOrdinary", samples, iterations, () =>
-            ExecuteUtf8AfterDuplicateValidation(context, compiled: false));
-        MeasureUtf8CaseLane("LegacyDuplicateValidationCompiled", samples, iterations, () =>
-            ExecuteUtf8AfterDuplicateValidation(context, compiled: true));
         MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
         MeasureUtf8CaseLane("DecodeThenCompiled", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
         MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
@@ -519,14 +515,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    private static int ExecuteUtf8AfterDuplicateValidation(Utf8RegexBenchmarkContext context, bool compiled)
-    {
-        var utf16Length = Utf8Validation.Validate(context.InputBytes).Utf16Length;
-        var result = compiled
-            ? ExecuteUtf8Compiled(context)
-            : ExecuteUtf8(context);
-        return utf16Length ^ result;
-    }
 
     public static int RunMeasureReplicaCase(string caseId, string? iterationsText)
     {
@@ -688,7 +676,7 @@ internal static partial class BenchmarkInspectReporter
                 return 1;
         }
 
-        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).Utf16Length);
+        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).ByteLength);
         Measure("WellFormedOnly", iterations, () =>
         {
             Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
@@ -1142,30 +1130,23 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false, inputValidation);
+    public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
 
-    public static int RunMeasureReadmeCaseReversed(string caseId, string? iterationsText, string? samplesText,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true, inputValidation);
+    public static int RunMeasureReadmeCaseReversed(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
 
     private static int RunMeasureReadmeCase(
-        string caseId,
-        string? iterationsText,
-        string? samplesText,
-        bool reverseMeasurementOrder, Utf8InputValidation inputValidation)
+        string caseId, string? iterationsText, string? samplesText, bool reverseMeasurementOrder)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        Console.WriteLine($"InputValidation   : {inputValidation}; whole-subject validity is {(inputValidation == Utf8InputValidation.Validate ? "checked by the engine" : "guaranteed by the caller")}");
+        Console.WriteLine("InputContract     : caller-valid unchanged UTF-8");
         Console.WriteLine($"Environment       : {JsonSerializer.Serialize(CaptureBenchmarkEnvironment())}");
 
         var lokadScriptCase = LokadReplicaScriptBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId);
         if (lokadScriptCase is not null)
         {
-            if (inputValidation != Utf8InputValidation.Validate)
-                throw new ArgumentException("Input-policy measurements currently cover replica Count cases, not script loops.", nameof(inputValidation));
             var context = new LokadReplicaScriptBenchmarkContext(lokadScriptCase);
             var expected = lokadScriptCase.Model == LokadReplicaScriptBenchmarkModel.PrefixMatchLoop
                 ? context.VerifyPrefixMatchResults() : (Bytes: 0, Units: 0);
@@ -1186,9 +1167,9 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var utf8Regex = inputValidation == Utf8InputValidation.Validate ? benchmarkCase.Utf8Regex
-            : new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options, inputValidation: inputValidation);
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled, inputValidation: inputValidation);
+        var utf8Regex = false ? benchmarkCase.Utf8Regex
+            : new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
         Console.WriteLine($"CaseId            : {caseId}; InputBytes={benchmarkCase.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(benchmarkCase.InputBytes))}");
         var iterationTarget = GetReadmeReplicaIterationTarget(benchmarkCase, requestedIterations);
         var row = MeasureReadmeCase(
@@ -1206,24 +1187,19 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false, inputValidation);
+    public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
 
-    public static int RunMeasureReadmePublicCaseReversed(string caseId, string? iterationsText, string? samplesText,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true, inputValidation);
+    public static int RunMeasureReadmePublicCaseReversed(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
 
     private static int RunMeasureReadmePublicCase(
-        string caseId,
-        string? iterationsText,
-        string? samplesText,
-        bool reverseMeasurementOrder, Utf8InputValidation inputValidation)
+        string caseId, string? iterationsText, string? samplesText, bool reverseMeasurementOrder)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var context = new LokadPublicBenchmarkContext(caseId, inputValidation);
-        Console.WriteLine($"InputValidation   : {inputValidation}; whole-subject validity is {(inputValidation == Utf8InputValidation.Validate ? "checked by the engine" : "guaranteed by the caller")}");
+        var context = new LokadPublicBenchmarkContext(caseId);
+        Console.WriteLine("InputContract     : caller-valid unchanged UTF-8");
         Console.WriteLine($"Environment       : {JsonSerializer.Serialize(CaptureBenchmarkEnvironment())}");
         Console.WriteLine($"CaseId            : {caseId}; InputBytes={context.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(context.InputBytes))}");
         var iterationTarget = GetReadmePublicIterationTarget(context, requestedIterations);
@@ -2172,7 +2148,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"FallbackReason    : {context.CompiledUtf8Regex.Inspection.FallbackReason}");
         }
 
-        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
         Measure("AsciiOnlyCheck", iterations, () => Utf8InputAnalyzer.IsAscii(context.InputBytes) ? context.InputBytes.Length : 0);
         Measure("Utf8IsValid", iterations, () => Utf8.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
         Measure("WellFormedOnly", iterations, () =>
@@ -2707,7 +2683,6 @@ internal static partial class BenchmarkInspectReporter
         WriteCountDiagnostics("Compiled", compiledUtf8Regex.CollectCountDiagnostics(replicaCase.InputBytes));
         Console.WriteLine($"CompiledGateUtf8Literal      : {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralCount}");
         Console.WriteLine($"CompiledGateUtf8LiteralFamily: {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralFamilyCount}");
-        Console.WriteLine($"CompiledThrowIfInvalidCount  : {compiledUtf8Regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount}");
         var inputShape = Utf8LeadByteSampling.DescribeLeadByteSample(replicaCase.InputBytes);
         Console.WriteLine($"ShapeSampleBytes            : {inputShape.SampleLength}");
         Console.WriteLine($"ShapeAsciiBytes             : {inputShape.AsciiBytes}");
@@ -2718,7 +2693,7 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("ValidationOnly", compiledIterations, () => ExecuteValidationOnly(replicaCase.InputBytes));
         Measure("Utf8IsValid", compiledIterations, () => Utf8.IsValid(replicaCase.InputBytes) ? replicaCase.InputBytes.Length : 0);
-        Measure("Utf8InputValidateOnly", compiledIterations, () => Utf8InputAnalyzer.ValidateOnly(replicaCase.InputBytes).Utf16Length);
+        Measure("Utf8InputValidateOnly", compiledIterations, () => Utf8InputAnalyzer.ValidateOnly(replicaCase.InputBytes).ByteLength);
         Measure("Utf8ValidityOnly", compiledIterations, () =>
         {
             Utf8InputAnalyzer.TryValidateOnly(replicaCase.InputBytes, out _);
@@ -2796,7 +2771,7 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"BoundedSuffixPlan : {simplePatternPlan.BoundedSuffixLiteralPlan.HasValue}");
             }
 
-            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
             {
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
@@ -2837,7 +2812,7 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"CanDirectFixedAlt    : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
             }
 
-            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
             {
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
@@ -2871,7 +2846,7 @@ internal static partial class BenchmarkInspectReporter
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.Replace)
         {
-            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
             {
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
@@ -2885,7 +2860,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
             Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
 
-            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+            Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
             {
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
@@ -3016,7 +2991,7 @@ internal static partial class BenchmarkInspectReporter
         WriteIsMatchDiagnostics("Baseline", baselineDiagnostics);
         WriteIsMatchDiagnostics("Compiled", compiledDiagnostics);
 
-        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
         Measure("WellFormedOnly", iterations, () =>
         {
             Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
@@ -3064,7 +3039,7 @@ internal static partial class BenchmarkInspectReporter
             return input.Length;
         });
         Measure("Utf8IsValid", iterations, () => Utf8.IsValid(input) ? input.Length : 0);
-        Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(input).Utf16Length);
+        Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(input).ByteLength);
         return 0;
     }
 
@@ -3181,7 +3156,7 @@ internal static partial class BenchmarkInspectReporter
             return benchmarkCase.InputBytes.Length;
         });
         Measure("Utf8IsValid", iterations, () => Utf8.IsValid(benchmarkCase.InputBytes) ? benchmarkCase.InputBytes.Length : 0);
-        Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).Utf16Length);
+        Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).ByteLength);
         Measure("StrictDecodeOnly", iterations, () => Utf8Validation.DecodeStrict(benchmarkCase.InputBytes).Length);
         Measure("DefaultDecodeOnly", iterations, () => Encoding.UTF8.GetString(benchmarkCase.InputBytes).Length);
 
@@ -3347,7 +3322,7 @@ internal static partial class BenchmarkInspectReporter
                 return benchmarkCase.InputBytes.Length;
             });
             Measure("Utf8IsValid", iterations, () => Utf8.IsValid(benchmarkCase.InputBytes) ? benchmarkCase.InputBytes.Length : 0);
-            Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).Utf16Length);
+            Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).ByteLength);
             return 0;
         }
 
@@ -3366,7 +3341,7 @@ internal static partial class BenchmarkInspectReporter
                 return context.InputBytes.Length;
             });
             Measure("Utf8IsValid", iterations, () => Utf8.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
-            Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
+            Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             return 0;
         }
 
@@ -4427,7 +4402,7 @@ internal static partial class BenchmarkInspectReporter
                 WorkingDirectory = tempRoot,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                UseShellExecute = false,
+                UseShellExecute = false
             };
             psi.ArgumentList.Add("build");
             psi.ArgumentList.Add("--tl:off");
@@ -5255,7 +5230,7 @@ internal static partial class BenchmarkInspectReporter
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            WorkingDirectory = Environment.CurrentDirectory,
+            WorkingDirectory = Environment.CurrentDirectory
         };
         psi.ArgumentList.Add(typeof(BenchmarkInspectReporter).Assembly.Location);
         psi.ArgumentList.Add(command);
@@ -5310,7 +5285,7 @@ internal static partial class BenchmarkInspectReporter
     private static readonly JsonSerializerOptions ReadmeBenchmarkSnapshotJsonOptions = new()
     {
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = true,
+        WriteIndented = true
     };
 
     private sealed class ReadmeBenchmarkSnapshot
@@ -5392,7 +5367,7 @@ internal static partial class BenchmarkInspectReporter
                 PredecodedRegexAllocatedBytes = measurement.PredecodedRegexAllocatedBytes,
                 CompiledRegexAllocatedBytes = measurement.CompiledRegexAllocatedBytes,
                 DecodeThenRegexAllocatedBytes = measurement.DecodeThenRegexAllocatedBytes,
-                DecodeThenCompiledRegexAllocatedBytes = measurement.DecodeThenCompiledRegexAllocatedBytes,
+                DecodeThenCompiledRegexAllocatedBytes = measurement.DecodeThenCompiledRegexAllocatedBytes
             };
 
         public ReadmeCaseMeasurement ToMeasurement()
@@ -5761,7 +5736,7 @@ internal static partial class BenchmarkInspectReporter
             Processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? RuntimeInformation.ProcessArchitecture.ToString(),
             TieredPgo = Environment.GetEnvironmentVariable("DOTNET_TieredPGO") ??
                 Environment.GetEnvironmentVariable("COMPlus_TieredPGO") ??
-                "runtime-default",
+                "runtime-default"
         };
 
     internal static string GetAssemblyIdentity(Assembly assembly)
@@ -5801,7 +5776,7 @@ internal static partial class BenchmarkInspectReporter
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = false,
+            UseShellExecute = false
         };
         foreach (var argument in arguments)
         {
@@ -7091,7 +7066,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ExecuteValidationOnly(byte[] input)
     {
-        return Utf8Validation.Validate(input).Utf16Length;
+        return Utf8Validation.Validate(input).ByteLength;
     }
 
     private static int ExecutePublicEnumeratorMoveNextCount(Utf8Regex regex, byte[] input)

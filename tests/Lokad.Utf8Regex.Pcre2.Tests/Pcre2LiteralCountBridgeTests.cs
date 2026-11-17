@@ -30,7 +30,10 @@ public sealed class Pcre2LiteralCountBridgeTests
     {
         var regex = Create("(a)(b)", new()
         {
-            MatchLimit = 5000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1,
+            MatchLimit = 5000,
+            DepthLimit = 1,
+            HeapLimitInBytes = 1,
+            ResultLimitInBytes = 1
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 1000)));
         Assert.Equal(1000, regex.Count(bytes));
@@ -48,7 +51,6 @@ public sealed class Pcre2LiteralCountBridgeTests
         Assert.Equal("a", retained.GetGroup(1).GetValueString());
         Assert.Equal("b", retained.GetGroup(2).GetValueString());
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', (byte)'b', 255 }));
     }
 
     [Theory]
@@ -62,8 +64,7 @@ public sealed class Pcre2LiteralCountBridgeTests
         var denied = false;
         for (uint work = 1; work <= 96; work++)
         {
-            var regex = Create(pattern, new() { MatchLimit = work, DepthLimit = 1024,
-                HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 });
+            var regex = Create(pattern, new() { MatchLimit = work, DepthLimit = 1024, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 });
             try { Assert.Equal(expected, regex.Count(bytes)); admitted = true; }
             catch (Pcre2MatchException error)
             {
@@ -79,11 +80,10 @@ public sealed class Pcre2LiteralCountBridgeTests
     {
         // Work units are versioned. Fund all but the final required step,
         // rather than pinning the old per-candidate accounting threshold.
-        var control = Create("(a)(b)", new() { MatchLimit = uint.MaxValue, DepthLimit = 1,
-            HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
+        var control = Create("(a)(b)", new() { MatchLimit = uint.MaxValue, DepthLimit = 1, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
         var funded = Pcre2SliceDriver.CreateInvocation(control.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, funded.TryReserveWorking(13));
-        var controlInput = Pcre2Runner.PrepareInput(control.DebugCompiledProgram, "ab ab ab ab"u8, 0, ref funded);
+        var controlInput = Pcre2Runner.PrepareInput("ab ab ab ab"u8, 0, ref funded);
         ulong requiredWork;
         try
         {
@@ -95,11 +95,10 @@ public sealed class Pcre2LiteralCountBridgeTests
         }
         finally { funded.Ledger.Release(13); }
 
-        var regex = Create("(a)(b)", new() { MatchLimit = checked((uint)(requiredWork - 1)), DepthLimit = 1,
-            HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
+        var regex = Create("(a)(b)", new() { MatchLimit = checked((uint)(requiredWork - 1)), DepthLimit = 1, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, "ab ab ab ab"u8, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput("ab ab ab ab"u8, 0, ref invocation);
         try
         {
             for (var attempt = 0; attempt < 2; attempt++)
@@ -128,12 +127,11 @@ public sealed class Pcre2LiteralCountBridgeTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, HeapLimitInBytes = 1048576,
-                ResultLimitInBytes = 1048576 }, TimeSpan.FromMilliseconds(20));
+            new() { MatchLimit = 1000000, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 }, TimeSpan.FromMilliseconds(20));
         var retained = regex.MatchDetailed("ab"u8);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes("π😀" + string.Concat(Enumerable.Repeat("ab ", 1000)));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };
@@ -184,6 +182,9 @@ public sealed class Pcre2LiteralCountBridgeTests
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
         new(pattern, Pcre2CompileOptions.None, default, limits ?? new()
         {
-            MatchLimit = 1000000, DepthLimit = 1024, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576,
+            MatchLimit = 1000000,
+            DepthLimit = 1024,
+            HeapLimitInBytes = 1048576,
+            ResultLimitInBytes = 1048576
         }, Timeout.InfiniteTimeSpan);
 }

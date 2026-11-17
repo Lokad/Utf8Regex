@@ -51,9 +51,9 @@ internal static partial class Utf8CompiledOperationCursorFactory
         var cursor = prepared.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase
-                => new Utf8OperationMatchCursor(input, prepared, validation.IsAscii, false, invocation),
+                => new Utf8OperationMatchCursor(input, prepared, false, invocation),
             NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => new Utf8OperationMatchCursor(input, prepared, validation.IsAscii, invocation),
+                => new Utf8OperationMatchCursor(input, prepared, invocation),
             NativeExecutionKind.AsciiOrderedLiteralWindow or NativeExecutionKind.AsciiStructuralIdentifierFamily
                 => new Utf8OperationMatchCursor(input, prepared, invocation),
             NativeExecutionKind.AsciiSimplePattern

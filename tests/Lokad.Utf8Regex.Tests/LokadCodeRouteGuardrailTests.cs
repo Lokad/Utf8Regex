@@ -47,19 +47,6 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
-    public void CompiledMethodTokenFamilyStillRejectsMalformedUtf8()
-    {
-        var regex = new Utf8Regex(
-            @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        byte[] malformed = [0xFF, .. System.Text.Encoding.UTF8.GetBytes(" LogTrace")];
-
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
-    }
-
-    [Fact]
     public void OrderedIdentifierWindowStaysOnStructuralEngine()
     {
         var regex = new Utf8Regex(@"\bHttpClient\b[\s\S]{0,80}\bSendAsync\b", RegexOptions.CultureInvariant);

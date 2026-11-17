@@ -56,8 +56,6 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
         var unicode = Encoding.UTF8.GetBytes("é ababaz 夏 az");
         Assert.Equal(vm.Count(unicode), direct.Count(unicode));
         Assert.Equal(vm.Count(unicode, "é "u8.Length), direct.Count(unicode, "é "u8.Length));
-
-        Assert.Throws<ArgumentException>(() => direct.Count([0xFF, (byte)'a', (byte)'z']));
     }
 
     [Theory]

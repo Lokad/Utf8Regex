@@ -109,15 +109,19 @@ internal static partial class BenchmarkInspectReporter
             var exclusion = PreflightPosix(benchmarkCase, context);
             var result = new PosixBenchmarkRow
             {
-                Operation = benchmarkCase.Operation.ToString(), Records = benchmarkCase.Records,
+                Operation = benchmarkCase.Operation.ToString(),
+                Records = benchmarkCase.Records,
                 CompileOptions = benchmarkCase.Options.ToString(),
                 StartOffsetInBytes = benchmarkCase.StartOffsetInBytes,
                 InputSha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(benchmarkCase.Input))),
-                Environment = environment, PosixAssembly = GetAssemblyIdentity(typeof(Utf8PosixRegex).Assembly),
-                NativeAssembly = nativeAssembly, NativeBuild = nativeBuild,
-                ProcessorPolicy = placement.Policy, ProcessorAffinityMask = placement.AffinityMask,
+                Environment = environment,
+                PosixAssembly = GetAssemblyIdentity(typeof(Utf8PosixRegex).Assembly),
+                NativeAssembly = nativeAssembly,
+                NativeBuild = nativeBuild,
+                ProcessorPolicy = placement.Policy,
+                ProcessorAffinityMask = placement.AffinityMask,
                 Expected = PosixResultJson(PosixBenchmarkCatalog.Expected(benchmarkCase.Id)),
-                NativeExclusion = exclusion,
+                NativeExclusion = exclusion
             };
             var lanes = PosixLaneIndices(benchmarkCase, exclusion);
             var counts = new int[5];
@@ -234,9 +238,10 @@ internal static partial class BenchmarkInspectReporter
         var repository = PosixRepository();
         var summary = new BenchmarkSummary
         {
-            Profile = "Posix", CatalogSha256 = snapshot.CatalogSha256,
+            Profile = "Posix",
+            CatalogSha256 = snapshot.CatalogSha256,
             Evidence = BenchmarkSummary.DescribeEvidence(repository, PosixSnapshotName),
-            Comparator = new() { PackageId = "PCRE.NET", PackageVersion = "1.5.0", Engine = "Native ordered NFA on verified equal-result inputs only", License = "BSD-3-Clause" },
+            Comparator = new() { PackageId = "PCRE.NET", PackageVersion = "1.5.0", Engine = "Native ordered NFA on verified equal-result inputs only", License = "BSD-3-Clause" }
         };
         foreach (var (id, row) in snapshot.Cases)
         {
@@ -244,25 +249,34 @@ internal static partial class BenchmarkInspectReporter
             var section = id == "capture/sku007" ? "AdapterControl" : id.StartsWith("history/", StringComparison.Ordinal) ? "HistoryScaling" : "Operations";
             summary.AddRow(section, id, new()
             {
-                Source = source, Operation = row.Records > 1 ? $"{row.Operation} × {row.Records}" : row.Operation,
-                // Canonicalize embedded JSON: raw snapshot indentation must not
+                Source = source,
+                Operation = row.Records > 1 ? $"{row.Operation} × {row.Records}" : row.Operation,                // Canonicalize embedded JSON: raw snapshot indentation must not
                 // change the result contract after a write/read round trip.
-                InputSha256 = row.InputSha256, ResultContract = JsonSerializer.Serialize(row.Expected),
-                ManagedUs = Median(row.Lanes["Unlimited"].Microseconds), ManagedBytes = Median(row.Lanes["Unlimited"].AllocatedBytes),
+                InputSha256 = row.InputSha256,
+                ResultContract = JsonSerializer.Serialize(row.Expected),
+                ManagedUs = Median(row.Lanes["Unlimited"].Microseconds),
+                ManagedBytes = Median(row.Lanes["Unlimited"].AllocatedBytes),
                 ReferenceUs = row.Lanes.TryGetValue("NativeNfa", out var native) ? Median(native.Microseconds) : null,
                 ReferenceBytes = native is not null ? Median(native.AllocatedBytes) : null,
-                Ratio = row.Ratio, Lower95 = row.Lower95, Upper95 = row.Upper95, Status = row.Status, Reason = row.StatusReason,
-                PeakWorkingBytes = row.PeakFundedWorkingBytes,
+                Ratio = row.Ratio,
+                Lower95 = row.Lower95,
+                Upper95 = row.Upper95,
+                Status = row.Status,
+                Reason = row.StatusReason,
+                PeakWorkingBytes = row.PeakFundedWorkingBytes
             });
             foreach (var lane in new[] { "FiniteLive", "FundedFiniteLive", "FiniteDeadlineLive" })
             {
                 if (!row.Lanes.TryGetValue(lane, out var measured)) continue;
                 summary.AddRow(lane, id, new()
                 {
-                    Source = source, Operation = row.Operation, ManagedUs = Median(measured.Microseconds),
-                    ManagedBytes = Median(measured.AllocatedBytes), Status = row.Status == "Unqualified" ? "Unqualified" : "Measured",
+                    Source = source,
+                    Operation = row.Operation,
+                    ManagedUs = Median(measured.Microseconds),
+                    ManagedBytes = Median(measured.AllocatedBytes),
+                    Status = row.Status == "Unqualified" ? "Unqualified" : "Measured",
                     Ratio = Median(measured.Microseconds) / Median(row.Lanes["Unlimited"].Microseconds),
-                    Reason = lane == "FundedFiniteLive" ? $"Peak covered host working storage {row.PeakFundedWorkingBytes} bytes; zero outstanding loans." : null,
+                    Reason = lane == "FundedFiniteLive" ? $"Peak covered host working storage {row.PeakFundedWorkingBytes} bytes; zero outstanding loans." : null
                 });
             }
         }

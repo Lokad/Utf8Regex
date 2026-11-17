@@ -20,9 +20,7 @@ internal readonly record struct Pcre2CompileRequest(
     Utf8Pcre2ExecutionLimits DefaultLimits,
     TimeSpan MatchTimeout)
 {
-    internal Utf8InputValidation InputValidation { get; init; }
 
-    internal int MaximumLookbehind { get; init; }
 
     internal Utf8ConstructionPattern ConstructionPattern => PatternSource is byte[] bytes
         ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)PatternSource);
@@ -45,7 +43,7 @@ internal readonly record struct Pcre2CompileRequest(
         MaxWorkSteps = DefaultLimits.MatchLimit == 0 ? null : DefaultLimits.MatchLimit,
         MaxDepth = DefaultLimits.DepthLimit == 0 ? null : DefaultLimits.DepthLimit,
         MaxWorkingBytes = DefaultLimits.HeapLimitInBytes == 0 ? null : DefaultLimits.HeapLimitInBytes,
-        MaxResultBytes = DefaultLimits.ResultLimitInBytes == 0 ? null : DefaultLimits.ResultLimitInBytes,
+        MaxResultBytes = DefaultLimits.ResultLimitInBytes == 0 ? null : DefaultLimits.ResultLimitInBytes
     };
 }
 
@@ -89,8 +87,8 @@ internal static class Pcre2Compiler
         {
             var source = request.ConstructionPattern;
             regex = source.IsUtf8
-                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, Utf8InputValidation.AssumeValid)
-                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy, inputValidation: Utf8InputValidation.AssumeValid);
+                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy)
+                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
             return true;
         }
         catch (ArgumentException)
@@ -582,7 +580,7 @@ internal static class Pcre2CompiledProgramOverlay
         request = request with
         {
             SkipsCrLfContinuation = request.UsesCrLfNewlines && !literalProgram.HasExplicitCrOrLf,
-            MaximumLookbehind = literalProgram.StartAnchor == Pcre2LiteralAnchor.AbsoluteStart ? 1 : 0,
+
         };
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
         return new Pcre2CompiledProgram(
@@ -1856,7 +1854,7 @@ internal static partial class Pcre2Runner
             character.Program.Request.Options != Pcre2CompileOptions.None ||
             character.Program.Tokens is not [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster, Options: Pcre2CharacterOptions.None }])
             return false;
-        CheckInput(program, input, startOffsetInBytes, ref invocation);
+        CheckInput(input, startOffsetInBytes, ref invocation);
         var start = Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var budget = new Pcre2ResourceBudget(program.Request.DefaultLimits, invocation, false);
         budget.ChargeCandidate();
@@ -3583,11 +3581,13 @@ internal static class Pcre2MatchPublication
         control.ChargeWorkspaceStep();
         return new Pcre2GroupData
         {
-            Number = 0, Success = true,
-            StartOffsetInBytes = start, EndOffsetInBytes = end,
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = start,
+            EndOffsetInBytes = end,
             Utf8SliceIsWellFormed = start <= end &&
                 input.IsScalarBoundary(new Utf8BytePosition(start)) &&
-                input.IsScalarBoundary(new Utf8BytePosition(end)),
+                input.IsScalarBoundary(new Utf8BytePosition(end))
         };
     }
 }

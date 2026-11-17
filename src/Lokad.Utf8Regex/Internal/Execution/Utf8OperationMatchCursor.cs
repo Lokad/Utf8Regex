@@ -81,7 +81,7 @@ internal ref partial struct Utf8OperationMatchCursor
     private int _slicePositionByte;
     private int _sliceOriginByte;
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool asciiInput)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
@@ -106,9 +106,9 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     // Transfer invocation ownership exactly once when constructing a literal
-    // cursor. Validation already performed by its caller keeps its charged work.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool asciiInput, bool rightToLeft, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."), regexPlan.ExecutionKind, invocation.Budget.Deadline, asciiInput)
+    // cursor. Entry admission and subsequent search share the same charged work.
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool rightToLeft, Utf8SliceInvocation invocation)
+        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."), regexPlan.ExecutionKind, invocation.Budget.Deadline)
     {
         _sliceInvocation = invocation;
         _mode = (regexPlan.ExecutionKind, rightToLeft) switch
@@ -128,7 +128,7 @@ internal ref partial struct Utf8OperationMatchCursor
     // ASCII literals (plain or folded) qualify; the divert guarantees a nonempty
     // literal, no boundary or trailing requirements, and no culture or Kelvin
     // fences, so the arms below stay branch-free.
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool asciiInput, bool rightToLeft)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
@@ -368,7 +368,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            _current = new Utf8CaptureRange(0, (0) + (literal.Length));
+            _current = new Utf8CaptureRange(0, 0 + (literal.Length));
             return true;
         }
 
@@ -395,7 +395,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            _current = new Utf8CaptureRange(0, (0) + (foldedPrefixLiteral.Length));
+            _current = new Utf8CaptureRange(0, 0 + (foldedPrefixLiteral.Length));
             return true;
         }
 
@@ -580,28 +580,25 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
     }
 
+    // Literal-family and structural cursors keep one original invocation.
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, useStructuralLinearProgram: true, invocation.Budget.Deadline, asciiInput: true)
+        : this(input, regexPlan, regexPlan.ExecutionKind, invocation.Budget.Deadline)
     {
         _sliceInvocation = invocation;
         if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
+        {
+            _program = default;
             _mode = EnumeratorMode.AsciiStructuralIdentifierFamily;
-    }
-
-    // The caller transfers the state already used for whole-subject validation.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool inputIsAscii, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, regexPlan.ExecutionKind, inputIsAscii, invocation.Budget.Deadline)
-    {
-        _sliceInvocation = invocation;
-    }
-
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
-        : this(input, regexPlan, executionKind, Utf8InputAnalyzer.IsAscii(input), budget)
-    {
+        }
+        else if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow)
+        {
+            _program = default;
+            _mode = EnumeratorMode.AsciiOrderedLiteralWindow;
+        }
     }
 
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, bool inputIsAscii, Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
@@ -620,11 +617,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             ? EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
             : EnumeratorMode.ExactUtf8Literals;
-    }
-
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-        : this(input, budget)
-    {
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
@@ -932,7 +924,7 @@ internal ref partial struct Utf8OperationMatchCursor
             return false;
         }
 
-        _current = new Utf8CaptureRange(_consumed, (_consumed) + (0));
+        _current = new Utf8CaptureRange(_consumed, (_consumed) + 0);
         if (_consumed == _input.Length)
             _consumed = -1;
         else

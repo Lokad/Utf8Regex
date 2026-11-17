@@ -18,7 +18,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
                 out var needsValidation);
             if (directDate)
             {
-                match = new Utf8CaptureRange(0, (0) + (boundedDateLength));
+                match = new Utf8CaptureRange(0, 0 + (boundedDateLength));
                 return true;
             }
 
@@ -38,7 +38,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
                 out var needsValidation);
             if (directGroup)
             {
-                match = new Utf8CaptureRange(0, (0) + (groupedMatchLength));
+                match = new Utf8CaptureRange(0, 0 + (groupedMatchLength));
                 return true;
             }
 

@@ -118,15 +118,6 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
     }
 
     [Fact]
-    public void FusedCountDoesNotBypassMalformedUtf8Rejection()
-    {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        byte[] malformed = [.. "LogTrace "u8, 0xFF, .. " LogError"u8];
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-    }
-
-    [Fact]
     public void FiniteTimeoutRetainsTheBudgetedCountRoute()
     {
         // This checks route selection, independently of host scheduling pauses.

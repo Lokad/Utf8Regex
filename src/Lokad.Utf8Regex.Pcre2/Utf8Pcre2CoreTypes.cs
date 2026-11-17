@@ -142,7 +142,7 @@ public readonly struct Utf8Pcre2MatchData
             StartOffsetInBytes = data.Success ? data.StartOffsetInBytes : 0,
             EndOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0,
             HasContiguousByteRange = data.HasContiguousByteRange,
-            IsUtf8SliceWellFormed = data.IsUtf8SliceWellFormed,
+            IsUtf8SliceWellFormed = data.IsUtf8SliceWellFormed
         };
     }
 }
@@ -589,7 +589,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                     Success = _currentData.Success,
                     StartOffsetInBytes = _currentData.StartOffsetInBytes,
                     EndOffsetInBytes = _currentData.EndOffsetInBytes,
-                    Utf8SliceIsWellFormed = _currentData.Utf8SliceIsWellFormed,
+                    Utf8SliceIsWellFormed = _currentData.Utf8SliceIsWellFormed
                 });
         }
     }
@@ -613,7 +613,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 Success = true,
                 StartOffsetInBytes = match.StartOffsetInBytes,
                 EndOffsetInBytes = match.EndOffsetInBytes,
-                Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed,
+                Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed
             };
             return true;
         }
@@ -633,7 +633,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 Success = true,
                 StartOffsetInBytes = projected.StartOffsetInBytes,
                 EndOffsetInBytes = projected.EndOffsetInBytes,
-                Utf8SliceIsWellFormed = projected.IsUtf8SliceWellFormed,
+                Utf8SliceIsWellFormed = projected.IsUtf8SliceWellFormed
             };
             return true;
         }

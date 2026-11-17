@@ -7,8 +7,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NonBacktrackingPreparationDeadlineTests
 {
     [Theory]
-    [InlineData(0, "x")] [InlineData(62, "x")] [InlineData(63, "😀")]
-    [InlineData(64, "é")] [InlineData(65, "😀")] [InlineData(127, "x")]
+    [InlineData(0, "x")]
+    [InlineData(62, "x")]
+    [InlineData(63, "😀")]
+    [InlineData(64, "é")]
+    [InlineData(65, "😀")]
+    [InlineData(127, "x")]
     [InlineData(128, "😀")]
     public void CandidateQuantaBoundExaminedStartsAndPreserveOffsets(int prefix, string scalar)
     {
@@ -63,8 +67,10 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void CandidateQuantaKeepBoundedInterruptionAndTableLoans(bool expire, bool wide)
     {
         var program = new Utf8Regex("(?<x>" + new string('z', wide ? 70 : 1) + ")", RegexOptions.NonBacktracking)
@@ -142,11 +148,6 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         foreach (var compiled in new[] { false, true })
         {
             var regex = new Utf8Regex("(?<x>a+)|$", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
-            Assert.Throws<ArgumentException>(() => regex.Count(input));
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
-            Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
-            Assert.Throws<ArgumentException>(() => Encoding.UTF8.GetString(regex.Replace(input, "X")));
-            Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(input); _ = cursor.MoveNext(); });
             using var live = new CancellationTokenSource();
             live.Cancel();
             Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
@@ -154,9 +155,14 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData(0, "", 0)] [InlineData(64, "", 0)] [InlineData(65, "", 0)]
-    [InlineData(63, "é", 1)] [InlineData(62, "😀", 1)] [InlineData(63, "😀", 1)]
-    [InlineData(0, "😀", 65)] [InlineData(1, "é", 128)]
+    [InlineData(0, "", 0)]
+    [InlineData(64, "", 0)]
+    [InlineData(65, "", 0)]
+    [InlineData(63, "é", 1)]
+    [InlineData(62, "😀", 1)]
+    [InlineData(63, "😀", 1)]
+    [InlineData(0, "😀", 65)]
+    [InlineData(1, "é", 128)]
     public void SizeBlocksPreserveEveryScalarBoundary(int prefix, string unit, int repeats)
     {
         var text = new string('a', prefix) + string.Concat(Enumerable.Repeat(unit, repeats));
@@ -186,8 +192,10 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void SizeAndOffsetBlocksKeepBoundedInterruptionAndRefunds(bool offsets, bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('a', offsets ? 65 : 4097));
@@ -219,8 +227,10 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void BothSearchRoutesAdmitCategoryBlocksBeforeTheyRun(bool batch, bool expireAtAdmission)
     {
         long ticks = 0;
@@ -275,10 +285,14 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData("1", false)] [InlineData("1", true)]
-    [InlineData("[12]", false)] [InlineData("[12]", true)]
-    [InlineData(@"\d", false)] [InlineData(@"\d", true)]
-    [InlineData(".", false)] [InlineData(".", true)]
+    [InlineData("1", false)]
+    [InlineData("1", true)]
+    [InlineData("[12]", false)]
+    [InlineData("[12]", true)]
+    [InlineData(@"\d", false)]
+    [InlineData(@"\d", true)]
+    [InlineData(".", false)]
+    [InlineData(".", true)]
     public void LastSimpleAtomCannotPublishAfterInterruption(string pattern, bool cancel)
     {
         var program = new Utf8Regex(pattern, RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
@@ -372,8 +386,12 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     }
 
     [Theory]
-    [InlineData(63, 2)] [InlineData(64, 2)] [InlineData(65, 3)]
-    [InlineData(128, 3)] [InlineData(129, 4)] [InlineData(4097, 66)]
+    [InlineData(63, 2)]
+    [InlineData(64, 2)]
+    [InlineData(65, 3)]
+    [InlineData(128, 3)]
+    [InlineData(129, 4)]
+    [InlineData(4097, 66)]
     public void EmptyRowWorkBoundsEachQuantumAndRefusesBeforeItRuns(int states, ulong steps)
     {
         var program = new Utf8Regex(new string('a', states - 1), RegexOptions.NonBacktracking)

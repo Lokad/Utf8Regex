@@ -18,14 +18,13 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         foreach (var tail in new[] { "", " KIT" })
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
             var text = "\0é😀 ſ Iİı KIT kit Sherlock HOLMES JOHN WATSON é" + tail;
             var bytes = Encoding.UTF8.GetBytes(text);
             var options = Invariant | mode;
             var reference = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
-            Assert.Equal(reference.IsMatch(text), regex.IsMatch(bytes));
+                var regex = new Utf8Regex(pattern, options);
+                Assert.Equal(reference.IsMatch(text), regex.IsMatch(bytes));
             Assert.Equal(reference.Count(text), regex.Count(bytes));
                     var expected = reference.Matches(text).Select(m => (
                         Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), Encoding.UTF8.GetByteCount(m.Value))).ToArray();
@@ -83,19 +82,14 @@ public sealed class Utf8InvariantFoldedCountTests
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
             var expected = new Regex(pattern, options).Count(text);
             var regex = new Utf8Regex(pattern, options);
-            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
-            var bytes = Encoding.UTF8.GetBytes(text);
+                var trusted = new Utf8Regex(pattern, options);
+                var bytes = Encoding.UTF8.GetBytes(text);
             for (var offset = 0; offset < 4; offset++)
             {
                 var padded = new byte[offset + bytes.Length + 3];
                 bytes.CopyTo(padded, offset);
                 Assert.Equal(expected, regex.Count(padded.AsSpan(offset, bytes.Length)));
                 Assert.Equal(expected, trusted.Count(padded.AsSpan(offset, bytes.Length)));
-            }
-            foreach (var tail in new[] { new byte[] { 255 }, new byte[] { 0xE2 }, new byte[] { 0xE2, 0x84 } })
-            {
-                var malformed = bytes.Concat(tail).ToArray();
-                Assert.Throws<ArgumentException>(() => regex.Count(malformed));
             }
         }
     }
@@ -113,12 +107,11 @@ public sealed class Utf8InvariantFoldedCountTests
             var options = Invariant | RegexOptions.Compiled;
             var expected = new Regex(pattern, options).Count(text);
             Assert.Equal(expected, new Utf8Regex(pattern, options).Count(bytes));
-            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
-            var session = Utf8SearchDiagnosticsSession.Start();
+                var trusted = new Utf8Regex(pattern, options);
+                var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(expected, trusted.Count(bytes));
-                Assert.Equal(0, session.SubjectValidations);
             }
             finally { session.Complete(); }
         }
@@ -146,8 +139,7 @@ public sealed class Utf8InvariantFoldedCountTests
             var regex = new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase);
             var text = "é I i İ ı Kit ſ";
             Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
-            Assert.Equal(oracle.Count(text), new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase,
-                inputValidation: Utf8InputValidation.AssumeValid).Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(oracle.Count(text), new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase).Count(Encoding.UTF8.GetBytes(text)));
         }
         finally { CultureInfo.CurrentCulture = previous; }
     }
@@ -159,16 +151,13 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         var options = Invariant | (compiled ? RegexOptions.Compiled : 0);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Sherlock Holmes John Watson ", 256)));
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000000, MaxDepth = 1024,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var finite = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(512, finite.Count(input));
-        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy,
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(512, trusted.Count(input));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
-            "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkSteps = 1 }, inputValidation: Utf8InputValidation.AssumeValid).Count(input));
+            "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy with { MaxWorkSteps = 1 }).Count(input));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
             "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
             policy with { MaxWorkSteps = 1 }).Count(input));
@@ -195,8 +184,7 @@ public sealed class Utf8InvariantFoldedCountTests
     public void KelvinScreeningHandlesWindowEdgesAndRetainsFallback(int offset)
     {
         var text = new string('x', offset) + "K K k";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var regex = new Utf8Regex("k|kit", Invariant, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(3, regex.Count(Encoding.UTF8.GetBytes(text)));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
@@ -211,10 +199,9 @@ public sealed class Utf8InvariantFoldedCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Kit k ", 512)));
         using var tokens = new CancellationTokenSource();
         var validation = new Utf8SliceInvocation(new(1000000, 1, 1, 1), Regex.InfiniteMatchTimeout, tokens.Token);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1,
-            MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var regex = new Utf8Regex("kit|k", Invariant | (compiled ? RegexOptions.Compiled : 0),
             Regex.InfiniteMatchTimeout, policy);
         ulong stoppedAt = 0;
@@ -241,8 +228,7 @@ public sealed class Utf8InvariantFoldedCountTests
         var text = new string('j', padding) + "é JOHN ABC ! ? @ 😀 inspector ab B professor";
         var expected = new Regex(pattern, Invariant).Count(text);
         var bytes = Encoding.UTF8.GetBytes(text);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         foreach (var compiled in new[] { false, true })
         {
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0);

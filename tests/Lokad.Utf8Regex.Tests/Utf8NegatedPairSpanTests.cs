@@ -61,12 +61,6 @@ public sealed class Utf8NegatedPairSpanTests
     }
 
     [Fact]
-    public void WholeSubjectValidationRejectsMalformedBytesAfterAnEarlyStop()
-    {
-        Assert.Throws<ArgumentException>(() => new Utf8Regex(@"([^ab]*)a").Count(new byte[] { (byte)'a', 0xFF }));
-    }
-
-    [Fact]
     public void EveryWorkCutoffReleasesTheEnclosingLoan()
     {
         var program = new Utf8Regex(@"\A[^ab]*a").Inspection.AvailableOwnedSliceProgram!;

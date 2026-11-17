@@ -92,8 +92,10 @@ public sealed class PythonReFullMatchByteCeilingTests
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(20), new()
             {
-                MaxWorkSteps = 100000, MaxDepth = 256,
-                MaxWorkingBytes = 16384, MaxResultBytes = 16384,
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 16384,
+                MaxResultBytes = 16384
             });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();

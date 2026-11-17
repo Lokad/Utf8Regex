@@ -35,21 +35,14 @@ int count = regex.Count("A😀"u8); // 2 scalars
 var match = regex.Match("😀"u8); // Utf8CaptureRange: byte endpoints [0, 4)
 ```
 
-Core's `Utf8InputValidation.Validate` is the default: it checks the entire subject,
-including unsearched prefixes/suffixes, at most once per operation or cursor
-lifetime. Select `inputValidation: Utf8InputValidation.AssumeValid` once at engine
-construction or through a factory only when the host guarantees valid UTF-8 and
-unchanged borrowed bytes. Read-only `InputValidation` reports that choice.
-Supported Core matching, counting, replacement, splitting and cursor operations inherit
-it. Pattern/replacement validation keeps its separate profile rules. There is no
-per-call validation override. Match results expose byte endpoints only; callers
-derive any character positions. Required result shaping may still scan input.
-
-PythonRe models Python `re` over `str`; PythonRe and POSIX take already-valid,
-unchanged UTF-8 text without regex-operation validity passes or validation options.
-Validate external bytes at the application's text boundary. PCRE2 retains its
-UTF-mode checking and explicit trusted-input bypass. Pattern/replacement checks
-remain separate in every profile.
+All profiles require already-valid UTF-8 subjects and unchanged borrowed bytes.
+Regex operations do not validate subjects or expose a validation policy. Check
+external bytes where they become text, using `System.Text.Unicode.Utf8.IsValid`
+when the host representation does not already guarantee validity. Malformed
+subjects have unspecified matching results; managed bounds checking, cancellation
+and enforceable resource limits remain. Pattern, template and assembled-output
+checks stay independent. Live route eligibility, scalar matching and output sizing
+may still inspect text. Match results expose byte endpoints only.
 
 PCRE2's explicitly enabled `\C` byte atom and special `\K` ranges have separate
 slice-validity rules; check result slice properties before decoding those results.
@@ -76,9 +69,10 @@ host retention after releasing a receipt is the host's responsibility.
 ## Upgrading and further documentation
 
 Version 0.4 introduced scalar matching over strict UTF-8 in place of the older
-UTF-16 matching behavior. Version 0.5 adds .NET 11 assets, POSIX and Core's optional
-caller-validity policy while preserving Core's default strict rejection. PythonRe/
-POSIX require existing valid text; PCRE2 follows its UTF checking contract.
+UTF-16 matching behavior. Version 0.5 adds .NET 11 assets and POSIX, consolidates
+byte-only results and requires caller-valid subjects across all profiles. Remove
+`inputValidation` arguments and `InputValidation` reads when upgrading. The old
+validation option and malformed-subject rejection guarantees are removed.
 
 NuGet's project-website link leads to the repository specifications, migration
 guide, profile examples and benchmark tables. Those tables retain their measured

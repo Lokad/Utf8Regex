@@ -9,8 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CapturedSimpleBooleanTests
 {
     private const string Pattern = @"(\d{4}[- ]){3}\d{3,4}";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static bool Scalar(Utf8Regex regex, byte[] input)
     {
@@ -99,28 +98,25 @@ public sealed class Utf8CapturedSimpleBooleanTests
         foreach (var prefix in new[] { "1234-5678-1234-456", "no match" })
         {
             byte[] malformed = [.. Encoding.UTF8.GetBytes(prefix), 0xff];
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, canceled.Token)).CancellationToken);
         }
     }
 
     [Fact]
-    public void WholeKernelAdmissionIncludesValidationAndPublication()
+    public void WholeKernelAdmissionBoundsMatchingAndPublication()
     {
         var input = "1234-5678-1234-456"u8.ToArray();
-        var invocation = new Utf8SliceInvocation(new(1000000, 1, 1, 1), Timeout.InfiniteTimeSpan, default);
-        Assert.True(Utf8Validation.Validate(input, ref invocation).IsAscii);
-        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        for (ulong work = 1; work <= invocation.Budget.Steps; work++)
+        ulong required = 0;
+        for (ulong work = 1; work <= 32; work++)
         {
             var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
                 Funded with { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            if (work == invocation.Budget.Steps) Assert.True(regex.IsMatch(input));
-            else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
+            try { Assert.True(regex.IsMatch(input)); required = work; break; }
+            catch (Utf8ResourceLimitExceededException error)
+            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
+        Assert.InRange(required, 2UL, 32UL);
     }
 
     [Theory]
@@ -132,7 +128,7 @@ public sealed class Utf8CapturedSimpleBooleanTests
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string('x', 320000) + "1234-5678-1234-456");
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.Validate(input, ref validation);
+        Utf8InputAnalyzer.Describe(input, ref validation);
         var entered = false;
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var regex = new Utf8Regex(Pattern, RegexOptions.None, timeout, Funded);

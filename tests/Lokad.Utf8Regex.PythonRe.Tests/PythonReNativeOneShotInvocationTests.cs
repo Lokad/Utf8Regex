@@ -111,11 +111,16 @@ public sealed class PythonReNativeOneShotInvocationTests
 
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
-    [InlineData(3, false)] [InlineData(3, true)]
-    [InlineData(4, false)] [InlineData(4, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    [InlineData(3, true)]
+    [InlineData(4, false)]
+    [InlineData(4, true)]
     public void EveryNativeValueOrTextWorkCutoffIsCumulativeAndUnpublished(int kind, bool text)
     {
         var pattern = kind switch { 0 => "Шерлок", 1 => "ab[0-9]+", 2 => "ab.*xy", 4 => "needle", _ => "é😀" };
@@ -169,9 +174,12 @@ public sealed class PythonReNativeOneShotInvocationTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void NativeScansObserveOriginalTokenAndDeadline(int lane, bool expire)
     {
         long ticks = 0;
@@ -183,7 +191,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20),
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        _ = Utf8Validation.Validate(input, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         while ((invocation.Budget.Steps & 63) != 0)
             Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
         var seed = invocation.Budget.Steps;
@@ -210,9 +218,12 @@ public sealed class PythonReNativeOneShotInvocationTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void NativeProjectionBorrowsTheTokenInsideLongDiscovery(int family, bool text)
     {
         var fragment = new string('a', 65536);
@@ -234,7 +245,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         });
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.DotAll);
         var probe = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
         using var token = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, token.Token);

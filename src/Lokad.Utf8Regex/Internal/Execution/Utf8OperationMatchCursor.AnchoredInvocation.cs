@@ -7,7 +7,7 @@ internal ref partial struct Utf8OperationMatchCursor
 {
     private bool _hasAnchoredLiteralInvocation;
 
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8FallbackDirectFamilyKind kind, Utf8ValidationResult validation, Utf8SliceInvocation invocation)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8FallbackDirectFamilyKind kind, Utf8SliceInvocation invocation)
         : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {
         // The borrowed invocation already owns the deadline and shared state.

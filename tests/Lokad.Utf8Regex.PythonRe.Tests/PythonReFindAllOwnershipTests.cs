@@ -25,7 +25,9 @@ public sealed class PythonReFindAllOwnershipTests
     {
         using var regex = new Utf8PythonRegex("(([a-z]+))", resourcePolicy: new()
         {
-            MaxResultBytes = 12 << 10, MaxWorkingBytes = 1 << 20, MaxWorkSteps = 1000000,
+            MaxResultBytes = 12 << 10,
+            MaxWorkingBytes = 1 << 20,
+            MaxWorkSteps = 1000000
         });
         var text = new string('a', 4096);
         var tuples = regex.FindAllToStrings(Encoding.UTF8.GetBytes(text)).TupleValues;

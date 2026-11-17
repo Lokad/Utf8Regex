@@ -172,11 +172,16 @@ public sealed class Utf8NonBacktrackingBatchTests
             .Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
 
     [Theory]
-    [InlineData("a*b|", false)] [InlineData("a*b|", true)]
-    [InlineData("(a*)*b|", false)] [InlineData("(a*)*b|", true)]
-    [InlineData("a*?b|", false)] [InlineData("a*?b|", true)]
-    [InlineData("(?:a|aa)*?b|", false)] [InlineData("(?:a|aa)*?b|", true)]
-    [InlineData("a*b", false)] [InlineData("a*b", true)]
+    [InlineData("a*b|", false)]
+    [InlineData("a*b|", true)]
+    [InlineData("(a*)*b|", false)]
+    [InlineData("(a*)*b|", true)]
+    [InlineData("a*?b|", false)]
+    [InlineData("a*?b|", true)]
+    [InlineData("(?:a|aa)*?b|", false)]
+    [InlineData("(?:a|aa)*?b|", true)]
+    [InlineData("a*b", false)]
+    [InlineData("a*b", true)]
     public void CountWorkIsLinearAcrossTheWholeBatch(string pattern, bool hit)
     {
         var program = Program(pattern);
@@ -413,7 +418,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ulong ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
     {
-        var validation = Utf8Validation.Validate(input, ref invocation);
+        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.ShareStorageForCursor();
         var original = new Utf8OperationMatchCursor(program, input, invocation);
         var held = invocation.Ledger.ReservedBytes;

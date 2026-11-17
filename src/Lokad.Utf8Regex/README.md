@@ -2,8 +2,8 @@
 
 **0.5.0 development**, .NET 10 and .NET 11. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
-coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates and
-string APIs are derived interoperability conveniences.
+coordinates. Dot matches 😀 once across four bytes. Results expose byte ranges;
+callers derive character positions when needed.
 
 ```csharp
 using Lokad.Utf8Regex;
@@ -17,7 +17,8 @@ The owned managed engine supports documented .NET-style grammar, captures/histor
 backreferences, assertions, RTL and a supported NonBacktracking subset, with
 native UTF-8 search paths. It does not execute BCL Regex matchers/results or
 promise UTF-16 parity. CultureInvariant is the primary supported mode. Whole
-subjects must be valid UTF-8, including suffixes after an early match; Validate checks this and AssumeValid trusts the caller. Core uses
+subjects must be valid UTF-8 and remain unchanged during use. Regex operations
+trust this contract without a validation pass. Core uses
 ordered alternatives, not POSIX leftmost-longest matching.
 
 Optional IL preparation is skipped when the host disables dynamic code,
@@ -37,7 +38,7 @@ surrogate repair and .NET-style reference grammar.
 
 Instances support finite `Utf8ResourcePolicy` work, depth, working-capacity and
 result-capacity limits. **Defaults and static cached calls are unlimited.**
-Original cancellation and absolute deadlines cover validation, matching, required
+Original cancellation and absolute deadlines cover pattern/template checks, matching, required
 shaping and cursor advances. Explicit `Compile` factories offer separate
 construction controls. Memory accounting admits modeled major capacity before
 allocation; it is not total heap/RSS, all preparation, callbacks or retained-host
@@ -66,14 +67,12 @@ The [repository specification](../../docs/SPEC.md)
 defines the target contract; qualification fixtures establish implemented scope.
 Performance snapshots retain their recorded source/package/runtime identities.
 
-## Subject validation policy
+## Subject input contract
 
-Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
-host guarantees valid UTF-8 and unchanged borrowed storage. Read-only
-`InputValidation` reports the choice; `Validate` is default and checks the whole
-subject at most once per logical operation or cursor lifetime. Matching, counting,
-replacement/splitting where supported and cursors inherit the engine policy.
-Pattern/replacement validation, checked accesses, scalar/byte semantics,
-cooperative cancellation/deadlines and admission remain. Required coordinate or
-output work may still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-validation).
-Existing benchmark tables use Validate unless explicitly labeled otherwise.
+All four profiles require valid, unchanged UTF-8 subjects. Validate external bytes
+where they become text, for example with `System.Text.Unicode.Utf8.IsValid`.
+Regex operations expose no validation policy or token. Malformed subjects have
+unspecified matching results; managed bounds checking and resource controls remain.
+Pattern/template checks are independent. Necessary search, output and eligibility
+work can still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-contract).
+Frozen performance snapshots retain their recorded input contracts.

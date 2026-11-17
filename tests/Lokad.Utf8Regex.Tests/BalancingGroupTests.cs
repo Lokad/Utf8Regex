@@ -46,9 +46,8 @@ public sealed class BalancingGroupTests
         foreach (var finite in new[] { false, true })
         {
             var regex = new Utf8Regex(pattern, options, matchTimeout: finite ? TimeSpan.FromSeconds(10) : null,
-                resourcePolicy: finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
-                    MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
-            var oracle = new Regex(pattern, options);
+                resourcePolicy: finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
+                var oracle = new Regex(pattern, options);
             foreach (var text in subjects)
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -130,7 +129,7 @@ public sealed class BalancingGroupTests
         var input = "BEGINBEGIN😀ENDEND"u8.ToArray();
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 }, new() { MaxDepth = 1 }, new() { MaxWorkingBytes = 1 } })
         {
-            var regex = new Utf8Regex(pattern, resourcePolicy: policy, inputValidation: Utf8InputValidation.AssumeValid);
+            var regex = new Utf8Regex(pattern, resourcePolicy: policy);
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input));
         }
         using var cancellation = new CancellationTokenSource();

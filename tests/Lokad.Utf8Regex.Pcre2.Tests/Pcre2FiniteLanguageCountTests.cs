@@ -19,8 +19,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData("(a{2,3}?)(a)", "aaaaaa", 2)]
     public void ControlledCountPreservesTheProvedLanguageAndOrder(string pattern, string text, int expected)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
+        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
         Assert.IsAssignableFrom<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
@@ -39,8 +38,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData("(?i)(a)(b)", "AB ab", 2)]
     public void EmptyAndUnprovedPatternsKeepTheirExistingSemantics(string pattern, string text, int expected)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 });
+        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -51,7 +49,7 @@ public sealed class Pcre2FiniteLanguageCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 100)));
         var measured = Create(pattern, new() { MatchLimit = 1000000 });
         var invocation = Pcre2SliceDriver.CreateInvocation(measured.DebugCompiledProgram.Request, default);
-        var validated = Pcre2Runner.PrepareInput(measured.DebugCompiledProgram, input, 0, ref invocation);
+        var validated = Pcre2Runner.PrepareInput(input, 0, ref invocation);
         var validationSteps = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(measured.DebugCompiledProgram,
             ref validated, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -74,7 +72,7 @@ public sealed class Pcre2FiniteLanguageCountTests
             // Four alternatives retain the scalar VM and its real rewind frames.
             var regex = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-            var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, "ab a"u8, 0, ref invocation);
+            var input = Pcre2Runner.PrepareInput("ab a"u8, 0, ref invocation);
             if (allowance == 1)
             {
                 Pcre2MatchException? failure = null;
@@ -106,9 +104,6 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(0, regex.Count("😀ab ab"u8, 9));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab ab"u8, 1));
         Assert.Equal(1, regex.Count("ab ab"u8, 0, Pcre2MatchOptions.Anchored));
-        var malformed = "ab ab"u8.ToArray(); malformed[^1] = 0xff;
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(malformed));
-        Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.Count(malformed)).Message);
         var tinyLiteral = Create("(a)(b)", new() { HeapLimitInBytes = 1 });
         Assert.Equal(1, tinyLiteral.Count("ab"u8)); // No major scratch is acquired.
         var tinyAlternatives = Create("((ab)|(a))", new() { HeapLimitInBytes = 1 });
@@ -127,8 +122,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     {
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
         var retained = regex.MatchDetailed("ab"u8);
         int reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -155,8 +149,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData(@"(?<x>a)\Kb", "ab")]
     public void SparseFiniteCountsKeepBoundedSeekingAndScalarOffsets(string pattern, string hit)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
+        var regex = Create(pattern, new() { MatchLimit = 1000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(new string('x', 65536))));
         foreach (var prefix in new[] { 2047, 2048, 2049 })
@@ -182,7 +175,7 @@ public sealed class Pcre2FiniteLanguageCountTests
             TimeSpan.FromMilliseconds(20));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validatedSteps = invocation.Budget.Steps;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>

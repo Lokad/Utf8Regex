@@ -9,8 +9,10 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LiveTokenBooleanTests
 {
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void AnchoredBooleanLiveTokenAvoidsScalarTemporaryStorage(bool compiled, bool hit)
     {
         using var construction = new CancellationTokenSource();
@@ -49,8 +51,6 @@ public sealed class Utf8LiveTokenBooleanTests
         {
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
             Assert.Equal(expected, regex.IsMatch(input)); Assert.Equal(expected, regex.IsMatch(input, live.Token));
-            var malformed = input.Concat(new byte[] { 0xff }).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, live.Token));
         }
     }
 

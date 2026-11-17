@@ -121,13 +121,4 @@ public sealed class Utf8OptionalRepeatTests
             Assert.Equal(3, regex.Count("a😀"u8, source.Token));
         }
     }
-
-    [Fact]
-    public void OptionalMatchDoesNotHideMalformedSuffix()
-    {
-        var input = new byte[] { (byte)'a', (byte)'b', 0xFF };
-        var regex = new Utf8Regex("(a)?b");
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
-    }
 }

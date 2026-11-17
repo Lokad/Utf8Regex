@@ -12,8 +12,10 @@ public sealed class Pcre2BacktrackingCountFramesTests
     {
         var regex = Create(@"(?<s>\p{Xps}+)(?<x>\p{Xuc}{1,2})", new()
         {
-            MatchLimit = 10000000, DepthLimit = 256,
-            HeapLimitInBytes = 1UL << 20, ResultLimitInBytes = 1,
+            MatchLimit = 10000000,
+            DepthLimit = 256,
+            HeapLimitInBytes = 1UL << 20,
+            ResultLimitInBytes = 1
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\u0085\u180E😀😀!", 1000)));
         using var token = new CancellationTokenSource();
@@ -34,7 +36,10 @@ public sealed class Pcre2BacktrackingCountFramesTests
     {
         var regex = Create(@"(?<x>\p{Xuc}){3}!", new()
         {
-            MatchLimit = 10000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1,
+            MatchLimit = 10000,
+            DepthLimit = 1,
+            HeapLimitInBytes = 1,
+            ResultLimitInBytes = 1
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(text), 0, Pcre2MatchOptions.None, token.Token));
@@ -71,11 +76,11 @@ public sealed class Pcre2BacktrackingCountFramesTests
             MatchLimit = deniedLimit == 0 ? 30U : 1000000U,
             DepthLimit = deniedLimit == 1 ? 1U : 256U,
             HeapLimitInBytes = deniedLimit == 2 ? 1UL : 1UL << 20,
-            ResultLimitInBytes = deniedLimit == 3 ? 1UL : 1UL << 20,
+            ResultLimitInBytes = deniedLimit == 3 ? 1UL : 1UL << 20
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         Exception? failure = null;
         try
@@ -114,7 +119,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var retained = regex.MatchDetailed("aaab"u8);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         armed = true;
         Exception? failure = null;
@@ -137,7 +142,6 @@ public sealed class Pcre2BacktrackingCountFramesTests
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null,
         TimeSpan? timeout = null) => new(pattern, Pcre2CompileOptions.None, default,
-            limits ?? new() { MatchLimit = 1000000, DepthLimit = 256,
-                HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
+            limits ?? new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
             timeout ?? Timeout.InfiniteTimeSpan);
 }

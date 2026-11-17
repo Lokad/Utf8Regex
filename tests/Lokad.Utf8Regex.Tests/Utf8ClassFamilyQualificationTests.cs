@@ -32,8 +32,7 @@ public sealed class Utf8ClassFamilyQualificationTests
     }
     private static void TrustedPublicCount(string pattern, ReadOnlySpan<byte> input, int expected)
     {
-        Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.CultureInvariant,
-            inputValidation: Utf8InputValidation.AssumeValid).Count(input));
+        Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.CultureInvariant).Count(input));
     }
 
     [Fact]

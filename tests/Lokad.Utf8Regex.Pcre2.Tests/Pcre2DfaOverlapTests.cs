@@ -50,7 +50,6 @@ public sealed class Pcre2DfaOverlapTests
     public void CorrectedBooleanRouteKeepsValidationAndOriginalInterruption()
     {
         var expression = new Utf8Pcre2Regex(@"^\d*1$");
-        Assert.Throws<ArgumentException>(() => expression.IsMatch([0x31, 0x31, 0xff]));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var failure = Assert.ThrowsAny<OperationCanceledException>(() => expression.IsMatch("11"u8, 0, default, cancellation.Token));

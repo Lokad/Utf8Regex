@@ -14,14 +14,14 @@ public sealed class Utf8Pcre2RegexConstructionTests
             BackslashC = Pcre2BackslashCPolicy.Allow,
             AllowLookaroundBackslashK = true,
             Newline = Pcre2NewlineConvention.Any,
-            Bsr = Pcre2BsrConvention.Unicode,
+            Bsr = Pcre2BsrConvention.Unicode
         };
 
         var limits = new Utf8Pcre2ExecutionLimits
         {
             MatchLimit = 123,
             DepthLimit = 45,
-            HeapLimitInBytes = 678,
+            HeapLimitInBytes = 678
         };
 
         var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.Caseless | Pcre2CompileOptions.Multiline, settings, limits, TimeSpan.FromSeconds(2));

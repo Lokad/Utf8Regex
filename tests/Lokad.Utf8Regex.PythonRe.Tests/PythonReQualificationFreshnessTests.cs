@@ -21,9 +21,15 @@ public sealed class PythonReQualificationFreshnessTests
 
         static PythonReBenchmarkEnvironment Environment(string core, string python, string benchmark) => new()
         {
-            SourceCommit = "checkout", TrackedDirty = false, HasUntrackedFiles = false,
-            Runtime = "runtime", OperatingSystem = "os", Processor = "cpu",
-            CoreAssembly = core, PythonReAssembly = python, BenchmarkAssembly = benchmark,
+            SourceCommit = "checkout",
+            TrackedDirty = false,
+            HasUntrackedFiles = false,
+            Runtime = "runtime",
+            OperatingSystem = "os",
+            Processor = "cpu",
+            CoreAssembly = core,
+            PythonReAssembly = python,
+            BenchmarkAssembly = benchmark
         };
     }
 

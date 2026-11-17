@@ -59,29 +59,31 @@ public sealed class Utf8FiniteStructuralFamilyCountTests
     {
         var input = Encoding.UTF8.GetBytes(prefix + new string(' ', 4096) + suffix);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = invocation.Budget.Steps, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
-        var malformed = Encoding.UTF8.GetBytes(prefix + " " + suffix).Append((byte)0xff).ToArray();
         var tiny = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        Assert.Throws<ArgumentException>(() => tiny.Count(malformed));
     }
 
     [Theory]
-    [InlineData(MethodPattern, "LogError", "(", false, false)] [InlineData(MethodPattern, "LogError", "(", false, true)]
-    [InlineData(MethodPattern, "LogError", "(", true, false)] [InlineData(MethodPattern, "LogError", "(", true, true)]
-    [InlineData(KeywordPattern, "class", "Alpha", false, false)] [InlineData(KeywordPattern, "class", "Alpha", false, true)]
-    [InlineData(KeywordPattern, "class", "Alpha", true, false)] [InlineData(KeywordPattern, "class", "Alpha", true, true)]
+    [InlineData(MethodPattern, "LogError", "(", false, false)]
+    [InlineData(MethodPattern, "LogError", "(", false, true)]
+    [InlineData(MethodPattern, "LogError", "(", true, false)]
+    [InlineData(MethodPattern, "LogError", "(", true, true)]
+    [InlineData(KeywordPattern, "class", "Alpha", false, false)]
+    [InlineData(KeywordPattern, "class", "Alpha", false, true)]
+    [InlineData(KeywordPattern, "class", "Alpha", true, false)]
+    [InlineData(KeywordPattern, "class", "Alpha", true, true)]
     public void FinitePublicSearchAndVerifierKeepOriginalInterruption(string pattern, string prefix, string suffix, bool verifier, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var cancellation = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(verifier ? prefix + new string(' ', 320000) + suffix : new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

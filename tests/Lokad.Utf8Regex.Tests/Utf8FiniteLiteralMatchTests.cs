@@ -10,10 +10,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteLiteralMatchTests
 {
-    private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, inputValidation: inputValidation);
+    private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None)
+        => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
 
     [Theory]
     [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
@@ -25,9 +23,8 @@ public sealed class Utf8FiniteLiteralMatchTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
         {
             var expected = new Regex(pattern, options | RegexOptions.CultureInvariant);
-            foreach (var policy in Enum.GetValues<Utf8InputValidation>())
             {
-                var regex = Create(pattern, options: options, inputValidation: policy);
+                var regex = Create(pattern, options: options);
                 foreach (var padding in new[] { 0, 2037, 2043, 4095 })
                 foreach (var literal in literals.Take(count))
                 {
@@ -50,7 +47,6 @@ public sealed class Utf8FiniteLiteralMatchTests
     {
         var regex = Create("cat|dog|emu|fox|yak");
         byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Match(bytes));
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token)).CancellationToken);
@@ -134,9 +130,8 @@ public sealed class Utf8FiniteLiteralMatchTests
             var pattern = "(?<hit>" + literal + ")";
             var options = reverse | compiled | RegexOptions.CultureInvariant;
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 32,
-                    MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
-            var expected = new Regex(pattern, options).Match(text);
+                new() { MaxWorkSteps = 1_000_000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+                        var expected = new Regex(pattern, options).Match(text);
             AssertRange(regex.Match(input, source.Token), text, expected.Index, length);
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
             Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("hit")).Span));
@@ -171,9 +166,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         foreach (var working in new[] { true, false })
         {
             var limited = new Utf8Regex(regex.Pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 32,
-                    MaxWorkingBytes = working ? 1UL : 1UL << 20,
-                    MaxResultBytes = working ? 1UL << 20 : 1UL });
+                new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = working ? 1UL : 1UL << 20, MaxResultBytes = working ? 1UL << 20 : 1UL });
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(limited.CreateMatchCursor(input))).ResourceKind);
             if (working)
@@ -214,8 +207,10 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("validation", false, "needle")] [InlineData("validation", true, "needle")]
-    [InlineData("search", false, "needle")] [InlineData("search", true, "needle")]
+    [InlineData("validation", false, "needle")]
+    [InlineData("validation", true, "needle")]
+    [InlineData("search", false, "needle")]
+    [InlineData("search", true, "needle")]
 
     [InlineData("validation", false, "needle|other|third|fourth|fifth")]
     [InlineData("validation", true, "needle|other|third|fourth|fifth")]
@@ -234,7 +229,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         var prepared = (Utf8PreparedRegex)typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(prepared.SearchPlan,
             input, 0, input.Length, false, ref probe, out var selected, out var found));
@@ -268,8 +263,6 @@ public sealed class Utf8FiniteLiteralMatchTests
     {
         var regex = Create("needle");
         byte[] invalid = [.. "needle"u8, 0x80];
-        Assert.Throws<ArgumentException>(() => regex.Match(invalid));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(invalid));
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, source.Token)).CancellationToken);
@@ -337,8 +330,10 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void BooleanValidationAndSearchKeepOriginalInterruption(bool searchPhase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
@@ -348,7 +343,7 @@ public sealed class Utf8FiniteLiteralMatchTests
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

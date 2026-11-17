@@ -10,8 +10,10 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreTemplateByteCeilingTests
 {
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void EmptyInputCannotPrepareAnOversizedTemplate(bool bytes, bool liveToken)
     {
         var regex = Create("a", 4096);
@@ -123,8 +125,10 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         var regex = new Utf8Regex("(?<x>😀|a)", RegexOptions.CultureInvariant,
             TimeSpan.FromMilliseconds(20), new()
             {
-                MaxWorkSteps = 100000, MaxDepth = 256,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
             });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
@@ -156,10 +160,14 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     }
 
     [Theory]
-    [InlineData(false, 0)] [InlineData(true, 0)]
-    [InlineData(false, 1)] [InlineData(true, 1)]
-    [InlineData(false, 2)] [InlineData(true, 2)]
-    [InlineData(false, 3)] [InlineData(true, 3)]
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 2)]
+    [InlineData(false, 3)]
+    [InlineData(true, 3)]
     public void DistinctCallerAndParentAuthoritiesRemainEffective(bool bytes, int authority)
     {
         long ticks = 0;

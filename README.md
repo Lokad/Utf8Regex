@@ -48,32 +48,24 @@ Matching uses **Unicode scalars**. For example,
 `new Utf8Regex(".").Count("A😀"u8)` returns 2; the emoji occupies four bytes.
 Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
 
-Core's default Validate policy checks the entire subject, including text after
-an early match. PythonRe and POSIX consume existing valid text; PCRE2 checks its
-native UTF-mode window and has an explicit trusted-input bypass.
-Match and capture results expose byte coordinates only. Callers derive any
-character positions or materialized strings they need. Keep borrowed input unchanged and its owner alive while a view or
-cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
+All four profiles consume already-valid UTF-8 text. Match and capture results
+expose byte coordinates only; callers derive character positions or strings.
+Keep borrowed input unchanged and its owner alive while a view or cursor uses it.
+Owned snapshots remain valid after cursor advance or disposal.
 
-## Subject input contracts
+## Subject input contract
 
-Core selects its validation policy once at construction or through its factory:
+Validate external bytes where they become text, using
+`System.Text.Unicode.Utf8.IsValid` when validity is not already guaranteed by the
+host's text representation. Regex operations do not perform a separate subject
+validity pass and expose no validation policy or token.
 
-```csharp
-var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
-// regex.InputValidation is read-only.
-```
-
-`Validate` (default) checks the whole subject at most once per operation or cursor
-lifetime. `AssumeValid` omits that pass when the caller guarantees valid UTF-8 and
-unchanged borrowed bytes. Core operations and cursors inherit this choice.
-PythonRe models Python `re` over `str`; PythonRe and POSIX require already-valid
-UTF-8 text and omit regex-operation validity passes. Validate external bytes where
-they become text. PCRE2 retains explicit UTF-mode validation controls.
-Pattern/replacement
-validation, checked memory access, scalar semantics and cooperative cancellation
-remain. Coordinate/result work may still scan input. Read the
-[contract](docs/SPEC.md#subject-input-validation) before choosing AssumeValid.
+This applies to matching, counting, replacements, splits and cursors in Core,
+PythonRe, PCRE2 and POSIX. Malformed subjects have unspecified matching results;
+managed bounds checking, cancellation and enforceable resource controls remain.
+Pattern, replacement-template and assembled-output checks remain independent.
+Live route eligibility, scalar decoding and output sizing may still inspect text.
+See the [input contract](docs/SPEC.md#subject-input-contract).
 
 ## Cancellation and limits
 
@@ -120,9 +112,10 @@ deletion batch.
 
 The tables were refreshed on **15 November 2026** using **.NET 11**
 (`11.0.0`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
-They measure public operations, including strict UTF-8 validation and required
-result materialization. Existing tables use **Validate**; AssumeValid
-measurements have a separate caller-validity contract. Values come from
+They measure public operations and required result materialization. These frozen
+tables include the former **Validate** pass; current 0.5 operations require
+caller-valid text and omit that pass. Historical results retain their actual
+input guarantees and source identities. Values come from
 [the compact Core summary](bench/Snapshots/Core.json). Qualification verdicts,
 recorded source identities and snapshot hashes remain in that summary. Unqualified rows
 retain their observations without establishing parity. The complete Release
@@ -141,9 +134,9 @@ subject, so it measures a hit.
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
 
-Focused Core counts accept a final validation policy, for example
-`--measure-readme-public-case industry/mariomka-email-count 1 9 AssumeValid`.
-These measurements label their input contract and leave recorded tables unchanged.
+Focused Core counts use the caller-valid text contract, for example
+`--measure-readme-public-case industry/mariomka-email-count 1 9`.
+These measurements label that contract and leave recorded tables unchanged.
 
 Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks),

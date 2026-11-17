@@ -18,17 +18,14 @@ public sealed class Utf8PreparedAsciiIntervalTests
         var pattern = $"([\\x{first:X2}-\\x{last:X2}]+)";
         var wanted = new string([(char)first, (char)last]);
         var input = Encoding.UTF8.GetBytes("é😀" + wanted + "Ω");
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, options, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, options);
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(match.Success);
             Assert.Equal((6, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             Assert.Equal(wanted, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
             Assert.Equal(1, regex.Count(input));
-            if (policy == Utf8InputValidation.Validate)
-                Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
         }
     }
 
@@ -40,9 +37,8 @@ public sealed class Utf8PreparedAsciiIntervalTests
     [InlineData("([a-z]+)b", "ab", "a")]
     public void OpaqueMasksAndRewindsKeepTheirActualPredicates(string pattern, string text, string expected)
     {
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(pattern, inputValidation: policy);
+            var regex = new Utf8Regex(pattern);
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             Assert.True(match.Success);
             Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));

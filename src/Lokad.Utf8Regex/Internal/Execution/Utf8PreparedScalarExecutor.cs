@@ -97,7 +97,7 @@ internal static class Utf8PreparedScalarExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (validation.ByteLength != input.Length)
         {
-            breach = Utf8Validation.TrySubject(input, ref invocation, out validation);
+            breach = Utf8InputAnalyzer.TryDescribe(input, ref invocation, out validation);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
         }
         breach = Utf8SliceRunner.TryRentSlots(program.GroupCount, ref invocation, out slots);

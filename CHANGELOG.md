@@ -2,6 +2,13 @@
 
 ## Unreleased — 0.5.0
 
+- All profiles now require caller-valid, unchanged UTF-8 subjects. Remove
+  `Utf8InputValidation`, policy arguments/properties, mandatory subject validation
+  and PCRE2's validation-window analysis. Host text boundaries own validation;
+  pattern/template/output checks remain independent. Scalar semantics, byte ranges,
+  original interruption and useful resource limits remain. Numerical work/storage
+  requirements can decrease. Malformed-subject matching results are unspecified.
+
 - Core whole-match results and span enumeration now use `Utf8CaptureRange` with
   byte start/end endpoints. Remove `Utf8ValueMatch`, subject coordinate maps and
   UTF-16 cursor scans. Default ranges remain distinct from successful empty hits;
@@ -81,11 +88,6 @@
   counting remain; `Compiled` does not yet compile general patterns to IL.
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.
-- Add immutable `inputValidation` and read-only `InputValidation` in Core and
-  PCRE2. Core defaults to strict whole-subject validation; PCRE2 follows native
-  UTF-mode checking from start minus maximum lookbehind through subject end.
-  `AssumeValid` omits subject checking when the host guarantees valid unchanged
-  UTF-8. Pattern/replacement checks and managed bounds remain independent.
 - PythonRe models Python `re` over `str`; PythonRe and POSIX require already-valid
   UTF-8 text and omit regex-operation validity passes. Validate external bytes at
   the text boundary. Required coordinates and output may still inspect text.

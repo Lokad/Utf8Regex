@@ -25,8 +25,7 @@ public sealed class Utf8CooperativeBooleanContractTests
         if (!input.AsSpan().ContainsAnyInRange((byte)128, byte.MaxValue))
         {
             var limited = new Utf8Regex(Pattern, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 4096,
-                    MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 4096, MaxWorkingBytes = 1, MaxResultBytes = 1 });
             Assert.Equal(expected, limited.IsMatch(input, CancellationToken.None));
             Assert.Equal(expected, limited.IsMatch(input, source.Token));
         }
@@ -40,7 +39,6 @@ public sealed class Utf8CooperativeBooleanContractTests
         var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
         byte[] malformed = [.. Encoding.UTF8.GetBytes(text), 0xff];
         using var source = new CancellationTokenSource();
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, source.Token));
         source.Cancel();
         Assert.Equal(source.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, source.Token)).CancellationToken);

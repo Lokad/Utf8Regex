@@ -167,7 +167,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            total += Utf8Validation.Validate(sample).Utf16Length;
+            total += Utf8Validation.Validate(sample).ByteLength;
         }
 
         return total;
@@ -500,7 +500,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8CountValidationOnly()
     {
         EnsureCountModel();
-        return Utf8Validation.Validate(InputBytes).Utf16Length;
+        return Utf8Validation.Validate(InputBytes).ByteLength;
     }
 
     public int ExecuteUtf8CountWellFormedOnly()

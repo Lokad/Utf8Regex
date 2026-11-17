@@ -8,19 +8,6 @@ namespace Lokad.Utf8Regex.Pcre2;
 /// <inheritdoc />
 public sealed partial class Utf8Pcre2Regex
 {
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2Regex Compile(string pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
-        => Compile(pattern, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
-
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2Regex Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
-        => Compile(patternUtf8, options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: Utf8InputValidation.Validate);
 
 
     /// <summary>Compiles pattern text under explicit eager construction and execution policies.</summary>
@@ -32,13 +19,8 @@ public sealed partial class Utf8Pcre2Regex
     /// <exception cref="OperationCanceledException">Construction cancellation was requested.</exception>
     /// <exception cref="System.Text.RegularExpressions.RegexMatchTimeoutException">The construction timeout expired.</exception>
     /// <exception cref="Utf8ResourceLimitExceededException">A covered construction limit was exceeded.</exception>
-    public static Utf8Pcre2Regex Compile(string pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => Compile(new Utf8ConstructionPattern(pattern), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
+    public static Utf8Pcre2Regex Compile(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        => Compile(new Utf8ConstructionPattern(pattern), options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
     /// <remarks>Admission and interruption include bounded strict validation and
@@ -50,19 +32,10 @@ public sealed partial class Utf8Pcre2Regex
     /// <exception cref="OperationCanceledException">Construction cancellation was requested.</exception>
     /// <exception cref="System.Text.RegularExpressions.RegexMatchTimeoutException">The construction timeout expired.</exception>
     /// <exception cref="Utf8ResourceLimitExceededException">A covered construction limit was exceeded.</exception>
-    public static Utf8Pcre2Regex Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        => Compile(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, matchTimeout,
-            resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, inputValidation: inputValidation);
+    public static Utf8Pcre2Regex Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken cancellationToken)
+        => Compile(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken);
 
-    private static Utf8Pcre2Regex Compile(Utf8ConstructionPattern pattern, Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+    private static Utf8Pcre2Regex Compile(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
@@ -71,7 +44,7 @@ public sealed partial class Utf8Pcre2Regex
         using var construction = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
         try
         {
-            var result = new Utf8Pcre2Regex(pattern, options, compileSettings, executionLimits, matchTimeout, inputValidation: inputValidation);
+            var result = new Utf8Pcre2Regex(pattern, options, compileSettings, executionLimits, matchTimeout);
             construction.Budget.ChargeWork(0);
             construction.Complete();
             return result;

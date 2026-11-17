@@ -31,8 +31,6 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
         Assert.True(isMore);
         Assert.Equal((7, 11), (destination[2].StartOffsetInBytes, destination[2].EndOffsetInBytes));
         Assert.Equal("<ab> <abb> <abbb> x <ab>", regex.ReplaceToString(input, "<$0>"));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([0xFF, (byte)'a', (byte)'b']));
-        Assert.Throws<ArgumentException>(() => regex.Count([0xFF, (byte)'a', (byte)'b']));
     }
 
     [Theory]

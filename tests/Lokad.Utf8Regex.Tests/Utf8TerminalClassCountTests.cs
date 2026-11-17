@@ -9,8 +9,10 @@ public sealed class Utf8TerminalClassCountTests
 {
     private static Utf8ResourcePolicy Funded => new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 128,
-        MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 128,
+        MaxWorkingBytes = 1_000_000,
+        MaxResultBytes = 1_000_000
     };
 
     [Theory]
@@ -128,9 +130,15 @@ public sealed class Utf8TerminalClassCountTests
     }
 
     [Theory]
-    [InlineData(0, 2)] [InlineData(2, 2)] [InlineData(4, 1)]
-    [InlineData(6, 1)] [InlineData(7, 1)] [InlineData(8, 1)]
-    [InlineData(9, 1)] [InlineData(11, 0)] [InlineData(13, 0)]
+    [InlineData(0, 2)]
+    [InlineData(2, 2)]
+    [InlineData(4, 1)]
+    [InlineData(6, 1)]
+    [InlineData(7, 1)]
+    [InlineData(8, 1)]
+    [InlineData(9, 1)]
+    [InlineData(11, 0)]
+    [InlineData(13, 0)]
     public void ByteFloorsCanBeginInsideARun(int floor, int expected)
     {
         var regex = new Utf8Regex(@"\p{L}{2,3}", RegexOptions.CultureInvariant,
@@ -151,9 +159,8 @@ public sealed class Utf8TerminalClassCountTests
     {
         var pattern = new string('(', groups) + "[a-z]{2,3}" + new string(')', groups);
         var input = "éabcdefg 😀 ab"u8.ToArray();
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(pattern, resourcePolicy: Funded, inputValidation: validation);
+            var regex = new Utf8Regex(pattern, resourcePolicy: Funded);
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(groups).Span));
             Assert.Equal(3, regex.Count(input));
@@ -168,7 +175,6 @@ public sealed class Utf8TerminalClassCountTests
             Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy
             { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         Assert.Equal(3, regex.Count("é 中 x"u8));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xc3, 0xa9, 0xff }));
     }
 
     [Theory]

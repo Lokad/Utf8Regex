@@ -129,7 +129,7 @@ public sealed class PythonReRequiredLiteralScreenTests
     {
         var input = Enumerable.Repeat((byte)'a', 32768).ToArray();
         var measured = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 1, 1), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8Validation.Validate(input, ref measured);
+        _ = Utf8InputAnalyzer.Describe(input, ref measured);
         var limited = new Utf8PythonRegex("a+b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = measured.Budget.Steps + 1, MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,

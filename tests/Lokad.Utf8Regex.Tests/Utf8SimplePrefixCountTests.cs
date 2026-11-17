@@ -48,8 +48,7 @@ public sealed class Utf8SimplePrefixCountTests
     public void SafePrefixesAvoidVmStorageAndDependentCapturesRemainAdmitted(bool compiled)
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1,
-            MaxWorkingBytes = 256, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 1 };
         var regex = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout, policy);
         // A positive ASCII-only acceptance proof applies to this valid mixed
         // subject. Both misses and complete hits can avoid VM storage.
@@ -62,9 +61,6 @@ public sealed class Utf8SimplePrefixCountTests
         var dependent = new Utf8Regex(pattern + @"\1", Options(compiled), Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(1, new Utf8Regex(pattern + @"\1", Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8, token.Token));
-
-        byte[] malformed = [.. input, 0xF0, 0x80];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed, token.Token));
         var denied = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout,
             policy with { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));

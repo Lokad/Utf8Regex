@@ -31,7 +31,6 @@ public sealed class Utf8ScalarWeakPrefilterRegressionTests
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Equal(cancelled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token)).CancellationToken);
             Assert.Equal(1, regex.Count(input));
-            Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
         }
         foreach (var pattern in new[] { email, uri })
         foreach (var text in new[] { "", "admin@example.org", "https://example.org/a?q=x#z", "miss / @", "a@b.co a@c.co" })

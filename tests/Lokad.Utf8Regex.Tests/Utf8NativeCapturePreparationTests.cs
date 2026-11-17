@@ -32,7 +32,6 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal(new[] { "z", " z", "" }, parts);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, canceled.Token)).CancellationToken);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. input, 0xff]));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("😀ab", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
@@ -82,8 +81,10 @@ public sealed class Utf8NativeCapturePreparationTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void ElidedCaptureDeclarationsKeepAbsentSlots(bool compiled, bool unicode)
     {
         var regex = new Utf8Regex("(?<gone>x){0}(?<alsoGone>y){0}(?:" + (unicode ? "😀|中" : "cat|horse") + ")", Options(compiled));
@@ -99,8 +100,10 @@ public sealed class Utf8NativeCapturePreparationTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void FixedFinitePolicyOrDeadlineDoesNotPrepareUnusedAsciiCaptureMaps(bool compiled, bool deadline)
     {
         var policy = deadline ? Utf8ResourcePolicy.Unlimited : new Utf8ResourcePolicy

@@ -66,8 +66,10 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
-    [InlineData(false, 2)] [InlineData(true, 2)]
-    [InlineData(false, 3)] [InlineData(true, 3)]
+    [InlineData(false, 2)]
+    [InlineData(true, 2)]
+    [InlineData(false, 3)]
+    [InlineData(true, 3)]
     public void RawCandidateSearchKeepsStartPriorityInsteadOfRtlEndPriority(bool reverse, int branches)
     {
         byte[][] literals = branches == 2
@@ -98,7 +100,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var plan = Prepared(regex);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
-        var cursor = new Utf8OperationMatchCursor(input, plan, ascii, baseline);
+        var cursor = new Utf8OperationMatchCursor(input, plan, baseline);
         foreach (Match expected in new Regex(regex.Pattern, regex.Options).Matches(text))
         {
             Assert.True(cursor.MoveNext());
@@ -112,7 +114,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var limited = new Utf8OperationMatchCursor(input, plan, ascii, invocation);
+            var limited = new Utf8OperationMatchCursor(input, plan, invocation);
             Utf8ExecutionLimitKind breach;
             bool found;
             do { breach = limited.TryMoveNextLiteralFamily(out found); } while (breach == Utf8ExecutionLimitKind.None && found);
@@ -239,7 +241,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(metered ? new(ulong.MaxValue, 0, 0) : Utf8ExecutionLimits.Unlimited,
             Regex.InfiniteMatchTimeout, default);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), false, invocation).WithStartFloor(10);
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation).WithStartFloor(10);
         foreach (Match expected in new Regex(regex.Pattern, RegexOptions.CultureInvariant).Matches(text, 9))
         {
             Assert.True(cursor.MoveNext());
@@ -418,7 +420,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             TimeSpan.FromMilliseconds(200));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -508,7 +510,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), true, invocation);
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation);
         Assert.False(cursor.MoveNext());
         var first = cursor.DebugInvocationSteps;
         Assert.False(cursor.MoveNext());

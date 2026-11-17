@@ -95,68 +95,28 @@ rejected, and the private `_xmlC`/`_xmlD`/`_xmlI`/`_xmlW` sets retain their froz
 .NET 10 memberships. BCL comparisons use equivalent patterns or independent
 expectations where .NET 11 changed behavior; they do not redefine this contract.
 
-The entire subject must be well-formed UTF-8, including a suffix after an early
-match. With the default `Utf8InputValidation.Validate`, malformed, overlong,
-surrogate-encoding and truncated input throws `ArgumentException` with an offending
-byte offset. Interruption or resource denial can occur before a later invalid byte
-is visited. UTF-8 pattern and replacement validation is independent and remains strict.
+### Subject input contract
 
-### Subject input validation
+Every operation and cursor requires already-valid UTF-8 for the entire subject,
+with unchanged borrowed storage during use. Callers validate external bytes where
+they become text, for example with `System.Text.Unicode.Utf8.IsValid`; an existing
+text representation may already guarantee validity.
 
-Core selects an immutable `inputValidation`
-constructor/factory option and expose it as read-only `InputValidation`:
-
-```csharp
-public enum Utf8InputValidation { Validate = 0, AssumeValid }
-
-var regex = new Utf8Regex("needle", inputValidation: Utf8InputValidation.AssumeValid);
-```
-
-`Validate` is the default and validates the entire subject, including an unsearched
-prefix or suffix after an early hit, at most once per logical operation or cursor
-lifetime. `AssumeValid` omits that validity pass: the caller guarantees the entire
-subject is valid UTF-8 and borrowed bytes remain unchanged throughout use. It
-provides no malformed-subject rejection guarantee. There is no per-call override
-or public validation token. Static matching conveniences keep default validation.
-
-The Core policy covers matching/counting, detailed results, replacements, splits and
-value/persistent cursors, including funded and
-derived operation programs. Managed bounds checking, Unicode/scalar semantics,
-byte coordinates, cooperative cancellation/deadlines and resource admission
-remain active. Required coordinate/ASCII classification, scalar decoding and
-result sizing may still inspect input; these are not a mandatory validity pass.
+Core, PythonRe, PCRE2 and POSIX use this same contract. Regex operations do not
+validate subjects or expose a validation policy/token. Malformed subjects have
+unspecified matching results and no rejection or error-offset promise. Managed
+bounds checking and the same useful work/depth/storage limits remain active.
 Pattern, capture-name, replacement-template and assembled-output validation keep
-their separate existing rules. Trusting subject input does not trust those inputs.
-Work requirements can decrease when validation is omitted or redundant validation
-is removed; finite policies remain enforceable and version/route dependent.
-ASCII classification over trusted or already-checked text stops at its first
-non-ASCII block. Avoided classification work spends no further steps; default
-`Validate` still checks the complete subject before using that eligibility fact.
+their separate strict rules.
 
-Finite literal value matching derives coordinates for the selected range instead
-of describing an unrelated suffix. `Validate` still checks the whole subject;
-`AssumeValid` retains bounded search and coordinate-projection charges. Avoided
-description work can lower the required work budget; storage admission is unchanged.
-
-Owned detailed results limit Unicode maps to the prefix ending at the farthest returned
-capture-history endpoint, including captures inside lookarounds. The context and
-its aliases still borrow the complete original subject. Avoided suffix maps can
-lower work, working-capacity and result-capacity requirements; needed arrays are
-admitted before allocation. Explicit offset maps retain their existing scope and
-lifetime.
-Strict detailed preparation reuses its whole-subject ASCII proof and defers mixed
-UTF-16 metadata to the required capture prefix. A required mixed prefix can add
-description work quanta; numerical work budgets remain route/version dependent.
-
-Adapters define their own input contracts. [PythonRe](SPEC-PYTHONRE.md#subject-text-contract)
-and [POSIX](SPEC-POSIX.md#subject-text-contract) consume existing valid UTF-8 text
-without a subject-validation policy. [PCRE2](SPEC-PCRE2.md#subject-input-validation)
-has UTF-mode checking and an explicit trusted-input bypass.
-
-An integration may select AssumeValid once when its own text representation
-already guarantees valid UTF-8. It must still keep borrowed storage alive and
-unchanged. Comparisons between policies must label this different input contract;
-the existing recorded benchmark tables use Validate unless explicitly stated.
+Scalar boundaries, byte offsets, captures, RTL/NonBacktracking behavior, retained
+results/cursor aliases, original synchronous cancellation and absolute deadlines
+are unchanged. Native byte discovery and the general VM avoid unrelated suffix
+preparation when no live eligibility or algorithm state needs it. Some routes
+still inspect ASCII/scalar facts, and NonBacktracking retains its scalar viability
+table. These are matching requirements, not subject-validity passes. No subject
+path computes UTF-16 totals or coordinate maps. Removed validation/description
+work can lower numerical limits; charges remain version/route dependent.
 
 Core admits documented .NET-style syntax: literals/classes/subtraction, inline
 options, greedy/lazy repetition, captures/history, references, balancing groups,
@@ -223,7 +183,7 @@ rejected neighbouring bytes still consume work. Every surviving start runs the
 normal VM with captures and rollback. Nullable, contiguous-anchor, folded and RTL
 roots retain their existing discovery, as do initial beginning anchors. Skipping
 impossible starts can reduce work and avoid local scratch; enclosing storage loans,
-the selected subject-validation policy and final interruption/admission still
+final interruption/admission still
 apply.
 
 A complete LTR backtracking root containing only a word-boundary instruction and
@@ -394,7 +354,7 @@ lexemes may project text under the existing name grammar. Prepared instructions
 retain byte literals and original syntax flags, without retaining parser tokens,
 literal text or a duplicate source. Each string literal is encoded independently: an unpaired
 surrogate becomes U+FFFD and cannot join a fragment from another substitution.
-Subject validation follows the instance policy; template bytes remain strict.
+Subjects are caller-valid; template bytes remain strict.
 
 Non-literal fallback/simple-pattern replacements use the existing scalar byte
 template engine for both allocated and caller-owned output. They select that
@@ -421,7 +381,7 @@ the final copy can leave partial destination contents.
 
 Explicit token overloads observe pre-cancellation before validation and preserve
 the original token in `OperationCanceledException`. Cooperative checks cover
-bounded validation, search, matching, projection, copying, output and publication.
+bounded input inspection, search, matching, copying, output and publication.
 A long failed advance must check before reporting EOF. Tokens belong to the
 invocation, never the reusable program/cache.
 
@@ -489,7 +449,7 @@ History, assertions/required ends, nested or repeated captures, folding, lazy or
 bounded repeats, RTL/NonBacktracking and opaque roots retain their current paths.
 Proved unbounded scalar repeats excluding exactly two ASCII values can scan in
 checked byte spans of at most 2048 bytes per work/deadline checkpoint. Whole-subject
-UTF-8 validation follows the selected input policy; ASCII stops and final endpoints
+The caller supplies valid UTF-8; ASCII stops and final endpoints
 stay on scalar boundaries. Minimums above one, finite maxima and folding retain scalar-counted
 execution; paths requiring rewind retain their existing handling. Work charges
 can fall; no scratch storage is added.
@@ -570,7 +530,7 @@ metadata. They keep one original invocation and synchronous interruption,
 admission and refunds. Avoided metadata work can lower numeric work requirements.
 Controlled simple-pattern and signed-decimal IsMatch gates likewise request only
 ASCII eligibility, without UTF-16 totals or supplementary-scalar metadata.
-Validate still checks the complete subject once. AssumeValid can stop ASCII
+Caller-valid matching can stop ASCII
 classification at its first non-ASCII block; scalar fallback then borrows the
 same invocation without describing an unrelated suffix. This may lower required
 work, while native eligibility, matching algorithms and storage admission stay
@@ -582,7 +542,7 @@ For a direct class/literal prefix, only the actual class is rewound, including
 whitespace that belongs to it. Explicit whitespace/gap prefixes retain their
 conservative union. Omitting impossible starts across nonmember whitespace can
 lower numerical work requirements without changing allocation admission.
-Skipped starts need no VM work or scratch. The selected subject-validation policy,
+Skipped starts need no VM work or scratch. The caller-valid subject contract,
 bounded search/rewind checkpoints and admission before live VM storage remain.
 A backwards class step proves membership at the rewound start. When it makes
 no progress, bounded classification can discard only the unproved window prefix;
@@ -634,15 +594,13 @@ Template replacement reads final completed captures without materializing captur
 histories. Avoiding temporary snapshots can lower work and covered working/result charges; execution,
 output staging and final output remain under their original admission and
 interruption controls.
-Validated ASCII literal-family cursors reuse byte coordinates for UTF-16
-projection. Avoided gap scans consume no validation-work units; search and
-per-match interruption checks remain.
+ASCII literal-family cursors publish byte coordinates directly. Search and
+per-match interruption checks remain; no subject coordinate map is built.
 Complete literal discovery can also use a proved positive literal suffix,
 confirmed under the same bounded comparison budget without consuming the suffix.
 Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
 with its bounded checkpoints, without scalar capture/backtracking workspace.
-Validate checks the complete subject before the decision; AssumeValid relies on
-the caller's valid-text guarantee. Unsupported shapes, mixed Unicode input, RTL
+The caller guarantees valid unchanged text; operations perform no validity pass. Unsupported shapes, mixed Unicode input, RTL
 and NonBacktracking keep their existing paths. The
 controlled invocation owner remains; this is not a general zero-allocation claim.
 For example, the fixed predicate `^[A-Z]{3}[0-9]{4}$` keeps this Boolean path
@@ -665,10 +623,9 @@ Avoiding scalar VM scratch can lower route-dependent work, depth and working
 requirements; invocation metadata still allocates.
 
 Finite structural/simple `Count` needs the valid-text guarantee and ASCII eligibility,
-not UTF-16 lengths or supplementary-scalar metadata. Validate carries the existing
-ASCII proof through its bounded validation blocks; AssumeValid needs only the
-route's ASCII eligibility checks. Original work/interruption and admission remain.
-Coordinate-producing operations still derive their complete metadata. Unicode subjects retain scalar matching.
+not UTF-16 lengths or supplementary-scalar metadata. Only the route's actual ASCII
+eligibility checks remain. Original work/interruption and admission stay active.
+Unicode subjects retain scalar matching.
 
 On subjects proved ASCII and of at most 2048 bytes, a proved zero-origin
 operator or quoted-string prefix can publish its value-Match range through the existing
@@ -697,8 +654,8 @@ folding. Validation, bounded interruption/publication and detailed captures stay
 unchanged; this route can avoid VM workspace and nesting records.
 
 A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
-use zero-origin span Count by searching for that byte under the selected input
-validation policy. The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
+use zero-origin span Count by searching for that byte under the caller-valid
+input contract. The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
 work/interruption checkpoint and carry nonempty runs across block boundaries;
 the original invocation also checks final publication. Empty matches still
 advance one scalar. This constant-space counter needs no VM capture workspace,
@@ -710,8 +667,7 @@ The scalar counter for a complete capture-free greedy literal or contiguous
 ASCII range repeat can skip nonmembers through checked span search. Active runs
 retain their original minimum/maximum splitting. Controlled searches charge
 before each block of at most 2048 bytes and preserve the original token,
-deadline and final publication check. Validate checks the complete subject before
-counting; AssumeValid trusts the caller's valid-text guarantee. No capture workspace
+deadline and final publication check. Subjects satisfy the caller-valid text contract. No capture workspace
 or result payload is introduced.
 Nonmember work charges can fall from per-scalar steps to bounded scan units.
 Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
@@ -725,8 +681,7 @@ without being consumed by `\w`; bounded runs retain both edge conditions.
 No full-subject ASCII classification, coordinate totals or capture/VM scratch is
 needed, including caller-funded Count. The counter admits a work unit before
 each scalar-aligned block of at most32 bytes and before publication; the original
-token/deadline cover validation and counting. Validate still checks the whole
-subject first, and AssumeValid trusts valid unchanged borrowed text. Removing
+token/deadline cover counting over valid unchanged borrowed text. Removing
 VM scratch/steps can lower work/depth/working requirements on mixed subjects.
 Lazy/finite-repeat and extended-class shapes, RTL,
 NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/depth/result policies can
@@ -735,13 +690,12 @@ changes route-dependent resource costs, not matching semantics.
 
 A complete case-sensitive single-category expression or proven Unicode-letter
 expression (`\p{L}`) can Count using the existing category/letter kernels,
-including caller-funded Count. Validate checks the whole UTF-8 subject first;
-AssumeValid relies on the caller's validity contract. These counters classify
+including caller-funded Count over caller-valid subjects. These counters classify
 every encountered scalar directly and need no UTF-16 or supplementary-width
 description. Trusted Count therefore omits the description pass and its work
 charges. Native counting and admission remain unchanged. One work unit admits at
 most 4096 bytes ending on a scalar boundary; publication has its own checkpoint.
-The original token/deadline cover validation and counting, including supplementary
+The original token/deadline cover counting, including supplementary
 scalars. This constant-space route needs no capture workspace or nesting records;
 tight working/depth/result limits can therefore admit it. RTL, NonBacktracking,
 ECMAScript and unproved compound expressions retain their owned routes; folded
@@ -751,7 +705,7 @@ route-dependent work and working-storage costs can be lower.
 
 A complete greedy set repeat with a positive minimum (for example
 `[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. The
-selected input-validation policy, one work charge per examined scalar and final
+caller-valid input contract, one work charge per examined scalar and final
 publication checks remain. Complemented/folded sets retain scalar membership; positive
 unfolded sets can use their existing ASCII mask. Tight working/depth/result
 limits can admit this constant-space route. A bounded proof over at most 64
@@ -764,8 +718,7 @@ are unchanged; route-dependent workspace/depth and work charges can decrease.
 An uncaptured, case-sensitive finite repeat of disjoint classes, such as
 `(?:[A-Z][a-z]+\s*){10,100}`, can Count through its existing prepared plan after
 a complete-root check. The leading and trailing classes must be ASCII; the
-original separator predicate retains Unicode membership. Subject preparation
-follows the selected input-validation policy before counting. Work admission covers at most 2048 search bytes, 64 trailing
+original separator predicate retains Unicode membership. Subjects are caller-valid; no validity pass precedes counting. Work admission covers at most 2048 search bytes, 64 trailing
 ASCII bytes or 64 separator scalars per quantum; non-ASCII separator predicates
 retain their direct atom charges. Original-token/deadline checks include final
 publication. No local VM arrays or frames are needed, while zero-byte working
@@ -867,9 +820,7 @@ required for this route.
 `CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
 on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
 selects zero for LTR or the subject end for RTL; explicit starts are scalar-aligned
-bytes within the original subject, preserving assertion context. The cursor
-validates the entire unchanged subject once in Validate mode; AssumeValid omits
-that pass under the caller's valid-text guarantee. Byte discovery and capture
+bytes within the original subject, preserving assertion context. The cursor borrows already-valid unchanged text without a validity pass. Byte discovery and capture
 histories need neither captured strings nor a whole-subject UTF-16 map. NonBacktracking
 retains its existing scalar viability table and last-capture semantics; other
 Core paths preserve all capture histories, sparse numbers and repeated names.

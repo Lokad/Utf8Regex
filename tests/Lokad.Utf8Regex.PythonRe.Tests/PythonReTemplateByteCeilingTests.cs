@@ -82,8 +82,10 @@ public sealed class PythonReTemplateByteCeilingTests
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(20), new()
             {
-                MaxWorkSteps = 100000, MaxDepth = 256,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
             });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();

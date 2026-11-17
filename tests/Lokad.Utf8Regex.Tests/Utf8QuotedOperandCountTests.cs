@@ -108,12 +108,6 @@ public sealed class Utf8QuotedOperandCountTests
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(new Regex(Pattern, RegexOptions.Multiline).Matches(text, 14).Count,
             Utf8MatchSequence.Count(regex.EnumerateMatches(bytes, Encoding.UTF8.GetByteCount(text.AsSpan(0, 14)))));
-        foreach (var prefix in new[] { "EASTASIA", "\"AB12\" \"abc\"", "😀" })
-        {
-            var malformed = Encoding.UTF8.GetBytes(prefix).Append((byte)255).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-        }
     }
 
     [Theory]

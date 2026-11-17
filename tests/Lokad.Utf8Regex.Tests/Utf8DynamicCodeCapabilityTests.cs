@@ -34,14 +34,12 @@ public sealed class Utf8DynamicCodeCapabilityTests
             if (pattern.Contains("?<x>"))
                 Assert.Equal(pattern == "(?<x>.)" && mode != RegexOptions.RightToLeft ? "é" : "😀",
                     System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
-            Assert.Throws<ArgumentException>(() => regex.Count([0xff]));
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             Assert.Equal(canceled.Token,
                 Assert.Throws<OperationCanceledException>(() => regex.Count(input, canceled.Token)).CancellationToken);
             var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
-                    MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+                new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
             Assert.Equal(count, finite.Count(input));
         }
     }

@@ -35,7 +35,6 @@ public sealed class Pcre2GraphemeInvocationTests
     {
         var regex = new Utf8Pcre2Regex(@"\X");
         var input = "áb"u8.ToArray();
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. input, 0xff]));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, input.Length + 1));
         Assert.False(regex.IsMatch("ab"u8, 0, Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored));

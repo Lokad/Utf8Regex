@@ -15,7 +15,7 @@ public sealed partial class Utf8Regex
     {
         // Count exposes no coordinates. Its callers retain this validity
         // authority, without deriving and discarding a subject description.
-        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         if (!CanCountNativeLiteralForResult)
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
@@ -87,7 +87,7 @@ public sealed partial class Utf8Regex
         invocation = default;
         // Unmetered Count already owns specialized counters. Trusting input
         // removes their separate validity pass, not their matching algorithm.
-        if ((InputValidation == Utf8InputValidation.Validate || forCount) &&
+        if ((forCount) &&
             MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
@@ -100,10 +100,10 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is { Length: 0 })
             return false;
         // Empty literals use the shared scalar program and its boundary progression.
-        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token) { InputValidation = InputValidation };
+        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         // These roots consume bytes or project their selected range separately.
         // Keep full metered validity without deriving discarded UTF-16 metadata.
-        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         return true;
     }
 }

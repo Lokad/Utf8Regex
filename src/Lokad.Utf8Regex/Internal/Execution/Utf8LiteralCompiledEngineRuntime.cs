@@ -57,7 +57,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         SupportsWellFormedOnlyMatch: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
         WellFormedOnlyMatchMissIsDefinitive: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
         SupportsWellFormedOnlyCount: true,
-        SupportsThrowIfInvalidOnlyCount: true,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: true);
 
@@ -130,7 +129,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         if (_regexPlan.LiteralUtf8 is { Length: 0 } &&
             !_regexPlan.SearchPlan.HasBoundaryRequirements && !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
-            var emptyCursor = new Utf8OperationMatchCursor(input, GetProbeValidation(input, validation), budget);
+            var emptyCursor = new Utf8OperationMatchCursor(input, budget);
             var emptyCount = 0;
             while (emptyCursor.MoveNext()) emptyCount++;
             return emptyCount;
@@ -329,9 +328,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
                 match = default(Utf8CaptureRange);
                 return false;
             }
-
-            // A definitive hit or miss must still reject a malformed suffix.
-            Utf8Validation.CheckSubject(input, Utf8InputValidation.Validate);
             match = found
                 ? new Utf8CaptureRange(index, (index) + (matchedLength))
                 : default(Utf8CaptureRange);
@@ -605,11 +601,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             }
 
             break;
-        }
-
-        if (index < input.Length)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
         }
 
         return count;
@@ -1075,11 +1066,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             }
 
             break;
-        }
-
-        if (index < input.Length)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
         }
 
         return count;

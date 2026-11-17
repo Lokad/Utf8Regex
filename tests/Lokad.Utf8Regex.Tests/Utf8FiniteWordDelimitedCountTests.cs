@@ -49,14 +49,6 @@ public sealed class Utf8FiniteWordDelimitedCountTests
             Assert.Equal(1, Create(options, 100000).Count(input));
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void WholeSubjectValidationStillRejectsMalformedSuffix(bool compiled)
-    {
-        var input = "a@b.c"u8.ToArray().Append((byte)0xff).ToArray();
-        Assert.Throws<ArgumentException>(() => Create(compiled ? RegexOptions.Compiled : RegexOptions.None, 100000).Count(input));
-    }
-
     [Fact]
     public void WorkDenialDoesNotPoisonOtherInvocations()
     {

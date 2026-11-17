@@ -66,8 +66,7 @@ public sealed class RegexDifferentialTests
             var options = RegexOptions.CultureInvariant | (mode == "compiled" ? RegexOptions.Compiled : 0);
             var regex = new Utf8Regex(pattern, options,
                 matchTimeout: mode == "timeout" ? TimeSpan.FromSeconds(10) : null,
-                resourcePolicy: mode == "budget" ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
-                    MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
+                resourcePolicy: mode == "budget" ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
             var token = mode == "token" ? cancellation.Token : default;
             var captures = new Utf8CaptureRange[regex.GetGroupNumbers().Length];
@@ -212,9 +211,8 @@ public sealed class RegexDifferentialTests
         var expected = Regex.Count(text, pattern, RegexOptions.CultureInvariant);
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        foreach (var validation in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(pattern, options, inputValidation: validation);
+            var regex = new Utf8Regex(pattern, options);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
         }

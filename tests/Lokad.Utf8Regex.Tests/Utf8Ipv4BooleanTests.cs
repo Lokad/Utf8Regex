@@ -9,8 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8Ipv4BooleanTests
 {
     private const string Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static bool Scalar(Utf8Regex regex, byte[] input)
     {
@@ -130,8 +129,6 @@ public sealed class Utf8Ipv4BooleanTests
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch("012.200.033.199"u8));
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
     }
 
     [Fact]

@@ -84,7 +84,6 @@ public sealed class Pcre2AsciiWordBoundaryTests
     {
         var regex = new Utf8Pcre2Regex(@"\babc\b");
         byte[] invalid = [.. "abc!"u8, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(invalid));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(invalid, 0, Pcre2MatchOptions.None, canceled.Token));

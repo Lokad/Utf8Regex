@@ -16,43 +16,14 @@ namespace Lokad.Utf8Regex.Pcre2;
 /// <remarks>Unsupported constructs or operation combinations fail explicitly; no native PCRE2 binary or interop layer is used.</remarks>
 public sealed partial class Utf8Pcre2Regex
 {
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2Regex Create(
-        string pattern,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8ResourcePolicy resourcePolicy,
-        TimeSpan matchTimeout)
-        => Create(pattern, options, compileSettings, resourcePolicy, matchTimeout, inputValidation: Utf8InputValidation.Validate);
 
-    /// <summary>Compiles with default strict subject validation.</summary>
-    public static Utf8Pcre2Regex Create(
-        ReadOnlySpan<byte> patternUtf8,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8ResourcePolicy resourcePolicy,
-        TimeSpan matchTimeout)
-        => Create(patternUtf8, options, compileSettings, resourcePolicy, matchTimeout, inputValidation: Utf8InputValidation.Validate);
+    /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
+    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
+        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
 
-
-    /// <summary>Gets the immutable subject UTF-8 validation policy.</summary>
-    public Utf8InputValidation InputValidation => _program.Request.InputValidation;
-
-    /// <summary>Compiles an expression with an immutable subject validation policy.</summary>
-    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None,
-        Utf8Pcre2CompileSettings compileSettings = default,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits,
-            matchTimeout ?? DefaultMatchTimeout, inputValidation) { }
-
-    /// <summary>Compiles a strict UTF-8 pattern with an immutable subject validation policy.</summary>
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None,
-        Utf8Pcre2CompileSettings compileSettings = default,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits,
-            matchTimeout ?? DefaultMatchTimeout, inputValidation) { }
+    /// <summary>Compiles a strict UTF-8 pattern for caller-valid, unchanged UTF-8 subjects.</summary>
+    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
 
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
@@ -77,14 +48,9 @@ public sealed partial class Utf8Pcre2Regex
     /// <see cref="Utf8Pcre2ExecutionLimits"/> constructor overload unambiguously.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
     public static Utf8Pcre2Regex Create(
-        string pattern,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8ResourcePolicy resourcePolicy,
-        TimeSpan matchTimeout,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
     {
-        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(pattern), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout, inputValidation: inputValidation);
+        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(pattern), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout);
     }
 
     /// <summary>Compiles a PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
@@ -100,13 +66,8 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Owns admitted source storage; native compilation borrows it without decoding.</summary>
     private Utf8Pcre2Regex(
-        Utf8ConstructionPattern patternSource,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
-        TimeSpan matchTimeout, Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        Utf8ConstructionPattern patternSource, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
     {
-        Utf8Validation.ValidatePolicy(inputValidation);
         // Preserve timeout-before-flags/settings ordering from string entries,
         // and reject invalid arguments before any byte-pattern conversion.
         var validatedTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
@@ -128,7 +89,7 @@ public sealed partial class Utf8Pcre2Regex
             options,
             compileSettings,
             defaultExecutionLimits,
-            validatedTimeout) { InputValidation = inputValidation };
+            validatedTimeout);
         _program = Pcre2Compiler.Compile(request);
         var isMatchProgram = _program.Operations.IsMatch;
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
@@ -169,7 +130,7 @@ public sealed partial class Utf8Pcre2Regex
             MatchLimit = workSteps,
             DepthLimit = resourcePolicy.MaxDepth ?? 0u,
             HeapLimitInBytes = resourcePolicy.MaxWorkingBytes ?? 0ul,
-            ResultLimitInBytes = resourcePolicy.MaxResultBytes ?? 0ul,
+            ResultLimitInBytes = resourcePolicy.MaxResultBytes ?? 0ul
         };
     }
 
@@ -192,15 +153,10 @@ public sealed partial class Utf8Pcre2Regex
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
     /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8.</exception>
     public static Utf8Pcre2Regex Create(
-        ReadOnlySpan<byte> patternUtf8,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8ResourcePolicy resourcePolicy,
-        TimeSpan matchTimeout,
-        Utf8InputValidation inputValidation = Utf8InputValidation.Validate)
+        ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
     {
         var defaultExecutionLimits = ToExecutionLimits(resourcePolicy);
-        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout, inputValidation: inputValidation);
+        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
@@ -245,7 +201,6 @@ public sealed partial class Utf8Pcre2Regex
     {
         if (_unmeteredIsMatchProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegular)
         {
-            Utf8Validation.CheckSubject(input, InputValidation);
             if (!asciiRegular.SupportsPreparedOffsets ||
                 asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
             {
@@ -257,7 +212,6 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_unmeteredIsMatchProgram is not null)
         {
-            Utf8Validation.CheckSubject(input, InputValidation);
             switch (_unmeteredIsMatchProgram.Kind)
             {
                 case Pcre2DirectProgramKind.Pcre2LiteralFamily:
@@ -317,7 +271,7 @@ public sealed partial class Utf8Pcre2Regex
             if (Pcre2Runner.TryIsMatchWithoutCoordinates(_program, input, startOffsetInBytes, matchOptions,
                 ref invocation, out var coordinateFreeResult))
                 return coordinateFreeResult;
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))
             {
@@ -383,7 +337,7 @@ public sealed partial class Utf8Pcre2Regex
                 (uint)startOffsetInBytes <= (uint)input.Length &&
                 literal.Program.CanCountDirectly(input.Length - startOffsetInBytes))
             {
-                Pcre2Runner.CheckInput(_program, input, startOffsetInBytes, ref invocation);
+                Pcre2Runner.CheckInput(input, startOffsetInBytes, ref invocation);
                 if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                     throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes), startOffsetInBytes,
                         "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
@@ -396,7 +350,7 @@ public sealed partial class Utf8Pcre2Regex
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return count;
             }
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, ref invocation, out var result))
             {
@@ -446,7 +400,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch))
             {
@@ -497,7 +451,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation);
         }
@@ -566,7 +520,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             return EnumerateMatchesValidated(input, subject, start, matchOptions, invocation);
         }
@@ -667,7 +621,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
             {
@@ -897,7 +851,7 @@ public sealed partial class Utf8Pcre2Regex
             if (construction is not null) construction.Budget.Deadline = invocation.Budget.Deadline;
             using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacementPatternUtf8, ref invocation));
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var replacement = new Utf8ConstructionPattern(replacementPatternUtf8);
             Pcre2ReplacementPreparation? preparation = null;
@@ -1025,7 +979,7 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2GlobalOperationDriver.TryCreateCursor(
                     _program,
@@ -1090,7 +1044,7 @@ public sealed partial class Utf8Pcre2Regex
                 StartOffsetInBytes = current.StartOffsetInBytes,
                 EndOffsetInBytes = current.EndOffsetInBytes,
                 HasContiguousByteRange = current.HasContiguousByteRange,
-                IsUtf8SliceWellFormed = current.IsUtf8SliceWellFormed,
+                IsUtf8SliceWellFormed = current.IsUtf8SliceWellFormed
             };
             written++;
         }
@@ -1149,7 +1103,7 @@ public sealed partial class Utf8Pcre2Regex
             MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit,
             MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
             RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
-            MayFailIterativeExecutionAtRuntime = backtracking is not null && HasDeferredLookaroundReset(backtracking),
+            MayFailIterativeExecutionAtRuntime = backtracking is not null && HasDeferredLookaroundReset(backtracking)
         };
     }
 
@@ -1580,7 +1534,7 @@ public sealed partial class Utf8Pcre2Regex
         using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, cancellationToken);
         try
         {
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions,
                 matchOptions, invocation, text ? Pcre2ReplacementResultKind.Text : Pcre2ReplacementResultKind.Bytes, default);
@@ -1599,7 +1553,7 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacement, ref invocation));
-            var subject = Pcre2Runner.PrepareInput(_program, input, startOffsetInBytes, ref invocation);
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), options,
                 matchOptions, invocation, Pcre2ReplacementResultKind.Bytes, default);

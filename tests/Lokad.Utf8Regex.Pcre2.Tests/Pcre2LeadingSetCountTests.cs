@@ -27,9 +27,7 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.True(regex.IsMatch(input, 4, Pcre2MatchOptions.None, token.Token));
         Assert.False(regex.IsMatch(input, input.Length));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(Encoding.UTF8.GetBytes(text), 1));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'x', 255 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(text), 1));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { (byte)'x', 255 }));
     }
 
     [Theory]
@@ -75,7 +73,7 @@ public sealed class Pcre2LeadingSetCountTests
         var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 65536));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -89,7 +87,7 @@ public sealed class Pcre2LeadingSetCountTests
         else Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(hit)));
 
         invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         validation = invocation.Budget.Steps;
         Assert.True(Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var found));
@@ -113,7 +111,7 @@ public sealed class Pcre2LeadingSetCountTests
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 262144));
         var regex = Create(pattern);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -144,12 +142,11 @@ public sealed class Pcre2LeadingSetCountTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
         var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(hit));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
-        var input = Pcre2Runner.PrepareInput(regex.DebugCompiledProgram, bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validation = invocation.Budget.Steps;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };
@@ -187,13 +184,11 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.True(regex.IsMatch(subject));
         Assert.False(regex.IsMatch("foo@bar"u8, 4));
         Assert.False(regex.IsMatch("@bad aa@!"u8));
-        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 0xFF }));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀foo@bar"u8, 1));
     }
 
     private static Utf8Pcre2Regex Create(string pattern, ulong working = 1 << 20,
         ulong result = 1 << 20, uint work = 1000000) =>
         new(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = working,
-                ResultLimitInBytes = result }, Timeout.InfiniteTimeSpan);
+            new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = working, ResultLimitInBytes = result }, Timeout.InfiniteTimeSpan);
 }

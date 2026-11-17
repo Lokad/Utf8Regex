@@ -44,7 +44,7 @@ public static class PythonReCorpusLoader
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = false,
-            ReadCommentHandling = JsonCommentHandling.Skip,
+            ReadCommentHandling = JsonCommentHandling.Skip
         };
         options.Converters.Add(new JsonStringEnumConverter());
         return options;

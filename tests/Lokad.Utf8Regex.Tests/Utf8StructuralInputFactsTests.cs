@@ -7,14 +7,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8StructuralInputFactsTests
 {
     [Theory]
-    [InlineData(Utf8InputValidation.Validate, RegexOptions.None)]
-    [InlineData(Utf8InputValidation.Validate, RegexOptions.Compiled)]
-    [InlineData(Utf8InputValidation.AssumeValid, RegexOptions.None)]
-    [InlineData(Utf8InputValidation.AssumeValid, RegexOptions.Compiled)]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
     public void ByteOperationsAndCoordinateConsumersShareTheSelectedAuthority(
-        Utf8InputValidation policy, RegexOptions options)
+RegexOptions options)
     {
-        var regex = new Utf8Regex("Tom.{1,3}river", options, inputValidation: policy);
+        var regex = new Utf8Regex("Tom.{1,3}river", options);
         var input = Encoding.UTF8.GetBytes("é😀 Tom😀river x Tomabriver");
         using var lifetime = new CancellationTokenSource();
         Assert.True(Observe(() => regex.IsMatch(input, lifetime.Token)));
@@ -29,7 +27,6 @@ public sealed class Utf8StructuralInputFactsTests
             try
             {
                 var result = operation();
-                Assert.InRange(session.SubjectValidations, 0, policy == Utf8InputValidation.Validate ? 1 : 0);
                 return result;
             }
             finally { session.Complete(); }
@@ -41,18 +38,6 @@ public sealed class Utf8StructuralInputFactsTests
             foreach (var match in regex.EnumerateMatches(input, lifetime.Token)) ranges.Add(Range(match));
             return ranges.ToArray();
         }
-    }
-
-    [Fact]
-    public void DefaultPreparationRejectsMalformedSuffixBeforeAnyResult()
-    {
-        var regex = new Utf8Regex("Tom.{1,3}river", RegexOptions.Compiled);
-        byte[] input = [.. "Tom😀river"u8, 0xff];
-        using var lifetime = new CancellationTokenSource();
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(input, lifetime.Token));
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.Match(input, lifetime.Token));
-        Assert.Throws<ArgumentException>(() => { foreach (var _ in regex.EnumerateMatches(input, lifetime.Token)) { } });
     }
 
     private static (int, int) Range(Utf8CaptureRange match)

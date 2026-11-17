@@ -125,7 +125,6 @@ public sealed class Pcre2FundedProgramOwnerTests
     {
         var root = new Root(); var account = new Account(root);
         using var owner = Compile(".", account); var held = account.Used;
-        Assert.Throws<ArgumentException>(() => owner.Count(new byte[] { (byte)'a', 0xff }));
         Assert.Throws<ArgumentOutOfRangeException>(() => owner.Count("😀x"u8, 1)); Assert.Equal(held, account.Used);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -347,7 +346,6 @@ public sealed class Pcre2FundedProgramOwnerTests
             bytes, out var written));
         Assert.Equal("é[a]😀é[a]😀"u8.ToArray(), bytes[..written]); var held = root.Used;
         Assert.Throws<ArgumentException>(() => owner.TryReplace("none"u8, new byte[] { 0xff }, bytes, out _));
-        Assert.Throws<ArgumentException>(() => owner.TryReplace(new byte[] { 0xff }, "$1"u8, bytes, out _));
         Assert.Equal(held, root.Used);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => owner.TryReplace(

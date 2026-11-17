@@ -11,7 +11,7 @@ internal sealed class BenchmarkSummary
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     public int SchemaVersion { get; init; } = 1;
@@ -65,7 +65,7 @@ internal sealed class BenchmarkSummary
     internal static BenchmarkSummaryEvidence DescribeEvidence(string repository, string snapshotName) => new()
     {
         Snapshot = snapshotName,
-        SnapshotSha256 = BenchmarkSnapshotHash.HashNormalizedFile(RawPath(repository, snapshotName)),
+        SnapshotSha256 = BenchmarkSnapshotHash.HashNormalizedFile(RawPath(repository, snapshotName))
     };
 }
 

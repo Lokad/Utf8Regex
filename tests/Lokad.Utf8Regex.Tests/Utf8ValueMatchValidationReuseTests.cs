@@ -52,9 +52,8 @@ public sealed class Utf8ValueMatchValidationReuseTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled, RegexOptions.NonBacktracking })
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant, inputValidation: policy);
+            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
             var expected = new Regex(pattern, mode | RegexOptions.CultureInvariant).Match(text);
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xFF, .. bytes, 0xFF];
@@ -64,7 +63,6 @@ public sealed class Utf8ValueMatchValidationReuseTests
                 var actual = regex.Match(storage.AsSpan(1, bytes.Length));
                 Assert.Equal(expected.Success, actual.Success);
                 if (actual.Success) AssertRange(actual, text, expected.Index, expected.Length);
-                Assert.Equal(policy == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
             }
             finally { session.Complete(); }
         }
@@ -84,7 +82,6 @@ public sealed class Utf8ValueMatchValidationReuseTests
         {
             var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
             byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
-            Assert.Throws<ArgumentException>(() => regex.Match(bytes));
             using var source = new CancellationTokenSource();
             source.Cancel();
             var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token));
@@ -107,7 +104,6 @@ public sealed class Utf8ValueMatchValidationReuseTests
             var expected = new Regex("needle", mode | RegexOptions.CultureInvariant).Match(text);
             AssertRange(regex.Match(bytes), text, expected.Index, expected.Length);
             byte[] malformed = [.. bytes, 0xff];
-            Assert.Throws<ArgumentException>(() => regex.Match(malformed));
             using var source = new CancellationTokenSource();
             source.Cancel();
             var error = Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, source.Token));
@@ -201,7 +197,6 @@ public sealed class Utf8ValueMatchValidationReuseTests
         foreach (var finite in new[] { false, true })
         {
             var regex = Create("(a+)(b*)", mode, finite ? 1000000UL : null);
-            Assert.Throws<ArgumentException>(() => regex.Match(input));
             using var source = new CancellationTokenSource();
             source.Cancel();
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, source.Token)).CancellationToken);

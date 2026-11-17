@@ -356,7 +356,7 @@ internal static partial class BenchmarkInspectReporter
                         ManagedRoute = context.Utf8Pcre2Regex.DebugExecutionKindName,
                         ManagedPlan = context.Utf8Pcre2Regex.DebugDescribeExecutionPlan(),
                         Status = status,
-                        StatusReason = statusReason,
+                        StatusReason = statusReason
                     };
                 }
 
@@ -423,7 +423,7 @@ internal static partial class BenchmarkInspectReporter
         StateHolder = "operation-local managed state",
         Lifetime = "The compiled regex is reused; each public invocation or global enumerator owns its transient state and returns rented storage on disposal or completion.",
         ConcurrencyContract = "The compiled regex may be invoked concurrently because capture, progress, timeout, and workspace state is invocation-local.",
-        RetainedMemoryContract = "The regex retains its immutable compiled plan, not invocation workspace; shared managed pools may retain returned arrays.",
+        RetainedMemoryContract = "The regex retains its immutable compiled plan, not invocation workspace; shared managed pools may retain returned arrays."
     };
 
     private static Pcre2QualificationWarmup WarmPcre2QualificationLane(Func<int> action)

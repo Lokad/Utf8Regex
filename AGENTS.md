@@ -12,11 +12,10 @@ bytes only; callers derive character positions when needed.
 - Preserve scalar boundaries, captures, RTL/NonBacktracking behavior, retained
   results/cursor aliases, resource admission and synchronous original-token
   cancellation/deadlines. Do not restore UTF-16 parity or dormant fallback engines.
-- Core keeps immutable inputValidation (Validate by default). PythonRe models
-  Python re over str; PythonRe and POSIX require already-valid unchanged UTF-8
-  text and do not validate whole subjects. PCRE2 follows native UTF-mode checking
-  and its explicit trusted-input bypass. Pattern/replacement validation remains
-  independent. No validation-token API or replacement profile framework.
+- All profiles require already-valid, unchanged UTF-8 subjects. Regex operations
+  do not validate text or expose a validation policy. Validate external bytes where
+  they become text. Pattern/template/assembled-output checks remain independent.
+  No validation-token API or replacement profile framework.
 - Shipped execution is fully managed and owned: no BCL matcher/results, native
   regex dependency or unchecked reads. Actual Unsafe.SizeOf<T>() is permitted.
   BCL Regex is a test/benchmark comparator only on overlapping semantics.

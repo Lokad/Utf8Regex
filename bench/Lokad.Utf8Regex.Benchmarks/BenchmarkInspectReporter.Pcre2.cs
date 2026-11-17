@@ -478,13 +478,16 @@ internal static partial class BenchmarkInspectReporter
         { Console.WriteLine("Native JIT comparison excluded: this pattern was not JIT-compiled."); return; }
         var input = Encoding.UTF8.GetBytes(row.Input);
         var options = Utf8Pcre2BenchmarkCatalog.ToPcre2Options(row.Options);
-        var trusted = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, default,
-            Timeout.InfiniteTimeSpan, Utf8InputValidation.AssumeValid);
-        var finite = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, new() {
-            MaxWorkSteps = 50_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 },
-            TimeSpan.FromSeconds(10), Utf8InputValidation.AssumeValid);
+        var trusted = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, default, Timeout.InfiniteTimeSpan);
+        var finite = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, new()
+        {
+            MaxWorkSteps = 50_000_000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 16 << 20,
+            MaxResultBytes = 16 << 20
+        }, TimeSpan.FromSeconds(10));
         using var cancellation = new CancellationTokenSource();
-        Console.WriteLine($"TrustedNativeModes: native PCRE2 {PcreNetNativeBenchmarkBaseline.NativePcre2Version}; UTF + NO_UTF_CHECK; JIT size={plan.JitSizeBytes}; managed AssumeValid");
+        Console.WriteLine($"TrustedNativeModes: native PCRE2 {PcreNetNativeBenchmarkBaseline.NativePcre2Version}; UTF + NO_UTF_CHECK; JIT size={plan.JitSizeBytes}; managed caller-valid unchanged UTF-8");
         foreach (var operation in new[] { Utf8Pcre2BenchmarkOperation.IsMatch, Utf8Pcre2BenchmarkOperation.Count })
         {
             if ((row.SupportedOperations & operation) == 0) continue;
@@ -534,11 +537,7 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
-            Measure(
-                "Utf8ValidationOnly",
-                samples,
-                iterations,
-                () => Utf8InputAnalyzer.ValidateOnly(context.InputBytes).ByteLength);
+
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
             var pcre2AllocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,
@@ -798,11 +797,7 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
-            Measure(
-                "Utf8ValidationOnly",
-                samples,
-                iterations,
-                () => Utf8InputAnalyzer.ValidateOnly(context.InputBytes).ByteLength);
+
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
             var allocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,
@@ -961,7 +956,7 @@ internal static partial class BenchmarkInspectReporter
                     FirstCallAllocatedBytes = MeasurePcre2FirstCallAllocatedBytes(benchmarkCase, family.Operation),
                     WarmAllocatedBytes = MeasureAllocatedBytesPerInvocation(
                         allocationIterations,
-                        () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)),
+                        () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation))
                 });
             }
 
@@ -1408,7 +1403,7 @@ var rangeResult61356 = enumerator.Current;
             LaneIterations = comparison.Iterations,
             SampleMicroseconds = comparison.RawSamples,
             PhaseMilliseconds = comparison.Phases,
-            ConstructionIterations = constructionIterations,
+            ConstructionIterations = constructionIterations
         };
         MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
         return measurement;
@@ -1638,7 +1633,7 @@ var rangeResult61356 = enumerator.Current;
     private static readonly JsonSerializerOptions Pcre2BenchmarkSnapshotJsonOptions = new()
     {
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = true,
+        WriteIndented = true
     };
 
     private enum Pcre2BenchmarkSection : byte

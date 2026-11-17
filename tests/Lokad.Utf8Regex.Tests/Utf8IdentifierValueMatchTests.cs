@@ -76,14 +76,14 @@ public sealed class Utf8IdentifierValueMatchTests
         foreach (var text in new[] { "!!abc", "123_" })
         {
             byte[] invalid = [.. Encoding.ASCII.GetBytes(text), 0xff];
-            Assert.Throws<ArgumentException>(() => regex.Match(invalid));
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, canceled.Token)).CancellationToken);
         }
     }
 
     [Theory]
-    [InlineData("!!abc12.tail", true)] [InlineData("123_", false)]
+    [InlineData("!!abc12.tail", true)]
+    [InlineData("123_", false)]
     public void EveryWorkCutoffRefusesPartialPublication(string text, bool success)
     {
         var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;

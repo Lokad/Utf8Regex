@@ -18,25 +18,28 @@ public sealed class Pcre2DetailedValidationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void InitialValidationCannotReachMalformedTailAfterWorkDenial(
+    public void SearchStopsAtWorkDenial(
         string pattern, string text, string capture, string route, bool probe)
     {
+        Assert.NotEmpty(capture);
         var regex = Create(pattern, 3);
         Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
-        var input = new byte[16385]; input.AsSpan().Fill((byte)'x'); input[^1] = 0xff;
+        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Match(regex, input, probe); }).ErrorKind);
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void InitialValidationObservesOriginalInterruption(
+    public void SearchObservesOriginalInterruption(
         string pattern, string text, string capture, string route, bool probe)
     {
         foreach (var cancel in new[] { false, true })
         {
             using var source = new CancellationTokenSource();
+            Assert.NotEmpty(capture);
             var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
                 default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+            Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
             var reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
             {
@@ -44,7 +47,7 @@ public sealed class Pcre2DetailedValidationAuthorityTests
                 if (cancel) { source.Cancel(); return 0; }
                 return 25;
             });
-            var input = new byte[16385]; input.AsSpan().Fill((byte)'x'); input[^1] = 0xff;
+            var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
             Exception? failure = null;
             try { _ = Match(regex, input, probe, token: source.Token); }
             catch (Exception error) { failure = error; }
@@ -54,9 +57,10 @@ public sealed class Pcre2DetailedValidationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void ValidationStaysSpentThroughDiscoveryAndPublication(
+    public void OneAllowanceCoversDiscoveryAndPublication(
         string pattern, string text, string capture, string route, bool probe)
     {
+        Assert.Equal(route, Create(pattern, 100000).DebugCompiledProgram.Operations.Match.GetType().Name);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Match(Create(pattern, 3), input, probe); }).ErrorKind);
@@ -73,28 +77,11 @@ public sealed class Pcre2DetailedValidationAuthorityTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void IndividuallyAdmissibleValidationAndMatchingCannotResetTheirCombinedAllowance(
-        string pattern, string text, string capture, string route, bool probe)
-    {
-        const uint work = 128;
-        var regex = Create(pattern, work);
-        var shortInput = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(text, Match(regex, shortInput, probe).GetValueString());
-        var input = new byte[(work - 2) * 2048]; input.AsSpan().Fill((byte)'x');
-        shortInput.CopyTo(input, 0);
-        var validation = new Utf8SliceInvocation(new(work, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref validation, out _));
-        Assert.Equal((ulong)work, validation.Budget.Steps);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Match(regex, input, probe); }).ErrorKind);
-        Assert.Equal(text, Match(regex, shortInput, probe).GetValueString());
-    }
-
-    [Theory] [MemberData(nameof(Routes))]
     public void ScalarStartsFlagsNamesAndRetainedCoordinatesStayValid(
         string pattern, string text, string capture, string route, bool probe)
     {
         var regex = Create(pattern, 100000);
+        Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
         foreach (var lead in new[] { 2046, 2047, 2048 })
         foreach (var flags in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.NotEmpty })
         {
@@ -109,20 +96,6 @@ public sealed class Pcre2DetailedValidationAuthorityTests
             _ = Match(regex, Encoding.UTF8.GetBytes(text), probe);
             Assert.Equal(text, retained.GetValueString());
             Assert.Equal(capture, named.GetValueString());
-        }
-    }
-
-    [Theory] [MemberData(nameof(Routes))]
-    public void SufficientAllowanceValidatesWholeSubjectWithOriginalInvalidOffset(
-        string pattern, string text, string capture, string route, bool probe)
-    {
-        var regex = Create(pattern, 100000);
-        foreach (var lead in new[] { 2047, 2048, 4095 })
-        {
-            var input = Encoding.UTF8.GetBytes(text + new string('x', lead) + "😀"); input[^1] = 0xff;
-            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-            var actual = Assert.Throws<ArgumentException>(() => { _ = Match(regex, input, probe); });
-            Assert.Equal(expected.Message, actual.Message);
         }
     }
 

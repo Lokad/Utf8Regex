@@ -42,7 +42,6 @@ public sealed class Utf8FixedPolicyPreparationTests
                 Utf8MatchSequence.EqualCaptures(expected, actual);
                 if (pattern.Contains("?<x>"))
                     Assert.Equal(expected.GetCaptures(baseline.GroupNumberFromName("x")).Length, actual.GetCaptures(regex.GroupNumberFromName("x")).Length);
-                Assert.Throws<ArgumentException>(() => regex.Count([0xff]));
                 using var canceled = new CancellationTokenSource();
                 canceled.Cancel();
                 Assert.Equal(canceled.Token,

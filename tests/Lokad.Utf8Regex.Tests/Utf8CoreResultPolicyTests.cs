@@ -38,7 +38,7 @@ public sealed class Utf8CoreResultPolicyTests
             var policy = new Utf8ResourcePolicy
             {
                 MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
-                MaxResultBytes = kind != 0 ? 1_048_576ul : null,
+                MaxResultBytes = kind != 0 ? 1_048_576ul : null
             };
             var regex = new Utf8Regex("z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1), policy);
             long ticks = 0;
@@ -343,7 +343,6 @@ public sealed class Utf8CoreResultPolicyTests
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
         var input = "ab x"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        Assert.Throws<ArgumentException>(() => Run(Create("ab", 1000000, options), operation, input, token));
         source.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() => Run(Create("ab", 1, options), operation, input, source.Token));
         Assert.Equal(source.Token, failure.CancellationToken);

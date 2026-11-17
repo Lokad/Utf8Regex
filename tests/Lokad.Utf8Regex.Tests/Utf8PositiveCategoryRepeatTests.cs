@@ -64,8 +64,6 @@ public sealed class Utf8PositiveCategoryRepeatTests
         Assert.Equal("a😀@", Encoding.UTF8.GetString(first.GetValueMemory().Span));
         Assert.Equal("a😀", Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
         Assert.Equal("éa@", Encoding.UTF8.GetString(second.GetValueMemory().Span));
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
     }
 
     [Fact]

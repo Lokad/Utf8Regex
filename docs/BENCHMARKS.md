@@ -14,13 +14,13 @@ Unmetered `Count` and construction are secondary measurements. This first catalo
 has 24 Core patterns; exhaustive catalog neighbors and adapter catalogs remain
 work in progress.
 
-Inputs are caller-valid, unchanged UTF-8. Until the subject-policy API is removed,
-Core measurements select `AssumeValid`. .NET receives predecoded text; a separate
+Inputs are caller-valid, unchanged UTF-8 across all profiles; regex operations
+expose no validation mode. .NET receives predecoded text; a separate
 lane includes UTF-8 decoding. Matching options and complete capture histories are
 checked before timing. .NET byte-coordinate lookup is prepared outside timing;
 the comparison includes public result handling, rather than only matching kernels.
-Capture matching currently uses one cursor advance because the existing Core
-surface has no direct caller-buffer match from a byte offset.
+Capture matching uses the public caller-buffer byte-start operation or one memory
+cursor advance when the case requests capture history.
 
 Run the existing Release driver, using the SDK from `global.json`:
 
@@ -56,7 +56,7 @@ Comparator scope matters: Python uses a long-lived official CPython worker over
 `str`. PCRE.NET is a benchmark-only PCRE2 comparator. The existing focused
 `--measure-pcre2-case <id> 1 3` command also compares explicitly labeled native
 interpreted and JIT lanes for IsMatch and Count. It verifies actual JIT compilation
-and equal results, uses native `NO_UTF_CHECK` and managed `AssumeValid`, and
+and equal results, uses native `NO_UTF_CHECK` and the managed caller-valid contract, and
 reports token/finite/deadline costs separately. The legacy snapshots still use
 their original interpreted comparator; this does not refresh or qualify them.
 JIT catalog coverage and adapter generality catalogs remain pending.

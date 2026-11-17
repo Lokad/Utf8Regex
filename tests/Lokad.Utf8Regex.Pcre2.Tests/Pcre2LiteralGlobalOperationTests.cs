@@ -12,12 +12,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2LiteralGlobalOperationTests
 {
     [Fact]
-    public void ControlledByteOnlyCountDenialPrecedesUnvisitedMalformedTail()
+    public void ControlledByteOnlyCountDenialPrecedesUnvisitedTail()
     {
         var regex = new Utf8Pcre2Regex("é", default, default,
             new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 8192) + "é");
-        bytes[^1] = 0xff;
         var failure = Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
         using var token = new CancellationTokenSource();
@@ -31,7 +30,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [InlineData("é")]
     [InlineData("😀")]
     [InlineData("夏洛克·福尔摩斯")]
-    public void ControlledByteOnlyCountKeepsScalarOffsetsAndNativeWindowErrors(string pattern)
+    public void ControlledByteOnlyCountKeepsScalarOffsets(string pattern)
     {
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex(pattern, default, default,
@@ -42,7 +41,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
             Assert.Equal(2, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2, default, token.Token));
-            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 4, default, token.Token));
         }
     }
 
@@ -66,7 +64,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
             Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(17));
             try
             {
-                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(bytes, ref invocation));
                 var breach = program.TryCountNonOverlapping(bytes, ref invocation, out var count);
                 Assert.Equal(expectDenial ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, breach);
                 Assert.Equal(expectDenial ? 0 : 2, count);
@@ -80,9 +77,9 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void ByteOnlyValidationAndSearchRetainOriginalInterruption(bool duringSearch, bool cancel)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ByteOnlySearchRetainsOriginalInterruption(bool cancel)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -90,13 +87,12 @@ public sealed class Pcre2LiteralGlobalOperationTests
         var regex = new Utf8Pcre2Regex("é", default, default,
             new() { MatchLimit = 100000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
             TimeSpan.FromMilliseconds(20));
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 262144) + "é");
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "é");
         var checkpoints = 0;
-        // Validation consumes 131 bounded steps. The first search checkpoint
-        // after that is 192; the existing hook runs every 64 charged steps.
+        // The matching loop reaches the existing hook every 64 charged steps.
         var session = Utf8SearchDiagnosticsSession.Start(step =>
         {
-            if (step < (duringSearch ? 192UL : 64UL)) return;
+            if (step < 64UL) return;
             checkpoints++;
             if (cancel) token.Cancel(); else ticks = 25;
         });
@@ -117,7 +113,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [InlineData("é")]
     [InlineData("😀")]
     [InlineData("夏洛克·福尔摩斯")]
-    public void DirectCountNeedsNoDiscardedCoordinatesButKeepsNativeWindowValidation(string pattern)
+    public void DirectCountNeedsNoDiscardedCoordinatesButKeepsScalarStarts(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);
         foreach (var padding in new[] { 1023, 1024, 1025, 4096 })
@@ -129,7 +125,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
             Assert.Equal("startOffsetInBytes", invalidOffset.ParamName);
             foreach (var offset in new[] { -1, 2, input.Length + 2 })
                 Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count([.. input, 0xff], offset));
-            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff], 4));
             var matches = regex.EnumerateMatches(input, 4);
             Assert.True(matches.MoveNext());
             Assert.Equal(4 + padding, matches.Current.StartOffsetInBytes);

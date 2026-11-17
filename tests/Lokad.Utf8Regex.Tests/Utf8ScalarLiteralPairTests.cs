@@ -38,9 +38,6 @@ public sealed class Utf8ScalarLiteralPairTests
         var captured = System.Text.Encoding.UTF8.GetString(snapshot.GetGroupMemory(1).Span);
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(captured, System.Text.Encoding.UTF8.GetString(snapshot.GetGroupMemory(1).Span));
-        byte[] malformed = [.. input, 0xFF];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
     }
 
     private static (int Index, int Length)[] Ranges(Utf8Regex regex, byte[] input)
@@ -55,7 +52,10 @@ public sealed class Utf8ScalarLiteralPairTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1,
+            MaxWorkSteps = 1_000_000,
+            MaxDepth = 1,
+            MaxWorkingBytes = 1,
+            MaxResultBytes = 1
         };
         var regex = new Utf8Regex("[,，]", RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(2, regex.Count("東京，大阪,尾"u8));

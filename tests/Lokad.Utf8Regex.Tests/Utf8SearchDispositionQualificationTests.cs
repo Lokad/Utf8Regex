@@ -117,7 +117,6 @@ public sealed class Utf8SearchDispositionQualificationTests
                 while (enumerator.MoveNext()) { count++; Assert.True((enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes) > 0); }
                 Assert.Equal(3, count);
             Assert.Equal(2, new Utf8Regex("", options).Count("😀"u8));
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(input.Concat(new byte[] { 0xff }).ToArray()));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token));
         }

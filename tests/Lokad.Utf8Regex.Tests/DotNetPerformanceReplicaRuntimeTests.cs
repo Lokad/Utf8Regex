@@ -115,16 +115,6 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         }
     }
 
-
-    [Fact]
-    public void Utf8WordDelimitedTokenCountStillRejectsMalformedSuffix()
-    {
-        var regex = new Utf8Regex(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.Compiled);
-        byte[] malformed = [.. "alpha@example.org"u8, 0xFF];
-
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-    }
-
     [Theory]
     [InlineData("ops.dispatch@northwind-control.net")]
     [InlineData("ops.dispatch@[192.168.001.]42]")]

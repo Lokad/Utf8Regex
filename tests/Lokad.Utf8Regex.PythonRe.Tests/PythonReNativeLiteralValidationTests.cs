@@ -26,8 +26,10 @@ public sealed class PythonReNativeLiteralValidationTests
         {
             var policy = mode == 1 ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
             } : default;
             using var live = new CancellationTokenSource();
             var token = mode == 2 ? live.Token : default;

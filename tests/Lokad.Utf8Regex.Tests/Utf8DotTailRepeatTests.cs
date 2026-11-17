@@ -9,8 +9,10 @@ public sealed class Utf8DotTailRepeatTests
 {
     private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20) => new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = depth,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = result,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = depth,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = result
     };
 
     [Theory]
@@ -156,8 +158,10 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void DotScanObservesOriginalInterruptionAndReleasesScratch(bool timeout, bool singleline)
     {
         var program = new Utf8Regex(singleline ? "(?sm:^(.+)$)" : "(?m:^(.+)$)").Inspection.AvailableOwnedSliceProgram!;
@@ -180,15 +184,5 @@ public sealed class Utf8DotTailRepeatTests
             Assert.True(invocation.Budget.Steps >= 64);
         }
         finally { session.Complete(); }
-    }
-
-    [Fact]
-    public void ValidFirstLineDoesNotHideMalformedUtf8Tail()
-    {
-        var regex = new Utf8Regex("(?m:^(.+)$)", RegexOptions.None, Timeout.InfiniteTimeSpan, Policy());
-        byte[] input = [.. "abc\n"u8, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.Match(input));
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
     }
 }

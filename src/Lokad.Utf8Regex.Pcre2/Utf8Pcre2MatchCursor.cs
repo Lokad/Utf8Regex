@@ -29,7 +29,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
         _budget.WorkingInvocation.ShareStorageForCursor();
         try
         {
-            Pcre2Runner.CheckInput(program, input.Span, start, ref _budget.WorkingInvocation);
+            Pcre2Runner.CheckInput(input.Span, start, ref _budget.WorkingInvocation);
             _input = input;
             var subject = Utf8ValidatedInput.BorrowBytes(input.Span);
             _progress = new(subject.GetBytePosition(start, "startOffsetInBytes"));

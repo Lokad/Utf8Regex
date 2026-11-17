@@ -399,8 +399,8 @@ public sealed class PreparedSearchPrimitivesTests
         var candidates = CollectCandidates(prefilter, input);
 
         Assert.Contains(3, candidates);
-        Assert.Contains(("xx шЕрлок холмс yy "u8).Length, candidates);
-        Assert.Contains(("xx шЕрлок холмс yy ДЖон уотсон zz "u8).Length, candidates);
+        Assert.Contains("xx шЕрлок холмс yy "u8.Length, candidates);
+        Assert.Contains("xx шЕрлок холмс yy ДЖон уотсон zz "u8.Length, candidates);
     }
 
     [Fact]

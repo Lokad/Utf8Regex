@@ -244,7 +244,7 @@ var start = match.StartOffsetInBytes;
 
     private static int ExecuteSearchAttributionFullValidation(byte[] input)
     {
-        return Utf8Validation.Validate(input).Utf16Length;
+        return Utf8Validation.Validate(input).ByteLength;
     }
 
     private static int ExecutePrefilterOnly(Utf8Regex core, byte[] input)

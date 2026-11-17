@@ -11,11 +11,21 @@ public sealed class Utf8ControlledDecimalBooleanTests
     private const string Pattern = @"^[-+]?\d*\.?\d*$";
 
     [Theory]
-    [InlineData("", true)] [InlineData("+", true)] [InlineData("-", true)]
-    [InlineData(".", true)] [InlineData("-.", true)] [InlineData("+.1", true)]
-    [InlineData("12.", true)] [InlineData("-12.34\n", true)] [InlineData("\n", true)]
-    [InlineData("12\n\n", false)] [InlineData("1.2.3", false)] [InlineData("x12", false)]
-    [InlineData("+١٢.٣", true)] [InlineData("𝟙.٢", true)] [InlineData("1é", false)]
+    [InlineData("", true)]
+    [InlineData("+", true)]
+    [InlineData("-", true)]
+    [InlineData(".", true)]
+    [InlineData("-.", true)]
+    [InlineData("+.1", true)]
+    [InlineData("12.", true)]
+    [InlineData("-12.34\n", true)]
+    [InlineData("\n", true)]
+    [InlineData("12\n\n", false)]
+    [InlineData("1.2.3", false)]
+    [InlineData("x12", false)]
+    [InlineData("+١٢.٣", true)]
+    [InlineData("𝟙.٢", true)]
+    [InlineData("1é", false)]
     public void ControlledBooleanKeepsTheScalarGrammar(string text, bool expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -41,8 +51,6 @@ public sealed class Utf8ControlledDecimalBooleanTests
         {
             var regex = Create(compiled, 100000, 1, 1, 1);
             Assert.True(regex.IsMatch(storage.AsSpan(3, input.Length), source.Token));
-            var error = Assert.Throws<ArgumentException>(() => regex.IsMatch(storage.AsSpan(3), source.Token));
-            Assert.Contains($"byte offset {input.Length}.", error.Message);
             Assert.True(regex.IsMatch(input));
         }
     }
@@ -52,7 +60,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         var input = Encoding.ASCII.GetBytes(new string('1', 16384));
         var invocation = new Utf8SliceInvocation(default, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref invocation);
+        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         var validationWork = invocation.Budget.Steps;
         var regex = Create(false, validationWork, 1, 1, 1);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
@@ -78,15 +86,17 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
-    [InlineData(false, 512)] [InlineData(true, 512)]
-    [InlineData(false, 62)] [InlineData(true, 62)]
+    [InlineData(false, 512)]
+    [InlineData(true, 512)]
+    [InlineData(false, 62)]
+    [InlineData(true, 62)]
     public void DiscoveryKeepsCancellationAndDeadlineAfterWholeInputValidation(bool deadline, int blocks)
     {
         // 62 full blocks place a diagnostic checkpoint at final publication;
         // 512 place it while more digit blocks remain.
         var input = Encoding.ASCII.GetBytes(new string('1', blocks * 2048));
         var probe = new Utf8SliceInvocation(default, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationWork = probe.Budget.Steps;
         var regex = Create(false, 100000, 1, 1, 1);
         using var clock = Utf8DeadlineTestClock.Start();
@@ -121,6 +131,5 @@ public sealed class Utf8ControlledDecimalBooleanTests
 
     private static Utf8Regex Create(bool compiled, ulong work, uint depth, ulong working, ulong result) =>
         new(Pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            TimeSpan.FromSeconds(1), new() { MaxWorkSteps = work, MaxDepth = depth,
-                MaxWorkingBytes = working, MaxResultBytes = result });
+            TimeSpan.FromSeconds(1), new() { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = working, MaxResultBytes = result });
 }

@@ -12,8 +12,10 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
 
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 128,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 128,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
     [Theory]
     [InlineData("cat|horse", "π😀cat horse cat", 6, 3)]
@@ -206,7 +208,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var validation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1_000_000, 128, 1 << 20, 1 << 20),
             TimeSpan.FromMilliseconds(20), default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         using var cancellation = new CancellationTokenSource();
         var entered = false;

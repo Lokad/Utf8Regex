@@ -27,7 +27,7 @@ internal static class Pcre2CorpusOptions
             BackslashC = Enum.Parse<Pcre2BackslashCPolicy>(settings.BackslashC, ignoreCase: false),
             AllowLookaroundBackslashK = settings.AllowLookaroundBackslashK,
             Newline = Enum.Parse<Pcre2NewlineConvention>(settings.Newline, ignoreCase: false),
-            Bsr = Enum.Parse<Pcre2BsrConvention>(settings.Bsr, ignoreCase: false),
+            Bsr = Enum.Parse<Pcre2BsrConvention>(settings.Bsr, ignoreCase: false)
         };
     }
 }

@@ -10,7 +10,7 @@ internal static class Utf8OwnedSplitPreparation
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         var effectiveCount = count == 0 ? int.MaxValue : count;
         invocation.ShareStorageForCursor();
-        Utf8Validation.CheckSubject(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         var cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, invocation, effectiveCount == 1);
         try
         {

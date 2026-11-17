@@ -10,8 +10,10 @@ public sealed class Pcre2ReplacementStackSpanTests
     {
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+            MaxWorkSteps = 1_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
         } : Utf8ResourcePolicy.Unlimited;
         var regex = Utf8Pcre2Regex.Create("a", Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
         var output = regex.Replace("éa😀a"u8, 0,

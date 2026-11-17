@@ -50,7 +50,6 @@ public sealed class Utf8NativeDeadlineAdmissionTests
             Assert.True(regex.Match(input).Success);
             Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss)));
             byte[] malformed = [.. input, 0xff];
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
             using var source = new CancellationTokenSource();
             source.Cancel();
             var error = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, source.Token));

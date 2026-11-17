@@ -46,14 +46,8 @@ public sealed class Utf8DecodedFallbackTests
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex("Шерлок", options);
-        var malformedPrefix = new byte[] { 0xC3, 0x28, 0xD0, 0xA8 };
-        var malformedSuffix = new byte[] { 0xD0, 0xA8, 0xC3, 0x28 };
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedPrefix));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedSuffix));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedPrefix));
-        Assert.Throws<ArgumentException>(() => regex.Count(malformedSuffix));
     }
 
     [Fact]

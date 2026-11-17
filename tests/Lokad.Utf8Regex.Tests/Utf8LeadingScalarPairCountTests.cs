@@ -39,9 +39,6 @@ public sealed class Utf8LeadingScalarPairCountTests
         byte[] storage = [0xff, .. input, 0xff];
         Assert.Equal(2, regex.Count(storage.AsSpan(1, input.Length)));
         Assert.Equal(1, regex.Count(input.AsSpan(0, input.Length - 2)));
-        Assert.Throws<ArgumentException>(() => regex.Count(input.AsSpan(0, input.Length - 1)));
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
         Assert.Equal(cancelled.Token,
@@ -56,8 +53,7 @@ public sealed class Utf8LeadingScalarPairCountTests
         var regex = new Utf8Regex("夏a");
         Assert.Equal(2, regex.Count(input));
         var finite = new Utf8Regex("夏a", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 256,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         using var live = new CancellationTokenSource();
         Assert.Equal(2, finite.Count(input, live.Token));
         Assert.Equal(2, regex.Count(input, live.Token));

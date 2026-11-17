@@ -25,8 +25,10 @@ public class Utf8RequiredLiteralBenchmarks
         _finite = new Utf8Regex(Pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50000000, MaxDepth = 8192,
-                MaxWorkingBytes = 64UL << 20, MaxResultBytes = 128UL << 20,
+                MaxWorkSteps = 50000000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 64UL << 20,
+                MaxResultBytes = 128UL << 20
             });
         _baseline = new Regex(Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();

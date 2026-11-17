@@ -10,7 +10,10 @@ public sealed class PythonReLiteralRepeatFullMatchTests
 {
     private static Utf8ResourcePolicy Small => new()
     {
-        MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1,
+        MaxWorkSteps = 100000,
+        MaxDepth = 1,
+        MaxWorkingBytes = 1,
+        MaxResultBytes = 1
     };
 
     [Theory]
@@ -27,8 +30,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         foreach (var controlled in new[] { false, true })
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                controlled ? new() { MaxWorkSteps = 1000000, MaxDepth = 10000,
-                    MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+                controlled ? new() { MaxWorkSteps = 1000000, MaxDepth = 10000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
             using var live = new CancellationTokenSource();
             foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
             foreach (var prefix in new[] { "", "π😀" })
@@ -215,8 +217,10 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void ComparisonBlocksObserveOriginalCancellationAndDeadline(bool expire, bool hasTail)
     {
         var pattern = "(?:Шерлок )+" + (hasTail ? "Ω" : "");
@@ -249,8 +253,10 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void FinalPublicationPollsTokenAfterItsLastDeadlineRead(bool success, bool hasTail)
     {
         var regex = new Utf8PythonRegex("(?:ab)+" + (hasTail ? "c" : ""), PythonReCompileOptions.None, TimeSpan.FromSeconds(30), Small);

@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // Finite work spans the public call and all advances. These fixture limits
-// include validation, candidate discovery and byte-result publication.
+// include byte-start admission, discovery and byte-result publication.
 public sealed class Pcre2BudgetAccumulationTests
 {
     // Routes every operation through the native literal cursor (verified via
@@ -21,13 +21,13 @@ public sealed class Pcre2BudgetAccumulationTests
     [Fact]
     public void CountSucceedsWithEnoughAdmittedWork()
     {
-        Assert.Equal(3, Create(9).Count(Encoding.UTF8.GetBytes(InputText)));
+        Assert.Equal(3, Create(7).Count(Encoding.UTF8.GetBytes(InputText)));
     }
 
     [Fact]
     public void CountBreachesWhenLimitIsOneShort()
     {
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create(8).Count(Encoding.UTF8.GetBytes(InputText)));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create(6).Count(Encoding.UTF8.GetBytes(InputText)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
@@ -37,7 +37,7 @@ public sealed class Pcre2BudgetAccumulationTests
         // The stack-only enumerator cannot be captured by a lambda, so the
         // breach is collected with the same try/while idiom as the limit
         // enforcement battery.
-        var enumerator = Create(7).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
+        var enumerator = Create(5).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
         var yielded = 0;
         Pcre2MatchException? caught = null;
         try
@@ -60,7 +60,7 @@ public sealed class Pcre2BudgetAccumulationTests
     [Fact]
     public void EnumerationExhaustsCleanlyWithEnoughAdmittedWork()
     {
-        var enumerator = Create(9).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
+        var enumerator = Create(7).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
         var yielded = 0;
         while (enumerator.MoveNext())
         {

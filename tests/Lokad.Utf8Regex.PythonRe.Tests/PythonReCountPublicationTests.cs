@@ -33,8 +33,7 @@ public sealed class PythonReCountPublicationTests
         foreach (var admit in new[] { false, true })
         {
             var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = work - (admit ? 0UL : 1UL), MaxDepth = 1024,
-                    MaxWorkingBytes = 1048576, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = work - (admit ? 0UL : 1UL), MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1 });
             int? published = null;
             var failure = Record.Exception(() => published = bounded.Count(input));
             if (admit) { Assert.Null(failure); Assert.Equal(3, published); }
@@ -53,8 +52,7 @@ public sealed class PythonReCountPublicationTests
     {
         var input = "😀x"u8.ToArray();
         const string pattern = "(😀*)";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024,
-            MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 };
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
         ulong work;
         var matches = 0;
@@ -82,8 +80,10 @@ public sealed class PythonReCountPublicationTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void TerminalCursorFailureKeepsOriginalAuthorityAndRetainedSnapshots(bool finite, bool expire)
     {
         long ticks = 0;
@@ -91,7 +91,10 @@ public sealed class PythonReCountPublicationTests
         using var token = new CancellationTokenSource();
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576,
+            MaxWorkSteps = 100000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1048576,
+            MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
         var regex = new Utf8PythonRegex("(a*)", PythonReCompileOptions.None, timeout, policy);
@@ -153,10 +156,14 @@ public sealed class PythonReCountPublicationTests
     }
 
     [Theory]
-    [InlineData("(a*)", false, false)] [InlineData("(a*)", true, false)]
-    [InlineData("(a*)", false, true)] [InlineData("(a*)", true, true)]
-    [InlineData("(?!x)a+", false, false)] [InlineData("(?!x)a+", true, false)]
-    [InlineData("(?!x)a+", false, true)] [InlineData("(?!x)a+", true, true)]
+    [InlineData("(a*)", false, false)]
+    [InlineData("(a*)", true, false)]
+    [InlineData("(a*)", false, true)]
+    [InlineData("(a*)", true, true)]
+    [InlineData("(?!x)a+", false, false)]
+    [InlineData("(?!x)a+", true, false)]
+    [InlineData("(?!x)a+", false, true)]
+    [InlineData("(?!x)a+", true, true)]
     public void TerminalVmStepCannotPublishCountAfterInterruption(string pattern, bool finite, bool expire)
     {
         long ticks = 0;
@@ -165,7 +172,10 @@ public sealed class PythonReCountPublicationTests
         var limits = finite ? new Utf8ExecutionLimits(100000, 1024, 1048576, 1048576) : Utf8ExecutionLimits.Unlimited;
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576,
+            MaxWorkSteps = 100000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1048576,
+            MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);
@@ -234,7 +244,10 @@ public sealed class PythonReCountPublicationTests
     {
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576,
+            MaxWorkSteps = 100000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1048576,
+            MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);

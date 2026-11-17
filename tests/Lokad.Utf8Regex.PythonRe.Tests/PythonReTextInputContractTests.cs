@@ -28,7 +28,6 @@ public sealed class PythonReTextInputContractTests
                 Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
                 Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
             }
-            Assert.Equal(0, session.SubjectValidations);
         }
         finally { session.Complete(); }
     }
@@ -63,7 +62,6 @@ public sealed class PythonReTextInputContractTests
             var observed = 0;
             while (cursor.MoveNext(out _)) observed++;
             Assert.Equal(count, observed);
-            Assert.Equal(0, session.SubjectValidations);
         }
         finally { session.Complete(); }
     }

@@ -52,7 +52,6 @@ public sealed class Utf8PackedPreparationRetirementTests
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? 39 : 4, match.Value.StartOffsetInBytes);
             Assert.Equal(32, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));             Assert.Equal(1, new Utf8Regex(".", options).Count("😀"u8));
-            Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token));
         }

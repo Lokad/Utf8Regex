@@ -106,18 +106,4 @@ public sealed class Utf8StructuralBoundaryOverlapTests
             Assert.Equal(expected.Count, index);
         }
     }
-
-    [Fact]
-    public void MalformedTailCannotBeHiddenByNativeHitsOrMisses()
-    {
-        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-        foreach (var text in new[] { "class Alpha", "no declarations" })
-        {
-            var regex = new Utf8Regex(Declaration, options);
-            var malformed = Encoding.UTF8.GetBytes(text).Append((byte)0xff).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-            Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
-            Assert.Throws<ArgumentException>(() => regex.Match(malformed));
-        }
-    }
 }

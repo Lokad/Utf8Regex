@@ -19,9 +19,8 @@ public sealed class Utf8OrderedWindowInvocationTests
         var text = "é!" + head + "😀z";
         var bytes = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(head + ".{1,2}z", inputValidation: validation);
+            var regex = new Utf8Regex(head + ".{1,2}z");
             var prepared = Prepared(regex);
             Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
             var storage = new byte[bytes.Length + 2]; bytes.CopyTo(storage, 1);
@@ -157,7 +156,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(new string('x', 4096) + " a  b a1b2b foo1z2z barz Holmes and Watson Watson and Holmes");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref baseline);
+        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryCount(input,
             prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, ref baseline, out var total));
         Assert.Equal(new Regex(pattern).Count(Encoding.UTF8.GetString(input)), total);
@@ -165,7 +164,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var validation = Utf8Validation.TryValidate(input, ref invocation, out _);
+            var validation = Utf8InputAnalyzer.TryDescribe(input, ref invocation, out _);
             if (validation == Utf8ExecutionLimitKind.None)
             {
                 Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, AsciiOrderedLiteralWindowExecutor.TryCount(input,
@@ -246,7 +245,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         var text = phase == "confirmation" ? "a" + new string(separator ? ' ' : 'x', 160000) + "b" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;

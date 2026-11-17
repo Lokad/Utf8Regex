@@ -188,8 +188,10 @@ public sealed class Utf8NonBacktrackingConstructionTests
             (compiled ? RegexOptions.Compiled : 0);
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1000000, MaxDepth = 4096,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+            MaxWorkSteps = 1000000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
         };
         var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
         var input = Encoding.UTF8.GetBytes(text);

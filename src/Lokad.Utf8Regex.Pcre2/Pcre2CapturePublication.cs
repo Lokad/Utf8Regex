@@ -52,11 +52,13 @@ internal static partial class Pcre2Runner
                 }
                 groups[slot] = new Pcre2GroupData
                 {
-                    Number = slot, Success = true,
-                    StartOffsetInBytes = start, EndOffsetInBytes = end,
+                    Number = slot,
+                    Success = true,
+                    StartOffsetInBytes = start,
+                    EndOffsetInBytes = end,
                     Utf8SliceIsWellFormed = start <= end &&
                         input.IsScalarBoundary(new Utf8BytePosition(start)) &&
-                        input.IsScalarBoundary(new Utf8BytePosition(end)),
+                        input.IsScalarBoundary(new Utf8BytePosition(end))
                 };
             }
             budget.ChargeWorkspaceStep();

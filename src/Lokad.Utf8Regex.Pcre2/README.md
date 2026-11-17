@@ -6,26 +6,19 @@ matching the adapter. It can coexist with PythonRe at the same version. There is
 no P/Invoke, native PCRE2 binary, RID-specific payload or implementation dependency
 other than Core and the BCL.
 
-## Subject validation policy
+## Subject input contract
 
-`Validate` is default and follows native UTF-mode checking: validate from the
-requested byte start, extended backward by the pattern's maximum lookbehind in
-scalars, through the end of the subject. A malformed suffix is rejected even on
-an early hit; bytes before this window are ignored. Checking runs at most once
-per logical operation or cursor lifetime under the original work/token/deadline.
+Pass already-valid UTF-8 text and keep borrowed bytes unchanged while results or
+cursors use it. Regex operations do not validate subjects or expose an input
+policy. Validate external bytes where they become text. Pattern/template/output
+validation, checked accesses, scalar semantics and matching/output admission
+remain independent. Results expose byte endpoints without prefix scans or UTF-16
+coordinates. See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-contract).
 
-Construct with `inputValidation: Utf8InputValidation.AssumeValid` only when the
-host guarantees valid UTF-8 and unchanged borrowed storage. This is the subject
-`PCRE2_NO_UTF_CHECK` equivalent; read-only `InputValidation` reports the choice.
-Pattern/replacement validation, checked accesses, scalar semantics and matching/
-output admission remain independent. Results expose byte endpoints without
-prefix scans or UTF-16 coordinates. An ignored invalid prefix does not affect
-the selected byte result.
-See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-validation).
-
-The canonical benchmark compares default UTF-checked managed and native PCRE2
-operations with matching options and requested outputs. Trusted-input coverage
-uses focused checks rather than a second complete benchmark catalog.
+Canonical benchmarks give both sides valid text and use native `NO_UTF_CHECK`,
+equivalent options and matching requested outputs. This input contract deliberately
+differs from native PCRE2's default validation. Frozen tables retain their original
+producer and comparator guarantees until a coherent refresh.
 
 ## Supported scope and limitations
 
@@ -124,7 +117,7 @@ still takes precedence. Return-value rules for valid callbacks are unchanged.
 
 Core, PythonRe and PCRE2 0.4.0 are published. All four 0.5.0 packages form the
 qualified candidate.
-PCRE2 retains its immutable UTF validation/trusted-input choice. Frozen packages
+PCRE2 now requires caller-valid UTF-8, like the other profiles. Frozen packages
 and measurements retain their own identities.
 
 Use `tools/qualify-package-candidate.ps1 -Profiles Core,PythonRe,Pcre2,Posix` at a

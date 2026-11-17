@@ -281,7 +281,7 @@ public sealed class Utf8StructuralInvocationTests
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
@@ -324,7 +324,7 @@ public sealed class Utf8StructuralInvocationTests
         var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(method ? "LogError ( LogWarning( LogInformation (" : "getAlpha setBeta getGamma");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref baseline);
+        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
         var validationSteps = baseline.Budget.Steps;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(prepared.StructuralSearchPlan,
             prepared.StructuralVerifier.AsciiProgram, input, ref baseline, out var count));
@@ -333,7 +333,7 @@ public sealed class Utf8StructuralInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8Validation.Validate(input, ref invocation);
+            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(prepared.StructuralSearchPlan,
                 prepared.StructuralVerifier.AsciiProgram, input, ref invocation, out var denied));
             Assert.Equal(0, denied);

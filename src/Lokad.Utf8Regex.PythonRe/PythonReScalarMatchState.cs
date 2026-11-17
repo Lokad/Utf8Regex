@@ -628,8 +628,10 @@ internal partial struct PythonReScalarMatchState
         var end = EndOffsetInBytes;
         var value = new PythonReGroupData
         {
-            Number = 0, Success = true,
-            StartOffsetInBytes = start, EndOffsetInBytes = end,
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = start,
+            EndOffsetInBytes = end
         };
         Checkpoint();
         return value;
@@ -657,8 +659,10 @@ internal partial struct PythonReScalarMatchState
                 ? new PythonReGroupData { Number = pythonGroup, Success = false }
                 : new PythonReGroupData
                 {
-                    Number = pythonGroup, Success = true,
-                    StartOffsetInBytes = start, EndOffsetInBytes = end,
+                    Number = pythonGroup,
+                    Success = true,
+                    StartOffsetInBytes = start,
+                    EndOffsetInBytes = end
                 };
         }
         Checkpoint();
@@ -740,9 +744,11 @@ internal partial struct PythonReScalarMatchState
             }
             projected[i] = new Utf8PythonGroupMatchData
             {
-                Number = i, Success = true,
-                StartOffsetInBytes = start, EndOffsetInBytes = end,
-                ValueText = GetText(input, start, end),
+                Number = i,
+                Success = true,
+                StartOffsetInBytes = start,
+                EndOffsetInBytes = end,
+                ValueText = GetText(input, start, end)
             };
         }
         var copiedNames = SnapshotNameEntries(names);

@@ -79,8 +79,10 @@ public sealed partial class Utf8PythonRegex
             if (!matched) return default;
             var completed = Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
-                Number = 0, Success = true,
-                StartOffsetInBytes = startOffsetInBytes, EndOffsetInBytes = input.Length,
+                Number = 0,
+                Success = true,
+                StartOffsetInBytes = startOffsetInBytes,
+                EndOffsetInBytes = input.Length
             });
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
@@ -167,7 +169,7 @@ public sealed partial class Utf8PythonRegex
                     Success = true,
                     StartOffsetInBytes = range.IndexInBytes,
                     EndOffsetInBytes = range.IndexInBytes + range.LengthInBytes,
-                    ValueText = ranges.GetText(input, range),
+                    ValueText = ranges.GetText(input, range)
                 };
             }
             ranges.Checkpoint();
@@ -411,8 +413,10 @@ public sealed partial class Utf8PythonRegex
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {
-                Number = 0, Success = true,
-                StartOffsetInBytes = start, EndOffsetInBytes = end,
+                Number = 0,
+                Success = true,
+                StartOffsetInBytes = start,
+                EndOffsetInBytes = end
             });
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&

@@ -85,7 +85,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(Texts[^1]);
         var baselineInvocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref baselineInvocation);
+        _ = Utf8InputAnalyzer.Describe(input, ref baselineInvocation);
         var baseline = new Utf8OperationMatchCursor(input, prepared, baselineInvocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextStructuralFamily(out var found));
         Assert.True(found);
@@ -96,7 +96,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8Validation.Validate(input, ref invocation);
+            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
             var cursor = new Utf8OperationMatchCursor(input, prepared, invocation);
             Assert.Equal(Utf8ExecutionLimitKind.None, cursor.TryMoveNextStructuralFamily(out found));
             Assert.True(found);
@@ -160,7 +160,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref validation);
+        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
@@ -237,9 +237,6 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         foreach (var input in new[] { new byte[] { 0xff }, new byte[] { (byte)'x', 0xc0, 0xaf }, new byte[] { 0xf0, 0x9f } })
         {
             var regex = new Utf8Regex(Patterns[0], options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
-            var malformed = "getAlpha "u8.ToArray().Concat(input).ToArray();
-            Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(malformed); _ = cursor.MoveNext(); });
-            Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); });
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         source.Cancel();

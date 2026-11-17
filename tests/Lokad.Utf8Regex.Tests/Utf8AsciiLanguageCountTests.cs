@@ -62,19 +62,6 @@ public sealed class Utf8AsciiLanguageCountTests
     }
 
     [Theory]
-    [InlineData(RegexOptions.None)]
-    [InlineData(RegexOptions.Compiled)]
-    public void FullValidationPrecedesBothHitsAndMisses(RegexOptions options)
-    {
-        var regex = new Utf8Regex(Pattern, options);
-        foreach (var prefix in new[] { "", "00.11.22.255", "😀..." })
-        {
-            var bytes = Encoding.UTF8.GetBytes(prefix).Concat(new byte[] { 0xF0, 0x9F, 0x98 }).ToArray();
-            Assert.Throws<ArgumentException>(() => regex.Count(bytes));
-        }
-    }
-
-    [Theory]
     [InlineData(RegexOptions.RightToLeft)]
     [InlineData(RegexOptions.NonBacktracking)]
     public void DirectionAndNonBacktrackingRetainTheirExistingExecutors(RegexOptions options)
@@ -93,7 +80,7 @@ public sealed class Utf8AsciiLanguageCountTests
     [Fact]
     public void FiniteWorkAndOriginalTokenStillGovernThePublicCall()
     {
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 65536) + "00.11.22.255");
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "00.11.22.255");
         var denied = new Utf8Regex(Pattern, RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxWorkSteps = 1 });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes));
@@ -119,7 +106,7 @@ public sealed class Utf8AsciiLanguageCountTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(10));
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀00.11.22.255é"u8.ToArray()));
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 65536));
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20));
         var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 20);
         try { Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes)); }
         finally { session.Complete(); }

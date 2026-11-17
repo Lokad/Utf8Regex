@@ -26,9 +26,8 @@ public sealed class Utf8SingleCategoryCountTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         foreach (var finite in new[] { false, true })
         {
-            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000,
-                MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 } : default;
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+                var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 } : default;
+                var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             Assert.Equal(expected, regex.Count(bytes));
             Assert.Equal(expected, regex.Count(bytes, live.Token));
             Assert.Equal(expected, regex.Count(bytes, live.Token, new NoStorage()));
@@ -77,9 +76,8 @@ public sealed class Utf8SingleCategoryCountTests
         var subject = text.ToString(); var input = Encoding.UTF8.GetBytes(subject);
         var expected = subject.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == category);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-        foreach (var inputValidation in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(@"\p{" + name + "}", options, inputValidation: inputValidation);
+            var regex = new Utf8Regex(@"\p{" + name + "}", options);
             var diagnostic = regex.CollectCountDiagnostics(input);
             Assert.Equal(expected, diagnostic.Result); Assert.Equal(NativeRoute, diagnostic.ExecutionRoute);
             Assert.Equal(expected, regex.Count(input)); Assert.Equal(expected, regex.Count(input, CancellationToken.None));
@@ -102,8 +100,14 @@ public sealed class Utf8SingleCategoryCountTests
     }
 
     [Theory]
-    [InlineData(@"\p{Sm}", 0)] [InlineData(@"\p{Sm}", 1)] [InlineData(@"\p{Sm}", 17)] [InlineData(@"\p{Sm}", 31)]
-    [InlineData(@"\p{L}", 0)] [InlineData(@"\p{L}", 1)] [InlineData(@"\p{L}", 17)] [InlineData(@"\p{L}", 31)]
+    [InlineData(@"\p{Sm}", 0)]
+    [InlineData(@"\p{Sm}", 1)]
+    [InlineData(@"\p{Sm}", 17)]
+    [InlineData(@"\p{Sm}", 31)]
+    [InlineData(@"\p{L}", 0)]
+    [InlineData(@"\p{L}", 1)]
+    [InlineData(@"\p{L}", 17)]
+    [InlineData(@"\p{L}", 31)]
     public void NativeBlocksKeepCompleteScalarsAndBorrowedSliceBoundaries(string pattern, int offset)
     {
         var regex = new Utf8Regex(pattern);
@@ -127,14 +131,13 @@ public sealed class Utf8SingleCategoryCountTests
         var subject = string.Concat(Enumerable.Repeat(text.ToString(), 4));
         var bytes = Encoding.UTF8.GetBytes(subject);
         var expected = subject.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         foreach (var offset in new[] { 0, 1, 15, 31, 32, 63, 4093, 4095, 4096 })
         {
             var storage = Enumerable.Repeat((byte)'+', offset + bytes.Length + 31).ToArray();
             bytes.CopyTo(storage.AsSpan(offset));
-            var regex = new Utf8Regex(@"\p{Sm}", options, inputValidation: validation);
-            Assert.Equal(expected, regex.Count(storage.AsSpan(offset, bytes.Length)));
+                var regex = new Utf8Regex(@"\p{Sm}", options);
+                Assert.Equal(expected, regex.Count(storage.AsSpan(offset, bytes.Length)));
         }
     }
 
@@ -177,15 +180,11 @@ public sealed class Utf8SingleCategoryCountTests
         var expected = text.EnumerateRunes().Count(rune => pattern == @"\p{L}" ? Rune.IsLetter(rune)
             : Rune.GetUnicodeCategory(rune) == (pattern == @"\p{Sm}" ? UnicodeCategory.MathSymbol : UnicodeCategory.UppercaseLetter));
         var limits = new Utf8ResourcePolicy { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var trusted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, limits,
-            inputValidation: Utf8InputValidation.AssumeValid);
+        var trusted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, limits);
         using var live = new CancellationTokenSource();
         Assert.Equal(expected, trusted.Count(input, live.Token));
         Assert.Equal(expected, trusted.Count(input, live.Token, new NoStorage()));
-        // The same budget still cannot cover strict whole-input validation.
-        var strict = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, limits);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.Count(input, live.Token)).ResourceKind);
+
     }
 
     [Theory]
@@ -193,14 +192,12 @@ public sealed class Utf8SingleCategoryCountTests
     public void NativeCountUsesTheSelectedValidationAuthorityOnce(string pattern)
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 4095) + "∑𐐀😀A");
-        foreach (var policy in Enum.GetValues<Utf8InputValidation>())
         {
-            var regex = new Utf8Regex(pattern, inputValidation: policy);
+            var regex = new Utf8Regex(pattern);
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 regex.Count(input);
-                Assert.Equal(policy == Utf8InputValidation.Validate ? 1 : 0, session.SubjectValidations);
                 Assert.Equal(pattern == @"\p{L}" ? Utf8ExecutionRoute.FallbackDirectUnicodeLetter
                     : Utf8ExecutionRoute.FallbackDirectUnicodeCategory, session.ExecutionRoute);
             }
@@ -209,8 +206,10 @@ public sealed class Utf8SingleCategoryCountTests
     }
 
     [Theory]
-    [InlineData(@"\p{Sm}", false)] [InlineData(@"\p{Sm}", true)]
-    [InlineData(@"\p{L}", false)] [InlineData(@"\p{L}", true)]
+    [InlineData(@"\p{Sm}", false)]
+    [InlineData(@"\p{Sm}", true)]
+    [InlineData(@"\p{L}", false)]
+    [InlineData(@"\p{L}", true)]
     public void NativeWorkObservesOriginalCancellationAndDeadline(string pattern, bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -259,13 +258,16 @@ public sealed class Utf8SingleCategoryCountTests
     }
 
     [Theory]
-    [InlineData(@"\p{Sm}", 0)] [InlineData(@"\p{Sm}", 4095)] [InlineData(@"\p{Sm}", 4096)]
-    [InlineData(@"\p{L}", 0)] [InlineData(@"\p{L}", 4095)] [InlineData(@"\p{L}", 4096)]
+    [InlineData(@"\p{Sm}", 0)]
+    [InlineData(@"\p{Sm}", 4095)]
+    [InlineData(@"\p{Sm}", 4096)]
+    [InlineData(@"\p{L}", 0)]
+    [InlineData(@"\p{L}", 4095)]
+    [InlineData(@"\p{L}", 4096)]
     public void WholeSubjectValidationAndPreCancellationRemainAuthoritative(string pattern, int prefix)
     {
         var regex = new Utf8Regex(pattern);
         var malformed = Encoding.UTF8.GetBytes(new string('+', prefix)).Concat(new byte[] { 0xf0, 0x9f }).ToArray();
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
         Assert.Equal(0, regex.Count(ReadOnlySpan<byte>.Empty));

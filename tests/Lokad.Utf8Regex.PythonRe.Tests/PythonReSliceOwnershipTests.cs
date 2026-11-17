@@ -40,9 +40,6 @@ public sealed class PythonReSliceOwnershipTests
         var expected = Bcl(regex).Match(inputText, start);
         var found = regex.Search(Utf8(inputText), start);
         Assert.Equal(expected.Success, found.Success);
-        if (expected.Success)
-        {
-        }
 
     }
 

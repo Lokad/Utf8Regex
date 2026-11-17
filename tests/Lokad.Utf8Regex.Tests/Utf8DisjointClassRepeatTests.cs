@@ -7,15 +7,12 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DisjointClassRepeatTests
 {
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void AdjacentCaptureBoundariesKeepFiniteLongRuns(Utf8InputValidation validation)
+    [Fact]
+    public void AdjacentCaptureBoundariesKeepFiniteLongRuns()
     {
         var first = new string('a', 8192); var second = new string('1', 8192);
         var regex = new Utf8Regex("([a-z]+)([0-9]+)", resourcePolicy: new()
-            { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            inputValidation: validation);
+        { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         var input = Encoding.UTF8.GetBytes("é😀!" + first + second + "!");
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
@@ -28,11 +25,9 @@ public sealed class Utf8DisjointClassRepeatTests
     [Fact]
     public void ComplementedMaskFollowersCoverBothHalvesAndKeepScalarCaptures()
     {
-        foreach (var validation in Enum.GetValues<Utf8InputValidation>())
         for (var excluded = 1; excluded < 128; excluded++)
         {
-            var regex = new Utf8Regex($"([^\\x00\\x{excluded:x2}]+)[\\x00\\x{excluded:x2}]",
-                inputValidation: validation);
+            var regex = new Utf8Regex($"([^\\x00\\x{excluded:x2}]+)[\\x00\\x{excluded:x2}]");
             const string captured = "é😀";
             var input = Encoding.UTF8.GetBytes(captured + (char)excluded);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -174,8 +169,7 @@ public sealed class Utf8DisjointClassRepeatTests
     public void AsciiCaptureBlocksRespectFiniteMaximaAndSupplementaryPrefixes(int length)
     {
         var input = Encoding.UTF8.GetBytes("😀" + new string('a', length) + "-");
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         using var token = new CancellationTokenSource();
         var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]{1,4096})-", RegexOptions.None,
             Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input, cancellationToken: token.Token));
@@ -288,8 +282,6 @@ public sealed class Utf8DisjointClassRepeatTests
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
-        byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         // Count discards captures. Disjoint tails need no rewind vectors even
@@ -329,8 +321,7 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(32)] [InlineData(33)]
     public void OnlyProvedUselessAlternativesLoseTheirDepthRequirement(int nesting)
     {
-        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkSteps = 100000,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkSteps = 100000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var text = Encoding.UTF8.GetBytes(new string('a', 2048) + "-");
         var disjoint = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-",
             RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
@@ -344,9 +335,12 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(1, false, false)] [InlineData(2, false, false)]
-    [InlineData(1, true, false)] [InlineData(2, true, false)]
-    [InlineData(1, false, true)] [InlineData(2, false, true)]
+    [InlineData(1, false, false)]
+    [InlineData(2, false, false)]
+    [InlineData(1, true, false)]
+    [InlineData(2, true, false)]
+    [InlineData(1, false, true)]
+    [InlineData(2, false, true)]
     public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting, bool exact, bool boundary)
     {
         var regex = new Utf8Regex(new string('(', nesting) + (boundary ? @"\d{2,4}" : exact ? @"\p{L}{2}" : @"\p{L}{2,3}") +
@@ -372,10 +366,14 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false, 1, false, false)] [InlineData(true, 1, false, false)]
-    [InlineData(false, 2, false, false)] [InlineData(true, 2, false, false)]
-    [InlineData(false, 1, true, false)] [InlineData(true, 1, true, false)]
-    [InlineData(false, 1, false, true)] [InlineData(true, 1, false, true)]
+    [InlineData(false, 1, false, false)]
+    [InlineData(true, 1, false, false)]
+    [InlineData(false, 2, false, false)]
+    [InlineData(true, 2, false, false)]
+    [InlineData(false, 1, true, false)]
+    [InlineData(true, 1, true, false)]
+    [InlineData(false, 1, false, true)]
+    [InlineData(true, 1, false, true)]
     public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting, bool exact, bool ascii)
     {
         var regex = new Utf8Regex(new string('(', nesting) + (ascii ? "[a-z]+" : exact ? @"\p{L}{2048}" : @"\p{L}+") +
@@ -401,9 +399,15 @@ public sealed class Utf8DisjointClassRepeatTests
         finally { session.Complete(); }
     }
     [Theory]
-    [InlineData(0, 1)] [InlineData(1, 31)] [InlineData(3, 32)]
-    [InlineData(7, 63)] [InlineData(1, 64)] [InlineData(3, 2047)]
-    [InlineData(7, 2048)] [InlineData(1, 2049)] [InlineData(4, 4097)]
+    [InlineData(0, 1)]
+    [InlineData(1, 31)]
+    [InlineData(3, 32)]
+    [InlineData(7, 63)]
+    [InlineData(1, 64)]
+    [InlineData(3, 2047)]
+    [InlineData(7, 2048)]
+    [InlineData(1, 2049)]
+    [InlineData(4, 4097)]
     public void AsciiRangeRunsKeepOffsetsAndStopBeforeWiderScalars(int padding, int length)
     {
         var regex = new Utf8Regex("(?<run>[a-z]+)");
@@ -447,8 +451,10 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void AsciiRangeBlocksObserveOriginalInterruption(bool deadline, bool captureTail)
     {
         var regex = new Utf8Regex(captureTail ? "([a-z]+)([0-9])" : "([a-z]+)");

@@ -5,15 +5,13 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ProfileLiteralReplacementTests
 {
-    [Theory]
-    [InlineData(Utf8InputValidation.Validate)]
-    [InlineData(Utf8InputValidation.AssumeValid)]
-    public void BorrowedInvocationKeepsExactUtf8ReplacementAndOriginalAdmission(Utf8InputValidation policy)
+    [Fact]
+    public void BorrowedInvocationKeepsExactUtf8ReplacementAndOriginalAdmission()
     {
-        var regex = new Utf8Regex("foo", inputValidation: policy);
+        var regex = new Utf8Regex("foo");
         var input = Encoding.UTF8.GetBytes("é😀foo 中foo!");
         var invocation = new Utf8SliceInvocation(new(10000, 0, 1 << 20), Timeout.InfiniteTimeSpan, default)
-        { InputValidation = policy };
+;
         Assert.True(invocation.Ledger.TryReserve(17));
         Utf8InvocationResultLedger results = default;
         byte[]? retained = null;
@@ -32,13 +30,12 @@ public sealed class Utf8ProfileLiteralReplacementTests
     }
 
     [Fact]
-    public void StrictSubjectAndIndependentReplacementValidationPrecedeMissPublication()
+    public void IndependentReplacementValidationPrecedesMissPublication()
     {
         var regex = new Utf8Regex("foo");
-        foreach (var subjectFailure in new[] { false, true })
         {
-            var input = subjectFailure ? new byte[] { (byte)'x', 0xff } : "é😀 no match"u8.ToArray();
-            var replacement = subjectFailure ? "ok"u8.ToArray() : new byte[] { 0xff };
+            var input = "é😀 no match"u8.ToArray();
+            var replacement = new byte[] { 0xff };
             var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
             Utf8InvocationResultLedger results = default;
             Exception? failure = null;

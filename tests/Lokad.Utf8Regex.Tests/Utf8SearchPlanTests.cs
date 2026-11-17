@@ -196,7 +196,7 @@ public sealed class Utf8SearchPlanTests
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
                                                   LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary,
+                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
                                               }));
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
@@ -639,7 +639,7 @@ public sealed class Utf8SearchPlanTests
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
                                                   LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary,
+                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
                                               }));
         var input = Encoding.UTF8.GetBytes("xfood bar foo baz bar");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -658,7 +658,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar"),
+                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar")
                                               }));
 
         Assert.Contains(
@@ -676,7 +676,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar"),
+                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar")
                                               }));
         var input = Encoding.UTF8.GetBytes("fooqux foobar");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -695,7 +695,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  ExactRequiredLength = 5,
+                                                  ExactRequiredLength = 5
                                               }));
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
@@ -715,7 +715,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  ExactRequiredLength = 5,
+                                                  ExactRequiredLength = 5
                                               }));
         var input = Encoding.UTF8.GetBytes("xxfoozzyy");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -734,7 +734,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  MaxPossibleLength = 6,
+                                                  MaxPossibleLength = 6
                                               }));
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
@@ -755,7 +755,7 @@ public sealed class Utf8SearchPlanTests
                                               {
                                                   LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
                                                   CanGuideFallbackStarts = true,
-                                                  MaxPossibleLength = 6,
+                                                  MaxPossibleLength = 6
                                               }));
         var input = Encoding.UTF8.GetBytes("xxfoozzyy");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -833,12 +833,12 @@ public sealed class Utf8SearchPlanTests
                                               Utf8SearchKind.None,
                                               new Utf8SearchFactData
                                               {
-                                                  OrderedWindowLeadingLiteralsUtf8 = [ Encoding.UTF8.GetBytes("foo"), ],
+                                                  OrderedWindowLeadingLiteralsUtf8 = [Encoding.UTF8.GetBytes("foo"),],
                                                   OrderedWindowTrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar"),
                                                   OrderedWindowMaxGap = 16,
                                                   OrderedWindowSameLine = true,
                                                   LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary,
+                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
                                               }));
         var input = Encoding.UTF8.GetBytes("xfoo bar foo barz foo bar");
         var state = new Utf8StructuralSearchState(default, new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -935,7 +935,7 @@ public sealed class Utf8SearchPlanTests
                                                         ExactRequiredLength = searchFacts.ExactRequiredLength,
                                                         MaxPossibleLength = searchFacts.MaxPossibleLength,
                                                         LeadingBoundary = searchFacts.LeadingBoundary,
-                                                        TrailingBoundary = searchFacts.TrailingBoundary,
+                                                        TrailingBoundary = searchFacts.TrailingBoundary
                                                     }));
         Assert.Equal(3, searchPlan.OrderedWindowMaxGap);
         Assert.True(searchPlan.OrderedWindowSameLine);

@@ -268,26 +268,22 @@ if (args.Length >= 2 && args[0].Equals("--refresh-readme-case", StringComparison
 
 if (args.Length >= 2 && args[0].Equals("--measure-readme-case", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureReadmeCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null,
-        args.Length >= 5 ? Enum.Parse<Utf8InputValidation>(args[4]) : Utf8InputValidation.Validate);
+    return BenchmarkInspectReporter.RunMeasureReadmeCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-readme-case-reversed", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureReadmeCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null,
-        args.Length >= 5 ? Enum.Parse<Utf8InputValidation>(args[4]) : Utf8InputValidation.Validate);
+    return BenchmarkInspectReporter.RunMeasureReadmeCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-readme-public-case", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureReadmePublicCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null,
-        args.Length >= 5 ? Enum.Parse<Utf8InputValidation>(args[4]) : Utf8InputValidation.Validate);
+    return BenchmarkInspectReporter.RunMeasureReadmePublicCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-readme-public-case-reversed", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureReadmePublicCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null,
-        args.Length >= 5 ? Enum.Parse<Utf8InputValidation>(args[4]) : Utf8InputValidation.Validate);
+    return BenchmarkInspectReporter.RunMeasureReadmePublicCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-literal-search-case", StringComparison.Ordinal))

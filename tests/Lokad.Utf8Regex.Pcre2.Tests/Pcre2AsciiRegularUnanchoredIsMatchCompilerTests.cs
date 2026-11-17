@@ -97,7 +97,6 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-        Assert.Throws<ArgumentException>(() => direct.IsMatch([0xFF]));
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

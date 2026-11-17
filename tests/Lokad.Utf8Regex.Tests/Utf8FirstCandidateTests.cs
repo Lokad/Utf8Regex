@@ -47,7 +47,6 @@ public sealed class Utf8FirstCandidateTests
         Assert.False(alias.MoveNext(out _));
         Assert.Equal("ab12", Encoding.UTF8.GetString(first.GetValueMemory().Span));
         Assert.Equal("345", Encoding.UTF8.GetString(second.GetGroupMemory(1).Span));
-        Assert.Throws<ArgumentException>(() => regex.Match(new byte[] { (byte)'a', (byte)'b', (byte)'1', 255 }));
     }
 
     [Theory]

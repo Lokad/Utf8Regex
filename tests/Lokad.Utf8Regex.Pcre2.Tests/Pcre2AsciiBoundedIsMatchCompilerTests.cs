@@ -59,7 +59,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal("18", retained.GetGroup(2).GetValueString());
         Assert.Equal("2019", retained.GetGroup(3).GetValueString());
         Assert.Equal(2, regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "1/2/34"u8, 0xff]));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(input, 0, default, canceled.Token)).CancellationToken);
@@ -123,7 +122,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.False(retained.GetGroup(3).Success);
         Assert.True(direct.IsMatch("cd"u8));
         Assert.Equal("a", retained.GetGroup(1).GetValueString());
-        Assert.Throws<ArgumentException>(() => direct.IsMatch([.. "ab"u8, 0xff]));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => direct.IsMatch("ab"u8, 0, default, canceled.Token)).CancellationToken);
@@ -165,7 +163,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal(4, retained.GetGroup(1).StartOffsetInBytes);
         Assert.True(regex.IsMatch("def"u8));
         Assert.Equal("a", retained.GetGroup(1).GetValueString());
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "abc"u8, 0xff]));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("abc"u8, 0, default, canceled.Token)).CancellationToken);
@@ -222,7 +219,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     {
         const string pattern = @"^(?1)\d{3}(a)";
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. "a123a"u8, 0xff]));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("a123a"u8, 0, default, canceled.Token)).CancellationToken);
@@ -344,7 +340,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-        Assert.Throws<ArgumentException>(() => direct.IsMatch([0xFF]));
     }
 
     [Fact]

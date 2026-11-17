@@ -9,8 +9,10 @@ public sealed class Utf8ReplacementWorkspaceReuseTests
         new(pattern, options | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000, MaxDepth = 256,
-                MaxWorkingBytes = working, MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = working,
+                MaxResultBytes = 1 << 20
             });
 
     [Theory]

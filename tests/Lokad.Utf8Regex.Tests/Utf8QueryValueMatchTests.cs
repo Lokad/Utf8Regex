@@ -14,8 +14,7 @@ public sealed class Utf8QueryValueMatchTests
     private const string Hex = @"^(?<before>.*)(https://go(\.testing)?\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \n]+)?(?<rest>.*)$";
     private const string Route = "/gateway/BigFiles/Browse/Download?hash=";
     private const RegexOptions Fold = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000,
-        MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 };
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -127,7 +126,7 @@ public sealed class Utf8QueryValueMatchTests
     {
         var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("~bad ", 100)) + "~/d/1?t=x");
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.Validate(input, ref validation);
+        Utf8InputAnalyzer.Describe(input, ref validation);
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex(Digits, Fold, TimeSpan.FromMilliseconds(20), Funded);
@@ -157,7 +156,6 @@ public sealed class Utf8QueryValueMatchTests
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("topicId")).Span)); Assert.Equal("tab", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("tab")).Span));
         byte[] malformed = [.. input, 0xff];
-        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);
     }

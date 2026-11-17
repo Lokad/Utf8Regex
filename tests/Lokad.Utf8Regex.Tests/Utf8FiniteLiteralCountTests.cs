@@ -26,7 +26,6 @@ public sealed class Utf8FiniteLiteralCountTests
             Assert.Equal(2, ordinary.Count(storage.AsSpan(1, input.Length)));
             Assert.Equal(2, finite.Count(storage.AsSpan(1, input.Length), token.Token));
             Assert.True(finite.IsMatch(input, token.Token));
-            Assert.Throws<ArgumentException>(() => finite.Count([.. input, 0xff], token.Token));
         }
     }
 
@@ -85,31 +84,6 @@ public sealed class Utf8FiniteLiteralCountTests
         Assert.Equal(expected, Create(pattern, low, RegexOptions.Compiled).Count(input));
     }
 
-    [Fact]
-    public void SmallFamilyCountStillRejectsMalformedSuffix()
-    {
-        var regex = Create("ab|cd|ef", 100000, RegexOptions.Compiled);
-        byte[] input = [.. "ab cd"u8, 0xF0, 0x9F];
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(4095)] [InlineData(4096)]
-    public void NativeCountKeepsFirstMalformedOffsetAcrossBlocksAndBorrowedSlices(int offset)
-    {
-        byte[] input = [.. Encoding.UTF8.GetBytes("ab" + new string('x', offset - 2)), 0xF0, 0x80, 0x80, 0x80];
-        byte[] storage = [.. "padding"u8, .. input, .. "padding"u8];
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-        using var source = new CancellationTokenSource();
-        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
-        foreach (var token in new[] { CancellationToken.None, source.Token })
-        {
-            var regex = Create("(a)(b)", 1000000, mode);
-            var error = Assert.Throws<ArgumentException>(() => regex.Count(storage.AsSpan(7, input.Length), token));
-            Assert.Equal(expected.Message, error.Message);
-        }
-    }
-
     [Theory]
     [InlineData("abcdefgh|xyzzz|ztzzz", "abcde xyzzz ztzzz abcdefgh", 3)]
     [InlineData("abcde|abcd|abcz", "abcde abcd abcz", 3)]
@@ -148,8 +122,6 @@ public sealed class Utf8FiniteLiteralCountTests
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, timeout);
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input, source.Token));
-            byte[] malformed = [.. input, 0x80];
-            Assert.Throws<ArgumentException>(() => regex.Count(malformed, source.Token));
         }
     }
 
@@ -242,11 +214,16 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
-    [InlineData("(a)(b)", false, false)] [InlineData("(a)(b)", false, true)]
-    [InlineData("(a)(b)", true, false)] [InlineData("(a)(b)", true, true)]
-    [InlineData("夏洛克·福尔摩斯", false, false)] [InlineData("夏洛克·福尔摩斯", false, true)]
-    [InlineData("ab|cd|ef", false, false)] [InlineData("ab|cd|ef", false, true)]
-    [InlineData("ab|cd|ef", true, false)] [InlineData("ab|cd|ef", true, true)]
+    [InlineData("(a)(b)", false, false)]
+    [InlineData("(a)(b)", false, true)]
+    [InlineData("(a)(b)", true, false)]
+    [InlineData("(a)(b)", true, true)]
+    [InlineData("夏洛克·福尔摩斯", false, false)]
+    [InlineData("夏洛克·福尔摩斯", false, true)]
+    [InlineData("ab|cd|ef", false, false)]
+    [InlineData("ab|cd|ef", false, true)]
+    [InlineData("ab|cd|ef", true, false)]
+    [InlineData("ab|cd|ef", true, true)]
     public void OriginalInterruptionCoversValidationAndNativeSearch(string pattern, bool validationPhase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
@@ -256,7 +233,7 @@ public sealed class Utf8FiniteLiteralCountTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, policy);
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref probe);
+        _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
         var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -272,15 +249,6 @@ public sealed class Utf8FiniteLiteralCountTests
             Assert.True(triggered);
         }
         finally { diagnostics.Complete(); }
-    }
-
-    [Fact]
-    public void MalformedTailNeverBecomesAnEarlySuccessfulCount()
-    {
-        var regex = Create("(a)(b)", 100000, RegexOptions.None);
-        byte[] input = [.. "ab ab"u8, 0xF0, 0x9F];
-        Assert.Throws<ArgumentException>(() => regex.Count(input));
-        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 0)));
     }
 
     [Theory]

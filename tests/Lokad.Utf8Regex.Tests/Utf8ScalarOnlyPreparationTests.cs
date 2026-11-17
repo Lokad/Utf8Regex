@@ -29,7 +29,6 @@ public sealed class Utf8ScalarOnlyPreparationTests
         var parts = new List<string>();
         foreach (var part in regex.EnumerateSplits(input)) parts.Add(part.GetValueString());
         Assert.Equal(new[] { "😀", "中", "" }, parts);
-        Assert.Throws<ArgumentException>(() => regex.IsMatch([.. input, 0xff]));
         using var source = new CancellationTokenSource(); source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
         Assert.Equal(2, regex.Count(input));

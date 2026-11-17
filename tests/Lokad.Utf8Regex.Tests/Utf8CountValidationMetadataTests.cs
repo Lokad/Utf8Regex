@@ -18,7 +18,7 @@ public sealed class Utf8CountValidationMetadataTests
         {
             var reference = new Regex(pattern, options);
             var strict = new Utf8Regex(pattern, options);
-            var trusted = new Utf8Regex(pattern, options, inputValidation: Utf8InputValidation.AssumeValid);
+            var trusted = new Utf8Regex(pattern, options);
             foreach (var length in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 127, 128, 4095, 4096 })
             foreach (var tail in new[] { "", "é😀 夏洛克·福尔摩斯 abcé needle" })
             {
@@ -35,36 +35,18 @@ public sealed class Utf8CountValidationMetadataTests
     }
 
     [Theory]
-    [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
-    public void UnicodeLiteralMissStillRejectsMalformedWholeSubject(string pattern)
-    {
-        foreach (var length in new[] { 0, 63, 4096 })
-        foreach (var suffix in new byte[][] { [0xff], [0xc2], [0xf0, 0x9f] })
-        {
-            var input = Encoding.UTF8.GetBytes(new string('a', length)).Concat(suffix).ToArray();
-            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input));
-            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
-            {
-                var regex = new Utf8Regex(pattern, options);
-                Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.Count(input)).Message);
-            }
-        }
-    }
-
-    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void UnicodeLiteralMissKeepsOriginalWorkAndInterruption(bool expire)
     {
         var input = Encoding.ASCII.GetBytes(new string('a', 262144));
-        foreach (var policy in new[] { Utf8InputValidation.Validate, Utf8InputValidation.AssumeValid })
         {
-            var limited = new Utf8Regex("夏洛克·福尔摩斯", resourcePolicy: new() { MaxWorkSteps = 1 }, inputValidation: policy);
+            var limited = new Utf8Regex("夏洛克·福尔摩斯", resourcePolicy: new() { MaxWorkSteps = 1 });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
             using var source = new CancellationTokenSource();
-            var regex = new Utf8Regex("夏洛克·福尔摩斯", matchTimeout: TimeSpan.FromMilliseconds(20), inputValidation: policy);
+            var regex = new Utf8Regex("夏洛克·福尔摩斯", matchTimeout: TimeSpan.FromMilliseconds(20));
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(_ =>
             {
@@ -96,13 +78,11 @@ public sealed class Utf8CountValidationMetadataTests
             var input = backing.AsSpan(5, bytes.Length);
             var full = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
             var flags = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
-            var metadata = Utf8Validation.Validate(input, ref full);
-            Assert.Equal(suffix.Length == 0, Utf8Validation.ValidateIsAscii(input, ref flags));
-            Assert.Equal(text.Length, metadata.Utf16Length);
+            var metadata = Utf8InputAnalyzer.Describe(input, ref full);
+            Assert.Equal(suffix.Length == 0, Utf8InputAnalyzer.IsAscii(input, ref flags));
             Assert.Equal(bytes.Length, metadata.ByteLength);
             Assert.Equal(suffix.Length == 0, metadata.IsAscii);
             Assert.Equal(suffix.Contains("😀", StringComparison.Ordinal), metadata.ContainsSupplementaryScalars);
-            Assert.Equal(full.Budget.Steps, flags.Budget.Steps);
             Assert.Equal(0UL, flags.Ledger.ReservedBytes);
         }
     }
@@ -113,24 +93,7 @@ public sealed class Utf8CountValidationMetadataTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(System.Text.Ascii.IsValid(input), Utf8Validation.ValidateIsAscii(input, ref invocation));
-    }
-
-    [Theory]
-    [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
-    public void MalformedBlocksRetainTheOriginalAbsoluteError(int prefix)
-    {
-        foreach (var tail in new byte[][] { [0xc2], [0xed, 0xa0, 0x80], [0xf0, 0x9f], [0x80, 0x80, 0x80, 0x80] })
-        {
-            var input = Encoding.UTF8.GetBytes(new string('a', prefix)).Concat(tail).ToArray();
-            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input));
-            var actual = Assert.Throws<ArgumentException>(() =>
-            {
-                var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
-                _ = Utf8Validation.ValidateIsAscii(input, ref invocation);
-            });
-            Assert.Equal(expected.Message, actual.Message);
-        }
+        Assert.Equal(System.Text.Ascii.IsValid(input), Utf8InputAnalyzer.IsAscii(input, ref invocation));
     }
 
     [Theory]
@@ -144,11 +107,9 @@ public sealed class Utf8CountValidationMetadataTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000,
-                    MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
+                new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
             using var live = new CancellationTokenSource();
             Assert.Equal(new Regex(pattern, mode).Count(text), regex.Count(input, live.Token));
-            Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 255 }).ToArray()));
         }
     }
 

@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteSimplePatternCountTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
-        MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData("a?b[0-9]{2}")]
@@ -57,7 +56,6 @@ public sealed class Utf8FiniteSimplePatternCountTests
         var regex = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout,
             Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         Assert.Equal(2000, regex.Count(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 1000)))));
-        Assert.Throws<ArgumentException>(() => regex.Count([97, 98, 49, 50, 255]));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -77,35 +75,36 @@ public sealed class Utf8FiniteSimplePatternCountTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(new Regex(pattern, RegexOptions.CultureInvariant).Count(text), regex.Count(input));
-        Assert.Throws<ArgumentException>(() => regex.Count([.. input, 255]));
     }
 
     [Theory]
-    [InlineData("", 0)] [InlineData("abxx", 0)] [InlineData("b12 ab34", 2)]
-    public void EveryWorkCutoffKeepsValidationAndSearchCumulative(string text, int expected)
+    [InlineData("", 0)]
+    [InlineData("abxx", 0)]
+    [InlineData("b12 ab34", 2)]
+    public void EveryWorkCutoffBoundsPublicSearchAndPublication(string text, int expected)
     {
         var regex = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
         var input = Encoding.UTF8.GetBytes(text);
-        var baseline = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20), Regex.InfiniteMatchTimeout, default);
-        Assert.True(Utf8Validation.Validate(input, ref baseline).IsAscii);
-        var prepared = regex.Inspection.PreparedRegex;
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.SearchPlan, prepared.SimplePatternPlan, ref baseline, out var baselineCount));
-        Assert.Equal(expected, baselineCount);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
+        ulong required = 0;
+        for (ulong work = 1; work <= 128; work++)
         {
-            var denied = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
+            var candidate = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
                 Funded with { MaxWorkSteps = work });
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
+            try { Assert.Equal(expected, candidate.Count(input)); required = work; break; }
+            catch (Utf8ResourceLimitExceededException error)
+            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
+        Assert.InRange(required, 2UL, 128UL);
         Assert.Equal(expected, regex.Count(input));
     }
 
     [Theory]
-    [InlineData("", 0, false)] [InlineData("", 0, true)]
-    [InlineData("abxx", 0, false)] [InlineData("abxx", 0, true)]
-    [InlineData("b12 ab34", 2, false)] [InlineData("b12 ab34", 2, true)]
+    [InlineData("", 0, false)]
+    [InlineData("", 0, true)]
+    [InlineData("abxx", 0, false)]
+    [InlineData("abxx", 0, true)]
+    [InlineData("b12 ab34", 2, false)]
+    [InlineData("b12 ab34", 2, true)]
     public void TerminalObservationKeepsOriginalAuthorityAndParentLoans(string text, int expected, bool expire)
     {
         var prepared = new Utf8Regex("a?b[0-9]{2}").Inspection.PreparedRegex;
@@ -139,8 +138,10 @@ public sealed class Utf8FiniteSimplePatternCountTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void PublicPostValidationInterruptionDoesNotPublishACount(bool compiled, bool expire)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
@@ -151,7 +152,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 256)));
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         var measured = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8Validation.Validate(input, ref measured);
+        _ = Utf8InputAnalyzer.Describe(input, ref measured);
         var validation = measured.Budget.Steps;
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(step => {

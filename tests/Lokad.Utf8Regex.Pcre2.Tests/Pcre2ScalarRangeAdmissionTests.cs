@@ -33,8 +33,10 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         {
             var limits = finite ? new Utf8Pcre2ExecutionLimits
             {
-                MatchLimit = 1_000_000, DepthLimit = 256,
-                HeapLimitInBytes = 1_048_576, ResultLimitInBytes = 1_048_576,
+                MatchLimit = 1_000_000,
+                DepthLimit = 256,
+                HeapLimitInBytes = 1_048_576,
+                ResultLimitInBytes = 1_048_576
             } : default;
             var fromText = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp, default,
                 limits, Timeout.InfiniteTimeSpan);
@@ -69,8 +71,7 @@ public sealed class Pcre2ScalarRangeAdmissionTests
     public void CapturedRangeKeepsScalarCoordinatesAndFiniteAuthority()
     {
         var regex = Utf8Pcre2Regex.Create("([😀-😃]+)", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 256,
-                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan);
+            new() { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan);
         var input = Encoding.UTF8.GetBytes("é😁😃x😀");
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);

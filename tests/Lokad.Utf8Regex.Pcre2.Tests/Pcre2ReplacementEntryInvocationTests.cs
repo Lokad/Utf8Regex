@@ -19,11 +19,11 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void ValidationWorkDeniesBeforeMalformedTail(string pattern, string text, string mode)
+    public void SearchWorkDeniesBeforeUnvisitedTail(string pattern, string text, string mode)
     {
-        var malformed = new byte[16385]; malformed.AsSpan().Fill((byte)'x'); malformed[^1] = 0xff;
+        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Run(Policy(pattern, 3), malformed, mode); }).ErrorKind);
+        { _ = Run(Policy(pattern, 3), input, mode); }).ErrorKind);
         Assert.Equal("xZ", Run(Policy(pattern, 100000), Encoding.UTF8.GetBytes(text), mode));
     }
 
@@ -52,9 +52,6 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         var input = Encoding.UTF8.GetBytes("😀" + text);
         Assert.Equal("😀xZ", Run(regex, input, mode, start: 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, input, mode, start: 1));
-        var malformed = new byte[input.Length + 1]; input.CopyTo(malformed, 0); malformed[^1] = 0xff;
-        Assert.Equal(Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(malformed)).Message,
-            Assert.Throws<ArgumentException>(() => Run(regex, malformed, mode)).Message);
         Assert.Equal("😀xZ", Run(regex, input, mode, start: 4));
     }
 

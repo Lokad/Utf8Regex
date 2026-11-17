@@ -21,15 +21,15 @@ public sealed partial class Utf8Regex
             return false;
         try
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token) { InputValidation = InputValidation };
-            var validation = Utf8Validation.Subject(input, ref invocation);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+            var isAscii = Utf8InputAnalyzer.IsAscii(input, ref invocation);
             // Mixed subjects need scalar discovery unless the native proof
             // guarantees complete UTF-8 boundaries. Keep the same invocation.
             var byteSafe = _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue
                 ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
             invocation.ShareStorageForCursor();
-            var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
-                ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
+            var cursor = !_preparedRegex.Features.HasLookarounds && (isAscii || byteSafe)
+                ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, isAscii)
                 : new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
