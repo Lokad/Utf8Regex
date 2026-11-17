@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Fix escaped literal punctuation as character-class range endpoints, including
+  the backslash member of the escaped bracket range. Preserve escaped-hyphen and
+  shorthand/subtraction rules, scalar byte ranges and original cancellation.
+
 - Consolidate Core operation signatures, retaining native/token-aware workers.
   IsMatch/Count accept optional shared working admission; null uses numeric engine
   limits and non-null refusal remains terminal. Name positional enumeration tokens

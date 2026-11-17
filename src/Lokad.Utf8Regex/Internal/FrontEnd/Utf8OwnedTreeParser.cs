@@ -882,7 +882,7 @@ internal static class Utf8OwnedTreeParser
             using var categories = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
             var pending = 0;
             var hasPending = false;
-            var pendingIsPlain = false;
+            var pendingCanStartRange = false;
             var pendingAdded = false;
             var first = true;
             while (true)
@@ -901,7 +901,7 @@ internal static class Utf8OwnedTreeParser
                 if (character == '-')
                 {
                     if (hasPending &&
-                        pendingIsPlain &&
+                        pendingCanStartRange &&
                         state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] != ']' &&
                         state.Pattern[state.Position + 1] != '[')
@@ -948,7 +948,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         pending = '-';
                         hasPending = true;
-                        pendingIsPlain = true;
+                        pendingCanStartRange = true;
                         pendingAdded = false;
                         state.Position++;
                         first = false;
@@ -968,7 +968,7 @@ internal static class Utf8OwnedTreeParser
                     }
                     pending = '-';
                     hasPending = true;
-                    pendingIsPlain = true;
+                    pendingCanStartRange = true;
                     pendingAdded = true;
                     state.Position++;
                     first = false;
@@ -977,12 +977,12 @@ internal static class Utf8OwnedTreeParser
                 if (character == '\\' && TryTakeShorthandMembers(ref state, scalarRanges, categories))
                 {
                     hasPending = false;
-                    pendingIsPlain = false;
+                    pendingCanStartRange = false;
                     pendingAdded = false;
                     first = false;
                     continue;
                 }
-                if (!TryReadClassScalar(ref state, out var atom, out pendingIsPlain)) return false;
+                if (!TryReadClassScalar(ref state, out var atom, out pendingCanStartRange)) return false;
                 if (state.Position < state.Pattern.Length &&
                     state.Pattern[state.Position] == '-' &&
                     IsRangeEndAhead(state, 1))
@@ -1124,15 +1124,15 @@ internal static class Utf8OwnedTreeParser
             return TryReadClassScalar(ref state, out _, out _);
         }
 
-        static bool TryReadClassScalar(ref ParserState state, out int value, out bool isPlain)
+        static bool TryReadClassScalar(ref ParserState state, out int value, out bool canStartRange)
         {
             value = 0;
-            isPlain = true;
+            canStartRange = true;
             if (state.AtEnd) return false;
             int first;
             if (state.Pattern[state.Position] == '\\')
             {
-                if (!DecodeClassEscape(ref state, out first, out isPlain)) return false;
+                if (!DecodeClassEscape(ref state, out first, out canStartRange)) return false;
             }
             else
             {
@@ -1183,15 +1183,15 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool DecodeClassEscape(ref ParserState state, out int value, out bool isPlain)
+        static bool DecodeClassEscape(ref ParserState state, out int value, out bool canStartRange)
         {
-            isPlain = false;
+            canStartRange = false;
             // Octal decoding applies to both class members and range bounds.
             // Outside classes the same digits may resolve as capture references.
             if (TryTakeClassOctal(ref state, out var octal))
             {
                 value = octal;
-                isPlain = true;
+                canStartRange = true;
                 return true;
             }
             if (state.Position + 1 < state.Pattern.Length)
@@ -1201,7 +1201,7 @@ internal static class Utf8OwnedTreeParser
                 {
                     value = (char)8;
                     state.Position += 2;
-                    isPlain = true;
+                    canStartRange = true;
                     return true;
                 }
                 // Anchor escapes (A, B, G, Z, z) are BCL-invalid inside a
@@ -1211,11 +1211,13 @@ internal static class Utf8OwnedTreeParser
                 {
                     value = '-';
                     state.Position += 2;
-                    isPlain = false;
+                    canStartRange = false;
                     return true;
                 }
 
-                isPlain = IsLimitedClassEscapeHead(letter);
+                // Decoded literal scalars can start ranges, including escaped
+                // punctuation. Escaped '-' keeps its literal-member rule above.
+                canStartRange = true;
             }
             if (!DecodeEscape(ref state, out value))
             {
@@ -1224,13 +1226,6 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool IsLimitedClassEscapeHead(char letter)
-        {
-            // Subset TryScanCharClassLiteralEscape heads beyond the arms above:
-            // single-char escapes with full range behavior, unlike shorthand or
-            // punctuation resolutions that break ranges.
-            return letter is '0' or 'x' or 'u' or 'c' or 'a' or 'e' or 'n' or 'r' or 't' or 'f' or 'v' || (letter >= '0' && letter <= '7');
-        }
         static Utf8TreeNode CreateDotNode(RegexOptions options)
         {
             using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);

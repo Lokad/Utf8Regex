@@ -14,6 +14,7 @@ public sealed class Utf8SliceClassSubtractionTests
     [InlineData(@"[\c1]")]
     [InlineData(@"[\c`]")]
     [InlineData(@"[a-\d]")]
+    [InlineData(@"[\[-\d]")]
     public void InvalidClassSyntaxHasOwnedConstructionFailures(string pattern)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
