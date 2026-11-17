@@ -772,12 +772,6 @@ public sealed class Pcre2ExecutionRouteTests
         var input = "abcdefghij short klmnopqrst"u8;
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-        Assert.Equal(10, direct.Program.Minimum);
-        Assert.Equal(int.MaxValue, direct.Program.Maximum);
-        Assert.Null(direct.Program.LeadingAsciiByte);
-        Assert.Null(direct.Program.GreedyExcludedAsciiByte);
-        Assert.Equal(Pcre2CompileOptions.None, direct.Program.Request.Options & Pcre2CompileOptions.Anchored);
         Assert.True(regex.Match(input, 17).Success);
         Assert.True(regex.Match(input, 16).Success);
         Assert.True(regex.Match(input, 10).Success);
@@ -808,8 +802,6 @@ public sealed class Pcre2ExecutionRouteTests
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-        Assert.Equal((byte)'\n', direct.Program.GreedyExcludedAsciiByte);
         Assert.Equal(4, regex.Count("abc\ndef"u8));
     }
 

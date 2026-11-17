@@ -16,26 +16,6 @@ public sealed class Pcre2SliceEscapeTests
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
     }
 
-    [Fact]
-    public void HexEscapeKeepsNativeRouting()
-    {
-        var regex = new Utf8Pcre2Regex("\\x41+", Pcre2CompileOptions.None);
-        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-        Assert.DoesNotContain("Utf8Regex", regex.DebugDescribeExecutionPlan());
-        Assert.True(regex.IsMatch(Utf8("AAA")));
-    }
-
-    [Fact]
-    public void ControlEscapesKeepNativeRouting()
-    {
-        foreach (var pattern in new[] { "\\t+", "\\n+", "\\e+", "\\cA+" })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-            Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-            Assert.DoesNotContain("Utf8Regex", regex.DebugDescribeExecutionPlan());
-        }
-    }
-
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "\\x41+", "AAB", true };

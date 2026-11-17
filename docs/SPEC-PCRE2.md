@@ -52,6 +52,13 @@ literal helpers with genuine consumers remain. Fixed-scratch line discovery and
 Count can now succeed under depth/heap budgets that previously refused the
 backtracking fallback. Growing state still requires admission and obeys its limits.
 
+Standalone token-repeat execution, its counters and its cursor variant are also
+retired. Existing general programs preserve greedy/lazy/possessive priority,
+global nonempty retries, grapheme/newline/explicit-byte tokens and captures.
+Callback group-zero projection can avoid a temporary group array; admission still
+covers the buffers actually needed, and numerical requirements can decrease or
+increase with the selected program. Shared token and character support remains.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,

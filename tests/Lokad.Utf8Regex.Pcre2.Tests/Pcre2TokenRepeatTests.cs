@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2SingleTokenRepeatCompilerTests
+public sealed class Pcre2TokenRepeatTests
 {
     [Theory]
     [InlineData(@"\w*", "abcde", "abcde")]
@@ -14,26 +14,28 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
     [InlineData(".+", "abc\ndef", "abc")]
     [InlineData(@"\d{2,3}", "x1234", "123")]
     [InlineData(@"\p{L}+", "é漢!", "é漢")]
-    public void DirectRepeatPreservesQuantifierPreference(
+    public void TokenRepeatPreservesQuantifierPreference(
         string pattern,
         string inputText,
         string expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-
-        Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(inputText)).GetValueString());
     }
 
     [Fact]
-    public void DirectRepeatSharesOneGlobalStreamAcrossOperations()
+    public void LazyRepeatRetriesNonemptyAtTheSameScalarPosition()
+    {
+        Assert.Equal(["", "a", "", "b", ""], GetValues(new Utf8Pcre2Regex(@"\w*?"), "ab"u8));
+        Assert.Equal(["", ""], GetValues(new Utf8Pcre2Regex(@"\w*?"), "é"u8));
+        Assert.Equal(["😀", "é"], GetValues(new Utf8Pcre2Regex(".+?"), "😀é"u8));
+    }
+
+    [Fact]
+    public void TokenRepeatKeepsGlobalProgressionAcrossOperations()
     {
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
         var input = "abc\ndef"u8;
-
-        Assert.Equal(
-            "IsMatch=Pcre2SingleTokenRepeat, Count=Pcre2SingleTokenRepeat, Enumerate=Pcre2SingleTokenRepeat, Match=Pcre2SingleTokenRepeat, Replace=Pcre2SingleTokenRepeat",
-            regex.DebugDescribeExecutionPlan());
         Assert.Equal(4, regex.Count(input));
 
         var values = new List<string>();
@@ -52,7 +54,7 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
     }
 
     [Fact]
-    public void DirectRepeatHonorsStartAnchorsAndNotEmptyOptions()
+    public void TokenRepeatHonorsStartAnchorsAndNotEmptyOptions()
     {
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
         var input = "abc\ndef"u8;
@@ -71,7 +73,7 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
     }
 
     [Fact]
-    public void DirectRepeatFallsBackToTheVmForMeteredExecution()
+    public void TokenRepeatObservesFiniteWork()
     {
         var regex = new Utf8Pcre2Regex(
             @"\w+",
@@ -79,15 +81,13 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-
-        Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc"u8)).ErrorKind);
     }
 
     [Fact]
-    public void DirectRepeatPreservesVariableWidthTokenBoundaries()
+    public void TokenRepeatPreservesVariableWidthTokenBoundaries()
     {
         var graphemes = new Utf8Pcre2Regex(@"\X+");
         var newlineSequences = new Utf8Pcre2Regex(@"\R+");
@@ -97,20 +97,15 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow },
             default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
-
-        Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(graphemes.DebugCompiledProgram.Operations.Match);
         Assert.Equal("a\u0301🇫🇷", graphemes.Match(Encoding.UTF8.GetBytes("a\u0301🇫🇷")).GetValueString());
         Assert.Equal("\r\n\n", newlineSequences.Match("\r\n\nx"u8).GetValueString());
         Assert.Equal("é", codeUnits.Match("é"u8).GetValueString());
     }
 
     [Fact]
-    public void ExcludedByteKernelRequiresAnAsciiScalar()
+    public void ExcludedUnicodeScalarPreservesWholeValues()
     {
         var regex = new Utf8Pcre2Regex(@"[^\x{e9}]*");
-
-        var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-        Assert.Null(direct.Program.GreedyExcludedAsciiByte);
         Assert.Equal(["abc", "", "def", ""], GetValues(regex, "abcédef"u8));
     }
 
@@ -122,27 +117,13 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
     [InlineData("abc\n\ndef", 0, 5)]
     [InlineData("abc\ndef", 4, 2)]
     [InlineData("abc\ndef", 3, 3)]
-    public void ExcludedAsciiCountKernelPreservesGlobalProgression(
+    public void ExcludedAsciiRepeatPreservesGlobalProgression(
         string inputText,
         int startOffsetInBytes,
         int expected)
     {
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
-
-        Assert.True(regex.DebugCompiledProgram.Operations.Count is Pcre2SingleTokenRepeatDirectProgram
-        {
-            Program.CanCountGreedyExcludedAsciiDirectly: true,
-        });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText), startOffsetInBytes));
-    }
-
-    [Fact]
-    public void DirectRepeatAnalyzerRejectsComposedAndCapturedShapes()
-    {
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex(@"\w+z").DebugCompiledProgram.Operations.Match);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex(@"(\w+)").DebugCompiledProgram.Operations.Match);
     }
 
     private static List<string> GetValues(Utf8Pcre2Regex regex, ReadOnlySpan<byte> input)

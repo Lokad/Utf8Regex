@@ -159,18 +159,6 @@ internal sealed class Pcre2CharacterDirectProgram : IPcre2DirectProgram
     internal Pcre2CharacterProgram Program { get; }
 }
 
-internal sealed class Pcre2SingleTokenRepeatDirectProgram : IPcre2DirectProgram
-{
-    internal Pcre2SingleTokenRepeatDirectProgram(Pcre2SingleTokenRepeatProgram program)
-    {
-        Program = program;
-    }
-
-    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2SingleTokenRepeat;
-
-    internal Pcre2SingleTokenRepeatProgram Program { get; }
-}
-
 internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2BacktrackingDirectProgram(Pcre2BacktrackingProgram program)
@@ -353,7 +341,6 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2Character = 4,
     Pcre2Backtracking = 5,
     Pcre2LiteralFamily = 6,
-    Pcre2SingleTokenRepeat = 7,
     Pcre2SameStartLiteral = 12,
     Pcre2Slice = 19,
 }
@@ -629,18 +616,6 @@ internal static class Pcre2CompiledProgramOverlay
                 Enumerate = literalFamily,
             };
         }
-        else if (Pcre2SingleTokenRepeatAnalyzer.TryCompile(
-                     root,
-                     backtrackingProgram) is { } singleTokenRepeatProgram)
-        {
-            var singleTokenRepeat = new Pcre2SingleTokenRepeatDirectProgram(singleTokenRepeatProgram);
-            operations = new Pcre2OperationPrograms(
-                singleTokenRepeat,
-                singleTokenRepeat,
-                singleTokenRepeat,
-                singleTokenRepeat,
-                singleTokenRepeat);
-        }
 
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(root, request);
         var partialProbe = Pcre2PartialProbeCompiler.Compile(root, request);
@@ -873,116 +848,6 @@ internal static class Pcre2CompiledProgramOverlay
 
         return repeatIndex > 0 && repeatIndex < sequence.Children.Length - 1;
     }
-}
-
-internal sealed class Pcre2SingleTokenRepeatProgram
-{
-    internal Pcre2SingleTokenRepeatProgram(
-        Pcre2CharacterToken token,
-        int minimum,
-        int maximum,
-        Pcre2RepeatPreference preference,
-        Pcre2BacktrackingProgram fallback)
-    {
-        Token = token;
-        Minimum = minimum;
-        Maximum = maximum;
-        Preference = preference;
-        Fallback = fallback;
-        LeadingAsciiByte = token.Kind == Pcre2CharacterTokenKind.Literal &&
-            token.Literal.IsAscii &&
-            (token.Options & Pcre2CharacterOptions.Caseless) == 0
-                ? (byte)token.Literal.Value
-                : null;
-        GreedyExcludedAsciiByte = TryGetGreedyExcludedAsciiByte(token, minimum, maximum, preference);
-    }
-
-    internal Pcre2CharacterToken Token { get; }
-
-    internal int Minimum { get; }
-
-    internal int Maximum { get; }
-
-    internal Pcre2RepeatPreference Preference { get; }
-
-    internal Pcre2BacktrackingProgram Fallback { get; }
-
-    internal Pcre2CompileRequest Request => Fallback.Request;
-
-    internal byte? LeadingAsciiByte { get; }
-
-    internal byte? GreedyExcludedAsciiByte { get; }
-
-    internal bool UsesCodeUnit => Token.Kind == Pcre2CharacterTokenKind.CodeUnit;
-
-    internal bool CanCountGreedyExcludedAsciiDirectly =>
-        GreedyExcludedAsciiByte.HasValue &&
-        (Request.Options &
-            (Pcre2CompileOptions.Anchored |
-             Pcre2CompileOptions.EndAnchored |
-             Pcre2CompileOptions.FirstLine)) == 0;
-
-    private static byte? TryGetGreedyExcludedAsciiByte(
-        Pcre2CharacterToken token,
-        int minimum,
-        int maximum,
-        Pcre2RepeatPreference preference)
-    {
-        if (minimum != 0 ||
-            maximum != int.MaxValue ||
-            preference == Pcre2RepeatPreference.Lazy ||
-            token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
-            (token.Options & Pcre2CharacterOptions.Caseless) != 0 ||
-            !token.CharacterClass.Negated ||
-            token.CharacterClass.Terms is not
-            [
-                {
-                    Kind: Pcre2CharacterClassTermKind.Range,
-                    Negated: false,
-                    Range: { Low: var low, High: var high },
-                },
-            ] ||
-            low != high ||
-            (uint)low > 0x7F)
-        {
-            return null;
-        }
-
-        return (byte)low;
-    }
-}
-
-internal static class Pcre2SingleTokenRepeatAnalyzer
-{
-    internal static Pcre2SingleTokenRepeatProgram? TryCompile(
-        IPcre2BacktrackingNode root,
-        Pcre2BacktrackingProgram fallback)
-    {
-        if (root is Pcre2RepeatBacktrackingNode
-            {
-                Body: Pcre2TokenBacktrackingNode token,
-            } repeat &&
-            IsConsuming(token.Token.Kind))
-        {
-            return new Pcre2SingleTokenRepeatProgram(
-                token.Token,
-                repeat.Minimum,
-                repeat.Maximum,
-                repeat.Preference,
-                fallback);
-        }
-
-        return null;
-    }
-
-    private static bool IsConsuming(Pcre2CharacterTokenKind kind) => kind is
-        Pcre2CharacterTokenKind.Literal or
-        Pcre2CharacterTokenKind.CharacterClass or
-        Pcre2CharacterTokenKind.Any or
-        Pcre2CharacterTokenKind.AnyNotNewline or
-        Pcre2CharacterTokenKind.NewlineSequence or
-        Pcre2CharacterTokenKind.ExtendedGraphemeCluster or
-        Pcre2CharacterTokenKind.CodeUnit;
 }
 
 internal static class Pcre2ProgramInvariant
@@ -1548,182 +1413,6 @@ internal static class Pcre2CandidateSearchAnalyzer
     };
 }
 
-internal static class Pcre2SingleTokenRepeatRunner
-{
-    internal static int CountAsciiClassRuns(PreparedByteSet set, int minimum,
-        ReadOnlySpan<byte> input, ref Pcre2ResourceBudget budget)
-    {
-        var count = 0;
-        var runLength = 0;
-        for (var offset = 0; offset < input.Length;)
-        {
-            budget.ChargeWorkspaceStep();
-            var length = Math.Min(4096, input.Length - offset);
-            var block = input.Slice(offset, length);
-            while (!block.IsEmpty)
-            {
-                if (runLength == 0)
-                {
-                    var start = set.IndexOf(block);
-                    if (start < 0) break;
-                    block = block[start..];
-                    budget.ChargeCandidate();
-                }
-                var stop = set.IndexOfAnyExcept(block);
-                if (stop < 0)
-                {
-                    runLength += block.Length;
-                    break;
-                }
-                runLength += stop;
-                if (runLength >= minimum) count = checked(count + 1);
-                runLength = 0;
-                block = block[(stop + 1)..];
-            }
-            offset += length;
-        }
-        return runLength >= minimum ? checked(count + 1) : count;
-    }
-
-    internal static int CountGreedyExcludedAscii(
-        Pcre2SingleTokenRepeatProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BytePosition start)
-    {
-        var excluded = program.GreedyExcludedAsciiByte.GetValueOrDefault();
-        var remaining = input[start.Value..];
-        var count = 1;
-        while (!remaining.IsEmpty)
-        {
-            var delimiter = remaining.IndexOf(excluded);
-            if (delimiter < 0)
-            {
-                return checked(count + 1);
-            }
-
-            if (delimiter > 0)
-            {
-                count = checked(count + 1);
-            }
-
-            count = checked(count + 1);
-            remaining = remaining[(delimiter + 1)..];
-        }
-
-        return count;
-    }
-
-    internal static Pcre2CharacterMatch Match(
-        Pcre2SingleTokenRepeatProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget) =>
-        Match(program, ref input, start, start, matchOptions, ref budget);
-
-    internal static Pcre2CharacterMatch Match(
-        Pcre2SingleTokenRepeatProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition searchStart,
-        Utf8BytePosition firstMatchingPosition,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget)
-    {
-        var bytes = input.Bytes;
-        var anchored = (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
-            (matchOptions & Pcre2MatchOptions.Anchored) != 0;
-        var candidate = searchStart.Value;
-        while (candidate <= bytes.Length)
-        {
-            budget.ChargeCandidate();
-            if (TryMatchAt(
-                    program,
-                    bytes,
-                    candidate,
-                    firstMatchingPosition.Value,
-                    matchOptions,
-                    ref budget,
-                    out var end))
-            {
-                return Pcre2CharacterMatch.Create(candidate, end);
-            }
-
-            if (anchored || !Pcre2CharacterRunner.TryAdvanceCandidate(
-                    program.Request,
-                    program.Minimum == 0 ? default(byte?) : program.LeadingAsciiByte,
-                    ref input,
-                    candidate,
-                    allowAcceleration: true,
-                    out var nextCandidate))
-            {
-                break;
-            }
-
-            candidate = nextCandidate;
-        }
-
-        return Pcre2CharacterMatch.NoMatch;
-    }
-
-    private static bool TryMatchAt(
-        Pcre2SingleTokenRepeatProgram program,
-        ReadOnlySpan<byte> input,
-        int candidate,
-        int firstMatchingPosition,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget,
-        out int end)
-    {
-        var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 ||
-            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition;
-        var requiredCount = emptyDisallowed ? Math.Max(1, program.Minimum) : program.Minimum;
-        var endAnchored = (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0 ||
-            (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
-        if (program.GreedyExcludedAsciiByte is byte excluded &&
-            (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0)
-        {
-            var relativeEnd = input[candidate..].IndexOf(excluded);
-            var fastEnd = relativeEnd < 0 ? input.Length : candidate + relativeEnd;
-            if (fastEnd - candidate >= requiredCount && (!endAnchored || fastEnd == input.Length))
-            {
-                end = fastEnd;
-                return true;
-            }
-
-            end = 0;
-            return false;
-        }
-
-        var consumeGreedily = program.Preference != Pcre2RepeatPreference.Lazy || endAnchored;
-        var count = 0;
-        var index = candidate;
-        while (count < program.Maximum &&
-               (consumeGreedily || count < requiredCount) &&
-               Pcre2CharacterRunner.TryMatchToken(
-                   program.Token,
-                   program.Request,
-                   input,
-                   index,
-                   firstMatchingPosition,
-                   matchOptions,
-                   ref budget,
-                   out var nextIndex))
-        {
-            index = nextIndex;
-            count++;
-        }
-
-        if (count < requiredCount || endAnchored && index != input.Length)
-        {
-            end = 0;
-            return false;
-        }
-
-        end = index;
-        return true;
-    }
-}
-
 internal static partial class Pcre2Runner
 {
     // The existing lone-grapheme Boolean proof needs no coordinate metadata.
@@ -1826,18 +1515,6 @@ internal static partial class Pcre2Runner
 
             result = Pcre2BacktrackingRunner.Match(
                 literalFamilyProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
-        {
-            result = ExecuteSingleTokenRepeatOrFallback(
-                singleTokenRepeatProgram.Program,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
@@ -1949,18 +1626,7 @@ internal static partial class Pcre2Runner
                 matchOptions,
                 ref budget);
         }
-        else if (compiledProgram.Operations.Match is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
-        {
-            directMatch = ExecuteSingleTokenRepeatOrFallback(
-                singleTokenRepeatProgram.Program,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget);
-        }
-        else
-        {
+        else         {
             result = default;
             return false;
         }
@@ -2049,17 +1715,6 @@ internal static partial class Pcre2Runner
         mark = match.Mark;
         return true;
     }
-
-    private static Pcre2CharacterMatch ExecuteSingleTokenRepeatOrFallback(
-        Pcre2SingleTokenRepeatProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        scoped ref Pcre2ResourceBudget budget) =>
-        budget.IsUnmetered
-            ? Pcre2SingleTokenRepeatRunner.Match(program, ref input, start, matchOptions, ref budget)
-            : Pcre2BacktrackingRunner.Match(program.Fallback, candidateSearch, ref input, start, matchOptions, ref budget);
 
     private static Pcre2BacktrackingMatch ExecuteBacktrackingDetailed(
         Pcre2BacktrackingProgram program,
@@ -2169,47 +1824,6 @@ internal static class Pcre2GlobalOperationDriver
                     start);
                 return true;
             }
-        }
-
-        if (program is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
-            singleTokenRepeatProgram.Program.CanCountGreedyExcludedAsciiDirectly)
-        {
-            result = Pcre2SingleTokenRepeatRunner.CountGreedyExcludedAscii(
-                singleTokenRepeatProgram.Program,
-                input.Bytes,
-                start);
-            return true;
-        }
-
-        if (program is Pcre2SingleTokenRepeatDirectProgram { Program: var repeat } &&
-            matchOptions == Pcre2MatchOptions.None &&
-            invocation.CheckpointHook is null &&
-            repeat.Minimum > 0 && repeat.Maximum == int.MaxValue && repeat.Preference != Pcre2RepeatPreference.Lazy &&
-            !repeat.Request.SkipsCrLfContinuation &&
-            (repeat.Request.Options & (Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine)) == 0 &&
-            repeat.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-            (repeat.Token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
-            repeat.Token.CharacterClass.AsciiByteSet is { } asciiSet &&
-            (input.IsAscii || start.Value == input.ByteLength ||
-             HasOnlyPositiveAsciiRanges(repeat.Token.CharacterClass, ref invocation) ||
-             Pcre2Runner.SubjectIsAscii(input.Bytes[start.Value..], ref invocation)))
-        {
-            // Positive ASCII range unions consume only scalar-aligned bytes;
-            // every byte of another scalar is excluded, so no ASCII subject
-            // classification is needed. Other classes keep the ASCII proof.
-            // An empty suffix is already ASCII and needs no class-term proof.
-            // A complete greedy root selects each maximal member run; shorter
-            // runs cannot qualify at a suffix.
-            var asciiBudget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
-            // This counter acquires no scratch/result storage. Observe existing
-            // shared admission failures and original interruption authority;
-            // do not invent an allowance loan for storage it does not need.
-            if (!invocation.IsUnmetered) asciiBudget.ReserveWorking(0);
-            result = Pcre2SingleTokenRepeatRunner.CountAsciiClassRuns(asciiSet, repeat.Minimum,
-                input.Bytes[start.Value..], ref asciiBudget);
-            return true;
         }
 
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
@@ -2380,45 +1994,8 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        if (compiledProgram.Operations.Enumerate is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
-        {
-            cursor = budget.IsUnmetered
-                ? Pcre2GlobalMatchCursor.CreateSingleTokenRepeat(
-                    singleTokenRepeatProgram.Program,
-                    input,
-                    start,
-                    matchOptions,
-                    compiledProgram.Request, budget)
-                : Pcre2GlobalMatchCursor.CreateBacktracking(
-                    singleTokenRepeatProgram.Program.Fallback,
-                    compiledProgram.CandidateSearchPlan,
-                    input,
-                    start,
-                    matchOptions,
-                    compiledProgram.Request,
-                    budget);
-            return true;
-        }
-
         cursor = default;
         return false;
-    }
-
-    private static bool HasOnlyPositiveAsciiRanges(Pcre2CharacterClass characterClass,
-        scoped ref Utf8SliceInvocation invocation)
-    {
-        if (characterClass.Negated) return false;
-        var terms = characterClass.Terms;
-        for (var index = 0; index < terms.Length; index++)
-        {
-            // Entry already checked the invocation. Bound a large pattern's
-            // proof without charging individual terms or retaining another flag.
-            if (index != 0 && (index & 63) == 0)
-                Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryChargeInputStep());
-            if (terms[index] is not { Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 })
-                return false;
-        }
-        return terms.Length != 0;
     }
 }
 
@@ -2483,15 +2060,6 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2CompileRequest request,
         Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateCharacter(program, input, start, matchOptions, request, budget));
-
-    internal static Pcre2GlobalMatchCursor CreateSingleTokenRepeat(
-        Pcre2SingleTokenRepeatProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
-        new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateSameStartLiteral(
         Pcre2SameStartLiteralDirectProgram program,
@@ -2583,7 +2151,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2DirectGlobalCursorKind _kind;
     private readonly Pcre2LiteralProgram? _literalProgram;
     private readonly Pcre2CharacterProgram? _characterProgram;
-    private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
     private readonly Pcre2SameStartLiteralDirectProgram? _sameStartLiteralProgram;
     private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
     private readonly Pcre2CandidateSearchPlan? _candidateSearch;
@@ -2599,7 +2166,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Pcre2DirectGlobalCursorKind kind,
         Pcre2LiteralProgram? literalProgram,
         Pcre2CharacterProgram? characterProgram,
-        Pcre2SingleTokenRepeatProgram? singleTokenRepeatProgram,
         Pcre2SameStartLiteralDirectProgram? sameStartLiteralProgram,
         Pcre2BacktrackingProgram? backtrackingProgram,
         Pcre2CandidateSearchPlan? candidateSearch,
@@ -2612,7 +2178,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         _kind = kind;
         _literalProgram = literalProgram;
         _characterProgram = characterProgram;
-        _singleTokenRepeatProgram = singleTokenRepeatProgram;
         _sameStartLiteralProgram = sameStartLiteralProgram;
         _backtrackingProgram = backtrackingProgram;
         _candidateSearch = candidateSearch;
@@ -2641,7 +2206,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             Pcre2DirectGlobalCursorKind.Literal,
             program,
             characterProgram: null,
-            singleTokenRepeatProgram: null,
             sameStartLiteralProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
@@ -2662,28 +2226,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             Pcre2DirectGlobalCursorKind.Character,
             literalProgram: null,
             program,
-            singleTokenRepeatProgram: null,
-            sameStartLiteralProgram: null,
-            backtrackingProgram: null,
-            candidateSearch: default,
-            input,
-            start,
-            matchOptions,
-            request,
-            budget);
-
-    internal static Pcre2DirectGlobalMatchCursor CreateSingleTokenRepeat(
-        Pcre2SingleTokenRepeatProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
-        new(
-            Pcre2DirectGlobalCursorKind.SingleTokenRepeat,
-            literalProgram: null,
-            characterProgram: null,
-            program,
             sameStartLiteralProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
@@ -2703,7 +2245,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             Pcre2DirectGlobalCursorKind.SameStartLiteral,
             literalProgram: null,
             characterProgram: null,
-            singleTokenRepeatProgram: null,
             program,
             backtrackingProgram: null,
             candidateSearch: default,
@@ -2725,7 +2266,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             Pcre2DirectGlobalCursorKind.Backtracking,
             literalProgram: null,
             characterProgram: null,
-            singleTokenRepeatProgram: null,
             sameStartLiteralProgram: null,
             program,
             candidateSearch,
@@ -2802,23 +2342,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             characterMatch.ConsumedStartOffsetInBytes,
                             characterMatch.ConsumedEndOffsetInBytes,
                             characterMatch.MatchBoundaryWasReset);
-                        break;
-                    case Pcre2DirectGlobalCursorKind.SingleTokenRepeat:
-                        var repeatProgram = _singleTokenRepeatProgram ??
-                            throw new InvalidOperationException("The PCRE2 repeat cursor has no execution program.");
-                        var repeatMatch = Pcre2SingleTokenRepeatRunner.Match(
-                            repeatProgram,
-                            ref _input,
-                            _restartPosition,
-                            options,
-                            ref _budget);
-                        match = new Pcre2DirectGlobalMatch(
-                            repeatMatch.Success,
-                            repeatMatch.StartOffsetInBytes,
-                            repeatMatch.EndOffsetInBytes,
-                            repeatMatch.ConsumedStartOffsetInBytes,
-                            repeatMatch.ConsumedEndOffsetInBytes,
-                            repeatMatch.MatchBoundaryWasReset);
                         break;
                     case Pcre2DirectGlobalCursorKind.SameStartLiteral:
                         var sameStartLiteralProgram = _sameStartLiteralProgram ??
@@ -2936,7 +2459,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         None = 0,
         Literal = 1,
         Character = 2,
-        SingleTokenRepeat = 3,
         Backtracking = 4,
         SameStartLiteral = 6,
     }

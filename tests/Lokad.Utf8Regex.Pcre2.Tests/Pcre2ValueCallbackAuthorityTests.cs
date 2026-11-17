@@ -45,8 +45,9 @@ public sealed class Pcre2ValueCallbackAuthorityTests
         state.Steps.Add(scope.Invocation.Budget.Steps);
         var group = match.GetGroup(0);
         state.Captures.Add((group.StartOffsetInBytes, group.EndOffsetInBytes, group.GetValueString()));
-        Assert.True(scope.Invocation.Ledger.ReservedBytes >=
-            2 * Utf8SliceByteOutputScope.ControlBytes + Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1));
+        // Group zero can be projected without a temporary group array. Keep
+        // output-control admission, rather than pinning a particular payload.
+        Assert.True(scope.Invocation.Ledger.ReservedBytes >= 2 * Utf8SliceByteOutputScope.ControlBytes);
     }
 
     private static string Run(Utf8Pcre2Regex regex, byte[] input, Observation state, bool text,
@@ -71,7 +72,7 @@ public sealed class Pcre2ValueCallbackAuthorityTests
     [Theory]
     [InlineData("x", "αx😀xβ", "αR😀Rβ", "Pcre2Literal")]
     [InlineData("[x]", "αx😀xβ", "αR😀Rβ", "Pcre2Character")]
-    [InlineData("a+", "éaaa😀aaβ", "éR😀Rβ", "Pcre2SingleTokenRepeat")]
+    [InlineData("a+", "éaaa😀aaβ", "éR😀Rβ", "Pcre2Slice")]
     [InlineData("a|ab", "éab😀aβ", "éRb😀Rβ", "Pcre2LiteralFamily")]
     [InlineData("", "😀", "R😀R", "Pcre2Literal")]
     [InlineData(".", "é😀", "RR", "Pcre2Character")]
@@ -129,7 +130,7 @@ public sealed class Pcre2ValueCallbackAuthorityTests
 
     [Theory]
     [InlineData("x")] [InlineData("[x]")] [InlineData("a+")] [InlineData("a|ab")]
-    public void ValueCallbacksSeeCumulativeDiscoveryAndReturnTheSlotLoan(string pattern)
+    public void ValueCallbacksShareCumulativeDiscoveryAndReleaseTemporaryStorage(string pattern)
     {
         var input = Encoding.UTF8.GetBytes(pattern is "x" or "[x]" ? "éx😀xβ" : "éa😀aβ");
         var state = new Observation();

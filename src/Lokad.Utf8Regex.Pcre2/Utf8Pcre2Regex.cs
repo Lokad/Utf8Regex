@@ -275,8 +275,8 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
-            // This existing direct Count consumes bytes only. Validate strictly
-            // without preparing interoperability metadata that cannot escape it.
+            // Literal Count needs only byte-boundary admission and original
+            // controls; it builds no interoperability metadata.
             if (matchOptions == Pcre2MatchOptions.None &&
                 _program.Operations.Count is Pcre2LiteralDirectProgram literal &&
                 (uint)startOffsetInBytes <= (uint)input.Length &&
@@ -1036,7 +1036,6 @@ public sealed partial class Utf8Pcre2Regex
             {
                 Pcre2LiteralDirectProgram program => program.Program.LiteralUtf8.Length,
                 Pcre2CharacterDirectProgram program => program.Program.MinimumByteLength,
-                Pcre2SingleTokenRepeatDirectProgram program => program.Program.Fallback.AnalyzedMinimumByteLength,
                 Pcre2BacktrackingDirectProgram program => program.Program.AnalyzedMinimumByteLength,
                 Pcre2SliceDirectProgram program => program.Fallback.AnalyzedMinimumByteLength,
                 _ => 0,
@@ -1322,7 +1321,6 @@ public sealed partial class Utf8Pcre2Regex
         if (_program.Operations.Replace is not (
             Pcre2LiteralDirectProgram or
             Pcre2CharacterDirectProgram or
-            Pcre2SingleTokenRepeatDirectProgram or
             Pcre2BacktrackingDirectProgram))
         {
             plan = default;
@@ -1744,7 +1742,6 @@ public sealed partial class Utf8Pcre2Regex
     private bool GenericProgramUsesCodeUnit => _program.Operations.Match switch
     {
         Pcre2CharacterDirectProgram { Program.UsesCodeUnit: true } => true,
-        Pcre2SingleTokenRepeatDirectProgram { Program.UsesCodeUnit: true } => true,
         Pcre2BacktrackingDirectProgram { Program.UsesCodeUnit: true } => true,
         _ => false,
     };

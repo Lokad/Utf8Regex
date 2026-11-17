@@ -11,6 +11,7 @@ public sealed class Pcre2SliceDotTests
 {
     public static IEnumerable<object?[]> SliceDotShapes()
     {
+        yield return new object?[] { ".*" };
         yield return new object?[] { "a.*b" };
         yield return new object?[] { "(a.c)+" };
         yield return new object?[] { "a.*?b" };
@@ -18,14 +19,6 @@ public sealed class Pcre2SliceDotTests
         yield return new object?[] { "a|.*" };
         yield return new object?[] { "(.+)" };
         yield return new object?[] { ".*b" };
-    }
-
-    [Fact]
-    public void BareDotRepeatKeepsItsExistingOwnedProgram()
-    {
-        var regex = new Utf8Pcre2Regex(".*", Pcre2CompileOptions.None);
-        Assert.StartsWith("IsMatch=Pcre2SingleTokenRepeat", regex.DebugDescribeExecutionPlan());
-        Assert.DoesNotContain("Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
     }
 
     [Theory]

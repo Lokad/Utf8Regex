@@ -3,17 +3,17 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R03 class slice for the PCRE2 profile: compound class shapes the
-// specialized analyzers decline run Count, first-match, enumeration, and
-// replacement on the shared slice runner (IsMatch keeps AsciiRegular where
-// one exists); bare single-token repeats keep SingleTokenRepeat, and POSIX
-// classes never route the slice. Negated classes serve astral scalars.
+// Compatible class programs share scalar execution. POSIX class syntax keeps
+// profile semantics; negated classes consume complete supplementary scalars.
 public sealed class Pcre2SliceClassTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
     public static IEnumerable<object?[]> SliceClassShapes()
     {
+        yield return new object?[] { "[a-z]+" };
+        yield return new object?[] { "[^a-z]+" };
+        yield return new object?[] { "[a-z]+?" };
         yield return new object?[] { "([a-z]+)" };
         yield return new object?[] { "[a-z]+b$" };
         yield return new object?[] { "[^a-z]+b" };
@@ -34,24 +34,12 @@ public sealed class Pcre2SliceClassTests
     }
 
     [Fact]
-    public void AnchoredClassShapeKeepsAsciiRegularIsMatch()
+    public void AnchoredClassUsesSharedScalarExecution()
     {
         var regex = new Utf8Pcre2Regex("^[a-z]+$", Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
-    }
-
-    [Theory]
-    [InlineData("[a-z]+")]
-    [InlineData("[^a-z]+")]
-    [InlineData("[a-z]+?")]
-    public void BareSingleTokenRepeatsKeepSpecializedPrograms(string pattern)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.StartsWith("IsMatch=Pcre2SingleTokenRepeat", regex.DebugDescribeExecutionPlan());
-        Assert.DoesNotContain("Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]

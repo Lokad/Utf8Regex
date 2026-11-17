@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2's standalone token-repeat program, counters and cursor variant.
+  Existing shared scalar/profile programs preserve quantifier and global-empty
+  semantics, grapheme/newline/byte-token behavior, captures and controls. Resource
+  requirements can change; value callbacks can avoid a temporary group-zero array.
+
 - Retire PCRE2's multiline-prefix, prefix/repeat and alternation/repeat overlays,
   including their global cursor state. Keep shared literal helpers with their real
   consumer. Existing scalar/backtracking paths preserve results and controls;

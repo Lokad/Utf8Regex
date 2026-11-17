@@ -38,7 +38,6 @@ public sealed partial class Utf8Pcre2Regex
         {
             Pcre2BacktrackingDirectProgram native when native.Program.CaptureSlotCount > 1 => native.Program,
             Pcre2SliceDirectProgram slice when slice.Fallback.CaptureSlotCount > 1 => slice.Fallback,
-            Pcre2SingleTokenRepeatDirectProgram repeat when repeat.Program.Fallback.CaptureSlotCount > 1 => repeat.Program.Fallback,
             _ => null,
         };
         _originalStart = 0;

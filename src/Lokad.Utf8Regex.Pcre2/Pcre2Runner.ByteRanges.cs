@@ -27,9 +27,6 @@ internal static partial class Pcre2Runner
             case Pcre2CharacterDirectProgram character:
                 match = Pcre2CharacterRunner.Match(character.Program, ref input, start, options, ref budget);
                 break;
-            case Pcre2SingleTokenRepeatDirectProgram repeat:
-                match = ExecuteSingleTokenRepeatOrFallback(repeat.Program, compiled.CandidateSearch, ref input, start, options, ref budget);
-                break;
             case Pcre2LiteralFamilyDirectProgram family when options == Pcre2MatchOptions.None &&
                 family.Regex.TryFindNativeLiteralForResult(input.Bytes, start.Value, ref budget.WorkingInvocation,
                     out var found, out var begin, out var end):
