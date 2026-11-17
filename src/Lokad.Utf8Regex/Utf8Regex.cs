@@ -562,10 +562,9 @@ public sealed partial class Utf8Regex
     {
         if (!ReferenceEquals(program, _ownedSliceProgram) ||
             program.RightToLeft || program.HasContiguousAnchor ||
-            // This feature includes internal multiline ^ assertions. The
-            // quoted-relation proof starts at an operand, not at that assertion.
-            _preparedRegex.Features.HasAbsoluteStartAnchor &&
-                !_preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
+            // Includes internal multiline ^ assertions, whose origin must be
+            // preserved by the scalar program.
+            _preparedRegex.Features.HasAbsoluteStartAnchor ||
             _preparedRegex.SearchPlan.CanGuideFallbackStarts) return false;
         ref readonly var prefilter = ref _preparedRegex.SearchPlan.PrefilterPlan.PrimarySearcher;
         if (prefilter.Kind is not (PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.MultiLiteral)) return false;
@@ -759,7 +758,7 @@ public sealed partial class Utf8Regex
 
         if (_compiledEngineRuntime.SupportsWellFormedOnlyCount)
         {
-            if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
+            if (RejectsByRequiredPrefilter(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
                 return 0;
@@ -772,7 +771,7 @@ public sealed partial class Utf8Regex
         if (CanUseWellFormedOnlyValidation())
         {
 
-            if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
+            if (RejectsByRequiredPrefilter(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
                 return 0;
@@ -784,7 +783,7 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8InputAnalyzer.Describe(input);
 
-        if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
+        if (RejectsByRequiredPrefilter(input))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
             return 0;
@@ -900,14 +899,6 @@ public sealed partial class Utf8Regex
             }
         }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return 0;
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralRepeatedSegment &&
-            ReferenceEquals(program, _ownedSliceProgram) &&
-            Utf8SliceRunner.TryCountPreparedRepeatedSegment(program, _preparedRegex.StructuralRepeatedSegmentPlan,
-                input, startByte, ref invocation, out var repeatedCount))
-        {
-            if (repeatedCount.Breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            return repeatedCount.Count;
-        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

@@ -29,9 +29,6 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
-        AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan,
-        AsciiStructuralQuotedRelationPlan structuralQuotedRelationPlan,
         AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         byte[]? literalUtf8,
         string? fallbackReason)
@@ -49,9 +46,6 @@ internal sealed class Utf8PreparedRegex
         StructuralSearchPlan = structuralSearchPlan;
         StructuralVerifier = structuralVerifier;
         StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
-        StructuralTokenWindowPlan = structuralTokenWindowPlan;
-        StructuralRepeatedSegmentPlan = structuralRepeatedSegmentPlan;
-        StructuralQuotedRelationPlan = structuralQuotedRelationPlan;
         OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
@@ -70,9 +64,6 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
-        AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan,
-        AsciiStructuralQuotedRelationPlan structuralQuotedRelationPlan,
         AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         byte[]? literalUtf8,
         string? fallbackReason,
@@ -96,9 +87,6 @@ internal sealed class Utf8PreparedRegex
             structuralSearchPlan,
             structuralVerifier,
             structuralIdentifierFamilyPlan,
-            structuralTokenWindowPlan,
-            structuralRepeatedSegmentPlan,
-            structuralQuotedRelationPlan,
             orderedLiteralWindowPlan,
             literalUtf8,
             fallbackReason);
@@ -133,12 +121,6 @@ internal sealed class Utf8PreparedRegex
     public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
-
-    public AsciiStructuralTokenWindowPlan StructuralTokenWindowPlan { get; }
-
-    public AsciiStructuralRepeatedSegmentPlan StructuralRepeatedSegmentPlan { get; }
-
-    public AsciiStructuralQuotedRelationPlan StructuralQuotedRelationPlan { get; }
 
     public AsciiOrderedLiteralWindowPlan OrderedLiteralWindowPlan { get; }
 

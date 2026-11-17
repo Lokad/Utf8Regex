@@ -637,16 +637,12 @@ retain their original execution and storage. Lazy, nullable, trailing, RTL and
 NonBacktracking shapes retain their existing paths. Matching semantics
 are unchanged; route-dependent workspace/depth and work charges can decrease.
 
-An uncaptured, case-sensitive finite repeat of disjoint classes, such as
-`(?:[A-Z][a-z]+\s*){10,100}`, can Count through its existing prepared plan after
-a complete-root check. The leading and trailing classes must be ASCII; the
-original separator predicate retains Unicode membership. Subjects are caller-valid; no validity pass precedes counting. Work admission covers at most 2048 search bytes, 64 trailing
-ASCII bytes or 64 separator scalars per quantum; non-ASCII separator predicates
-retain their direct atom charges. Original-token/deadline checks include final
-publication. No local VM arrays or frames are needed, while zero-byte working
-admission still checks enclosing loans and the first denial. Work/depth/working
-costs can therefore fall; other grammars and capture/cursor operations retain
-their existing implementations and lifetimes.
+Token-window, disjoint repeated-segment and quoted-relation whole-pattern plans
+are retired, including the finite repeated-segment Count shortcut. These patterns
+use existing scalar execution. Work, depth and covered storage follow that program
+and may increase, including on misses. No constant-space or exact numerical
+cutoff is promised for these shapes. Scalar extents, captures, retained results,
+original-token/deadline interruption and major-buffer admission remain required.
 
 Count can reject impossible mandatory ASCII prefixes before acquiring local VM
 continuation storage. The bounded prefix filter accepts no match: surviving

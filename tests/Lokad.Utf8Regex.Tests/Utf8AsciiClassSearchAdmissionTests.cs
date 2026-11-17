@@ -57,7 +57,6 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             case 2: Assert.Equal(124, Class(4, true).GetMatchBytes().Length); break;
             case 3: Assert.Equal(caller, PreparedByteSearch.Create(caller).Values.ToArray()); break;
             case 4: Assert.Equal(4, Utf8PreparedByteSearchFactory.CreateFromPositiveClass(charClass).Count); break;
-            case 5: Assert.Equal(4, new AsciiCharClassRunPlan(charClass, 2, 4).Search.Count); break;
             case 7:
                 var positive = Utf8FixedDistanceSet.FromBytes(7, caller, false);
                 Assert.Equal(7, positive.Distance); Assert.True(positive.Contains(2)); Assert.False(positive.Contains(5)); break;
@@ -67,9 +66,9 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         }
     }
 
-    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 9).Where(route => route != 6).Select(route => new object[] { route });
+    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 9).Where(route => route is not (5 or 6)).Select(route => new object[] { route });
     public static IEnumerable<object[]> Denials()
-        => from route in Enumerable.Range(0, 9).Where(route => route != 6) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
+        => from route in Enumerable.Range(0, 9).Where(route => route is not (5 or 6)) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
 
     [Theory]
     [MemberData(nameof(Denials))]

@@ -50,42 +50,35 @@ public sealed class Utf8NativeStructuralPreparationTests
     {
         var root = route switch
         {
-            0 or 1 => Node(Utf8TreeNodeKind.Concatenate, One('\n'), Text("a\n\r")),
             2 => Text("ASCII"),
             3 => Node(Utf8TreeNodeKind.Alternate, Text("ONE"), Text("TWO")),
             4 => Node(Utf8TreeNodeKind.Concatenate, Wrap(One(')'), depth), SetLoop("[ \\t]", 1, int.MaxValue), Text("tail")),
-            5 => Node(Utf8TreeNodeKind.Alternate, One('\''), One('"')),
             6 => SetLoop("[ \\t]", 0, int.MaxValue),
-            7 => Node(Utf8TreeNodeKind.Concatenate, One('\''),
-                Wrap(Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("AKIA"), Text("ASIA")),
-                    SetLoop("[A-Z]", 16, 16)), depth), One('\'')),
             _ => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")),
                 SetLoop("[ \\t]", 1, int.MaxValue), Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
                 SetLoop("[a-z]", 0, int.MaxValue), Text("(")),
         };
-        return route is 4 or 7 ? root : Wrap(root, depth);
+        return route == 4 ? root : Wrap(root, depth);
     }
-    private static bool ProducesOutput(int route) => route is 2 or 3 or 4 or 7 or 8;
+    private static bool ProducesOutput(int route) => route is 2 or 3 or 4 or 8;
     private static void Run(int route, Utf8TreeNode root)
     {
         var name = route switch
         {
-            0 or 1 => "TryGetFiniteLineBreakCount", 2 => "TryGetAsciiLiteral", 3 => "TryGetAsciiLiteralAlternation",
-            4 => "TryExtractAsciiStructuralSuffixParts", 5 => "IsQuoteNode", 6 => "TryGetIdentifierSeparatorLoop",
-            7 => "TryExtractQuotedPrefixedAsciiRun", _ => "TryExtractAsciiStructuralIdentifierFamily",
+            2 => "TryGetAsciiLiteral", 3 => "TryGetAsciiLiteralAlternation",
+            4 => "TryExtractAsciiStructuralSuffixParts", 6 => "TryGetIdentifierSeparatorLoop",
+            _ => "TryExtractAsciiStructuralIdentifierFamily",
         };
         object?[] args = route switch
         {
-            1 or 4 => [root, 0, root.ChildCount - 1, null],
-            5 => [root], 6 => [root, null, 0], 7 => [root, null, null, 0],
+            4 => [root, 0, root.ChildCount - 1, null],
+            6 => [root, null, 0],
             8 => [root, null, null, 0, null, null, 0, 0, null, null, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None],
             _ => [root, null],
         };
         Assert.True(Assert.IsType<bool>(Call(name, args)));
         switch (route)
         {
-            case 0: Assert.Equal(2, Assert.IsType<int>(args[1])); break;
-            case 1: Assert.Equal(2, Assert.IsType<int>(args[3])); break;
             case 2: Assert.Equal("ASCII", Encoding.ASCII.GetString(Assert.IsType<byte[]>(args[1]))); break;
             case 3: Assert.Equal(new[] { "ONE", "TWO" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString)); break;
             case 4:
@@ -100,7 +93,6 @@ public sealed class Utf8NativeStructuralPreparationTests
                 for (var value = 0; value < 128; value++)
                     Assert.Equal(value is ' ' or '\t', separator.Contains((byte)value));
                 Assert.Equal(0, Assert.IsType<int>(args[2])); break;
-            case 7: Assert.Equal(new[] { "AKIA", "ASIA" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString)); Assert.Equal(16, Assert.IsType<int>(args[3])); break;
             case 8:
                 Assert.Equal(new[] { "call", "invoke" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString));
                 Assert.Equal("(", Encoding.ASCII.GetString(Assert.IsType<byte[]>(args[8])));
@@ -109,7 +101,7 @@ public sealed class Utf8NativeStructuralPreparationTests
     }
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 9; route++)
+        foreach (var route in new[] { 2, 3, 4, 6, 8 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
     [Theory]
@@ -128,8 +120,8 @@ public sealed class Utf8NativeStructuralPreparationTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
-    [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(6)] [InlineData(8)]
     public void WrapperDepthDenialUnwindsAncestorsAndAllowsLaterWork(int route)
     {
         var root = Input(route, 32); var shallow = Input(route, 0);
@@ -142,8 +134,8 @@ public sealed class Utf8NativeStructuralPreparationTests
         Assert.Equal(ProducesOutput(route), owner.Budget.ReservedBytes > 128); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
-    [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(6)] [InlineData(8)]
     public void EveryWorkCutoffRecoversScratchAndKeepsAcceptedOutputLoans(int route)
     {
         var root = Input(route, 0); ulong work;
@@ -166,60 +158,31 @@ public sealed class Utf8NativeStructuralPreparationTests
         }
     }
     [Theory]
-    [InlineData("\r", true, 0)] [InlineData("\n", true, 1)] [InlineData("é😀\n\r", true, 1)]
-    [InlineData(@"[\n]", true, 1)] [InlineData(@"[^\n]", true, 0)]
-    [InlineData(@"[a-z-[aeiou]]", true, 0)] [InlineData(@"[\s-[\t]]", true, 1)]
-    [InlineData(@"[\s-[\s]]", true, 0)] [InlineData(@"[^\S-[\t]]", true, 1)]
-    [InlineData(@"[^\n]*", true, 0)] [InlineData("", true, 0)] [InlineData(@"\n{2}", false, 0)]
-    public void NativeLineBoundRetainsItsLfConsumerAndSupportedGrammar(string pattern, bool expected, int count)
-    {
-        var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant); Assert.NotNull(tree);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        object?[] args = [tree.Root, 0];
-        Assert.Equal(expected, Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", args))); Assert.Equal(count, Assert.IsType<int>(args[1]));
-        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
-    }
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CheckedLineBoundOverflowRestoresTheParent(bool repeat)
-    {
-        var loop = Node(Utf8TreeNodeKind.Loop, Text(repeat ? "\n\n" : "\n")); loop.M = 1; loop.N = int.MaxValue - 1;
-        var root = repeat ? loop : Node(Utf8TreeNodeKind.Concatenate, loop, Text("\n\n"));
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Throws<OverflowException>(() => Call("TryGetFiniteLineBreakCount", root, 0));
-        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
-    }
-    [Theory]
-    [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(7)] [InlineData(8)]
+    [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(8)]
     public void LateDeclineRecoversAllEarlierLiteralAndPrefixLoans(int route)
     {
         var root = route switch
         {
             2 => Text("é😀"), 3 => Node(Utf8TreeNodeKind.Alternate, Text("good"), Text("é")),
             4 => Node(Utf8TreeNodeKind.Concatenate, Text("good"), Node(Utf8TreeNodeKind.Empty)),
-            7 => Node(Utf8TreeNodeKind.Concatenate, One('\''), Node(Utf8TreeNodeKind.Concatenate,
-                Node(Utf8TreeNodeKind.Alternate, Text("AKIA"), Text("ASIA")), Text("bad-tail")), One('\'')),
             _ => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")), Node(Utf8TreeNodeKind.Empty)),
         };
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        object?[] args = route switch { 4 => [root, 0, 1, null], 7 => [root, null, null, 0],
+        object?[] args = route switch { 4 => [root, 0, 1, null],
             8 => [root, null, null, 0, null, null, 0, 0, null, null, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None], _ => [root, null] };
         var name = route switch { 2 => "TryGetAsciiLiteral", 3 => "TryGetAsciiLiteralAlternation", 4 => "TryExtractAsciiStructuralSuffixParts",
-            7 => "TryExtractQuotedPrefixedAsciiRun", _ => "TryExtractAsciiStructuralIdentifierFamily" };
+            _ => "TryExtractAsciiStructuralIdentifierFamily" };
         Assert.False(Assert.IsType<bool>(Call(name, args)));
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void BorrowedLiteralScanningCannotEvadeWorkAdmission(int route)
+    [Fact]
+    public void BorrowedLiteralScanningCannotEvadeWorkAdmission()
     {
-        var root = Text(new string(route == 0 ? '\n' : 'A', 100000));
+        var root = Text(new string('A', 100000));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 64, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call(route == 0 ? "TryGetFiniteLineBreakCount" : "TryGetAsciiLiteral", root, null));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("TryGetAsciiLiteral", root, null));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind); Assert.True(error.Requested > 64);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
@@ -298,35 +261,6 @@ public sealed class Utf8NativeStructuralPreparationTests
             Assert.Equal(checkpoint, query.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
-    }
-
-    [Fact]
-    public void EverySubtractionWorkCutoffRecoversCanonicalQueryAdmission()
-    {
-        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
-        ulong work;
-        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        { Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", node, 0))); work = measure.Budget.WorkSteps; }
-        for (var cutoff = 0ul; cutoff < work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("TryGetFiniteLineBreakCount", node, 0));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
-        }
-    }
-
-    [Fact]
-    public void SubtractionQueriesBorrowCanonicalDataWithinTheOriginalByteBound()
-    {
-        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
-        using var owner = new Utf8ConstructionScope(0, 640, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", node, 0)));
-        Assert.True(owner.Budget.PeakBytes <= 640); Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]

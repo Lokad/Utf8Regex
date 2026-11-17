@@ -27,9 +27,6 @@ public sealed partial class Utf8Regex
         // Native replacement routes need complete scalar endpoints. Unsupported
         // native cursor shapes use the admitted scalar program with the original token.
         if (UsesRightToLeft() || !CanUseScalarAlignedNativeReplacement(input) || _ownedSliceProgram.HasContiguousAnchor ||
-             // These structural shapes have no qualified native match cursor.
-             _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiStructuralTokenWindow or
-                NativeExecutionKind.AsciiStructuralRepeatedSegment or NativeExecutionKind.AsciiStructuralQuotedRelation ||
              replacement.ContainsGroupReferences &&
                 (MatchTimeout != Regex.InfiniteMatchTimeout || _hasCaptures && ShouldUseKelvinSignFallback(input)))
             return _ownedSliceProgram;

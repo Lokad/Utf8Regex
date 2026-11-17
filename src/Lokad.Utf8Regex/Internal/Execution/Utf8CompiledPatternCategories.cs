@@ -25,9 +25,6 @@ internal static class Utf8CompiledPatternCategories
                 => Utf8CompiledPatternCategory.Literal,
 
             NativeExecutionKind.AsciiStructuralIdentifierFamily or
-            NativeExecutionKind.AsciiStructuralTokenWindow or
-            NativeExecutionKind.AsciiStructuralRepeatedSegment or
-            NativeExecutionKind.AsciiStructuralQuotedRelation or
             NativeExecutionKind.AsciiOrderedLiteralWindow
                 => Utf8CompiledPatternCategory.DeterministicLinear,
 

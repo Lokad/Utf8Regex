@@ -475,40 +475,12 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void ConstructorClassifiesAwsKeysFullPatternAsNativeQuotedRelation()
-    {
-        const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
-        var oracle = new System.Text.RegularExpressions.Regex(pattern, RegexOptions.Multiline);
-        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.Multiline);
-        Assert.NotNull(analysis.SemanticRegex.RuntimeTree);
-        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
-        Assert.Null(family);
-        // The generic collector does not cross this nested dirty alternation.
-        // The admitted structural grammar supplies its own necessary quoted
-        // prefix family, without claiming that an operand proves a match/start.
-
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(PreparedSearcherKind.MultiLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
-        Assert.False(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
-        Assert.Equal(PreparedSearcherKind.None, regex.Inspection.SearchPlan.SecondaryRequiredPrefilterSearcher.Kind);
-        Assert.Null(regex.Inspection.SearchPlan.RequiredWindowPrefilterPlans);
-        Assert.False(regex.Inspection.SearchPlan.HasFallbackCandidates);
-        Assert.Null(regex.Inspection.SearchPlan.FallbackCandidatePlans);
-    }
-
-    [Fact]
-    public void AwsKeyNativeQuotedRelationCanCountRepeatedForwardWindows()
+    public void QuotedRelationsCanCountRepeatedForwardWindows()
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         const string input = "\"AIDAABCDEFGHIJKLMNOP\"\nctx = 1\nctx = 2\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\n\"AIDAABCDEFGHIJKLMNOP\"\nctx = 3\nctx = 4\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
         var bytes = Encoding.UTF8.GetBytes(input);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
         Assert.Equal(2, regex.Count(bytes));
 
         var match = regex.Match(bytes);
@@ -576,15 +548,11 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void VariableGapFixedDistanceLiteralCanUseAsciiStructuralTokenWindow()
+    public void VariableGapRequiredLiteralRetainsSearchFacts()
     {
         const string pattern = "[A-Za-z]{10}\\s+[\\s\\S]{0,100}Result[\\s\\S]{0,100}\\s+[A-Za-z]{10}";
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(analysis).Kind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiTokenWindow, analysis.StructuralLinearProgram.Kind);
     }
 
     [Fact]

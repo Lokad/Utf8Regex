@@ -24,7 +24,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
     [MemberData(nameof(Roots))]
     public void EveryStorageWorkAndDepthCutoffUnwindsChildrenWithoutRefundingWork(int kind, string limit)
     {
-        const string pattern = "aaaaa|bbbbb|ccccc";
+        const string pattern = "(?:call|invoke)[ \t]+[A-Z][a-z]*\\(";
         var plan = Plan(pattern);
         var verifier = Utf8VerifierRuntime.Create(plan);
         ulong peak, work, depth, loan;
@@ -61,66 +61,6 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             { Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
         }
         Assert.Equal(1, successes);
-    }
-
-
-    private static Utf8PreparedRegex WithSearch(Utf8PreparedRegex p, Utf8SearchPlan search,
-        Utf8StructuralLinearProgram program) =>
-        Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(search, program, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
-            p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
-            p.LiteralUtf8, "unsupported_loop", p.AnchoredLiteral);
-
-    public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 3)
-                                                     from bytes in new[] { false, true } select new object[] { kind, bytes };
-
-    [Theory]
-    [MemberData(nameof(Helpers))]
-    public void PlainHelperAdmissionBorrowsPayloadsAndUnwindsEveryCutoff(int kind, bool bytes)
-    {
-        var originalPlan = Plan("abc");
-        var program = originalPlan.StructuralLinearProgram;
-        if (kind is 1 or 2)
-        {
-            object boxed = program;
-            typeof(Utf8StructuralLinearProgram).GetField("<Kind>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .SetValue(boxed, kind == 1 ? Utf8StructuralLinearProgramKind.AsciiTokenWindow : Utf8StructuralLinearProgramKind.AsciiStructuralFamily);
-            program = (Utf8StructuralLinearProgram)boxed;
-        }
-        var holderPlan = WithSearch(originalPlan, originalPlan.SearchPlan, program);
-        // Prepare primitive inputs explicitly. Public scalar admission may bypass
-        // these legacy optimization shapes; this test qualifies holder accounting.
-        object Acquire() => Utf8StructuralLinearRuntime.Create(holderPlan);
-        ulong loan;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 0))
-        {
-            var result = Acquire(); loan = funded.Budget.ReservedBytes;
-            Assert.Equal(2ul, funded.Budget.WorkSteps); Assert.Equal(0ul, funded.Budget.PeakDepth);
-            {
-                Assert.Equal(new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) }[kind], result.GetType());
-                Assert.Same(holderPlan, typeof(Utf8StructuralLinearRuntime).GetField("_regexPlan", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(result));
-                Assert.Equal(128ul, loan);
-            }
-        }
-        var maximum = bytes ? loan : 2ul;
-        for (var allowance = 0ul; allowance <= maximum; allowance++)
-        {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue,
-                bytes ? ulong.MaxValue : 2 + allowance, 0);
-            var parent = owner.Budget.AllocateObject(17, static v => new Box(v)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => _ = Acquire());
-            if (allowance < maximum)
-            {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            }
-            else { Assert.Null(error); Assert.Equal(128 + loan, owner.Budget.ReservedBytes); }
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(allowance == maximum ? 4ul : 2ul, owner.Budget.WorkSteps);
-        }
     }
 
     private sealed class Box(int value) { internal readonly int Value = value; }

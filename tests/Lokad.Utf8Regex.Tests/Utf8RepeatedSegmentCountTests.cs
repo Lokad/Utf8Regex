@@ -35,35 +35,12 @@ public sealed class Utf8RepeatedSegmentCountTests
                 foreach (var scalar in text.EnumerateRunes()) boundaries.Add(boundaries[^1] + scalar.Utf8SequenceLength);
                 foreach (var start in boundaries)
                 {
-                    var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 13), Timeout.InfiniteTimeSpan, live.Token);
-                    Assert.True(invocation.Ledger.TryReserve(13));
-                    var prepared = regex.Inspection.PreparedRegex;
-                    if (!Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-                        prepared.StructuralRepeatedSegmentPlan, input, start, ref invocation, out var found)) continue;
-                    Assert.Equal(Utf8ExecutionLimitKind.None, found.Breach);
-                    Assert.Equal(reference.Count(text, Encoding.UTF8.GetCharCount(input.AsSpan(0, start))), found.Count);
-                    Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-                    Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
+                    var expected = reference.Count(text, Encoding.UTF8.GetCharCount(input.AsSpan(0, start)));
+                    Assert.Equal(expected, Utf8MatchSequence.Count(regex.EnumerateMatches(input, start)));
                 }
+
             }
         }
-    }
-
-    [Theory]
-    [InlineData(@"(?:[A-Z][a-z]+\s*){2,3}")]
-    [InlineData(@"(?:[AC][bd]+[ \t]*){2,4}")]
-    public void CompletePreparedRootRunsWithoutLocalStorage(string pattern)
-    {
-        var regex = new Utf8Regex(pattern);
-        var prepared = regex.Inspection.PreparedRegex;
-        var invocation = new Utf8SliceInvocation(new(1000, 1, 13), Timeout.InfiniteTimeSpan, default);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        Assert.True(Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-            prepared.StructuralRepeatedSegmentPlan, "AbCd Acbd Cbdd "u8, 0, ref invocation, out var found));
-        Assert.Equal(Utf8ExecutionLimitKind.None, found.Breach);
-        Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(0U, invocation.Budget.PeakDepth);
     }
 
     [Theory]
@@ -75,45 +52,27 @@ public sealed class Utf8RepeatedSegmentCountTests
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,3}", RegexOptions.RightToLeft)]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,3}", RegexOptions.NonBacktracking)]
     [InlineData(@"(?:[A-Z][A-Za-z]+\s*){2,3}", RegexOptions.None)]
-    public void OtherProgramsRetainTheirVerifier(string pattern, RegexOptions options)
+    public void NeighbouringGrammarsPreservePublicCounts(string pattern, RegexOptions options)
     {
         var regex = new Utf8Regex(pattern, options);
-        var prepared = regex.Inspection.PreparedRegex;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Assert.False(Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-            prepared.StructuralRepeatedSegmentPlan, "Ab Cd Ef !"u8, 0, ref invocation, out _));
         Assert.Equal(new Regex(pattern, options).Count("Ab Cd Ef !"), regex.Count("Ab Cd Ef !"u8));
-        Assert.Equal(0UL, invocation.Budget.Steps);
     }
 
     [Fact]
-    public void EveryFiniteCutoffRetainsLoansAndFirstDenial()
+    public void FiniteCountPreservesSharedLoansAndFirstDenial()
     {
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,3}");
-        var prepared = regex.Inspection.PreparedRegex;
+        const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
         var input = "xx Ab\u00a0Cd\u2028Ef GhIj "u8.ToArray();
-        var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Assert.True(baseline.Ledger.TryReserve(13));
-        Assert.True(Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-            prepared.StructuralRepeatedSegmentPlan, input, 0, ref baseline, out var expected));
-        for (ulong limit = 1; limit <= baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 13), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.True(Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-                prepared.StructuralRepeatedSegmentPlan, input, 0, ref invocation, out var found));
-            Assert.Equal(limit == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, found.Breach);
-            if (found.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(expected.Count, found.Count);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
-        var denied = new Utf8SliceInvocation(new(1000, 1, 13), Timeout.InfiniteTimeSpan, default);
-        Assert.True(denied.Ledger.TryReserve(13));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, denied.TryReserveWorking(1));
-        Assert.True(Utf8SliceRunner.TryCountPreparedRepeatedSegment(prepared.ScalarProgram!,
-            prepared.StructuralRepeatedSegmentPlan, input, 0, ref denied, out var refusal));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, refusal.Breach);
-        Assert.Equal(13UL, denied.Ledger.ReservedBytes);
-        Assert.Equal(14UL, denied.Budget.PeakWorkingBytes);
+        var regex = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20 });
+        var account = new WorkingAllowance(1 << 20); Assert.True(account.TryReserve(13));
+        Assert.Equal(new Regex(pattern).Count(System.Text.Encoding.UTF8.GetString(input)), regex.Count(input, default, account));
+        Assert.Equal(13UL, account.Used);
+        var denied = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account)).ResourceKind);
+        Assert.Equal(13UL, account.Used);
+        var refusing = new WorkingAllowance(13); Assert.True(refusing.TryReserve(13));
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Count(input, default, refusing));
+        Assert.Equal(13UL, refusing.Used);
     }
 
     [Theory]
@@ -127,37 +86,39 @@ public sealed class Utf8RepeatedSegmentCountTests
     [InlineData("unicode", true)]
     [InlineData("publication", false)]
     [InlineData("publication", true)]
-    public void RealQuantaAndPublicationKeepOriginalTokenAndDeadline(string stage, bool expire)
+    public void CountPreservesOriginalCancellationAndDeadlineAtPublication(string stage, bool expire)
     {
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,3}");
-        var prepared = regex.Inspection.PreparedRegex;
+        const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
         var text = stage switch { "seek" => new string('x', 8192), "tail" => "A" + new string('b', 8192) + "Cd",
             "separator" => "Ab" + new string(' ', 8192) + "Cd", "unicode" => "Ab" + new string('\u2003', 4096) + "Cd", _ => "AbCd" };
-        var padding = stage switch { "seek" => 62, "tail" => 60, "separator" => 59, "unicode" => 58, _ => 56 };
-        using var live = new CancellationTokenSource();
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 13), TimeSpan.FromMilliseconds(50), live.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        for (var index = 0; index < padding; index++) _ = invocation.TryChargeStep();
-        invocation.CheckpointHook = _ => { if (expire) ticks = 100; else live.Cancel(); };
         var bytes = Encoding.UTF8.GetBytes(text);
-        if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8SliceRunner.TryCountPreparedRepeatedSegment(
-            prepared.ScalarProgram!, prepared.StructuralRepeatedSegmentPlan, bytes, 0, ref invocation, out _));
-        else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => Utf8SliceRunner.TryCountPreparedRepeatedSegment(
-            prepared.ScalarProgram!, prepared.StructuralRepeatedSegmentPlan, bytes, 0, ref invocation, out _)).CancellationToken);
-        Assert.Equal(64UL, invocation.Budget.Steps);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        using var live = new CancellationTokenSource();
+        long ticks = 0; var reads = 0; var trigger = int.MaxValue;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        { if (++reads == trigger) { if (expire) ticks = 100; else live.Cancel(); } return ticks; });
+        var regex = new Utf8Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50),
+            new() { MaxWorkSteps = 10_000_000, MaxDepth = 100000, MaxWorkingBytes = 16 << 20 });
+        _ = regex.Count(bytes, live.Token);
+        Assert.True(reads > 0); trigger = reads; reads = 0;
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes, live.Token)).MatchTimeout);
+        else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, live.Token)).CancellationToken);
     }
 
     [Fact]
     public void PublicAdmissionAndStrictTailValidationStillApply()
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         Assert.Equal(1, regex.Count("Ab\u2003Cd"u8));
         var malformed = "AbCd"u8.ToArray().Concat(new byte[] { 0xc3 }).ToArray();
         using var live = new CancellationTokenSource(); live.Cancel();
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, live.Token)).CancellationToken);
+    }
+
+    private sealed class WorkingAllowance(ulong capacity) : IUtf8MemoryAllowance
+    {
+        internal ulong Used;
+        public bool TryReserve(ulong bytes) { if (bytes > capacity - Used) return false; Used += bytes; return true; }
+        public void Release(ulong bytes) { Assert.True(bytes <= Used); Used -= bytes; }
     }
 }

@@ -4374,14 +4374,6 @@ internal static partial class BenchmarkInspectReporter
                 return;
             }
 
-            var instructionProgram = program.InstructionProgram;
-            var instructions = instructionProgram.Instructions ?? [];
-            Console.WriteLine($"InstructionCount  : {instructions.Length}");
-
-            for (var i = 0; i < instructions.Length; i++)
-            {
-                Console.WriteLine($"Instruction[{i}]  : {FormatStructuralInstruction(instructions[i])}");
-            }
         }
     }
 
@@ -4407,18 +4399,6 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"Stage[{i}]         : {FormatStructuralSearchStage(stages[i])}");
         }
-    }
-
-    private static string FormatStructuralInstruction(Utf8StructuralLinearInstruction instruction)
-    {
-        return instruction.Kind switch
-        {
-            Utf8StructuralLinearInstructionKind.RepeatedSegment => "RepeatedSegment",
-            Utf8StructuralLinearInstructionKind.TokenWindow => "TokenWindow",
-            Utf8StructuralLinearInstructionKind.QuotedRelation => "QuotedRelation",
-            Utf8StructuralLinearInstructionKind.Accept => "Accept",
-            _ => instruction.Kind.ToString(),
-        };
     }
 
     private static string FormatStructuralSearchStage(Utf8StructuralSearchStage stage)

@@ -18,9 +18,6 @@ public sealed class CoreCompilationArchitectureTests
 
         Assert.IsType<Utf8RegexAnalysis>(analysis);
         Assert.IsType<Utf8PreparedRegex>(prepared);
-        // Repeated access borrows the same instruction storage; this is a
-        // reference-stability check, not a complete immutability proof.
-        Assert.Same(prepared.StructuralLinearProgram.InstructionProgram.Instructions, prepared.StructuralLinearProgram.InstructionProgram.Instructions);
     }
 
     [Fact]

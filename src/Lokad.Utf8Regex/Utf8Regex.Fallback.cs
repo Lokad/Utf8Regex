@@ -89,18 +89,9 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private bool ShouldSkipRequiredPrefilterForCount()
-    {
-        // The ASCII relation finder already seeks quotes and verifies operands.
-        // Its new necessary-family filter serves owned scalar calls instead;
-        // adding another scan to this native route only duplicates discovery.
-        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue;
-    }
-
     private bool ShouldSkipRequiredPrefilterForMatch()
     {
-        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
-            _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
+        return _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
     }
 
     private bool RequiresScalarValueExecution()

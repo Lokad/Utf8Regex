@@ -19,7 +19,6 @@ public sealed class Utf8StructuralPlanAdmissionTests
         return node;
     }
     private static Utf8TreeNode Text(string text) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
-    private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
     private static Utf8ScalarClass Class(string pattern)
     {
         var node = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant)!.Root;
@@ -36,35 +35,18 @@ public sealed class Utf8StructuralPlanAdmissionTests
         Assert.True(Utf8ScalarAsciiProjector.TryProjectStructuralClass(Class(pattern), out var mask));
         return mask;
     }
-    private static Utf8TreeNode Repeated(Utf8TreeNode child)
-    {
-        var node = Node(Utf8TreeNodeKind.Loop, child); node.M = 2; node.N = 4; return node;
-    }
     private static Utf8TreeNode Identifier() => Node(Utf8TreeNodeKind.Concatenate,
         Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")), Set("[ \\t]", 1, int.MaxValue),
         Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")), Set("[a-z]", 0, int.MaxValue), Text("("));
     private static Utf8TreeNode Ordered(string first = "call", string last = "Result", int gap = 3)
         => Node(Utf8TreeNodeKind.Concatenate, Text(first), Set("[\\s\\S]", 0, gap), Text(last));
-    private static Utf8TreeNode QuotedBody() => Node(Utf8TreeNodeKind.Concatenate,
-        Node(Utf8TreeNodeKind.Alternate, Text("AKIA"), Text("ASIA")), Set("[A-Z]", 2, 2));
-    private static Utf8TreeNode QuotedBranch(bool reverse)
-    {
-        var prefixed = QuotedBody(); var run = Set("[a-z]", 3, 3);
-        return Node(Utf8TreeNodeKind.Concatenate, One('\''), reverse ? run : prefixed, One('\''),
-            One(':'), One('\''), reverse ? prefixed : run, One('\''));
-    }
     private static Utf8TreeNode Body(int route) => route switch
     {
         6 => Ordered(),
         7 => Node(Utf8TreeNodeKind.Alternate, Ordered("call", "Result"), Ordered("invoke", "Other")),
         8 => Node(Utf8TreeNodeKind.Concatenate, Text("call"), Node(Utf8TreeNodeKind.PositiveLookaround,
             Node(Utf8TreeNodeKind.Concatenate, Set("[ \\t]", 1, int.MaxValue), Text("Result")))),
-        9 => Node(Utf8TreeNodeKind.Concatenate, Set("[A-Z]", 2, 2), Set("[ \\t]", 1, int.MaxValue),
-            Set("[\\s\\S]", 0, 3), Text("Result"), Set("[\\s\\S]", 0, 3), Set("[ \\t]", 1, int.MaxValue), Set("[a-z]", 2, 2)),
-        10 => Repeated(
-            Node(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
-                Set("[a-z]", 1, int.MaxValue), Set("[ \\t]", 0, int.MaxValue))),
-        _ => Node(Utf8TreeNodeKind.Alternate, QuotedBranch(false), QuotedBranch(true)),
+        _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
     private static Utf8SemanticRegex Semantic(Utf8TreeNode body)
         => new("fixture", RegexOptions.CultureInvariant, "fixture", RegexOptions.CultureInvariant,
@@ -86,8 +68,8 @@ public sealed class Utf8StructuralPlanAdmissionTests
                 _ => new object[] { "call"u8.ToArray(), "Result"u8.ToArray() },
             };
         }
-        if (route <= 11) return Body(route);
-        return Semantic(route == 12 ? Identifier() : Body(route switch { 13 => 7, 14 => 9, 15 => 10, _ => 11 }));
+        if (route <= 8) return Body(route);
+        return Semantic(route == 12 ? Identifier() : Body(7));
     }
     private static object? Call(string name, params object?[] args)
     {
@@ -133,18 +115,15 @@ public sealed class Utf8StructuralPlanAdmissionTests
         var name = route switch
         {
             6 => "TryExtractOrderedLiteralWindow", 7 => "TryExtractSymmetricAlternateOrderedLiteralWindow",
-            8 => "TryExtractOrderedLiteralLookaheadWindow", 9 => "TryExtractAsciiStructuralTokenWindow",
-            10 => "TryExtractAsciiStructuralRepeatedSegment", 11 => "TryExtractAsciiStructuralQuotedRelation",
-            12 => "TryAnalyzeAsciiStructuralIdentifierFamilyTree", 13 => "TryAnalyzeAsciiOrderedLiteralWindowTree",
-            14 => "TryAnalyzeAsciiStructuralTokenWindowTree", 15 => "TryAnalyzeAsciiStructuralRepeatedSegmentTree",
-            _ => "TryAnalyzeAsciiStructuralQuotedRelationTree",
+            8 => "TryExtractOrderedLiteralLookaheadWindow",             12 => "TryAnalyzeAsciiStructuralIdentifierFamilyTree", 13 => "TryAnalyzeAsciiOrderedLiteralWindowTree",
+            _ => throw new ArgumentOutOfRangeException(nameof(route)),
         };
         object?[] args = route <= 11 ? [input, null] : [input, "fixture", RegexOptions.CultureInvariant, null];
         Assert.True(Assert.IsType<bool>(Call(name, args)));
     }
-    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 17).Select(route => new object[] { route });
+    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 17).Where(route => route <= 8 || route is 12 or 13).Select(route => new object[] { route });
     public static IEnumerable<object[]> Denials()
-        => from route in Enumerable.Range(0, 17) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
+        => from route in Enumerable.Range(0, 17).Where(route => route <= 8 || route is 12 or 13) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
     [Theory]
     [MemberData(nameof(Denials))]
     public void RootDenialRecoversParentBeforeAcquisition(int route, int denial)
@@ -182,7 +161,7 @@ public sealed class Utf8StructuralPlanAdmissionTests
         }
     }
     [Theory]
-    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)] [InlineData(11)]
+    [InlineData(6)] [InlineData(7)] [InlineData(8)]
     public void WrapperDepthDenialPreservesBorrowedParentsAndUnwindsLoans(int route)
     {
         var root = Body(route); var wrapped = root;
@@ -218,7 +197,7 @@ public sealed class Utf8StructuralPlanAdmissionTests
         Assert.True(failures > 0); Assert.True(successes > 0);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void LateDeclineRestoresSuccessfulChildren(int family)
     {
         var root = family switch
@@ -227,11 +206,11 @@ public sealed class Utf8StructuralPlanAdmissionTests
             1 => Node(Utf8TreeNodeKind.Alternate, Ordered(), Ordered("invoke", "Other", 4)),
             2 => Node(Utf8TreeNodeKind.Concatenate, Text("call"), Node(Utf8TreeNodeKind.PositiveLookaround,
                 Node(Utf8TreeNodeKind.Concatenate, Set("[ \\t]", 0, int.MaxValue), Text("Result")))),
-            _ => Node(Utf8TreeNodeKind.Alternate, QuotedBranch(false), Ordered()),
+            _ => throw new ArgumentOutOfRangeException(nameof(family)),
         };
-        var route = family switch { 0 => 6, 1 => 7, 2 => 8, _ => 11 };
+        var route = family switch { 0 => 6, 1 => 7, 2 => 8, _ => throw new ArgumentOutOfRangeException(nameof(family)) };
         var name = route switch { 6 => "TryExtractOrderedLiteralWindow", 7 => "TryExtractSymmetricAlternateOrderedLiteralWindow",
-            8 => "TryExtractOrderedLiteralLookaheadWindow", _ => "TryExtractAsciiStructuralQuotedRelation" };
+            8 => "TryExtractOrderedLiteralLookaheadWindow", _ => throw new ArgumentOutOfRangeException(nameof(route)) };
         var parents = Children(root).Select(node => (Node: node, Parent: node.Parent)).ToArray();
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
@@ -244,16 +223,6 @@ public sealed class Utf8StructuralPlanAdmissionTests
     {
         yield return root;
         for (var index = 0; index < root.ChildCount; index++) foreach (var child in Children(root.Child(index))) yield return child;
-    }
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void QuotedEdgeBorrowsOriginalChildrenOnSuccessAndLateDecline(bool reverse)
-    {
-        var root = QuotedBranch(reverse); var parents = Children(root).Select(node => (Node: node, Parent: node.Parent)).ToArray();
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        object?[] args = [root, default(AsciiStructuralQuotedRelationBranchPlan), null, null, 0, null, 0];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractAsciiStructuralQuotedRelationBranch", args)));
-        foreach (var pair in parents) Assert.Same(pair.Parent, pair.Node.Parent);
     }
     [Fact]
     public void SingletonSuffixAndLinearProgramRetainBorrowedPayloadsAndAdmitOnlyOwnedArrays()

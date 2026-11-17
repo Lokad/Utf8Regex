@@ -214,16 +214,17 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Fact]
-    public void SkippedStartsRequireValidationAndAdmissionForTheStorageActuallyUsed()
+    public void SkippedStartsAdmitTheStorageActuallyUsed()
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,4}";
         var input = Encoding.UTF8.GetBytes(new string('x', (1 << 20)) + "😀Ab Cd");
         Assert.Equal(1, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             Funded with { MaxWorkSteps = 4096 }).Count(input));
-        Assert.Equal(1, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            Funded with { MaxWorkingBytes = 1 }).Count(input));
-        // The complete count plan needs no VM scratch; a captured root still
-        // uses the verifier and must admit its actual continuation storage.
+        // The external complete-repeat plan is retired. Both root forms now
+        // admit the scalar verifier storage after the independent start filter.
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
+                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>" + pattern + ")",
                 RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
@@ -232,10 +233,9 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(0, anchored.Count(Encoding.UTF8.GetBytes(new string('x', 8192) + "😀")));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => anchored.Count("xx\nAb Cd"u8)).ResourceKind);
-        var invalid = input.Append((byte)255).ToArray();
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
-                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(invalid)).ResourceKind);
+                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(input)).ResourceKind);
     }
 
     [Theory]

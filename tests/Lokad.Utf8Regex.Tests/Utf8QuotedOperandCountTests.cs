@@ -1,10 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -22,9 +18,6 @@ public sealed class Utf8QuotedOperandCountTests
     {
         var regex = new Utf8Regex(Pattern, RegexOptions.Multiline | extra);
         var oracle = new Regex(Pattern, RegexOptions.Multiline | extra);
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
-        Assert.Equal(PreparedSearcherKind.MultiLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
-        Assert.False(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
         foreach (var text in new[] { "", "EASTASIA AB12 CD34", "\"AB12\"", "\"ABxx\" \"abc\"",
             "\"AB12\"😀\"abc\"", "'abc' λ 'CD34'", "\"AB12\"\nctx\n\"abc\"",
             "\"AB12\"\"abc\"\"CD34\"\"abc\"", "é\"AB12\" \"abc\" 😀 \"abc\" \"CD34\"" })
@@ -52,56 +45,48 @@ public sealed class Utf8QuotedOperandCountTests
     [Theory]
     [InlineData("+?")]
     [InlineData("{2,}")]
-    public void OtherOuterRepeatsKeepScalarSelection(string quantifier)
+    public void OuterRepeatsPreserveCounts(string quantifier)
     {
         var pattern = Pattern[..^1] + quantifier;
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
-        Assert.NotEqual(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
         foreach (var text in new[] { "\"AB12\"\"abc\"", "\"AB12\"\"abc\"\"CD34\"\"abc\"" })
             Assert.Equal(new Regex(pattern, RegexOptions.Multiline).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
-    }
-
-    [Fact]
-    public void NativeAsciiCountHonorsItsExistingPrefilterSkipPolicy()
-    {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline);
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.Equal(0, regex.Count("unrelated ASCII text"u8));
-            Assert.Equal(Utf8ExecutionRoute.NativeStructuralLinearAutomaton, session.ExecutionRoute);
-        }
-        finally { session.Complete(); }
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void MissingQuotedPrefixNeedsNoVmCapacityButPresenceStillNeedsAdmission(bool count)
+    public void QuotedRelationsRespectFiniteWorkingAdmissionOnHitsAndMisses(bool count)
     {
         var regex = new Utf8Regex(Pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        var absent = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("EASTASIA AB12 CD34 😀 ", 2048)));
-        if (count) Assert.Equal(0, regex.Count(absent));
-        else Assert.False(regex.IsMatch(absent));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20 });
+        var denied = new Utf8Regex(Pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkingBytes = 1 });
+        foreach (var text in new[] { "EASTASIA AB12 CD34 😀", "\"AB12\" \"abc\"" })
         {
-            if (count) regex.Count("\"AB12\" missing operand"u8);
-            else regex.IsMatch("\"AB12\" missing operand"u8);
-        });
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var expected = new Regex(Pattern, RegexOptions.Multiline).Count(text);
+            if (count) Assert.Equal(expected, regex.Count(bytes));
+            else Assert.Equal(expected != 0, regex.IsMatch(bytes));
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                if (count) denied.Count(bytes);
+                else denied.IsMatch(bytes);
+            });
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+        }
     }
 
     [Fact]
     public void UnicodeTailPredicatesRetainScalarSemantics()
     {
         var regex = new Utf8Regex(Pattern.Replace("[0-9]", "[^q]"), RegexOptions.Multiline);
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
         Assert.Equal(1, regex.Count("\"AB😀é\" \"abc\""u8));
         Assert.True(regex.IsMatch("\"abc\" \"CD😀é\""u8));
     }
 
     [Fact]
-    public void OffsetsAndMalformedTailsKeepTheirExistingMeaning()
+    public void ByteOffsetsKeepTheirExistingMeaning()
     {
         var regex = new Utf8Regex(Pattern, RegexOptions.Multiline);
         const string text = "é\"AB12\" \"abc\" 😀 'abc' 'CD34'";
@@ -113,31 +98,24 @@ public sealed class Utf8QuotedOperandCountTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FamilySearchPollsTheOriginalAuthorityAfterValidation(bool expire)
+    public void QuotedRelationSearchPollsOriginalCancellationAndDeadline(bool expire)
     {
-        var input = Encoding.UTF8.GetBytes(new string('x', 200000));
-        var calibration = new Utf8SliceInvocation(new(4096, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var input = Encoding.UTF8.GetBytes(new string('x', 8192));
+        long ticks = 0; var reads = 0; var trigger = int.MaxValue;
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline,
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
-            if (steps < threshold) return;
-            entered = true;
-            if (expire) ticks = 50; else source.Cancel();
+            if (++reads == trigger) { if (expire) ticks = 100; else source.Cancel(); }
+            return ticks;
         });
-        Exception? failure = null;
-        try { regex.Count(input, source.Token); }
-        catch (Exception error) { failure = error; }
-        finally { session.Complete(); }
-        Assert.True(entered);
-        if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline,
+            TimeSpan.FromMilliseconds(50),
+            new() { MaxWorkSteps = 10_000_000, MaxDepth = 4096, MaxWorkingBytes = 4 << 20 });
+        Assert.Equal(0, regex.Count(input, source.Token));
+        Assert.True(reads > 1); trigger = reads; reads = 0;
+        if (expire) Assert.Equal(regex.MatchTimeout,
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, source.Token)).MatchTimeout);
+        else Assert.Equal(source.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
     }
 }

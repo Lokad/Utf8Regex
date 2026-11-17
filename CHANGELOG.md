@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove token-window, repeated-segment and quoted-relation whole-pattern plans,
+  their instruction carrier and the finite repeated-segment Count shortcut.
+  Existing scalar execution preserves results and interruption; execution costs
+  and numerical resource requirements can increase, including on misses.
+
 - Retire Core's nonliteral fallback classifiers, payloads and shortcuts, including
   token/URI/IP, word/category counting and anchored validators. Matching uses the
   existing scalar programs; adapters no longer borrow the retired IP proof.

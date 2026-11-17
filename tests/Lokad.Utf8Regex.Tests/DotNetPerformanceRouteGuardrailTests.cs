@@ -73,27 +73,6 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     }
 
     [Fact]
-    public void ContextBoundedRepeatStaysOnTokenWindowStructuralEngine()
-    {
-        var regex = new Utf8Regex("[A-Za-z]{10}\\s+[\\s\\S]{0,100}Result[\\s\\S]{0,100}\\s+[A-Za-z]{10}", RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-    }
-
-    [Fact]
-    public void AwsFullRelationCaseStaysOnQuotedRelationStructuralEngine()
-    {
-        const string pattern =
-            "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-    }
-
-    [Fact]
     public void RuffTweakedRetainsItsScalarPrefilter()
     {
         var regex = new Utf8Regex(

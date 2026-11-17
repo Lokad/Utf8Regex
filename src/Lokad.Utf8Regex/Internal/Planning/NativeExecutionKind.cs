@@ -9,9 +9,6 @@ internal enum NativeExecutionKind
     ExactUtf8Literals = 5,
     AsciiStructuralIdentifierFamily = 6,
     AsciiLiteralIgnoreCaseLiterals = 7,
-    AsciiStructuralTokenWindow = 8,
-    AsciiStructuralRepeatedSegment = 9,
-    AsciiStructuralQuotedRelation = 10,
     AsciiOrderedLiteralWindow = 11,
 }
 

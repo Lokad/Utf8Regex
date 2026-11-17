@@ -682,34 +682,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorClassifiesAwsKeyWindowPatternAsStructuralLinearAutomaton()
-    {
-        const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(
-            [
-                Utf8StructuralLinearInstructionKind.QuotedRelation,
-                Utf8StructuralLinearInstructionKind.Accept,
-            ],
-            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
-    }
-
-    [Fact]
-    public void AnalysisClassifiesRepeatedCapitalizedWordsLoopAsStructuralLinear()
-    {
-        var analysis = Utf8FrontEnd.Compile("(?:[A-Z][a-z]+\\s*){10,100}", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, analysis.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(analysis).Kind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, analysis.StructuralLinearProgram.Kind);
-    }
-
-    [Fact]
     public void ConstructorTreatsUnicodeCategoryRepeatAsOwnedSlice()
     {
         const string pattern = "\\p{L}{8,13}";
@@ -800,42 +772,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);
         Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void ConstructorClassifiesAsciiStructuralTokenWindowAsStructuralLinearAutomaton()
-    {
-        var regex = new Utf8Regex(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiTokenWindow, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(
-            [
-                Utf8StructuralLinearInstructionKind.TokenWindow,
-                Utf8StructuralLinearInstructionKind.Accept,
-            ],
-            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
-    }
-
-    [Fact]
-    public void ConstructorClassifiesAsciiStructuralRepeatedSegmentAsStructuralLinearAutomaton()
-    {
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Compile(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(Utf8SearchKind.None, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(
-            [
-                Utf8StructuralLinearInstructionKind.RepeatedSegment,
-                Utf8StructuralLinearInstructionKind.Accept,
-            ],
-            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]

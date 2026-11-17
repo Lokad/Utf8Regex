@@ -1,28 +1,25 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8RepeatedSegmentProofTests
 {
     [Theory]
-    [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}?", "Aa Bb Cc Dd Ee Ff Gg Hh", false)]
-    [InlineData(@"(?:[A-Z][a-z]+?\s*){2,4}", "Aaaaa Bbbbb", false)]
-    [InlineData(@"(?:[A-Z][a-z]+\s*?){2,4}", "Aa Bb Cc Dd   ", false)]
-    [InlineData(@"(?:[a-z][a-z]+\s*){2,4}", "aaaa", false)]
-    [InlineData(@"(?:[A-Z ][a-z]+\s*){2,4}", "Aa aa", false)]
-    [InlineData(@"(?:[A-Z][a-z ]+\s+){2,4}", "Aa Bb ", false)]
-    [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}", "Aa BbC Dd Ee", true)]
-    [InlineData(@"(?:[A-Z][a-z]+\s+){2,4}", "Aa Bb Cc", true)]
-    [InlineData(@"(?<all>(?:[A-Z][a-z]+\s*){2,4}?)", "Aa Bb Cc Dd Ee Ff Gg Hh", false)]
-    public void NativeProofPreservesGreedinessRewindAndFailedSegmentEndpoints(string pattern, string subject, bool native)
+    [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}?", "Aa Bb Cc Dd Ee Ff Gg Hh")]
+    [InlineData(@"(?:[A-Z][a-z]+?\s*){2,4}", "Aaaaa Bbbbb")]
+    [InlineData(@"(?:[A-Z][a-z]+\s*?){2,4}", "Aa Bb Cc Dd   ")]
+    [InlineData(@"(?:[a-z][a-z]+\s*){2,4}", "aaaa")]
+    [InlineData(@"(?:[A-Z ][a-z]+\s*){2,4}", "Aa aa")]
+    [InlineData(@"(?:[A-Z][a-z ]+\s+){2,4}", "Aa Bb ")]
+    [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}", "Aa BbC Dd Ee")]
+    [InlineData(@"(?:[A-Z][a-z]+\s+){2,4}", "Aa Bb Cc")]
+    [InlineData(@"(?<all>(?:[A-Z][a-z]+\s*){2,4}?)", "Aa Bb Cc Dd Ee Ff Gg Hh")]
+    public void GreedinessRewindAndFailedSegmentEndpointsRemainScalar(string pattern, string subject)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var regex = new Utf8Regex(pattern, mode); var oracle = new Regex(pattern, mode);
-            if (mode is RegexOptions.None or RegexOptions.Compiled)
-                Assert.Equal(native, regex.Inspection.PreparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralRepeatedSegment);
             foreach (var text in new[] { subject, "😀" + subject + "é" })
             {
                 var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
