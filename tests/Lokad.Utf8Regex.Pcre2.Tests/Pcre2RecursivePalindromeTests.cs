@@ -3,18 +3,15 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2PalindromeIsMatchCompilerTests
+public sealed class Pcre2RecursivePalindromeTests
 {
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", true)]
     [InlineData("^(.|(.)(?1)?\\2)$", false)]
-    public void RecursivePalindromeUsesAnIsMatchOnlyDirectPlan(string pattern, bool allowsEmpty)
+    public void RecursivePalindromePreservesEmptyAndCaptureSemantics(string pattern, bool allowsEmpty)
     {
         var regex = new Utf8Pcre2Regex(pattern);
 
-        Assert.Equal(
-            "IsMatch=Pcre2PalindromeIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
-            regex.DebugDescribeExecutionPlan());
         Assert.Equal(allowsEmpty, regex.IsMatch([]));
         Assert.True(regex.IsMatch("abccba"u8));
         Assert.False(regex.IsMatch("abca"u8));
@@ -27,12 +24,10 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$")]
     [InlineData("^(.|(.)(?1)?\\2)$")]
-    public void RecursivePalindromeMatchesTheMeteredVmAcrossUtf8AndLineEndings(string pattern)
+    public void RecursivePalindromeMatchesScalarPalindromeSemanticsAtValidStarts(string pattern)
     {
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = CreateMetered(pattern, 1_000_000);
-        Assert.IsType<Pcre2PalindromeIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2PalindromeIsMatchDirectProgram>(vm.DebugCompiledProgram.Operations.IsMatch);
 
         foreach (var inputText in new[]
                  {
@@ -55,7 +50,9 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            var expected = ScalarPalindrome(inputText, pattern.Contains(".?)", StringComparison.Ordinal));
+            Assert.Equal(expected, direct.IsMatch(input));
+            Assert.Equal(expected, vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -64,7 +61,8 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                Assert.Equal(start == 0 && expected, direct.IsMatch(input, start));
+                Assert.Equal(start == 0 && expected, vm.IsMatch(input, start));
             }
         }
     }
@@ -72,11 +70,11 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$")]
     [InlineData("^(.|(.)(?1)?\\2)$")]
-    public void RecursivePalindromeFallsBackForMatchOptionsAndLimits(string pattern)
+    public void RecursivePalindromeObservesMatchOptionsAndLimits(string pattern)
     {
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = CreateMetered(pattern, 1_000_000);
-        var input = "abcba\n"u8.ToArray();
+        var input = "abcba"u8.ToArray();
 
         foreach (var options in new[]
                  {
@@ -88,7 +86,9 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
                      Pcre2MatchOptions.NotEmptyAtStart,
                  })
         {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
+            var expected = options is not (Pcre2MatchOptions.NotBol or Pcre2MatchOptions.NotEol);
+            Assert.Equal(expected, direct.IsMatch(input, 0, options));
+            Assert.Equal(expected, vm.IsMatch(input, 0, options));
         }
 
         var tightlyMetered = CreateMetered(pattern, 1);
@@ -97,30 +97,14 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcba"u8)).ErrorKind);
     }
 
-    [Fact]
-    public void RecursivePalindromeAnalyzerRejectsDifferentSemantics()
+    private static bool ScalarPalindrome(string text, bool allowsEmpty)
     {
-        foreach (var regex in new[]
-                 {
-                     new Utf8Pcre2Regex("((.)(?1)\\2|.?)$"),
-                     new Utf8Pcre2Regex("^((.)(?1)\\2|.?)"),
-                     new Utf8Pcre2Regex("^((.)(?1)\\1|.?)$"),
-                     new Utf8Pcre2Regex("^((.)(?1)\\2|.)$"),
-                     new Utf8Pcre2Regex("^((.)(?1)?\\2|.?)$"),
-                     new Utf8Pcre2Regex("^(.|(.)(?1)\\2)$"),
-                     new Utf8Pcre2Regex("^(.|(.)(?1)?\\1)$"),
-                     new Utf8Pcre2Regex("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.DotAll),
-                     new Utf8Pcre2Regex("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.Multiline),
-                     new Utf8Pcre2Regex(
-                         "^((.)(?1)\\2|.?)$",
-                         Pcre2CompileOptions.None,
-                         new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                         default(Utf8Pcre2ExecutionLimits),
-                         Regex.InfiniteMatchTimeout),
-                 })
-        {
-            Assert.IsNotType<Pcre2PalindromeIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        }
+        // Default $ may precede one terminal LF; dot cannot consume any LF.
+        if (text.EndsWith('\n')) text = text[..^1];
+        var scalars = text.EnumerateRunes().ToArray();
+        return (allowsEmpty || scalars.Length != 0) &&
+            !scalars.Any(rune => rune.Value == '\n') &&
+            scalars.SequenceEqual(scalars.Reverse());
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

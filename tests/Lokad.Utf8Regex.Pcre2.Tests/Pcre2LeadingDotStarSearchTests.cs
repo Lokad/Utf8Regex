@@ -3,16 +3,13 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
+public sealed class Pcre2LeadingDotStarSearchTests
 {
     [Fact]
-    public void LeadingDotStarLiteralUsesAnIsMatchOnlyDirectPlan()
+    public void LeadingDotStarPreservesCapturedGreedySearch()
     {
         var regex = new Utf8Pcre2Regex(@".*(ss)");
 
-        Assert.Equal(
-            "IsMatch=Pcre2LeadingDotStarLiteralIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("Essential services"u8));
         Assert.False(regex.IsMatch("A regular service"u8));
 
@@ -30,12 +27,13 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
     [InlineData(@".*?tail")]
     [InlineData(".*é🙂")]
     [InlineData(".*\\n")]
-    public void LeadingDotStarLiteralMatchesTheMeteredVmAtEveryValidStart(string pattern)
+    public void LeadingDotStarMatchesOverlappingBclGrammarAtValidStarts(string pattern)
     {
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = CreateMetered(pattern, 1_000_000);
-        Assert.IsType<Pcre2LeadingDotStarLiteralIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2LeadingDotStarLiteralIsMatchDirectProgram>(vm.DebugCompiledProgram.Operations.IsMatch);
+        // An unconstrained dot repeat plus exact suffix has the same Boolean
+        // existence over these scalar-aligned subjects in the BCL grammar.
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
                  {
@@ -54,7 +52,8 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            Assert.Equal(oracle.IsMatch(inputText), direct.IsMatch(input));
+            Assert.Equal(oracle.IsMatch(inputText), vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -63,13 +62,15 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                var characterStart = Encoding.UTF8.GetCharCount(input.AsSpan(0, start));
+                Assert.Equal(oracle.IsMatch(inputText, characterStart), direct.IsMatch(input, start));
+                Assert.Equal(oracle.IsMatch(inputText, characterStart), vm.IsMatch(input, start));
             }
         }
     }
 
     [Fact]
-    public void LeadingDotStarLiteralFallsBackForMatchOptionsAndLimits()
+    public void LeadingDotStarObservesMatchOptionsAndLimits()
     {
         const string Pattern = @".*(ss)";
         var direct = new Utf8Pcre2Regex(Pattern);
@@ -86,41 +87,15 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
                      Pcre2MatchOptions.NotEmptyAtStart,
                  })
         {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
+            var expected = options is not (Pcre2MatchOptions.Anchored or Pcre2MatchOptions.EndAnchored);
+            Assert.Equal(expected, direct.IsMatch(input, 0, options));
+            Assert.Equal(expected, vm.IsMatch(input, 0, options));
         }
 
         var tightlyMetered = CreateMetered(Pattern, 1);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
-    [Fact]
-    public void LeadingDotStarLiteralAnalyzerRejectsDifferentLanguages()
-    {
-        foreach (var regex in new[]
-                 {
-                     new Utf8Pcre2Regex(@".+ss"),
-                     new Utf8Pcre2Regex(@".*+ss"),
-                     new Utf8Pcre2Regex(@".*s+"),
-                     new Utf8Pcre2Regex(@".*(s|t)"),
-                     new Utf8Pcre2Regex(@".*[s]"),
-                     new Utf8Pcre2Regex(@"^.*ss"),
-                     new Utf8Pcre2Regex(@".*ss$"),
-                     new Utf8Pcre2Regex(@".*(?=ss)ss"),
-                     new Utf8Pcre2Regex(@".*ss", Pcre2CompileOptions.Caseless),
-                     new Utf8Pcre2Regex(@".*ss", Pcre2CompileOptions.DotAll),
-                     new Utf8Pcre2Regex(
-                         @".*ss",
-                         Pcre2CompileOptions.None,
-                         new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                         default(Utf8Pcre2ExecutionLimits),
-                         Regex.InfiniteMatchTimeout),
-                 })
-        {
-            Assert.IsNotType<Pcre2LeadingDotStarLiteralIsMatchDirectProgram>(
-                regex.DebugCompiledProgram.Operations.IsMatch);
-        }
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

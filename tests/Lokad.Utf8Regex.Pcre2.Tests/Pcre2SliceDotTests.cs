@@ -17,20 +17,15 @@ public sealed class Pcre2SliceDotTests
         yield return new object?[] { "x*|y." };
         yield return new object?[] { "a|.*" };
         yield return new object?[] { "(.+)" };
+        yield return new object?[] { ".*b" };
     }
 
-    // Bare leading-dotstar shapes keep their pre-existing specialized owned
-    // programs, which take precedence over the slice overlay. They stay
-    // owned (no backtracking, no foundation fallback) with native behavior.
-    [Theory]
-    [InlineData(".*", "IsMatch=Pcre2SingleTokenRepeat")]
-    [InlineData(".*b", "IsMatch=Pcre2LeadingDotStarLiteralIsMatch")]
-    public void LeadingDotStarShapesKeepSpecializedOwnedPrograms(string pattern, string expectedPrefix)
+    [Fact]
+    public void BareDotRepeatKeepsItsExistingOwnedProgram()
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.StartsWith(expectedPrefix, regex.DebugDescribeExecutionPlan());
+        var regex = new Utf8Pcre2Regex(".*", Pcre2CompileOptions.None);
+        Assert.StartsWith("IsMatch=Pcre2SingleTokenRepeat", regex.DebugDescribeExecutionPlan());
         Assert.DoesNotContain("Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]

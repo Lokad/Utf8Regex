@@ -95,9 +95,6 @@ public sealed partial class Utf8Pcre2Regex
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
             isMatchProgram is Pcre2FiniteLiteralLanguageDirectProgram or
                 Pcre2LiteralPrefixRepeatDirectProgram or
-                Pcre2PalindromeIsMatchDirectProgram or
-                Pcre2LeadingDotStarLiteralIsMatchDirectProgram or
-                Pcre2SeparatedRunsIsMatchDirectProgram or
                 Pcre2AsciiBoundedIsMatchDirectProgram or
                 Pcre2AsciiAnchoredDfaIsMatchDirectProgram or
                 Pcre2AsciiRegularIsMatchDirectProgram)
@@ -220,20 +217,6 @@ public sealed partial class Utf8Pcre2Regex
                 case Pcre2DirectProgramKind.Pcre2LiteralPrefixRepeat:
                     return Pcre2LiteralPrefixRepeatRunner.IsMatch(
                         (Pcre2LiteralPrefixRepeatDirectProgram)_unmeteredIsMatchProgram,
-                        input,
-                        0);
-                case Pcre2DirectProgramKind.Pcre2PalindromeIsMatch:
-                    return Pcre2PalindromeIsMatchRunner.IsMatch(
-                        (Pcre2PalindromeIsMatchDirectProgram)_unmeteredIsMatchProgram,
-                        input);
-                case Pcre2DirectProgramKind.Pcre2LeadingDotStarLiteralIsMatch:
-                    return Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
-                        (Pcre2LeadingDotStarLiteralIsMatchDirectProgram)_unmeteredIsMatchProgram,
-                        input,
-                        0);
-                case Pcre2DirectProgramKind.Pcre2SeparatedRunsIsMatch:
-                    return Pcre2SeparatedRunsIsMatchRunner.IsMatch(
-                        (Pcre2SeparatedRunsIsMatchDirectProgram)_unmeteredIsMatchProgram,
                         input,
                         0);
                 case Pcre2DirectProgramKind.Pcre2AsciiBoundedIsMatch:

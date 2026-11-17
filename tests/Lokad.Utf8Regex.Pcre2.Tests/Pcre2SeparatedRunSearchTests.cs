@@ -3,18 +3,15 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
+public sealed class Pcre2SeparatedRunSearchTests
 {
     private const string UriPattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
 
     [Fact]
-    public void SeparatedRunsUseAnIsMatchOnlyDirectPlan()
+    public void SeparatedRunsPreserveUriValues()
     {
         var regex = new Utf8Pcre2Regex(UriPattern);
 
-        Assert.Equal(
-            "IsMatch=Pcre2SeparatedRunsIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("https://atlas.example.org/reports/export?id=42"u8));
         Assert.False(regex.IsMatch("not a URI"u8));
 
@@ -24,12 +21,10 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
     }
 
     [Fact]
-    public void SeparatedRunsMatchTheMeteredVmAtEveryValidStart()
+    public void SeparatedRunsMatchScalarClassOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(UriPattern);
         var vm = CreateMetered(UriPattern, 1_000_000);
-        Assert.IsType<Pcre2SeparatedRunsIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2SeparatedRunsIsMatchDirectProgram>(vm.DebugCompiledProgram.Operations.IsMatch);
 
         foreach (var inputText in new[]
                  {
@@ -44,6 +39,8 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                      "éx://ab",
                      "x://a b",
                      "x://é🙂",
+                     "x://😀",
+                     "x://a😀",
                      "prefix https://atlas.example.org/reports/export?id=42 suffix",
                      "x://ab?q=hello#fragment",
                      "bad://a then good://ab",
@@ -51,7 +48,8 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            Assert.Equal(ScalarClassOracle(inputText, direct.Pattern, 0), direct.IsMatch(input));
+            Assert.Equal(ScalarClassOracle(inputText, direct.Pattern, 0), vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -60,7 +58,9 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                var expected = ScalarClassOracle(inputText, direct.Pattern, Encoding.UTF8.GetString(input.AsSpan(0, start)).EnumerateRunes().Count());
+                Assert.Equal(expected, direct.IsMatch(input, start));
+                Assert.Equal(expected, vm.IsMatch(input, start));
             }
         }
     }
@@ -71,7 +71,6 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
         const string Pattern = @"[\d]+--[^x\s]+[^\s]+(?:![a-z]*)?";
         var direct = new Utf8Pcre2Regex(Pattern);
         var vm = CreateMetered(Pattern, 1_000_000);
-        Assert.IsType<Pcre2SeparatedRunsIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
 
         foreach (var inputText in new[]
                  {
@@ -85,12 +84,13 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            Assert.Equal(ScalarClassOracle(inputText, direct.Pattern, 0), direct.IsMatch(input));
+            Assert.Equal(ScalarClassOracle(inputText, direct.Pattern, 0), vm.IsMatch(input));
         }
     }
 
     [Fact]
-    public void SeparatedRunsFallBackForMatchOptionsAndLimits()
+    public void SeparatedRunsObserveMatchOptionsAndLimits()
     {
         var direct = new Utf8Pcre2Regex(UriPattern);
         var vm = CreateMetered(UriPattern, 1_000_000);
@@ -106,7 +106,9 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                      Pcre2MatchOptions.NotEmptyAtStart,
                  })
         {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
+            var expected = options != Pcre2MatchOptions.Anchored;
+            Assert.Equal(expected, direct.IsMatch(input, 0, options));
+            Assert.Equal(expected, vm.IsMatch(input, 0, options));
         }
 
         var tightlyMetered = CreateMetered(UriPattern, 1);
@@ -115,32 +117,17 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
     }
 
-    [Fact]
-    public void SeparatedRunsAnalyzerRejectsUnprovenLanguages()
+    private static bool ScalarClassOracle(string text, string pattern, int scalarStart)
     {
-        foreach (var regex in new[]
-                 {
-                     new Utf8Pcre2Regex(@"[\w]{2,}://[^/\s?#]+[^\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]++://[^/\s?#]+[^\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]+é[^/\s?#]+[^\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]+://[^\s?#]+[^/\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]++[^\s?#]+"),
-                     new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+x"),
-                     new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:x){0,2}"),
-                     new Utf8Pcre2Regex(UriPattern, Pcre2CompileOptions.Caseless),
-                     new Utf8Pcre2Regex(UriPattern, Pcre2CompileOptions.Ucp),
-                     new Utf8Pcre2Regex(
-                         UriPattern,
-                         Pcre2CompileOptions.None,
-                         new Utf8Pcre2CompileSettings { Bsr = Pcre2BsrConvention.AnyCrlf },
-                         default(Utf8Pcre2ExecutionLimits),
-                         Regex.InfiniteMatchTimeout),
-                 })
-        {
-            Assert.IsNotType<Pcre2SeparatedRunsIsMatchDirectProgram>(
-                regex.DebugCompiledProgram.Operations.IsMatch);
-        }
+        // These two grammars use ASCII positive classes and negative ASCII
+        // delimiter classes only. Map each non-ASCII scalar to one BMP symbol:
+        // this preserves every predicate while preventing BCL surrogate splitting.
+        // This projection is not a general PCRE2 or Unicode-class comparator.
+        var projected = string.Concat(text.EnumerateRunes().Select(r => r.IsAscii ? (char)r.Value : 'é'));
+        var ascii = pattern.Replace(@"[\w]", "[A-Za-z0-9_]", StringComparison.Ordinal)
+            .Replace(@"[\d]", "[0-9]", StringComparison.Ordinal)
+            .Replace(@"\s", @"\t\n\r\f\v ", StringComparison.Ordinal);
+        return new Regex(ascii, RegexOptions.CultureInvariant).IsMatch(projected, scalarStart);
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

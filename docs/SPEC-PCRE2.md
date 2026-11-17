@@ -34,6 +34,11 @@ depth and covered storage remain route-dependent; their numerical requirements
 and operating costs can increase or decrease. Lazy bounded-window alternatives
 retain their existing compatibility exclusion and profile backtracking priority.
 
+Palindrome, leading-dot-star/literal and separated-run Boolean overlays are also
+retired. Their matching uses the existing profile or shared scalar programs;
+captures, option handling and original interruption/admission remain. Numerical
+work/depth/scratch requirements and costs can increase when a shortcut disappears.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,

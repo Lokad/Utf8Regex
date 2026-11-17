@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Retire PCRE2's palindrome, leading-dot-star/literal and separated-run Boolean
+  overlays. Existing profile backtracking or shared scalar execution preserves
+  matching, captures and original controls; operating and numerical resource costs
+  can increase. Literal/search helpers and PCRE2 semantic foundations remain.
+
 - Remove PythonRe's constructor-selected prefix/digit Match and DotAll
   prefix/suffix FullMatch shortcuts. Existing scalar execution preserves values,
   captures, byte offsets and interruption; cold FullMatch preparation and numerical

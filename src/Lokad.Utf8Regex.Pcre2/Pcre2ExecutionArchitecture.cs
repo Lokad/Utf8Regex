@@ -380,9 +380,6 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2AsciiLiteralAlternationRepeat = 11,
     Pcre2SameStartLiteral = 12,
     Pcre2LiteralPrefixRepeat = 13,
-    Pcre2PalindromeIsMatch = 14,
-    Pcre2LeadingDotStarLiteralIsMatch = 15,
-    Pcre2SeparatedRunsIsMatch = 16,
     Pcre2AsciiBoundedIsMatch = 17,
     Pcre2AsciiAnchoredDfaIsMatch = 18,
     Pcre2Slice = 19,
@@ -705,42 +702,6 @@ internal static class Pcre2CompiledProgramOverlay
                 singleTokenRepeat,
                 singleTokenRepeat,
                 singleTokenRepeat);
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            Pcre2PalindromeIsMatchAnalyzer.TryCompile(
-                root,
-                request,
-                backtrackingProgram) is { } palindrome)
-        {
-            operations = operations with
-            {
-                IsMatch = palindrome,
-            };
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            Pcre2LeadingDotStarLiteralIsMatchAnalyzer.TryCompile(
-                root,
-                request,
-                backtrackingProgram) is { } leadingDotStarLiteral)
-        {
-            operations = operations with
-            {
-                IsMatch = leadingDotStarLiteral,
-            };
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            Pcre2SeparatedRunsIsMatchAnalyzer.TryCompile(
-                root,
-                request,
-                backtrackingProgram) is { } separatedRuns)
-        {
-            operations = operations with
-            {
-                IsMatch = separatedRuns,
-            };
         }
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
@@ -1195,24 +1156,6 @@ internal static class Pcre2ProgramInvariant
             !IsOwnedMatchFallback(program, literalPrefixRepeatProgram.Fallback))
         {
             throw new InvalidOperationException("A literal-prefix repeat backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2PalindromeIsMatchDirectProgram palindromeProgram &&
-            !IsOwnedMatchFallback(program, palindromeProgram.Fallback))
-        {
-            throw new InvalidOperationException("A palindrome IsMatch backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram &&
-            !IsOwnedMatchFallback(program, leadingDotStarLiteralProgram.Fallback))
-        {
-            throw new InvalidOperationException("A leading dot-star literal IsMatch backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram &&
-            !IsOwnedMatchFallback(program, separatedRunsProgram.Fallback))
-        {
-            throw new InvalidOperationException("A separated-runs IsMatch backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram &&
@@ -2078,70 +2021,6 @@ internal static partial class Pcre2Runner
 
             result = Pcre2BacktrackingRunner.Match(
                 literalPrefixRepeatProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2PalindromeIsMatchDirectProgram palindromeProgram)
-        {
-            if (start.Value == 0 &&
-                matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null))
-            {
-                result = Pcre2PalindromeIsMatchRunner.IsMatch(palindromeProgram, input.Bytes);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                palindromeProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram)
-        {
-            if (matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null))
-            {
-                result = Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
-                    leadingDotStarLiteralProgram,
-                    input.Bytes,
-                    start.Value);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                leadingDotStarLiteralProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram)
-        {
-            if (matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null))
-            {
-                result = Pcre2SeparatedRunsIsMatchRunner.IsMatch(
-                    separatedRunsProgram,
-                    input.Bytes,
-                    start.Value);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                separatedRunsProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
