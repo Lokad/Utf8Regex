@@ -3,17 +3,17 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
+public sealed class Pcre2AnchoredDotSearchTests
 {
     private const string FtpLinePattern = @"^([0-9]+)(\-| |$)(.*)$";
 
     [Fact]
-    public void AnchoredDefaultDotUsesPreparedIsMatchAndVmForDetailedOperations()
+    public void AnchoredDefaultDotPreservesBooleanAndDetailedResults()
     {
         var regex = new Utf8Pcre2Regex(FtpLinePattern);
 
         Assert.Equal(
-            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+            "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("123-file listing"u8));
         Assert.True(regex.IsMatch("123 αβ"u8));
@@ -28,12 +28,9 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
     }
 
     [Fact]
-    public void ExplicitZeroOffsetKeepsTheScalarBooleanRouteAndSubjectContract()
+    public void ExplicitZeroOffsetKeepsTheSubjectSliceAndByteStartContract()
     {
         var regex = new Utf8Pcre2Regex(FtpLinePattern);
-        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        Assert.True(program.SupportsPreparedOffsets);
-        Assert.Equal("FallbackRegex", program.Regex.Inspection.ExecutionKind.ToString());
         foreach (var text in new[] { "123-file listing", "123-\u00e9\u4e2d\U0001f600", "abc-" + new string('\u00e9', 131072), "abc-" + new string('x', 262144) })
         {
             var bytes = Encoding.UTF8.GetBytes(text);
@@ -45,12 +42,11 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
     }
 
     [Fact]
-    public void AnchoredDefaultDotMatchesTheMeteredVmAtEveryValidStart()
+    public void AnchoredDefaultDotMatchesAnIndependentOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(FtpLinePattern);
         var vm = CreateMetered(FtpLinePattern, 1_000_000);
-        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(vm.DebugCompiledProgram.Operations.IsMatch);
+        var oracle = new Regex(FtpLinePattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
                  {
@@ -68,7 +64,9 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            var expected = oracle.IsMatch(inputText);
+            Assert.Equal(expected, direct.IsMatch(input));
+            Assert.Equal(expected, vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -77,13 +75,15 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                var expectedAtStart = oracle.IsMatch(inputText, Encoding.UTF8.GetCharCount(input.AsSpan(0, start)));
+                Assert.Equal(expectedAtStart, direct.IsMatch(input, start));
+                Assert.Equal(expectedAtStart, vm.IsMatch(input, start));
             }
         }
     }
 
     [Fact]
-    public void AnchoredDefaultDotFallsBackOutsideTheProvenContract()
+    public void AnchoredDefaultDotObservesOptionsAndLimits()
     {
         var direct = new Utf8Pcre2Regex(FtpLinePattern);
         var vm = CreateMetered(FtpLinePattern, 1_000_000);
@@ -106,19 +106,6 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@".+").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(FtpLinePattern, Pcre2CompileOptions.DotAll)
-                .DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(
-                FtpLinePattern,
-                Pcre2CompileOptions.None,
-                new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                default(Utf8Pcre2ExecutionLimits),
-                Regex.InfiniteMatchTimeout)
-                .DebugCompiledProgram.Operations.IsMatch);
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

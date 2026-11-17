@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2's bounded-ASCII, regular-ASCII and anchored-DFA Boolean overlays,
+  including the private DFA compiler. Existing profile and shared scalar programs
+  preserve supported matching and controls; numerical resource needs and costs
+  can change. Keep literal mechanisms and general search/backtracking foundations.
+
 - Retire PCRE2's palindrome, leading-dot-star/literal and separated-run Boolean
   overlays. Existing profile backtracking or shared scalar execution preserves
   matching, captures and original controls; operating and numerical resource costs

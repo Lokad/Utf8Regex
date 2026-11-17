@@ -24,15 +24,10 @@ public sealed class Pcre2BooleanSearchInterruptionTests
             1 => new string('a', 65536) + "ss",
             _ => new string('a', 8192) + "://ab",
         });
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 5_000_000, DepthLimit = 8192,
-                HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 },
-            TimeSpan.FromMilliseconds(20));
-        var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(shortText));
         using var source = new CancellationTokenSource();
         var reads = 0;
         var entered = false;
-        var armed = true;
+        var armed = false;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
             // One invocation start, its entry check, then a later work check.
@@ -43,6 +38,12 @@ public sealed class Pcre2BooleanSearchInterruptionTests
             source.Cancel();
             return 0;
         });
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
+            new() { MatchLimit = 5_000_000, DepthLimit = 8192,
+                HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 },
+            TimeSpan.FromMilliseconds(20));
+        var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(shortText));
+        armed = true;
         Exception? failure = null;
         try { _ = regex.IsMatch(input, 0, Pcre2MatchOptions.None, source.Token); }
         catch (Exception error) { failure = error; }

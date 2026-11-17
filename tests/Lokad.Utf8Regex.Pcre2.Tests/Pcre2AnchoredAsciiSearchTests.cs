@@ -3,18 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
+public sealed class Pcre2AnchoredAsciiSearchTests
 {
     private const string FloatPattern = @"^[-+]?\d*\.?\d*$";
 
     [Fact]
-    public void FloatLanguageUsesDfaOnlyForBooleanExecution()
+    public void FloatLanguagePreservesBooleanAndCaptureResults()
     {
         var regex = new Utf8Pcre2Regex(FloatPattern);
-
-        Assert.Equal(
-            "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("-3.14159"u8));
         Assert.True(regex.IsMatch("+.5"u8));
         Assert.True(regex.IsMatch("."u8));
@@ -28,7 +24,7 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
     }
 
     [Fact]
-    public void AnchoredAsciiDfaMatchesTheMeteredVmAtEveryValidStart()
+    public void AnchoredAsciiResultsAgreeAtEveryValidStart()
     {
         AssertEquivalentAtEveryValidStart(
             FloatPattern,
@@ -69,7 +65,7 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
     }
 
     [Fact]
-    public void AnchoredAsciiDfaMatchesTheVmAcrossAmbiguousRegularLanguages()
+    public void AmbiguousRegularLanguagesMatchAnIndependentOracle()
     {
         foreach (var pattern in new[]
                  {
@@ -80,28 +76,25 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
         {
             var direct = new Utf8Pcre2Regex(pattern);
             var vm = CreateMetered(pattern, 1_000_000);
-            Assert.IsType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-                direct.DebugCompiledProgram.Operations.IsMatch);
+        var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
+            .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
             foreach (var inputText in EnumerateWords("ab0.\n", 5))
             {
                 var input = Encoding.UTF8.GetBytes(inputText);
-                Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+                var expected = oracle.IsMatch(inputText);
+            Assert.Equal(expected, direct.IsMatch(input));
+            Assert.Equal(expected, vm.IsMatch(input));
             }
         }
     }
 
     [Fact]
-    public void AnchoredAsciiDfaFallsBackOutsideTheProvenContract()
+    public void AnchoredAsciiSearchObservesOptionsAndLimits()
     {
         var direct = new Utf8Pcre2Regex(FloatPattern);
         var vm = CreateMetered(FloatPattern, 1_000_000);
         var input = "-3.14159"u8.ToArray();
-
-        Assert.IsType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            vm.DebugCompiledProgram.Operations.IsMatch);
 
         foreach (var options in new[]
                  {
@@ -116,30 +109,6 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
             Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
         }
 
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"[-+]?\d*\.?\d*$").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"^\d*+\d$").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"^(?i:a*)$").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"^[^a]*$").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(FloatPattern, Pcre2CompileOptions.Ucp)
-                .DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(
-                FloatPattern,
-                Pcre2CompileOptions.None,
-                new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                default(Utf8Pcre2ExecutionLimits),
-                Regex.InfiniteMatchTimeout)
-                .DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"^(a?){100}a*$").DebugCompiledProgram.Operations.IsMatch);
-
         var tightlyMetered = CreateMetered(FloatPattern, 1);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
@@ -150,13 +119,15 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
     {
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = CreateMetered(pattern, 1_000_000);
-        Assert.IsType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
-            direct.DebugCompiledProgram.Operations.IsMatch);
+        var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
+            .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            var expected = oracle.IsMatch(inputText);
+            Assert.Equal(expected, direct.IsMatch(input));
+            Assert.Equal(expected, vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -165,7 +136,9 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                var expectedAtStart = oracle.IsMatch(inputText, Encoding.UTF8.GetCharCount(input.AsSpan(0, start)));
+                Assert.Equal(expectedAtStart, direct.IsMatch(input, start));
+                Assert.Equal(expectedAtStart, vm.IsMatch(input, start));
             }
         }
     }

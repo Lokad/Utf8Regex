@@ -6,18 +6,17 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2OptimizerAdmissionTests
 {
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void MajorExpansionRefusesBeforeTheReviewedUnadmittedGrowth(bool bounded)
+    [Fact]
+    public void MajorFiniteLanguageExpansionAdmitsBeforeAllocation()
     {
-        var (request, parsed) = Parse(bounded);
+        var (request, parsed) = Parse();
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
         var allocated = GC.GetAllocatedBytesForCurrentThread();
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Optimize(bounded, request, parsed));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Optimize(request, parsed));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        // The old paths allocated 18 MB / 205 KB before reaching their first denial.
+        // Reject the major finite-language buffer before uncontrolled growth.
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - allocated, 0, 64 * 1024);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
@@ -26,11 +25,10 @@ public sealed class Pcre2OptimizerAdmissionTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void ExpansionRetainsOriginalCancellationAndDeadline(bool bounded, bool timeout)
+    [InlineData(false)] [InlineData(true)]
+    public void ExpansionRetainsOriginalCancellationAndDeadline(bool timeout)
     {
-        var (request, parsed) = Parse(bounded);
+        var (request, parsed) = Parse();
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
@@ -46,7 +44,7 @@ public sealed class Pcre2OptimizerAdmissionTests
             if (++checkpoints != 4) return;
             if (timeout) ticks = 30000; else cancellation.Cancel();
         };
-        var failure = Record.Exception(() => Optimize(bounded, request, parsed));
+        var failure = Record.Exception(() => Optimize(request, parsed));
         if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(4, checkpoints);
@@ -57,14 +55,13 @@ public sealed class Pcre2OptimizerAdmissionTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void ExpansionSharesWorkAndDepthAdmission(bool bounded, bool depth)
+    [InlineData(false)] [InlineData(true)]
+    public void ExpansionSharesWorkAndDepthAdmission(bool depth)
     {
-        var (request, parsed) = Parse(bounded);
+        var (request, parsed) = Parse();
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue,
             depth ? ulong.MaxValue : 1, depth ? 1ul : ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Optimize(bounded, request, parsed));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Optimize(request, parsed));
         Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps,
             failure.ResourceKind);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
@@ -98,16 +95,15 @@ public sealed class Pcre2OptimizerAdmissionTests
         }
     }
 
-    private static (Pcre2CompileRequest Request, Pcre2CompiledBacktrackingOutcome Parsed) Parse(bool bounded)
+    private static (Pcre2CompileRequest Request, Pcre2CompiledBacktrackingOutcome Parsed) Parse()
     {
-        var pattern = bounded ? "([ab]){128}" : string.Concat(Enumerable.Repeat("(a)", 1024));
+        var pattern = string.Concat(Enumerable.Repeat("(a)", 1024));
         var request = new Pcre2CompileRequest(pattern, default, default, default, Timeout.InfiniteTimeSpan);
         return (request, Pcre2BacktrackingCompiler.Compile(request)!);
     }
 
-    private static void Optimize(bool bounded, Pcre2CompileRequest request, Pcre2CompiledBacktrackingOutcome parsed)
+    private static void Optimize(Pcre2CompileRequest request, Pcre2CompiledBacktrackingOutcome parsed)
     {
-        if (bounded) _ = Pcre2AsciiBoundedIsMatchAnalyzer.TryCompile(parsed.Root, request, parsed.Program);
-        else _ = Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(parsed.Root, request);
+        _ = Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(parsed.Root, request);
     }
 }

@@ -68,32 +68,21 @@ public sealed class Pcre2PatternByteSetQualificationTests
     }
 
     [Fact]
-    public void Pcre2DirectLeadingSetsShareAdmissionWithoutTemporaryClassArrays()
+    public void Pcre2LiteralRepeatLeadingSetAdmitsWithoutTemporaryClassArrays()
     {
-        Func<object>[] create =
-        [
-            () => new Pcre2AsciiLiteralAlternationRepeatDirectProgram(null!,
-                ["ab"u8.ToArray(), "ac"u8.ToArray(), "xy"u8.ToArray()], "!"u8.ToArray()),
-            () => new Pcre2AsciiBoundedIsMatchDirectProgram(
-                [[new AsciiCharClass(1ul << 33, 0)], [new AsciiCharClass(1ul << 35, 0)]], false, false, null!),
-        ];
-        foreach (var factory in create)
+        static Pcre2AsciiLiteralAlternationRepeatDirectProgram Create() => new(null!,
+            ["ab"u8.ToArray(), "ac"u8.ToArray(), "xy"u8.ToArray()], "!"u8.ToArray());
+        for (var denial = 0; denial < 3; denial++)
         {
-            for (var denial = 0; denial < 3; denial++)
-            {
-                using var owner = new Utf8ConstructionScope(0, denial == 0 ? 0ul : ulong.MaxValue,
-                    denial == 1 ? 0ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
-                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => factory());
-                Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-                    1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
-                Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-
-            }
+            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 0ul : ulong.MaxValue,
+                denial == 1 ? 0ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create());
+            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
+                1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
+            Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
         }
-        var repeat = Set(create[0](), "FirstBytes");
+        var repeat = Create().FirstBytes;
         Assert.Equal(1, repeat.IndexOf("!xyabc"u8)); Assert.Equal(-1, repeat.IndexOf("!😀"u8));
-        var bounded = Set(create[1](), "LeadingBytes");
-        Assert.Equal(2, bounded.IndexOf("??#"u8)); Assert.Equal(-1, bounded.IndexOf("a😀"u8));
     }
 
     [Fact]

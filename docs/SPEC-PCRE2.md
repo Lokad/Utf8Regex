@@ -39,6 +39,13 @@ retired. Their matching uses the existing profile or shared scalar programs;
 captures, option handling and original interruption/admission remain. Numerical
 work/depth/scratch requirements and costs can increase when a shortcut disappears.
 
+Bounded-ASCII, regular-ASCII and anchored-DFA Boolean overlays and their private
+DFA compiler are retired under the same contract. Construction still admits major
+buffers and bounds program expansion; helper-only DFA accounting is gone. Existing
+profile and shared scalar programs retain captures, option semantics and original
+controls. Numerical construction/execution requirements and operating costs change
+with the selected program.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,

@@ -94,10 +94,7 @@ public sealed partial class Utf8Pcre2Regex
         var isMatchProgram = _program.Operations.IsMatch;
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
             isMatchProgram is Pcre2FiniteLiteralLanguageDirectProgram or
-                Pcre2LiteralPrefixRepeatDirectProgram or
-                Pcre2AsciiBoundedIsMatchDirectProgram or
-                Pcre2AsciiAnchoredDfaIsMatchDirectProgram or
-                Pcre2AsciiRegularIsMatchDirectProgram)
+                Pcre2LiteralPrefixRepeatDirectProgram)
         {
             _unmeteredIsMatchProgram = isMatchProgram;
         }
@@ -196,17 +193,6 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Determines whether the well-formed UTF-8 subject contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
-        if (_unmeteredIsMatchProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegular)
-        {
-            if (!asciiRegular.SupportsPreparedOffsets ||
-                asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
-            {
-                return asciiRegular.Regex.IsMatch(input);
-            }
-
-            return asciiRegular.Regex.ByteOffsetExecution.IsMatchPrepared(input);
-        }
-
         if (_unmeteredIsMatchProgram is not null)
         {
             switch (_unmeteredIsMatchProgram.Kind)
@@ -217,16 +203,6 @@ public sealed partial class Utf8Pcre2Regex
                 case Pcre2DirectProgramKind.Pcre2LiteralPrefixRepeat:
                     return Pcre2LiteralPrefixRepeatRunner.IsMatch(
                         (Pcre2LiteralPrefixRepeatDirectProgram)_unmeteredIsMatchProgram,
-                        input,
-                        0);
-                case Pcre2DirectProgramKind.Pcre2AsciiBoundedIsMatch:
-                    return Pcre2AsciiBoundedIsMatchRunner.IsMatch(
-                        (Pcre2AsciiBoundedIsMatchDirectProgram)_unmeteredIsMatchProgram,
-                        input,
-                        0);
-                case Pcre2DirectProgramKind.Pcre2AsciiAnchoredDfaIsMatch:
-                    return Pcre2AsciiAnchoredDfaIsMatchRunner.IsMatch(
-                        (Pcre2AsciiAnchoredDfaIsMatchDirectProgram)_unmeteredIsMatchProgram,
                         input,
                         0);
             }

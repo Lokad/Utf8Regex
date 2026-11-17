@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
+public sealed class Pcre2FiniteAsciiSearchTests
 {
     private const string CreditCardPattern = @"(\d{4}[- ]){3}\d{3,4}";
 
@@ -21,7 +21,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     public void FiniteWordBoundaryLanguagesPreserveIndependentBooleanResults(string pattern, string text, bool expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
@@ -29,19 +28,8 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal(expected, regex.IsMatch(input, 0, default, token.Token));
     }
 
-    [Theory]
-    [InlineData(@"\ba!\b")]
-    [InlineData(@"\b!a\b")]
-    [InlineData(@"\b(a|!)\b")]
-    [InlineData(@"\ba?\b")]
-    [InlineData(@"\ba\bb\b")]
-    [InlineData(@"\Ba\b")]
-    public void UnprovedBoundaryEndpointsKeepTheirExistingExecutors(string pattern)
-        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
-
     [Fact]
-    public void FiniteBoundariesKeepSubjectContextCapturesValidationAndAuthority()
+    public void FiniteBoundariesKeepSubjectContextCapturesAndAuthority()
     {
         const string pattern = @"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b";
         var regex = new Utf8Pcre2Regex(pattern);
@@ -64,8 +52,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
             regex.IsMatch(input, 0, default, canceled.Token)).CancellationToken);
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch(input)).ErrorKind);
-        Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp).DebugCompiledProgram.Operations.IsMatch);
     }
 
     [Theory]
@@ -92,17 +78,16 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     [InlineData("^(?(?!a)[ab]|[ab])$", "c", false)]
     [InlineData("^x(?(?=([ab]))[a-c]|[a-c])y$", "xcy", true)]
     [InlineData("^(?(?=a)(?(?!b)a|b)|c)$", "a", true)]
-    public void SingleTokenAssertionConditionalsFilterTheExistingFiniteLanguage(string pattern, string text, bool expected)
+    public void SingleTokenAssertionConditionalsPreserveBooleanSemantics(string pattern, string text, bool expected)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, direct.IsMatch(input));
         Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
     }
 
     [Fact]
-    public void ConditionalBooleanProofKeepsScalarFloorsCapturesValidationAndRefusal()
+    public void ConditionalBooleanProofKeepsScalarFloorsCapturesAndRefusal()
     {
         const string pattern = "(?(?=(a))(a)b|(c)d)";
         var direct = new Utf8Pcre2Regex(pattern);
@@ -128,20 +113,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("ab"u8)).ErrorKind);
     }
-
-    [Theory]
-    [InlineData("^(?(?!(a)(*ACCEPT:named))def|abc)")]
-    [InlineData("^(?(?!(a)(*COMMIT))def|abc)")]
-    [InlineData("^(?(?!(a)(*ACCEPT)b)def|abc)")]
-    [InlineData("^(?(?=ab)abc|def)")]
-    [InlineData("(?(?<=a)b|c)")]
-    [InlineData("^(?(?=a)a|)$")]
-    [InlineData("^(?(?=a)a?|b)$")]
-    [InlineData("^(?(?=(é))é|a)$")]
-    [InlineData(@"^(?(?=(a))a\1|b)$")]
-    public void UnprovenConditionalLanguagesKeepTheirOwnedVm(string pattern)
-        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
 
     [Theory]
     [InlineData("(?(?!(a)(*ACCEPT))def|abc)")]
@@ -180,10 +151,9 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     [InlineData(@"^(?<x>a)(?&x)$", "aa", true)]
     [InlineData(@"^(?1)-(\d)$", "1-2", true)]
     [InlineData(@"^(?1)-(\d)$", "١-2", false)]
-    public void SingleAsciiTokenCallsUseTheExistingBooleanPlan(string pattern, string text, bool expected)
+    public void SingleAsciiTokenCallsKeepProfileSemantics(string pattern, string text, bool expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
         using var token = new CancellationTokenSource();
@@ -215,7 +185,7 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     }
 
     [Fact]
-    public void SingleTokenCallsKeepWholeInputValidationAndOriginalRefusal()
+    public void SingleTokenCallsKeepOriginalRefusal()
     {
         const string pattern = @"^(?1)\d{3}(a)";
         var regex = new Utf8Pcre2Regex(pattern);
@@ -226,27 +196,10 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
             Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("a123a"u8)).ErrorKind);
     }
 
-    [Theory]
-    [InlineData(@"^(a|ab)(?1)$")]
-    [InlineData(@"^()(?1)$")]
-    [InlineData(@"^(😀)(?1)$")]
-    [InlineData(@"^([^a])(?1)$")]
-    [InlineData(@"^(?i:(a))(?1)$")]
-    [InlineData(@"^(a)(?1)\1$")]
-    [InlineData(@"^(a)(?1)(?(1)b|c)$")]
-    [InlineData(@"^(a(?1)?)$")]
-    public void NonTokenOrCaptureDependentCallsKeepTheirOwnedVm(string pattern)
-        => Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(pattern).DebugCompiledProgram.Operations.IsMatch);
-
     [Fact]
-    public void BoundedAsciiLanguageUsesAnIsMatchOnlyDirectPlan()
+    public void BoundedAsciiPreservesBooleanAndCaptureResults()
     {
         var regex = new Utf8Pcre2Regex(CreditCardPattern);
-
-        Assert.Equal(
-            "IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("4111-1111-1111-111"u8));
         Assert.True(regex.IsMatch("4111 1111 1111 1111"u8));
         Assert.False(regex.IsMatch("4111-1111-1111-11"u8));
@@ -263,8 +216,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
     {
         var direct = new Utf8Pcre2Regex(CreditCardPattern);
         var vm = CreateMetered(CreditCardPattern, 1_000_000);
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(vm.DebugCompiledProgram.Operations.IsMatch);
 
         foreach (var inputText in new[]
                  {
@@ -310,8 +261,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         var direct = new Utf8Pcre2Regex(pattern);
         var vm = CreateMetered(pattern, 1_000_000);
         var input = Encoding.UTF8.GetBytes(inputText);
-
-        Assert.IsType<Pcre2AsciiBoundedIsMatchDirectProgram>(direct.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(expected, direct.IsMatch(input));
         Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
     }
@@ -340,35 +289,6 @@ public sealed class Pcre2AsciiBoundedIsMatchCompilerTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
-    [Fact]
-    public void BoundedAsciiLanguageAnalyzerRejectsUnprovenLanguages()
-    {
-        foreach (var regex in new[]
-                 {
-                     new Utf8Pcre2Regex(@"\d+"),
-                     new Utf8Pcre2Regex(@"[^0]{2}"),
-                     new Utf8Pcre2Regex(@".{2}"),
-                     new Utf8Pcre2Regex(@"é{2}"),
-                     new Utf8Pcre2Regex(@"(?i:a){2}"),
-                     new Utf8Pcre2Regex(@"(?:a|b|c|d|e){4}[0-9]"),
-                     new Utf8Pcre2Regex(@"[a]{129}[b]"),
-                     new Utf8Pcre2Regex(@"(a)\1"),
-                     new Utf8Pcre2Regex(@"\A\d{4}-\d{2}-\d{2}\z"),
-                     new Utf8Pcre2Regex(CreditCardPattern, Pcre2CompileOptions.Ucp),
-                     new Utf8Pcre2Regex(CreditCardPattern, Pcre2CompileOptions.Caseless),
-                     new Utf8Pcre2Regex(
-                         CreditCardPattern,
-                         Pcre2CompileOptions.None,
-                         new Utf8Pcre2CompileSettings { Bsr = Pcre2BsrConvention.AnyCrlf },
-                         default(Utf8Pcre2ExecutionLimits),
-                         Regex.InfiniteMatchTimeout),
-                 })
-        {
-            Assert.IsNotType<Pcre2AsciiBoundedIsMatchDirectProgram>(
-                regex.DebugCompiledProgram.Operations.IsMatch);
-        }
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

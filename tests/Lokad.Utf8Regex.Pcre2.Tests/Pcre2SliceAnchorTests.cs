@@ -19,7 +19,7 @@ public sealed class Pcre2SliceAnchorTests
         {
             var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
             Assert.Equal(
-                "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+                "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
                 regex.DebugDescribeExecutionPlan());
         }
 

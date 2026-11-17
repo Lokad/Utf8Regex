@@ -74,12 +74,12 @@ public sealed class Pcre2ExecutionArchitectureTests
     public void CompiledProgramUsesTypedOperationBackendsWithOwnedPayloads()
     {
         var literal = new Utf8Pcre2Regex("abc").DebugCompiledProgram;
-        var delegated = new Utf8Pcre2Regex("^([a-z]+)-([0-9]{2})$").DebugCompiledProgram;
+        var delegated = new Utf8Pcre2Regex("foo|bar").DebugCompiledProgram;
         var special = new Utf8Pcre2Regex("(?|(abc)|(xyz))").DebugCompiledProgram;
 
         Assert.IsType<Pcre2LiteralDirectProgram>(literal.Operations.IsMatch);
         Assert.Null(literal.PrimaryUtf8);
-        var direct = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(delegated.Operations.IsMatch);
+        var direct = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(delegated.Operations.IsMatch);
         var primary = Assert.IsType<Utf8Regex>(delegated.PrimaryUtf8);
         Assert.Same(primary, direct.Regex);
         var finite = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
@@ -89,7 +89,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void AsciiRegularIsMatchReusesCoreOnlyForItsProvenSemanticSubset()
+    public void AsciiGrammarPreservesIndependentBooleanResults()
     {
         const string emailPattern = @"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,12}$";
         const string fixedFieldsPattern = @"^([a-z]+)-([0-9]{2})$";
@@ -97,9 +97,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         var email = new Utf8Pcre2Regex(emailPattern);
         var fixedFields = new Utf8Pcre2Regex(fixedFieldsPattern);
         var unanchoredIp = new Utf8Pcre2Regex(unanchoredIpPattern);
-
-        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(email.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(fixedFields.DebugCompiledProgram.Operations.IsMatch);
         Assert.True(email.IsMatch("ops@northwind.example"u8));
         Assert.True(email.IsMatch("ops@northwind.example\n"u8));
         Assert.False(email.IsMatch("ops@northwind.example#"u8));
@@ -108,16 +105,10 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.False(fixedFields.IsMatch("alpha-123"u8));
         Assert.True(unanchoredIp.IsMatch("prefix 192.168.001.001 suffix"u8));
         Assert.False(unanchoredIp.IsMatch("prefix 999.999.999.999 suffix"u8));
-
-        foreach (var unsupported in new[] { @"\w+", @"[^a]+", ".+", "é+", @"(?=a)a", @"(a)\1" })
-        {
-            Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-                new Utf8Pcre2Regex(unsupported).DebugCompiledProgram.Operations.IsMatch);
-        }
     }
 
     [Fact]
-    public void AsciiRegularIsMatchRetainsBacktrackingForOffsetsOptionsAndLimits()
+    public void AsciiGrammarPreservesOffsetsOptionsAndLimits()
     {
         var ordinary = new Utf8Pcre2Regex("^a+$");
         var captured = new Utf8Pcre2Regex("(a)");
@@ -132,7 +123,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.False(ordinary.IsMatch("xa"u8, 1));
         Assert.False(captured.IsMatch("xa"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.True(captured.IsMatch("xa"u8, 1, Pcre2MatchOptions.Anchored));
-        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(limited.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("aaaaaaaa"u8)).ErrorKind);
@@ -518,7 +508,8 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         var input = "aaaaaaaa"u8;
         var compiled = regex.DebugCompiledProgram;
-        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(compiled.Operations.IsMatch).Fallback;
+        var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
         var subject = Utf8ValidatedInput.Create(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
@@ -645,7 +636,8 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         var input = "aaab"u8;
         var compiled = regex.DebugCompiledProgram;
-        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(compiled.Operations.IsMatch).Fallback;
+        var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
         var subject = Utf8ValidatedInput.Create(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,

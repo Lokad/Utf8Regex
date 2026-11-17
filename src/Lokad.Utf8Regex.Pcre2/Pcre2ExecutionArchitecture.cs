@@ -204,27 +204,6 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
-internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
-{
-    internal Pcre2AsciiRegularIsMatchDirectProgram(
-        Utf8Regex regex,
-        bool supportsPreparedOffsets,
-        Pcre2BacktrackingProgram fallback)
-    {
-        Regex = regex;
-        SupportsPreparedOffsets = supportsPreparedOffsets;
-        Fallback = fallback;
-    }
-
-    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiRegularIsMatch;
-
-    internal Utf8Regex Regex { get; }
-
-    internal bool SupportsPreparedOffsets { get; }
-
-    internal Pcre2BacktrackingProgram Fallback { get; }
-}
-
 internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2LiteralFamilyDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
@@ -375,13 +354,10 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2Backtracking = 5,
     Pcre2LiteralFamily = 6,
     Pcre2SingleTokenRepeat = 7,
-    Pcre2AsciiRegularIsMatch = 8,
     Pcre2MultilinePrefix = 9,
     Pcre2AsciiLiteralAlternationRepeat = 11,
     Pcre2SameStartLiteral = 12,
     Pcre2LiteralPrefixRepeat = 13,
-    Pcre2AsciiBoundedIsMatch = 17,
-    Pcre2AsciiAnchoredDfaIsMatch = 18,
     Pcre2Slice = 19,
 }
 
@@ -702,48 +678,6 @@ internal static class Pcre2CompiledProgramOverlay
                 singleTokenRepeat,
                 singleTokenRepeat,
                 singleTokenRepeat);
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            Pcre2AsciiBoundedIsMatchAnalyzer.TryCompile(
-                root,
-                request,
-                backtrackingProgram) is { } asciiBounded)
-        {
-            operations = operations with
-            {
-                IsMatch = asciiBounded,
-            };
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            preparedCore is { } asciiRegularPrimary &&
-            Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(
-                root,
-                request,
-                asciiRegularPrimary))
-        {
-            var supportsPreparedOffsets =
-                Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root);
-            operations = operations with
-            {
-                IsMatch = new Pcre2AsciiRegularIsMatchDirectProgram(
-                    asciiRegularPrimary,
-                    supportsPreparedOffsets,
-                    backtrackingProgram),
-            };
-        }
-
-        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
-            Pcre2AsciiAnchoredDfaIsMatchAnalyzer.TryCompile(
-                root,
-                request,
-                backtrackingProgram) is { } asciiAnchoredDfa)
-        {
-            operations = operations with
-            {
-                IsMatch = asciiAnchoredDfa,
-            };
         }
 
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(root, request);
@@ -1122,7 +1056,6 @@ internal static class Pcre2ProgramInvariant
 
     internal static Utf8Regex? GetCoreRegex(IPcre2DirectProgram program) => program switch
     {
-        Pcre2AsciiRegularIsMatchDirectProgram regular => regular.Regex,
         Pcre2AsciiLiteralAlternationRepeatDirectProgram repeat => repeat.Regex,
         Pcre2LiteralFamilyDirectProgram family => family.Regex,
         _ => null,
@@ -1157,71 +1090,6 @@ internal static class Pcre2ProgramInvariant
         {
             throw new InvalidOperationException("A literal-prefix repeat backend must be owned by its compiled PCRE2 program.");
         }
-
-        if (directProgram is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram &&
-            !IsOwnedMatchFallback(program, asciiBoundedProgram.Fallback))
-        {
-            throw new InvalidOperationException("A bounded ASCII IsMatch backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram &&
-            !IsOwnedMatchFallback(program, asciiAnchoredDfaProgram.Fallback))
-        {
-            throw new InvalidOperationException("An anchored ASCII DFA IsMatch backend must be owned by its compiled PCRE2 program.");
-        }
-    }
-}
-
-internal static class Pcre2AsciiRegularIsMatchAnalyzer
-{
-    internal static bool CanReuseCoreExecution(
-        IPcre2BacktrackingNode root,
-        Pcre2CompileRequest request,
-        Utf8Regex regex)
-    {
-        return request.Options == Pcre2CompileOptions.None &&
-            request.Settings.Newline == Pcre2NewlineConvention.Default &&
-            request.Settings.Bsr == Pcre2BsrConvention.Default &&
-            !request.Settings.AllowDuplicateNames &&
-            request.Settings.BackslashC == Pcre2BackslashCPolicy.Forbid &&
-            !request.Settings.AllowLookaroundBackslashK &&
-            IsSupportedNode(root) &&
-            (Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root) ||
-             regex.Inspection.PreparedRegex.AnchoredLiteral.IsExact);
-    }
-
-    internal static bool IsSupportedNode(IPcre2BacktrackingNode node) => node switch
-    {
-        Pcre2EmptyBacktrackingNode => true,
-        Pcre2TokenBacktrackingNode { Token: var token } => IsSupportedToken(token),
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.All(IsSupportedNode),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.All(IsSupportedNode),
-        Pcre2RepeatBacktrackingNode { Preference: not Pcre2RepeatPreference.Possessive } repeat =>
-            IsSupportedNode(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => IsSupportedNode(capture.Body),
-        _ => false,
-    };
-
-    internal static bool IsSupportedToken(Pcre2CharacterToken token)
-    {
-        if (token.Options != Pcre2CharacterOptions.None)
-        {
-            return false;
-        }
-
-        return token.Kind switch
-        {
-            Pcre2CharacterTokenKind.Literal => token.Literal.IsAscii,
-            Pcre2CharacterTokenKind.CharacterClass =>
-                !token.CharacterClass.Negated &&
-                token.CharacterClass.Terms.All(static term =>
-                    !term.Negated &&
-                    term.Kind == Pcre2CharacterClassTermKind.Range &&
-                    term.Range.High < 128),
-            Pcre2CharacterTokenKind.Any or Pcre2CharacterTokenKind.AnyNotNewline => true,
-            Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.EndOfLine => true,
-            _ => false,
-        };
     }
 }
 
@@ -2021,70 +1889,6 @@ internal static partial class Pcre2Runner
 
             result = Pcre2BacktrackingRunner.Match(
                 literalPrefixRepeatProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram)
-        {
-            if (matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null))
-            {
-                result = Pcre2AsciiBoundedIsMatchRunner.IsMatch(
-                    asciiBoundedProgram,
-                    input.Bytes,
-                    start.Value);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                asciiBoundedProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram)
-        {
-            if (matchOptions == Pcre2MatchOptions.None &&
-                (invocation.IsUnmetered && invocation.CheckpointHook is null))
-            {
-                result = Pcre2AsciiAnchoredDfaIsMatchRunner.IsMatch(
-                    asciiAnchoredDfaProgram,
-                    input.Bytes,
-                    start.Value);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                asciiAnchoredDfaProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram)
-        {
-            if (start.Value == 0 && asciiRegularProgram.SupportsPreparedOffsets &&
-                matchOptions == Pcre2MatchOptions.None &&
-                invocation.IsUnmetered && invocation.CheckpointHook is null)
-            {
-                result = asciiRegularProgram.Regex.ByteOffsetExecution.IsMatchPrepared(input.Bytes);
-                return true;
-            }
-
-            result = Pcre2BacktrackingRunner.Match(
-                asciiRegularProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,

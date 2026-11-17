@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
+public sealed class Pcre2AsciiSearchTests
 {
     private const string IpPattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
 
@@ -21,10 +21,11 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
     }
 
     [Fact]
-    public void UnanchoredAsciiRegularMatchesTheMeteredVmAtEveryValidStart()
+    public void UnanchoredAsciiMatchesAnIndependentOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(IpPattern);
         var vm = CreateMetered(IpPattern, 1_000_000);
+        var oracle = new Regex(IpPattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
                  {
@@ -41,7 +42,9 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
                  })
         {
             var input = Encoding.UTF8.GetBytes(inputText);
-            Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
+            var expected = oracle.IsMatch(inputText);
+            Assert.Equal(expected, direct.IsMatch(input));
+            Assert.Equal(expected, vm.IsMatch(input));
 
             for (var start = 0; start <= input.Length; start++)
             {
@@ -50,13 +53,15 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
                     continue;
                 }
 
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
+                var expectedAtStart = oracle.IsMatch(inputText, Encoding.UTF8.GetCharCount(input.AsSpan(0, start)));
+                Assert.Equal(expectedAtStart, direct.IsMatch(input, start));
+                Assert.Equal(expectedAtStart, vm.IsMatch(input, start));
             }
         }
     }
 
     [Fact]
-    public void UnanchoredAsciiRegularRetainsVmForOptionsLimitsAndUnsafeClasses()
+    public void UnanchoredAsciiObservesOptionsAndLimits()
     {
         var direct = new Utf8Pcre2Regex(IpPattern);
         var vm = CreateMetered(IpPattern, 1_000_000);
@@ -72,14 +77,6 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
         {
             Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
         }
-
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"\d+\.\d+").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(@"[^.]+\.[^.]+").DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            new Utf8Pcre2Regex(IpPattern, Pcre2CompileOptions.Ucp)
-                .DebugCompiledProgram.Operations.IsMatch);
 
         var tightlyMetered = CreateMetered(IpPattern, 1);
         Assert.Equal(

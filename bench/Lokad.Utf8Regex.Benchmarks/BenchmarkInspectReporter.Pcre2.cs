@@ -26,12 +26,9 @@ internal static partial class BenchmarkInspectReporter
         var backtrackingProgram = program.Operations.IsMatch switch
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
-            Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
             Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
             Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
             Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
-            Pcre2AsciiBoundedIsMatchDirectProgram asciiBounded => asciiBounded.Fallback,
-            Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfa => asciiAnchoredDfa.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
