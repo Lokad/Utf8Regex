@@ -21,9 +21,18 @@ public sealed class PythonReClassDelimiterWindowTests
         {
             using var token = new CancellationTokenSource();
             using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 128,
-                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
-            var result = owner.SearchDetailed(storage.AsSpan(3, bytes.Length), floor, token.Token);
+                finite ? new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1_000_000,
+                    MaxResultBytes = 1_000_000
+                } : default);
+            Utf8PythonRangeMatch result = default;
+            using (var captureCursor1 = owner.CreateMatchCursor(storage.AsMemory(3, bytes.Length), floor, token.Token, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out result);
+            }
             Assert.Equal(expectedStart, result.Value.StartOffsetInBytes);
             Assert.Equal(new[] { expectedWhole, first, second }, PythonReCaptureAssert.Values(result));
         }
@@ -58,8 +67,13 @@ public sealed class PythonReClassDelimiterWindowTests
             foreach (var finite in new[] { false, true })
             {
                 using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                    finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096,
-                        MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 } : default);
+                    finite ? new()
+                    {
+                        MaxWorkSteps = 1_000_000,
+                        MaxDepth = 4096,
+                        MaxWorkingBytes = 1_000_000,
+                        MaxResultBytes = 1_000_000
+                    } : default);
                 Assert.Equal(oracle.Count(text), owner.Count(input));
                 Assert.Equal(oracle.Count(suffix), owner.Count(input, Encoding.UTF8.GetByteCount(prefix)));
                 var collectedRanges1 = new List<Utf8PythonRangeMatch>();
@@ -112,7 +126,9 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(steps, Run(steps));
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DirectWindowCountKeepsOriginalInterruption(bool timeout)
     {
         long ticks = 0;
@@ -134,8 +150,12 @@ public sealed class PythonReClassDelimiterWindowTests
     }
 
     [Theory]
-    [InlineData(255, false)] [InlineData(256, false)] [InlineData(256, true)]
-    [InlineData(2048, false)] [InlineData(2048, true)] [InlineData(4097, true)]
+    [InlineData(255, false)]
+    [InlineData(256, false)]
+    [InlineData(256, true)]
+    [InlineData(2048, false)]
+    [InlineData(2048, true)]
+    [InlineData(4097, true)]
     public void PublicOperationsKeepCapturesAndUnicodePrefixContext(int prefix, bool finite)
     {
         const string pattern = "([a-z]+)-([0-9]+)";
@@ -143,9 +163,18 @@ public sealed class PythonReClassDelimiterWindowTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern);
         using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            finite ? new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1_000_000,
-                MaxResultBytes = 1_000_000, MaxDepth = 128 } : default);
-        var first = owner.SearchDetailed(input);
+            finite ? new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1_000_000,
+                MaxResultBytes = 1_000_000,
+                MaxDepth = 128
+            } : default);
+        Utf8PythonRangeMatch first = default;
+        using (var captureCursor2 = owner.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out first);
+        }
         var wanted = oracle.Match(text);
         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), first.Value.StartOffsetInBytes);
         Assert.Equal(new[] { "item-123", "item", "123" }, PythonReCaptureAssert.Values(first));
@@ -157,7 +186,7 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.True(owner.Match(input, floor).Success);
         Assert.False(owner.Match(input).Success);
         Assert.False(owner.FullMatch(input, floor).Success);
-        Assert.Equal("item", System.Text.Encoding.UTF8.GetString(first.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("item", System.Text.Encoding.UTF8.GetString((first.Groups[1].Success ? first.GetGroupMemory(first.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -193,8 +222,14 @@ public sealed class PythonReClassDelimiterWindowTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
-    [InlineData(246)] [InlineData(247)] [InlineData(248)] [InlineData(512)]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(246)]
+    [InlineData(247)]
+    [InlineData(248)]
+    [InlineData(512)]
     public void EveryWorkCutoffRetainsTheCallerLoanAndRefusesPartialSuccess(int prefix)
     {
         var program = PythonReScalarCompiler.Compile(new PythonReParser("([a-z]+)-([0-9]+)").Parse(default));
@@ -220,7 +255,9 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(steps, Run(steps));
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WindowSearchKeepsOriginalCancellationAndDeadline(bool timeout)
     {
         var program = PythonReScalarCompiler.Compile(new PythonReParser("([a-z]+)-([0-9]+)").Parse(default));
@@ -256,8 +293,12 @@ public sealed class PythonReClassDelimiterWindowTests
     }
 
     [Theory]
-    [InlineData(15)] [InlineData(16)] [InlineData(17)]
-    [InlineData(255)] [InlineData(256)] [InlineData(257)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(257)]
     public void SubjectGateKeepsDetailedCapturesLaterFloorsAndAnchoredOperations(int length)
     {
         var text = new string('x', length - 7) + " item-1";
@@ -268,9 +309,18 @@ public sealed class PythonReClassDelimiterWindowTests
             using var token = new CancellationTokenSource();
             using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)", default,
                 mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
-                mode == 0 ? default : new() { MaxWorkSteps = 1_000_000, MaxDepth = 128,
-                    MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 });
-            var first = owner.SearchDetailed(input, 0, token.Token);
+                mode == 0 ? default : new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1_000_000,
+                    MaxResultBytes = 1_000_000
+                });
+            Utf8PythonRangeMatch first = default;
+            using (var captureCursor3 = owner.CreateMatchCursor((input).ToArray(), 0, token.Token, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor3.MoveNext(out first);
+            }
             Assert.Equal((at, length), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes));
             Assert.Equal(new[] { "item-1", "item", "1" }, PythonReCaptureAssert.Values(first));
             Assert.Equal(at + 1, owner.Search(input, at + 1, token.Token).StartOffsetInBytes);

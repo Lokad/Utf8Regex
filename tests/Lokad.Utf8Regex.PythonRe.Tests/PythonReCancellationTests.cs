@@ -67,7 +67,16 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SearchDetailed(s_input, cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+        {
+            Utf8PythonRangeMatch snapshot1 = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(s_input, cancellationToken: token, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out snapshot1);
+            }
+
+            _ = snapshot1;
+        });
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -76,7 +85,16 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+        {
+            Utf8PythonRangeMatch snapshot2 = default;
+            using (var captureCursor2 = regex.CreateMatchCursor(s_input, cancellationToken: token, mode: Utf8PythonMatchMode.Match))
+            {
+                captureCursor2.MoveNext(out snapshot2);
+            }
+
+            _ = snapshot2;
+        });
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -85,7 +103,16 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FullMatchDetailed(s_input, cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+        {
+            Utf8PythonRangeMatch snapshot3 = default;
+            using (var captureCursor3 = regex.CreateMatchCursor(s_input, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor3.MoveNext(out snapshot3);
+            }
+
+            _ = snapshot3;
+        });
         Assert.Equal(token, exception.CancellationToken);
     }
 

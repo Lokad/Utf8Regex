@@ -77,7 +77,16 @@ public sealed class PythonReFiniteDepthPolicyTests
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };
         var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailed("😀😀😀ab"u8));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            Utf8PythonRangeMatch snapshot1 = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(("😀😀😀ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out snapshot1);
+            }
+
+            _ = snapshot1;
+        });
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(1UL, error.Limit);
         Assert.True(error.Requested > 1);

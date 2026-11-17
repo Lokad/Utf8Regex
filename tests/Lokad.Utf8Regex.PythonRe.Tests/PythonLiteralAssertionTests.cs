@@ -11,13 +11,22 @@ public sealed class PythonLiteralAssertionTests
     {
         using var token = new CancellationTokenSource();
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
-        var match = regex.SearchDetailed("foobar"u8, 0, token.Token);
+            new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            });
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("foobar"u8).ToArray(), 0, token.Token, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("foobar", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.False(match.GetGroup(1).Success);
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal("foobar", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.False(match.Groups[1].Success);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -33,8 +42,13 @@ public sealed class PythonLiteralAssertionTests
     public void FixedForwardAssertionsRetainPythonResults(string pattern, string text, bool success, int start)
     {
         var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 128,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        };
         foreach (var bytes in new[] { false, true })
         {
             if (bytes && pattern.Contains("😀", StringComparison.Ordinal)) continue;
@@ -48,10 +62,14 @@ public sealed class PythonLiteralAssertionTests
             Assert.Equal(start, match.StartOffsetInBytes);
             Assert.True(regex.Search(input, start).Success);
             Assert.False(regex.Search(input, start + 1).Success);
-            var retained = regex.SearchDetailed(input);
-            Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-            if (pattern.Contains("?P<x>", StringComparison.Ordinal)) Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
-            Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+            Utf8PythonRangeMatch retained = default;
+            using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor2.MoveNext(out retained);
+            }
+            Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+            if (pattern.Contains("?P<x>", StringComparison.Ordinal)) Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
 
         }
     }

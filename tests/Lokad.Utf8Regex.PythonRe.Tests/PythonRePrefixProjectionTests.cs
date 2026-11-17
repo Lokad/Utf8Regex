@@ -6,21 +6,24 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonRePrefixProjectionTests
 {
     [Theory]
-    [InlineData("(a)(b)","ab",0,2)]
-    [InlineData("a(?=(😀))","a😀",0,1)]
-    [InlineData("(?<=(é))(😀)","é😀",2,6)]
-    public void EarlyDetailedCursorAndCollectionIgnoreUnusedSuffix(string pattern,string prefix,        int start,int endBytes)
+    [InlineData("(a)(b)", "ab", 0, 2)]
+    [InlineData("a(?=(😀))", "a😀", 0, 1)]
+    [InlineData("(?<=(é))(😀)", "é😀", 2, 6)]
+    public void EarlyDetailedCursorAndCollectionIgnoreUnusedSuffix(string pattern, string prefix, int start, int endBytes)
     {
         Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(prefix + new string('界', 200000));
         using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
         {
-            MaxWorkSteps = 10000000, MaxDepth = 4096, MaxWorkingBytes = 4096, MaxResultBytes = 4096
+            MaxWorkSteps = 10000000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 4096,
+            MaxResultBytes = 4096
         });
         var account = new Allowance(4096); Assert.True(account.TryReserve(17));
         using var cursor = regex.CreateMatchCursor(input, start, default, account);
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
-        Assert.Equal((start,endBytes),            (retained.Value.StartOffsetInBytes,retained.Value.EndOffsetInBytes));
+        Assert.Equal((start, endBytes), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, start, default))
         {
@@ -28,8 +31,12 @@ public sealed class PythonRePrefixProjectionTests
                 collectedRanges1.Add(rangeMatch1);
         }
         var collection = Assert.Single(collectedRanges1.ToArray());
-        var oneShot = regex.SearchDetailed(input, start);
-        PythonReCaptureAssert.Equal(oneShot, retained); PythonReCaptureAssert.Equal(oneShot,collection);
+        Utf8PythonRangeMatch oneShot = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, start, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out oneShot);
+        }
+        PythonReCaptureAssert.Equal(oneShot, retained); PythonReCaptureAssert.Equal(oneShot, collection);
         cursor.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
         PythonReCaptureAssert.Equal(oneShot, retained);
     }
@@ -41,7 +48,8 @@ public sealed class PythonRePrefixProjectionTests
         ulong? traffic = null;
         using var regex = new Utf8PythonRegex("(a)", resourcePolicy: new()
         {
-            MaxWorkingBytes = 65536, MaxResultBytes = 2048
+            MaxWorkingBytes = 65536,
+            MaxResultBytes = 2048
         });
         foreach (var prefix in new[] { "", new string('é', 4096) + "😀" })
         {
@@ -61,16 +69,18 @@ public sealed class PythonRePrefixProjectionTests
     }
 
     [Theory]
-    [InlineData(253)] [InlineData(255)] [InlineData(256)]
+    [InlineData(253)]
+    [InlineData(255)]
+    [InlineData(256)]
     public void LookaroundCaptureBytesCrossFormerIndexCuts(int prefixLength)
     {
         Utf8PythonRangeMatch cursorRange = default;
         var text = new string('x', prefixLength) + "éa😀" + new string('界', 10000);
         using var cursor = new Utf8PythonRegex("(?<=(é))a(?=(😀))", resourcePolicy: new()
-            { MaxWorkingBytes = 4096, MaxResultBytes = 4096 }).CreateMatchCursor(Encoding.UTF8.GetBytes(text));
+        { MaxWorkingBytes = 4096, MaxResultBytes = 4096 }).CreateMatchCursor(Encoding.UTF8.GetBytes(text));
         Assert.True(cursor.MoveNext(out cursorRange)); var result = cursorRange;
-        Assert.Equal((prefixLength,prefixLength + 2),            (result.Groups[1].StartOffsetInBytes,result.Groups[1].EndOffsetInBytes));
-        Assert.Equal((prefixLength + 3,prefixLength + 7),            (result.Groups[2].StartOffsetInBytes,result.Groups[2].EndOffsetInBytes));
+        Assert.Equal((prefixLength, prefixLength + 2), (result.Groups[1].StartOffsetInBytes, result.Groups[1].EndOffsetInBytes));
+        Assert.Equal((prefixLength + 3, prefixLength + 7), (result.Groups[2].StartOffsetInBytes, result.Groups[2].EndOffsetInBytes));
         cursor.Dispose(); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroupMemory(2).Span));
     }
 }

@@ -31,20 +31,21 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 
 | Family | Contract |
 | --- | --- |
-| Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value and borrowed capture-context forms agree. |
+| Search / Match / FullMatch | Stack-only whole-match values: search from the byte floor / match at it / match the entire remaining suffix. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
 | FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
-| CreateMatchCursor | Incremental immutable capture ranges borrowing ReadOnlyMemory<byte>; explicit disposal on early stop |
+| CreateMatchCursor | Immutable capture snapshots borrowing ReadOnlyMemory<byte>; Search advances successively, Match/FullMatch publish at most one result; explicit disposal on early stop |
 | Replace / Subn | Python template expansion into owned UTF-8 bytes; Subn includes replacement count |
 | SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
-Value/context operations, Count, FindAllToUtf8 and derived byte outputs use one
+Value operations, Count, FindAllToUtf8 and derived byte outputs use one
 token-bearing signature per supported input/template representation. Byte offsets,
 replacement/split counts default to zero; cancellation defaults to None. Entry
 cancellation remains before program use and argument/input work. Ordinary short
 source calls are unchanged; recompile old binaries and adapt shorter delegates
-with explicit lambdas when needed. The explicit cursor working-allowance overload
-still rejects null and preserves original-token precedence; no uncapped retry.
+with explicit lambdas when needed. The cursor has one optional working-allowance parameter: null inherits program
+funding or numeric engine limits; a non-null account overrides working funding.
+Refusal remains terminal and original-token cancellation takes precedence.
 
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
@@ -547,12 +548,15 @@ be lower than general matching. Captures, folding, lazy or nonliteral bodies and
 unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
-Value results, borrowed capture contexts and range cursors publish selected byte
+Value results and range cursors publish selected byte
 endpoints without scanning their prefix/content for coordinates or captured text.
 There is no owned-text result family: SearchDetailedData, MatchDetailedData,
 FullMatchDetailedData, FindIterDetailed and their two owned-text carriers are
-removed. Hosts read SearchDetailed/MatchDetailed/FullMatchDetailed contexts or
-collect real cursor ranges, and decode/copy under their own controls.
+removed. SearchDetailed, MatchDetailed, FullMatchDetailed and their stack-only
+Utf8PythonMatchContext/Utf8PythonGroupContext carriers are also removed. Hosts
+use the capture cursor with the corresponding mode, then decode/copy under
+their own controls. Snapshots retain numbered/named groups and Python closing-order
+LastIndex/LastGroup, including an outer capture that closes after its children.
 
 Template substitutions copy required output from encoded template literals and
 scalar-aligned captures. Capture/name arrays and owned byte output consume modeled
@@ -596,7 +600,15 @@ and decoding are outside regex controls. Borrowed views expose bytes only.
 ## Cursor and result lifetime
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` retains one invocation across moves,
-including host waits within its absolute deadline. Reference aliases share
+including host waits within its absolute deadline. Optional mode defaults to
+Utf8PythonMatchMode.Search; Match anchors at startOffsetInBytes and FullMatch
+requires the complete remaining prefix through endOffsetInBytes. Both anchored
+modes publish at most one result, including an empty result. The optional end
+defaults to input.Length. Start/end must satisfy 0 <= start <= end <= input.Length
+and fall on scalar boundaries. The prefix before start remains available to anchors
+and lookbehind; lookahead cannot read past end. Bounds do not validate the subject.
+FullMatch uses the existing lazy full-program preparation under the same original
+invocation deadline. Reference aliases share
 position and disposal; concurrent/reentrant access rejects. Advance with
 `MoveNext(out Utf8PythonRangeMatch match, token = default)` and keep the returned
 value. There is no text `Current` or no-output advance. EOF, failure or Dispose
@@ -719,7 +731,7 @@ cancellation and the original deadline; retained byte snapshots keep their
 existing lifetime and admission contracts.
 
 `CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
-accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and
+accepts an optional `IUtf8MemoryAllowance` shared directly across concurrent cursors and
 other host users. Existing working-buffer admission reserves additional modeled
 bytes before acquisition, including old/new growth overlap. Refusal throws
 `Utf8MemoryAdmissionException` with the additional requested amount; it never

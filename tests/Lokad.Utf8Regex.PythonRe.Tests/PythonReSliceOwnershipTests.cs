@@ -73,11 +73,15 @@ public sealed class PythonReSliceOwnershipTests
     {
         var regex = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None);
         var expected = Bcl(regex).Match("xxaaabbyy");
-        var detailed = regex.SearchDetailed(Utf8("xxaaabbyy"), 0);
+        Utf8PythonRangeMatch detailed = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(Utf8("xxaaabbyy"), 0, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out detailed);
+        }
         Assert.True(detailed.Success);
-        Assert.Equal(expected.Groups[0].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
-        Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal(expected.Groups[2].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal(expected.Groups[0].Value, System.Text.Encoding.UTF8.GetString((detailed.Groups[0].Success ? detailed.GetGroupMemory(detailed.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed.GetGroupMemory(detailed.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(expected.Groups[2].Value, System.Text.Encoding.UTF8.GetString((detailed.Groups[2].Success ? detailed.GetGroupMemory(detailed.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -984,12 +988,16 @@ public sealed class PythonReSliceOwnershipTests
         // Python numbers sequentially (w=1, b=2) while the owned slice
         // numbers BCL-style underneath; projection must show Python order.
         var regex = new Utf8PythonRegex("(?P<w>a)(b)", PythonReCompileOptions.None);
-        var detailed = regex.SearchDetailed(Utf8("xab"), 0);
+        Utf8PythonRangeMatch detailed = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(Utf8("xab"), 0, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out detailed);
+        }
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed.GetGroupMemory(detailed.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((detailed.Groups[2].Success ? detailed.GetGroupMemory(detailed.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.True(detailed.TryGetFirstSetGroup("w", out var word));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(word.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((word.Success ? detailed.GetGroupMemory(word.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]

@@ -20,7 +20,6 @@ internal ref struct PythonReScalarMatchCursor
 
     internal int StartOffsetInBytes => _state.StartOffsetInBytes;
     internal int EndOffsetInBytes => _state.EndOffsetInBytes;
-    internal int? GetLastIndex() => _state.GetLastIndex();
     internal readonly ulong ReservedBytes => _state.ReservedBytes;
     internal readonly ulong ResultReservation => _state.ResultReservation;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
@@ -34,8 +33,6 @@ internal ref struct PythonReScalarMatchCursor
     internal bool MoveNext() => _state.MoveNext(_input);
     internal bool MatchAtCurrentPosition() => _state.MatchAtCurrentPosition(_input);
     internal PythonReGroupData SnapshotValueData() => _state.SnapshotValueData();
-    internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names) => _state.SnapshotNameEntries(names);
-    internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups();
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);
     internal Utf8SliceOutputWriter CreateOutputWriter() => _state.CreateOutputWriter();

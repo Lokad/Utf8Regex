@@ -35,24 +35,33 @@ public sealed class PythonReCaptureAliasTests
         foreach (var finite in new[] { false, true })
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
-                    MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 } : default);
+                finite ? new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 2048,
+                    MaxWorkingBytes = 1_048_576,
+                    MaxResultBytes = 1_048_576
+                } : default);
             Assert.Equal(["0", first, second], regex.GetGroupNames());
             Assert.True(regex.IsMatch(input));
             Assert.False(regex.IsMatch(absent));
             Assert.Equal(1, regex.Count(input));
             Assert.True(regex.FullMatch(input).Success);
-            var retained = regex.SearchDetailed(input);
+            Utf8PythonRangeMatch retained = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out retained);
+            }
             Assert.Equal(2, retained.LastIndex);
             Assert.Equal(second, retained.LastGroup);
             Assert.True(retained.TryGetFirstSetGroup(first, out var a));
             Assert.True(retained.TryGetFirstSetGroup(second, out var b));
-            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(a.Value.GetValueBytes()));
-            Assert.Equal("b", System.Text.Encoding.UTF8.GetString(b.Value.GetValueBytes()));
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString((a.Success ? retained.GetGroupMemory(a.Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal("b", System.Text.Encoding.UTF8.GetString((b.Success ? retained.GetGroupMemory(b.Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal(["a", "b"], Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
             Assert.Equal("a|b", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "\\g<" + first + ">|\\g<" + second + ">")));
-            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
-            Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).Value.GetValueBytes()));
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained.GetGroupMemory(retained.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
 
         }
     }
@@ -67,7 +76,11 @@ public sealed class PythonReCaptureAliasTests
         Assert.True(native.IsMatch("abcab"u8));
         Assert.False(native.IsMatch("abccb"u8));
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.FullMatchDetailed("abcab"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(("abcab"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out match);
+        }
         Assert.True(match.Success);
         Assert.Equal(["0", "α", "2", "g1"], regex.GetGroupNames());
         Assert.Equal(3, match.LastIndex);
@@ -84,9 +97,13 @@ public sealed class PythonReCaptureAliasTests
         Assert.True(core.CanFindNativeLiteralForResult);
         Assert.Equal(["0", "α", "g1"], regex.GetGroupNames());
         Assert.True(regex.IsMatch("é😀ab"u8));
-        var match = regex.SearchDetailed("é😀ab"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(("é😀ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out match);
+        }
         Assert.Equal(6, match.Value.StartOffsetInBytes);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 }

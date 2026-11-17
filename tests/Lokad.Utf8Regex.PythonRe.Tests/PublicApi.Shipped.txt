@@ -21,25 +21,11 @@ readonly struct PythonRe.Utf8PythonFindAllUtf8Result
   property Byte[][][] TupleValues { get; init; }
   property Int32 Count { get; }
   property PythonRe.Utf8PythonFindAllShape Shape { get; init; }
-readonly ref struct PythonRe.Utf8PythonGroupContext
-  property Boolean Success { get; }
-  property Int32 Number { get; }
-  property PythonRe.Utf8PythonValueMatch Value { get; }
-readonly ref struct PythonRe.Utf8PythonMatchContext
-  property Boolean Success { get; }
-  property Int32 CaptureSlotCount { get; }
-  property Int32 NameEntryCount { get; }
-  property Nullable<Int32> LastIndex { get; }
-  property PythonRe.Utf8PythonValueMatch Value { get; }
-  property String LastGroup { get; }
-  method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupContext group)
-  method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupContext group)
-  method PythonRe.PythonReNameEntry[] GetNameEntries()
-  method PythonRe.Utf8PythonGroupContext GetGroup(Int32 number)
 sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Boolean MoveNextRetained(out PythonRe.Utf8PythonRetainedRangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Void Dispose()
+enum PythonRe.Utf8PythonMatchMode : Int32 { FullMatch = 2, Match = 1, Search = 0 }
 readonly struct PythonRe.Utf8PythonRangeMatch
   property Boolean Success { get; }
   property Nullable<Int32> LastIndex { get; }
@@ -69,11 +55,7 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonCaptureRange[] SplitRanges(ReadOnlySpan<Byte> input, Int32 maxSplit = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
+  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, PythonRe.Utf8PythonMatchMode mode = 0, Nullable<Int32> endOffsetInBytes = null)
   method PythonRe.Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementUtf8, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<Byte> input, String replacement, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementUtf8, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)

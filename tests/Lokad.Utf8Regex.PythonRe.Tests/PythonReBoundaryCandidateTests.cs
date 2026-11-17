@@ -35,12 +35,16 @@ public sealed class PythonReBoundaryCandidateTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected is not null, regex.IsMatch(input, offset));
         Assert.Equal(expected is not null, regex.IsMatch(input, offset, token.Token));
-        var held = regex.SearchDetailed(input, offset);
+        Utf8PythonRangeMatch held = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, offset, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out held);
+        }
         Assert.Equal(expected is not null, held.Success);
-        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(held.GetGroup(0).Value.GetValueBytes()));
-        if (pattern.Contains("?P<")) Assert.Equal("22", System.Text.Encoding.UTF8.GetString(held.GetGroup(1).Value.GetValueBytes()));
+        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString((held.Groups[0].Success ? held.GetGroupMemory(held.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        if (pattern.Contains("?P<")) Assert.Equal("22", System.Text.Encoding.UTF8.GetString((held.Groups[1].Success ? held.GetGroupMemory(held.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(expectedCount, regex.Count(input, offset));
-        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(held.GetGroup(0).Value.GetValueBytes()));
+        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString((held.Groups[0].Success ? held.GetGroupMemory(held.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -57,8 +61,10 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void BoundedWordRunsPreserveOriginalInterruptionAndRetainedResult(bool timeout, bool interiorRun)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -96,7 +102,10 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4096)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(4096)]
     public void WordInteriorBlocksKeepUnicodeEdgesCapturesAndEofBoundaries(int count)
     {
         var input = Encoding.UTF8.GetBytes("a" + new string('1', count) + "X\u0301 22X😀 33Xé");
@@ -145,7 +154,9 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(2033)] [InlineData(2047)] [InlineData(4095)]
+    [InlineData(2033)]
+    [InlineData(2047)]
+    [InlineData(4095)]
     public void WordInteriorsAndTailsKeepOriginalScalarFloors(int count)
     {
         using var regex = new Utf8PythonRegex(@"\b[0-9]+X\b");
@@ -212,8 +223,10 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(false, @"\b[0-9]+X\b")] [InlineData(true, @"\b[0-9]+X\b")]
-    [InlineData(false, @"\b")] [InlineData(true, @"\b")]
+    [InlineData(false, @"\b[0-9]+X\b")]
+    [InlineData(true, @"\b[0-9]+X\b")]
+    [InlineData(false, @"\b")]
+    [InlineData(true, @"\b")]
     public void WordInteriorScanObservesOriginalInterruption(bool expire, string pattern)
     {
         long ticks = 0;

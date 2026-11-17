@@ -10,7 +10,7 @@ public sealed class PythonReOperationBoundaryTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void FinalPublicPollPreservesTimeoutDiagnosticsAndOriginalToken( bool expire, bool funded)
+    public void FinalPublicPollPreservesTimeoutDiagnosticsAndOriginalToken(bool expire, bool funded)
     {
         const string pattern = "([a-z]+)-([0-9]+)";
         var input = "item-12 other-345"u8.ToArray();
@@ -64,7 +64,14 @@ public sealed class PythonReOperationBoundaryTests
         {
             case 0: _ = regex.IsMatch(input, 0, token); break;
             case 1: _ = regex.Search(input, 0, token); break;
-            case 2: _ = regex.SearchDetailed(input, 0, token); break;
+            case 2:
+                Utf8PythonRangeMatch snapshot1 = default;
+                using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token, mode: Utf8PythonMatchMode.Search))
+                {
+                    captureCursor1.MoveNext(out snapshot1);
+                }
+                _ = snapshot1;
+                break;
             case 7: _ = regex.FindAllToUtf8(input, 0, token); break;
             case 8: _ = regex.SplitRanges(input, 0, 0, token); break;
             case 10: _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1", 0, 0, token)); break;

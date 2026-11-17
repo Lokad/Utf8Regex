@@ -31,21 +31,26 @@ public sealed class PythonReFiniteWorkPolicyTests
     }
 
     internal static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0,
-        CancellationToken token = default) => operation switch
+        CancellationToken token = default)
     {
-        0 => regex.IsMatch(input, start, token).ToString(),
-        1 => regex.Search(input, start, token).Success.ToString(),
-        2 => regex.Match(input, start, token).Success.ToString(),
-        3 => regex.FullMatch(input, start, token).Success.ToString(),
-        4 => regex.Count(input, start, token).ToString(),
-        8 => regex.SearchDetailed(input, start, token).Success.ToString(),
-        9 => regex.MatchDetailed(input, start, token).Success.ToString(),
-        10 => regex.FullMatchDetailed(input, start, token).Success.ToString(),
-        17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
-        18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
-        21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
-        _ => throw new ArgumentOutOfRangeException(nameof(operation)),
-    };
+        if (operation is >= 8 and <= 10)
+        {
+            using var cursor = regex.CreateMatchCursor(input, start, token, mode: (Utf8PythonMatchMode)(operation - 8));
+            return cursor.MoveNext(out _).ToString();
+        }
+        return operation switch
+        {
+            0 => regex.IsMatch(input, start, token).ToString(),
+            1 => regex.Search(input, start, token).Success.ToString(),
+            2 => regex.Match(input, start, token).Success.ToString(),
+            3 => regex.FullMatch(input, start, token).Success.ToString(),
+            4 => regex.Count(input, start, token).ToString(),
+            17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
+            18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
+            21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+        };
+    }
 
     private static void Exhausted(Action action, ulong limit)
     {
@@ -84,14 +89,22 @@ public sealed class PythonReFiniteWorkPolicyTests
     public void EverySmallSearchCutoffEitherCompletesOrFailsExplicitly(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var expected = new Utf8PythonRegex(pattern).SearchDetailed(input);
+        Utf8PythonRangeMatch expected = default;
+        using (var captureCursor1 = new Utf8PythonRegex(pattern).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out expected);
+        }
         for (ulong limit = 1; limit <= 4096; limit++)
         {
             try
             {
-                var actual = RegexWith(pattern, limit).SearchDetailed(input);
+                Utf8PythonRangeMatch actual = default;
+                using (var captureCursor2 = RegexWith(pattern, limit).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+                {
+                    captureCursor2.MoveNext(out actual);
+                }
                 Assert.Equal(expected.Success, actual.Success);
-                PythonReCaptureAssert.Equal(expected,actual);
+                PythonReCaptureAssert.Equal(expected, actual);
                 return;
             }
             catch (Utf8ResourceLimitExceededException error)
@@ -144,7 +157,9 @@ public sealed class PythonReFiniteWorkPolicyTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(4)]   [InlineData(21)]
+    [InlineData(0)]
+    [InlineData(4)]
+    [InlineData(21)]
     public void WorkCoversLateMisses(int operation)
     {
         var miss = Encoding.UTF8.GetBytes(new string('x', 16384));

@@ -11,7 +11,8 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     private const int CopyCheckpoint = 3;
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)]
+    [InlineData(1)]
     public void ColdFullMatchDoesNotRestartDeadlineAfterPreparation(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
@@ -22,7 +23,15 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         var checkpoints = 0;
         Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) ticks = 250; };
         construction.Budget.CheckpointHook = hook;
-        var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, result, CancellationToken.None));
+        var error = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            if (result == 0) _ = regex.FullMatch("😀a"u8);
+            else
+            {
+                using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch);
+                cursor.MoveNext(out _);
+            }
+        });
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
         Assert.Equal("😀a", error.Input);
         Assert.Equal(CopyCheckpoint, checkpoints);
@@ -30,12 +39,23 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         AssertRestored(construction, hook);
         // Interrupted preparation must not poison future invocations.
         ticks = 0;
-        Assert.Equal("x", regex.FullMatchDetailed("😀a"u8).LastGroup);
-        Assert.Equal(1, regex.FullMatchDetailed("😀a"u8).LastIndex);
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal("x", snapshot1.LastGroup);
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.Equal(1, snapshot2.LastIndex);
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)]
+    [InlineData(1)]
     public void ColdPreparationCancellationUsesOriginalTokenAndAllowsFreshCall(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+");
@@ -44,7 +64,15 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         var checkpoints = 0;
         Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) cancellation.Cancel(); };
         construction.Budget.CheckpointHook = hook;
-        var error = Assert.Throws<OperationCanceledException>(() => Run(regex, result, cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() =>
+        {
+            if (result == 0) _ = regex.FullMatch("😀a"u8, 0, cancellation.Token);
+            else
+            {
+                using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray(), 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch);
+                cursor.MoveNext(out _);
+            }
+        });
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.Equal(CopyCheckpoint, checkpoints);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
@@ -71,7 +99,12 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             AssertRestored(construction, hook);
         }
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.Equal("x", regex.FullMatchDetailed("😀a"u8).LastGroup);
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.Equal("x", snapshot3.LastGroup);
     }
 
     [Fact]
@@ -122,7 +155,11 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             }
             else
             {
-                var match = regex.FullMatchDetailed("😀a"u8);
+                Utf8PythonRangeMatch match = default;
+                using (var captureCursor4 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+                {
+                    captureCursor4.MoveNext(out match);
+                }
                 Assert.Equal(1, match.LastIndex);
                 Assert.Equal("x", match.LastGroup);
                 Assert.Same(hook, construction.Budget.CheckpointHook);
@@ -161,10 +198,4 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         Assert.Equal(error.Requested, again.Requested);
     }
 
-    private static void Run(Utf8PythonRegex regex, int result, CancellationToken token)
-    {
-        if (result == 0) _ = regex.FullMatch("😀a"u8, 0, token);
-        else if (result == 1) _ = regex.FullMatchDetailed("😀a"u8, 0, token);
-        else _ = regex.FullMatchDetailed("😀a"u8, 0, token);
-    }
 }

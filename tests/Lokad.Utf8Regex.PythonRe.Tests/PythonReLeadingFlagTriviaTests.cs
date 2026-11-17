@@ -20,16 +20,25 @@ public sealed class PythonReLeadingFlagTriviaTests
         var pattern = prefix + "(?P<x>😀a)";
         foreach (var bytes in new[] { false, true })
         {
-            var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            };
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             using var cancellation = new CancellationTokenSource();
-            var match = regex.FullMatchDetailed("😀A"u8, 0, cancellation.Token);
+            Utf8PythonRangeMatch match = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(("😀A"u8).ToArray(), 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out match);
+            }
             Assert.True(match.Success);
-            Assert.Equal("😀A", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-            Assert.Equal((0, 5), (match.GetGroup(1).Value.StartOffsetInBytes, match.GetGroup(1).Value.EndOffsetInBytes));
+            Assert.Equal("😀A", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal((0, 5), (match.Groups[1].StartOffsetInBytes, match.Groups[1].EndOffsetInBytes));
             Assert.Equal(1, match.LastIndex);
             Assert.Equal("x", match.LastGroup);
             Assert.Equal(1, regex.Count("😀A"u8, 0, cancellation.Token));
@@ -89,8 +98,10 @@ public sealed class PythonReLeadingFlagTriviaTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void CommentScansKeepTheOriginalConstructionInterruption(bool lineComment, bool expire)
     {
         var pattern = (lineComment ? "(?x)#" : "(?#") + new string('c', 4096) +

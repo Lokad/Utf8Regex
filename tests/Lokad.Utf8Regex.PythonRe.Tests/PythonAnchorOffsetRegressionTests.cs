@@ -54,8 +54,12 @@ public sealed class PythonAnchorOffsetRegressionTests
     {
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input)).Success);
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(Utf8(input), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal(expectedSuccess, snapshot1.Success);
     }
 
     [Theory]
@@ -68,8 +72,12 @@ public sealed class PythonAnchorOffsetRegressionTests
     {
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input), startOffsetInBytes).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input), startOffsetInBytes).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input), startOffsetInBytes).Success);
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(Utf8(input), startOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.Equal(expectedSuccess, snapshot3.Success);
     }
 
     [Fact]
@@ -79,9 +87,13 @@ public sealed class PythonAnchorOffsetRegressionTests
         var value = regex.FullMatch(Utf8("xfoo"), 1);
         Assert.True(value.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
-        var detailed = regex.FullMatchDetailed(Utf8("xfoo"), 1);
+        Utf8PythonRangeMatch detailed = default;
+        using (var captureCursor5 = regex.CreateMatchCursor(Utf8("xfoo"), 1, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor5.MoveNext(out detailed);
+        }
         Assert.True(detailed.Success);
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         PythonReMatchAssert.Equal("foo", regex.FullMatch(Utf8("xfoo"), 1));
     }
 
@@ -93,7 +105,12 @@ public sealed class PythonAnchorOffsetRegressionTests
     {
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatchDetailed(Utf8(input)).Success);
+        Utf8PythonRangeMatch snapshot6 = default;
+        using (var captureCursor6 = regex.CreateMatchCursor(Utf8(input), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor6.MoveNext(out snapshot6);
+        }
+        Assert.Equal(expectedSuccess, snapshot6.Success);
     }
 
     [Theory]

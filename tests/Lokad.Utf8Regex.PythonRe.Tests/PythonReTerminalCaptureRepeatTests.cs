@@ -3,8 +3,13 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTerminalCaptureRepeatTests
 {
     private static Utf8PythonRegex Create() => new("(?:|([a-z]+))", PythonReCompileOptions.None,
-        Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 100000, MaxDepth = 32,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        Timeout.InfiniteTimeSpan, new()
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 32,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        });
 
     [Fact]
     public void EmptyRetryKeepsNonemptyCaptureAndCompletionMetadata()
@@ -31,13 +36,21 @@ public sealed class PythonReTerminalCaptureRepeatTests
     [Fact]
     public void DerivedFullMatchKeepsItsEndRequirementAndAlternatives()
     {
-        var match = Create().FullMatchDetailed("ab"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = Create().CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, match.LastIndex);
-        var empty = Create().FullMatchDetailed([]);
+        Utf8PythonRangeMatch empty = default;
+        using (var captureCursor2 = Create().CreateMatchCursor(ReadOnlyMemory<byte>.Empty, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out empty);
+        }
         Assert.True(empty.Success);
         Assert.Null(empty.LastIndex);
-        Assert.False(empty.GetGroup(1).Success);
+        Assert.False(empty.Groups[1].Success);
     }
 }

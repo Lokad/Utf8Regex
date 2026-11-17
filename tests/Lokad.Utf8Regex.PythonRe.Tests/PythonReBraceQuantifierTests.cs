@@ -37,8 +37,13 @@ public sealed class PythonReBraceQuantifierTests
     [InlineData("(?x)a* #comment\n{foo}", "aaa{foo}")]
     public void LiteralBracesAndQuantifierAttachmentFollowPython(string pattern, string text)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 256,
-            MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 256,
+            MaxWorkingBytes = 1000000,
+            MaxResultBytes = 1000000
+        };
         using var cancellation = new CancellationTokenSource();
         foreach (var bytes in new[] { false, true })
         {
@@ -46,9 +51,13 @@ public sealed class PythonReBraceQuantifierTests
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             var input = Encoding.UTF8.GetBytes(text);
-            var actual = regex.FullMatchDetailed(input, 0, cancellation.Token);
+            Utf8PythonRangeMatch actual = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out actual);
+            }
             Assert.True(actual.Success);
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
             Assert.Equal(0, actual.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes);
             Assert.True(regex.FullMatch(input).Success);
@@ -78,14 +87,18 @@ public sealed class PythonReBraceQuantifierTests
     public void OmittedLowerBoundsKeepLastCompleteScalarCapture(string pattern, string text, string capture, string? name, int startByte)
     {
         var regex = new Utf8PythonRegex(pattern);
-        var actual = regex.FullMatchDetailed(Encoding.UTF8.GetBytes(text));
+        Utf8PythonRangeMatch actual = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out actual);
+        }
         Assert.True(actual.Success);
-        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, actual.LastIndex);
         Assert.Equal(name, actual.LastGroup);
-        Assert.Equal(startByte, actual.GetGroup(1).Value.StartOffsetInBytes);
+        Assert.Equal(startByte, actual.Groups[1].StartOffsetInBytes);
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(text)));
-        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -101,7 +114,8 @@ public sealed class PythonReBraceQuantifierTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LongBraceLookaheadSpendsConstructionWorkBeforeLiteralFallback(bool bytes)
     {
         var pattern = "a{" + new string('0', 8192) + "x";

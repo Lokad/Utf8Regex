@@ -24,18 +24,21 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     private int _active;
     private Utf8FundedStorage.Use? _programUse;
     private Status _status;
+    private readonly bool _anchored;
 
-    private enum Status : byte { Open, Ended, Faulted, Disposed }
+    private enum Status : byte { Open, Matched, Ended, Faulted, Disposed }
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
-        object pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null)
+        object pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null,
+        bool anchored = false)
     {
         _input = input;
         _programUse = programUse;
         _names = names;
+        _anchored = anchored;
         _discovery = new PythonReScalarMatchState(input.Span, program,
-            startOffsetInBytes, timeout, pattern, invocation, candidateRegex);
+            startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch: !anchored);
         try { _discovery.Checkpoint(); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             _discovery.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -127,8 +130,14 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         retained = null;
         try
         {
+            if (_status == Status.Matched)
+            {
+                _discovery.Checkpoint();
+                Close(Status.Ended);
+                return false;
+            }
             var input = _input.Span;
-            if (!_discovery.MoveNext(input))
+            if (!(_anchored ? _discovery.MatchAtCurrentPosition(input) : _discovery.MoveNext(input)))
             {
                 Close(Status.Ended);
                 return false;
@@ -148,7 +157,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                     _discovery.ReleaseResultsSince(marker);
                     match = completed;
                 }
-                _status = Status.Open;
+                _status = _anchored ? Status.Matched : Status.Open;
             }
             return true;
         }
@@ -193,7 +202,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
 
     private void Close(Status status)
     {
-        if (_status == Status.Open)
+        if (_status is Status.Open or Status.Matched)
         {
             _discovery.Dispose();
         }

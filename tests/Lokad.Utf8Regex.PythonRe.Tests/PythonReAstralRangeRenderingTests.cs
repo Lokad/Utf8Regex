@@ -82,10 +82,14 @@ public sealed class PythonReAstralRangeRenderingTests
     public void FixedLookbehindStillCountsOneScalarAndCapturesForward()
     {
         var regex = Compile(@"(?<=([\U00010001-\U0010fffe]))X");
-        var match = regex.SearchDetailed("😀X"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀X"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
         Assert.Equal(4, match.Value.StartOffsetInBytes);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, match.LastIndex);
         var managed = new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant).Match("😀X");
         Assert.True(managed.Success);

@@ -275,17 +275,17 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void InlineFlagErrorsFollowCpythonExamples()
     {
-        AssertPatternError(@"(?-","missing flag", 3);
-        AssertPatternError(@"(?-+","missing flag", 3);
-        AssertPatternError(@"(?-z","unknown flag", 3);
-        AssertPatternError(@"(?-i","missing :", 4);
-        AssertPatternError(@"(?-i)","missing :", 4);
-        AssertPatternError(@"(?-i+","missing :", 4);
-        AssertPatternError(@"(?-iz","unknown flag", 4);
-        AssertPatternError(@"(?i:","missing ), unterminated subpattern", 0);
-        AssertPatternError(@"(?i","missing -, : or )", 3);
-        AssertPatternError(@"(?i+","missing -, : or )", 3);
-        AssertPatternError(@"(?iz","unknown flag", 3);
+        AssertPatternError(@"(?-", "missing flag", 3);
+        AssertPatternError(@"(?-+", "missing flag", 3);
+        AssertPatternError(@"(?-z", "unknown flag", 3);
+        AssertPatternError(@"(?-i", "missing :", 4);
+        AssertPatternError(@"(?-i)", "missing :", 4);
+        AssertPatternError(@"(?-i+", "missing :", 4);
+        AssertPatternError(@"(?-iz", "unknown flag", 4);
+        AssertPatternError(@"(?i:", "missing ), unterminated subpattern", 0);
+        AssertPatternError(@"(?i", "missing -, : or )", 3);
+        AssertPatternError(@"(?i+", "missing -, : or )", 3);
+        AssertPatternError(@"(?iz", "unknown flag", 3);
     }
 
     [Fact]
@@ -468,8 +468,18 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void SpecialEscapesFollowCpythonExamples()
     {
-        Assert.Equal("bx", GetGroup1(new Utf8PythonRegex(@"\b(b.)\b").SearchDetailed("abcd abc bcd bx"u8)));
-        Assert.Equal("bx", GetGroup1(new Utf8PythonRegex(@"\B(b.)\B").SearchDetailed("abc bcd bc abxd"u8)));
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = new Utf8PythonRegex(@"\b(b.)\b").CreateMatchCursor(("abcd abc bcd bx"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal("bx", GetGroup1(snapshot1));
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = new Utf8PythonRegex(@"\B(b.)\B").CreateMatchCursor(("abc bcd bc abxd"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.Equal("bx", GetGroup1(snapshot2));
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"^abc$", PythonReCompileOptions.Multiline).Search("\nabc\n"u8).GetValueBytes()));
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"^\Aabc\Z$", PythonReCompileOptions.Multiline).Search("abc"u8).GetValueBytes()));
         Assert.False(new Utf8PythonRegex(@"^\Aabc\Z$", PythonReCompileOptions.Multiline).Search("\nabc\n"u8).Success);
@@ -479,7 +489,12 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void WordBoundarySemanticsFollowCpythonExamples()
     {
-        Assert.Equal("abc", GetGroup1(new Utf8PythonRegex(@"\b(abc)\b").SearchDetailed("abc"u8)));
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = new Utf8PythonRegex(@"\b(abc)\b").CreateMatchCursor(("abc"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.Equal("abc", GetGroup1(snapshot3));
         Assert.True(new Utf8PythonRegex(@".\b").Match("a="u8).Success);
         Assert.True(new Utf8PythonRegex(@".\b").Match("=a"u8).Success);
         Assert.True(new Utf8PythonRegex(@".\b").Match("я="u8).Success);
@@ -518,8 +533,18 @@ public sealed class Utf8PythonRegexCpythonParityTests
     {
         Assert.False(new Utf8PythonRegex(@"^(\w){1}$").Match("abc"u8).Success);
         Assert.False(new Utf8PythonRegex(@"^(\w){1,2}$").Match("abc"u8).Success);
-        Assert.Equal("c", GetGroup1(new Utf8PythonRegex(@"^(\w){3}$").MatchDetailed("abc"u8)));
-        Assert.Equal("c", GetGroup1(new Utf8PythonRegex(@"^(\w){1,3}$").MatchDetailed("abc"u8)));
+        Utf8PythonRangeMatch snapshot4 = default;
+        using (var captureCursor4 = new Utf8PythonRegex(@"^(\w){3}$").CreateMatchCursor(("abc"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor4.MoveNext(out snapshot4);
+        }
+        Assert.Equal("c", GetGroup1(snapshot4));
+        Utf8PythonRangeMatch snapshot5 = default;
+        using (var captureCursor5 = new Utf8PythonRegex(@"^(\w){1,3}$").CreateMatchCursor(("abc"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor5.MoveNext(out snapshot5);
+        }
+        Assert.Equal("c", GetGroup1(snapshot5));
         Assert.True(new Utf8PythonRegex(@"^x{3}$").Match("xxx"u8).Success);
         Assert.True(new Utf8PythonRegex(@"^x{1,4}?$").Match("xxx"u8).Success);
         Assert.False(new Utf8PythonRegex(@"^x{1}$").Match("xxx"u8).Success);
@@ -554,10 +579,30 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void PossessiveQuantifierCapturesFollowCpythonExamples()
     {
-        Assert.Equal("ae", GetGroup1(new Utf8PythonRegex(@"(ae)*+a").MatchDetailed("aea"u8)));
-        Assert.Equal("ae", GetGroup1(new Utf8PythonRegex(@"([ae][ae])?+a").MatchDetailed("aea"u8)));
-        Assert.Equal(string.Empty, GetGroup1(new Utf8PythonRegex(@"(e?){2,4}+a").MatchDetailed("eeea"u8)));
-        Assert.Equal(string.Empty, GetGroup1(new Utf8PythonRegex(@"()*+a").MatchDetailed("a"u8)));
+        Utf8PythonRangeMatch snapshot6 = default;
+        using (var captureCursor6 = new Utf8PythonRegex(@"(ae)*+a").CreateMatchCursor(("aea"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor6.MoveNext(out snapshot6);
+        }
+        Assert.Equal("ae", GetGroup1(snapshot6));
+        Utf8PythonRangeMatch snapshot7 = default;
+        using (var captureCursor7 = new Utf8PythonRegex(@"([ae][ae])?+a").CreateMatchCursor(("aea"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor7.MoveNext(out snapshot7);
+        }
+        Assert.Equal("ae", GetGroup1(snapshot7));
+        Utf8PythonRangeMatch snapshot8 = default;
+        using (var captureCursor8 = new Utf8PythonRegex(@"(e?){2,4}+a").CreateMatchCursor(("eeea"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor8.MoveNext(out snapshot8);
+        }
+        Assert.Equal(string.Empty, GetGroup1(snapshot8));
+        Utf8PythonRangeMatch snapshot9 = default;
+        using (var captureCursor9 = new Utf8PythonRegex(@"()*+a").CreateMatchCursor(("a"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor9.MoveNext(out snapshot9);
+        }
+        Assert.Equal(string.Empty, GetGroup1(snapshot9));
     }
 
     [Fact]
@@ -572,7 +617,11 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void PossessiveRepeatCapturesFollowCpythonRegression()
     {
-        var match = new Utf8PythonRegex(@"((x)|y|z)*+").MatchDetailed("xyz"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor10 = new Utf8PythonRegex(@"((x)|y|z)*+").CreateMatchCursor(("xyz"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor10.MoveNext(out match);
+        }
         Assert.True(match.Success);
         Assert.Equal("z", GetGroup(match, 1));
         Assert.Equal("x", GetGroup(match, 2));
@@ -581,7 +630,11 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void NamedCaptureMetadataFollowsCpythonExamples()
     {
-        var match = new Utf8PythonRegex("(?P<first>first) (?P<second>second)").MatchDetailed("first second"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor11 = new Utf8PythonRegex("(?P<first>first) (?P<second>second)").CreateMatchCursor(("first second"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor11.MoveNext(out match);
+        }
         Assert.True(match.Success);
         Assert.Equal("first", GetNamedGroup(match, "first"));
         Assert.Equal("second", GetNamedGroup(match, "second"));
@@ -742,25 +795,25 @@ public sealed class Utf8PythonRegexCpythonParityTests
         return (match.StartOffsetInBytes, match.EndOffsetInBytes);
     }
 
-    private static string GetGroup1(Utf8PythonMatchContext match)
+    private static string GetGroup1(Utf8PythonRangeMatch match)
     {
         Assert.True(match.TryGetGroup(1, out var group));
         Assert.True(group.Success);
-        return System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes());
+        return System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty));
     }
 
-    private static string GetGroup(Utf8PythonMatchContext match, int number)
+    private static string GetGroup(Utf8PythonRangeMatch match, int number)
     {
         Assert.True(match.TryGetGroup(number, out var group));
         Assert.True(group.Success);
-        return System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes());
+        return System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty));
     }
 
-    private static string GetNamedGroup(Utf8PythonMatchContext match, string name)
+    private static string GetNamedGroup(Utf8PythonRangeMatch match, string name)
     {
         Assert.True(match.TryGetFirstSetGroup(name, out var group));
         Assert.True(group.Success);
-        return System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes());
+        return System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty));
     }
 
     private static string JoinValues(Utf8PythonRangeMatch[] matches)

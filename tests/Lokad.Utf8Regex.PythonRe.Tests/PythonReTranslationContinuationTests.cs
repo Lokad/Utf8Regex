@@ -6,10 +6,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTranslationContinuationTests
 {
     [Theory]
-    [InlineData(4097, "(?:")] [InlineData(16385, "(?:")]
-    [InlineData(4097, "(")] [InlineData(16385, "(")]
-    [InlineData(4097, "(?>")] [InlineData(16385, "(?>")]
-    [InlineData(4097, "(?s:")] [InlineData(16385, "(?s:")]
+    [InlineData(4097, "(?:")]
+    [InlineData(16385, "(?:")]
+    [InlineData(4097, "(")]
+    [InlineData(16385, "(")]
+    [InlineData(4097, "(?>")]
+    [InlineData(16385, "(?>")]
+    [InlineData(4097, "(?s:")]
+    [InlineData(16385, "(?s:")]
     public void PublicDeepConstructorsAndFullMatchesRemainOwnedAndScalar(int depth, string opener)
     {
         // Atomic syntax uses additional owned parser frames. Exercise the
@@ -18,13 +22,17 @@ public sealed class PythonReTranslationContinuationTests
             Utf8ConstructionScope.DefaultBufferBytes, Utf8ConstructionScope.DefaultWorkSteps, 131072);
         var pattern = string.Concat(Enumerable.Repeat(opener, depth)) + "." + new string(')', depth);
         var regex = new Utf8PythonRegex(pattern);
-        var result = regex.FullMatchDetailed("😀"u8);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out result);
+        }
         Assert.True(result.Success);
         Assert.Equal((0, 4), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         if (opener == "(")
         {
-            Assert.Equal(depth + 1, result.CaptureSlotCount);
-            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroup(depth).Value.GetValueBytes()));
+            Assert.Equal(depth + 1, result.Groups.Length);
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((result.Groups[depth].Success ? result.GetGroupMemory(result.Groups[depth].Number).Span : ReadOnlySpan<byte>.Empty)));
         }
         Assert.InRange(construction.Budget.PeakDepth, 1ul, 131072ul);
         Assert.Equal(0ul, construction.Budget.Depth);
@@ -49,19 +57,25 @@ public sealed class PythonReTranslationContinuationTests
     }
 
     [Theory]
-    [InlineData(4097)] [InlineData(16385)]
+    [InlineData(4097)]
+    [InlineData(16385)]
     public void DeepLookbehindMeasuresSupplementaryContentAsOneScalar(int depth)
     {
         var inner = string.Concat(Enumerable.Repeat("(?:", depth)) + "😀" + new string(')', depth);
         var regex = new Utf8PythonRegex("(?<=" + inner + ")(?P<x>.)");
-        var result = regex.SearchDetailed("😀é"u8);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(("😀é"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out result);
+        }
         Assert.True(result.Success);
         Assert.Equal((4, 6), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString((result.Groups[1].Success ? result.GetGroupMemory(result.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
-    [InlineData(4097)] [InlineData(16385)]
+    [InlineData(4097)]
+    [InlineData(16385)]
     public void NestedLiteralProofKeepsTheWholePublicMatch(int depth)
     {
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "éab" + new string(')', depth);
@@ -143,9 +157,12 @@ public sealed class PythonReTranslationContinuationTests
     }
 
     [Theory]
-    [InlineData("(?:a|b)", true)] [InlineData("(?:a|ab)", false)]
-    [InlineData("(a)?", true)] [InlineData("(?=(a))a", true)]
-    [InlineData("(?:a)+", true)] [InlineData("(a)+", true)]
+    [InlineData("(?:a|b)", true)]
+    [InlineData("(?:a|ab)", false)]
+    [InlineData("(a)?", true)]
+    [InlineData("(?=(a))a", true)]
+    [InlineData("(?:a)+", true)]
+    [InlineData("(a)+", true)]
     [InlineData("(a)(?(1)b|c)", false)]
     public void DeepIterationDecisionsKeepTheirConservativeRules(string fragment, bool iterationSafe)
     {
@@ -182,7 +199,8 @@ public sealed class PythonReTranslationContinuationTests
     }
 
     [Theory]
-    [InlineData(32)] [InlineData(128)]
+    [InlineData(32)]
+    [InlineData(128)]
     public void SharedBackreferenceWidthsAreMemoizedWithoutRecursiveRecordHashing(int groups)
     {
         var pattern = new StringBuilder("(?P<g0>a)");

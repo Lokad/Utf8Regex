@@ -31,9 +31,9 @@ public sealed class PythonReResultExtentTests
 
                 var positioned = cursor.ReservedBytes;
                 var marker = cursor.ResultReservation;
-                var groups = cursor.SnapshotGroups();
-                Assert.Equal(positioned + ArrayBytes<PythonReGroupData>(2), cursor.ReservedBytes);
-                Assert.Equal(2 * count, groups[1].StartOffsetInBytes);
+                var groups = cursor.SnapshotRanges(input, []);
+                Assert.Equal(positioned + ArrayBytes<Utf8PythonCaptureRange>(2), cursor.ReservedBytes);
+                Assert.Equal(2 * count, groups.Groups[1].StartOffsetInBytes);
                 var resultTraffic = cursor.WorkingInvocation.Budget.ResultBytes;
                 cursor.ReleaseResultsSince(marker);
                 Assert.Equal(positioned, cursor.ReservedBytes);
@@ -49,7 +49,8 @@ public sealed class PythonReResultExtentTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CanonicalLiteralPublicationContinuesTheCountInvocation(bool expire)
     {
         long ticks = 0;

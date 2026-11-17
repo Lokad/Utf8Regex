@@ -34,10 +34,14 @@ public sealed class PythonScalarAtomRegressionTests
     {
         var regex = new Utf8PythonRegex("([^[:alpha:]])");
         var input = Utf8("\U0001f600]x]");
-        var match = regex.SearchDetailed(input, 0);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, 0, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(0).Value.GetValueBytes()));
-        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString((match.Groups[0].Success ? match.GetGroupMemory(match.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(new[] { "\U0001f600]", "x]" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal("<_><_>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>")));
     }
@@ -166,9 +170,13 @@ public sealed class PythonScalarAtomRegressionTests
     [Fact]
     public void ComplementDetailedMatchFreezesWholeScalarRanges()
     {
-        var match = new Utf8PythonRegex("\\W").SearchDetailed(Utf8(char.ConvertFromUtf32(0x1F600)));
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor2 = new Utf8PythonRegex("\\W").CreateMatchCursor(Utf8(char.ConvertFromUtf32(0x1F600)), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal(char.ConvertFromUtf32(0x1F600), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal(char.ConvertFromUtf32(0x1F600), System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
     }
 
     // CPython 3.13.2 searches an astral scalar with a scoped-ASCII complement and

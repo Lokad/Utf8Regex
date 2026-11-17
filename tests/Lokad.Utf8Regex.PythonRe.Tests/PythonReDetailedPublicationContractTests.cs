@@ -59,7 +59,8 @@ public sealed class PythonReDetailedPublicationContractTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void RetainedCursorSnapshotsKeepNumberingAndIndependentSlots(bool named)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -97,35 +98,35 @@ public sealed class PythonReDetailedPublicationContractTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(😀)(é?)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         var input = "😀é"u8.ToArray();
-        var measured = new PythonReScalarMatchCursor(input, program, 0,
+        var measured = new PythonReScalarMatchState(input, program, 0,
             Regex.InfiniteMatchTimeout,
-            null, "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
+            "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
         ulong work, extent;
         try
         {
-            Assert.True(measured.MoveNext());
-            _ = measured.SnapshotGroups();
+            Assert.True(measured.MoveNext(input));
+            _ = measured.SnapshotRanges(input, []);
             work = measured.WorkingInvocation.Budget.Steps;
             extent = measured.WorkingInvocation.Budget.ResultBytes;
         }
         finally { measured.Dispose(); }
         for (ulong cap = 1; cap <= work; cap++)
         {
-            PythonReScalarMatchCursor cursor = default;
+            PythonReScalarMatchState cursor = default;
             var constructed = false;
             var reserved = false;
             try
             {
                 cursor = new(input, program, 0, Regex.InfiniteMatchTimeout,
-                    null, "(😀)(é?)", new(new(cap, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
+                    "(😀)(é?)", new(new(cap, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
                 constructed = true;
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
                 reserved = true;
-                Assert.True(cursor.MoveNext());
-                var snapshot = cursor.SnapshotGroups();
+                Assert.True(cursor.MoveNext(input));
+                var snapshot = cursor.SnapshotRanges(input, []);
                 Assert.Equal(work, cap);
                 Assert.Equal(extent, cursor.WorkingInvocation.Budget.ResultBytes);
-                Assert.Equal("😀é", Encoding.UTF8.GetString(input.AsSpan(snapshot[0].StartOffsetInBytes, snapshot[0].EndOffsetInBytes - snapshot[0].StartOffsetInBytes)));
+                Assert.Equal("😀é", Encoding.UTF8.GetString(input.AsSpan(snapshot.Groups[0].StartOffsetInBytes, snapshot.Groups[0].EndOffsetInBytes - snapshot.Groups[0].StartOffsetInBytes)));
             }
             catch (InvalidOperationException error)
             {

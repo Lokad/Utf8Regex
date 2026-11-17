@@ -8,20 +8,28 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReLeadingAsciiProjectionTests
 {
     [Theory]
-    [InlineData(@"\d+", false)] [InlineData(@"\d+", true)]
-    [InlineData(@"(?P<n>\d+)", false)] [InlineData(@"(?P<n>\d+)", true)]
+    [InlineData(@"\d+", false)]
+    [InlineData(@"\d+", true)]
+    [InlineData(@"(?P<n>\d+)", false)]
+    [InlineData(@"(?P<n>\d+)", true)]
     public void ImmediateSearchNeedsNoUnrelatedSuffixClassification(string pattern, bool unicodeSuffix)
     {
         var input = Encoding.UTF8.GetBytes("1" + new string('a', 1 << 20) + (unicodeSuffix ? "😀" : ""));
         using var token = new CancellationTokenSource();
         using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
         {
-            MaxWorkSteps = 200, MaxWorkingBytes = 65536, MaxResultBytes = 65536
+            MaxWorkSteps = 200,
+            MaxWorkingBytes = 65536,
+            MaxResultBytes = 65536
         });
         PythonReMatchAssert.Equal("1", regex.Search(input, 0, token.Token));
-        var owned = regex.SearchDetailed(input, 0, token.Token);
-        Assert.Equal("1", System.Text.Encoding.UTF8.GetString(owned.Value.GetValueBytes()));
-        Assert.Equal((0,1),(owned.Value.StartOffsetInBytes,owned.Value.EndOffsetInBytes));
+        Utf8PythonRangeMatch owned = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token.Token, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out owned);
+        }
+        Assert.Equal("1", System.Text.Encoding.UTF8.GetString(owned.GetValueMemory().Span));
+        Assert.Equal((0, 1), (owned.Value.StartOffsetInBytes, owned.Value.EndOffsetInBytes));
     }
 
     [Theory]
@@ -40,12 +48,23 @@ public sealed class PythonReLeadingAsciiProjectionTests
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
         PythonReMatchAssert.Equal(expected, regex.Search(input));
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.SearchDetailed(input).Value.GetValueBytes()));
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(snapshot2.GetValueMemory().Span));
     }
 
     [Theory]
-    [InlineData(31)] [InlineData(32)] [InlineData(63)] [InlineData(64)]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(4095)]
     public void BlockEdgesKeepScalarCandidatesAndDurableCaptureResults(int prefixLength)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -63,7 +82,8 @@ public sealed class PythonReLeadingAsciiProjectionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void SkippedAsciiPrefixKeepsOriginalInterruption(bool expire)
     {
         long ticks = 0;

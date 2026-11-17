@@ -8,7 +8,9 @@ public sealed class PythonReFiniteResultPolicyTests
 {
     [Theory]
     [InlineData(0)]
-    [InlineData(17)] [InlineData(18)] [InlineData(21)]
+    [InlineData(17)]
+    [InlineData(18)]
+    [InlineData(21)]
     public void ByteBoundedTimeoutOmitsSubjectAcrossPreparationAndResultOwners(int operation)
     {
         var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
@@ -94,12 +96,12 @@ public sealed class PythonReFiniteResultPolicyTests
         var expected = Run(new(pattern), input, operation);
         using var source = new CancellationTokenSource();
         foreach (var bytes in new[] { false, true })
-        foreach (var token in new[] { default, source.Token })
-        {
-            Assert.Equal(expected, Run(Create(pattern, 1000000, bytes), input, operation, token: token));
-            Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, bytes), input, operation, token: token));
-            Assert.Equal(expected, Run(Create(pattern, 1000000, bytes, work: 1000000), input, operation, token: token));
-        }
+            foreach (var token in new[] { default, source.Token })
+            {
+                Assert.Equal(expected, Run(Create(pattern, 1000000, bytes), input, operation, token: token));
+                Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, bytes), input, operation, token: token));
+                Assert.Equal(expected, Run(Create(pattern, 1000000, bytes, work: 1000000), input, operation, token: token));
+            }
     }
 
     [Theory]
@@ -141,9 +143,12 @@ public sealed class PythonReFiniteResultPolicyTests
     }
 
     [Theory]
-    [InlineData(PythonReCompileOptions.None)] [InlineData(PythonReCompileOptions.IgnoreCase)]
-    [InlineData(PythonReCompileOptions.Multiline)] [InlineData(PythonReCompileOptions.DotAll)]
-    [InlineData(PythonReCompileOptions.Verbose)] [InlineData(PythonReCompileOptions.Ascii)]
+    [InlineData(PythonReCompileOptions.None)]
+    [InlineData(PythonReCompileOptions.IgnoreCase)]
+    [InlineData(PythonReCompileOptions.Multiline)]
+    [InlineData(PythonReCompileOptions.DotAll)]
+    [InlineData(PythonReCompileOptions.Verbose)]
+    [InlineData(PythonReCompileOptions.Ascii)]
     [InlineData(PythonReCompileOptions.Unicode)]
     public void SupportedFlagsKeepScalarCoordinatesAndValues(PythonReCompileOptions options)
     {
@@ -180,12 +185,16 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Empty(bytes.TupleValues[0][1]);
         Assert.Empty(bytes.TupleValues[1][0]);
         Assert.Equal("a"u8.ToArray(), bytes.TupleValues[1][1]);
-        var retained = regex.SearchDetailed(input);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out retained);
+        }
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(retained.TryGetFirstSetGroup("first", out var first));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(first.Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((first.Success ? retained.GetGroupMemory(first.Number).Span : ReadOnlySpan<byte>.Empty)));
         Denied(() => PythonReFindAllAssert.Decode(Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToUtf8(input)), 1);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }
 
@@ -232,7 +241,16 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(2, Create(".", 1).Count("😀a"u8));
         var range = Create(".", 1).Search("😀"u8);
         Assert.Equal(4, range.EndOffsetInBytes);
-        Denied(() => Create(".", 1).SearchDetailed("😀"u8), 1);
+        Denied(() =>
+        {
+            Utf8PythonRangeMatch snapshot2 = default;
+            using (var captureCursor2 = Create(".", 1).CreateMatchCursor(("😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor2.MoveNext(out snapshot2);
+            }
+
+            _ = snapshot2;
+        }, 1);
         PythonReMatchAssert.Equal("", Create("", 1).Search("😀"u8));
         Assert.False(Create("missing", 1).Search("😀"u8).Success);
         var regex = Create(".*?", 1000000);
@@ -245,8 +263,12 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(new[] { "", "😀", "", "a", "" }, collectedRanges3.ToArray().Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
         Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀a"u8, 1));
-        var context = regex.SearchDetailed("😀a"u8);
-        Assert.Equal("", System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
+        Utf8PythonRangeMatch context = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out context);
+        }
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
         Assert.NotEmpty(Create("(?P<x>a)", 1).GetGroupNames());
     }
 

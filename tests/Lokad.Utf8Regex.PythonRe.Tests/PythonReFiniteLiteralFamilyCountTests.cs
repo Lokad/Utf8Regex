@@ -130,7 +130,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(2, longRegex.Count(Encoding.UTF8.GetBytes("😀" + longLiterals[4] + " " + longLiterals[0]), 4));
         var captured = new Utf8PythonRegex("(cat|horse|dog|pig|cow)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
         var input = "π😀cat cow"u8.ToArray();
-        var retained = captured.SearchDetailed(input);
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor1 = captured.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out retained);
+        }
         Assert.Equal(2, captured.Count(input));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = captured.CreateMatchCursor(input, 0, default))
@@ -140,8 +144,8 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         }
         var matches = collectedRanges1.ToArray();
         Assert.Equal(new[] { "cat", "cow" }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
-        Assert.Equal("cat", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal(6,retained.Value.StartOffsetInBytes);
+        Assert.Equal("cat", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(6, retained.Value.StartOffsetInBytes);
     }
     [Fact]
     public void NinthAlternativeStillUsesAdmittedScalarExecution()

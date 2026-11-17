@@ -16,7 +16,9 @@ public sealed class PythonReAtomicViabilityTests
         (Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     [Theory]
-    [InlineData("a++a")] [InlineData("(?>a+)a")] [InlineData("(?>a*)a")]
+    [InlineData("a++a")]
+    [InlineData("(?>a+)a")]
+    [InlineData("(?>a*)a")]
     [InlineData("é++é")]
     public void ImpossibleAtomicRunsFinishWithoutScalarWorkspace(string pattern)
     {
@@ -60,19 +62,27 @@ public sealed class PythonReAtomicViabilityTests
         Assert.Equal(2, Program(impossible).GroupCount);
         Assert.Equal(0, impossible.Count("xaaaay"u8));
         var negative = new Utf8PythonRegex("(?!a++a)(?P<value>.)");
-        var negativeHit = negative.SearchDetailed("😀"u8);
-        Assert.True(negativeHit.Success); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(negativeHit.GetGroup(1).Value.GetValueBytes()));
+        Utf8PythonRangeMatch negativeHit = default;
+        using (var captureCursor1 = negative.CreateMatchCursor(("😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out negativeHit);
+        }
+        Assert.True(negativeHit.Success); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((negativeHit.Groups[1].Success ? negativeHit.GetGroupMemory(negativeHit.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         var conditional = new Utf8PythonRegex("(?:(?P<x>a++a)|b)(?(x)c|d)");
         Assert.True(conditional.FullMatch("bd"u8).Success);
         Assert.False(conditional.FullMatch("bc"u8).Success);
         var allowance = new Allowance(16 << 20);
         using var branches = Utf8PythonRegex.Compile("(?P<dead>a++a)|(?P<live>é+)", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
-        var retained = branches.SearchDetailed("xxéé"u8);
-        Assert.True(retained.Success); Assert.False(retained.GetGroup(1).Success);
-        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).Value.GetValueBytes()));
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor2 = branches.CreateMatchCursor(("xxéé"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out retained);
+        }
+        Assert.True(retained.Success); Assert.False(retained.Groups[1].Success);
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained.GetGroupMemory(retained.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
         branches.Dispose(); Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained.GetGroupMemory(retained.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -107,7 +117,8 @@ public sealed class PythonReAtomicViabilityTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ProvedFailureStillChecksFinalPublication(bool expire)
     {
         var regex = new Utf8PythonRegex("a++a", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Policy);

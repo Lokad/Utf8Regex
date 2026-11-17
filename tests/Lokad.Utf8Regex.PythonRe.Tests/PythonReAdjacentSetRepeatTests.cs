@@ -29,12 +29,16 @@ public sealed class PythonReAdjacentSetRepeatTests
             var owner = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
             var value = owner.FullMatch(input);
             Assert.True(value.Success);
-            Assert.Equal((0,input.Length),                (value.StartOffsetInBytes,value.EndOffsetInBytes));
+            Assert.Equal((0, input.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             PythonReMatchAssert.Equal(text, owner.FullMatch(input));
-            var retained = owner.FullMatchDetailed(input);
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+            Utf8PythonRangeMatch retained = default;
+            using (var captureCursor1 = owner.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out retained);
+            }
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
             Assert.Equal(1, owner.Count(input));
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
 
         }
@@ -48,16 +52,20 @@ public sealed class PythonReAdjacentSetRepeatTests
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
         var held = allowance.Used;
         var input = "item\u2003 12345"u8.ToArray();
-        var retained = owner.FullMatchDetailed(input);
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor2 = owner.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out retained);
+        }
         Assert.True(retained.Success);
-        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("gap", retained.LastGroup);
         Assert.Equal(held, allowance.Used);
         Assert.Equal(1, owner.Count(input));
         Assert.Equal(held, allowance.Used);
         owner.Dispose();
         Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -78,7 +86,8 @@ public sealed class PythonReAdjacentSetRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TheDisjointClassRunKeepsTheOriginalTokenAndDeadline(bool expire)
     {
         const string pattern = @"item\s+[0-9]+";

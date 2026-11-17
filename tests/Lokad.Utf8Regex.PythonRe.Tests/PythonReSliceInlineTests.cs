@@ -172,9 +172,13 @@ public sealed class PythonReSliceInlineTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var expected = Bcl(regex).Match("xaBB", 0);
         Assert.True(expected.Success);
-        var detailed = regex.SearchDetailed(Utf8("xaBB"), 0);
+        Utf8PythonRangeMatch detailed = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(Utf8("xaBB"), 0, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out detailed);
+        }
         Assert.True(detailed.Success);
-        Assert.Equal("aBB", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("aBB", System.Text.Encoding.UTF8.GetString((detailed.Groups[0].Success ? detailed.GetGroupMemory(detailed.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed.GetGroupMemory(detailed.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 }

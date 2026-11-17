@@ -63,13 +63,25 @@ public sealed class PythonReFullProgramReuseTests
         var regex = new Utf8PythonRegex(pattern);
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
         Assert.Equal(success, regex.FullMatch(bytes).Success);
-        Assert.Equal(success, regex.FullMatchDetailed(bytes).Success);
-        Assert.Equal(success, regex.FullMatchDetailed(bytes).Success);
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(bytes, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal(success, snapshot1.Success);
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(bytes, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.Equal(success, snapshot2.Success);
         PythonReMatchAssert.Equal(success ? input : null, regex.FullMatch(bytes));
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
     public void DerivationAdmissionRollsBackWithoutChangingBorrowedProgram(int limit)
     {
         var parse = new PythonReParser("(?P<x>[é😀]+)(?=a)a").Parse(PythonReCompileOptions.None);

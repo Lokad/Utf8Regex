@@ -71,19 +71,24 @@ public sealed class PythonReAtomicRepeatCommitTests
         var regex = Utf8PythonRegex.Compile("(?>(a+))b", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
         var held = allowance.Used;
-        var retained = regex.SearchDetailed("xxaaaabzz"u8);
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("xxaaaabzz"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out retained);
+        }
         Assert.True(retained.Success);
-        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(held, allowance.Used);
         Assert.False(regex.FullMatch("aaaabX"u8).Success);
         Assert.Equal(held, allowance.Used);
         regex.Dispose();
         Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OriginalInterruptionDuringGreedyRunDoesNotPoisonReuse(bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "b");

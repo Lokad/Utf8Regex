@@ -6,7 +6,10 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonRePublicConstructionTests
 {
     [Theory]
-    [InlineData(4093)] [InlineData(4094)] [InlineData(4095)] [InlineData(4096)]
+    [InlineData(4093)]
+    [InlineData(4094)]
+    [InlineData(4095)]
+    [InlineData(4096)]
     public void ByteFactoryPreservesScalarsAcrossDecodeBlocks(int prefix)
     {
         var pattern = new string('a', prefix) + "😀é";
@@ -34,15 +37,20 @@ public sealed class PythonRePublicConstructionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExplicitCompileNeedsNoLaterFullMatchConstruction(bool bytes)
     {
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1, 1);
-        var match = regex.FullMatchDetailed("😀😀"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("x", match.LastGroup);
         Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
@@ -50,7 +58,8 @@ public sealed class PythonRePublicConstructionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void EagerFullProgramUsesConstructionDeadlineInsteadOfMatchDeadline(bool bytes)
     {
         long ticks = 0;
@@ -77,8 +86,14 @@ public sealed class PythonRePublicConstructionTests
             Timeout.InfiniteTimeSpan, CancellationToken.None);
 
     [Theory]
-    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)] [InlineData(3, false)]
-    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)] [InlineData(3, true)]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
     public void EachFiniteConstructionLimitDeniesAndFreshCallRecovers(int limit, bool bytes)
     {
         var policy = limit switch
@@ -100,7 +115,11 @@ public sealed class PythonRePublicConstructionTests
         Assert.False(Utf8ConstructionScope.IsActive);
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var result = regex.SearchDetailed("😀😀"u8);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out result);
+        }
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
@@ -122,14 +141,28 @@ public sealed class PythonRePublicConstructionTests
     {
         using var cancellation = new CancellationTokenSource();
         var regex = Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 100000, MaxDepth = 64,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 },
-            new() { MaxWorkSteps = 1000000, MaxDepth = 128,
-                MaxInstructionCapacity = 10000, MaxBytes = 1000000 },
+            Timeout.InfiniteTimeSpan, new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 64,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            },
+            new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 128,
+                MaxInstructionCapacity = 10000,
+                MaxBytes = 1000000
+            },
             TimeSpan.FromSeconds(30), cancellation.Token);
         cancellation.Cancel();
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var result = regex.SearchDetailed("😀😀"u8);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out result);
+        }
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
@@ -155,7 +188,8 @@ public sealed class PythonRePublicConstructionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DeadlineUsesOneEagerAuthorityAndLeavesNoActiveOwner(bool bytes)
     {
         long ticks = 0;

@@ -93,15 +93,21 @@ public sealed class PythonReRequiredLiteralScreenTests
         var held = allowance.Used; allowance.Maximum = held;
         Assert.False(regex.Search("aaaa"u8).Success); Assert.Equal(held, allowance.Used);
         allowance.Maximum += 1 << 20;
-        var snapshot = regex.SearchDetailed("xxéé😀"u8);
-        Assert.True(snapshot.Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
+        Utf8PythonRangeMatch snapshot = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("xxéé😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out snapshot);
+        }
+        Assert.True(snapshot.Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((snapshot.Groups[1].Success ? snapshot.GetGroupMemory(snapshot.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(held, allowance.Used);
-        Assert.False(regex.Search("zzzz"u8).Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
-        regex.Dispose(); Assert.Equal(0UL, allowance.Used); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(snapshot.GetGroup(1).Value.GetValueBytes()));
+        Assert.False(regex.Search("zzzz"u8).Success); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((snapshot.Groups[1].Success ? snapshot.GetGroupMemory(snapshot.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        regex.Dispose(); Assert.Equal(0UL, allowance.Used); Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((snapshot.Groups[1].Success ? snapshot.GetGroupMemory(snapshot.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Throws<ObjectDisposedException>(() => regex.Search("aaaa"u8));
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void RequiredSearchKeepsOriginalCancellationAndDeadline(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

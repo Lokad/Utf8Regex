@@ -29,13 +29,22 @@ public sealed class PythonReIdentifierVersionTests
             return;
         }
 
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 128,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
+        };
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-        var match = regex.SearchDetailed("😀aa"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀aa"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
         Assert.Equal(name, match.LastGroup);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("😀a", PythonReSubstitutionAssert.Decode(regex.Subn("😀aa"u8, "\\g<" + name + ">")).ResultText);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -46,7 +55,11 @@ public sealed class PythonReIdentifierVersionTests
     public void IdentifierValidationDoesNotNormalizeStoredNames()
     {
         var regex = new Utf8PythonRegex("(?P<é>a)(?P<e\u0301>b)");
-        var match = regex.SearchDetailed("ab"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out match);
+        }
         Assert.Equal("e\u0301", match.LastGroup);
         Assert.Equal("a|b", PythonReSubstitutionAssert.Decode(regex.Subn("ab"u8, "\\g<é>|\\g<e\u0301>")).ResultText);
     }

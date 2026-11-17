@@ -54,13 +54,17 @@ public sealed class PythonReScalarRenderingTests
                 Assert.Equal(input.Length, found.EndOffsetInBytes);
                 Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(found.GetValueBytes()));
             }
-            var detailed = regex.SearchDetailed(input, 0, token);
+            Utf8PythonRangeMatch detailed = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out detailed);
+            }
             Assert.Equal(expected, detailed.Success);
             if (detailed.Success)
             {
                 Assert.Equal(0, detailed.Value.StartOffsetInBytes);
                 Assert.Equal(input.Length, detailed.Value.EndOffsetInBytes);
-                Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+                Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
             }
         }
         Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
@@ -85,12 +89,16 @@ public sealed class PythonReScalarRenderingTests
     {
         var regex = new Utf8PythonRegex(@"(?P<x>[\U00010400-\U00010428])(?P=x)");
         var input = Encoding.UTF8.GetBytes("\U00010400\U00010400");
-        var match = regex.FullMatchDetailed(input);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        var group = match.GetGroup(1);
-        Assert.Equal("\U00010400", System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
-        Assert.Equal(0, group.Value.StartOffsetInBytes);
-        Assert.Equal(4, group.Value.EndOffsetInBytes);
+        var group = match.Groups[1];
+        Assert.Equal("\U00010400", System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(0, group.StartOffsetInBytes);
+        Assert.Equal(4, group.EndOffsetInBytes);
     }
 
     [Theory]

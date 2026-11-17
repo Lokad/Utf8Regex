@@ -118,12 +118,13 @@ no scalar-coordinate index. Published arrays retain their result charges.
 including unmatched captures, without decoding or copying their text. These paths
 retain finite limits and synchronous cancellation.
 
-The four-argument `CreateMatchCursor` overload accepts a caller-owned
+`CreateMatchCursor` accepts an optional caller-owned
 `IUtf8MemoryAllowance` for shared working admission. Concurrent cursors use that
 same allowance directly; refusal throws `Utf8MemoryAdmissionException` before
 covered acquisition, and EOF/failure/disposal refund scratch synchronously.
 Numeric limits still apply. Compilation, caches and published caller-retained
-results need separate funding; this overload does not imply a total memory cap.
+results need separate funding; this parameter does not imply a total memory cap. Null inherits program funding
+or numeric engine limits; non-null refusal never retries without admission.
 
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
@@ -184,6 +185,17 @@ stable, unchanged subject memory; the host owns collected arrays/strings and
 their final admission/cancellation checks. `ReplaceToString`
 and `SubnToString` are removed too; decode the owned byte-template output when needed.
 
+Use mode: Utf8PythonMatchMode.Match for one anchored capture result or
+Utf8PythonMatchMode.FullMatch for one complete-suffix result; Search is the default
+and advances successively. An optional scalar-aligned endOffsetInBytes limits the
+subject prefix without rebasing byte coordinates or losing lookbehind context.
+Dispose after consuming the desired result; snapshots remain valid. The former
+SearchDetailed/MatchDetailed/FullMatchDetailed APIs and context/group view types
+are removed. LastIndex/LastGroup retain Python's last-capture-to-close semantics.
+A cursor owns persistent discovery state, so one-shot capture materialization now
+pays cursor setup and allocation too. Use the stack-only value Search/Match/FullMatch
+operations when captures and completion metadata are unnecessary.
+
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one range result per
 advance without materializing a complete collection:
 
@@ -234,7 +246,7 @@ remains untimed, and regex limits cover advances rather than host output. These
 rows have new operation identities; the tables retain their historical API scope
 until the coherent refresh.
 
-Current detailed search rows materialize host capture strings from SearchDetailed;
+Current detailed search rows materialize host capture strings from capture cursor snapshots;
 detailed iteration rows collect and decode actual range-cursor results. Those
 containers/strings and final host publication are outside regex budgets. Both
 operations have new managed protocol identities; their recorded tables remain

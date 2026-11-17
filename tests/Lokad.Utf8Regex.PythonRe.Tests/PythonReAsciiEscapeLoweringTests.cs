@@ -13,33 +13,37 @@ public sealed class PythonReAsciiEscapeLoweringTests
     {
         var body = kind switch { 'w' => @"\w.-", 'd' => @"\dA-F", 's' => @"\s\x1c-", _ => @"\w\d\s-" };
         foreach (var negate in new[] { false, true })
-        foreach (var bytes in new[] { false, true })
-        {
-            var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
-            using var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
-                : new Utf8PythonRegex(pattern);
-            foreach (var scalar in Enumerable.Range(0, 128).Concat(new[] { 0xE9, 0x660, 0xA0, 0x212A, 0x10400, 0x1F600 }))
+            foreach (var bytes in new[] { false, true })
             {
-                var word = scalar is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
-                var digit = scalar is >= '0' and <= '9';
-                var space = scalar is >= 9 and <= 13 or 32;
-                var positive = kind switch
+                var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
+                using var regex = bytes
+                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
+                    : new Utf8PythonRegex(pattern);
+                foreach (var scalar in Enumerable.Range(0, 128).Concat(new[] { 0xE9, 0x660, 0xA0, 0x212A, 0x10400, 0x1F600 }))
                 {
-                    'w' => word || scalar is '.' or '-',
-                    'd' => digit || scalar is >= 'A' and <= 'F' or >= 'a' and <= 'f',
-                    's' => space || scalar is 0x1C or '-',
-                    _ => word || digit || space || scalar == '-',
-                };
-                var text = char.ConvertFromUtf32(scalar);
-                var input = Encoding.UTF8.GetBytes(text);
-                var actual = regex.FullMatchDetailed(input);
-                Assert.Equal(negate ? !positive : positive, actual.Success);
-                if (!actual.Success) continue;
-                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
-                Assert.Equal((0, input.Length), (actual.GetGroup(1).Value.StartOffsetInBytes, actual.GetGroup(1).Value.EndOffsetInBytes));
+                    var word = scalar is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+                    var digit = scalar is >= '0' and <= '9';
+                    var space = scalar is >= 9 and <= 13 or 32;
+                    var positive = kind switch
+                    {
+                        'w' => word || scalar is '.' or '-',
+                        'd' => digit || scalar is >= 'A' and <= 'F' or >= 'a' and <= 'f',
+                        's' => space || scalar is 0x1C or '-',
+                        _ => word || digit || space || scalar == '-',
+                    };
+                    var text = char.ConvertFromUtf32(scalar);
+                    var input = Encoding.UTF8.GetBytes(text);
+                    Utf8PythonRangeMatch actual = default;
+                    using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+                    {
+                        captureCursor1.MoveNext(out actual);
+                    }
+                    Assert.Equal(negate ? !positive : positive, actual.Success);
+                    if (!actual.Success) continue;
+                    Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+                    Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
+                }
             }
-        }
     }
     [Theory]
     [InlineData('w')]
@@ -70,11 +74,15 @@ public sealed class PythonReAsciiEscapeLoweringTests
                     _ => scalar is >= 9 and <= 13 or 32,
                 };
                 var expected = char.IsLower(escape) ? positive : !positive;
-                var actual = regex.FullMatchDetailed(input);
+                Utf8PythonRangeMatch actual = default;
+                using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+                {
+                    captureCursor2.MoveNext(out actual);
+                }
                 Assert.Equal(expected, actual.Success);
                 if (!expected) continue;
-                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetGroup(1).Value.GetValueBytes()));
-                Assert.Equal((0, input.Length), (actual.GetGroup(1).Value.StartOffsetInBytes, actual.GetGroup(1).Value.EndOffsetInBytes));
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+                Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
             }
             Assert.False(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         }
@@ -82,7 +90,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults( bool union)
+    public void ScopedModesRestoreUnicodePredicatesAndKeepGlobalResults(bool union)
     {
         Utf8PythonRangeMatch cursorRange = default;
         using var regex = new Utf8PythonRegex(union ? @"(?ai:([\w-]))(?u:([\w-]))(?a:([^\w-]))"

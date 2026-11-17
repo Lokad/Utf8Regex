@@ -128,7 +128,8 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void EveryTokenAndDeadlineCheckpointKeepsTheSharedOwner(bool timeout)
     {
         foreach (var shape in Shapes())
@@ -204,11 +205,20 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     {
         foreach (var finite in new[] { false, true })
         {
-            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
+            var policy = finite ? new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            } : default;
             var regex = new Utf8PythonRegex("(😀)a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             var input = "😀a"u8.ToArray();
-            var retained = regex.SearchDetailed(input);
+            Utf8PythonRangeMatch retained = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out retained);
+            }
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Assert.Throws<PythonRePatternException>(() => regex.Replace(input, template));
@@ -216,8 +226,8 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
                 Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
             }
-            Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000001>")));
             Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000000>")));
             Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);

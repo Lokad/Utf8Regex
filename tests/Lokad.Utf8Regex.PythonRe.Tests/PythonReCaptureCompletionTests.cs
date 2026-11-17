@@ -22,19 +22,28 @@ public sealed class PythonReCaptureCompletionTests
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
                 new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
             var input = Encoding.UTF8.GetBytes(text);
-            var result = regex.SearchDetailed(input);
+            Utf8PythonRangeMatch result = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out result);
+            }
             Assert.True(result.Success);
             Assert.Equal(last, result.LastIndex);
             Assert.Equal(name, result.LastGroup);
-            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(result.GetGroup(last).Value.GetValueBytes()));
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[last].Success ? result.GetGroupMemory(result.Groups[last].Number).Span : ReadOnlySpan<byte>.Empty)));
 
             var expected = PythonReCaptureAssert.Values(result).Skip(1).ToArray();
             Assert.Equal(expected, Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
             Assert.Equal(expected, Assert.Single(regex.FindAllToUtf8(input).TupleValues).Select(value => Encoding.UTF8.GetString(value)));
-            Assert.Equal(last, regex.SearchDetailed(input).LastIndex);
+            Utf8PythonRangeMatch snapshot2 = default;
+            using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor2.MoveNext(out snapshot2);
+            }
+            Assert.Equal(last, snapshot2.LastIndex);
             Assert.Equal(last, result.LastIndex);
             Assert.Equal(name, result.LastGroup);
-            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(result.GetGroup(last).Value.GetValueBytes()));
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[last].Success ? result.GetGroupMemory(result.Groups[last].Number).Span : ReadOnlySpan<byte>.Empty)));
         }
     }
     [Theory]
@@ -44,11 +53,15 @@ public sealed class PythonReCaptureCompletionTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1024, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
-        var result = regex.SearchDetailed(Encoding.UTF8.GetBytes(text));
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out result);
+        }
         Assert.True(result.Success);
         Assert.Equal(1, result.LastIndex);
         Assert.Equal("v", result.LastGroup);
-        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(result.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[1].Success ? result.GetGroupMemory(result.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     private static IEnumerable<JsonElement> Rows()
@@ -71,22 +84,6 @@ public sealed class PythonReCaptureCompletionTests
     private static int? LastIndex(JsonElement expected)
         => expected.GetProperty("lastIndex").ValueKind == JsonValueKind.Null ? null : expected.GetProperty("lastIndex").GetInt32();
 
-    private static void AssertContext(JsonElement expected, Utf8PythonMatchContext actual)
-    {
-        Assert.Equal(expected.GetProperty("success").GetBoolean(), actual.Success);
-        Assert.Equal(LastIndex(expected), actual.LastIndex);
-        Assert.Equal(expected.GetProperty("lastGroup").GetString(), actual.LastGroup);
-        var groups = expected.GetProperty("groups");
-        Assert.Equal(groups.GetArrayLength(), actual.CaptureSlotCount);
-        for (var number = 0; number < groups.GetArrayLength(); number++)
-        {
-            var group = groups[number]; var value = actual.GetGroup(number);
-            Assert.Equal(group.GetProperty("success").GetBoolean(), value.Success);
-            Assert.Equal(group.GetProperty("text").GetString(), System.Text.Encoding.UTF8.GetString(value.Value.GetValueBytes()));
-            Assert.Equal(group.GetProperty("startByte").GetInt32(), value.Value.StartOffsetInBytes);
-            Assert.Equal(group.GetProperty("endByte").GetInt32(), value.Value.EndOffsetInBytes);
-        }
-    }
     private static void AssertRange(JsonElement expected, Utf8PythonRangeMatch actual)
     {
         Assert.Equal(expected.GetProperty("success").GetBoolean(), actual.Success);
@@ -117,9 +114,17 @@ public sealed class PythonReCaptureCompletionTests
             var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 };
             var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            var context = kind switch { 0 => regex.SearchDetailed(input, 0, source.Token),
-                1 => regex.MatchDetailed(input, 0, source.Token), _ => regex.FullMatchDetailed(input, 0, source.Token) };
-            AssertContext(expected, context);
+            Utf8PythonRangeMatch context = default;
+            using (var captureCursor4 = kind switch
+            {
+                0 => regex.CreateMatchCursor(input, 0, source.Token, mode: Utf8PythonMatchMode.Search),
+                1 => regex.CreateMatchCursor(input, 0, source.Token, mode: Utf8PythonMatchMode.Match),
+                _ => regex.CreateMatchCursor(input, 0, source.Token, mode: Utf8PythonMatchMode.FullMatch)
+            })
+            {
+                captureCursor4.MoveNext(out context);
+            }
+            AssertRange(expected, context);
         }
     }
     [Theory]
@@ -158,7 +163,11 @@ public sealed class PythonReCaptureCompletionTests
     public void CompletionPublicationHasEnforceableWorkAndResultCutoffs(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var expected = new Utf8PythonRegex(pattern).SearchDetailed(input);
+        Utf8PythonRangeMatch expected = default;
+        using (var captureCursor5 = new Utf8PythonRegex(pattern).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor5.MoveNext(out expected);
+        }
         foreach (var work in new[] { false, true })
         {
             Utf8PythonRegex Create(ulong cap) => new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
@@ -167,14 +176,35 @@ public sealed class PythonReCaptureCompletionTests
             while (first < last)
             {
                 var cap = first + (last - first) / 2;
-                try { var actual = Create(cap).SearchDetailed(input); Assert.Equal(expected.LastIndex, actual.LastIndex); last = cap; }
+                try
+                {
+                    Utf8PythonRangeMatch actual = default;
+                    using (var captureCursor6 = Create(cap).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+                    {
+                        captureCursor6.MoveNext(out actual);
+                    }
+                    Assert.Equal(expected.LastIndex, actual.LastIndex); last = cap;
+                }
                 catch (Utf8ResourceLimitExceededException error)
                 { Assert.Equal(work ? Utf8ResourceLimitKind.ExecutionWorkSteps : Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind); first = cap + 1; }
             }
-            var result = Create(first).SearchDetailed(input);
+            Utf8PythonRangeMatch result = default;
+            using (var captureCursor7 = Create(first).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor7.MoveNext(out result);
+            }
             Assert.Equal(expected.LastIndex, result.LastIndex); Assert.Equal(expected.LastGroup, result.LastGroup);
-            PythonReCaptureAssert.Equal(expected,result);
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(first - 1).SearchDetailed(input));
+            PythonReCaptureAssert.Equal(expected, result);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                Utf8PythonRangeMatch snapshot8 = default;
+                using (var captureCursor8 = Create(first - 1).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+                {
+                    captureCursor8.MoveNext(out snapshot8);
+                }
+
+                _ = snapshot8;
+            });
             Assert.Equal(first - 1, failure.Limit);
         }
     }
@@ -204,9 +234,9 @@ public sealed class PythonReCaptureCompletionTests
     [Fact]
     public void DefaultDetailedResultsHaveNoCompletion()
     {
-        Assert.Null(default(Utf8PythonMatchContext).LastIndex);
-        Assert.Null(default(Utf8PythonMatchContext).LastGroup);
-        Assert.Null(default(Utf8PythonMatchContext).LastIndex);
-        Assert.Null(default(Utf8PythonMatchContext).LastGroup);
+        Assert.Null(default(Utf8PythonRangeMatch).LastIndex);
+        Assert.Null(default(Utf8PythonRangeMatch).LastGroup);
+        Assert.Null(default(Utf8PythonRangeMatch).LastIndex);
+        Assert.Null(default(Utf8PythonRangeMatch).LastGroup);
     }
 }

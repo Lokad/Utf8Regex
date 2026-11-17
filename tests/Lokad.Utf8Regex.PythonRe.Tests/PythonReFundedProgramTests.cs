@@ -11,7 +11,8 @@ public sealed class PythonReFundedProgramTests
             Timeout.InfiniteTimeSpan, default, construction, Timeout.InfiniteTimeSpan, token, allowance);
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ProgramStaysFundedUntilExplicitClosure(bool utf8)
     {
         var allowance = new Allowance(16 << 20); Assert.True(allowance.TryReserve(13));
@@ -21,15 +22,20 @@ public sealed class PythonReFundedProgramTests
             : Compile("(?P<x>é+)", allowance, token.Token);
         var held = allowance.Used; Assert.True(held > 13); token.Cancel();
         Assert.Equal(1, regex.Count("éé"u8)); Assert.Equal(held, allowance.Used);
-        var retained = regex.SearchDetailed("éé"u8);
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("éé"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out retained);
+        }
         regex.Dispose(); regex.Dispose(); Assert.Equal(13UL, allowance.Used);
-        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Throws<ObjectDisposedException>(() => regex.Count("é"u8));
         allowance.Release(13);
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void MetadataCopyBelongsToCallerAndFundedCloseRejectsNewCopies(bool native)
     {
         const string pattern = "(?P<x>😀)";
@@ -94,22 +100,27 @@ public sealed class PythonReFundedProgramTests
     }
 
     [Theory]
-    [InlineData("(?P<x>a)")] [InlineData("a")] [InlineData("[a-z]+")]
+    [InlineData("(?P<x>a)")]
+    [InlineData("a")]
+    [InlineData("[a-z]+")]
     public void ClosedFundedExpressionsRejectEveryPublicOperationFamily(string pattern)
     {
-        var allowance = new Allowance(16 << 20); using var regex = Compile(pattern, allowance); regex.Dispose();
+        var allowance = new Allowance(16 << 20);
+        using var regex = Compile(pattern, allowance);
+        regex.Dispose();
+        var input = "a"u8.ToArray();
         Action[] operations = [
-            () => regex.IsMatch("a"u8), () => { _ = regex.Search("a"u8); },
-            () => { _ = regex.Match("a"u8); }, () => { _ = regex.FullMatch("a"u8); },
-            () => regex.Count("a"u8), () => { _ = regex.SearchDetailed("a"u8); },
-            () => { _ = regex.MatchDetailed("a"u8); }, () => { _ = regex.FullMatchDetailed("a"u8); },
-            () => regex.SearchDetailed("a"u8), () => regex.MatchDetailed("a"u8), () => regex.FullMatchDetailed("a"u8),
-            () => regex.FindAllToUtf8("a"u8),
-            () => regex.SplitRanges("a"u8),
-            () => regex.Subn("a"u8, "x"),
-            () => regex.CreateMatchCursor("a"u8.ToArray()),
+            () => regex.IsMatch(input), () => { _ = regex.Search(input); },
+            () => { _ = regex.Match(input); }, () => { _ = regex.FullMatch(input); },
+            () => regex.Count(input),
+            () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); },
+            () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); },
+            () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch); cursor.MoveNext(out _); },
+            () => regex.FindAllToUtf8(input), () => regex.SplitRanges(input),
+            () => regex.Subn(input, "x"), () => regex.CreateMatchCursor(input),
         ];
-        foreach (var operation in operations) Assert.Throws<ObjectDisposedException>(operation);
+        foreach (var operation in operations)
+            Assert.Throws<ObjectDisposedException>(operation);
         Assert.Equal(0UL, allowance.Used);
     }
 

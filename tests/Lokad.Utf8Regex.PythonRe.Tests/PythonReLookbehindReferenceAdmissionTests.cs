@@ -48,15 +48,24 @@ public sealed class PythonReLookbehindReferenceAdmissionTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var bytes in new[] { false, true })
         {
-            var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            };
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var match = regex.SearchDetailed(input);
+            Utf8PythonRangeMatch match = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out match);
+            }
             Assert.True(match.Success);
-            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-            Assert.Equal(Encoding.UTF8.GetByteCount(capture), match.GetGroup(1).Value.EndOffsetInBytes - match.GetGroup(1).Value.StartOffsetInBytes);
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal(Encoding.UTF8.GetByteCount(capture), match.Groups[1].EndOffsetInBytes - match.Groups[1].StartOffsetInBytes);
             Assert.Equal(1, match.LastIndex);
         }
     }

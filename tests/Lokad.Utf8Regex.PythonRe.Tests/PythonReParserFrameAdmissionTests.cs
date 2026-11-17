@@ -20,7 +20,8 @@ public sealed class PythonReParserFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ParserDescriptorDenialAcquiresNoObjectAndPreservesParentLoans(bool workDenial)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
@@ -74,7 +75,8 @@ public sealed class PythonReParserFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void RootFrameDenialOccursBeforeConsumingPatternAndParserCanRetry(bool depthDenial)
     {
         var parser = new PythonReParser("(?P<x>😀)"); // Caller-owned descriptor.
@@ -101,10 +103,14 @@ public sealed class PythonReParserFrameAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var regex = new Utf8PythonRegex("(?P<x>.)");
-        var match = regex.SearchDetailed("😀"u8);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal(4, match.Value.GetValueBytes().Length);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal(4, match.GetValueMemory().Span.Length);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.ReservedBytes > 0);
     }

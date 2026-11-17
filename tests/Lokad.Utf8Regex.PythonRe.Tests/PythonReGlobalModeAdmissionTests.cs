@@ -45,10 +45,14 @@ public sealed class PythonReGlobalModeAdmissionTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
-        var match = regex.FullMatchDetailed(Encoding.UTF8.GetBytes(text));
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal(first, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal(second, System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal(first, System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(second, System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, match.LastIndex);
         Assert.Equal("y", match.LastGroup);
     }

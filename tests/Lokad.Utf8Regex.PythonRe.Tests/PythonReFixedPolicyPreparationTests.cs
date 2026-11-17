@@ -5,7 +5,11 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFixedPolicyPreparationTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
     public void FiniteCorePreparationKeepsSearchWithoutUnmeteredRuntime(int limit)
     {
         var policy = new Utf8ResourcePolicy
@@ -27,7 +31,12 @@ public sealed class PythonReFixedPolicyPreparationTests
         PythonReMatchAssert.Equal("abc", regex.Search(input));
         Assert.Equal(["abc", "xyz", "abc"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal("é😀 ! ! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
-        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(regex.SearchDetailed(input).Value.GetValueBytes()));
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(snapshot1.GetValueMemory().Span));
         Assert.True(regex.FullMatch("xyz"u8).Success);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
@@ -36,7 +45,8 @@ public sealed class PythonReFixedPolicyPreparationTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ScalarOneShotValuesAndTextSupportFiniteWork(bool finite)
     {
         var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 } : default;

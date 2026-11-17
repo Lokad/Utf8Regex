@@ -27,8 +27,13 @@ public sealed class PythonReFundedExecutionTests
         {
             operation(); Assert.True(account.Used == held, name + " left temporary funding outstanding.");
         }
-        var retained = regex.SearchDetailed(input); Assert.True(retained.Success);
-        regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.NotEmpty(System.Text.Encoding.UTF8.GetString(retained.GetGroup(0).Value.GetValueBytes()));
+        Utf8PythonRangeMatch retained = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out retained);
+        }
+        Assert.True(retained.Success);
+        regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.NotEmpty(System.Text.Encoding.UTF8.GetString((retained.Groups[0].Success ? retained.GetGroupMemory(retained.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -85,7 +90,9 @@ public sealed class PythonReFundedExecutionTests
         Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
     }
 
-    [Theory] [InlineData("cat|horse")] [InlineData("a.b")]
+    [Theory]
+    [InlineData("cat|horse")]
+    [InlineData("a.b")]
     public void BoundNativeOrScalarTimeoutDoesNotDecodeDiagnosticInput(string pattern)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -157,13 +164,13 @@ public sealed class PythonReFundedExecutionTests
     private static (string Name, Action Operation)[] Operations(Utf8PythonRegex regex, byte[] input) => [
         ("IsMatch", () => regex.IsMatch(input)), ("Search", () => { _ = regex.Search(input); }),
         ("Match", () => { _ = regex.Match(input); }), ("FullMatch", () => { _ = regex.FullMatch(input); }),
-        ("Count", () => regex.Count(input)), ("SearchDetailed", () => { _ = regex.SearchDetailed(input); }),
-        ("MatchDetailed", () => { _ = regex.MatchDetailed(input); }), ("FullMatchDetailed", () => { _ = regex.FullMatchDetailed(input); }),
-        ("SearchDetailed", () => regex.SearchDetailed(input)), ("MatchDetailed", () => regex.MatchDetailed(input)),
-        ("FullMatchDetailed", () => regex.FullMatchDetailed(input)),
+        ("Count", () => regex.Count(input)),
+        ("CursorSearch", () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); }),
+        ("CursorMatch", () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); }),
+        ("CursorFullMatch", () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch); cursor.MoveNext(out _); }),
         ("FindAllToUtf8", () => regex.FindAllToUtf8(input)),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),
-        ("Cursor", () => { using var cursor = regex.CreateMatchCursor(input); while (cursor.MoveNext(out _)) { } }),
+        ("CursorAll", () => { using var cursor = regex.CreateMatchCursor(input); while (cursor.MoveNext(out _)) { } }),
     ];
 }

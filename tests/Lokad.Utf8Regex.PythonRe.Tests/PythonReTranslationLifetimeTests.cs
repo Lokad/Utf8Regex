@@ -75,7 +75,12 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal(1, regex.Count(input));
             Assert.True(regex.Search(input).Success);
             Assert.True(regex.FullMatch(input).Success);
-            Assert.True(regex.SearchDetailed(input).Success);
+            Utf8PythonRangeMatch snapshot1 = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor1.MoveNext(out snapshot1);
+            }
+            Assert.True(snapshot1.Success);
             Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
             Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
         }
@@ -96,7 +101,12 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Search(input).Success);
         Assert.True(regex.FullMatch(input).Success);
-        Assert.True(regex.SearchDetailed(input).Success);
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.True(snapshot2.Success);
         Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
         Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
     }
@@ -112,7 +122,12 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.FullMatch(input).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.SearchDetailed(input).Success);
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.True(snapshot3.Success);
     }
     [Theory]
     [InlineData(false)]
@@ -120,8 +135,13 @@ public sealed class PythonReTranslationLifetimeTests
     public void ProvedLiteralLookaheadRetainsCompleteNativeResultEligibility(bool finite)
     {
         var policy = finite
-            ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1024,
-                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }
+            ? new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
             : default;
         var regex = new Utf8PythonRegex("needle(?=bar)", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, policy);
@@ -150,11 +170,20 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.False(regex.DebugUsesUtf8RegexBackend);
             Assert.DoesNotContain(ReachableStrings(regex), text => text == rendered);
             Assert.Equal(["0", "α"], regex.GetGroupNames());
-            var hit = regex.SearchDetailed("ab"u8);
+            Utf8PythonRangeMatch hit = default;
+            using (var captureCursor4 = regex.CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor4.MoveNext(out hit);
+            }
             Assert.True(hit.Success);
-            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(hit.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString((hit.Groups[1].Success ? hit.GetGroupMemory(hit.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("α", hit.LastGroup);
-            Assert.True(regex.FullMatchDetailed("ab"u8).Success);
+            Utf8PythonRangeMatch snapshot5 = default;
+            using (var captureCursor5 = regex.CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor5.MoveNext(out snapshot5);
+            }
+            Assert.True(snapshot5.Success);
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, @"\g<α>", 1)));
         }
     }

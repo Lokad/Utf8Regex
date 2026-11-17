@@ -10,7 +10,7 @@ public sealed class PythonReIpv4BooleanTests
 {
     private const string Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
     private static readonly Utf8ResourcePolicy Small = new()
-        { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("012.200.033.199", 0, true)]
@@ -38,7 +38,11 @@ public sealed class PythonReIpv4BooleanTests
     }
 
     [Theory]
-    [InlineData(2029)] [InlineData(2033)] [InlineData(2034)] [InlineData(2047)] [InlineData(4095)]
+    [InlineData(2029)]
+    [InlineData(2033)]
+    [InlineData(2034)]
+    [InlineData(2047)]
+    [InlineData(4095)]
     public void CrossingWindowsKeepScalarStartAndPartialHit(int padding)
     {
         using var regex = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, Small);
@@ -96,11 +100,15 @@ public sealed class PythonReIpv4BooleanTests
     {
         using var regex = new Utf8PythonRegex(prefix + "(?P<address>" + Pattern + ")");
         var input = Encoding.UTF8.GetBytes(text);
-        var held = regex.SearchDetailed(input);
+        Utf8PythonRangeMatch held = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out held);
+        }
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, held.Success);
         regex.Dispose();
-        if (expected) Assert.Equal(text, System.Text.Encoding.UTF8.GetString(held.GetGroup(1).Value.GetValueBytes()));
+        if (expected) Assert.Equal(text, System.Text.Encoding.UTF8.GetString((held.Groups[1].Success ? held.GetGroupMemory(held.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

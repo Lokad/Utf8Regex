@@ -8,7 +8,8 @@ public sealed class PythonReScalarCursorOwnershipTests
 {
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PreparationAndMapUseTheOriginalOperationToken(bool snapshot)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
@@ -20,23 +21,23 @@ public sealed class PythonReScalarCursorOwnershipTests
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
             {
-                var cursor = new PythonReScalarMatchCursor("\U0001f600"u8, program, 0, Regex.InfiniteMatchTimeout,
-                    null, "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token));
+                var cursor = new PythonReScalarMatchState("\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
+                    "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token), null);
                 cursor.Dispose();
             });
             Assert.Equal(source.Token, failure.CancellationToken);
             return;
         }
-        var mapped = new PythonReScalarMatchCursor("\U0001f600"u8, program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token));
+        var mapped = new PythonReScalarMatchState("\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
+            "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token), null);
         try
         {
-            Assert.True(mapped.MoveNext());
+            Assert.True(mapped.MoveNext("\U0001f600"u8));
             var positionedBytes = mapped.ReservedBytes;
             Assert.True(positionedBytes > 0); // Owned slots; unnecessary rollback scratch may be absent.
             source.Cancel();
             var observed = false;
-            try { mapped.SnapshotGroups(); }
+            try { mapped.SnapshotRanges("\U0001f600"u8.ToArray(), []); }
             catch (OperationCanceledException failure)
             {
                 observed = true;

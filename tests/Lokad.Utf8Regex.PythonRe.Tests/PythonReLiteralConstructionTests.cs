@@ -49,16 +49,22 @@ public sealed class PythonReLiteralConstructionTests
     {
         var expression = Compile(@"(é)(中)\1");
         var input = "é中é"u8.ToArray();
-        var match = expression.SearchDetailed(input, 0);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor1 = expression.CreateMatchCursor(input, 0, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out match);
+        }
         Assert.True(match.Success);
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal("中", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("中", System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.True(expression.FullMatch(input).Success);
     }
 
     [Theory]
-    [InlineData(0xd800, false)] [InlineData(0xdfff, false)]
-    [InlineData(0xd800, true)] [InlineData(0xdfff, true)]
+    [InlineData(0xd800, false)]
+    [InlineData(0xdfff, false)]
+    [InlineData(0xd800, true)]
+    [InlineData(0xdfff, true)]
     public void IsolatedSurrogateAtomsRemainImpossible(int scalar, bool escaped)
     {
         var pattern = escaped ? $@"\u{scalar:x4}" : new string((char)scalar, 1);

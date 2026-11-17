@@ -52,7 +52,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SearchFromOffset => "managed-search-from-offset-consumed-group-zero-v2",
             PythonReBenchmarkOperation.Match => "managed-match-consumed-group-zero-v2",
             PythonReBenchmarkOperation.FullMatch => "managed-fullmatch-consumed-group-zero-v2",
-            PythonReBenchmarkOperation.SearchDetailed => "managed-search-context-host-captures-v2",
+            PythonReBenchmarkOperation.SearchDetailed => "managed-search-range-cursor-host-captures-v3",
             PythonReBenchmarkOperation.Count => "managed-count-scalar-v2",
             PythonReBenchmarkOperation.FindAllStrings => "managed-findall-utf8-host-strings-eager-v4",
             PythonReBenchmarkOperation.FindAllUtf8 => "managed-findall-utf8-eager-v2",

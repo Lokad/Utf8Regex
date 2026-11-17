@@ -35,13 +35,17 @@ public sealed partial class PythonReScalarFoldingTests
             var first = char.ConvertFromUtf32(row.Captured);
             var second = char.ConvertFromUtf32(row.Referenced);
             var input = Encoding.UTF8.GetBytes(first + second);
-            var match = regex.FullMatchDetailed(input, 0, source.Token);
+            Utf8PythonRangeMatch match = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, 0, source.Token, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out match);
+            }
             Assert.True(row.Matches == match.Success,
                 $"reference U+{row.Captured:X}/U+{row.Referenced:X}");
             if (!match.Success) continue;
             Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(first), match.GetGroup(1).Value.EndOffsetInBytes);
-            Assert.Equal(first, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+            Assert.Equal(Encoding.UTF8.GetByteCount(first), match.Groups[1].EndOffsetInBytes);
+            Assert.Equal(first, System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         }
     }
 
@@ -71,8 +75,12 @@ public sealed partial class PythonReScalarFoldingTests
             0, limit, replacement, expectedJson, options);
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
     public void OneShotScalarDiscoveryKeepsCancellationAndRecovers(int operation)
     {
         var regex = new Utf8PythonRegex(@"(?i:(.)\1+)");
@@ -94,12 +102,11 @@ public sealed partial class PythonReScalarFoldingTests
                     case 0: regex.Search(input, 0, source.Token); break;
                     case 1: regex.Match(input, 0, source.Token); break;
                     case 2: regex.FullMatch(input, 0, source.Token); break;
-                    case 3: regex.SearchDetailed(input, 0, source.Token); break;
-                    case 4: regex.MatchDetailed(input, 0, source.Token); break;
-                    case 5: regex.FullMatchDetailed(input, 0, source.Token); break;
-                    case 6: regex.SearchDetailed(input, 0, source.Token); break;
-                    case 7: regex.MatchDetailed(input, 0, source.Token); break;
-                    default: regex.FullMatchDetailed(input, 0, source.Token); break;
+                    default:
+                        using (var cursor = regex.CreateMatchCursor(input, 0, source.Token,
+                            mode: (Utf8PythonMatchMode)(operation - 3)))
+                            cursor.MoveNext(out _);
+                        break;
                 }
             });
             Assert.True(entered);
@@ -113,18 +120,30 @@ public sealed partial class PythonReScalarFoldingTests
     public void FailedNamedScalarDiscoveryKeepsDefaultResultMetadata()
     {
         var regex = new Utf8PythonRegex("(?P<x>i)", PythonReCompileOptions.IgnoreCase);
-        var search = regex.SearchDetailed("!"u8);
+        Utf8PythonRangeMatch search = default;
+        using (var captureCursor8 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor8.MoveNext(out search);
+        }
         Assert.False(search.Success);
-        Assert.Equal(0, search.CaptureSlotCount);
-        Assert.Equal(0, search.NameEntryCount);
-        var match = regex.MatchDetailed("!"u8);
+        Assert.Equal(0, search.Groups.Length);
+        Assert.Equal(0, search.NameEntries.Length);
+        Utf8PythonRangeMatch match = default;
+        using (var captureCursor9 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor9.MoveNext(out match);
+        }
         Assert.False(match.Success);
-        Assert.Equal(0, match.CaptureSlotCount);
-        Assert.Equal(0, match.NameEntryCount);
-        var full = regex.FullMatchDetailed("!"u8);
+        Assert.Equal(0, match.Groups.Length);
+        Assert.Equal(0, match.NameEntries.Length);
+        Utf8PythonRangeMatch full = default;
+        using (var captureCursor10 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor10.MoveNext(out full);
+        }
         Assert.False(full.Success);
-        Assert.Equal(0, full.CaptureSlotCount);
-        Assert.Equal(0, full.NameEntryCount);
+        Assert.Equal(0, full.Groups.Length);
+        Assert.Equal(0, full.NameEntries.Length);
     }
 
     [Fact]
@@ -133,7 +152,12 @@ public sealed partial class PythonReScalarFoldingTests
         var regex = new Utf8PythonRegex(@"(?<=x)(?i:k|kk)");
         Assert.True(regex.FullMatch("xKK"u8, 1).Success);
         Assert.False(regex.FullMatch("yKK"u8, 1).Success);
-        Assert.Equal("KK", System.Text.Encoding.UTF8.GetString(regex.FullMatchDetailed("xKK"u8, 1).Value.GetValueBytes()));
+        Utf8PythonRangeMatch snapshot11 = default;
+        using (var captureCursor11 = regex.CreateMatchCursor(("xKK"u8).ToArray(), 1, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor11.MoveNext(out snapshot11);
+        }
+        Assert.Equal("KK", System.Text.Encoding.UTF8.GetString(snapshot11.GetValueMemory().Span));
         Assert.False(new Utf8PythonRegex(@"(?i:^kk)").FullMatch("xKK"u8, 1).Success);
     }
 }

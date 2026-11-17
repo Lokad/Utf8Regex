@@ -79,37 +79,37 @@ public sealed class PythonRePrefixDiscoveryTests
 
             var names = Field<PythonReNameEntry[]>(regex, "_nameEntries");
             foreach (var first in pieces)
-            foreach (var second in pieces)
-            {
-                var subject = "x" + first + second + "ab😀éabc";
-                var input = Encoding.UTF8.GetBytes(subject);
-                var start = 0;
-                while (true)
+                foreach (var second in pieces)
                 {
-                    var plain = new PythonReScalarMatchState(input, program, start,
-                        Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
-                    var expected = new List<Utf8PythonRangeMatch>();
-                    try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input, names)); }
-                    finally { plain.Dispose(); }
-                    var collectedRanges3 = new List<Utf8PythonRangeMatch>();
-                    using (var rangeCursor3 = regex.CreateMatchCursor(input, start, default))
+                    var subject = "x" + first + second + "ab😀éabc";
+                    var input = Encoding.UTF8.GetBytes(subject);
+                    var start = 0;
+                    while (true)
                     {
-                        while (rangeCursor3.MoveNext(out var rangeMatch3))
-                            collectedRanges3.Add(rangeMatch3);
+                        var plain = new PythonReScalarMatchState(input, program, start,
+                            Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
+                        var expected = new List<Utf8PythonRangeMatch>();
+                        try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input, names)); }
+                        finally { plain.Dispose(); }
+                        var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+                        using (var rangeCursor3 = regex.CreateMatchCursor(input, start, default))
+                        {
+                            while (rangeCursor3.MoveNext(out var rangeMatch3))
+                                collectedRanges3.Add(rangeMatch3);
+                        }
+                        var actual = collectedRanges3.ToArray();
+                        Assert.Equal(expected.Count, actual.Length);
+                        for (var index = 0; index < actual.Length; index++)
+                        {
+                            Assert.Equal(expected[index].Groups.ToArray(), actual[index].Groups.ToArray());
+                            Assert.Equal(expected[index].LastIndex, actual[index].LastIndex);
+                            Assert.Equal(expected[index].LastGroup, actual[index].LastGroup);
+                        }
+                        if (start == input.Length) break;
+                        start++;
+                        while (start < input.Length && (input[start] & 0xc0) == 0x80) start++;
                     }
-                    var actual = collectedRanges3.ToArray();
-                    Assert.Equal(expected.Count, actual.Length);
-                    for (var index = 0; index < actual.Length; index++)
-                    {
-                        Assert.Equal(expected[index].Groups.ToArray(), actual[index].Groups.ToArray());
-                        Assert.Equal(expected[index].LastIndex, actual[index].LastIndex);
-                        Assert.Equal(expected[index].LastGroup, actual[index].LastGroup);
-                    }
-                    if (start == input.Length) break;
-                    start++;
-                    while (start < input.Length && (input[start] & 0xc0) == 0x80) start++;
                 }
-            }
         }
     }
 
@@ -118,9 +118,24 @@ public sealed class PythonRePrefixDiscoveryTests
     {
         var regex = new Utf8PythonRegex("(ab|cd)+");
         var input = "éxxabcd"u8.ToArray();
-        Assert.False(regex.MatchDetailed(input).Success);
-        Assert.False(regex.FullMatchDetailed(input).Success);
-        Assert.Equal(4, regex.SearchDetailed(input).Value.StartOffsetInBytes);
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.False(snapshot1.Success);
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.False(snapshot2.Success);
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.Equal(4, snapshot3.Value.StartOffsetInBytes);
         Assert.Equal(1, regex.Count(input, 4));
         Assert.Equal(0, regex.Count(input, 8));
 

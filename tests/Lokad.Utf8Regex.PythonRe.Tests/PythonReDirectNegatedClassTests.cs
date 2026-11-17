@@ -34,11 +34,19 @@ public sealed class PythonReDirectNegatedClassTests
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.FullMatch(input).Success);
-        Assert.Equal(expected, regex.FullMatchDetailed(input).Success);
+        Utf8PythonRangeMatch snapshot1 = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out snapshot1);
+        }
+        Assert.Equal(expected, snapshot1.Success);
     }
 
     [Theory]
-    [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
+    [InlineData(2046)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(4095)]
     public void CapturesAndRetainedCursorSnapshotsSurviveOffsetsAndTails(int length)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -55,7 +63,12 @@ public sealed class PythonReDirectNegatedClassTests
         cursor.Dispose();
         Assert.Equal(value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input, 2));
-        Assert.Equal(value + "a", System.Text.Encoding.UTF8.GetString(regex.SearchDetailed(input, 2).Value.GetValueBytes()));
+        Utf8PythonRangeMatch snapshot2 = default;
+        using (var captureCursor2 = regex.CreateMatchCursor(input, 2, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor2.MoveNext(out snapshot2);
+        }
+        Assert.Equal(value + "a", System.Text.Encoding.UTF8.GetString(snapshot2.GetValueMemory().Span));
     }
 
     [Fact]
@@ -72,7 +85,8 @@ public sealed class PythonReDirectNegatedClassTests
 
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InterruptedDiscoveryKeepsOriginalTokenDeadlineAndRetainedResult(bool expire)
     {
         Utf8PythonRangeMatch cursorRange = default;

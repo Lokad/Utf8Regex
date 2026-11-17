@@ -35,17 +35,21 @@ public readonly record struct PythonReHostDetailedMatch
 internal static partial class PythonReBenchmarkReporter
 {
     internal static PythonReHostDetailedMatch MaterializeDetailedSearch(Utf8PythonRegex regex,
-        ReadOnlySpan<byte> input, int start = 0, CancellationToken token = default)
+        ReadOnlyMemory<byte> input, int start = 0, CancellationToken token = default)
     {
-        var result = ProjectDetailed(regex.SearchDetailed(input, start, token));
+        using var cursor = regex.CreateMatchCursor(input, start, token);
+        cursor.MoveNext(out var match);
+        var result = ProjectDetailed(match);
         token.ThrowIfCancellationRequested();
         return result;
     }
 
     internal static PythonReHostDetailedMatch MaterializeDetailedFullMatch(Utf8PythonRegex regex,
-        ReadOnlySpan<byte> input, int start = 0, CancellationToken token = default)
+        ReadOnlyMemory<byte> input, int start = 0, CancellationToken token = default)
     {
-        var result = ProjectDetailed(regex.FullMatchDetailed(input, start, token));
+        using var cursor = regex.CreateMatchCursor(input, start, token, mode: Utf8PythonMatchMode.FullMatch);
+        cursor.MoveNext(out var match);
+        var result = ProjectDetailed(match);
         token.ThrowIfCancellationRequested();
         return result;
     }
@@ -72,16 +76,16 @@ internal static partial class PythonReBenchmarkReporter
         return result;
     }
 
-    private static PythonReHostDetailedMatch ProjectDetailed(Utf8PythonMatchContext match)
+    private static PythonReHostDetailedMatch ProjectDetailed(Utf8PythonRangeMatch match)
     {
-        var groups = new PythonReHostCapture[match.CaptureSlotCount];
+        var groups = new PythonReHostCapture[match.Groups.Length];
         for (var number = 0; number < groups.Length; number++)
         {
-            var group = match.GetGroup(number);
+            var group = match.Groups[number];
             groups[number] = new() { Number = number, Success = group.Success,
-                StartOffsetInBytes = group.Value.StartOffsetInBytes, EndOffsetInBytes = group.Value.EndOffsetInBytes,
-                ValueText = Encoding.UTF8.GetString(group.Value.GetValueBytes()) };
+                StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
+                ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span) };
         }
-        return new() { Groups = groups, NameEntries = match.GetNameEntries(), LastIndex = match.LastIndex };
+        return new() { Groups = groups, NameEntries = match.NameEntries.ToArray(), LastIndex = match.LastIndex };
     }
 }

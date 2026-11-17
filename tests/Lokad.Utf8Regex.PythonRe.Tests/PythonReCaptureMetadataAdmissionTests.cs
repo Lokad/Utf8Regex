@@ -12,8 +12,10 @@ public sealed class PythonReCaptureMetadataAdmissionTests
     { ["third"] = 3, ["first"] = 1 };
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void MetadataCannotBypassTheOriginalWorkOrByteOwner(bool entries, bool work)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, work ? ulong.MaxValue : 0,
@@ -47,14 +49,24 @@ public sealed class PythonReCaptureMetadataAdmissionTests
         Assert.Equal(new[] { "0", "first", "2", "third", "4" }, regex.GetGroupNames());
         var first = regex.GetGroupNames(); first[1] = "changed";
         Assert.Equal("first", regex.GetGroupNames()[1]);
-        var result = regex.SearchDetailed("abcd"u8);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(("abcd"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor1.MoveNext(out result);
+        }
         Assert.Null(result.LastGroup);
         Assert.Equal(4, result.LastIndex);
     }
 
     [Theory]
-    [InlineData(9)] [InlineData(10)] [InlineData(99)] [InlineData(100)]
-    [InlineData(299)] [InlineData(300)] [InlineData(999)] [InlineData(1000)]
+    [InlineData(9)]
+    [InlineData(10)]
+    [InlineData(99)]
+    [InlineData(100)]
+    [InlineData(299)]
+    [InlineData(300)]
+    [InlineData(999)]
+    [InlineData(1000)]
     public void NumericNamesUseInvariantTextAcrossDigitAndCacheBoundaries(int count)
     {
         using var owner = Utf8ConstructionScope.Enter();
@@ -68,8 +80,10 @@ public sealed class PythonReCaptureMetadataAdmissionTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void MetadataUsesOriginalInterruptionAndRollsBackItsArrays(bool entries, bool timeout)
     {
         using var owner = Utf8ConstructionScope.Enter();

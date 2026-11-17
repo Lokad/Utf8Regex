@@ -8,8 +8,13 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReCompletedBackreferenceTests
 {
     private const string Pattern = @"(?P<word>[a-z]+)-(?P=word)";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1_000_000,
-        MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new()
+    {
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 4096,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
+    };
 
     [Theory]
     [InlineData(Pattern, "token-token")]
@@ -32,7 +37,17 @@ public sealed class PythonReCompletedBackreferenceTests
         {
             var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, policy);
             Assert.Equal(reference.FullMatch(input).Success, regex.FullMatch(input, 0, source.Token).Success);
-            PythonReCaptureAssert.Equal(reference.FullMatchDetailed(input), regex.FullMatchDetailed(input, 0, source.Token));
+            Utf8PythonRangeMatch snapshot1 = default;
+            using (var captureCursor1 = reference.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out snapshot1);
+            }
+            Utf8PythonRangeMatch snapshot2 = default;
+            using (var captureCursor2 = regex.CreateMatchCursor(input, 0, source.Token, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor2.MoveNext(out snapshot2);
+            }
+            PythonReCaptureAssert.Equal(snapshot1, snapshot2);
             var repeated = Encoding.UTF8.GetBytes("😀 " + text + " " + text);
             var collectedRanges1 = new List<Utf8PythonRangeMatch>();
             using (var rangeCursor1 = reference.CreateMatchCursor(repeated, 0, default))
@@ -83,6 +98,14 @@ public sealed class PythonReCompletedBackreferenceTests
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, policy).FullMatchDetailed("token-token"u8.ToArray()));
+{
+    Utf8PythonRangeMatch snapshot3 = default;
+    using (var captureCursor3 = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, policy).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+    {
+        captureCursor3.MoveNext(out snapshot3);
+    }
+
+    _ = snapshot3;
+});
     }
 }

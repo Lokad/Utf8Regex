@@ -449,3 +449,18 @@ limits/deadlines still apply. Non-null funding uses the existing admitted worker
 refusal is terminal with no uncapped retry, and covered loans refund synchronously.
 Program owners continue to supply their account when no separate working account
 is specified. Captures, original cancellation, byte output and aliases are unchanged.
+
+### PythonRe capture cursor modes and byte end bounds
+
+PythonRe capture metadata now comes from CreateMatchCursor over stable memory.
+Select Utf8PythonMatchMode.Search (default), Match or FullMatch and optionally a
+scalar-aligned byte end bound. MoveNext returns immutable numbered/named ranges
+with LastIndex/LastGroup; dispose the cursor after the desired result. Previously
+returned snapshots remain valid while borrowed subject memory remains unchanged.
+SearchDetailed/MatchDetailed/FullMatchDetailed and their context/group carriers
+are removed. The optional cursor working account now treats null as inherited
+program funding or numeric limits; a supplied account still refuses terminally.
+Recompile consumers against the changed factory signature.
+One-shot capture consumers now pay persistent cursor setup and allocation; the
+stack-only whole-match value APIs retain their native routes when captures and
+completion metadata are unnecessary.

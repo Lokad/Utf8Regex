@@ -52,20 +52,29 @@ public sealed class PythonReConditionalNameAdmissionTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var bytes in new[] { false, true })
         {
-            var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            };
             var regex = bytes
                 ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy)
                 : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var match = regex.FullMatchDetailed(input);
+            Utf8PythonRangeMatch match = default;
+            using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor1.MoveNext(out match);
+            }
             Assert.Equal(success, match.Success);
             if (success)
             {
                 Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
                 if (text == "😀é")
                 {
-                    Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+                    Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                     Assert.Equal(1, match.LastIndex);
                     Assert.Equal("x", match.LastGroup);
                 }

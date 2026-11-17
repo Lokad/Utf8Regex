@@ -152,31 +152,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.Dispose(); }
     }
 
-    private Utf8PythonMatchContext MatchContextScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, CancellationToken cancellationToken)
-    {
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
-        try
-        {
-            Utf8PythonMatchContext result = default;
-            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
-            {
-                var lastIndex = cursor.GetLastIndex();
-                var groups = cursor.SnapshotGroups();
-                var names = cursor.SnapshotNameEntries(_nameEntries);
-                result = new Utf8PythonMatchContext(input, groups, names, lastIndex);
-            }
-            cursor.Checkpoint();
-            return result;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.Dispose(); }
-    }
-
     private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
     {

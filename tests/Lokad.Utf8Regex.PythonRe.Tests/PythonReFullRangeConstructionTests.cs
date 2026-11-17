@@ -75,10 +75,14 @@ public sealed class PythonReFullRangeConstructionTests
     {
         var regex = Compile(@"(?i)([^\x00-\U0010ffff]*)");
         Assert.Equal(new[] { "", "", "" }, regex.FindAllToUtf8("é😀"u8).ScalarValues.Select(Encoding.UTF8.GetString));
-        var empty = regex.FullMatchDetailed([]);
+        Utf8PythonRangeMatch empty = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(ReadOnlyMemory<byte>.Empty, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out empty);
+        }
         Assert.True(empty.Success);
         Assert.Equal(1, empty.LastIndex);
-        Assert.Equal("", System.Text.Encoding.UTF8.GetString(empty.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString((empty.Groups[1].Success ? empty.GetGroupMemory(empty.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]

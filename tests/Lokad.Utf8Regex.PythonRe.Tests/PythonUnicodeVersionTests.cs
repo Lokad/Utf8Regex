@@ -38,11 +38,11 @@ public sealed class PythonUnicodeVersionTests
     public static IEnumerable<object[]> CategoryCases()
     {
         foreach (var scalar in new[] { 0x1C89, 0x1E5D0, 0x1E5F1 })
-        foreach (var pattern in new[] { @"\w", @"[\w]", @"[a\w]", @"\d", @"[\d]", @"[a\d]" })
-            yield return [pattern, char.ConvertFromUtf32(scalar), false];
+            foreach (var pattern in new[] { @"\w", @"[\w]", @"[a\w]", @"\d", @"[\d]", @"[a\d]" })
+                yield return [pattern, char.ConvertFromUtf32(scalar), false];
         foreach (var scalar in new[] { 0x1C89, 0x1E5D0, 0x1E5F1 })
-        foreach (var pattern in new[] { @"\W", @"[^\w]", @"[\W]", @"\D", @"[^\d]", @"[\D]" })
-            yield return [pattern, char.ConvertFromUtf32(scalar), true];
+            foreach (var pattern in new[] { @"\W", @"[^\w]", @"[\W]", @"\D", @"[^\d]", @"[\D]" })
+                yield return [pattern, char.ConvertFromUtf32(scalar), true];
         yield return [@"\w", char.ConvertFromUtf32(0x31350), true];
         yield return [@"\d", char.ConvertFromUtf32(0x1D7CE), true];
         yield return [@"\s", "\u001C", true];
@@ -61,17 +61,22 @@ public sealed class PythonUnicodeVersionTests
             new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 },
         })
-        foreach (var options in new[] { PythonReCompileOptions.None,
+            foreach (var options in new[] { PythonReCompileOptions.None,
             PythonReCompileOptions.IgnoreCase | PythonReCompileOptions.Verbose })
-        {
-            var regex = new Utf8PythonRegex(pattern, options,
-                Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(expected, regex.IsMatch(input));
-            Assert.Equal(expected ? 1 : 0, regex.Count(input));
-            Assert.Equal(expected, regex.SearchDetailed(input).Success);
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, 0, source.Token));
-        }
+            {
+                var regex = new Utf8PythonRegex(pattern, options,
+                    Timeout.InfiniteTimeSpan, policy);
+                Assert.Equal(expected, regex.IsMatch(input));
+                Assert.Equal(expected ? 1 : 0, regex.Count(input));
+                Utf8PythonRangeMatch snapshot1 = default;
+                using (var captureCursor1 = regex.CreateMatchCursor((input).ToArray(), mode: Utf8PythonMatchMode.Search))
+                {
+                    captureCursor1.MoveNext(out snapshot1);
+                }
+                Assert.Equal(expected, snapshot1.Success);
+                using var source = new CancellationTokenSource();
+                Assert.Equal(expected, regex.IsMatch(input, 0, source.Token));
+            }
     }
 
     [Theory]
@@ -101,15 +106,21 @@ public sealed class PythonUnicodeVersionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CapturedCursorsKeepTheirOriginalDeadlineTokenAndSnapshots(bool expire)
     {
         Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576,
+            MaxResultBytes = 1_048_576
+        };
         var regex = new Utf8PythonRegex(@"(?P<w>\w+)", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(20), policy);
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("😀\u1C89é\U0001E5D0中"), 0, token.Token);
@@ -138,9 +149,23 @@ public sealed class PythonUnicodeVersionTests
                 _ => new Utf8ResourcePolicy { MaxResultBytes = 1 },
             };
             var regex = new Utf8PythonRegex(@"(?P<w>(?:\w|zz)+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SearchDetailed("éé"u8));
-            Assert.Equal(kind switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps, 1 => Utf8ResourceLimitKind.ExecutionDepth,
-                2 => Utf8ResourceLimitKind.ExecutionWorkingBytes, _ => Utf8ResourceLimitKind.ExecutionResultBytes }, error.ResourceKind);
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                Utf8PythonRangeMatch snapshot2 = default;
+                using (var captureCursor2 = regex.CreateMatchCursor(("éé"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+                {
+                    captureCursor2.MoveNext(out snapshot2);
+                }
+
+                _ = snapshot2;
+            });
+            Assert.Equal(kind switch
+            {
+                0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
+                1 => Utf8ResourceLimitKind.ExecutionDepth,
+                2 => Utf8ResourceLimitKind.ExecutionWorkingBytes,
+                _ => Utf8ResourceLimitKind.ExecutionResultBytes
+            }, error.ResourceKind);
         }
     }
 
@@ -157,7 +182,12 @@ public sealed class PythonUnicodeVersionTests
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, regex.Match(input).Success);
         Assert.Equal(expected, regex.FullMatch(input).Success);
-        Assert.Equal(expected, regex.SearchDetailed(input).Success);
+        Utf8PythonRangeMatch snapshot3 = default;
+        using (var captureCursor3 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
+        {
+            captureCursor3.MoveNext(out snapshot3);
+        }
+        Assert.Equal(expected, snapshot3.Success);
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
         using var cursor = regex.CreateMatchCursor(input);
         Assert.Equal(expected, cursor.MoveNext(out _));

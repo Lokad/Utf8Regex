@@ -33,22 +33,22 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                 controlled ? new() { MaxWorkSteps = 1000000, MaxDepth = 10000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
             using var live = new CancellationTokenSource();
             foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
-            foreach (var prefix in new[] { "", "π😀" })
-            foreach (var suffix in new[] { "", "!" })
-            {
-                var body = string.Concat(Enumerable.Repeat(period, count)) + suffix;
-                var text = prefix + body;
-                var bytes = Encoding.UTF8.GetBytes(text);
-                byte[] storage = [0xff, .. bytes, 0xff];
-                var start = Encoding.UTF8.GetByteCount(prefix);
-                var expected = oracle.Match(text, prefix.Length).Success;
-                var match = regex.FullMatch(storage.AsSpan(1, bytes.Length), start,
-                    controlled ? live.Token : default);
-                Assert.Equal(expected, match.Success);
-                if (!expected) continue;
-                Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                Assert.Equal(body, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-            }
+                foreach (var prefix in new[] { "", "π😀" })
+                    foreach (var suffix in new[] { "", "!" })
+                    {
+                        var body = string.Concat(Enumerable.Repeat(period, count)) + suffix;
+                        var text = prefix + body;
+                        var bytes = Encoding.UTF8.GetBytes(text);
+                        byte[] storage = [0xff, .. bytes, 0xff];
+                        var start = Encoding.UTF8.GetByteCount(prefix);
+                        var expected = oracle.Match(text, prefix.Length).Success;
+                        var match = regex.FullMatch(storage.AsSpan(1, bytes.Length), start,
+                            controlled ? live.Token : default);
+                        Assert.Equal(expected, match.Success);
+                        if (!expected) continue;
+                        Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+                        Assert.Equal(body, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                    }
         }
     }
 
@@ -83,10 +83,14 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.FullMatch(input).Success);
-        var detailed = regex.FullMatchDetailed(input);
+        Utf8PythonRangeMatch detailed = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out detailed);
+        }
         Assert.True(detailed.Success);
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
-        if (pattern == "(ab)+") Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString((detailed.Groups[0].Success ? detailed.GetGroupMemory(detailed.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        if (pattern == "(ab)+") Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed.GetGroupMemory(detailed.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -103,29 +107,30 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Small);
         using var live = new CancellationTokenSource();
         foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
-        foreach (var prefix in new[] { "", "π😀" })
-        foreach (var candidate in new[] {
+            foreach (var prefix in new[] { "", "π😀" })
+                foreach (var candidate in new[] {
             string.Concat(Enumerable.Repeat(period, count)) + tail,
             string.Concat(Enumerable.Repeat(period, count)) + tail + "!",
             string.Concat(Enumerable.Repeat(period, count)),
             string.Concat(Enumerable.Repeat(period, count)) + "x" + tail })
-        {
-            var text = prefix + candidate;
-            var bytes = Encoding.UTF8.GetBytes(text);
-            byte[] storage = [0xff, .. bytes, 0xff];
-            var start = Encoding.UTF8.GetByteCount(prefix);
-            var expected = oracle.Match(text, prefix.Length).Success;
-            var match = regex.FullMatch(storage.AsSpan(1, bytes.Length), start, live.Token);
-            Assert.Equal(expected, match.Success);
-            if (!expected) continue;
-            Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.Equal(candidate, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-        }
+                {
+                    var text = prefix + candidate;
+                    var bytes = Encoding.UTF8.GetBytes(text);
+                    byte[] storage = [0xff, .. bytes, 0xff];
+                    var start = Encoding.UTF8.GetByteCount(prefix);
+                    var expected = oracle.Match(text, prefix.Length).Success;
+                    var match = regex.FullMatch(storage.AsSpan(1, bytes.Length), start, live.Token);
+                    Assert.Equal(expected, match.Success);
+                    if (!expected) continue;
+                    Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+                    Assert.Equal(candidate, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                }
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]
-    [InlineData(59)] [InlineData(60)]
+    [InlineData(59)]
+    [InlineData(60)]
     public void FixedStackProofBoundaryRetainsUnicodeAndFallbackCorrectness(int periodScalars)
     {
         var period = string.Concat(Enumerable.Range(0, periodScalars).Select(i => new Rune(0x1f600 + i).ToString()));
@@ -174,7 +179,8 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void EveryScalarBoundaryAndOriginalCancellationRetainTheirAuthority(bool hasTail)
     {
         var regex = new Utf8PythonRegex("(?:é😀)+" + (hasTail ? "Ω" : ""));
@@ -203,7 +209,9 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(1UL)] [InlineData(4UL)] [InlineData(16UL)]
+    [InlineData(1UL)]
+    [InlineData(4UL)]
+    [InlineData(16UL)]
     public void WorkDenialIsNotNoMatchAndFreshInvocationsRecover(ulong work)
     {
         var regex = new Utf8PythonRegex("(?:Шерлок )+", PythonReCompileOptions.None,
@@ -273,7 +281,8 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DeclinedRepeatProofKeepsColdPreparationAuthority(bool expire)
     {
         const string pattern = "(?:ab[cd])+";

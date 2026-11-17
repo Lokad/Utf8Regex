@@ -644,27 +644,6 @@ internal struct PythonReScalarMatchState
         return copied;
     }
 
-    internal PythonReGroupData[] SnapshotGroups()
-    {
-        Checkpoint();
-        var groups = AllocateResultArray<PythonReGroupData>(_program.GroupCount + 1);
-        for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
-        {
-            if ((pythonGroup & 255) == 0) Checkpoint();
-            groups[pythonGroup] = !TryGetCaptureByteRange(pythonGroup, out var start, out var end)
-                ? new PythonReGroupData { Number = pythonGroup, Success = false }
-                : new PythonReGroupData
-                {
-                    Number = pythonGroup,
-                    Success = true,
-                    StartOffsetInBytes = start,
-                    EndOffsetInBytes = end
-                };
-        }
-        Checkpoint();
-        return groups;
-    }
-
     internal bool TryGetCaptureByteRange(int number, out int start, out int end)
     {
         start = end = -1;
@@ -692,8 +671,8 @@ internal struct PythonReScalarMatchState
             return 1;
         }
         // The successful workspace keeps its capture journal until the next
-        // advance. Only detailed/context results observe completion order;
-        // value/string/UTF8 discovery needs no extra scan or metadata state.
+        // advance. Only capture range snapshots observe completion order;
+        // value/UTF8 discovery needs no extra scan or metadata state.
         var breach = _workspace.Stacks.FindLastClosedSlot(ref _invocation, out var slot);
         if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
         if (slot < 0) return null;
@@ -703,7 +682,6 @@ internal struct PythonReScalarMatchState
 
     internal Utf8PythonRangeMatch SnapshotRanges(ReadOnlyMemory<byte> input, PythonReNameEntry[] names)
     {
-        var bytes = input.Span;
         var lastIndex = GetLastIndex();
         var groups = AllocateResultArray<Utf8PythonCaptureRange>(_program.GroupCount + 1);
         for (var number = 0; number < groups.Length; number++)

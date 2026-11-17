@@ -31,26 +31,35 @@ public sealed class PythonReWideRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         using var cancellation = new CancellationTokenSource();
         foreach (var finite in new[] { false, true })
-        foreach (var bytes in new[] { false, true })
-        {
-            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 256,
-                MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 } : default;
-            var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-                : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            var match = regex.FullMatchDetailed(input, 0, cancellation.Token);
-            Assert.Equal(success, match.Success);
-            Assert.Equal(count, regex.Count(input, 0, cancellation.Token));
-            if (!success) continue;
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-            Assert.Equal(0, match.Value.StartOffsetInBytes);
-            Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
-            if (capture is not null)
+            foreach (var bytes in new[] { false, true })
             {
-                Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-                Assert.Equal(1, match.LastIndex);
+                var policy = finite ? new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 256,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1000000
+                } : default;
+                var regex = bytes
+                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
+                    : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+                Utf8PythonRangeMatch match = default;
+                using (var captureCursor1 = regex.CreateMatchCursor(input, 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
+                {
+                    captureCursor1.MoveNext(out match);
+                }
+                Assert.Equal(success, match.Success);
+                Assert.Equal(count, regex.Count(input, 0, cancellation.Token));
+                if (!success) continue;
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
+                Assert.Equal(0, match.Value.StartOffsetInBytes);
+                Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
+                if (capture is not null)
+                {
+                    Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
+                    Assert.Equal(1, match.LastIndex);
+                }
             }
-        }
     }
 
     [Theory]
@@ -85,7 +94,8 @@ public sealed class PythonReWideRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WideMandatoryIterationsKeepOriginalInterruption(bool expire)
     {
         const string pattern = "(?:){4294967294,}";

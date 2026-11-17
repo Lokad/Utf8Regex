@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Replace PythonRe detailed/context APIs with capture cursor Search/Match/FullMatch
+  modes and optional scalar-aligned byte end bounds. Preserve Python closing-order
+  metadata, immutable snapshots and borrowed-input lifetimes. Null cursor working
+  admission now inherits program funding/numeric limits; recompile consumers.
+
 - Fix escaped literal punctuation as character-class range endpoints, including
   the backslash member of the escaped bracket range. Preserve escaped-hyphen and
   shorthand/subtraction rules, scalar byte ranges and original cancellation.

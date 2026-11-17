@@ -34,19 +34,29 @@ public sealed class PythonReConditionalNumberAdmissionTests
     [InlineData("(😀)?(?(0001)é|c)", "😀é")]
     public void ValidNumericConditionsKeepForwardReferencesAndScalarCaptures(string pattern, string text)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
-            MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 128,
+            MaxWorkingBytes = 1000000,
+            MaxResultBytes = 1000000
+        };
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
         var input = Encoding.UTF8.GetBytes(text);
-        var result = regex.FullMatchDetailed(input);
+        Utf8PythonRangeMatch result = default;
+        using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
+        {
+            captureCursor1.MoveNext(out result);
+        }
         Assert.True(result.Success);
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()));
-        Assert.Equal(text == "😀é" ? "😀" : "c", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(result.GetValueMemory().Span));
+        Assert.Equal(text == "😀é" ? "😀" : "c", System.Text.Encoding.UTF8.GetString((result.Groups[1].Success ? result.GetGroupMemory(result.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(input.Length, result.Value.EndOffsetInBytes);
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LongNumericHeadersRemainSubjectToConstructionAdmission(bool bytes)
     {
         var pattern = "(?(" + new string('9', 8192) + ")a|b)";

@@ -124,7 +124,8 @@ public sealed class PythonReSharedWorkingAllowanceTests
         var regex = new Utf8PythonRegex("a");
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.CreateMatchCursor(new byte[] { 0xff }, 0, token.Token, null!)).CancellationToken);
-        Assert.Throws<ArgumentNullException>(() => regex.CreateMatchCursor("a"u8.ToArray(), 0, default, null!));
+        using var inherited = regex.CreateMatchCursor("a"u8.ToArray(), 0, default, null);
+        Assert.True(inherited.MoveNext(out _));
     }
 
     [Fact]

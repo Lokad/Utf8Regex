@@ -10,21 +10,21 @@ public sealed class PythonReOneShotProjectionTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
     [Theory]
-    [InlineData(0,"(?P<x>.)","é😀z",2,2,6,"😀")]
-    [InlineData(1,"(?P<x>.)","é😀z",2,2,6,"😀")]
-    [InlineData(2,"(?P<x>.)","é😀",2,2,6,"😀")]
-    [InlineData(0,"(?<=é).(?=z)","é😀z",0,2,6,"😀")]
-    [InlineData(0,@"(.)\1","é😀😀z",0,2,10,"😀😀")]
-    [InlineData(1,"(?P<x>.)?","",0,0,0,"")]
-    [InlineData(2,"(?P<x>.)?","",0,0,0,"")]
-    [InlineData(0,"😀","é😀",0,2,6,"😀")]
-    [InlineData(1,"ab[0-9]+","ab12😀",0,0,4,"ab12")]
-    [InlineData(2,"(?P<x>.)+","é😀",0,0,6,"é😀")]
-    [InlineData(2,"(?P<x>.)+","πé😀",2,2,8,"é😀")]
-    [InlineData(2,"(?P<x>.*)","πé😀",8,8,8,"")]
-    [InlineData(0,"(?P<x>😀)$","πé😀",0,4,8,"😀")]
-    [InlineData(0,"(?P<x>é)","πé😀",0,2,4,"é")]
-    public void ValueAndContextEntryPointsKeepByteRangesAndValues(int kind, string pattern,
+    [InlineData(0, "(?P<x>.)", "é😀z", 2, 2, 6, "😀")]
+    [InlineData(1, "(?P<x>.)", "é😀z", 2, 2, 6, "😀")]
+    [InlineData(2, "(?P<x>.)", "é😀", 2, 2, 6, "😀")]
+    [InlineData(0, "(?<=é).(?=z)", "é😀z", 0, 2, 6, "😀")]
+    [InlineData(0, @"(.)\1", "é😀😀z", 0, 2, 10, "😀😀")]
+    [InlineData(1, "(?P<x>.)?", "", 0, 0, 0, "")]
+    [InlineData(2, "(?P<x>.)?", "", 0, 0, 0, "")]
+    [InlineData(0, "😀", "é😀", 0, 2, 6, "😀")]
+    [InlineData(1, "ab[0-9]+", "ab12😀", 0, 0, 4, "ab12")]
+    [InlineData(2, "(?P<x>.)+", "é😀", 0, 0, 6, "é😀")]
+    [InlineData(2, "(?P<x>.)+", "πé😀", 2, 2, 8, "é😀")]
+    [InlineData(2, "(?P<x>.*)", "πé😀", 8, 8, 8, "")]
+    [InlineData(0, "(?P<x>😀)$", "πé😀", 0, 4, 8, "😀")]
+    [InlineData(0, "(?P<x>é)", "πé😀", 0, 2, 4, "é")]
+    public void ValueAndCursorModesKeepByteRangesAndValues(int kind, string pattern,
         string subject, int start, int startBytes, int endBytes, string text)
     {
         var regex = new Utf8PythonRegex(pattern);
@@ -32,26 +32,25 @@ public sealed class PythonReOneShotProjectionTests
         using var token = new CancellationTokenSource();
         foreach (var cancellation in new[] { CancellationToken.None, token.Token })
         {
-            var value = Value(regex, input, start, kind, cancellation);
+            var value = kind switch { 0 => regex.Search(input, start, cancellation), 1 => regex.Match(input, start, cancellation), _ => regex.FullMatch(input, start, cancellation) };
             Assert.True(value.Success);
             Assert.Equal((startBytes, endBytes), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             Assert.Equal(Encoding.UTF8.GetBytes(text), value.GetValueBytes().ToArray());
-            var context = Context(regex, input, start, kind, cancellation);
+            Utf8PythonRangeMatch context;
+            using (var cursor = regex.CreateMatchCursor(input, start, cancellation, mode: (Utf8PythonMatchMode)kind))
+                cursor.MoveNext(out context);
             Assert.True(context.Success);
             Assert.Equal((startBytes, endBytes), (context.Value.StartOffsetInBytes, context.Value.EndOffsetInBytes));
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
             if (regex.IsMatch(input, start, cancellation)) Assert.True(regex.Search(input, start, cancellation).Success);
         }
     }
 
-    private static Utf8PythonValueMatch Value(Utf8PythonRegex regex, ReadOnlySpan<byte> input, int start, int kind, CancellationToken token)
-        => kind switch { 0 => regex.Search(input, start, token), 1 => regex.Match(input, start, token), _ => regex.FullMatch(input, start, token) };
-
-    private static Utf8PythonMatchContext Context(Utf8PythonRegex regex, ReadOnlySpan<byte> input, int start, int kind, CancellationToken token)
-        => kind switch { 0 => regex.SearchDetailed(input, start, token), 1 => regex.MatchDetailed(input, start, token), _ => regex.FullMatchDetailed(input, start, token) };
-
     [Theory]
-    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)] [InlineData(8193)]
+    [InlineData(4095)]
+    [InlineData(4096)]
+    [InlineData(4097)]
+    [InlineData(8193)]
     public void LongAsciiAndUnicodeTailsKeepValueAndStringWidths(int asciiBytes)
     {
         using var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
@@ -70,7 +69,9 @@ public sealed class PythonReOneShotProjectionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(7)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(7)]
     public void LongNativeAndScalarValuesKeepCoordinatesAcrossBorrowedBlockCuts(int borrowedOffset)
     {
         using var native = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
@@ -78,66 +79,74 @@ public sealed class PythonReOneShotProjectionTests
             resourcePolicy: new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         using var token = new CancellationTokenSource();
         foreach (var prefixLength in new[] { 0, 1, 30, 31, 32, 4093, 4094, 4095 })
-        foreach (var tail in new[] { 0, 1, 31 })
-        {
-            var prefix = new string('x', prefixLength) + string.Concat(Enumerable.Repeat("é😀中", 513));
-            var text = "start" + string.Concat(Enumerable.Repeat("\0\u007f\u0080\u07ff\u0800\uffff\U00010000\U0010ffff", 257)) + new string('y', tail) + "end";
-            var bytes = Encoding.UTF8.GetBytes(prefix + text);
-            byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. bytes, 0xff];
-            var input = storage.AsSpan(borrowedOffset, bytes.Length);
-            var start = Encoding.UTF8.GetByteCount(prefix);
-            var expected = Encoding.UTF8.GetBytes(text);
-            foreach (var regex in new[] { native, scalar })
+            foreach (var tail in new[] { 0, 1, 31 })
             {
-                var value = regex.FullMatch(input, start, ReferenceEquals(regex, native) ? default : token.Token);
-                Assert.True(value.Success);
-                Assert.Equal((start, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-                Assert.True(value.GetValueBytes().SequenceEqual(expected));
-                Assert.False(regex.FullMatch("no"u8).Success);
-                Assert.True(value.GetValueBytes().SequenceEqual(expected));
+                var prefix = new string('x', prefixLength) + string.Concat(Enumerable.Repeat("é😀中", 513));
+                var text = "start" + string.Concat(Enumerable.Repeat("\0\u007f\u0080\u07ff\u0800\uffff\U00010000\U0010ffff", 257)) + new string('y', tail) + "end";
+                var bytes = Encoding.UTF8.GetBytes(prefix + text);
+                byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. bytes, 0xff];
+                var input = storage.AsSpan(borrowedOffset, bytes.Length);
+                var start = Encoding.UTF8.GetByteCount(prefix);
+                var expected = Encoding.UTF8.GetBytes(text);
+                foreach (var regex in new[] { native, scalar })
+                {
+                    var value = regex.FullMatch(input, start, ReferenceEquals(regex, native) ? default : token.Token);
+                    Assert.True(value.Success);
+                    Assert.Equal((start, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+                    Assert.True(value.GetValueBytes().SequenceEqual(expected));
+                    Assert.False(regex.FullMatch("no"u8).Success);
+                    Assert.True(value.GetValueBytes().SequenceEqual(expected));
+                }
             }
-        }
     }
 
     [Theory]
-    [InlineData("(?<=(?P<left>é))a","πéa",4,"left","é",2,4)]
-    [InlineData("a(?=(?P<right>😀))","πa😀",2,"right","😀",3,7)]
-    [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?","πé😀",2,"inner","é😀",2,8)]
-    [InlineData("(?P<empty>)","π",2,"empty","",2,2)]
-    public void OneShotDetailsProjectAllCapturesWithoutUnrelatedUnicodeSuffix(string pattern,string prefix,        int start,string name,string text,int begin,int end)
+    [InlineData("(?<=(?P<left>é))a", "πéa", 4, "left", "é", 2, 4)]
+    [InlineData("a(?=(?P<right>😀))", "πa😀", 2, "right", "😀", 3, 7)]
+    [InlineData("(?P<outer>(?P<inner>é😀))(?P<absent>x)?", "πé😀", 2, "inner", "é😀", 2, 8)]
+    [InlineData("(?P<empty>)", "π", 2, "empty", "", 2, 2)]
+    public void CursorModesProjectCapturesWithoutUnrelatedUnicodeSuffix(string pattern, string prefix, int start, string name, string text, int begin, int end)
     {
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat("é😀", 65536)));
         using var token = new CancellationTokenSource();
         using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
         {
-            MaxWorkSteps = 5000, MaxDepth = 4096, MaxWorkingBytes = 65536, MaxResultBytes = 65536
+            MaxWorkSteps = 5000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 65536,
+            MaxResultBytes = 65536
         });
         foreach (var kind in new[] { 0, 1 })
         {
-            var owned = kind == 0 ? regex.SearchDetailed(input, start, token.Token)
-                : regex.MatchDetailed(input, start, token.Token);
-            var context = Context(regex, input, start, kind, token.Token);
-            Assert.True(owned.Success); Assert.True(context.Success);
+            Utf8PythonRangeMatch owned = default;
+            using (var captureCursor1 = kind == 0 ? regex.CreateMatchCursor(input, start, token.Token, mode: Utf8PythonMatchMode.Search) : regex.CreateMatchCursor(input, start, token.Token, mode: Utf8PythonMatchMode.Match))
+            {
+                captureCursor1.MoveNext(out owned);
+            }
+            Assert.True(owned.Success);
             Assert.True(owned.TryGetFirstSetGroup(name, out var group));
-            Assert.True(context.TryGetFirstSetGroup(name, out var borrowed));
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes())); Assert.Equal(text, System.Text.Encoding.UTF8.GetString(borrowed.Value.GetValueBytes()));
-            Assert.Equal((begin,end),                (group.Value.StartOffsetInBytes,group.Value.EndOffsetInBytes));
-            Assert.Equal((begin,end),                (borrowed.Value.StartOffsetInBytes,borrowed.Value.EndOffsetInBytes));
-            Assert.Equal(1, owned.LastIndex); Assert.Equal(owned.LastIndex, context.LastIndex);
-            Assert.Equal(owned.LastGroup, context.LastGroup);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString((group.Success ? owned.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal((begin, end), (group.StartOffsetInBytes, group.EndOffsetInBytes));
+            Assert.Equal(1, owned.LastIndex);
             if (name == "inner")
             {
                 Assert.Equal("outer", owned.LastGroup);
-                Assert.False(owned.GetGroup(3).Success); Assert.False(context.GetGroup(3).Success);
+                Assert.False(owned.Groups[3].Success);
             }
-            // The independently owned text survives another operation's scratch release.
-            _ = regex.SearchDetailed("!"u8);
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
+            // Borrowed captured bytes survive another operation's scratch release.
+            Utf8PythonRangeMatch snapshot2 = default;
+            using (var captureCursor2 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
+            {
+                captureCursor2.MoveNext(out snapshot2);
+            }
+            _ = snapshot2;
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString((group.Success ? owned.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
         }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void KnownEndpointPublicationKeepsOriginalCancellationAndDeadline(bool expire)
     {
         var regex = new Utf8PythonRegex("(?P<x>.)+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
@@ -161,13 +170,18 @@ public sealed class PythonReOneShotProjectionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void MissingContextsHaveNoOwnedChildren(int kind)
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void MissingCursorSnapshotsHaveNoOwnedChildren(int kind)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀)");
-        var context = Context(regex, "é"u8, 0, kind, CancellationToken.None);
-        Assert.False(context.Success); Assert.Equal(0, context.CaptureSlotCount);
-        Assert.Empty(context.GetNameEntries()); Assert.False(Value(regex, "é"u8, 0, kind, CancellationToken.None).Success);
+        Utf8PythonRangeMatch context;
+        using (var cursor = regex.CreateMatchCursor("é"u8.ToArray(), mode: (Utf8PythonMatchMode)kind))
+            cursor.MoveNext(out context);
+        Assert.False(context.Success); Assert.Equal(0, context.Groups.Length);
+        Assert.Empty(context.NameEntries.ToArray()); var value = kind switch { 0 => regex.Search("é"u8), 1 => regex.Match("é"u8), _ => regex.FullMatch("é"u8) };
+        Assert.False(value.Success);
         Assert.False(regex.IsMatch("é"u8));
     }
 
@@ -188,7 +202,7 @@ public sealed class PythonReOneShotProjectionTests
             var baseline = cursor.ReservedBytes;
             value = cursor.SnapshotValueData();
             Assert.Equal((2, 6), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-             Assert.Equal(0UL, cursor.ResultReservation);
+            Assert.Equal(0UL, cursor.ResultReservation);
             Assert.Equal(baseline, cursor.ReservedBytes);
         }
         finally { cursor.Dispose(); }
@@ -216,61 +230,61 @@ public sealed class PythonReOneShotProjectionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void ContextNamesAreAdmittedWithTheGroupRootAndTransferredWithoutAnotherClone(bool allow)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RangeNamesAndGroupsRequireAdmissionAndSurviveScratchRelease(bool allow)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 5000).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
-        var groupExtent = ArrayBytes<PythonReGroupData>(2);
-        // This linear single capture needs two slot arrays and no coordinate
-        // index for its short prefix. Group/name roots require prior admission.
+        var groupExtent = ArrayBytes<Utf8PythonCaptureRange>(2);
+        var input = "😀é"u8.ToArray();
+        // Real snapshot roots overlap discovery scratch. Refusal must leave the
+        // result unpublished and every reservation refundable by this owner.
         var total = 13 + 2 * ArrayBytes<int>(1) + groupExtent + extent;
-        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-        Utf8PythonMatchContext result = default;
+        var state = new PythonReScalarMatchState(input, program, 0, Regex.InfiniteMatchTimeout,
+            "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
+        Assert.True(state.WorkingInvocation.Ledger.TryReserve(13));
+        Utf8PythonRangeMatch result = default;
         try
         {
-            Assert.True(cursor.MoveNext());
-            var groups = cursor.SnapshotGroups();
-            Assert.Equal(groupExtent, cursor.ResultReservation);
-            var baseline = cursor.ReservedBytes;
-            var priorPeak = cursor.WorkingInvocation.Budget.PeakWorkingBytes;
-            PythonReNameEntry[]? copied = null;
+            Assert.True(state.MoveNext(input));
             Exception? failure = null;
-            try { copied = cursor.SnapshotNameEntries(names); }
+            try { result = state.SnapshotRanges(input, names); }
             catch (InvalidOperationException error) { failure = error; }
             if (allow)
             {
-                Assert.Null(failure); Assert.NotNull(copied);
-                result = new Utf8PythonMatchContext("😀é"u8, groups, copied, cursor.GetLastIndex());
-                cursor.Checkpoint();
-                Assert.Same(copied, result.GetNameEntries()); Assert.NotSame(names, copied);
-                Assert.Equal(groupExtent + extent, cursor.ResultReservation);
-                Assert.Equal(total, cursor.ReservedBytes); Assert.Equal(total, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
-                result.GetNameEntries()[0] = new PythonReNameEntry { Name = "changed", Number = 0 };
-                Assert.Equal("word", names[0].Name);
-                Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()));
+                Assert.Null(failure); Assert.True(result.Success);
+                Assert.Equal(names, result.NameEntries.ToArray());
+                Assert.Equal(groupExtent + extent, state.ResultReservation);
+                Assert.Equal(total, state.ReservedBytes);
+                names[0] = new PythonReNameEntry { Name = "changed", Number = 0 };
+                Assert.Equal("word", result.NameEntries[0].Name);
+                Assert.Equal("😀", Encoding.UTF8.GetString(result.GetValueMemory().Span));
             }
             else
             {
-                Assert.NotNull(failure); Assert.Null(copied); Assert.False(result.Success);
-                Assert.Equal(groupExtent, cursor.ResultReservation); Assert.Equal(baseline, cursor.ReservedBytes);
-                Assert.True(cursor.WorkingInvocation.Budget.PeakWorkingBytes >= priorPeak);
-                Assert.Equal(baseline + extent, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
-                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, cursor.WorkingInvocation.Budget.LimitBreach);
+                Assert.NotNull(failure); Assert.False(result.Success);
+                Assert.Equal(groupExtent, state.ResultReservation);
+                Assert.Equal(total - extent, state.ReservedBytes);
+                Assert.Equal(total, state.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, state.WorkingInvocation.Budget.LimitBreach);
             }
         }
-        finally { cursor.Dispose(); }
-        Assert.Equal(13UL, cursor.ReservedBytes); cursor.WorkingInvocation.Ledger.Release(13);
-        if (allow) { Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes())); Assert.Equal("changed", result.GetNameEntries()[0].Name); }
+        finally { state.Dispose(); }
+        Assert.Equal(13UL, state.ReservedBytes); state.WorkingInvocation.Ledger.Release(13);
+        if (allow)
+        {
+            Assert.Equal("😀", Encoding.UTF8.GetString(result.GetValueMemory().Span));
+            Assert.Equal("word", result.NameEntries[0].Name);
+        }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NameCopyFailureAfterAdmissionIsUnpublishedAndPreservesNeutralFailure(bool expire)
     {
         long ticks = 0;
@@ -282,12 +296,12 @@ public sealed class PythonReOneShotProjectionTests
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 16385).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor("😀"u8, program, 0, timeout,
-            null, "(.)", new(new(0, 0, 1UL << 24), timeout, token.Token));
+        var cursor = new PythonReScalarMatchState("😀"u8, program, 0, timeout,
+            "(.)", new(new(0, 0, 1UL << 24), timeout, token.Token), null);
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try
         {
-            Assert.True(cursor.MoveNext()); _ = cursor.SnapshotGroups();
+            Assert.True(cursor.MoveNext("😀"u8));
             var baseline = cursor.ReservedBytes;
             var priorResults = cursor.ResultReservation;
             cursor.WorkingInvocation.ShareStorageForCursor();
