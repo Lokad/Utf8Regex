@@ -24,7 +24,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal(count == 2 ? new[] { 0, 7 } : new[] { 0, 2, 6, 7 },
                 matches.Select(match => match.Value.StartOffsetInBytes));
             Assert.Equal(7, matches[^1].Value.EndOffsetInBytes);
-            Assert.Equal(count == 2 ? "XX" : "XX😀X!X", regex.ReplaceToString(input, "X"));
+            Assert.Equal(count == 2 ? "XX" : "XX😀X!X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.Equal(count == 2, regex.FullMatch(input).Success);
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
@@ -71,7 +71,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.True(regex.FullMatch(input).Success);
             Assert.True(regex.SearchDetailedData(input).Success);
             Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
-            Assert.Equal("X", regex.ReplaceToString(input, "X"));
+            Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
         }
     }
     [Theory]
@@ -92,7 +92,7 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.FullMatch(input).Success);
         Assert.True(regex.SearchDetailedData(input).Success);
         Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
-        Assert.Equal("X", regex.ReplaceToString(input, "X"));
+        Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
     }
     [Theory]
     [InlineData("needle", "needle")]
@@ -149,7 +149,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal("a", hit.Groups[1].ValueText);
             Assert.Equal("α", hit.LastGroup);
             Assert.True(regex.FullMatchDetailedData("ab"u8).Success);
-            Assert.Equal("a", regex.ReplaceToString("ab"u8, @"\g<α>", 1));
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, @"\g<α>", 1)));
         }
     }
     [Theory]

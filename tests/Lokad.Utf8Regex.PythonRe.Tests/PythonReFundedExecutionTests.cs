@@ -21,7 +21,7 @@ public sealed class PythonReFundedExecutionTests
     {
         var account = new Allowance(16 << 20); using var regex = Compile(pattern, account);
         var input = Encoding.UTF8.GetBytes(text);
-        regex.SubnToString(input, @"x\g<0>y"); // Retain the one template before observing temporary balances.
+        regex.Subn(input, @"x\g<0>y"); // Retain the one template before observing temporary balances.
         var held = account.Used;
         foreach (var (name, operation) in Operations(regex, input))
         {
@@ -35,7 +35,7 @@ public sealed class PythonReFundedExecutionTests
     public void ScalarFamiliesAdmitTheirActualWorkingStorage()
     {
         var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account);
-        var input = "aaa"u8.ToArray(); regex.SubnToString(input, @"x\g<0>y");
+        var input = "aaa"u8.ToArray(); PythonReSubstitutionAssert.Decode(regex.Subn(input, @"x\g<0>y"));
         var held = account.Used; account.Maximum = held;
         foreach (var (name, operation) in Operations(regex, input))
         {
@@ -83,19 +83,6 @@ public sealed class PythonReFundedExecutionTests
         var held = account.Used; account.Maximum = held; var reservations = account.Reservations;
         Assert.True(regex.IsMatch("😀 cat"u8)); Assert.Equal(2, regex.Count("cat 😀 cat"u8));
         Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
-    }
-
-    [Fact]
-    public void CallbackOutputIsAdmittedBeforeEngineCopying()
-    {
-        var account = new Allowance(16 << 20); using var regex = Compile("a+", account); var held = account.Used;
-        var called = false;
-        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.SubnToString("aaa"u8, account, (budget, _) =>
-        {
-            called = true; Assert.True(budget.Used > held); budget.Maximum = budget.Used;
-            return new string('x', 65536); // Caller-owned callback return; the engine must admit its copy.
-        }));
-        Assert.True(called); Assert.Equal(held, account.Used);
     }
 
     [Theory] [InlineData("cat|horse")] [InlineData("a.b")]
@@ -177,10 +164,6 @@ public sealed class PythonReFundedExecutionTests
         ("FindAllToUtf8", () => regex.FindAllToUtf8(input)), ("FindIterDetailed", () => regex.FindIterDetailed(input)),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),
-        ("SubnToString", () => regex.SubnToString(input, @"x\g<0>y")),
-        ("String evaluator", () => regex.SubnToString(input, 0, static (_, _) => "x")),
-        ("UTF8 result string evaluator", () => regex.Subn(input, 0, static (_, _) => "x")),
-        ("UTF8 evaluator", () => regex.Subn(input, 0, static (_, _) => "x"u8.ToArray())),
         ("Cursor", () => { using var cursor = regex.CreateMatchCursor(input); while (cursor.MoveNext(out _)) { } }),
     ];
 }

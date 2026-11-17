@@ -470,18 +470,6 @@ public sealed class Utf8PythonRegexTests
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Count(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)));
     }
-    [Fact]
-    public void EvaluatorExceptionPropagatesAndLeavesInstanceUsable()
-    {
-        // user callbacks run inside cursor-driven replacement loops; the exception must surface unchanged and leave no per-operation state behind. CPython re.sub propagates the callback exception identically.
-        var regex = new Utf8PythonRegex("([a-z]+)");
-        var input = System.Text.Encoding.UTF8.GetBytes("cat dog");
-        Assert.Throws<System.InvalidOperationException>(() =>
-            regex.SubnToString(input, 0, static (_, _) => throw new System.InvalidOperationException("boom"), 0, 0));
-        var again = regex.SubnToString(input, "-", static (prefix, _) => prefix, count: 0);
-        Assert.Equal("- -", again.ResultText);
-        Assert.Equal(2, again.ReplacementCount);
-    }
 
 
 
@@ -839,9 +827,9 @@ public sealed class Utf8PythonRegexTests
             regex.FindAllToUtf8("y"u8).ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
         Assert.Equal(expected, regex.FindIterDetailed("y"u8).Select(static match => match.Value.ValueText).ToArray());
         Assert.Equal(3, regex.Count("y"u8));
-        Assert.Equal("---", regex.ReplaceToString("y"u8, "-"));
+        Assert.Equal("---", System.Text.Encoding.UTF8.GetString(regex.Replace("y"u8, "-")));
 
-        var subn = regex.SubnToString("y"u8, "-");
+        var subn = PythonReSubstitutionAssert.Decode(regex.Subn("y"u8, "-"));
         Assert.Equal("---", subn.ResultText);
         Assert.Equal(3, subn.ReplacementCount);
         Assert.Equal(new string?[] { "", "", "", "" }, PythonReSplitAssert.Decode("y"u8, regex.SplitRanges("y"u8, 0, 0, default)));
@@ -878,15 +866,15 @@ public sealed class Utf8PythonRegexTests
         var repeated = new Utf8PythonRegex("x*");
         var grouped = new Utf8PythonRegex("(?:ab)*");
 
-        Assert.Equal("-a-b--d-", repeated.ReplaceToString("abxd"u8, "-"));
         Assert.Equal("-a-b--d-", System.Text.Encoding.UTF8.GetString(repeated.Replace("abxd"u8, "-")));
-        var repeatedSubn = repeated.SubnToString("abxd"u8, "-");
+        Assert.Equal("-a-b--d-", System.Text.Encoding.UTF8.GetString(repeated.Replace("abxd"u8, "-")));
+        var repeatedSubn = PythonReSubstitutionAssert.Decode(repeated.Subn("abxd"u8, "-"));
         Assert.Equal("-a-b--d-", repeatedSubn.ResultText);
         Assert.Equal(5, repeatedSubn.ReplacementCount);
-        Assert.Equal("_z__q_", grouped.ReplaceToString("zababq"u8, "_"));
+        Assert.Equal("_z__q_", System.Text.Encoding.UTF8.GetString(grouped.Replace("zababq"u8, "_")));
         Assert.Equal(
             "π-a-bxd",
-            repeated.ReplaceToString("πabxd"u8, "-", count: 2, startOffsetInBytes: "π"u8.Length));
+            System.Text.Encoding.UTF8.GetString(repeated.Replace("πabxd"u8, "-", count: 2, startOffsetInBytes: "π"u8.Length)));
     }
 
     [Fact]
@@ -895,8 +883,8 @@ public sealed class Utf8PythonRegexTests
         var alternation = new Utf8PythonRegex("x*|y");
         var reluctant = new Utf8PythonRegex("x*?");
 
-        Assert.Equal("---", alternation.ReplaceToString("y"u8, "-"));
-        Assert.Equal("-----", reluctant.ReplaceToString("xx"u8, "-"));
+        Assert.Equal("---", System.Text.Encoding.UTF8.GetString(alternation.Replace("y"u8, "-")));
+        Assert.Equal("-----", System.Text.Encoding.UTF8.GetString(reluctant.Replace("xx"u8, "-")));
     }
 
     [Fact]
@@ -1167,7 +1155,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");
 
-        var replaced = regex.ReplaceToString("foo x foo"u8, "<\\g<word>>");
+        var replaced = System.Text.Encoding.UTF8.GetString(regex.Replace("foo x foo"u8, "<\\g<word>>"));
 
         Assert.Equal("<foo> x <foo>", replaced);
     }
@@ -1179,9 +1167,9 @@ public sealed class Utf8PythonRegexTests
         var input = "é cat fox cat 𝒜"u8;
         const string expected = "é $🐈 fox $🐈 𝒜";
 
-        var replacedText = regex.ReplaceToString(input, "$🐈");
+        var replacedText = System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$🐈"));
         var replacedUtf8 = regex.Replace(input, "$🐈");
-        var subnText = regex.SubnToString(input, "$🐈");
+        var subnText = PythonReSubstitutionAssert.Decode(regex.Subn(input, "$🐈"));
         var subnUtf8 = regex.Subn(input, "$🐈");
 
         Assert.Equal(expected, replacedText);
@@ -1197,15 +1185,15 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("cat");
         var input = "cat cat cat"u8;
 
-        Assert.Equal("dog cat cat", regex.ReplaceToString(input, "dog", count: 1));
+        Assert.Equal("dog cat cat", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "dog", count: 1)));
         Assert.Equal(
             "🐈 🐈 cat",
             System.Text.Encoding.UTF8.GetString(regex.Replace(input, "🐈", count: 2)));
-        var subn = regex.SubnToString(input, "dog", count: 2);
+        var subn = PythonReSubstitutionAssert.Decode(regex.Subn(input, "dog", count: 2));
         Assert.Equal(("dog dog cat", 2), (subn.ResultText, subn.ReplacementCount));
-        Assert.Equal("dog dog dog", regex.ReplaceToString(input, "dog", count: 99));
-        Assert.Equal("cat dog dog", regex.ReplaceToString(input, "dog", count: 0, startOffsetInBytes: 4));
-        Assert.Equal("<cat> <cat> <cat>", regex.ReplaceToString(input, @"<\g<0>>"));
+        Assert.Equal("dog dog dog", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "dog", count: 99)));
+        Assert.Equal("cat dog dog", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "dog", count: 0, startOffsetInBytes: 4)));
+        Assert.Equal("<cat> <cat> <cat>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"<\g<0>>")));
 
     }
 
@@ -1214,7 +1202,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
-        var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 0, startOffsetInBytes: 3);
+        var replaced = PythonReSubstitutionAssert.Decode(regex.Subn("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 0, startOffsetInBytes: 3));
 
         Assert.Equal("xx <foo> yy <foo>", replaced.ResultText);
         Assert.Equal(2, replaced.ReplacementCount);
@@ -1237,12 +1225,12 @@ public sealed class Utf8PythonRegexTests
         // count 1 needs only existence, not a full-subject count.
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
-        var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 3);
+        var replaced = PythonReSubstitutionAssert.Decode(regex.Subn("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 3));
 
         Assert.Equal("xx <foo> yy foo-foo", replaced.ResultText);
         Assert.Equal(1, replaced.ReplacementCount);
 
-        var missed = regex.SubnToString("xx no-hit yy"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 0);
+        var missed = PythonReSubstitutionAssert.Decode(regex.Subn("xx no-hit yy"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 0));
 
         Assert.Equal("xx no-hit yy", missed.ResultText);
         Assert.Equal(0, missed.ReplacementCount);
@@ -1254,21 +1242,21 @@ public sealed class Utf8PythonRegexTests
         // the managed progression cursor owns empty-match advancement in Subn; oracle is CPython 3.13.2 re.subn.
         var optional = new Utf8PythonRegex("(a)?");
 
-        var one = optional.SubnToString("ab"u8, "-", 1);
+        var one = PythonReSubstitutionAssert.Decode(optional.Subn("ab"u8, "-", 1));
         Assert.Equal("-b", one.ResultText);
         Assert.Equal(1, one.ReplacementCount);
 
-        var all = optional.SubnToString("ab"u8, "-", 0);
+        var all = PythonReSubstitutionAssert.Decode(optional.Subn("ab"u8, "-", 0));
         Assert.Equal("--b-", all.ResultText);
         Assert.Equal(3, all.ReplacementCount);
 
         var alternation = new Utf8PythonRegex("a*|b");
 
-        var first = alternation.SubnToString("ba"u8, "-", 1);
+        var first = PythonReSubstitutionAssert.Decode(alternation.Subn("ba"u8, "-", 1));
         Assert.Equal("-ba", first.ResultText);
         Assert.Equal(1, first.ReplacementCount);
 
-        var every = alternation.SubnToString("ba"u8, "-", 0);
+        var every = PythonReSubstitutionAssert.Decode(alternation.Subn("ba"u8, "-", 0));
         Assert.Equal("----", every.ResultText);
         Assert.Equal(4, every.ReplacementCount);
     }
@@ -1287,21 +1275,6 @@ public sealed class Utf8PythonRegexTests
 
         Assert.Equal<string?[]>(["", null, "a", null, "b", null, ""], PythonReSplitAssert.Decode("ab"u8, optional.SplitRanges("ab"u8, 0, 0, default)));
         Assert.Equal<string?[]>(["", null, "ab"], PythonReSplitAssert.Decode("ab"u8, optional.SplitRanges("ab"u8, 1, 0, default)));
-    }
-
-    [Fact]
-    public void EvaluatorSubnHonorsLimitsWithEmptyMatches()
-    {
-        // the managed progression cursor owns empty-match advancement in evaluator Subn; oracle is CPython 3.13.2 re.subn.
-        var star = new Utf8PythonRegex("x*");
-
-        var one = star.SubnToString("ab"u8, "-", static (prefix, _) => prefix, count: 1);
-        Assert.Equal("-ab", one.ResultText);
-        Assert.Equal(1, one.ReplacementCount);
-
-        var all = star.SubnToString("ab"u8, "-", static (prefix, _) => prefix, count: 0);
-        Assert.Equal("-a-b-", all.ResultText);
-        Assert.Equal(3, all.ReplacementCount);
     }
 
     [Fact]
@@ -1324,23 +1297,23 @@ public sealed class Utf8PythonRegexTests
         // non-empty-matching patterns take the single-pass cursor template route; oracle is CPython 3.13.2 re.subn.
         var words = new Utf8PythonRegex("([a-z]+)");
 
-        var all = words.SubnToString("cat dog"u8, "<\\1>", 0, 0);
+        var all = PythonReSubstitutionAssert.Decode(words.Subn("cat dog"u8, "<\\1>", 0, 0));
         Assert.Equal("<cat> <dog>", all.ResultText);
         Assert.Equal(2, all.ReplacementCount);
 
-        var one = words.SubnToString("cat dog"u8, "<\\1>", 1, 0);
+        var one = PythonReSubstitutionAssert.Decode(words.Subn("cat dog"u8, "<\\1>", 1, 0));
         Assert.Equal("<cat> dog", one.ResultText);
         Assert.Equal(1, one.ReplacementCount);
 
-        var offset = words.SubnToString("cat dog"u8, "<\\1>", 0, 4);
+        var offset = PythonReSubstitutionAssert.Decode(words.Subn("cat dog"u8, "<\\1>", 0, 4));
         Assert.Equal("cat <dog>", offset.ResultText);
         Assert.Equal(1, offset.ReplacementCount);
 
-        var capped = words.SubnToString("cat dog"u8, "<\\1>", 2, 0);
+        var capped = PythonReSubstitutionAssert.Decode(words.Subn("cat dog"u8, "<\\1>", 2, 0));
         Assert.Equal("<cat> <dog>", capped.ResultText);
         Assert.Equal(2, capped.ReplacementCount);
 
-        var over = words.SubnToString("cat"u8, "<\\1>", 5, 0);
+        var over = PythonReSubstitutionAssert.Decode(words.Subn("cat"u8, "<\\1>", 5, 0));
         Assert.Equal("<cat>", over.ResultText);
         Assert.Equal(1, over.ReplacementCount);
 
@@ -1368,11 +1341,11 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("xx <foo> yy <foo>", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>"));
+        Assert.Equal("xx <foo> yy <foo>", System.Text.Encoding.UTF8.GetString(regex.Replace("xx foo-foo yy foo-foo"u8, "<\\g<word>>")));
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("xx <foo> yy <foo>", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>"));
+        Assert.Equal("xx <foo> yy <foo>", System.Text.Encoding.UTF8.GetString(regex.Replace("xx foo-foo yy foo-foo"u8, "<\\g<word>>")));
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("xx - yy -", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "-"));
+        Assert.Equal("xx - yy -", System.Text.Encoding.UTF8.GetString(regex.Replace("xx foo-foo yy foo-foo"u8, "-")));
         Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -1381,8 +1354,8 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("foo");
 
-        Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString("foo"u8, "\\"));
-        Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString("foo"u8, "\\"));
+        Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("foo"u8, "\\")));
+        Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("foo"u8, "\\")));
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -1391,93 +1364,9 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?:b)|(?::+)");
 
-        var replaced = regex.ReplaceToString(":a:b::c"u8, "-");
+        var replaced = System.Text.Encoding.UTF8.GetString(regex.Replace(":a:b::c"u8, "-"));
 
         Assert.Equal("-a---c", replaced);
-    }
-
-    [Fact]
-    public void CallableReplacementCanUseDetailedHostSnapshot()
-    {
-        var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
-
-        var replaced = regex.ReplaceToString(
-            "xx foo-foo yy foo-foo"u8,
-            "<",
-            static (prefix, match) =>
-            {
-                Assert.True(match.TryGetFirstSetGroup("word", out var word));
-                return prefix + word.ValueText + ">";
-            },
-            count: 0,
-            startOffsetInBytes: 3);
-
-        Assert.Equal("xx <foo> yy <foo>", replaced);
-    }
-
-    [Fact]
-    public void CallableSubnHonorsReplacementCount()
-    {
-        var regex = new Utf8PythonRegex("foo");
-
-        var result = regex.SubnToString("foo foo foo"u8, "-", static (prefix, match) => prefix + match.Value.ValueText, count: 2);
-
-        Assert.Equal("-foo -foo foo", result.ResultText);
-        Assert.Equal(2, result.ReplacementCount);
-    }
-
-    [Fact]
-    public void CallableSubnReturnsUtf8ResultBytesAndCount()
-    {
-        var regex = new Utf8PythonRegex("foo");
-
-        var result = regex.Subn("foo foo"u8, "-", static (prefix, match) => prefix + match.Value.ValueText);
-
-        Assert.Equal("-foo -foo", System.Text.Encoding.UTF8.GetString(result.ResultBytes));
-        Assert.Equal(2, result.ReplacementCount);
-    }
-
-    [Fact]
-    public void CallableUtf8SubnReturnsUtf8ResultBytesAndCount()
-    {
-        var regex = new Utf8PythonRegex("foo");
-        Utf8PythonUtf8MatchEvaluator<string> evaluator = static (prefix, match) =>
-            System.Text.Encoding.UTF8.GetBytes(prefix + match.Value.ValueText);
-
-        var result = regex.Subn("foo foo"u8, "-", evaluator);
-
-        Assert.Equal("-foo -foo", System.Text.Encoding.UTF8.GetString(result.ResultBytes));
-        Assert.Equal(2, result.ReplacementCount);
-    }
-
-    [Fact]
-    public void CallableSubnPreservesNamedUnmatchedGroupsAfterUnicodeByteStart()
-    {
-        var regex = new Utf8PythonRegex(@"(?P<word>[a-z]+)|(é)");
-        var input = "é pre | é foo"u8;
-        var startOffsetInBytes = "é pre | "u8.Length;
-
-        var text = regex.SubnToString(
-            input,
-            "unused",
-            static (_, match) =>
-            {
-                Assert.True(match.TryGetFirstSetGroup("word", out var word));
-                return word.Success ? $"<{word.ValueText}>" : "𝒜";
-            },
-            count: 0,
-            startOffsetInBytes: startOffsetInBytes);
-        Utf8PythonUtf8MatchEvaluator<string> utf8Evaluator = static (_, match) =>
-        {
-            Assert.True(match.TryGetFirstSetGroup("word", out var word));
-            return System.Text.Encoding.UTF8.GetBytes(word.Success ? $"<{word.ValueText}>" : "𝒜");
-        };
-        var utf8 = regex.Subn(input, "unused", utf8Evaluator, count: 0, startOffsetInBytes: startOffsetInBytes);
-
-        Assert.Equal("é pre | 𝒜 <foo>", text.ResultText);
-        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
-        Assert.Equal(2, text.ReplacementCount);
-        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
     }
 
     [Fact]
@@ -1492,30 +1381,10 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal("cat", Describe(matches[0]));
         Assert.Equal("dog:12", Describe(matches[1]));
 
-        var text = regex.SubnToString(
-            input,
-            0,
-            static (_, match) => $"<{Describe(match)}>",
-            count: 0,
-            startOffsetInBytes: startOffsetInBytes);
-        Utf8PythonUtf8MatchEvaluator<int> utf8Evaluator = static (_, match) =>
-            System.Text.Encoding.UTF8.GetBytes($"<{Describe(match)}>");
-        var utf8 = regex.Subn(input, 0, utf8Evaluator, count: 0, startOffsetInBytes: startOffsetInBytes);
-
-        Assert.Equal("π skip <cat> <dog:12>", text.ResultText);
-        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
-        Assert.Equal(2, text.ReplacementCount);
-        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
-
         Parallel.For(0, 16, _ =>
         {
-            var result = regex.SubnToString(
-                input,
-                0,
-                static (_, match) => $"<{Describe(match)}>",
-                count: 0,
-                startOffsetInBytes: startOffsetInBytes);
-            Assert.Equal(text.ResultText, result.ResultText);
+            var values = regex.FindIterDetailed(input, startOffsetInBytes);
+            Assert.Equal(new[] { "cat", "dog:12" }, values.Select(Describe));
         });
 
         static string Describe(Utf8PythonDetailedMatchData match)
@@ -1530,62 +1399,13 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void CallableSubnPreservesLimitedEmptyMatchProgression()
-    {
-        var regex = new Utf8PythonRegex("");
-
-        var text = regex.SubnToString("ab"u8, 0, static (_, _) => "-", count: 2);
-        Utf8PythonUtf8MatchEvaluator<int> evaluator = static (_, _) => "-"u8.ToArray();
-        var utf8 = regex.Subn("ab"u8, 0, evaluator, count: 2);
-
-        Assert.Equal("-a-b", text.ResultText);
-        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
-        Assert.Equal(2, text.ReplacementCount);
-        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
-    }
-
-    [Fact]
-    public void CallableSubnWritersHandleEmptyAndGrowingMultibyteResults()
-    {
-        var regex = new Utf8PythonRegex("(a|bb|c)");
-        var input = "π a bb c"u8;
-        var startOffsetInBytes = "π "u8.Length;
-        var large = string.Concat(Enumerable.Repeat("𝒜", 32));
-
-        var text = regex.SubnToString(
-            input,
-            large,
-            static (largeValue, match) => match.Value.ValueText switch
-            {
-                "a" => string.Empty,
-                "bb" => largeValue,
-                _ => "x",
-            },
-            count: 0,
-            startOffsetInBytes: startOffsetInBytes);
-        Utf8PythonUtf8MatchEvaluator<string> evaluator = static (largeValue, match) =>
-            System.Text.Encoding.UTF8.GetBytes(match.Value.ValueText switch
-            {
-                "a" => string.Empty,
-                "bb" => largeValue,
-                _ => "x",
-            });
-        var utf8 = regex.Subn(input, large, evaluator, count: 0, startOffsetInBytes: startOffsetInBytes);
-
-        Assert.Equal($"π  {large} x", text.ResultText);
-        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
-        Assert.Equal(3, text.ReplacementCount);
-        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
-    }
-
-    [Fact]
     public void ReplacementPreservesBackslashForNonLetterEscapes()
     {
         var regex = new Utf8PythonRegex("x");
 
-        Assert.Equal(@"\&", regex.ReplaceToString("x"u8, @"\&"));
-        Assert.Equal(@"\-", regex.ReplaceToString("x"u8, @"\-"));
-        Assert.Equal("\\ ", regex.ReplaceToString("x"u8, "\\ "));
+        Assert.Equal(@"\&", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\&")));
+        Assert.Equal(@"\-", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\-")));
+        Assert.Equal("\\ ", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, "\\ ")));
     }
 
     [Fact]
@@ -1593,7 +1413,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("x");
 
-        var ex = Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString("x"u8, "\\"));
+        var ex = Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, "\\")));
 
         Assert.Contains("bad escape (end of pattern)", ex.Message, StringComparison.Ordinal);
     }
@@ -1736,7 +1556,7 @@ public sealed class Utf8PythonRegexTests
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.SearchDetailedData(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.FindAll(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => empty.Count(input, startOffsetInBytes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => direct.ReplaceToString(input, "_", count: 0, startOffsetInBytes: startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => System.Text.Encoding.UTF8.GetString(direct.Replace(input, "_", count: 0, startOffsetInBytes: startOffsetInBytes)));
         Assert.Throws<ArgumentOutOfRangeException>(() => PythonReSplitAssert.Decode(input, direct.SplitRanges(input, 0, startOffsetInBytes, default)));
     }
 }

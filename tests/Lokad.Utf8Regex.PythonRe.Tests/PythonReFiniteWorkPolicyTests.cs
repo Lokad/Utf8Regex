@@ -9,7 +9,7 @@ public sealed class PythonReFiniteWorkPolicyTests
     internal static IEnumerable<int> OperationIds()
     {
         for (var operation = 0; operation < 25; operation++)
-            if (operation is not (5 or 6 or 7 or 16 or 19)) yield return operation;
+            if (operation is not (5 or 6 or 7 or 16 or 19 or 20 or 22 or 23 or 24)) yield return operation;
     }
 
     public static IEnumerable<object[]> Operations()
@@ -48,11 +48,7 @@ public sealed class PythonReFiniteWorkPolicyTests
         15 => string.Join("|", regex.FindIterDetailed(input, start, token).Select(x => x.Value.ValueText)),
         17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
         18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
-        20 => regex.SubnToString(input, "<\\g<0>>", 0, start, token).ResultText,
         21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
-        22 => regex.SubnToString(input, "x", static (state, _) => state, 0, start, token).ResultText,
-        23 => Encoding.UTF8.GetString(regex.Subn(input, "x", static (state, _) => state, 0, start, token).ResultBytes),
-        24 => Encoding.UTF8.GetString(regex.Subn(input, "x"u8.ToArray(), static (state, _) => state, 0, start, token).ResultBytes),
         _ => throw new ArgumentOutOfRangeException(nameof(operation)),
     };
 
@@ -146,7 +142,7 @@ public sealed class PythonReFiniteWorkPolicyTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(4)] [InlineData(11)] [InlineData(14)] [InlineData(20)]
+    [InlineData(0)] [InlineData(4)] [InlineData(11)] [InlineData(14)] [InlineData(21)]
     public void WorkCoversLateMisses(int operation)
     {
         var miss = Encoding.UTF8.GetBytes(new string('x', 16384));
@@ -179,23 +175,5 @@ public sealed class PythonReFiniteWorkPolicyTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks += 100);
         regex = new("cat", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), new() { MaxWorkSteps = 1 });
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Search("cat"u8));
-    }
-
-    [Fact]
-    public void CallbackReturnEncodingAndCopyingConsumeTheSameCap()
-    {
-        var called = false;
-        var regex = RegexWith("a", 100);
-        Exhausted(() => regex.SubnToString("a"u8, 0, (_, _) =>
-        {
-            called = true; return new string('x', 65536);
-        }, 0, 0), 100);
-        Assert.True(called);
-        called = false;
-        Exhausted(() => regex.Subn("a"u8, 0, (_, _) =>
-        {
-            called = true; return new byte[1 << 20];
-        }, 0, 0), 100);
-        Assert.True(called);
     }
 }

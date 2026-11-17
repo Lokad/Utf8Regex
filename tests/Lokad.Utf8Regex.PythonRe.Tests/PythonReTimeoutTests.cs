@@ -25,7 +25,7 @@ public sealed class PythonReTimeoutTests
     public void CatastrophicSubstitutionHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.SubnToString(CreateCatastrophicInput(), "-"));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(CreateCatastrophicInput(), "-")));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class PythonReTimeoutTests
         var input = Encoding.UTF8.GetBytes("aaabaaa");
         Assert.True(regex.Search(input).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal("aaab-", regex.SubnToString(input, "-").ResultText);
+        Assert.Equal("aaab-", PythonReSubstitutionAssert.Decode(regex.Subn(input, "-")).ResultText);
     }
     [Fact]
     public void FiniteTimeoutSupportsFastPaths()
@@ -60,7 +60,7 @@ public sealed class PythonReTimeoutTests
         Assert.True(regex.Search(input).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Single(regex.FindAll(input));
-        Assert.Equal("xxZxx", regex.SubnToString(input, "Z").ResultText);
+        Assert.Equal("xxZxx", PythonReSubstitutionAssert.Decode(regex.Subn(input, "Z")).ResultText);
         Assert.Equal(2, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)).Length);
     }
     [Fact]

@@ -52,12 +52,12 @@ public sealed class PythonReResultExtentTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(new string('é', 1025));
-        var cursor = new PythonReScalarMatchCursor(input, program, 0,
+        var cursor = new PythonReScalarMatchState(input, program, 0,
             Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
         try
         {
-            Assert.True(cursor.MoveNext());
+            Assert.True(cursor.MoveNext(input));
             var count = 0;
             do
             {
@@ -73,7 +73,7 @@ public sealed class PythonReResultExtentTests
                 Assert.Equal(marker, cursor.ResultReservation);
                 Assert.Equal(resultTraffic, cursor.WorkingInvocation.Budget.ResultBytes);
                 count++;
-            } while (cursor.MoveNext());
+            } while (cursor.MoveNext(input));
             Assert.Equal(1025, count);
             Assert.True(cursor.ReservedBytes < 65536); // Inline discovery retains bounded scratch until disposal.
         }

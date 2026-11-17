@@ -299,8 +299,13 @@ Core removes `ReplaceToString`, callback replacement and both evaluator delegate
 Use `CreateMatchCursor` to read byte ranges and capture histories, then assemble
 custom output in the host. Byte-template replacement and destination output keep
 their resource controls and original cancellation/deadline. Their scalar worker
-no longer derives input UTF-16 coordinates. PCRE2 and PythonRe callbacks remain
-available pending their separate surface cleanup.
+no longer derives input UTF-16 coordinates. PythonRe now likewise removes all
+callback replacement forms, both evaluator delegates, `ReplaceToString`,
+`SubnToString` and `Utf8PythonSubnResult`. Use byte-template `Replace`/`Subn` or
+`SubnRetained` for controlled library output. Custom output uses the real range
+cursor and host-owned buffers; each advance preserves regex controls, while host
+callback execution, final output/cancellation checks and memory admission belong
+to the host. PCRE2 callbacks remain pending their separate surface cleanup.
 
 For text output, decode `regex.Replace(input, template)` in the host with
 `Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the

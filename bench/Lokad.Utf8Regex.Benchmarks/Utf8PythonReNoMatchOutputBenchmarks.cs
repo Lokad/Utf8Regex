@@ -46,11 +46,11 @@ public class Utf8PythonReNoMatchOutputBenchmarks
     public void Cleanup() => _cancellation.Dispose();
 
     [Benchmark(Baseline = true)]
-    public string Unlimited() => _unlimited.ReplaceToString(_input, _replacement);
+    public string Unlimited() => System.Text.Encoding.UTF8.GetString(_unlimited.Replace(_input, _replacement));
     [Benchmark]
-    public string Finite() => _finite.ReplaceToString(_input, _replacement);
+    public string Finite() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacement));
     [Benchmark]
-    public string FiniteWithToken() => _finite.ReplaceToString(_input, _replacement, 0, 0, _cancellation.Token);
+    public string FiniteWithToken() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacement, 0, 0, _cancellation.Token));
     [Benchmark]
     public string PredecodedRegex() => _regex.Replace(_text, _replacement);
     [Benchmark]

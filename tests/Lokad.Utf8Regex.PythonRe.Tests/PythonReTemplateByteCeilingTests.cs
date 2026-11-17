@@ -69,7 +69,7 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Equal(entries, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal(payload, regex.DebugReplacementPlanCachePayloadBytes);
         Assert.Equal("<😀><a>"u8.ToArray(), retained.ResultBytes);
-        Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
     }
 
     [Theory]
@@ -113,7 +113,7 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Same(hook, parent.Budget.CheckpointHook);
         ticks = 0;
         parent.Budget.CheckpointHook = null;
-        Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
     }
 
     [Theory]
@@ -155,7 +155,7 @@ public sealed class PythonReTemplateByteCeilingTests
         parent.Budget.CheckpointHook = null;
         parent.Budget.CancellationToken = default;
         parent.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
-        Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
     }
 
     private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern,

@@ -34,7 +34,7 @@ the documented null/empty shaping for each API.
 Search, Match and FullMatch expose borrowed byte values and capture views, plus
 owned detailed snapshots. `FindIterDetailed` returns owned capture snapshots.
 `FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs; `FindAll` is the
-structural full-match collector. Split and template/callback replacement include
+structural full-match collector. Split ranges and byte-template replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
 positions are derived by the host when needed.
@@ -72,14 +72,14 @@ reach a finite byte limit earlier. Larger results retain bounded exact sizing.
 Denials use `Utf8ResourceLimitExceededException` with the corresponding
 `Execution*` resource kind. This is not a total heap/RSS or caller-retention bound.
 
-Replacement evaluator delegates must be non-null, even on misses; otherwise
-`ArgumentNullException` names `evaluator`. An already-cancelled explicit token
-still takes precedence. Return-value rules for valid callbacks are unchanged.
+Callback replacement and evaluator delegates are removed. Custom output uses
+the range cursor and host-owned buffers. Template replacement retains its output
+admission, strict template checks and original interruption controls.
 
 Original synchronous cancellation and one absolute
 deadline apply through required shaping and persistent cursor advances, including
-waits between moves. Caller callbacks cannot be preempted; copying/encoding their
-returned output remains covered. Timeouts use `RegexMatchTimeoutException`; its
+waits between moves. Host composition and its final output/cancellation checks
+belong to the host. Timeouts use `RegexMatchTimeoutException`; its
 Input is empty when working or result bytes are bounded to avoid decoding the
 subject for diagnostics after expiry.
 
@@ -165,7 +165,7 @@ Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 `GetValueBytes()` in the host if text is needed; caller decoding is outside the
 regex invocation's resource and cancellation scope. `FindAllToStrings` is also
 removed; decode selected `FindAllToUtf8` values in the host. `ReplaceToString`
-still provides its documented output form.
+and `SubnToString` are removed too; decode the owned byte-template output when needed.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
 `MoveNext` instead of materializing the complete `FindIterDetailed` array:
@@ -211,12 +211,19 @@ replacement, including each API's required argument/output construction. Rich
 callback capture checks and digests run in a separate untimed verification pass.
 Earlier instrumented callback ratios are not bare replacement-throughput claims.
 
+Current replacement string rows include explicit host decoding of byte-template
+output. The former callback rows now time host constant-replacement composition
+over the real range cursor, with host-owned output buffers. Their capture replay
+remains untimed, and regex limits cover advances rather than host output. These
+rows have new operation identities; the tables retain their historical API scope
+until the coherent refresh.
+
 The canonical comparison uses preexisting valid text on both sides. Value rows
 include byte-range projection; detailed and structural rows include their
 requested ranges, captures and text. CPython performs that conversion within
 each timed operation, sharing work across bulk results. These are public-output
 costs, rather than bare `re.Match` discovery timings. Boolean, count, string,
-callback and split rows keep their existing timing contract.
+callback and split rows retain their recorded historical timing contracts.
 
 The frozen tables below predate the byte-only result contract and include the
 former UTF-16 output costs. They remain historical until the next coherent refresh.

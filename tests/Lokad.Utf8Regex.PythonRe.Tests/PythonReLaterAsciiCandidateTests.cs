@@ -51,7 +51,7 @@ public sealed class PythonReLaterAsciiCandidateTests
         using var regex = new Utf8PythonRegex(prefix + "([0-9]+)");
         var skipped = "😀" + new string('a', 2049);
         var input = Encoding.UTF8.GetBytes(skipped + prefix + "12!" + prefix + "34");
-        Assert.Equal(skipped + "<12>!<34>", regex.ReplaceToString(input, "<\\1>"));
+        Assert.Equal(skipped + "<12>!<34>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<\\1>")));
         Assert.Equal(new[] { skipped, "12", "!", "34", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;

@@ -52,19 +52,15 @@ public sealed class PythonReDetailedPublicationContractTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void RetainedEqualRangeCallbacksKeepNumberingAndIndependentSlots(bool named)
+    public void RetainedCursorSnapshotsKeepNumberingAndIndependentSlots(bool named)
     {
         var input = "é😀"u8.ToArray();
         var retained = new List<Utf8PythonDetailedMatchData>();
         using (var regex = new Utf8PythonRegex(named ? "(?P<outer>(?P<inner>.))" : "((.))",
             resourcePolicy: new() { MaxWorkSteps = 10000, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }))
         {
-            var result = regex.ReplaceToString(input, retained, static (values, match) =>
-            {
-                values.Add(match);
-                return match.Groups[1].ValueText;
-            });
-            Assert.Equal("é😀", result);
+            using var cursor = regex.CreateMatchCursor(input);
+            while (cursor.MoveNext()) retained.Add(cursor.Current);
         }
         input.AsSpan().Fill((byte)'x');
         Assert.Equal(2, retained.Count);

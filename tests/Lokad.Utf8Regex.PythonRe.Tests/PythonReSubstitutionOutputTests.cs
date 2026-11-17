@@ -8,7 +8,6 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReSubstitutionOutputTests
 {
     private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + (((ulong)count + 15) & ~15UL);
-    private static ulong TextBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
 
     [Fact]
     public void TemplateExpansionBorrowsByteCapturesWithoutMappingOrProjectionArrays()
@@ -36,9 +35,8 @@ public sealed class PythonReSubstitutionOutputTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void ScalarFinalByteRootAdmitsTheWriterOverlapBeforeAllocation(bool allow, bool validateOutput)
+    [InlineData(false)] [InlineData(true)]
+    public void ScalarFinalByteRootAdmitsTheWriterOverlapBeforeAllocation(bool allow)
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
@@ -53,7 +51,7 @@ public sealed class PythonReSubstitutionOutputTests
             cursor.AppendBytes(ref writer, payload);
             byte[] result = [];
             Exception? failure = null;
-            try { result = cursor.CompleteOutputBytes(ref writer, validateOutput); }
+            try { result = cursor.CompleteOutputBytes(ref writer); }
             catch (InvalidOperationException error) { failure = error; }
             if (allow)
             {
@@ -91,7 +89,7 @@ public sealed class PythonReSubstitutionOutputTests
             var writer = measured.CreateOutputWriter();
             measured.AppendBytes(ref writer, payload);
             seed = measured.WorkingInvocation.Budget.Steps;
-            Assert.Equal(payload, measured.CompleteOutputBytes(ref writer, false));
+            Assert.Equal(payload, measured.CompleteOutputBytes(ref writer));
             completionWork = measured.WorkingInvocation.Budget.Steps - seed;
             measured.ReleaseOutput(ref writer); measured.Dispose();
         }
@@ -108,7 +106,7 @@ public sealed class PythonReSubstitutionOutputTests
                 Assert.Equal(seed, cursor.WorkingInvocation.Budget.Steps);
                 byte[] result = [];
                 Exception? failure = null;
-                try { result = cursor.CompleteOutputBytes(ref writer, false); }
+                try { result = cursor.CompleteOutputBytes(ref writer); }
                 catch (InvalidOperationException error) { failure = error; }
                 if (cutoff == completionWork) { Assert.Null(failure); Assert.Equal(payload, result); Assert.Equal(0, writer.Length); }
                 else
@@ -126,136 +124,7 @@ public sealed class PythonReSubstitutionOutputTests
     }
 
     [Fact]
-    public void FinalTextOverlapsTheWriterAndTransfersOnlyItsStringLoan()
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var text = string.Concat(Enumerable.Repeat("😀", 5000));
-        var cursor = new PythonReScalarMatchCursor([], program, 0,
-            Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        var writer = cursor.CreateOutputWriter();
-        string result;
-        try
-        {
-            cursor.AppendText(ref writer, text);
-            result = cursor.CompleteOutputText(ref writer);
-            Assert.Equal(text, result);
-            Assert.Equal(0, writer.Length);
-            Assert.Equal(TextBytes(10000), cursor.ResultReservation);
-            Assert.Equal(96 + TextBytes(10000), cursor.ReservedBytes);
-            Assert.Equal(96 + Bytes(20000) + TextBytes(10000), cursor.WorkingInvocation.Budget.PeakWorkingBytes);
-        }
-        finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
-        Assert.Equal(0UL, cursor.ReservedBytes);
-        Assert.Equal(text, result);
-    }
-
-    [Theory]
-    [InlineData(2047, 1)] //4095 UTF-8 bytes: conservative short-string charge.
-    [InlineData(2047, 2)] //4096 UTF-8 bytes: last short-string extent.
-    [InlineData(2048, 1)] //4097 UTF-8 bytes: bounded exact sizing.
-    public void FinalUnicodeTextUsesBoundedAdmissionAndSurvivesDisposal(int unicodeChars, int asciiChars)
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var text = new string('é', unicodeChars) + new string('x', asciiChars);
-        var length = Encoding.UTF8.GetByteCount(text);
-        var charge = TextBytes(length <= 4096 ? length : text.Length);
-        var cursor = new PythonReScalarMatchCursor([], program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        var writer = cursor.CreateOutputWriter();
-        string result;
-        try
-        {
-            cursor.AppendText(ref writer, text);
-            result = cursor.CompleteOutputText(ref writer);
-            Assert.Equal(text, result);
-            Assert.Equal(charge, cursor.ResultReservation);
-            Assert.Equal(0, writer.Length);
-        }
-        finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
-        Assert.Equal(0UL, cursor.ReservedBytes);
-        Assert.Equal(text, result);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void FinalTextFailureRestoresTheWriterAndPreservesProfileIdentity(bool expire)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor([], program, 0,
-            timeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), timeout, token.Token));
-        var writer = cursor.CreateOutputWriter();
-        try
-        {
-            cursor.AppendText(ref writer, new string('é', 5000));
-            var baseline = cursor.ReservedBytes;
-            ref var invocation = ref cursor.WorkingInvocation;
-            while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            var entered = false;
-            invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
-            string? result = null;
-            Exception? failure = null;
-            try { result = cursor.CompleteOutputText(ref writer); }
-            catch (Exception error) { failure = error; }
-            Assert.True(entered); Assert.Null(result);
-            if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(10000, writer.Length);
-            Assert.Equal(baseline, cursor.ReservedBytes);
-            Assert.Equal(0UL, cursor.ResultReservation);
-        }
-        finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
-        Assert.Equal(0UL, cursor.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void StringCallbackFragmentsStayIndependentAndPairsCrossEncodingBlocks(bool textOutput)
-    {
-        var regex = new Utf8PythonRegex("(.)");
-        var input = "xy"u8.ToArray();
-        var values = new[] { new string('a', 2047) + "😀" + new string((char)0xd83d, 1), new string((char)0xde00, 1) };
-        Utf8PythonMatchEvaluator<string[]> callback = static (state, match) => state[match.Value.StartOffsetInBytes];
-        var expected = new string('a', 2047) + "😀��";
-        if (textOutput) Assert.Equal(expected, regex.SubnToString(input, values, callback).ResultText);
-        else Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Subn(input, values, callback).ResultBytes);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CompletedByteCallbackOutputRejectsMalformedBytesAndCanJoinFragments(bool controlled)
-    {
-        using var regex = new Utf8PythonRegex("(.)", resourcePolicy: controlled ? new()
-        { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default);
-        var input = "xy"u8.ToArray();
-        Utf8PythonUtf8MatchEvaluator<int> malformed = static (_, match) => match.Value.StartOffsetInBytes == 0 ? "a"u8.ToArray() : [0xff];
-        var error = Assert.Throws<ArgumentException>(() => regex.Subn(input, 0, malformed));
-        Assert.Contains("byte offset 1", error.Message);
-        byte[][] parts = [[.. Encoding.UTF8.GetBytes(new string('a', 2047)), 0xe2], [0x82, 0xac]];
-        Utf8PythonUtf8MatchEvaluator<byte[][]> fragments = static (state, match) => state[match.Value.StartOffsetInBytes];
-        var result = regex.Subn(input, parts, fragments);
-        Assert.Equal(Encoding.UTF8.GetBytes(new string('a', 2047) + "€"), result.ResultBytes);
-        Assert.Equal(2, result.ReplacementCount);
-        parts[1] = [0x82];
-        error = Assert.Throws<ArgumentException>(() => regex.Subn(input, parts, fragments));
-        Assert.Contains("byte offset 2047", error.Message);
-        Assert.Equal("xy", regex.SubnToString(input, @"\1").ResultText);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void NativeLiteralOutputKeepsItsLoanThroughStringProjection(bool textOutput)
+    public void NativeLiteralByteOutputKeepsItsLoanUntilPublication()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("foo");
         var invocation = new Utf8SliceInvocation(new(0, 0, 13 + 48 + 64), Regex.InfiniteMatchTimeout, CancellationToken.None);
@@ -267,14 +136,7 @@ public sealed class PythonReSubstitutionOutputTests
             Assert.NotNull(bytes);
             Assert.Equal(2, count); Assert.Equal("😀 😀é"u8.ToArray(), bytes);
             Assert.Equal(48UL, results.ReservedBytes); Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
-            if (textOutput)
-            {
-                var text = results.DecodeUtf8(bytes, null, ref invocation);
-                Assert.Equal("😀 😀é", text);
-                Assert.Equal(125UL, invocation.Ledger.ReservedBytes);
-                results.ReleaseArray(bytes, ref invocation);
-                Assert.Equal(77UL, invocation.Ledger.ReservedBytes);
-            }
+
         }
         finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
@@ -296,7 +158,6 @@ public sealed class PythonReSubstitutionOutputTests
             Assert.Equal(0, count);
             Assert.Equal(0UL, results.ReservedBytes);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.Equal("é😀 dog", results.DecodeUtf8(input, null, ref invocation));
         }
         finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
@@ -309,40 +170,15 @@ public sealed class PythonReSubstitutionOutputTests
     [InlineData("é😀 cat 中 cat", "😀é", 0, "é😀 😀é 中 😀é", 2)]
     [InlineData("catcaté", "", 0, "é", 2)]
     [InlineData("catcaté", "😀", 1, "😀caté", 1)]
-    public void LiteralByteAndStringOutputsKeepUnicodeCountsAndOwnedCopies(
+    public void LiteralByteOutputsKeepUnicodeCountsAndOwnedCopies(
         string text, string replacement, int limit, string expected, int replacements)
     {
         var regex = new Utf8PythonRegex("cat");
         var input = Encoding.UTF8.GetBytes(text);
-        var result = regex.SubnToString(input, replacement, limit);
-        Assert.Equal(expected, result.ResultText);
-        Assert.Equal(replacements, result.ReplacementCount);
         var bytes = regex.Subn(input, replacement, limit);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
         Assert.Equal(replacements, bytes.ReplacementCount);
         input.AsSpan().Fill((byte)'x');
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
-    }
-
-    [Theory]
-    [InlineData(5)] [InlineData(1 << 20)]
-    public void CallbackCancellationPrecedesEncodingItsReturnedString(int length)
-    {
-        var regex = new Utf8PythonRegex("(.)");
-        var input = "x"u8.ToArray();
-        var text = new string('é', length);
-        Utf8PythonMatchEvaluator<(CancellationTokenSource Source, string Text)> evaluator = static (state, _) =>
-        {
-            state.Source.Cancel();
-            return state.Text;
-        };
-        using (var warm = new CancellationTokenSource())
-            Assert.Throws<OperationCanceledException>(() => regex.Subn(input, (warm, text), evaluator, 0, 0, warm.Token));
-        using var source = new CancellationTokenSource();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.Subn(input, (source, text), evaluator, 0, 0, source.Token));
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(source.Token, failure.CancellationToken);
-        Assert.True(allocated < 65536, $"Canceled output allocated {allocated} bytes before observing the callback token.");
     }
 }

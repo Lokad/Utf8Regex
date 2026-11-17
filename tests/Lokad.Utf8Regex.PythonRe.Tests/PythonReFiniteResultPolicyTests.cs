@@ -8,7 +8,7 @@ public sealed class PythonReFiniteResultPolicyTests
 {
     [Theory]
     [InlineData(0)] [InlineData(11)] [InlineData(13)] [InlineData(15)]
-    [InlineData(17)] [InlineData(18)] [InlineData(20)] [InlineData(22)]
+    [InlineData(17)] [InlineData(18)] [InlineData(21)]
     public void ByteBoundedTimeoutOmitsSubjectAcrossPreparationAndResultOwners(int operation)
     {
         var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
@@ -228,31 +228,6 @@ public sealed class PythonReFiniteResultPolicyTests
         var context = regex.SearchDetailed("😀a"u8);
         Assert.Equal("", System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
         Assert.NotEmpty(Create("(?P<x>a)", 1).GetGroupNames());
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CallbackExpansionUsesTheOriginalCapacityAndAllowsIndependentOperations(bool bytes)
-    {
-        var called = false;
-        var regex = Create("a", 4096);
-        if (bytes) Denied(() => regex.Subn("a"u8, 0, (_, _) =>
-        { called = true; return new byte[1000000]; }, 0, 0), 4096);
-        else Denied(() => regex.SubnToString("a"u8, 0, (_, _) =>
-        { called = true; return new string('é', 1000000); }, 0, 0), 4096);
-        Assert.True(called);
-        Assert.Equal("small", regex.ReplaceToString("a"u8, "small"));
-        Assert.Equal("small"u8.ToArray(), regex.Replace("a"u8, "small"));
-    }
-
-    [Fact]
-    public void CallbackCancellationPrecedesTheReturnedExpansionDenial()
-    {
-        using var source = new CancellationTokenSource();
-        var regex = Create("a", 4096);
-        var canceled = Assert.Throws<OperationCanceledException>(() => regex.SubnToString("a"u8, source, (state, _) =>
-        { state.Cancel(); return new string('x', 1000000); }, 0, 0, source.Token));
-        Assert.Equal(source.Token, canceled.CancellationToken);
     }
 
     [Fact]

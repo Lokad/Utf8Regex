@@ -30,7 +30,7 @@ public sealed class PythonReTemplateInvocationWorkTests
         var spent = parent.Budget.WorkSteps;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (text) _ = regex.ReplaceToString([], template);
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace([], template));
             else _ = regex.Replace([], template);
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
@@ -77,7 +77,7 @@ public sealed class PythonReTemplateInvocationWorkTests
         var retained = prepare([], template, funded, default, out _);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (text) _ = regex.ReplaceToString([], template);
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace([], template));
             else _ = regex.Replace([], template);
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);

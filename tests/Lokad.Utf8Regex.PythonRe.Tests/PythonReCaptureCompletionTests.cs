@@ -129,7 +129,7 @@ public sealed class PythonReCaptureCompletionTests
     }
     [Theory]
     [MemberData(nameof(GlobalCases))]
-    public void GlobalCursorAliasesAndCallbacksPublishCompleteRetainableCaptures(int id, string json)
+    public void GlobalCursorAliasesPublishCompleteRetainableCaptures(int id, string json)
     {
         using var document = JsonDocument.Parse(json); var row = document.RootElement;
         var regex = new Utf8PythonRegex(row.GetProperty("pattern").GetString()!);
@@ -149,15 +149,10 @@ public sealed class PythonReCaptureCompletionTests
             }
             Assert.False(alias.MoveNext());
         }
-        var callbacks = new List<Utf8PythonDetailedMatchData>();
-        var replaced = regex.Subn(input, callbacks, static (list, match) => { list.Add(match); return "#"; });
-        Assert.Equal(array.Length, replaced.ReplacementCount);
-        Assert.Equal(array.Length, callbacks.Count);
         for (var index = 0; index < array.Length; index++)
         {
             AssertOwned(expected[index], array[index]);
             AssertOwned(expected[index], retained[index]);
-            AssertOwned(expected[index], callbacks[index]);
         }
     }
     [Theory]

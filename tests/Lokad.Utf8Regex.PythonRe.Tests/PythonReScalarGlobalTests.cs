@@ -69,28 +69,17 @@ public sealed partial class PythonReScalarGlobalTests
             Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, limit, start, token)));
             var resultText = e.GetProperty("replacement").GetString();
             var resultCount = e.GetProperty("replacement_count").GetInt32();
-            Assert.Equal(resultText, regex.ReplaceToString(input, replacement, limit, start, token));
             Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Replace(input, replacement, limit, start, token)));
-            var subn = regex.SubnToString(input, replacement, limit, start, token);
-            Assert.Equal(resultText, subn.ResultText);
-            Assert.Equal(resultCount, subn.ReplacementCount);
             var bytes = regex.Subn(input, replacement, limit, start, token);
             Assert.Equal(resultText, Encoding.UTF8.GetString(bytes.ResultBytes));
             Assert.Equal(resultCount, bytes.ReplacementCount);
-            Utf8PythonMatchEvaluator<int> evaluator = static (_, match) => "<" + string.Join("|", match.Groups.Select(static group => group.ValueText)) + ">";
-            Utf8PythonUtf8MatchEvaluator<int> utf8Evaluator = (_, match) => Encoding.UTF8.GetBytes(evaluator(0, match));
-            Assert.Equal(resultText, regex.ReplaceToString(input, 0, evaluator, limit, start, token));
-            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Replace(input, 0, evaluator, limit, start, token)));
-            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Replace(input, 0, utf8Evaluator, limit, start, token)));
-            Assert.Equal(resultText, regex.SubnToString(input, 0, evaluator, limit, start, token).ResultText);
-            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Subn(input, 0, evaluator, limit, start, token).ResultBytes));
-            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Subn(input, 0, utf8Evaluator, limit, start, token).ResultBytes));
+
         }
     }
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(3)] [InlineData(4)]
-    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)]
+    [InlineData(6)] [InlineData(8)] [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
         var regex = new Utf8PythonRegex("(?P<x>.)+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout);
@@ -114,9 +103,8 @@ public sealed partial class PythonReScalarGlobalTests
                     case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
                     case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
                     case 6: regex.Replace(input, "x", 0, 0, source.Token); break;
-                    case 7: regex.ReplaceToString(input, "x", 0, 0, source.Token); break;
                     case 8: regex.Subn(input, "x", 0, 0, source.Token); break;
-                    default: regex.SubnToString(input, "x", 0, 0, source.Token); break;
+                    default: PythonReSubstitutionAssert.Decode(regex.Subn(input, "x", 0, 0, source.Token)); break;
                 }
             });
             Assert.True(entered);
@@ -124,22 +112,5 @@ public sealed partial class PythonReScalarGlobalTests
         }
         finally { session.Complete(); }
         Assert.Single(regex.FindIterDetailed("\U0001f600\U0001f600"u8));
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void GlobalDeadlinePersistsAcrossEvaluatorCalls(bool utf8)
-    {
-        var regex = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(500));
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 8)));
-        var calls = 0;
-        Utf8PythonMatchEvaluator<int> evaluator = (_, match) => { calls++; Thread.Sleep(300); return match.Value.ValueText; };
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() =>
-        {
-            if (utf8) regex.Subn(input, 0, (int state, Utf8PythonDetailedMatchData match) => Encoding.UTF8.GetBytes(evaluator(state, match)), 0, 0);
-            else regex.SubnToString(input, 0, evaluator, 0, 0);
-        });
-        Assert.InRange(calls, 1, 2);
-        Assert.Equal(regex.MatchTimeout, failure.MatchTimeout);
     }
 }

@@ -93,21 +93,6 @@ public sealed class PythonReFundedProgramTests
         Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
     }
 
-    [Fact]
-    public void CallbackClosureDefersRefundThroughRequiredOutputProcessing()
-    {
-        var allowance = new Allowance(16 << 20); using var regex = Compile("(a)", allowance);
-        var held = allowance.Used;
-        var output = regex.SubnToString("aa"u8, regex, (expression, match) =>
-        {
-            var active = allowance.Used; Assert.True(active >= held);
-            expression.Dispose(); Assert.Equal(active, allowance.Used);
-            return match.Value.ValueText.ToUpperInvariant();
-        });
-        Assert.Equal("AA", output.ResultText); Assert.Equal(2, output.ReplacementCount);
-        Assert.Equal(0UL, allowance.Used);
-    }
-
     [Theory]
     [InlineData("(?P<x>a)")] [InlineData("a")] [InlineData("[a-z]+")]
     public void ClosedFundedExpressionsRejectEveryPublicOperationFamily(string pattern)
@@ -121,8 +106,7 @@ public sealed class PythonReFundedProgramTests
             () => regex.SearchDetailedData("a"u8), () => regex.MatchDetailedData("a"u8), () => regex.FullMatchDetailedData("a"u8),
             () => regex.FindAll("a"u8), () => regex.FindAllToUtf8("a"u8),
             () => regex.FindIterDetailed("a"u8), () => regex.SplitRanges("a"u8),
-            () => regex.Subn("a"u8, "x"), () => regex.SubnToString("a"u8, "x"),
-            () => regex.SubnToString("a"u8, 0, (_, _) => "x"), () => regex.Subn("a"u8, 0, (_, _) => "x"),
+            () => regex.Subn("a"u8, "x"),
             () => regex.CreateMatchCursor("a"u8.ToArray()),
         ];
         foreach (var operation in operations) Assert.Throws<ObjectDisposedException>(operation);

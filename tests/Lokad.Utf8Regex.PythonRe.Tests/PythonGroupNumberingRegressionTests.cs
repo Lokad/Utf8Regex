@@ -108,7 +108,7 @@ public sealed class PythonGroupNumberingRegressionTests
     public void ReplacementReferencesFollowPythonSlots(string pattern, string replacement, string input, string expected)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expected, regex.SubnToString(Utf8(input), replacement, 0).ResultText);
+        Assert.Equal(expected, PythonReSubstitutionAssert.Decode(regex.Subn(Utf8(input), replacement, 0)).ResultText);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Subn(Utf8(input), replacement, 0).ResultBytes));
     }
 
@@ -141,12 +141,15 @@ public sealed class PythonGroupNumberingRegressionTests
     }
 
     [Fact]
-    public void EvaluatorSnapshotsFollowPythonSlotOrder()
+    public void RangeCapturesFollowPythonSlotOrder()
     {
-        var regex = new Utf8PythonRegex("(?P<x>a)(b)");
-        Utf8PythonUtf8MatchEvaluator<string> evaluator = static (prefix, match) =>
-            Encoding.UTF8.GetBytes(prefix + match.Groups[1].ValueText + match.Groups[2].ValueText);
-        Assert.Equal("-ab", Encoding.UTF8.GetString(regex.Subn(Utf8("ab"), "-", evaluator).ResultBytes));
+        using var regex = new Utf8PythonRegex("(?P<x>a)(b)");
+        using var cursor = regex.CreateMatchCursor(Utf8("ab"));
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal("ab", Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal("a", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal("b", Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
+
     }
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)

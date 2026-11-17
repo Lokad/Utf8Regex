@@ -1817,6 +1817,8 @@ internal static partial class PythonReBenchmarkReporter
 
 internal sealed class PythonReBenchmarkContext
 {
+    private static readonly Func<PythonReBenchmarkContext, Utf8PythonRangeMatch, byte[]> s_hostConstantReplacement =
+        static (context, _) => context._replacementBytes;
     private static readonly UTF8Encoding s_strictUtf8 = new(false, true);
     private readonly PythonReBenchmarkCase _case;
     private readonly Utf8PythonRegex _pythonRegex;
@@ -2492,7 +2494,7 @@ internal sealed class PythonReBenchmarkContext
                 var result = string.Empty;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.ReplaceToString(InputBytes, _case.Replacement);
+                    result = Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement));
                 }
 
                 return Complete(
@@ -2520,10 +2522,10 @@ internal sealed class PythonReBenchmarkContext
                 var result = string.Empty;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.ReplaceToString(
+                    result = Encoding.UTF8.GetString(_pythonRegex.Replace(
                         InputBytes,
                         _case.Replacement,
-                        _case.Coverage.ReplacementCount);
+                        _case.Coverage.ReplacementCount));
                 }
 
                 return Complete(
@@ -2534,10 +2536,10 @@ internal sealed class PythonReBenchmarkContext
             }
             case PythonReBenchmarkOperation.SubnString:
             {
-                Utf8PythonSubnResult result = default;
+                PythonReSubnTextResult result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.SubnToString(InputBytes, _case.Replacement);
+                    result = PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement));
                 }
 
                 return Complete(
@@ -2562,14 +2564,14 @@ internal sealed class PythonReBenchmarkContext
             }
             case PythonReBenchmarkOperation.SubnEvaluatorString:
             {
-                Utf8PythonSubnResult result = default;
+                PythonReSubnTextResult result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                    result = _pythonRegex.SubnToString(InputBytes, this, static (context, _) => context._case.Replacement);
+                    result = PythonReSubnTextResult.Decode(ComposePythonReReplacement());
 
                 var completed = Stopwatch.GetTimestamp();
                 var allocated = GC.GetAllocatedBytesForCurrentThread();
                 // One untimed semantic replay retains callback capture evidence.
-                // The timed callback only returns its prepared replacement.
+                // The timed host loop copies its prepared replacement; capture replay is untimed.
                 _ = ExecutePythonReEvaluatorString();
                 return Complete(completed, allocated,
                     Combine(Checksum(result), _callbackChecksum),
@@ -2579,12 +2581,12 @@ internal sealed class PythonReBenchmarkContext
             {
                 Utf8PythonSubnUtf8Result result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                    result = _pythonRegex.Subn(InputBytes, this, static (context, _) => context._replacementBytes);
+                    result = ComposePythonReReplacement();
 
                 var completed = Stopwatch.GetTimestamp();
                 var allocated = GC.GetAllocatedBytesForCurrentThread();
                 // One untimed semantic replay retains callback capture evidence.
-                // The timed callback only returns its prepared replacement.
+                // The timed host loop copies its prepared replacement; capture replay is untimed.
                 _ = ExecutePythonReEvaluatorUtf8();
                 return Complete(completed, allocated,
                     Combine(Checksum(result), _callbackChecksum),
@@ -2594,12 +2596,12 @@ internal sealed class PythonReBenchmarkContext
             {
                 string result = string.Empty;
                 for (var iteration = 0; iteration < iterations; iteration++)
-                    result = _pythonRegex.ReplaceToString(InputBytes, this, static (context, _) => context._case.Replacement);
+                    result = Encoding.UTF8.GetString(ComposePythonReReplacement().ResultBytes);
 
                 var completed = Stopwatch.GetTimestamp();
                 var allocated = GC.GetAllocatedBytesForCurrentThread();
                 // One untimed semantic replay retains callback capture evidence.
-                // The timed callback only returns its prepared replacement.
+                // The timed host loop copies its prepared replacement; capture replay is untimed.
                 _ = ExecutePythonReReplaceEvaluatorString();
                 return Complete(completed, allocated,
                     Combine(Checksum(result), _callbackChecksum),
@@ -2754,13 +2756,13 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
         PythonReBenchmarkOperation.FindIterDetailed => Checksum(_pythonRegex.FindIterDetailed(InputBytes)),
         PythonReBenchmarkOperation.FindAllStructural => Checksum(_pythonRegex.FindAll(InputBytes)),
-        PythonReBenchmarkOperation.ReplaceString => Checksum(_pythonRegex.ReplaceToString(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(_pythonRegex.ReplaceToString(
+        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
             InputBytes,
             _case.Replacement,
-            _case.Coverage.ReplacementCount)),
-        PythonReBenchmarkOperation.SubnString => Checksum(_pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+            _case.Coverage.ReplacementCount))),
+        PythonReBenchmarkOperation.SubnString => Checksum(PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),
@@ -2814,16 +2816,16 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.FindAll(InputBytes)),
         PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
             _case.Operation,
-            _pythonRegex.ReplaceToString(InputBytes, _case.Replacement)),
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
             _case.Operation,
             _pythonRegex.Replace(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.ReplaceStringLimited => SemanticDigest(
             _case.Operation,
-            _pythonRegex.ReplaceToString(InputBytes, _case.Replacement, _case.Coverage.ReplacementCount)),
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement, _case.Coverage.ReplacementCount))),
         PythonReBenchmarkOperation.SubnString => SemanticDigest(
             _case.Operation,
-            _pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+            PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
             _case.Operation,
             _pythonRegex.Subn(InputBytes, _case.Replacement)),
@@ -3503,7 +3505,7 @@ var indexInBytes = match.StartOffsetInBytes;
         return _case.Operation switch
         {
             PythonReBenchmarkOperation.ReplaceString => new(
-                _pythonRegex.ReplaceToString(InputBytes, _case.Replacement),
+                Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement)),
                 null,
                 null),
             PythonReBenchmarkOperation.ReplaceUtf8 => new(
@@ -3511,14 +3513,14 @@ var indexInBytes = match.StartOffsetInBytes;
                 _pythonRegex.Replace(InputBytes, _case.Replacement),
                 null),
             PythonReBenchmarkOperation.ReplaceStringLimited => new(
-                _pythonRegex.ReplaceToString(
+                Encoding.UTF8.GetString(_pythonRegex.Replace(
                     InputBytes,
                     _case.Replacement,
-                    _case.Coverage.ReplacementCount),
+                    _case.Coverage.ReplacementCount)),
                 null,
                 null),
             PythonReBenchmarkOperation.SubnString => CreateStringReplacementResult(
-                _pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+                PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
             PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
                 _pythonRegex.Subn(InputBytes, _case.Replacement)),
             _ => throw new InvalidOperationException(),
@@ -3698,7 +3700,7 @@ var indexInBytes = match.StartOffsetInBytes;
         : new PythonReBenchmarkReplacementResult(resultText, null, replacementCount);
 
     private static PythonReBenchmarkReplacementResult CreateStringReplacementResult(
-        Utf8PythonSubnResult result) => new(
+        PythonReSubnTextResult result) => new(
             result.ResultText,
             null,
             result.ReplacementCount);
@@ -3979,19 +3981,57 @@ var indexInBytes = match.StartOffsetInBytes;
     private Utf8Regex GetCoreFindAllRegex() => _coreFindAllRegex ??
         throw new InvalidOperationException("Capture-free FindAll phase controls are not available for this case.");
 
+    // Host-owned composition for constant-replacement callback comparisons.
+    // Regex admission/interruption covers advances; host output is outside that policy.
+    private Utf8PythonSubnUtf8Result ComposePythonReReplacement(Action<Utf8PythonDetailedMatchData>? observe = null)
+    {
+        using var cursor = _pythonRegex.CreateMatchCursor(InputBytes);
+        var writer = new System.Buffers.ArrayBufferWriter<byte>();
+        var last = 0;
+        var replaced = 0;
+        while (cursor.MoveNext(out var match))
+        {
+            Append(InputBytes.AsSpan(last, match.Value.StartOffsetInBytes - last));
+            if (observe is not null)
+            {
+                var groups = new Utf8PythonGroupMatchData[match.Groups.Length];
+                for (var number = 0; number < groups.Length; number++)
+                {
+                    var range = match.Groups[number];
+                    groups[number] = new Utf8PythonGroupMatchData
+                    {
+                        Number = range.Number, Success = range.Success,
+                        StartOffsetInBytes = range.StartOffsetInBytes, EndOffsetInBytes = range.EndOffsetInBytes,
+                        ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span)
+                    };
+                }
+                observe(new Utf8PythonDetailedMatchData { Groups = groups, NameEntries = match.NameEntries.ToArray(), LastIndex = match.LastIndex });
+            }
+            Append(s_hostConstantReplacement(this, match));
+            last = match.Value.EndOffsetInBytes;
+            replaced++;
+        }
+        Append(InputBytes.AsSpan(last));
+        return new Utf8PythonSubnUtf8Result { ResultBytes = writer.WrittenSpan.ToArray(), ReplacementCount = replaced };
+
+        void Append(ReadOnlySpan<byte> bytes)
+        {
+            bytes.CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+        }
+    }
+
+    private void ObservePythonReMatch(Utf8PythonDetailedMatchData match)
+    {
+        _callbackChecksum = Combine(_callbackChecksum, Checksum(match));
+        _callbackSemanticDigest = ExtendCallbackSemanticDigest(_callbackSemanticDigest, match);
+    }
+
     private int ExecutePythonReEvaluatorString()
     {
         _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.SubnToString(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
-                return context._case.Replacement;
-            });
+        var result = PythonReSubnTextResult.Decode(ComposePythonReReplacement(ObservePythonReMatch));
         return Combine(Checksum(result), _callbackChecksum);
     }
 
@@ -3999,15 +4039,7 @@ var indexInBytes = match.StartOffsetInBytes;
     {
         _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.Subn(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
-                return context._replacementBytes;
-            });
+        var result = ComposePythonReReplacement(ObservePythonReMatch);
         return Combine(Checksum(result), _callbackChecksum);
     }
 
@@ -4015,63 +4047,31 @@ var indexInBytes = match.StartOffsetInBytes;
     {
         _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.ReplaceToString(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(context._callbackSemanticDigest, match);
-                return context._case.Replacement;
-            });
+        var result = Encoding.UTF8.GetString(ComposePythonReReplacement(ObservePythonReMatch).ResultBytes);
         return Combine(Checksum(result), _callbackChecksum);
     }
 
     private ulong ExecutePythonReEvaluatorStringSemanticDigest()
     {
+        _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.SubnToString(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                    context._callbackSemanticDigest,
-                    match);
-                return context._case.Replacement;
-            });
+        var result = PythonReSubnTextResult.Decode(ComposePythonReReplacement(ObservePythonReMatch));
         return SemanticDigest(_case.Operation, result, _callbackSemanticDigest);
     }
 
     private ulong ExecutePythonReEvaluatorUtf8SemanticDigest()
     {
+        _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.Subn(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                    context._callbackSemanticDigest,
-                    match);
-                return context._replacementBytes;
-            });
+        var result = ComposePythonReReplacement(ObservePythonReMatch);
         return SemanticDigest(_case.Operation, result, _callbackSemanticDigest);
     }
 
     private ulong ExecutePythonReReplaceEvaluatorStringSemanticDigest()
     {
+        _callbackChecksum = 0;
         _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
-        var result = _pythonRegex.ReplaceToString(
-            InputBytes,
-            this,
-            static (context, match) =>
-            {
-                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
-                    context._callbackSemanticDigest,
-                    match);
-                return context._case.Replacement;
-            });
+        var result = Encoding.UTF8.GetString(ComposePythonReReplacement(ObservePythonReMatch).ResultBytes);
         return SemanticDigest(_case.Operation, result, _callbackSemanticDigest);
     }
 
@@ -4688,7 +4688,7 @@ var indexInBytes = match.StartOffsetInBytes;
 
     private static ulong SemanticDigest(
         PythonReBenchmarkOperation operation,
-        Utf8PythonSubnResult result)
+        PythonReSubnTextResult result)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
         digest.AddString(result.ResultText);
@@ -4698,7 +4698,7 @@ var indexInBytes = match.StartOffsetInBytes;
 
     private static ulong SemanticDigest(
         PythonReBenchmarkOperation operation,
-        Utf8PythonSubnResult result,
+        PythonReSubnTextResult result,
         ulong callbackSemanticDigest)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
@@ -4985,7 +4985,7 @@ var indexInBytes = match.StartOffsetInBytes;
         return checksum;
     }
 
-    private static int Checksum(Utf8PythonSubnResult result) =>
+    private static int Checksum(PythonReSubnTextResult result) =>
         Combine(Checksum(result.ResultText), result.ReplacementCount);
 
     private static int Checksum(Utf8PythonSubnUtf8Result result) =>
@@ -5416,4 +5416,13 @@ internal readonly struct PythonReFindAllTextResult
         ScalarValues = result.ScalarValues.Select(value => Encoding.UTF8.GetString(value)).ToArray(),
         TupleValues = result.TupleValues.Select(tuple => tuple.Select(value => Encoding.UTF8.GetString(value)).ToArray()).ToArray()
     };
+}
+
+// Benchmark-host text shaping; byte-template admission ends before this decoding.
+internal readonly struct PythonReSubnTextResult
+{
+    public string ResultText { get; init; }
+    public int ReplacementCount { get; init; }
+    public static PythonReSubnTextResult Decode(Utf8PythonSubnUtf8Result result) => new()
+    { ResultText = Encoding.UTF8.GetString(result.ResultBytes), ReplacementCount = result.ReplacementCount };
 }

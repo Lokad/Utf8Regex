@@ -782,34 +782,12 @@ internal struct PythonReScalarMatchState
             throw new InvalidOperationException("Python output exceeded the working storage budget.");
     }
 
-    internal void AppendText(scoped ref Utf8SliceOutputWriter writer, string text)
-    {
-        // Observe a callback's token/deadline before scanning its return.
-        Checkpoint();
-        if (!writer.AppendUtf16(text.AsSpan(0, text.Length), ref _invocation))
-            throw new InvalidOperationException("Python output exceeded the working storage budget.");
-    }
-
-    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput)
+    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer)
     {
         Checkpoint();
-        // Byte output needs strict completed-stream validity, without unused
-        // UTF-16 length or supplementary-scalar metadata.
-        if (validateOutput) Utf8Validation.ThrowIfInvalidOnly(writer.WrittenBytes, ref _invocation);
+        // Strict templates and scalar-aligned captures already form valid UTF-8.
         var result = AllocateResultArray<byte>(writer.Length);
         CopyBytes(writer.WrittenBytes, result);
-        writer.Release(ref _invocation);
-        return result;
-    }
-
-    internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer)
-    {
-        Checkpoint();
-        // Text templates and encoded string callbacks assemble valid scalar
-        // fragments. Reuse bounded sizing/admission without validating them again.
-        // Raw byte callbacks retain their completed-stream check above.
-        var result = _results.DecodeUtf8(writer.WrittenBytes, null, ref _invocation);
-        Checkpoint();
         writer.Release(ref _invocation);
         return result;
     }

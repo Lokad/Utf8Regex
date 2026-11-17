@@ -26,7 +26,7 @@ public sealed class PythonReFixedPolicyPreparationTests
         Assert.Equal(3, regex.Count(input));
         PythonReMatchAssert.Equal("abc", regex.Search(input));
         Assert.Equal(["abc", "xyz", "abc"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal("é😀 ! ! !", regex.ReplaceToString(input, "!"));
+        Assert.Equal("é😀 ! ! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
         Assert.Equal("abc", regex.SearchDetailedData(input).Value.ValueText);
         Assert.True(regex.FullMatch("xyz"u8).Success);
         using var canceled = new CancellationTokenSource();

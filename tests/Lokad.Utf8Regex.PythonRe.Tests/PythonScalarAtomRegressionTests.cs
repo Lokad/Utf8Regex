@@ -39,7 +39,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(0).Value.GetValueBytes()));
         Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(new[] { "\U0001f600]", "x]" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
+        Assert.Equal("<_><_>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>")));
     }
 
     [Theory]

@@ -63,7 +63,7 @@ public sealed class PythonReDiagnosticTests
         {
             var template = prefix + suffix;
             var bytes = Assert.Throws<PythonRePatternException>(() => regex.Subn(input, template));
-            var text = Assert.Throws<PythonRePatternException>(() => regex.SubnToString(input, template));
+            var text = Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
             foreach (var error in new[] { bytes, text })
             {
                 Assert.Equal(PythonReErrorSource.Replacement, error.ErrorSource);
@@ -83,13 +83,13 @@ public sealed class PythonReDiagnosticTests
         Assert.Equal(17UL, account.Used);
         using var regex = Utf8PythonRegex.Compile("(?P<x>a)", default, Timeout.InfiniteTimeSpan,
             default, default, Timeout.InfiniteTimeSpan, default, account);
-        Assert.Equal("a!", regex.SubnToString("a"u8, @"\g<x>!").ResultText); var held = account.Used;
+        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText); var held = account.Used;
         var replacement = new string('x', 131072) + "é😀" + @"\q";
         failure = Assert.Throws<PythonRePatternException>(() => regex.SubnRetained(""u8, replacement));
         Assert.Equal(PythonReErrorSource.Replacement, failure.ErrorSource);
         Assert.Equal(PythonReErrorKind.Syntax, failure.ErrorKind); Assert.Equal(131075, failure.Position);
         Assert.Equal(held, account.Used);
-        Assert.Equal("a!", regex.SubnToString("a"u8, @"\g<x>!").ResultText);
+        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText);
         Assert.Equal(held, account.Used);
         using var token = new CancellationTokenSource(); account.AfterGrant = token.Cancel;
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>

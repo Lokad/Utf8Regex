@@ -54,8 +54,8 @@ public sealed class PythonReUnicodeBoundaryTests
                     AssertRange(control.FullMatch(input, offset), actual.FullMatch(input, offset));
                     foreach (var limit in new[] { 0, 1, 2 })
                         Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
-                    Assert.Equal(control.SubnToString(input, "-", 0, offset, token.Token).ResultText,
-                        actual.SubnToString(input, "-", 0, offset, token.Token).ResultText);
+                    Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,
+                        PythonReSubstitutionAssert.Decode(actual.Subn(input, "-", 0, offset, token.Token)).ResultText);
                     if (offset == input.Length) break;
                     Rune.DecodeFromUtf8(input.AsSpan(offset), out _, out var width); offset += width;
                 }

@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe callback replacement, evaluator delegates and string substitution
+  output. Byte-template Replace/Subn and retained byte results remain; hosts use
+  the range cursor for custom output and decode returned bytes when needed.
+
 - Remove PythonRe FindAllToStrings and its text-only construction/canonicalization
   machinery. FindAllToUtf8 retains Python-shaped owned byte results.
 

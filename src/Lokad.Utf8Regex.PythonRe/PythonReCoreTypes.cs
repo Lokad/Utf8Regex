@@ -108,16 +108,6 @@ public readonly struct Utf8PythonFindAllUtf8Result
         : ScalarValues?.Length ?? 0;
 }
 
-/// <summary>Contains the UTF-16 result and replacement count from a CPython <c>subn</c> operation.</summary>
-public readonly struct Utf8PythonSubnResult
-{
-    /// <summary>Gets the replaced UTF-16 text.</summary>
-    public string ResultText { get; init; }
-
-    /// <summary>Gets the number of substitutions performed.</summary>
-    public int ReplacementCount { get; init; }
-}
-
 /// <summary>Contains the UTF-8 result and replacement count from a CPython <c>subn</c> operation.</summary>
 public readonly struct Utf8PythonSubnUtf8Result
 {
@@ -212,12 +202,6 @@ public readonly struct Utf8PythonDetailedMatchData
         return false;
     }
 }
-
-/// <summary>Represents a stateful callback that returns UTF-16 replacement text for one detailed match.</summary>
-public delegate string Utf8PythonMatchEvaluator<in TState>(TState state, Utf8PythonDetailedMatchData match);
-
-/// <summary>Represents a stateful callback that returns well-formed UTF-8 replacement bytes for one detailed match.</summary>
-public delegate byte[] Utf8PythonUtf8MatchEvaluator<in TState>(TState state, Utf8PythonDetailedMatchData match);
 
 /// <summary>Provides a stack-only view of one Python capture group over the original UTF-8 input.</summary>
 /// <remarks>The context and returned spans must not outlive the input supplied to the matching operation.</remarks>

@@ -3,7 +3,6 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-internal delegate void PythonReScalarReplacementAppender<TState>(ReadOnlySpan<byte> input, TState state, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer);
 
 /// <summary>Shared scalar discovery for Python global operations.</summary>
 public sealed partial class Utf8PythonRegex
@@ -344,14 +343,12 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
-    private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
-        PythonReScalarReplacementAppender<TState> appendReplacement, int count, int startOffsetInBytes,
-        Utf8SliceInvocation invocation, bool textOutput, bool validateOutput,
-        out Utf8PythonSubnUtf8Result bytesResult, out Utf8PythonSubnResult textResult,
+    private void SubstituteScalar(ReadOnlySpan<byte> input, PythonReReplacementPlan plan,
+        int count, int startOffsetInBytes, Utf8SliceInvocation invocation,
+        out Utf8PythonSubnUtf8Result bytesResult,
         out Utf8PythonRetainedSubnResult? retained, bool retain = false)
     {
         bytesResult = default;
-        textResult = default;
         retained = null;
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var cursor = new PythonReScalarMatchCursor(input, ScalarProgram,
@@ -366,27 +363,17 @@ public sealed partial class Utf8PythonRegex
                 // A miss needs only its final owned copy, with no output staging.
                 if (replaced == 0) writer = cursor.CreateOutputWriter();
                 cursor.AppendBytes(ref writer, input[last..cursor.StartOffsetInBytes]);
-                var resultMarker = cursor.ResultReservation;
-                try
-                {
-                    appendReplacement(input, state, ref cursor, ref writer);
-                    cursor.Checkpoint();
-                }
-                finally { cursor.ReleaseResultsSince(resultMarker); }
+                plan.AppendToUtf8(input, ref cursor, ref writer);
+                cursor.Checkpoint();
                 last = cursor.EndOffsetInBytes;
                 replaced++;
             }
             if (replaced != 0) cursor.AppendBytes(ref writer, input[last..]);
             var publicationMarker = cursor.ResultReservation;
-            byte[] completedBytes = [];
-            string completedText = string.Empty;
-            if (textOutput) completedText = replaced == 0 ? cursor.GetText(0, input.Length)
-                : cursor.CompleteOutputText(ref writer);
-            else completedBytes = replaced == 0 ? cursor.GetBytes(0, input.Length)
-                : cursor.CompleteOutputBytes(ref writer, validateOutput);
+            var completedBytes = replaced == 0 ? cursor.GetBytes(0, input.Length)
+                : cursor.CompleteOutputBytes(ref writer);
             cursor.Checkpoint();
-            if (textOutput) textResult = new Utf8PythonSubnResult { ResultText = completedText, ReplacementCount = replaced };
-            else bytesResult = new Utf8PythonSubnUtf8Result { ResultBytes = completedBytes, ReplacementCount = replaced };
+            bytesResult = new Utf8PythonSubnUtf8Result { ResultBytes = completedBytes, ReplacementCount = replaced };
             if (retain)
             {
                 var receipt = cursor.RetainSubstitution(bytesResult);

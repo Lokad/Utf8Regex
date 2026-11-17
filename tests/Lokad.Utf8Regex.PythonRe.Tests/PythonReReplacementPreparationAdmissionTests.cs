@@ -212,14 +212,14 @@ public sealed class PythonReReplacementPreparationAdmissionTests
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Assert.Throws<PythonRePatternException>(() => regex.Replace(input, template));
-                Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString(input, template));
-                Assert.Throws<PythonRePatternException>(() => regex.SubnToString(input, template));
+                Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace(input, template)));
+                Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
                 Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
             }
             Assert.Equal("😀a", retained.Value.ValueText);
             Assert.Equal("😀", retained.Groups[1].ValueText);
-            Assert.Equal("😀", regex.ReplaceToString(input, @"\g<00000000000000000000001>"));
-            Assert.Equal("😀a", regex.ReplaceToString(input, @"\g<00000000000000000000000>"));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000001>")));
+            Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000000>")));
             Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
         }
     }
@@ -249,11 +249,11 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template));
-        Assert.Equal(expected, regex.ReplaceToString(input, template));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template)));
         var bytes = regex.Subn(input, template);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
         Assert.Equal(count, bytes.ReplacementCount);
-        var text = regex.SubnToString(input, template);
+        var text = PythonReSubstitutionAssert.Decode(regex.Subn(input, template));
         Assert.Equal(expected, text.ResultText);
         Assert.Equal(count, text.ReplacementCount);
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);

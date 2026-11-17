@@ -37,7 +37,7 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 | FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
 | FindIterDetailed | Materialized owned snapshots |
 | CreateMatchCursor | Incremental detailed snapshots over ReadOnlyMemory<byte>; explicit disposal on early stop |
-| Replace / Subn | Python template or detailed text/UTF-8 callback output; Subn includes replacement count |
+| Replace / Subn | Python template expansion into owned UTF-8 bytes; Subn includes replacement count |
 | SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
@@ -458,7 +458,7 @@ neither historical allocation traffic nor the private cache maximum is charged.
 
 Funded expressions also use that account by default for covered temporary
 execution storage and result staging across matching, detailed/text projections,
-global operations, substitution callbacks and cursor creation/advances. Covered
+global operations, template substitution and cursor creation/advances. Covered
 growth overlap is admitted before acquisition. Synchronous completion, failure
 and cursor disposal refund exclusive temporary loans; retained program/cache
 charges remain. Exact literal boolean/Count paths need no major workspace and
@@ -474,7 +474,7 @@ objects, borrowed input and caller-retained output remain outside these scopes.
 Ordinary output is funded through staging/publication; ownership and admission
 after return remain the caller's responsibility. The retained range and UTF-8
 template substitution APIs below can instead keep their result charges on that
-account. Retained text, bulk and callback output transfer is not implemented.
+account. Retained detailed text and bulk output transfer is not implemented.
 This is not exact heap/RSS or
 a process-memory bound.
 
@@ -538,8 +538,9 @@ The previously rejected program-sharing prototype is not delivered.
 Value results and borrowed capture contexts copy selected scalar byte endpoints
 without scanning their prefix or content for coordinates. Owned detailed results
 size and decode only requested captured text. No scalar-coordinate index is kept.
-Substitutions still copy required output and validate assembled raw-byte callback
-output. Returned arrays and strings consume modeled result capacity independently.
+Template substitutions copy required output from encoded template literals and
+scalar-aligned captures. Returned arrays and detailed strings consume modeled
+result capacity independently.
 Deleting coordinate scans/storage can lower numerical limits; selected-content
 string sizing can change its conservative capacity charge. Positive extents still
 require admission before allocation. Captures equal to group zero may reuse its
@@ -579,10 +580,11 @@ parent loans without refunding spent work; one caller's interruption cannot beco
 another waiter's authority. These scopes do not combine invocation, preparation
 and cache retention into a total memory bound.
 
-Callbacks must be non-null even on misses; pre-cancellation wins.
-Checks surround caller execution, which cannot be preempted. Required return
-copying/encoding remains admitted; arbitrary callback allocations and later host
-decoding do not. Borrowed result views expose bytes; they have no string getters.
+Callback replacement, evaluator delegates and string substitution output are
+removed. Byte-template output keeps admitted copying, original interruption and
+publication checks. For custom output, hosts advance the range cursor and own
+their buffers, computation and final cancellation/publication checks. Host work
+and decoding are outside regex controls. Borrowed views expose bytes only.
 
 ## Cursor and result lifetime
 
@@ -658,21 +660,13 @@ while (cursor.MoveNextRetained(out var retained, cancellationToken))
 }
 ```
 
-String substitution output assembled from valid scalar slices and validated or
-repaired text fragments needs no second validity pass. Unknown short output uses
-the conservative byte-derived string charge described above; larger output retains
-bounded sizing/decoding. Completed byte-callback output remains independently
-validated for validity only, allowing valid scalars to join across fragments and
-rejecting malformed output without computing unused UTF-16 length/supplementary
-metadata. Original interruption, admission, ownership and result lifetimes remain.
-
-String callbacks of at most 2048 UTF-16 units can encode directly into already
-admitted output capacity when three bytes per unit fit. That bound includes
-isolated-surrogate repair. No sizing pass or growth is needed in that case;
-other fragments retain exact sizing and bounded encoding. Entry, encoding,
-completion and operation publication checks remain under the original invocation.
-Numerical work can decrease by the omitted sizing-block step; buffer admission
-and result charges are unchanged.
+Byte-template substitution copies valid encoded literals and scalar-aligned
+captures through an admitted writer and owned final byte array. It performs no
+UTF-16 sizing/decoding and has no raw callback fragments to validate. Strict
+template parsing/encoding remains independent of the trusted subject contract.
+The shared worker has one template operation; per-match snapshot loans, callback
+rollback and string completion are gone. Writer/final-root overlap, typed denial,
+original cancellation/deadline and retained-byte transfer remain enforced.
 
 `SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
 requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
@@ -691,7 +685,7 @@ before disposal. Dispose clears the receipt's payload references, closes later
 `Result` access and refunds once, including concurrent Dispose calls and aliases.
 Previously obtained byte arrays remain valid; the caller owns admission for
 continued retention after explicit release. No finalizer is involved. Retained
-text, bulk and callback output remain outside these two receipt APIs.
+owned detailed text and bulk output remain outside these two receipt APIs.
 
 `Replace`, `Subn` and `SubnRetained` also accept a `ReadOnlySpan<byte>` replacement
 template, with optional count, byte start and cancellation token. These are UTF-8

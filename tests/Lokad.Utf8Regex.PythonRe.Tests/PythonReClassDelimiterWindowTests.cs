@@ -145,7 +145,7 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(new[] { "item-123", "item", "123" }, first.Groups.Select(g => g.ValueText));
         Assert.Equal(2, owner.Count(input));
         Assert.Equal(new[] { "item", "123", "other", "45" }, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input)).TupleValues.SelectMany(row => row));
-        Assert.Equal(oracle.Replace(text, "$2:$1"), owner.ReplaceToString(input, @"\2:\1"));
+        Assert.Equal(oracle.Replace(text, "$2:$1"), System.Text.Encoding.UTF8.GetString(owner.Replace(input, @"\2:\1")));
         Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;
         Assert.True(owner.Match(input, floor).Success);
@@ -238,7 +238,7 @@ public sealed class PythonReClassDelimiterWindowTests
         using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
         var valid = Encoding.UTF8.GetBytes("😀" + new string('x', 256) + " item-123");
         Assert.Throws<ArgumentOutOfRangeException>(() => owner.Search(valid, 1));
-        Assert.Equal("😀" + new string('x', 256) + " 123:item", owner.ReplaceToString(valid, @"\2:\1"));
+        Assert.Equal("😀" + new string('x', 256) + " 123:item", System.Text.Encoding.UTF8.GetString(owner.Replace(valid, @"\2:\1")));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Search(valid, 0, token.Token)).CancellationToken);
     }

@@ -284,11 +284,10 @@ public sealed partial class Utf8PythonRegex
 
     private bool TryReplaceViaUtf8Literal(
         ReadOnlySpan<byte> input, PythonReReplacementPlan plan, int count, int startOffsetInBytes,
-        bool textOutput, ref Utf8SliceInvocation invocation, out byte[] resultBytes, out string resultText, out int replacementCount,
+        ref Utf8SliceInvocation invocation, out byte[] resultBytes, out int replacementCount,
         out Utf8PythonRetainedSubnResult? retained, bool retain = false)
     {
         resultBytes = [];
-        resultText = string.Empty;
         replacementCount = 0;
         retained = null;
         if (_canMatchEmpty || count < 0 || startOffsetInBytes != 0 ||
@@ -300,20 +299,13 @@ public sealed partial class Utf8PythonRegex
         {
             var bytes = _utf8Regex.ReplaceExactLiteralForResult(input, literalBytes,
                 count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced);
-            var text = string.Empty;
-            if (textOutput)
-            {
-                text = results.DecodeUtf8(bytes is null ? input : bytes, null, ref invocation);
-                if (bytes is not null) results.ReleaseArray(bytes, ref invocation);
-            }
-            else if (bytes is null)
+            if (bytes is null)
             {
                 bytes = results.AllocateArray<byte>(input.Length, ref invocation);
                 Utf8InvocationOutput.Copy(input, bytes, new Utf8InvocationBufferControl(ref invocation));
             }
             Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-            if (textOutput) resultText = text;
-            else resultBytes = bytes!;
+            resultBytes = bytes;
             replacementCount = replaced;
             if (retain)
             {

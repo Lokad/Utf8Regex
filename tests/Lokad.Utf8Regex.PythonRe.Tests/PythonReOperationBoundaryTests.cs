@@ -70,7 +70,7 @@ public sealed class PythonReOperationBoundaryTests
             case 5: _ = regex.FindAll(input, 0, token); break;
             case 7: _ = regex.FindAllToUtf8(input, 0, token); break;
             case 8: _ = regex.SplitRanges(input, 0, 0, token); break;
-            case 10: _ = regex.ReplaceToString(input, @"\2:\1", 0, 0, token); break;
+            case 10: _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1", 0, 0, token)); break;
             case 12: _ = regex.FullMatch(input, 0, token); break;
             case 13: _ = regex.Count(input, 0, token); break;
         }

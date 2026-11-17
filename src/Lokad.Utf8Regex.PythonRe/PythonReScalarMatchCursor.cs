@@ -25,7 +25,6 @@ internal ref struct PythonReScalarMatchCursor
     internal readonly ulong ResultReservation => _state.ResultReservation;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
     internal T[] AllocateResultArray<T>(int count) => _state.AllocateResultArray<T>(count);
-    internal void ReleaseResultsSince(ulong marker) => _state.ReleaseResultsSince(marker);
     internal ulong TransferResultsSince(ulong marker) => _state.TransferResultsSince(marker);
     internal Utf8PythonRetainedSubnResult RetainSubstitution(Utf8PythonSubnUtf8Result result) => _state.RetainSubstitution(result);
     internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value) => _state.AddResult(ref buffer, value);
@@ -43,9 +42,7 @@ internal ref struct PythonReScalarMatchCursor
     internal byte[] GetBytes(int start, int end) => _state.GetBytes(_input, start, end);
     internal Utf8SliceOutputWriter CreateOutputWriter() => _state.CreateOutputWriter();
     internal void AppendBytes(scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes) => _state.AppendBytes(ref writer, bytes);
-    internal void AppendText(scoped ref Utf8SliceOutputWriter writer, string text) => _state.AppendText(ref writer, text);
-    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput) => _state.CompleteOutputBytes(ref writer, validateOutput);
-    internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer) => _state.CompleteOutputText(ref writer);
+    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer) => _state.CompleteOutputBytes(ref writer);
     internal void ReleaseOutput(scoped ref Utf8SliceOutputWriter writer) => _state.ReleaseOutput(ref writer);
 
     internal readonly System.Text.RegularExpressions.RegexMatchTimeoutException TimeoutFailure() => _state.TimeoutFailure(_input);

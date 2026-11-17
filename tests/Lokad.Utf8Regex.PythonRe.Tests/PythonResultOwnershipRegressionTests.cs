@@ -77,23 +77,6 @@ public sealed class PythonResultOwnershipRegressionTests
         Assert.Equal("foo", found.Groups[1].ValueText);
     }
 
-    [Fact]
-    public void MutatingInsideEvaluatorCallbacksDoesNotLeakIntoRegex()
-    {
-        var regex = new Utf8PythonRegex("(?P<word>foo)");
-        Utf8PythonUtf8MatchEvaluator<string> evaluator = static (_, match) =>
-        {
-            match.NameEntries[0] = new PythonReNameEntry { Name = "hacked", Number = 99 };
-            match.Groups[1] = default;
-            return Encoding.UTF8.GetBytes("x");
-        };
-        var result = regex.Subn(Utf8("foo foo"), "-", evaluator);
-        Assert.Equal("x x", Encoding.UTF8.GetString(result.ResultBytes));
-        Assert.Equal(2, result.ReplacementCount);
-        Assert.Equal(["0", "word"], regex.GetGroupNames());
-        Assert.Equal("word", regex.SearchDetailedData(Utf8("foo")).NameEntries[0].Name);
-    }
-
 
     [Fact]
     public void ConcurrentReadsSeeStableMetadata()

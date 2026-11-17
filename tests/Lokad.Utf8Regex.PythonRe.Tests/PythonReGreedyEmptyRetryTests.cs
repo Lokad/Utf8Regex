@@ -40,7 +40,7 @@ public sealed class PythonReGreedyEmptyRetryTests
             Assert.Equal(reference.FindAllToUtf8(input, start).ScalarValues.Select(Convert.ToHexString),
                 regex.FindAllToUtf8(input, start, token.Token).ScalarValues.Select(Convert.ToHexString));
             Assert.Equal(PythonReSplitAssert.Decode(input, reference.SplitRanges(input, 0, start, default)), PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, start, default)));
-            Assert.Equal(reference.ReplaceToString(input, "!", 0, start), regex.ReplaceToString(input, "!", 0, start));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(input, "!", 0, start)), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!", 0, start)));
 
             using var cursor = regex.CreateMatchCursor(input, start);
             var alias = cursor;

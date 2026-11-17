@@ -39,7 +39,7 @@ public sealed class PythonReCompletedBackreferenceTests
                 JsonSerializer.Serialize(regex.FindIterDetailed(repeated, 0, source.Token)));
             Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(repeated)).ScalarValues,
                 PythonReFindAllAssert.Decode(regex.FindAllToUtf8(repeated, 0, source.Token)).ScalarValues);
-            Assert.Equal(reference.ReplaceToString(repeated, "!"), regex.ReplaceToString(repeated, "!"));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(repeated, "!")), System.Text.Encoding.UTF8.GetString(regex.Replace(repeated, "!")));
         }
     }
 

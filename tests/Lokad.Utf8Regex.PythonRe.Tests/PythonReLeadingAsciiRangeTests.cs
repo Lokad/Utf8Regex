@@ -140,7 +140,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(padding + 12, regex.Search(input, padding + 2).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
-        Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", regex.ReplaceToString(input, "[\\g<word>]"));
+        Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
 
 
         // A non-ASCII subject keeps all CPython partners on the scalar route.
@@ -163,7 +163,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(padding + 7, regex.Search(input, padding + 4).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
-        Assert.Equal(prefix + " [aaa] x [aa]!", regex.ReplaceToString(input, "[\\g<word>]"));
+        Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
 
         var match = regex.FindIterDetailed("π😀éa"u8)[0];
         Assert.Equal("éa", match.Groups[1].ValueText);
