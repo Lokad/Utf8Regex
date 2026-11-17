@@ -114,90 +114,17 @@ internal abstract class Utf8CompiledEngineRuntime
 
 }
 
-internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime,
-    IUtf8WellFormedMatchRuntime,
-    IUtf8UnvalidatedMatchRuntime
+internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly bool _canUseDirectAnchoredValidatorMatch;
-    private readonly bool _anchoredValidatorAllowsTrailingNewline;
 
-    internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
+    internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
     {
         _regexPlan = plan;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan);
         _verifierRuntime = verifier;
-        _canUseDirectAnchoredValidatorMatch =
-_regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue;
-        _anchoredValidatorAllowsTrailingNewline = _canUseDirectAnchoredValidatorMatch &&
-            _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-    }
-
-    public override Utf8CompiledRuntimeCapabilities Capabilities => new(
-        SupportsAsciiWellFormedOnlyMatch: _canUseDirectAnchoredValidatorMatch,
-        SupportsWellFormedOnlyMatch: _canUseDirectAnchoredValidatorMatch,
-        WellFormedOnlyMatchMissIsDefinitive: _canUseDirectAnchoredValidatorMatch,
-        SupportsWellFormedOnlyCount: false,
-        SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch,
-        SkipRequiredPrefilterForCount: false);
-
-    public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        if (_canUseDirectAnchoredValidatorMatch &&
-            Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidator(
-                _regexPlan,
-                _anchoredValidatorAllowsTrailingNewline,
-                input,
-                out var anchoredValidatorLength))
-        {
-            match = new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
-            return true;
-        }
-
-        match = default(Utf8CaptureRange);
-        return false;
-    }
-
-    public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
-    {
-        // Whole-match fast paths are definitive only when a miss at offset 0 rules
-        // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
-        // still match inside the input, so they decline to the validating scan paths.
-        if ((_regexPlan.SimplePatternPlan.IsStartAnchored &&
-            !_regexPlan.SimplePatternPlan.IsAbsoluteStartAnchored) ||
-            (_regexPlan.SimplePatternPlan.IsEndAnchored &&
-            !_regexPlan.SimplePatternPlan.IsAbsoluteEndAnchored))
-        {
-            match = default(Utf8CaptureRange);
-            return false;
-        }
-
-        if (_canUseDirectAnchoredValidatorMatch)
-        {
-            var direct = Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidatorWithoutValidation(
-                _regexPlan,
-                _anchoredValidatorAllowsTrailingNewline,
-                input,
-                out var anchoredValidatorLength);
-            if (direct == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
-            {
-                match = new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
-                return true;
-            }
-
-            if (direct == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
-            {
-                match = default(Utf8CaptureRange);
-                return false;
-            }
-            match = default(Utf8CaptureRange);
-            return true;
-        }
-
-        match = default(Utf8CaptureRange);
-        return false;
     }
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -211,36 +138,8 @@ _regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue;
             return _linearRuntime.IsMatch(input, validation, _verifierRuntime, budget);
         }
 
-        if (_canUseDirectAnchoredValidatorMatch)
-        {
-            if (validation.IsAscii &&
-                Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidator(
-                    _regexPlan,
-                    _anchoredValidatorAllowsTrailingNewline,
-                    input,
-                    out _))
-            {
-                return true;
-            }
-
-            if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
-            {
-                return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
-            }
-        }
-
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
-
-            if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out _))
-            {
-                return true;
-            }
-
-            if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out _))
-            {
-                return true;
-            }
 
             return Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,
@@ -265,40 +164,9 @@ _regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue;
             return _linearRuntime.Count(input, validation, _verifierRuntime, budget);
         }
 
-        if (_canUseDirectAnchoredValidatorMatch)
-        {
-            if (validation.IsAscii &&
-                Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidator(
-                    _regexPlan,
-                    _anchoredValidatorAllowsTrailingNewline,
-                    input,
-                    out _))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
-                return 1;
-            }
-
-            if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
-            {
-                return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
-            }
-        }
-
         if (!validation.IsAscii && !_regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
             return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
-        }
-
-        if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out _))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternFixedAlternation);
-            return 1;
-        }
-
-        if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out _))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternFixedLength);
-            return 1;
         }
 
         return Utf8ExecutionInterpreter.CountSimplePattern(
@@ -319,36 +187,8 @@ _regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue;
             return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
         }
 
-        if (_canUseDirectAnchoredValidatorMatch)
-        {
-            if (validation.IsAscii &&
-                Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidator(
-                    _regexPlan,
-                    _anchoredValidatorAllowsTrailingNewline,
-                    input,
-                    out var anchoredValidatorLength))
-            {
-                return new Utf8CaptureRange(0, 0 + (anchoredValidatorLength));
-            }
-
-            if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
-            {
-                return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
-            }
-        }
-
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
-
-            if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out var alternationMatchedLength))
-            {
-                return new Utf8CaptureRange(0, 0 + (alternationMatchedLength));
-            }
-
-            if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out var directMatchedLength))
-            {
-                return new Utf8CaptureRange(0, 0 + (directMatchedLength));
-            }
 
             var index = Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,

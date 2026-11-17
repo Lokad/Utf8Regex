@@ -36,7 +36,7 @@ internal static class Utf8CompiledRuntimeFactory
                     Utf8CompiledEngineKind.StructuralLinearAutomaton
                         => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
                     Utf8CompiledEngineKind.SimplePatternInterpreter
-                        => new Utf8SimplePatternCompiledEngineRuntime(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
+                        => new Utf8SimplePatternCompiledEngineRuntime(regexPlan, verifierRuntime),
                     _ => throw new ArgumentOutOfRangeException(nameof(compiledEngine), "No specialized runtime exists for this engine kind."),
                 };
             }

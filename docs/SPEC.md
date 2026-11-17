@@ -956,6 +956,12 @@ graph, identity deduplication or transactional manifest is required.
 
 ## Implementation and qualification
 
+Anchored class/head-tail patterns no longer have separate whole-pattern
+validators or segment plans; they use the remaining owned interpreters. This
+can increase work or working-storage requirements for a given numerical limit.
+Admission, original-token cancellation, deadlines, scalar semantics and byte
+capture ranges still apply to the selected program.
+
 Production execution is owned and managed: parse/analyze/prepare, immutable
 program, invocation runtime. No BCL matcher/result engine, native imports or
 unchecked memory reads are shipped. Actual `Unsafe.SizeOf<T>()` is permitted.

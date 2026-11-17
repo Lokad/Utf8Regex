@@ -240,34 +240,6 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
-    public int ExecuteUtf8DirectFixedLengthOnly()
-    {
-        var prepared = Utf8Regex.Inspection.PreparedRegex;
-        if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(prepared))
-        {
-            return 0;
-        }
-
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(
-            prepared, InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
-    public int ExecuteUtf8DirectFixedAlternationOnly()
-    {
-        var prepared = Utf8Regex.Inspection.PreparedRegex;
-        if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(prepared))
-        {
-            return 0;
-        }
-
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(
-            prepared, InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
     private int Execute(Utf8Regex regex)
     {
         return Operation switch

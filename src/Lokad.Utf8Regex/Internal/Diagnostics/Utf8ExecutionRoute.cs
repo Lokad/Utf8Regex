@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Diagnostics;
 
 internal enum Utf8ExecutionRoute : byte
 {
-    None = 0, CompiledFusedAsciiLiteralFamilyCount, CompiledFusedAsciiLiteralCount, CompiledFusedUtf8LiteralCount, CompiledFusedUtf8LiteralFamilyCount, RequiredPrefilterReject, NativeAsciiAnchoredValidator, NativeAsciiSimplePatternFixedAlternation, NativeAsciiSimplePatternFixedLength, NativeAsciiSimplePattern, FallbackDirectRegex, FallbackDirectUnicodeLetterBounded, FallbackDirectUnicodeLetter, FallbackDirectUnicodeCategory, FallbackDirectUtf8WordRun, FallbackDirectAsciiDottedDecimalQuad, FallbackDirectAsciiUntilByteStar, FallbackDirectAsciiDelimitedToken, FallbackDirectUtf8WordDelimitedToken, FallbackDirectUtf8UriToken, FallbackDirectAsciiLiteralStructuredToken, FallbackDirectAsciiIdentifierToken, FallbackDirectAsciiUriToken, NativeStructuralLinearAutomaton, LiteralFamilyHybridEarliestAutomaton, LiteralFamilyPreparedNonOverlapping, LiteralFamilyPreparedWithRequirementsLengthOnly, LiteralFamilyPreparedWithRequirementsMatch, LiteralFamilyPackedNibbleSimdCount, NativeOrderedLiteralWindow, NativeStructuralFamilyEmit, NativeStructuralFamilySuffix, NativeStructuralFamilyLinear, FallbackDirectAnchoredAsciiLiteralPrefix, FallbackDirectAnchoredAsciiLiteralSuffix, FallbackDirectAnchoredDigitsTail
+    None = 0, CompiledFusedAsciiLiteralFamilyCount, CompiledFusedAsciiLiteralCount, CompiledFusedUtf8LiteralCount, CompiledFusedUtf8LiteralFamilyCount, RequiredPrefilterReject, NativeAsciiAnchoredValidator, NativeAsciiSimplePattern, FallbackDirectRegex, FallbackDirectUnicodeLetterBounded, FallbackDirectUnicodeLetter, FallbackDirectUnicodeCategory, FallbackDirectUtf8WordRun, FallbackDirectAsciiDottedDecimalQuad, FallbackDirectAsciiUntilByteStar, FallbackDirectAsciiDelimitedToken, FallbackDirectUtf8WordDelimitedToken, FallbackDirectUtf8UriToken, FallbackDirectAsciiLiteralStructuredToken, FallbackDirectAsciiIdentifierToken, FallbackDirectAsciiUriToken, NativeStructuralLinearAutomaton, LiteralFamilyHybridEarliestAutomaton, LiteralFamilyPreparedNonOverlapping, LiteralFamilyPreparedWithRequirementsLengthOnly, LiteralFamilyPreparedWithRequirementsMatch, LiteralFamilyPackedNibbleSimdCount, NativeOrderedLiteralWindow, NativeStructuralFamilyEmit, NativeStructuralFamilySuffix, NativeStructuralFamilyLinear, FallbackDirectAnchoredAsciiLiteralPrefix, FallbackDirectAnchoredAsciiLiteralSuffix, FallbackDirectAnchoredDigitsTail
 }
 
 internal static class Utf8ExecutionRouteText
@@ -16,8 +16,6 @@ internal static class Utf8ExecutionRouteText
         Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount => "compiled_fused_utf8_literal_family_count",
         Utf8ExecutionRoute.RequiredPrefilterReject => "required_prefilter_reject",
         Utf8ExecutionRoute.NativeAsciiAnchoredValidator => "native_ascii_anchored_validator",
-        Utf8ExecutionRoute.NativeAsciiSimplePatternFixedAlternation => "native_ascii_simple_pattern_fixed_alternation",
-        Utf8ExecutionRoute.NativeAsciiSimplePatternFixedLength => "native_ascii_simple_pattern_fixed_length",
         Utf8ExecutionRoute.NativeAsciiSimplePattern => "native_ascii_simple_pattern",
         Utf8ExecutionRoute.FallbackDirectRegex => "fallback_direct_regex",
         Utf8ExecutionRoute.FallbackDirectUnicodeLetterBounded => "fallback_direct_unicode_letter_bounded",

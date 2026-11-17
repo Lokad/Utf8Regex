@@ -45,7 +45,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
         }
     }
 
-    public static Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult TryFindTokenWithoutValidation(
+    public static Utf8DirectMatchResult TryFindTokenWithoutValidation(
         ReadOnlySpan<byte> input,
         int startIndex,
         in Utf8FallbackDirectFamilyPlan plan,
@@ -61,7 +61,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
-                return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation;
+                return Utf8DirectMatchResult.NeedsScalarFallback;
             }
 
             return TryFindToken(
@@ -70,18 +70,18 @@ internal static class Utf8AsciiTokenFamilyExecutor
                 plan,
                 out matchIndex,
                 out matchedLength)
-                ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match
-                : Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
+                ? Utf8DirectMatchResult.Match
+                : Utf8DirectMatchResult.NoMatch;
         }
 
         return plan.Kind switch
         {
             Utf8FallbackDirectFamilyKind.AsciiIdentifierToken => Utf8AsciiTokenFinderExecutor.TryFindAsciiIdentifierTokenWithoutValidation(input, startIndex, out matchIndex, out matchedLength),
-            _ => Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation,
+            _ => Utf8DirectMatchResult.NeedsScalarFallback,
         };
     }
 
-    public static Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult TryIsMatchWithoutValidation(
+    public static Utf8DirectMatchResult TryIsMatchWithoutValidation(
         ReadOnlySpan<byte> input,
         int startIndex,
         in Utf8FallbackDirectFamilyPlan plan)
@@ -89,14 +89,14 @@ internal static class Utf8AsciiTokenFamilyExecutor
         if (plan.Kind != Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns)
         {
             var result = TryFindTokenWithoutValidation(input, startIndex, plan, out _, out var matchedLength);
-            return result == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match && matchedLength <= 0
-                ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch
+            return result == Utf8DirectMatchResult.Match && matchedLength <= 0
+                ? Utf8DirectMatchResult.NoMatch
                 : result;
         }
 
         if (plan.LiteralUtf8 is not { Length: 1 } literalUtf8)
         {
-            return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
+            return Utf8DirectMatchResult.NoMatch;
         }
 
         if (!Utf8AsciiLiteralBetweenNegatedRunsExecutor.TryIsMatchWithoutValidation(
@@ -107,12 +107,12 @@ internal static class Utf8AsciiTokenFamilyExecutor
             plan.SecondSeparatorByte,
             out var isMatch))
         {
-            return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation;
+            return Utf8DirectMatchResult.NeedsScalarFallback;
         }
 
         return isMatch
-            ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match
-            : Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
+            ? Utf8DirectMatchResult.Match
+            : Utf8DirectMatchResult.NoMatch;
     }
 
 }

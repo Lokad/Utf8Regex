@@ -5,14 +5,6 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class AsciiSimplePatternPortfolioTests
 {
-    [Fact]
-    public void IdentifierValidatorPlanCountsAsWholeInputCompiledSpecialization()
-    {
-        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
-    }
 
     [Theory]
     [InlineData(RegexOptions.IgnoreCase)]

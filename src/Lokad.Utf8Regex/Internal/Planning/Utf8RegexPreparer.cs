@@ -69,7 +69,6 @@ internal static class Utf8RegexPreparer
             if (compiledPatternCategory == Utf8CompiledPatternCategory.None &&
                 analyzedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
             {
-                compiledPatternCategory = analyzedRegex.SimplePatternPlan.CompiledPatternCategory;
                 // A linear program alone does not prove the linear search route: that route
                 // declines every anchored shape, while the interpreter enforces line edges
                 // per candidate. Pure line-anchored shapes without backreferences therefore

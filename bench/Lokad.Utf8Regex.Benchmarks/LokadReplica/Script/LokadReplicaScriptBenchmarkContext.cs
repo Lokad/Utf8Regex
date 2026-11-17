@@ -300,30 +300,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteAnchoredValidatorNativeOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var simplePatternPlan = Utf8Regex.Inspection.SimplePatternPlan;
-        if (!simplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var allowTrailingNewline = simplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if ((simplePatternPlan.AnchoredHeadTailRunPlan.HasValue &&
-                 Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(sample, simplePatternPlan.AnchoredHeadTailRunPlan, allowTrailingNewline, out var matchedLength)) ||
-                Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(sample, simplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline, out matchedLength))
-            {
-                total += matchedLength;
-            }
-        }
-
-        return total;
-    }
-
     public int ExecuteUtf8PrefixCompiledBoolAfterValidation()
     {
         EnsurePrefixMatchLoop();
@@ -351,103 +327,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             {
                 total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
-        }
-
-        return total;
-    }
-
-    public int ExecuteAnchoredHeadTailBoolOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if (Utf8Regex.TryIsMatchAnchoredHeadTailWithoutValidation(sample, out var isMatch) && isMatch)
-            {
-                total += sample.Length;
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteAnchoredHeadTailMatchOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if (Utf8Regex.TryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
-            {
-                total += (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteAsciiSimplePatternDirectBoolOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if (Utf8Regex.TryIsMatchAsciiSimplePatternWithoutValidation(sample, out var isMatch) && isMatch)
-            {
-                total += sample.Length;
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteAsciiSimplePatternDirectMatchOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if (Utf8Regex.TryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
-            {
-                total += (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteWholeMatchProjectionOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            total += Utf8MatchInspection.ProjectWholeMatchOnly(sample.Length);
         }
 
         return total;

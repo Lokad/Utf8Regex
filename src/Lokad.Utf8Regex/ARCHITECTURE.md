@@ -39,6 +39,10 @@ constrained literals whose lower-level classification still says literal. The
 secondary fallback runtime and its count/match router chain have been removed.
 Shared candidate helpers with facade or adapter consumers remain.
 
+Anchored class/head-tail validators and their segment plans are removed too.
+Their patterns use the remaining owned interpreters; finite-literal expansion
+and shared structural byte-class helpers remain separate live consumers.
+
 Search dispositions derive from canonical candidate sources, confirmation and
 projection. Count, first-match and enumeration control their actual exit and
 advancement behavior in execution; duplicate descriptive flags are not stored.

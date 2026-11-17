@@ -153,12 +153,11 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoostDateMatchUsesPrioritizedBoundedDateBooleanFamily(RegexOptions options)
+    public void BoostDatePreservesUnicodeDigitsAndAnchors(RegexOptions options)
     {
         const string pattern = @"^\d{1,2}/\d{1,2}/\d{4}$";
         var regex = new Utf8Regex(pattern, options);
-        Assert.True(regex.TryIsMatchDirectWithoutValidation("12/12/2001"u8, out var directMatch));
-        Assert.True(directMatch);
+        Assert.True(regex.IsMatch("12/12/2001"u8));
 
         string[] inputs =
         [

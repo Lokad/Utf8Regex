@@ -122,9 +122,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         storage.Budget.ChargeWork((ulong)branches.Length);
         simplePatternPlan = new AsciiSimplePatternPlan(
-            branches, searchLiteralOffset, searchLiterals, fixedLiteralChecks, isStartAnchored, isEndAnchored, allowsTrailingNewlineBeforeEnd, ignoreCase, IsUtf8ByteSafe(branches), TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default, anchoredHeadTailRunPlan: default, anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(storage, branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
-                ? anchoredValidatorPlan
-                : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
+            branches, searchLiteralOffset, searchLiterals, fixedLiteralChecks, isStartAnchored, isEndAnchored, allowsTrailingNewlineBeforeEnd, ignoreCase, IsUtf8ByteSafe(branches), TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {
             1 => Utf8SearchFacts.Create(
@@ -153,12 +151,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         foreach (var literal in plan.SearchLiterals) { Utf8ConstructionScope.ChargeWork(1); storage.Retain(literal); }
         storage.Retain(plan.FixedLiteralChecks);
         foreach (var check in plan.FixedLiteralChecks) { Utf8ConstructionScope.ChargeWork(1); storage.Retain(check.Literal); }
-        if (plan.AnchoredValidatorPlan.HasValue)
-        {
-            storage.Retain(plan.AnchoredValidatorPlan.Segments);
-            foreach (var segment in plan.AnchoredValidatorPlan.Segments)
-                { Utf8ConstructionScope.ChargeWork(1); if (segment.IsLiteral) storage.Retain(segment.Literal); }
-        }
     }
 
     private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);

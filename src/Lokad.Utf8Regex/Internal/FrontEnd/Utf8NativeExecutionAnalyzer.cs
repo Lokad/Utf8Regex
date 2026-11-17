@@ -60,11 +60,6 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
-        if (TryAnalyzeAnchoredAsciiHeadTailRunTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
-        {
-            return true;
-        }
-
         if (TryAnalyzeSimplePatternTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
@@ -511,67 +506,6 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
         finally { owner.LeaveDepth(); }
-    }
-
-    private static bool TryAnalyzeAnchoredAsciiHeadTailRunTree(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        RegexOptions executionOptions,
-        out Utf8RegexAnalysis analyzedRegex)
-    {
-        analyzedRegex = default;
-        if (!SupportsNativeOptions(executionOptions) ||
-            semanticRegex.RuntimeTree?.Root is not { } root ||
-            root.Kind != Utf8TreeNodeKind.Capture ||
-            root.ChildCount != 1)
-        {
-            return false;
-        }
-
-        var body = UnwrapRuntimeNode(root.Child(0));
-        if (body.Kind != Utf8TreeNodeKind.Concatenate ||
-            body.ChildCount != 4 ||
-            body.Child(0).Kind is not Utf8TreeNodeKind.Beginning and not Utf8TreeNodeKind.Start ||
-            !TryGetExactAsciiSetAtom(body.Child(1), out var headCharClass, out var headLength) ||
-            headLength != 1 ||
-            !TryGetSetLoop(body.Child(2), out var tailSetNode, out var tailMin, out var tailMax) ||
-            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(tailSetNode.ScalarClass, out var tailCharClass) ||
-            tailMax != int.MaxValue ||
-            body.Child(3).Kind is not Utf8TreeNodeKind.EndZ and not Utf8TreeNodeKind.End)
-        {
-            return false;
-        }
-
-
-
-        var simplePatternPlan = new AsciiSimplePatternPlan(
-            [],
-            searchLiteralOffset: 0,
-            searchLiterals: [],
-            fixedLiteralChecks: [],
-            isStartAnchored: true,
-            isEndAnchored: true,
-            allowsTrailingNewlineBeforeEnd: body.Child(3).Kind == Utf8TreeNodeKind.EndZ,
-            ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0,
-            isUtf8ByteSafe: true,
-            runPlan: default,
-            anchoredHeadTailRunPlan: new AsciiSimplePatternAnchoredHeadTailRunPlan(headCharClass, tailCharClass, tailMin),
-            anchoredValidatorPlan: new AsciiSimplePatternAnchoredValidatorPlan(
-            [
-                new AsciiSimplePatternAnchoredValidatorSegment(headCharClass, 1, 1),
-                new AsciiSimplePatternAnchoredValidatorSegment(tailCharClass, tailMin, int.MaxValue),
-            ],
-            ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0),
-            isAbsoluteStartAnchored: true,
-            isAbsoluteEndAnchored: true);
-
-        analyzedRegex = Utf8RegexAnalysis.CreateSimple(
-            semanticRegex,
-            executionPattern,
-            Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            default,
-            simplePatternPlan);
-        return true;
     }
 
     private static bool IsSupportedSimplePatternNode(Utf8TreeNode node)

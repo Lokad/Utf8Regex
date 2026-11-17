@@ -288,25 +288,8 @@ public sealed partial class Utf8Regex
 
     private string[] _groupNames => _program.CaptureCatalog.GroupNames;
 
-    private bool _allowsTrailingNewlineBeforeEnd =>
-        _preparedRegex.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-
-    private AsciiSimplePatternAnchoredHeadTailRunPlan _anchoredHeadTailRunPlan =>
-        _preparedRegex.SimplePatternPlan.AnchoredHeadTailRunPlan;
-
-    private AsciiSimplePatternAnchoredValidatorPlan _anchoredValidatorPlan =>
-        _preparedRegex.SimplePatternPlan.AnchoredValidatorPlan;
-
     private ref readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
         ref _preparedRegex.FallbackDirectFamily;
-
-    private bool _hasDirectAnchoredHeadTailWithoutValidation =>
-        _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-        _anchoredHeadTailRunPlan.HasValue;
-
-    private bool _hasDirectAnchoredValidatorWithoutValidation =>
-        _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-        _anchoredValidatorPlan.HasValue;
 
     private bool _hasDirectFallbackTokenFamilyWithoutValidation =>
         Utf8FallbackDirectFamilyCategories.IsTokenFindFamily(_fallbackDirectFamily.Kind);
@@ -443,7 +426,6 @@ public sealed partial class Utf8Regex
              // Anchored simple plans without a dedicated native matcher use
              // the cached scalar program. Keep qualified native and line paths.
              _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
-                !_hasDirectAnchoredHeadTailWithoutValidation &&
                 !_hasDirectFallbackAsciiFamilyWithoutValidation &&
                 !_hasDirectFallbackTokenFamilyWithoutValidation &&
                 _caretAnchoredGroupedLiteralUtf8 is null &&
@@ -618,10 +600,6 @@ public sealed partial class Utf8Regex
         }
 
         var validation = Utf8InputAnalyzer.Describe(input);
-        if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
-        {
-            return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        }
 
         if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
         {
@@ -1089,10 +1067,6 @@ public sealed partial class Utf8Regex
         }
 
         var validation = Utf8InputAnalyzer.Describe(input);
-        if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
-        {
-            return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
-        }
 
         if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
         {
@@ -1460,10 +1434,6 @@ public sealed partial class Utf8Regex
         }
 
         var validation = Utf8InputAnalyzer.Describe(input);
-        if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
-        {
-            return MatchFallback(input);
-        }
 
         if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
         {

@@ -18,15 +18,6 @@ public sealed partial class Utf8Regex
 {
     internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        if (TryMatchAnchoredHeadTailWithoutValidation(input, out match))
-        {
-            return true;
-        }
-
-        if (TryMatchAsciiSimplePatternWithoutValidation(input, out match))
-        {
-            return true;
-        }
 
         if (TryMatchDirectFallbackFamilyWithoutValidation(input, out match))
         {
@@ -56,16 +47,6 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        if (TryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
-
-        if (TryIsMatchAsciiSimplePatternWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
-
         if (!prioritizeFallbackFamily &&
             TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
         {
@@ -74,54 +55,6 @@ public sealed partial class Utf8Regex
 
         isMatch = false;
         return false;
-    }
-
-    internal bool TryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        match = default(Utf8CaptureRange);
-        if (!_hasDirectAnchoredHeadTailWithoutValidation)
-        {
-            return false;
-        }
-
-        var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
-            input,
-            _anchoredHeadTailRunPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out var matchedLength);
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
-        {
-            return false;
-        }
-
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
-        {
-            match = new Utf8CaptureRange(0, 0 + (matchedLength));
-        }
-
-        return true;
-    }
-
-    internal bool TryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        isMatch = false;
-        if (!_hasDirectAnchoredHeadTailWithoutValidation)
-        {
-            return false;
-        }
-
-        var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
-            input,
-            _anchoredHeadTailRunPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out _);
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
-        {
-            return false;
-        }
-
-        isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
-        return true;
     }
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -464,10 +397,6 @@ public sealed partial class Utf8Regex
             // Definitive byte kernels need no coordinate facts. Remaining
             // compiled routes request their existing description here.
             var input = Utf8ValidatedInput.Create(bytes);
-            if (_owner.ShouldFallbackForTrailingNewlineAnchoredValidator(bytes, input.Validation))
-            {
-                return _owner.IsMatchAtByteOffset(input, new Utf8BytePosition(0));
-            }
 
             if (!_owner.ShouldSkipRequiredPrefilterForMatch() &&
                 _owner.RejectsByRequiredPrefilter(bytes))

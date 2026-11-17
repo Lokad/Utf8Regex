@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -59,10 +58,6 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             case 3: Assert.Equal(caller, PreparedByteSearch.Create(caller).Values.ToArray()); break;
             case 4: Assert.Equal(4, Utf8PreparedByteSearchFactory.CreateFromPositiveClass(charClass).Count); break;
             case 5: Assert.Equal(4, new AsciiSimplePatternRunPlan(charClass, 2, 4).Search.Count); break;
-            case 6:
-                var headTail = new AsciiSimplePatternAnchoredHeadTailRunPlan(charClass, charClass, 2);
-                Assert.True(headTail.IsMatch(new byte[] { 0, 1, 2 }));
-                Assert.False(headTail.IsMatch(new byte[] { 0, 1, 128 })); break;
             case 7:
                 var positive = Utf8FixedDistanceSet.FromBytes(7, caller, false);
                 Assert.Equal(7, positive.Distance); Assert.True(positive.Contains(2)); Assert.False(positive.Contains(5)); break;
@@ -72,9 +67,9 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         }
     }
 
-    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 9).Select(route => new object[] { route });
+    public static IEnumerable<object[]> Routes() => Enumerable.Range(0, 9).Where(route => route != 6).Select(route => new object[] { route });
     public static IEnumerable<object[]> Denials()
-        => from route in Enumerable.Range(0, 9) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
+        => from route in Enumerable.Range(0, 9).Where(route => route != 6) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
 
     [Theory]
     [MemberData(nameof(Denials))]
@@ -163,41 +158,6 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         Assert.Equal(-1, search.IndexOf(new byte[] { 17, 18 }));
     }
 
-    private delegate bool ClassRunMatch(ReadOnlySpan<byte> input, int index, int length, AsciiCharClass charClass);
-    private delegate bool UniformMatch(ReadOnlySpan<byte> input, AsciiSimplePatternToken[] branch, out int length);
-
-    [Fact]
-    public void RuntimeClassValidationUsesCallerScratchWithoutConstructionOrHeapAllocation()
-    {
-        var charClass = AsciiCharClass.FromBytes("ACDEGHIJKLM"u8);
-        var match = typeof(Utf8AsciiAnchoredValidatorExecutor).GetMethod("MatchesCharClassRun", BindingFlags.Static | BindingFlags.NonPublic)!
-            .CreateDelegate<ClassRunMatch>();
-        byte[] hit = "ACDEGHIJKLMACDEGHIJKLM"u8.ToArray(); byte[] miss = "ACDEGHIJKLMx"u8.ToArray();
-        Assert.True(match(hit, 0, hit.Length, charClass)); Assert.False(match(miss, 0, miss.Length, charClass));
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
-        var before = GC.GetAllocatedBytesForCurrentThread(); var count = 0;
-        for (var iteration = 0; iteration < 2000; iteration++)
-            if (match(hit, 0, hit.Length, charClass)) count++;
-        var allocation = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(2000, count); Assert.Equal(0, allocation); Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes);
-    }
-
-    [Fact]
-    public void CompiledUniformBranchUsesCallerScratchWithoutConstructionOrHeapAllocation()
-    {
-        var charClass = AsciiCharClass.FromBytes("ACDEGHIJKLM"u8);
-        var branch = Enumerable.Repeat(new AsciiSimplePatternToken(charClass), 12).ToArray();
-        var match = typeof(Utf8SimplePatternCompiledWholeMatcher).GetMethod("TryMatchUniformPositiveCharClassBranch", BindingFlags.Static | BindingFlags.NonPublic)!
-            .CreateDelegate<UniformMatch>();
-        byte[] hit = "ACDEGHIJKLMAC"u8.ToArray(); byte[] miss = "ACDEGHIJKLMxC"u8.ToArray();
-        Assert.True(match(hit, branch, out var length)); Assert.Equal(12, length); Assert.False(match(miss, branch, out _));
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
-        var before = GC.GetAllocatedBytesForCurrentThread(); var count = 0;
-        for (var iteration = 0; iteration < 2000; iteration++)
-            if (match(hit, branch, out _)) count++;
-        var allocation = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(2000, count); Assert.Equal(0, allocation); Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes);
-    }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]

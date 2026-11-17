@@ -21,7 +21,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
     private static AsciiSimplePatternPlan Plan(AsciiSimplePatternToken[][] branches, bool folded)
-        => new(branches, 0, [], [], false, false, false, folded, true, default, default, default, false, false);
+        => new(branches, 0, [], [], false, false, false, folded, true, default, false, false);
     private static Utf8SearchFactData Data() => new()
     {
         LiteralUtf8 = "one"u8.ToArray(),

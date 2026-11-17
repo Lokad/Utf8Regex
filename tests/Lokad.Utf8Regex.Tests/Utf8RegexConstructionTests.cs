@@ -325,7 +325,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledMatchUsesDirectIdentifierValidatorPath()
+    public void CompiledIdentifierPreservesWholeByteMatch()
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("Alpha_42"u8.ToArray());
@@ -334,16 +334,14 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.Success);
         Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
     }
 
     [Fact]
     public void CompiledIdentifierValidatorMatchesBaselineAcrossCorpus()
     {
-        AssertCompiledFastPathMatchesBaseline(
+        AssertCompiledMatchesBaseline(
             "^[a-z][a-z0-9_]*$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            expectHandledWithoutValidation: true,
             [
                 [],
                 "A"u8.ToArray(),
@@ -382,10 +380,9 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledFixedLengthHexValidatorMatchesBaselineAcrossCorpus()
     {
-        AssertCompiledFastPathMatchesBaseline(
+        AssertCompiledMatchesBaseline(
             "^[a-f0-9]{3}$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            expectHandledWithoutValidation: true,
             [
                 [],
                 "A0f"u8.ToArray(),
@@ -397,14 +394,14 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorExtractsAnchoredValidatorPlanForRgbHexValidator()
+    public void CapturedRgbHexPreservesItsByteGroups()
     {
         var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.All(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Where(static s => !s.IsLiteral), static segment =>
-            Assert.Equal(AsciiCharClassPredicateKind.AsciiHexDigit, segment.PredicateKind));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[4];
+        Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("A0f1c2"u8, 0, slots));
+        Assert.Equal(new Utf8CaptureRange(0, 2), slots[regex.GroupNumberFromName("red")]);
+        Assert.Equal(new Utf8CaptureRange(2, 4), slots[regex.GroupNumberFromName("green")]);
+        Assert.Equal(new Utf8CaptureRange(4, 6), slots[regex.GroupNumberFromName("blue")]);
     }
 
     [Fact]
@@ -422,10 +419,9 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledRgbHexValidatorMatchesBaselineAcrossCorpus()
     {
-        AssertCompiledFastPathMatchesBaseline(
+        AssertCompiledMatchesBaseline(
             "^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            expectHandledWithoutValidation: true,
             [
                 [],
                 "A0f1c2"u8.ToArray(),
@@ -441,44 +437,38 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("AB0F"u8.ToArray());
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(match.Success);
         Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
-    public void CompiledAnchoredValidatorCanMatchWithoutValidationForAsciiIdentifier()
+    public void CompiledIdentifierMatchesValidAscii()
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.TryMatchDirectWithoutValidation("alpha_123"u8, out var match);
+        var match = regex.Match("alpha_123"u8);
 
-        Assert.True(handled);
         Assert.True(match.Success);
         Assert.True(match.Success);
         Assert.Equal(9, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
-    public void CompiledAnchoredValidatorCanRejectWithoutValidationForAsciiIdentifierMiss()
+    public void CompiledIdentifierRejectsInvalidLeadingDigit()
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.TryMatchDirectWithoutValidation("1alpha"u8, out var match);
+        var match = regex.Match("1alpha"u8);
 
-        Assert.True(handled);
         Assert.False(match.Success);
     }
 
     [Fact]
-    public void CompiledAnchoredValidatorStillNeedsValidationForNonAsciiIdentifierInput()
+    public void CompiledAsciiIdentifierRejectsNonAsciiScalar()
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.TryMatchDirectWithoutValidation("alphé"u8, out _);
-
-        Assert.False(handled);
+        Assert.False(regex.Match("alphé"u8).Success);
     }
 
     [Fact]
@@ -486,10 +476,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        AssertCompiledFastPathMatchesBaseline(
+        AssertCompiledMatchesBaseline(
             "^ab[0-9]{2}$",
             RegexOptions.CultureInvariant,
-            expectHandledWithoutValidation: true,
             [
                 [],
                 "ab01"u8.ToArray(),
@@ -506,10 +495,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-        AssertCompiledFastPathMatchesBaseline(
+        AssertCompiledMatchesBaseline(
             "^ab[a-f0-9]{2}$",
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
-            expectHandledWithoutValidation: true,
             [
                 [],
                 "ab0f"u8.ToArray(),
@@ -603,7 +591,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void AnchoredValidatorRejectsNonAsciiInputWithoutFallbackMatch()
+    public void AnchoredHexRejectsNonAsciiInput()
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var match = regex.Match("éab"u8.ToArray());
@@ -1031,10 +1019,9 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(baseline.Count(input), compiled.Count(input));
     }
 
-    private static void AssertCompiledFastPathMatchesBaseline(
+    private static void AssertCompiledMatchesBaseline(
         string pattern,
         RegexOptions options,
-        bool expectHandledWithoutValidation,
         byte[][] inputs)
     {
         var baseline = new Utf8Regex(pattern, options);
@@ -1061,30 +1048,11 @@ public sealed class Utf8RegexConstructionTests
             }
             Assert.Equal(baseline.IsMatch(input), compiled.IsMatch(input));
 
-            var handled = compiled.TryMatchDirectWithoutValidation(input, out var directMatch);
-            if (!Utf8InputAnalyzer.IsAscii(input) && !handled)
-            {
-                continue;
-            }
+            var oracle = new Regex(pattern, options | RegexOptions.Compiled);
+            var text = Encoding.UTF8.GetString(input);
+            Assert.Equal(oracle.IsMatch(text), compiled.IsMatch(input));
+            Assert.Equal(oracle.Count(text), compiled.Count(input));
 
-            Assert.Equal(expectHandledWithoutValidation, handled);
-            if (handled)
-            {
-                Assert.Equal(compiledMatch.Success, directMatch.Success);
-                Assert.Equal(compiledMatch.Success, directMatch.Success);
-                Assert.Equal(compiledMatch.StartOffsetInBytes, directMatch.StartOffsetInBytes);
-                Assert.Equal((compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes), (directMatch.EndOffsetInBytes - directMatch.StartOffsetInBytes));
-                var compiledDirectIndexInBytes = compiledMatch.StartOffsetInBytes;
-                var compiledDirectLengthInBytes = (compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes);
-                var directIndexInBytes = directMatch.StartOffsetInBytes;
-                var directLengthInBytes = (directMatch.EndOffsetInBytes - directMatch.StartOffsetInBytes);
-                if (compiledMatch.Success &&
-                    directMatch.Success)
-                {
-                    Assert.Equal(compiledDirectIndexInBytes, directIndexInBytes);
-                    Assert.Equal(compiledDirectLengthInBytes, directLengthInBytes);
-                }
-            }
         }
     }
 

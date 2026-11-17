@@ -28,6 +28,8 @@ public sealed class RegexDifferentialTests
         @"START(?:(?<open>START)|(?<-open>STOP)|(?:(?!START|STOP)[\s\S]))*STOP(?(open)(?!))",
         @"BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))",
         @"^[a-f0-9]{3}$", @"^ab[0-9]{2}$", @"^[A-Z][A-Za-z0-9_]{2}$",
+        @"^[a-z][a-z0-9_]*$", @"^(?<head>[a-z])(?<tail>[a-z0-9_]*)$",
+        @"^ab[a-f0-9]{2,4}$", @"(?m:^[a-z]{1,3}$)", @"\A[a-f0-9]{3}\z",
         @"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$",
         @"^(?<head>[A-Z]{1,2})(?<number>[0-9][A-Z0-9]?) ?[0-9](?<tail>[A-Z]{2})$",
         @"^(?:[A-Z][0-9][0-9][A-Z]{2}|[A-Z][0-9][A-Z0-9][0-9][A-Z]{2}|[A-Z][0-9] [0-9][A-Z]{2}|[A-Z]{2}[0-9][A-Z0-9] [0-9][A-Z]{2})$",
@@ -62,6 +64,7 @@ public sealed class RegexDifferentialTests
         var random = new Random(0x5ca1a);
         string[] subjects = ["", "ABAB", "A1BA1B", "A\nB", "BABA", "AxxBAB", "A\nBABA", "BAAAB", "éABAB中 BABA", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP", "BEGINBEGINENDEND",
             "a0f", "A0f", "A0f\n", "A0g", "A0ff", "A0f1c2", "A0f1c2\n", "A0f1cg", "A0f1c2x",
+            "Alpha_42", "alpha_42", "alpha_42\n", "1alpha", "alphé", "alphaK", "ab0f", "ab0f1", "ab0f12", "x\nabc\nz",
             "Ab0", "Ab0\n", "ab0", "A_0", "Ab01", "ab01", "ab01\n", "AB01", "ab0x", "ab001",
             "A01ZZ", "A0 1ZZ", "A0Z1ZZ", "A0Z 1ZZ", "AB01ZZ", "AB0 1ZZ", "AB0Z1ZZ", "AB0Z 1ZZ",
             "AB0Z 1ZZ\n", "ABC0Z 1ZZ", "AB0Z 1Z9", "éB0Z 1ZZ", "١/٢/٢٠٠١",

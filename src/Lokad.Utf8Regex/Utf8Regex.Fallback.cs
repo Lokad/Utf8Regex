@@ -32,81 +32,7 @@ public sealed partial class Utf8Regex
     private bool ShouldUseFallbackForAnchoredSimplePattern()
     {
         return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            !_preparedRegex.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
             (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored);
-    }
-
-    internal bool TryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        match = default(Utf8CaptureRange);
-        if (!_hasDirectAnchoredValidatorWithoutValidation || _hasDirectAnchoredHeadTailWithoutValidation)
-        {
-            return false;
-        }
-
-        // Whole-match fast paths are definitive only when a miss at offset 0 rules
-        // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
-        // still match inside the input, so they decline to the validating scan paths.
-        if ((_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) ||
-            (_preparedRegex.SimplePatternPlan.IsEndAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
-        {
-            return false;
-        }
-
-        var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out var matchedLength);
-
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
-        {
-            return false;
-        }
-
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
-        {
-            match = new Utf8CaptureRange(0, 0 + (matchedLength));
-        }
-
-        return true;
-    }
-
-    internal bool TryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        isMatch = false;
-
-        // Whole-match fast paths are definitive only when a miss at offset 0 rules
-        // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
-        // still match inside the input, so they decline to the validating scan paths.
-        if ((_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) ||
-            (_preparedRegex.SimplePatternPlan.IsEndAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
-        {
-            return false;
-        }
-
-        if (!_hasDirectAnchoredValidatorWithoutValidation || _hasDirectAnchoredHeadTailWithoutValidation)
-        {
-            return false;
-        }
-
-        var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out _);
-
-        if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
-        {
-            return false;
-        }
-
-        isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
-        return true;
     }
 
     private bool TryMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
@@ -169,12 +95,12 @@ public sealed partial class Utf8Regex
                 _fallbackDirectFamily,
                 out var tokenMatchIndex,
                 out var tokenMatchedLength);
-            if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
+            if (directResult == Utf8DirectMatchResult.NeedsScalarFallback)
             {
                 return false;
             }
 
-            if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match && tokenMatchedLength > 0)
+            if (directResult == Utf8DirectMatchResult.Match && tokenMatchedLength > 0)
             {
                 match = new Utf8CaptureRange(tokenMatchIndex, (tokenMatchIndex) + (tokenMatchedLength));
             }
@@ -255,12 +181,12 @@ public sealed partial class Utf8Regex
                 input,
                 0,
                 _fallbackDirectFamily);
-            if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
+            if (directResult == Utf8DirectMatchResult.NeedsScalarFallback)
             {
                 return false;
             }
 
-            isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
+            isMatch = directResult == Utf8DirectMatchResult.Match;
             return true;
         }
 
@@ -368,16 +294,6 @@ public sealed partial class Utf8Regex
             default:
                 return false;
         }
-    }
-
-    private bool ShouldFallbackForTrailingNewlineAnchoredValidator(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
-    {
-        return validation.IsAscii &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
-            _preparedRegex.SearchPlan.Kind == Utf8SearchKind.TrailingAnchorFixedLengthEndZ &&
-            input.Length > 0 &&
-            input[^1] == (byte)'\n';
     }
 
     private bool ShouldSkipRequiredPrefilterForCount()

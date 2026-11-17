@@ -79,7 +79,6 @@ public class ShortPublicMatchMicroCostBenchmarks
         var total = 0;
         for (var i = 0; i < RepeatCount; i++)
         {
-            total += _context.ExecuteUtf8DirectFixedLengthOnly();
         }
 
         return total;
@@ -91,7 +90,6 @@ public class ShortPublicMatchMicroCostBenchmarks
         var total = 0;
         for (var i = 0; i < RepeatCount; i++)
         {
-            total += _context.ExecuteUtf8DirectFixedAlternationOnly();
         }
 
         return total;
