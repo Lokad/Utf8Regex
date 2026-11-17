@@ -23,7 +23,7 @@ internal ref struct Utf8ValidatedInput
     // Byte execution needs no whole
     // subject description; genuine metadata consumers request it separately.
     internal static Utf8ValidatedInput BorrowBytes(ReadOnlySpan<byte> bytes, bool isAscii = false)
-        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, true, false) : null);
+        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, true) : null);
 
     public ReadOnlySpan<byte> Bytes => _bytes;
 

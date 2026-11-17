@@ -21,8 +21,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             byte[] storage = [.. Enumerable.Repeat((byte)0xFF, offset), .. encoded, 0xFF];
             var input = storage.AsSpan(offset, encoded.Length);
             var description = Utf8InputAnalyzer.ValidateOnly(input, out var kelvin);
-            Assert.True(kelvin); Assert.True(description.ContainsSupplementaryScalars);
-            Assert.False(description.IsAscii);
+            Assert.True(kelvin); Assert.False(description.IsAscii);
             Assert.True(Utf8InputAnalyzer.TryValidateOnly(input, out var error));
             Assert.Equal(-1, error);
             var invocation = new Utf8SliceInvocation(new(10000, 0, 17), Regex.InfiniteMatchTimeout, default);
@@ -55,7 +54,6 @@ public sealed class Utf8AsciiDrainBoundaryTests
             Assert.True(Utf8ValidationCore.TryValidate(subject, out var expected, out var error));
             Assert.Equal(-1, error);
             Assert.Equal(encoded.Length, expected.ByteLength);
-            Assert.True(expected.ContainsSupplementaryScalars);
             Assert.False(expected.IsAscii);
 
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);

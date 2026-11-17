@@ -25,7 +25,6 @@ public sealed class Utf8ValidationPrefixTests
             Assert.Equal(suffix.Length == 0, isAscii);
             Assert.Equal(bytes.Length, result.ByteLength);
             Assert.Equal(suffix.Length == 0, result.IsAscii);
-            Assert.Equal(suffix.Contains("😀", StringComparison.Ordinal), result.ContainsSupplementaryScalars);
             Assert.Equal(suffix.Contains('K'), kelvin);
         }
     }

@@ -9,6 +9,10 @@
   original interruption and useful resource limits remain. Numerical work/storage
   requirements can decrease. Malformed-subject matching results are unspecified.
 
+- Avoid scanning unused subject suffixes after ASCII eligibility is already known.
+  Remove unused supplementary-scalar metadata and discarded split preparation.
+  Strict pattern/template checks, matching semantics and interruption/admission remain.
+
 - Core whole-match results and span enumeration now use `Utf8CaptureRange` with
   byte start/end endpoints. Remove `Utf8ValueMatch`, subject coordinate maps and
   UTF-16 cursor scans. Default ranges remain distinct from successful empty hits;

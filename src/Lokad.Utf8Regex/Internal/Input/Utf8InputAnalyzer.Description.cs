@@ -8,9 +8,7 @@ internal static partial class Utf8InputAnalyzer
     // they neither validate the subject nor derive character coordinates.
     internal static Utf8ValidationResult Describe(ReadOnlySpan<byte> input)
     {
-        var ascii = IsAscii(input);
-        return new(input.Length, ascii,
-            !ascii && input.IndexOfAnyInRange((byte)0xf0, (byte)0xf4) >= 0);
+        return new(input.Length, IsAscii(input));
     }
 
     internal static Utf8ValidationResult Describe(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
@@ -48,7 +46,6 @@ internal static partial class Utf8InputAnalyzer
             return Utf8ExecutionLimitKind.None;
         }
         var ascii = true;
-        var supplementary = false;
         for (var offset = 0; offset < input.Length;)
         {
             breach = invocation.TryChargeInputStep();
@@ -57,12 +54,12 @@ internal static partial class Utf8InputAnalyzer
             var count = Math.Min(4096, input.Length - offset);
             var block = Describe(input.Slice(offset, count));
             ascii &= block.IsAscii;
-            supplementary |= block.ContainsSupplementaryScalars;
             offset += count;
+            if (!ascii) break; // Later bytes cannot change an already-false ASCII fact.
         }
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
-        if (breach == Utf8ExecutionLimitKind.None) result = new(input.Length, ascii, supplementary);
+        if (breach == Utf8ExecutionLimitKind.None) result = new(input.Length, ascii);
         return breach;
     }
 }

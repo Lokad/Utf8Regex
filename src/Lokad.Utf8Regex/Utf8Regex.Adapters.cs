@@ -390,7 +390,7 @@ public sealed partial class Utf8Regex
         {
             return new Utf8ValueMatchEnumerator(
                 Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, true, false), budget, start.Value))
+                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, true), budget, start.Value))
                 .WithTimeoutMapping(input.Bytes, this);
         }
 

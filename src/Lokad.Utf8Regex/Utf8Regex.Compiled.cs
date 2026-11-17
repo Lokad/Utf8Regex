@@ -154,7 +154,7 @@ public sealed partial class Utf8Regex
             {
                 // A default validation result does not prove the subject is
                 // mixed. Reuse this ASCII proof in the router below.
-                validation = new Utf8ValidationResult(input.Length, true, false);
+                validation = new Utf8ValidationResult(input.Length, true);
             }
             else
             {

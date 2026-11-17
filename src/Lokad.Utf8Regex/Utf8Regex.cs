@@ -1110,8 +1110,7 @@ public sealed partial class Utf8Regex
 
             var asciiValidation = new Utf8ValidationResult(
                 input.Length,
-                isAscii: true,
-                containsSupplementaryScalars: false);
+                isAscii: true);
             return CountViaCompiledEngine(input, asciiValidation, CreateExecutionBudget());
         }
 
@@ -1925,7 +1924,7 @@ public sealed partial class Utf8Regex
         var budget = CreateExecutionBudget();
         var usesAsciiDirectInput = CanUseAsciiDirectInput(input);
         var validation = usesAsciiDirectInput
-            ? new Utf8ValidationResult(input.Length, true, false)
+            ? new Utf8ValidationResult(input.Length, true)
             : Utf8InputAnalyzer.Describe(input);
         // R05: anchored ASCII literal families split through the anchor-enforcing
         // owned cursors (at most one match at a fixed position), like enumeration.
@@ -1983,7 +1982,6 @@ public sealed partial class Utf8Regex
         // remaining shapes use the cached scalar program below.
         if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var analysis = Utf8ValidatedInput.Create(input);
             return new Utf8ValueSplitEnumerator(
                 input,
                 new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false),

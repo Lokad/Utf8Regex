@@ -11,9 +11,6 @@ internal static partial class Utf8InputAnalyzer
         return System.Text.Ascii.IsValid(input);
     }
 
-    public static Utf8ValidatedInput Analyze(ReadOnlySpan<byte> input)
-        => Utf8ValidatedInput.Create(input);
-
     public static Utf8ValidationResult ValidateOnly(ReadOnlySpan<byte> input)
         => ValidateOnly(input, out _);
 
@@ -25,13 +22,12 @@ internal static partial class Utf8InputAnalyzer
             containsKelvinSign = false;
             return new Utf8ValidationResult(
                 input.Length,
-                isAscii: true,
-                containsSupplementaryScalars: false);
+                isAscii: true);
         }
 
         if (!Utf8ValidationCore.TryValidate(
                 input[firstNonAscii..],
-                out var validation,
+                out _,
                 out var errorOffset,
                 out containsKelvinSign))
         {
@@ -40,8 +36,7 @@ internal static partial class Utf8InputAnalyzer
 
         return new Utf8ValidationResult(
             input.Length,
-            isAscii: false,
-            validation.ContainsSupplementaryScalars);
+            isAscii: false);
     }
 
     public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)

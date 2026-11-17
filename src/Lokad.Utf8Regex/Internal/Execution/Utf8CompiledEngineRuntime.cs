@@ -21,7 +21,7 @@ internal interface IUtf8AsciiWellFormedMatchRuntime
 internal interface IUtf8WellFormedMatchRuntime
 {
     /// <summary>
-    /// Attempts a match after the caller has validated the complete subject.
+    /// Attempts a match over caller-valid UTF-8 text.
     /// A false result is definitive only when the capability record says so.
     /// </summary>
     bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8CaptureRange match);
@@ -32,7 +32,7 @@ internal interface IUtf8UnvalidatedMatchRuntime
     /// <summary>
     /// Attempts a byte-safe match without validation. The implementation must
     /// charge the supplied deadline and return false when it cannot safely
-    /// decide the operation; it must not treat malformed UTF-8 as accepted.
+    /// decide the operation over caller-valid UTF-8.
     /// </summary>
     bool ExecuteMatchWithoutValidation(
         ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match);
@@ -40,17 +40,10 @@ internal interface IUtf8UnvalidatedMatchRuntime
 
 internal abstract class Utf8CompiledEngineRuntime
 {
-    protected static Utf8ValidationResult GetProbeValidation(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
-    {
-        return validation.ByteLength == input.Length
-            ? validation
-            : Utf8InputAnalyzer.Describe(input);
-    }
-
     /// <summary>
     /// Describes optional whole-operation shortcuts implemented by this
-    /// runtime. A false member means that the canonical validated operation
-    /// path must be used; it is never permission to skip validation.
+    /// runtime. A false member means that the canonical matching operation
+    /// path must be used; all paths require caller-valid text.
     /// </summary>
     public virtual Utf8CompiledRuntimeCapabilities Capabilities => default;
 

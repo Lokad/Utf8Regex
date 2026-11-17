@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static partial class Utf8ValidationCore
 {
-    // Strict pattern/output validation reports scalar flags and first-error
+    // Strict pattern/output validation reports ASCII/Kelvin facts and first-error
     // offsets. Subject inspection has a separate caller-valid contract.
     public static bool TryValidate(
         ReadOnlySpan<byte> input,
@@ -21,7 +21,6 @@ internal static partial class Utf8ValidationCore
         out int errorOffset,
         out bool containsKelvinSign)
     {
-        var containsSupplementaryScalars = false;
         containsKelvinSign = false;
         var isAscii = true;
         var offset = 0;
@@ -33,8 +32,7 @@ internal static partial class Utf8ValidationCore
             {
                 validation = new Utf8ValidationResult(
                     input.Length,
-                    isAscii,
-                    containsSupplementaryScalars);
+                    isAscii);
                 errorOffset = -1;
                 return true;
             }
@@ -120,7 +118,6 @@ internal static partial class Utf8ValidationCore
                 }
 
                 offset += 4;
-                containsSupplementaryScalars = true;
 
                 continue;
             }
@@ -132,8 +129,7 @@ internal static partial class Utf8ValidationCore
 
         validation = new Utf8ValidationResult(
             input.Length,
-            isAscii,
-            containsSupplementaryScalars);
+            isAscii);
         errorOffset = -1;
         return true;
     }

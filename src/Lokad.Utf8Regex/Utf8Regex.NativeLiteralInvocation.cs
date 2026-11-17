@@ -78,7 +78,7 @@ public sealed partial class Utf8Regex
             literals.Length <= maximumAlternatives) &&
         !_preparedRegex.SearchPlan.HasBoundaryRequirements;
 
-    // Metered literal value operations start their one deadline before validation.
+    // Metered literal operations start their one deadline before input admission.
     // Unlimited operations keep the established specialized kernels. Semantic
     // exclusions match native token enumeration; other profiles retain their VM.
     private bool TryStartNativeLiteralInvocation(ReadOnlySpan<byte> input, CancellationToken token,
@@ -101,8 +101,8 @@ public sealed partial class Utf8Regex
             return false;
         // Empty literals use the shared scalar program and its boundary progression.
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        // These roots consume bytes or project their selected range separately.
-        // Keep full metered validity without deriving discarded UTF-16 metadata.
+        // These roots search caller-valid bytes and publish byte ranges.
+        // Keep bounded entry admission without deriving subject metadata.
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         return true;
     }

@@ -67,7 +67,7 @@ public sealed class Utf8CountValidationMetadataTests
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2045)] [InlineData(2046)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
-    public void BorrowedAsciiProofKeepsBlockWorkAndFullCoordinateValidation(int prefix)
+    public void BorrowedAsciiProofKeepsByteLengthAndBoundedWork(int prefix)
     {
         foreach (var suffix in new[] { "", "é", "中", "😀", "é😀中" })
         {
@@ -82,7 +82,6 @@ public sealed class Utf8CountValidationMetadataTests
             Assert.Equal(suffix.Length == 0, Utf8InputAnalyzer.IsAscii(input, ref flags));
             Assert.Equal(bytes.Length, metadata.ByteLength);
             Assert.Equal(suffix.Length == 0, metadata.IsAscii);
-            Assert.Equal(suffix.Contains("😀", StringComparison.Ordinal), metadata.ContainsSupplementaryScalars);
             Assert.Equal(0UL, flags.Ledger.ReservedBytes);
         }
     }
@@ -145,4 +144,25 @@ public sealed class Utf8CountValidationMetadataTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2047)]
+    [InlineData(4095)]
+    [InlineData(4096)]
+    public void NonAsciiFactStopsInspectingTheUnusedSuffix(int prefix)
+    {
+        var bytes = Encoding.UTF8.GetBytes(new string('a', prefix) + "é😀" + new string('x', 1 << 20));
+        var invocation = new Utf8SliceInvocation(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
+        var description = Utf8InputAnalyzer.Describe(bytes, ref invocation);
+        Assert.False(description.IsAscii);
+        Assert.Equal(bytes.Length, description.ByteLength);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+
+        // A true ASCII proof still has to inspect every byte under its allowance.
+        bytes.AsSpan().Fill((byte)'a');
+        invocation = new(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
+            Utf8InputAnalyzer.TryDescribe(bytes, ref invocation, out _));
+    }
+
 }

@@ -30,7 +30,7 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
-    public void ValidateAsciiInputReportsExpectedLengths()
+    public void StrictAsciiDescriptorUsesByteLength()
     {
         ReadOnlySpan<byte> input = "hello"u8;
 
@@ -38,11 +38,10 @@ public sealed class Utf8ValidationTests
 
         Assert.Equal(5, result.ByteLength);
         Assert.True(result.IsAscii);
-        Assert.False(result.ContainsSupplementaryScalars);
     }
 
     [Fact]
-    public void ValidateBmpInputReportsUtf16Length()
+    public void StrictBmpDescriptorUsesByteLength()
     {
         var input = "café"u8;
 
@@ -50,11 +49,10 @@ public sealed class Utf8ValidationTests
 
         Assert.Equal(input.Length, result.ByteLength);
         Assert.False(result.IsAscii);
-        Assert.False(result.ContainsSupplementaryScalars);
     }
 
     [Fact]
-    public void ValidateSupplementaryInputReportsTwoUtf16CodeUnits()
+    public void StrictSupplementaryDescriptorUsesByteLength()
     {
         var input = "a😀b"u8;
 
@@ -62,7 +60,6 @@ public sealed class Utf8ValidationTests
 
         Assert.Equal(input.Length, result.ByteLength);
         Assert.False(result.IsAscii);
-        Assert.True(result.ContainsSupplementaryScalars);
     }
 
     [Theory]
@@ -193,11 +190,10 @@ public sealed class Utf8ValidationTests
     {
         var input = "a😀b"u8;
 
-        var analysis = Utf8InputAnalyzer.Analyze(input);
+        var analysis = Utf8ValidatedInput.Create(input);
 
         Assert.Equal(input.Length, analysis.Validation.ByteLength);
         Assert.False(analysis.Validation.IsAscii);
-        Assert.True(analysis.Validation.ContainsSupplementaryScalars);
 
 
 
