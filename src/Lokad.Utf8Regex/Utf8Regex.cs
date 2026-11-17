@@ -18,9 +18,12 @@ public sealed partial class Utf8Regex
 {
 
     /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>Subjects must be valid unchanged UTF-8. Pattern and replacement checks are independent.</remarks>
+    /// <remarks>Subjects must be valid unchanged UTF-8; pattern/template checks are independent. A null timeout uses DefaultMatchTimeout.
+    /// Work and result traffic are cumulative per operation/cursor; depth and working bytes bound live modeled major state, buffers and growth overlap.
+    /// Admission precedes acquisition and can conservatively count shared storage. Borrowed subjects and host decoding/collections are excluded.
+    /// Construction/preparation and program funding have separate scope; use Compile for explicit construction limits and cancellation.</remarks>
     public Utf8Regex(string pattern, RegexOptions options = RegexOptions.CultureInvariant, TimeSpan? matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
-        : this(pattern, options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true) { }
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
 
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
@@ -38,48 +41,9 @@ public sealed partial class Utf8Regex
     private readonly Utf8SliceProgram _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache;
 
-    /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
-    public Utf8Regex(string pattern)
-        : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout)
+    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
     {
-    }
-
-    /// <summary>Compiles an expression with the specified .NET regex options and <see cref="DefaultMatchTimeout"/>.</summary>
-    public Utf8Regex(string pattern, RegexOptions options)
-        : this(pattern, options, DefaultMatchTimeout)
-    {
-    }
-
-    /// <summary>Compiles an expression with the specified options, match timeout, and invocation resource policy.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    /// <remarks>A finite work, depth, working or result limit selects owned scalar execution. Work covers validation, matching and required result shaping cumulatively; depth bounds live backtracking/continuation frames or pending linear alternatives.
-    /// Working bytes cover modeled major active arrays/output controls and old/new overlap; scratch releases synchronously while published cursor maps/tables remain charged for the invocation.
-    /// Result bytes cover cumulative modeled major result/staging capacity, including arrays, text, coordinate maps, growth and output controls.
-    /// Capacity charges precede acquisition, may conservatively count shared storage and are never refunded; fixed values and borrowed input are excluded.
-    /// Replacement parsing and UTF-8 template-key decoding also use the working-byte value as a separate additional-capacity ceiling; ConstructionBytes may precede execution. UTF-8 key decoding needs admission even on cache hits.
-    /// Construction/preparation work and retained storage remain separate. Caller callback execution and later standalone result getters are outside this work cap.
-    /// Copied value enumerators share their work allowance while keeping independent positions; concurrent advancement is unsupported.</remarks>
-    public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
-    {
-    }
-
-    /// <summary>Compiles an expression with the specified .NET regex options and match timeout.</summary>
-    public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
-        : this(pattern, options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
-    {
-    }
-
-    /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
-    private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy) { }
-
-    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
-    {
-        if (checkPolicy)
-        {
-            ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
-        }
+        ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
         using var construction = Utf8ConstructionScope.Enter();
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));

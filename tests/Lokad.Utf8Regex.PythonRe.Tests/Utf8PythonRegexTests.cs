@@ -5,6 +5,15 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 [Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class Utf8PythonRegexTests
 {
+    [Fact]
+    public void NullableConstructorDefaultInheritsTimeoutButTypedZeroIsRejected()
+    {
+        var inherited = new Utf8PythonRegex("a", PythonReCompileOptions.None, default);
+        Assert.Equal(Utf8PythonRegex.DefaultMatchTimeout, inherited.MatchTimeout);
+        Assert.Equal(inherited.MatchTimeout, new Utf8PythonRegex("a"u8, matchTimeout: null).MatchTimeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("a", PythonReCompileOptions.None, default(TimeSpan)));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-2)]

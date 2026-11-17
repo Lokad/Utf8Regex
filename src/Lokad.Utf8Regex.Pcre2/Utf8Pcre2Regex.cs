@@ -18,10 +18,12 @@ public sealed partial class Utf8Pcre2Regex
 {
 
     /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
     public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
         : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
 
     /// <summary>Compiles a strict UTF-8 pattern for caller-valid, unchanged UTF-8 subjects.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
         : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
 
@@ -29,18 +31,6 @@ public sealed partial class Utf8Pcre2Regex
     private readonly Pcre2CompiledProgram _program;
     private readonly Pcre2FiniteLiteralLanguageDirectProgram? _unmeteredLiteralLanguage;
     private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _replacementCache;
-
-    /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
-    public Utf8Pcre2Regex(string pattern)
-        : this(pattern, Pcre2CompileOptions.None)
-    {
-    }
-
-    /// <summary>Compiles a PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
-    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options)
-        : this(pattern, options, default(Utf8Pcre2CompileSettings), default(Utf8Pcre2ExecutionLimits), DefaultMatchTimeout)
-    {
-    }
 
     /// <summary>Compiles a PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
     /// <remarks>Policy-based construction is a named factory rather than a constructor overload so
@@ -51,17 +41,6 @@ public sealed partial class Utf8Pcre2Regex
         string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
     {
         return new Utf8Pcre2Regex(new Utf8ConstructionPattern(pattern), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout);
-    }
-
-    /// <summary>Compiles a PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
-    public Utf8Pcre2Regex(
-        string pattern,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
-        TimeSpan matchTimeout)
-        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits, matchTimeout)
-    {
     }
 
     /// <summary>Owns admitted source storage; native compilation borrows it without decoding.</summary>
@@ -126,18 +105,6 @@ public sealed partial class Utf8Pcre2Regex
         };
     }
 
-    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with default options, settings, limits, and timeout.</summary>
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8)
-        : this(patternUtf8, Pcre2CompileOptions.None)
-    {
-    }
-
-    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options)
-        : this(patternUtf8, options, default(Utf8Pcre2CompileSettings), default(Utf8Pcre2ExecutionLimits), DefaultMatchTimeout)
-    {
-    }
-
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
     /// <remarks>The policy is validated before the UTF-8 source is acquired and parsed. Policy-based
     /// construction is a named factory rather than a constructor overload; see
@@ -149,17 +116,6 @@ public sealed partial class Utf8Pcre2Regex
     {
         var defaultExecutionLimits = ToExecutionLimits(resourcePolicy);
         return new Utf8Pcre2Regex(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
-    }
-
-    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
-    public Utf8Pcre2Regex(
-        ReadOnlySpan<byte> patternUtf8,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
-        TimeSpan matchTimeout)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout)
-    {
     }
 
     /// <summary>Gets or sets the timeout used by constructors and static operations that do not specify one.</summary>

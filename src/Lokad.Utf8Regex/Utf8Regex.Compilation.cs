@@ -12,7 +12,7 @@ public sealed partial class Utf8Regex
     // Adapter construction already owns its synchronous scope. Reuse it rather
     // than entering a second public policy/token owner through Compile.
     internal Utf8Regex(ReadOnlySpan<byte> patternUtf8, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, true) { }
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy) { }
 
     /// <summary>Compiles a strict UTF-8 pattern directly with the owned scalar grammar.</summary>
     /// <remarks>The span is borrowed only during this call. Retained source and literal bytes are owned by the expression. Pattern text is projected only by explicit string interoperability or diagnostics.</remarks>
@@ -45,7 +45,7 @@ public sealed partial class Utf8Regex
             cancellationToken, programMemoryAllowance);
         try
         {
-            var regex = new Utf8Regex(pattern, options, matchTimeout, resourcePolicy, true);
+            var regex = new Utf8Regex(pattern, options, matchTimeout, resourcePolicy);
             var storage = construction.Budget.AllocateObject(programMemoryAllowance,
                 static allowance => new Utf8FundedStorage(allowance, nameof(Utf8RegexProgramOwner)));
             var result = construction.Budget.AllocateObject((Regex: regex, Storage: storage),
@@ -85,7 +85,7 @@ public sealed partial class Utf8Regex
         using var construction = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
         try
         {
-            var result = new Utf8Regex(pattern, options, matchTimeout, resourcePolicy, true);
+            var result = new Utf8Regex(pattern, options, matchTimeout, resourcePolicy);
             construction.Budget.ChargeWork(0); // Check before publication, even after a short route.
             construction.Complete();
             return result;

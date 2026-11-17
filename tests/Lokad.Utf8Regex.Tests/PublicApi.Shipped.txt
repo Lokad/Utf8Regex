@@ -31,11 +31,7 @@ readonly struct Utf8RangeMatch
   method ReadOnlyMemory<Byte> GetValueMemory()
   method ReadOnlySpan<Utf8CaptureRange> GetCaptures(Int32 number)
 sealed class Utf8Regex
-  ctor Utf8Regex(String pattern)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options = 512, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
-  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options)
-  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
-  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property Int32 CaptureGroupCount { get; }
   property String Pattern { get; }
   property Text.RegularExpressions.RegexOptions Options { get; }

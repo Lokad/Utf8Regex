@@ -383,3 +383,17 @@ collection allocation, copying and final publication checks belong to the host.
 The removed invocation string-sizing/decoding helpers provide no host memory cap.
 Scalar progression, offsets, capture completion, synchronous cancellation,
 deadlines and meaningful byte/work/depth limits remain on the retained APIs.
+
+### Constructor signatures
+
+Constructors now use the existing optional nullable-timeout signature: one per
+supported string/UTF-8 pattern representation. Short source calls still work;
+previously compiled callers of removed overloads must be recompiled, including
+adapters. Core UTF-8 compilation remains on Compile; no public span constructor
+is added. Explicit construction limits, cancellation and program funding retain
+their factory contracts.
+
+An omitted or null timeout inherits DefaultMatchTimeout (infinite for POSIX).
+A positional bare default in that nullable slot now has the same meaning.
+TimeSpan.Zero and default(TimeSpan) still fail timeout validation. Options,
+resource-policy ordering, strict pattern checks and scalar matching are unchanged.

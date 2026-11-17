@@ -11,6 +11,14 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixPublicContractTests
 {
     [Fact]
+    public void NullableConstructorDefaultInheritsTimeoutButTypedZeroIsRejected()
+    {
+        var inherited = new Utf8PosixRegex("a", PosixCompileOptions.None, default);
+        Assert.Equal(Timeout.InfiniteTimeSpan, inherited.MatchTimeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", PosixCompileOptions.None, default(TimeSpan)));
+    }
+
+    [Fact]
     public void PublicApiMatchesReviewedSnapshot()
         => PublicApiSnapshot.AssertMatches(typeof(Utf8PosixRegex).Assembly, "Lokad.Utf8Regex.Posix.Tests");
     [Fact]

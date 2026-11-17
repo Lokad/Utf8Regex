@@ -6,6 +6,15 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Utf8Pcre2RegexConstructionTests
 {
     [Fact]
+    public void NullableConstructorDefaultInheritsTimeoutButTypedZeroIsRejected()
+    {
+        var inherited = new Utf8Pcre2Regex("a", default, default, default, default);
+        Assert.Equal(Utf8Pcre2Regex.DefaultMatchTimeout, inherited.MatchTimeout);
+        Assert.Equal(inherited.MatchTimeout, new Utf8Pcre2Regex("a"u8, matchTimeout: null).MatchTimeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex("a", default, default, default, default(TimeSpan)));
+    }
+
+    [Fact]
     public void Utf8Pcre2RegexStoresConstructionProperties()
     {
         var settings = new Utf8Pcre2CompileSettings

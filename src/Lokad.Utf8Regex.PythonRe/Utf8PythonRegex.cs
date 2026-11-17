@@ -14,14 +14,16 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Compiles an expression over already-valid UTF-8 text.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
         Utf8ResourcePolicy resourcePolicy = default)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true) { }
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
 
     /// <summary>Compiles a strict UTF-8 pattern over already-valid UTF-8 text.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
         Utf8ResourcePolicy resourcePolicy = default)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy, true) { }
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
 
     private readonly record struct PythonReUtf8MatchRange(
         int IndexInBytes,
@@ -94,73 +96,10 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8BoundedPreparationCache<object, PythonReReplacementPlan> _replacementPlanCache;
     private readonly object _patternSource;
 
-    /// <summary>Creates a Python-compatible expression from UTF-16 text with default options and timeout.</summary>
-    public Utf8PythonRegex(string pattern)
-        : this(pattern, PythonReCompileOptions.None)
+    /// <summary>Shared construction worker. Validates the policy before parsing or preparation.</summary>
+    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
     {
-    }
-
-    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with default options and timeout.</summary>
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8)
-        : this(patternUtf8, PythonReCompileOptions.None)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern using the process-wide default timeout.</summary>
-    /// <param name="patternUtf8">The pattern encoded as UTF-8.</param>
-    /// <param name="options">The Python-compatible compile options.</param>
-    /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8, the options are incompatible, or the pattern is invalid.</exception>
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options)
-        : this(patternUtf8, options, DefaultMatchTimeout)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options and timeout.</summary>
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression using the process-wide default timeout.</summary>
-    /// <param name="pattern">The pattern in UTF-16 text.</param>
-    /// <param name="options">The Python-compatible compile options.</param>
-    /// <exception cref="ArgumentException">The options are incompatible or the pattern is invalid.</exception>
-    public Utf8PythonRegex(string pattern, PythonReCompileOptions options)
-        : this(pattern, options, DefaultMatchTimeout)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options, timeout, and invocation resource policy.</summary>
-    /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, checkPolicy: true)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
-    /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy: true)
-    {
-    }
-
-    /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options and timeout.</summary>
-    public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
-    {
-    }
-
-    /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
-    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
-    {
-        if (checkPolicy)
-        {
-            ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
-        }
+        ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
         // These argument checks need no pattern conversion or construction
         // allowance. Keep policy errors first, then flags and timeout, for both
         // text and byte entries before acquiring decoded pattern storage.

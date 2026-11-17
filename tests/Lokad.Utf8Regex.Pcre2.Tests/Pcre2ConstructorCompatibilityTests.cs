@@ -4,10 +4,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R01 source-compatibility evidence: the limits constructor overloads must keep
-// accepting legacy call shapes (positional/named bare `default`), while
-// policy-based construction lives on the unambiguous Create factories.
-// These tests fail to compile if the CS0121 ambiguity returns.
+// Optional string/UTF8 constructors accept positional/named default settings and
+// limits. Resource-policy construction remains on unambiguous named factories.
 public sealed class Pcre2ConstructorCompatibilityTests
 {
     [Fact]

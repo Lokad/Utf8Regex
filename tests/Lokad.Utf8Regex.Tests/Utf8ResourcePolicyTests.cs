@@ -5,6 +5,14 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ResourcePolicyTests
 {
     [Fact]
+    public void NullableConstructorDefaultInheritsTimeoutButTypedZeroIsRejected()
+    {
+        var inherited = new Utf8Regex("a", System.Text.RegularExpressions.RegexOptions.None, default);
+        Assert.Equal(Utf8Regex.DefaultMatchTimeout, inherited.MatchTimeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("a", System.Text.RegularExpressions.RegexOptions.None, default(TimeSpan)));
+    }
+
+    [Fact]
     public void UnlimitedHasNoBudgets()
     {
         Assert.Null(Utf8ResourcePolicy.Unlimited.MaxWorkSteps);

@@ -98,14 +98,8 @@ readonly struct Utf8Pcre2RangeMatch
   method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
   method ReadOnlyMemory<Byte> GetValueMemory()
 sealed class Utf8Pcre2Regex
-  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options = 0, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, Nullable<TimeSpan> matchTimeout = null)
-  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options)
-  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
-  ctor Utf8Pcre2Regex(String pattern)
   ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options = 0, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, Nullable<TimeSpan> matchTimeout = null)
-  ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options)
-  ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
   property Int32 CaptureGroupCount { get; }
   property Int32 NameEntryCount { get; }
   property Pcre2CompileOptions Options { get; }

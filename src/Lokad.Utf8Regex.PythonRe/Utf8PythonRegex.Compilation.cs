@@ -47,7 +47,7 @@ public sealed partial class Utf8PythonRegex
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
         try
         {
-            var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true);
+            var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy);
             // Explicit compilation finishes both operation programs under this
             // one owner. Do not retain its policy/token for later invocations.
             _ = result._lazyScalarFullProgram.Value;

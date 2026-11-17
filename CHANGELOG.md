@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Consolidate constructors to one optional signature per supported pattern
+  representation. Recompile old callers; a bare default timeout now inherits the
+  profile default, while an explicitly zero TimeSpan remains invalid. Preserve
+  construction/resource controls and remove obsolete validation switches.
+
 - Remove PythonRe's owned-text detailed Data APIs, FindIterDetailed and their two
   text carriers. Borrowed capture contexts and range cursors remain. Host code
   owns decoding/collections; obsolete invocation string sizing and decoding are

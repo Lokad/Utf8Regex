@@ -4,9 +4,7 @@ sealed class Posix.Utf8PosixMatchCursor : IDisposable
   method Boolean MoveNext(out Utf8CaptureRange match)
   method Void Dispose()
 sealed class Posix.Utf8PosixRegex
-  ctor Utf8PosixRegex(String pattern)
   ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options = 0, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
-  ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property Int32 GroupCount { get; }
   property Posix.PosixCompileOptions Options { get; }
   property String Pattern { get; }

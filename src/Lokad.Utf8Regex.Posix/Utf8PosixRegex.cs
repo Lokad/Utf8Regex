@@ -9,31 +9,25 @@ namespace Lokad.Utf8Regex.Posix;
 public sealed class Utf8PosixRegex
 {
     /// <summary>Compiles an ERE over already-valid UTF-8 text.</summary>
+    /// <remarks>A null timeout means infinite. Work, depth and modeled major working/result bounds remain active; host storage is separate. Use Compile for explicit construction controls.</remarks>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None, TimeSpan? matchTimeout = null,
         Utf8ResourcePolicy resourcePolicy = default)
-        : this(pattern, options, matchTimeout ?? Regex.InfiniteMatchTimeout, resourcePolicy) { }
-
-    // A synchronous vector never escapes its call. Keep its stack footprint
-    // bounded; the workspace admits the same conservative capacity first.
-    private const int StackStateLimit = 128;
-    private readonly PosixProgram _program;
-    private readonly Utf8ExecutionLimits _limits;
-
-    /// <summary>Compiles a case-sensitive ERE with absolute anchors and unlimited execution policy.</summary>
-    public Utf8PosixRegex(string pattern) : this(pattern, PosixCompileOptions.None, Regex.InfiniteMatchTimeout, default) { }
-
-    /// <summary>Compiles an ERE with explicit newline semantics, timeout and resource policy.</summary>
-    public Utf8PosixRegex(string pattern, PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)) != 0) throw new ArgumentOutOfRangeException(nameof(options));
-        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
+        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout ?? Regex.InfiniteMatchTimeout, nameof(matchTimeout));
         resourcePolicy.Validate(nameof(resourcePolicy));
         Pattern = pattern; Options = options;
         _limits = new(resourcePolicy.MaxWorkSteps ?? 0, resourcePolicy.MaxDepth ?? 0,
             resourcePolicy.MaxWorkingBytes ?? 0, resourcePolicy.MaxResultBytes ?? 0);
         _program = PosixProgram.Compile(pattern, options);
     }
+
+    // A synchronous vector never escapes its call. Keep its stack footprint
+    // bounded; the workspace admits the same conservative capacity first.
+    private const int StackStateLimit = 128;
+    private readonly PosixProgram _program;
+    private readonly Utf8ExecutionLimits _limits;
 
     /// <summary>Compiles with separate bounded eager construction and execution controls.</summary>
     public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
