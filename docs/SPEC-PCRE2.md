@@ -53,6 +53,10 @@ EnumerateMatches, MatchMany, replacement, Analyze, name metadata and Probe.
 Compile, match, substitution and probe options are separate types.
 There is no RTL or DFA matcher.
 
+Compile an expression once and invoke its instance methods. Static IsMatch,
+Match and Replace convenience overloads are removed; they previously compiled a
+fresh expression per call. There is no process-wide pattern cache.
+
 Construction requires a successful PCRE2 semantic parse before reusing Core
 execution/search. Core-only `\u0041`, `\p{IsGreek}` and balancing-group syntax
 are not admitted through a fallback. Unsupported executable coverage fails with

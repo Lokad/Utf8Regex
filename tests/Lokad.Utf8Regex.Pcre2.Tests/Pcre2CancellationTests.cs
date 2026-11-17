@@ -143,30 +143,6 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeStaticIsMatch()
-    {
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => Utf8Pcre2Regex.IsMatch(s_input, "foo", Pcre2CompileOptions.None, default, default, Utf8Pcre2Regex.DefaultMatchTimeout, 0, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeStaticMatch()
-    {
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => Utf8Pcre2Regex.Match(s_input, "foo", Pcre2CompileOptions.None, default, default, Utf8Pcre2Regex.DefaultMatchTimeout, 0, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeStaticReplace()
-    {
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => Utf8Pcre2Regex.Replace(s_input, "foo", "bar", Pcre2CompileOptions.None, default, default, Utf8Pcre2Regex.DefaultMatchTimeout, 0, Pcre2SubstitutionOptions.None, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void CancellationBeatsValidation()
     {
         var regex = Create();

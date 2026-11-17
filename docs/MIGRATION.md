@@ -149,7 +149,9 @@ pre-cancellation and excess entries leave caller storage unchanged.
 
 Core removes the static `IsMatch`, `Count`, `Match`, `MatchDetailed`,
 `EnumerateMatches`, `EnumerateSplits` and `Replace` families and their global
-pattern cache. Construct or compile an expression once and retain it in the host:
+pattern cache. PCRE2 also removes its static `IsMatch`, `Match` and `Replace`
+overloads, which compiled a fresh expression per call. Construct or compile an
+expression once and retain it in the host:
 
 ```csharp
 var words = new Utf8Regex(@"\w+");

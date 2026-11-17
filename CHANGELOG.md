@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2's static IsMatch, Match and Replace convenience overloads. Retain
+  compiled instances in the host; their matching and resource controls are unchanged.
+
 - Retire PCRE2's separate character-sequence execution and parse, including
   single-class counters and cursor state. Preserve partial probes through the
   existing parsed tree, and keep PCRE2 caret/end-only-dollar semantics when Core
