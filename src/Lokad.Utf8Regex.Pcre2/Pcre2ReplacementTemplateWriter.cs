@@ -139,26 +139,6 @@ internal ref struct Pcre2ReplacementTemplateWriter
         catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
-    internal string CompleteToString()
-    {
-        try
-        {
-            CheckWork();
-            ReleaseFrames();
-            var bytes = _writer.WrittenBytes;
-            Utf8SliceBufferWork.ValidateUtf8(bytes, ref _invocation);
-            var result = Utf8SliceBufferWork.DecodeUtf8(bytes, ref _invocation);
-            _writer.Release(ref _invocation);
-            return result;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach);
-            throw;
-        }
-    }
-
     internal OperationStatus CompleteToDestination(Span<byte> destination, bool overflowLength, out int written)
     {
         try
@@ -180,24 +160,6 @@ internal ref struct Pcre2ReplacementTemplateWriter
         { Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach); throw; }
     }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
-
-    // The caller guarantees a valid UTF-8 subject. EOF does not reset
-    // its authority; publish the string without a second encoded byte root.
-    internal static string DecodeUnchanged(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
-    {
-        Pcre2ReplacementPreparationControl.Check();
-        try
-        {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            return Utf8SliceBufferWork.DecodeUtf8(input, ref invocation);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach);
-            throw;
-        }
-    }
 
     // EOF releases discovery scratch, not its authority. Fund the returned root
     // before acquiring it, and keep the original budget/token/deadline for copying.

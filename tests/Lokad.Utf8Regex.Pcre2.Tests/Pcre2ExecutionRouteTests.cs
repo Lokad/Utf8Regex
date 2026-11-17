@@ -207,7 +207,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(16, matches[2].StartOffsetInBytes);
 
         const string expected = "é <tempus> <magna> <semper> <tempus>";
-        Assert.Equal(expected, regex.ReplaceToString(input, "<$0>"));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(
             expected,
@@ -389,7 +389,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.True(isMore);
         Assert.Equal(
             "short <abcdefghij> <x_123456789> <yyyyyyyyyy> é<abcdefghij>",
-            regex.ReplaceToString(input, "<$0>"));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
@@ -449,7 +449,7 @@ public sealed class Pcre2ExecutionRouteTests
         Parallel.For(0, 256, _ =>
         {
             Assert.Equal(2, regex.Count(input));
-            Assert.Equal("short <abcdefghij> <klmnopqrst>", regex.ReplaceToString(input, "<$0>"));
+            Assert.Equal("short <abcdefghij> <klmnopqrst>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
         });
     }
 
@@ -484,7 +484,7 @@ public sealed class Pcre2ExecutionRouteTests
 
                 var input = Encoding.UTF8.GetBytes(builder.ToString());
                 Assert.Equal(GetRanges(vmOnly, input), GetRanges(candidate, input));
-                Assert.Equal(vmOnly.ReplaceToString(input, "<$0>"), candidate.ReplaceToString(input, "<$0>"));
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(vmOnly.Replace(input, "<$0>")), System.Text.Encoding.UTF8.GetString(candidate.Replace(input, "<$0>")));
             }
         }
 

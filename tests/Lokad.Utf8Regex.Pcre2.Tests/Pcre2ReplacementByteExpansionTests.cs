@@ -45,7 +45,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
     {
         var regex = new Utf8Pcre2Regex("(?<w>😀𐐨)");
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("α😀𐐨β"u8, template, 0, Pcre2SubstitutionOptions.Extended));
-        Assert.Equal(expected, regex.ReplaceToString("α😀𐐨β"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace("α😀𐐨β"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
     }
 
     [Fact]
@@ -55,7 +55,6 @@ public sealed class Pcre2ReplacementByteExpansionTests
             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow }, default, Utf8Pcre2Regex.DefaultMatchTimeout);
         Assert.Equal("😀"u8.ToArray(), regex.Replace("😀"u8, "$1"));
         Assert.Equal(new byte[] {0xf0, 0xf0, 0x9f, 0x9f, 0x98, 0x98, 0x80, 0x80}, regex.Replace("😀"u8, "$1$1"));
-        Assert.Throws<ArgumentException>(() => regex.ReplaceToString("😀"u8, "$1$1"));
     }
 
     [Theory]
@@ -72,7 +71,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
     public void UnpairedTemplateFragmentsCannotJoinAcrossAnEmptyCapture()
     {
         var template = new string((char)0xd83d, 1) + "$1" + new string((char)0xde00, 1);
-        Assert.Equal("��😀��", new Utf8Pcre2Regex("()").ReplaceToString("😀"u8, template));
+        Assert.Equal("��😀��", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("()").Replace("😀"u8, template)));
     }
 
     [Fact]

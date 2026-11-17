@@ -93,7 +93,7 @@ public sealed class Pcre2QuotedClassTests
         Assert.Equal("😀-😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal((2,11),(group.StartOffsetInBytes,group.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("é<😀-😃>x<😀>", regex.ReplaceToString(input, "<$1>"));
+        Assert.Equal("é<😀-😃>x<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
         Assert.Equal("😀-😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();

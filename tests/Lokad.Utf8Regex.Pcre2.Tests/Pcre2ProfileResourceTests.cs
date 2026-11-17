@@ -40,7 +40,7 @@ public sealed class Pcre2ProfileResourceTests
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = regex.ReplaceToString(input, "$0");
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$0"));
             else _ = regex.Replace(input, "$0");
         });
         Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
@@ -55,7 +55,7 @@ public sealed class Pcre2ProfileResourceTests
         while (cursor.MoveNext()) ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.Equal(new[] { (0, 0), (0, 1), (1, 1), (5, 5) }, ranges);
         Assert.Equal(4, regex.Count("A😀"u8));
-        Assert.Equal("!!!😀!", regex.ReplaceToString("A😀"u8, "!"));
+        Assert.Equal("!!!😀!", System.Text.Encoding.UTF8.GetString(regex.Replace("A😀"u8, "!")));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class Pcre2ProfileResourceTests
         {
             var regex = new Utf8Pcre2Regex(@"(?<v>\x{41})😀", Pcre2CompileOptions.None, default,
                 new() { MatchLimit = heap ? 0 : (uint)cap, HeapLimitInBytes = heap ? cap : 0 }, Timeout.InfiniteTimeSpan);
-            return regex.ReplaceToString("A😀éA😀"u8, "${v}:😀");
+            return System.Text.Encoding.UTF8.GetString(regex.Replace("A😀éA😀"u8, "${v}:😀"));
         }
         var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
         const string expected = "A:😀éA:😀";
@@ -179,13 +179,13 @@ public sealed class Pcre2ProfileResourceTests
     public void ExtendedNativeTemplatesRetainGrammarAndFiniteControls()
     {
         const string template = @"\Ué\E$0";
-        Assert.Equal("Éx", new Utf8Pcre2Regex("x").ReplaceToString("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal("Éx", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("x").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
         foreach (var heap in new[] { false, true })
         {
             var limited = new Utf8Pcre2Regex("x", Pcre2CompileOptions.None, default,
                 new() { MatchLimit = heap ? 0u : 1u, HeapLimitInBytes = heap ? 1UL : 0UL }, Timeout.InfiniteTimeSpan);
             Assert.Equal(heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit,
-                Assert.Throws<Pcre2MatchException>(() => limited.ReplaceToString("x"u8, template, 0, Pcre2SubstitutionOptions.Extended)).ErrorKind);
+                Assert.Throws<Pcre2MatchException>(() => System.Text.Encoding.UTF8.GetString(limited.Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended))).ErrorKind);
         }
     }
 

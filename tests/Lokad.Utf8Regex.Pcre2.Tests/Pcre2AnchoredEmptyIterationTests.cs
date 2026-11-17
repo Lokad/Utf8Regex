@@ -40,8 +40,8 @@ public sealed class Pcre2AnchoredEmptyIterationTests
             while (cursor.MoveNext())
                 ranges.Add($"{cursor.Current.StartOffsetInBytes}:{cursor.Current.EndOffsetInBytes}");
             Assert.Equal(expectedRanges, string.Join("|", ranges));
-            Assert.Equal(replacement, regex.ReplaceToString(input, "X", start,
-                Pcre2SubstitutionOptions.None, options, token.Token));
+            Assert.Equal(replacement, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X", start,
+                Pcre2SubstitutionOptions.None, options, token.Token)));
             Assert.Equal(replacement, regex.ReplaceToString(input, 0,
                 static (in Utf8Pcre2MatchContext _, ref int state) => { state++; return "X"; },
                 start, options, token.Token));
@@ -55,8 +55,8 @@ public sealed class Pcre2AnchoredEmptyIterationTests
         Assert.Equal(1, regex.Count("ab"u8, 0, Pcre2MatchOptions.Anchored));
         // SPEC-PCRE2 deliberately preserves reset-empty results for replacement
         // that ordinary Count/enumeration suppresses. Anchoring still stops bumping.
-        Assert.Equal("aXXb", regex.ReplaceToString("ab"u8, "X", 0,
-            Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
+        Assert.Equal("aXXb", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "X", 0,
+            Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
     }
 
     [Theory]

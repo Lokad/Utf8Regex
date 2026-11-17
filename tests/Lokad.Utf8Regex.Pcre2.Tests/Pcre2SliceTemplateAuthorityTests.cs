@@ -9,49 +9,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SliceTemplateAuthorityTests
 {
-    [Theory]
-    [InlineData("(é)(😀)", "xé😀xé😀", "$2$1", "x😀éx😀é")]
-    [InlineData("(é)(😀)", "nothing", "$2$1", "nothing")]
-    [InlineData("(é)(😀)", "", "$2$1", "")]
-    [InlineData("(?<=abc)(|def)", "abcdefabc😀", "<$1>", "abc<><def>abc<>😀")]
-    public void PublicSliceTemplatesKeepScalarValuesAndOwnedRoots(string pattern, string text, string replacement, string expected)
-    {
-        using var source = new CancellationTokenSource();
-        foreach (var token in new[] { CancellationToken.None, source.Token })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, Regex.InfiniteMatchTimeout);
-            Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
-            var input = Encoding.UTF8.GetBytes(text);
-            var result = regex.Replace(input, replacement, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token);
-            Assert.Equal(expected, Encoding.UTF8.GetString(result));
-            if (input.Length != 0 && text == expected) Assert.NotSame(input, result);
-            input.AsSpan().Fill((byte)'x');
-            Assert.Equal(expected, Encoding.UTF8.GetString(result));
-            Assert.Equal(expected, regex.ReplaceToString(Encoding.UTF8.GetBytes(text), replacement));
-        }
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void PublicSliceWorkCutoffsIncludeWritingAndTheUnchangedCopy(bool hit)
-    {
-        var input = Encoding.UTF8.GetBytes(hit ? "é😀é😀" : "zzz");
-        var expected = Encoding.UTF8.GetBytes(hit ? "😀é😀é" : "zzz");
-        byte[] Run(uint cap) => new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = cap }, Regex.InfiniteMatchTimeout).Replace(input, "$2$1");
-        uint first = 1, last = 100000;
-        while (first < last)
-        {
-            var cap = first + (last - first) / 2;
-            try { Assert.Equal(expected, Run(cap)); last = cap; }
-            catch (Pcre2MatchException error) { Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind); first = cap + 1; }
-        }
-        Assert.True(first > 1);
-        Assert.Equal(expected, Run(first));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => Run(first - 1)).ErrorKind);
-        Assert.Equal(expected, Run(first));
-    }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -174,5 +131,84 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         var failure = Assert.Throws<OperationCanceledException>(() => Pcre2ReplacementTemplateWriter.CopyUnchanged(new byte[10000], ref invocation));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+    private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null,
+        string pattern = "(é)(😀)")
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, limits,
+            timeout ?? Timeout.InfiniteTimeSpan);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
+        return regex;
+    }
+
+    [Theory]
+    [InlineData("(é)(😀)", "é😀xé😀β", "$2$1", Pcre2SubstitutionOptions.None, 0, "😀éx😀éβ")]
+    [InlineData("(é)(😀)", "nothing😀", @"\o{Z}", Pcre2SubstitutionOptions.Extended, 0, "nothing😀")]
+    [InlineData("(é)(😀)", "", "${", Pcre2SubstitutionOptions.None, 0, "")]
+    [InlineData("(é)(😀)", "é😀xé😀β", "$2$1", Pcre2SubstitutionOptions.None, 7, "é😀x😀éβ")]
+    [InlineData("(é)(😀)", "é😀xé😀β", "$2$1", Pcre2SubstitutionOptions.SubstituteReplacementOnly, 0, "😀é😀é")]
+    [InlineData("(é)(😀)", "é😀xé😀β", "$2$1", Pcre2SubstitutionOptions.SubstituteLiteral, 0, "$2$1x$2$1β")]
+    [InlineData("(é)(😀)", "é😀", @"${1:+\U𐐨:other}$2", Pcre2SubstitutionOptions.Extended, 0, "𐐀😀")]
+    [InlineData("(?<=abc)(|def)", "abcdefabc😀", "<$1>", Pcre2SubstitutionOptions.None, 0, "abc<><def>abc<>😀")]
+    [InlineData("(é)(😀)", "xé😀xé😀", "$2$1", Pcre2SubstitutionOptions.None, 0, "x😀éx😀é")]
+    public void OwnedByteTemplatesKeepTheirSelectedScalarOutcomes(string pattern, string input,
+        string template, Pcre2SubstitutionOptions options, int start, string expected)
+    {
+        using var source = new CancellationTokenSource();
+        foreach (var token in new[] { CancellationToken.None, source.Token })
+        {
+            var regex = Create(new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, pattern: pattern);
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var result = regex.Replace(bytes, template, start, options, Pcre2MatchOptions.None, token);
+            var expectedBytes = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(expectedBytes, result);
+            if (bytes.Length != 0 && input == expected) Assert.NotSame(bytes, result);
+            bytes.AsSpan().Fill((byte)'q');
+            Assert.Equal(expectedBytes, result);
+            Assert.False(Pcre2ReplacementPreparationControl.IsActive);
+        }
+    }
+
+    public static IEnumerable<object[]> Cutoffs()
+    {
+        foreach (var working in new[] { false, true })
+        foreach (var hit in new[] { false, true })
+        foreach (var liveToken in new[] { false, true })
+            yield return [working, hit, liveToken];
+    }
+
+    [Theory]
+    [MemberData(nameof(Cutoffs))]
+    public void PublicWorkAndHeapCutoffsIncludeFinalByteOutput(bool working, bool hit, bool liveToken)
+    {
+        using var source = new CancellationTokenSource();
+        var token = liveToken ? source.Token : CancellationToken.None;
+        var input = Encoding.UTF8.GetBytes(hit ? "é😀é😀" : new string('q', 8192));
+        var literal = new string('a', 4097);
+        var template = literal + "$2";
+        var expected = hit ? literal + "😀" + literal + "😀" : Encoding.UTF8.GetString(input);
+        string Invoke(ulong cap)
+        {
+            var regex = Create(new() { MatchLimit = working ? 0 : (uint)cap, HeapLimitInBytes = working ? cap : 0 });
+            try
+            {
+                return Encoding.UTF8.GetString(regex.Replace(input, template, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
+            }
+            finally { Assert.False(Pcre2ReplacementPreparationControl.IsActive); }
+        }
+        var kind = working ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
+        Assert.Equal(expected, Invoke(working ? ulong.MaxValue : uint.MaxValue));
+        Assert.Equal(kind, Assert.Throws<Pcre2MatchException>(() => Invoke(1)).ErrorKind);
+        ulong first = 1, last = 1UL << 20;
+        while (first < last)
+        {
+            var cap = first + (last - first) / 2;
+            try { Assert.Equal(expected, Invoke(cap)); last = cap; }
+            catch (Pcre2MatchException failure) { Assert.Equal(kind, failure.ErrorKind); first = cap + 1; }
+        }
+        Assert.InRange(first, 2UL, (1UL << 20) - 1);
+        Assert.Equal(expected, Invoke(first));
+        Assert.Equal(kind, Assert.Throws<Pcre2MatchException>(() => Invoke(first - 1)).ErrorKind);
+        Assert.Equal(expected, Invoke(first));
     }
 }

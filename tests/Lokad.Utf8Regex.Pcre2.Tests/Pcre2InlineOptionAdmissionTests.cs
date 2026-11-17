@@ -64,7 +64,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         var retained = regex.MatchDetailed("é😀"u8);
         Assert.Equal((2, 6), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("é<😀>", regex.ReplaceToString("é😀"u8, "<$x>"));
+        Assert.Equal("é<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "<$x>")));
         using var cancellation = new CancellationTokenSource();
         var empty = new Utf8Pcre2Regex(directive, Pcre2CompileOptions.None, default,
             new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
@@ -107,7 +107,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.Equal(second, System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.True(retained.TryGetFirstSetGroup("n", out var named));
         Assert.Equal(first, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
-        Assert.Equal("q" + first + "/" + second, regex.ReplaceToString(input, "$1/$2"));
+        Assert.Equal("q" + first + "/" + second, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$1/$2")));
         Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         if (pattern.Contains(@"\1", StringComparison.Ordinal))
         {

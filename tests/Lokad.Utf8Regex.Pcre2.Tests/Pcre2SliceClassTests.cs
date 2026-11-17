@@ -70,7 +70,7 @@ public sealed class Pcre2SliceClassTests
         var matches = regex.EnumerateMatches(input, 0);
         while (matches.MoveNext()) actual.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.Equal(expected, actual);
-        Assert.Equal(replacement, regex.ReplaceToString(input, "<_>"));
+        Assert.Equal(replacement, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>")));
         Assert.True(regex.DebugCompiledProgram is not null, pattern);
     }
 
@@ -83,7 +83,7 @@ public sealed class Pcre2SliceClassTests
         Assert.True(match.Success);
         Assert.Equal("ab!", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-        Assert.Equal("1<ab> a]!", regex.ReplaceToString(input, "<$1>"));
+        Assert.Equal("1<ab> a]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.DebugCompiledProgram is not null);
     }
@@ -165,7 +165,7 @@ public sealed class Pcre2SliceClassTests
     public void OwnedReplaceExpandsClassGroup()
     {
         var regex = new Utf8Pcre2Regex("([a-z]+)", Pcre2CompileOptions.None);
-        Assert.Equal("<xxabbyy>", regex.ReplaceToString(Utf8("xxabbyy"), "<$1>"));
+        Assert.Equal("<xxabbyy>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxabbyy"), "<$1>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

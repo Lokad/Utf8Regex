@@ -20,7 +20,7 @@ public sealed class Pcre2AlternationRepeatTests
         }
 
         Assert.Equal(["az", "abz", "aabz", "ababaz", "ababaz"], values);
-        Assert.Equal("<az> <abz> <aabz> <ababaz> abax é<ababaz>夏", regex.ReplaceToString(input, "<$0>"));
+        Assert.Equal("<az> <abz> <aabz> <ababaz> abax é<ababaz>夏", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 
     [Fact]

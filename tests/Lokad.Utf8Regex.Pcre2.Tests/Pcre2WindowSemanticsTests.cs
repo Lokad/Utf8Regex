@@ -42,7 +42,7 @@ public sealed class Pcre2WindowSemanticsTests
             values);
         Assert.Equal(
             "<Holmes and Watson>\n<Watson near Holmes>\nHolmes\nWatson\n<HolmesxxxxxxxxxxxxxxxxxxxxxxxxxWatson>",
-            regex.ReplaceToString(input, "<$0>"));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 
     [Fact]

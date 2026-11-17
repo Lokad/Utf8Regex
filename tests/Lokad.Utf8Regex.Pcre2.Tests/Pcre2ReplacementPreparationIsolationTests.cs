@@ -152,7 +152,7 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         switch (route)
         {
             case "Bytes": return Encoding.UTF8.GetString(regex.Replace(input, template, 0, default, default, token));
-            case "Text": return regex.ReplaceToString(input, template, 0, default, default, token);
+            case "Text": return System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0, default, default, token));
             case "Utf8Bytes": return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, default, default, token));
             default:
                 var destination = new byte[128];

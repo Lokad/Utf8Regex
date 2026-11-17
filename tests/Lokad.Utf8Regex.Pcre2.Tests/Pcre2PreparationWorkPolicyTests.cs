@@ -20,7 +20,7 @@ public sealed class Pcre2PreparationWorkPolicyTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
             denied.Replace("ab"u8, template, 0, options)).ErrorKind);
         Assert.Equal(0, denied.DebugReplacementCacheEntryCount);
-        Assert.Equal(expected, Create(100000).ReplaceToString("ab"u8, template, 0, options));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, template, 0, options)));
     }
 
     [Theory] [MemberData(nameof(Templates))]
@@ -35,7 +35,7 @@ public sealed class Pcre2PreparationWorkPolicyTests
             regex.Replace("ab"u8, template, 0, options)).ErrorKind);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
         Assert.Equal(retained, get(template, options));
-        Assert.Equal(expected, Create(100000).ReplaceToString("ab"u8, template, 0, options));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, template, 0, options)));
     }
 
     [Fact]
@@ -48,8 +48,8 @@ public sealed class Pcre2PreparationWorkPolicyTests
             Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
             Assert.Equal(0UL, owner.Budget.ReservedBytes);
         }
-        Assert.Equal("a", regex.ReplaceToString("ab"u8, "${x}"));
-        Assert.Equal("a", regex.ReplaceToString("ab"u8, "${x}"));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}")));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}")));
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 

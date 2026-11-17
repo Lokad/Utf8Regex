@@ -16,15 +16,13 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         return regex;
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void UnchangedOutputIsDeniedBeforeMajorAcquisition(bool text)
+    [Fact]
+    public void UnchangedOutputIsDeniedBeforeMajorAcquisition()
     {
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var regex = Create(new() { HeapLimitInBytes = 4096 });
         Assert.False(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
-        string Invoke() => text ? regex.ReplaceToString(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)
-            : Encoding.UTF8.GetString(regex.Replace(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
+        string Invoke() => Encoding.UTF8.GetString(regex.Replace(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
         try { _ = Invoke(); } catch (Pcre2MatchException) { }
         var before = GC.GetAllocatedBytesForCurrentThread();
         var failure = Assert.Throws<Pcre2MatchException>(() => Invoke());
@@ -34,9 +32,8 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Assert.False(Pcre2ReplacementPreparationControl.IsActive);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void UnchangedCopyCannotResetSpentDiscoveryWork(bool text)
+    [Fact]
+    public void UnchangedCopyCannotResetSpentDiscoveryWork()
     {
         var input = Encoding.UTF8.GetBytes(new string('z', 8192));
         // Calibrate the replacement's actual discovery cursor. Public detailed
@@ -62,15 +59,13 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Assert.True(DiscoverySucceeds(first));
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = regex.ReplaceToString(input, "$2$1");
-            else _ = regex.Replace(input, "$2$1");
+            _ = regex.Replace(input, "$2$1");
         });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void LongTemplateOutputCannotEscapeTheWorkAllowance(bool text)
+    [Fact]
+    public void LongTemplateOutputCannotEscapeTheWorkAllowance()
     {
         var regex = Create(new() { MatchLimit = 200 });
         var input = "é😀"u8.ToArray();
@@ -78,19 +73,18 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var template = new string('x', 1 << 20) + "$2";
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = regex.ReplaceToString(input, template);
-            else _ = regex.Replace(input, template);
+            _ = regex.Replace(input, template);
         });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
         Assert.False(Pcre2ReplacementPreparationControl.IsActive);
     }
 
     [Theory]
-    [InlineData(false, false, false)] [InlineData(false, false, true)]
-    [InlineData(false, true, false)] [InlineData(false, true, true)]
-    [InlineData(true, false, false)] [InlineData(true, false, true)]
-    [InlineData(true, true, false)] [InlineData(true, true, true)]
-    public void PublicWorkAndHeapCutoffsCoverFinalOutput(bool heap, bool text, bool hit)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void PublicWorkAndHeapCutoffsCoverFinalOutput(bool heap, bool hit)
     {
         var input = Encoding.UTF8.GetBytes(hit ? "é😀é😀" : new string('z', 8192));
         var literal = new string('x', 4097);
@@ -99,7 +93,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         string Invoke(ulong cap)
         {
             var regex = Create(new() { HeapLimitInBytes = heap ? cap : 0, MatchLimit = heap ? 0 : (uint)cap });
-            return text ? regex.ReplaceToString(input, template) : Encoding.UTF8.GetString(regex.Replace(input, template));
+            return Encoding.UTF8.GetString(regex.Replace(input, template));
         }
         var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
         ulong first = 1, last = 1UL << 20;
@@ -116,9 +110,8 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Assert.Equal(expected, Invoke(first));
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void DiscoveryAndWriterShareCountersOverlapAndRetainedCaptures(bool text)
+    [Fact]
+    public void DiscoveryAndWriterShareCountersOverlapAndRetainedCaptures()
     {
         var regex = Create(new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 });
         var compiled = regex.DebugCompiledProgram;
@@ -147,7 +140,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
             Assert.NotSame(retained, current);
             writer.AppendTemplate(preparation, Pcre2SubstitutionOptions.None, current, 6, 6, cursor.Current.Mark);
             Assert.False(cursor.MoveNext());
-            var result = text ? writer.CompleteToString() : Encoding.UTF8.GetString(writer.Complete());
+            var result = Encoding.UTF8.GetString(writer.Complete());
             Assert.Equal("😀é😀é", result);
         }
         finally { writer.Release(); writer.Release(); }
@@ -180,7 +173,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Exception? failure = null;
         try
         {
-            if (hit) _ = writer.CompleteToString();
+            if (hit) _ = writer.Complete();
             else _ = Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref cursor.WorkingInvocation);
         }
         catch (Exception error) { failure = error; }
@@ -207,7 +200,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         else Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var input = Encoding.UTF8.GetBytes(subject);
         var bytes = regex.Replace(input, template, start, options, matchOptions, source.Token);
-        var text = regex.ReplaceToString(input, template, start, options, matchOptions, source.Token);
+        var text = System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, start, options, matchOptions, source.Token));
         Assert.Equal(expected, Encoding.UTF8.GetString(bytes)); Assert.Equal(expected, text);
         input.AsSpan().Fill((byte)'z');
         Assert.Equal(expected, Encoding.UTF8.GetString(bytes)); Assert.Equal(expected, text);

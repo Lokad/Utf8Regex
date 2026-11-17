@@ -22,8 +22,8 @@ public sealed class Pcre2PreparedReplacementTests
     [InlineData(@"${1:+\c}:fallback}", "x", "=")]
     [InlineData(@"${1:+\c::fallback}", "x", "z")]
     public void NestedBranchesAndEscapedSeparatorsPreserveGrammar(string replacement, string input, string expected)
-        => Assert.Equal(expected, new Utf8Pcre2Regex("(x)?").ReplaceToString(Encoding.UTF8.GetBytes(input), replacement, 0,
-            Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.NotEmpty));
+        => Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(x)?").Replace(Encoding.UTF8.GetBytes(input), replacement, 0,
+            Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.NotEmpty)));
 
     [Fact]
     public void GeneralTemplatesHaveAnOwnedPreparedProgram()
@@ -44,7 +44,7 @@ public sealed class Pcre2PreparedReplacementTests
     [InlineData(@"${1:+good:$missing}", "good")]
     [InlineData(@"${1:+\Q$1\E:bad}$1", "$1x")]
     public void DeferredBranchesKeepTheirValidationAndState(string template, string expected)
-        => Assert.Equal(expected, new Utf8Pcre2Regex("(x)").ReplaceToString("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        => Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(x)").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
 
     [Fact]
     public void PlusValidatesBothBranchesButNoMatchDoesNotEvaluateErrors()
@@ -57,13 +57,13 @@ public sealed class Pcre2PreparedReplacementTests
 
     [Fact]
     public void ChosenCaseStateContinuesAfterTheBranchAndResetsPerMatch()
-        => Assert.Equal("HELLO hello", new Utf8Pcre2Regex("(x)?y").ReplaceToString("xy y"u8, @"${1:+\U:\L}HeLLo", 0, Pcre2SubstitutionOptions.Extended));
+        => Assert.Equal("HELLO hello", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(x)?y").Replace("xy y"u8, @"${1:+\U:\L}HeLLo", 0, Pcre2SubstitutionOptions.Extended)));
 
     [Fact]
     public void DefaultAnglesAndBareMarkUsePcre2Syntax()
     {
-        Assert.Equal("😀", new Utf8Pcre2Regex("(?<w>😀)").ReplaceToString("😀"u8, "$<w>"));
-        Assert.Equal("pear", new Utf8Pcre2Regex("(*MARK:pear)x").ReplaceToString("x"u8, "$*MARK"));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(?<w>😀)").Replace("😀"u8, "$<w>")));
+        Assert.Equal("pear", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(*MARK:pear)x").Replace("x"u8, "$*MARK")));
     }
 
     [Theory]
@@ -71,11 +71,11 @@ public sealed class Pcre2PreparedReplacementTests
     [InlineData(@"\1234", "S4")]
     [InlineData(@"\0113", "\t3")]
     public void UnbracedOctalReadsAtMostThreeDigits(string template, string expected)
-        => Assert.Equal(expected, new Utf8Pcre2Regex("x").ReplaceToString("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        => Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("x").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
 
     [Fact]
     public void ExistingMultiDigitGroupWinsOverAmbiguousOctal()
-        => Assert.Equal("x", new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(x)", 12))).ReplaceToString("xxxxxxxxxxxx"u8, @"\12", 0, Pcre2SubstitutionOptions.Extended));
+        => Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(x)", 12))).Replace("xxxxxxxxxxxx"u8, @"\12", 0, Pcre2SubstitutionOptions.Extended)));
 
     [Fact]
     public void OversizedNumericReferenceFailsInTheProfileVocabulary()
@@ -86,12 +86,12 @@ public sealed class Pcre2PreparedReplacementTests
     {
         var template = "z";
         for (var index = 0; index < 256; index++) template = "${1:-" + template + "}";
-        Assert.Equal("z", new Utf8Pcre2Regex("(a)?b").ReplaceToString("b"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal("z", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(a)?b").Replace("b"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
     }
 
     [Theory]
     [InlineData(@"\U\Q𐐨$1\E𐐨", "𐐀$1𐐀")]
     [InlineData(@"\L\Q𐐀X\E𐐀", "𐐨x𐐨")]
     public void EndingQuotationPreservesContinuousCaseForcing(string template, string expected)
-        => Assert.Equal(expected, new Utf8Pcre2Regex("(x)").ReplaceToString("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        => Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(x)").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
 }

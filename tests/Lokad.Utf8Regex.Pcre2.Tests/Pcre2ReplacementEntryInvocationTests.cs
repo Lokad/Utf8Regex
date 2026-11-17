@@ -76,7 +76,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         => mode switch
         {
             "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
-            "Text" => regex.ReplaceToString(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token),
+            "Text" => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
             "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)),
             "CallbackBytes" => Encoding.UTF8.GetString(regex.Replace(input, 0,
                 static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => writer.Append("Z"u8),

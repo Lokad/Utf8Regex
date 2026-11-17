@@ -197,7 +197,7 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
             Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
         }
-        Assert.Equal("café😀cat", regex.ReplaceToString("cat"u8, "café😀$0"));
+        Assert.Equal("café😀cat", System.Text.Encoding.UTF8.GetString(regex.Replace("cat"u8, "café😀$0")));
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 
@@ -205,7 +205,7 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
     public void InvalidSurrogateFragmentsCannotCombineAcrossAnEmptyReference()
     {
         var template = new string((char)0xd83d, 1) + "$0" + new string((char)0xde00, 1);
-        Assert.Equal("��😀��", new Utf8Pcre2Regex("").ReplaceToString("😀"u8, template));
+        Assert.Equal("��😀��", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("").Replace("😀"u8, template)));
         var literal = Pcre2SimpleReplacementParser.Literal(new string((char)0xd83d, 1));
         Assert.Equal("�"u8.ToArray(), literal.Segments[0].LiteralUtf8);
     }

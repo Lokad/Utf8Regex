@@ -100,8 +100,8 @@ public sealed class Pcre2SupplementaryCaseTests
         {
             var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp, default, Limits(finite), Timeout.InfiniteTimeSpan);
             var input = Encoding.UTF8.GetBytes(text);
-            Assert.Equal(expected, regex.ReplaceToString(input, template, 0,
-                Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token));
+            Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0,
+                Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token)));
             Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template, 0,
                 Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token));
         }

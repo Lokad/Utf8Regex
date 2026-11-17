@@ -35,7 +35,7 @@ public sealed class Pcre2ResultPolicyTests
         var regex = Create("A", 1);
         var error = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = regex.ReplaceToString("zzz"u8, "!");
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace("zzz"u8, "!"));
             else _ = regex.Replace("zzz"u8, "!");
         });
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
@@ -94,7 +94,7 @@ public sealed class Pcre2ResultPolicyTests
         string replacement, string expected, Pcre2SubstitutionOptions options)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        string Invoke(ulong cap) => Create(pattern, cap).ReplaceToString(input, replacement, 0, options);
+        string Invoke(ulong cap) => System.Text.Encoding.UTF8.GetString(Create(pattern, cap).Replace(input, replacement, 0, options));
         Assert.Equal(expected, Invoke(1 << 20));
         ulong first = 1, last = 1 << 20;
         while (first < last)
@@ -118,7 +118,7 @@ public sealed class Pcre2ResultPolicyTests
         Assert.All(destination, value => Assert.Equal((byte)0xA5, value));
         var regex = Utf8Pcre2Regex.Create("(é)(😀)", Pcre2CompileOptions.None, default,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
-        Assert.Equal("😀é", regex.ReplaceToString("é😀"u8, "$2$1"));
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$2$1")));
         Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("é😀"u8).Value.GetValueBytes()));
     }
 

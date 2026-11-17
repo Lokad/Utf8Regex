@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 template-to-string replacement and its text-only accounting.
+  Byte-template replacement and destination output retain their controls; hosts
+  decode valid output explicitly. Callback forms remain pending separate cleanup.
+
 - Remove PCRE2 standalone value/group/match string getters. Byte views and slice
   status remain; hosts decode valid slices explicitly.
 

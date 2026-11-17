@@ -39,7 +39,7 @@ public sealed class Pcre2ReplacementPreparationReuseTests
             var output = route switch
             {
                 "Bytes" => regex.Replace("a"u8, template),
-                "Text" => Encoding.UTF8.GetBytes(regex.ReplaceToString("a"u8, template)),
+                "Text" => Encoding.UTF8.GetBytes(System.Text.Encoding.UTF8.GetString(regex.Replace("a"u8, template))),
                 "Utf8Bytes" => regex.Replace("a"u8, utf8),
                 _ => ReplaceInto(regex, utf8, destination)
             };

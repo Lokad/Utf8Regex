@@ -151,7 +151,7 @@ public sealed class Pcre2SliceLookaroundTests
     public void OwnedReplaceExpandsLookaroundMatch()
     {
         var regex = new Utf8Pcre2Regex("(?<=a)b", Pcre2CompileOptions.None);
-        Assert.Equal("aa<b> a<b>", regex.ReplaceToString(Utf8("aab ab"), "<$0>"));
+        Assert.Equal("aa<b> a<b>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aab ab"), "<$0>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

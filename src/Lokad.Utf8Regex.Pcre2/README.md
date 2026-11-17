@@ -109,10 +109,12 @@ while (matches.MoveNext())
 byte[] redacted = regex.Replace(input, "<$host>");
 ```
 
-Replacement strings use PCRE2 substitution syntax, not .NET replacement
-syntax. The API also exposes UTF-8 replacement patterns, callback replacement,
-`TryReplace`, `ReplaceToString`, detailed numeric-slot/name-table results, and
-explicit compile and execution settings.
+Replacement strings use PCRE2 substitution syntax. Templates return owned bytes
+through `Replace` or write caller storage through `TryReplace`. Decode valid output
+in the host when text is needed; the extra string is outside regex resource
+controls. Opt-in `\C` can produce raw malformed UTF-8, so check that output first.
+Callback replacement remains pending a separate API cleanup. Detailed numeric-slot/
+name-table results and explicit compile/execution settings remain available.
 
 Replacement evaluator delegates must be non-null, even on misses; otherwise
 `ArgumentNullException` names `evaluator`. An already-cancelled explicit token

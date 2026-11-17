@@ -156,11 +156,13 @@ supported, while Count, enumeration, MatchMany and replacement reject a yielded
 non-monotone result with `NotSupportedException`.
 
 `IsUtf8SliceWellFormed` can be false when explicitly allowed `\C` splits a
-scalar. Such ranges retain their bytes and reject string extraction.
+scalar. Such ranges expose raw bytes; hosts must check their validity before
+decoding them as text.
 No result exposes UTF-16 offsets or a UTF-16 projection flag. `\C` consumes one byte,
 is forbidden in UTF lookbehind, and retains the caller-valid subject contract.
 Successive global matches can expose individual bytes. Byte replacement can
-produce invalid UTF-8 in this mode; string replacement rejects invalid output.
+produce invalid UTF-8 in this mode. Template replacement returns bytes only;
+the host checks their validity before converting raw byte-token output to text.
 
 Global operations retain consumed range separately from reported `\K` offsets.
 After a nonempty consumed match, restart at consumed end. After an empty consumed
@@ -460,6 +462,12 @@ and UTF-8 template preparation are implemented. Funded caller-destination replac
 is implemented; final package/consumer acceptance remains separate delivery work.
 
 ## Isolation and non-goals
+
+Template `ReplaceToString` overloads are removed. `Replace` with a string or UTF-8
+template and `TryReplace` preserve substitution semantics and byte output controls.
+Hosts decode valid byte results explicitly; that string allocation and any final
+host cancellation check fall outside the regex invocation. Callback replacement
+still has its existing contract pending its separate surface retirement.
 
 All PCRE2-specific implementation/types/namespaces/test fixtures remain in the
 Pcre2 slice. Unavoidable Core hooks carry PCRE2-INTEGRATION-POINT.

@@ -48,7 +48,7 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.Equal((2, 6), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.Equal(2, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal("é😀😀", regex.ReplaceToString(bytes, "$1"));
+        Assert.Equal("é😀😀", System.Text.Encoding.UTF8.GetString(regex.Replace(bytes, "$1")));
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
@@ -121,6 +121,6 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-        Assert.Equal("é😀", regex.ReplaceToString("é😀😀"u8, "$1"));
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀😀"u8, "$1")));
     }
 }

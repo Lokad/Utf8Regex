@@ -171,7 +171,7 @@ public sealed class Pcre2SliceBackrefTests
     public void OwnedReplaceExpandsBackrefMatch()
     {
         var regex = new Utf8Pcre2Regex("(a)\\1", Pcre2CompileOptions.None);
-        Assert.Equal("<aa> ab", regex.ReplaceToString(Utf8("aa ab"), "<$0>"));
+        Assert.Equal("<aa> ab", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aa ab"), "<$0>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

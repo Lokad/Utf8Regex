@@ -26,7 +26,7 @@ public sealed class Pcre2PrefixRepeatTests
         Assert.Equal(3, regex.MatchMany(input, destination, out var isMore));
         Assert.True(isMore);
         Assert.Equal((7, 11), (destination[2].StartOffsetInBytes, destination[2].EndOffsetInBytes));
-        Assert.Equal("<ab> <abb> <abbb> x <ab>", regex.ReplaceToString(input, "<$0>"));
+        Assert.Equal("<ab> <abb> <abbb> x <ab>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 
     [Theory]

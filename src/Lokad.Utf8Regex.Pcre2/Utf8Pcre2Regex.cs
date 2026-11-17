@@ -634,7 +634,7 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Replaces matches using explicit start, substitution, and per-match options.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
-        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None, false).Bytes;
+        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None).Bytes;
     }
 
     /// <summary>Replaces matches using explicit start, substitution, and per-match options, observing cancellation during validation, matching and output shaping.</summary>
@@ -648,7 +648,7 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken, false).Bytes;
+        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken).Bytes;
     }
 
     /// <summary>Replaces matches using a well-formed UTF-8 PCRE2 replacement template.</summary>
@@ -704,42 +704,6 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
         => ReplaceCallback(input, state, new Pcre2ByteCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
             cancellationToken, false).Bytes;
-
-    /// <summary>Replaces matches using a PCRE2 replacement template and returns UTF-16 text.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
-        => ReplaceToString(input, replacement, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches to UTF-16 text at or after a scalar-aligned UTF-8 byte offset.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-        => ReplaceToString(input, replacement, startOffsetInBytes, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches to UTF-16 text using explicit substitution options.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions)
-        => ReplaceToString(input, replacement, 0, substitutionOptions, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches to UTF-16 text using explicit start and substitution options.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
-        => ReplaceToString(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None);
-
-    /// <summary>Replaces matches to UTF-16 text using explicit start, substitution, and per-match options.</summary>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
-    {
-        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None, true).Text;
-    }
-
-    /// <summary>Replaces matches to UTF-16 text using explicit start, substitution, and per-match options, observing cancellation during validation, matching and output shaping.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="replacement">The PCRE2 replacement template.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="substitutionOptions">The substitution options.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The original token retained through validation, matching and output shaping.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken, true).Text;
-    }
 
     /// <summary>Replaces matches through a stateful callback that returns UTF-16 replacement text.</summary>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
@@ -1055,7 +1019,6 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation,
-        bool text,
         ref Pcre2ReplacementPreparation? preparation,
         out Pcre2ReplacementResult result)
     {
@@ -1097,13 +1060,13 @@ public sealed partial class Utf8Pcre2Regex
             {
                 var bytes = Utf8InvocationOutput.AllocateBytes(replacementOnly ? 0 : input.Length, cursor.WorkingBufferControl, out outputReservation);
                 if (!replacementOnly) Utf8InvocationOutput.Copy(input, bytes, cursor.WorkingBufferControl);
-                result = text ? new(cursor.WorkingBufferControl.DecodeReplacementText(bytes), []) : new(string.Empty, bytes);
+                result = new(string.Empty, bytes);
                 return true;
             }
 
             var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
             EmitLiteralDriverReplacement(input, plan, replacementOnly, output, ledger.WrittenRanges, cursor.WorkingBufferControl);
-            result = text ? new(cursor.WorkingBufferControl.DecodeReplacementText(output), []) : new(string.Empty, output);
+            result = new(string.Empty, output);
             return true;
         }
         finally
@@ -1337,14 +1300,13 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private enum Pcre2ReplacementResultKind : byte { Bytes, Text, Destination }
+    private enum Pcre2ReplacementResultKind : byte { Bytes, Destination }
     private readonly record struct Pcre2ReplacementResult(string Text, byte[] Bytes,
         OperationStatus Status = OperationStatus.Done, int BytesWritten = 0);
 
     private static Pcre2ReplacementResult CompleteReplacementWriter(ref Pcre2ReplacementTemplateWriter writer,
         Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2SubstitutionOptions options)
     {
-        if (kind == Pcre2ReplacementResultKind.Text) return new(writer.CompleteToString(), []);
         if (kind == Pcre2ReplacementResultKind.Bytes) return new(string.Empty, writer.Complete());
         var status = writer.CompleteToDestination(destination,
             (options & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0, out var written);
@@ -1355,8 +1317,6 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2SubstitutionOptions options,
         ref Utf8SliceInvocation invocation)
     {
-        if (kind == Pcre2ReplacementResultKind.Text)
-            return new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(input, ref invocation), []);
         if (kind == Pcre2ReplacementResultKind.Bytes)
             return new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref invocation));
         Pcre2SliceDriver.CheckInvocation(ref invocation);
@@ -1373,7 +1333,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2SubstitutionOptions substitutionOptions,
         int startOffsetInBytes,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken, bool text)
+        CancellationToken cancellationToken)
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, cancellationToken);
@@ -1382,7 +1342,7 @@ public sealed partial class Utf8Pcre2Regex
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions,
-                matchOptions, invocation, text ? Pcre2ReplacementResultKind.Text : Pcre2ReplacementResultKind.Bytes, default);
+                matchOptions, invocation, Pcre2ReplacementResultKind.Bytes, default);
             Pcre2SliceDriver.CheckInvocation(ref invocation);
             return result;
         }
@@ -1429,7 +1389,6 @@ public sealed partial class Utf8Pcre2Regex
                 substitutionOptions,
                 matchOptions,
                 invocation,
-                kind == Pcre2ReplacementResultKind.Text,
                 ref preparation,
                 out var genericResult))
         {

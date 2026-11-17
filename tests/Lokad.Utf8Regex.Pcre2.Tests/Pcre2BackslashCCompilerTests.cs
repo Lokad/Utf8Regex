@@ -103,11 +103,10 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     [Fact]
-    public void StringReplacementRejectsAResultThatLeavesASplitScalar()
+    public void ByteReplacementPreservesAnExplicitSplitScalar()
     {
         var regex = Create(@"^\C");
 
-        Assert.Throws<ArgumentException>(() => regex.ReplaceToString("é"u8, "x"));
         Assert.Equal(new byte[] { (byte)'x', 0xA9 }, regex.Replace("é"u8, "x"));
     }
 

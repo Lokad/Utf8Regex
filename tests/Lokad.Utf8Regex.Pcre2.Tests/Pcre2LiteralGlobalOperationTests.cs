@@ -246,19 +246,19 @@ public sealed class Pcre2LiteralGlobalOperationTests
     {
         var regex = new Utf8Pcre2Regex("abc");
 
-        Assert.Equal("x<abc><abc>", regex.ReplaceToString("xabcabc"u8, "<$0>"));
+        Assert.Equal("x<abc><abc>", System.Text.Encoding.UTF8.GetString(regex.Replace("xabcabc"u8, "<$0>")));
         Assert.Equal(
             "[abc][abc]",
-            regex.ReplaceToString(
+            System.Text.Encoding.UTF8.GetString(regex.Replace(
                 "xabcabc"u8,
                 "[$&]",
-                substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+0,                substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly,Pcre2MatchOptions.None)));
         Assert.Equal(
             "x$0$0",
-            regex.ReplaceToString(
+            System.Text.Encoding.UTF8.GetString(regex.Replace(
                 "xabcabc"u8,
                 "$0",
-                substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral));
+0,                substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None)));
     }
 
     [Fact]
@@ -427,7 +427,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             }
 
             Assert.Equal(4, count);
-            Assert.Equal("x <café> <naïve> <😀> <café>", regex.ReplaceToString(input, "<$0>"));
+            Assert.Equal("x <café> <naïve> <😀> <café>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
         });
     }
 

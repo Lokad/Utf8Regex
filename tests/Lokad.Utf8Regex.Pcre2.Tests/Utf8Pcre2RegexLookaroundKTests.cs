@@ -74,7 +74,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
-        Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("ab"u8, "<$0>"));
+        Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "<$0>")));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
-        Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("a"u8, "<$0>"));
+        Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("a"u8, "<$0>")));
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     {
         var regex = new Utf8Pcre2Regex("(?(DEFINE)(?<sneaky>b\\K))a(?=(?&sneaky))");
 
-        Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("ab"u8, "<$0>"));
+        Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "<$0>")));
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     {
         var regex = new Utf8Pcre2Regex("a|(?(DEFINE)(?<sneaky>\\K\\Ga))(?<=(?&sneaky))b");
 
-        Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("ab"u8, "<$0>"));
+        Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "<$0>")));
     }
 
     [Fact]

@@ -28,7 +28,7 @@ public sealed class Pcre2CommentSemanticsTests
             Assert.True(match.Success);
             Assert.Equal("é", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
-            Assert.Equal("é😀", regex.ReplaceToString("é😀"u8, "$1$2"));
+            Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$1$2")));
         }
     }
 
@@ -41,7 +41,7 @@ public sealed class Pcre2CommentSemanticsTests
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = regex.ReplaceToString(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored);
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
             else _ = regex.Replace(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored);
         });
         Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);

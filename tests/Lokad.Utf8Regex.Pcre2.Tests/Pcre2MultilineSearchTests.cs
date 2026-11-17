@@ -28,7 +28,7 @@ public sealed class Pcre2MultilineSearchTests
         Assert.Equal(2, regex.MatchMany(input, destination, out var isMore));
         Assert.True(isMore);
         Assert.Equal("INFO: boot\n<ERROR: first>\nERROR: \n<ERROR: \r>\n<ERROR: café>\n",
-            regex.ReplaceToString(input, "<$0>"));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 
     [Fact]

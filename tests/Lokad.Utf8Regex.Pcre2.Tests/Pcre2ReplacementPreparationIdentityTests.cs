@@ -76,7 +76,7 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
         Pcre2SubstitutionOptions options)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        if (route == "Text") return regex.ReplaceToString(input, template, options);
+        if (route == "Text") return System.Text.Encoding.UTF8.GetString(regex.Replace(input, template,0, options,Pcre2MatchOptions.None));
         if (route == "Bytes") return Encoding.UTF8.GetString(regex.Replace(input, template, 0, options));
         var utf8Template = Encoding.UTF8.GetBytes(template);
         if (route == "Utf8Template") return Encoding.UTF8.GetString(regex.Replace(input, utf8Template, 0, options));

@@ -315,6 +315,9 @@ to the host. PCRE2 callbacks remain pending their separate surface cleanup.
 For text output, decode `regex.Replace(input, template)` in the host with
 `Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the
 additional string allocation and any host-level admission for it.
+PCRE2 likewise removes its template `ReplaceToString` overloads while retaining
+byte `Replace`/`TryReplace`. With opt-in `\C`, byte output may be malformed UTF-8;
+validate it before decoding. PCRE2 callback forms are still pending retirement.
 
 ## Profile scope and other compatibility changes
 
