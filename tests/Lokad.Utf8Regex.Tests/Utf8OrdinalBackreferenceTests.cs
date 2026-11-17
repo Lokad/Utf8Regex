@@ -42,7 +42,7 @@ public sealed class Utf8OrdinalBackreferenceTests
             Assert.True(cursor.MoveNext());
             var value = cursor.Current;
             Assert.False(cursor.MoveNext());
-            Assert.Equal((0, bytes.Length), (value.IndexInBytes, value.LengthInBytes));
+            Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
             using var source = new CancellationTokenSource();
             source.Cancel();
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>

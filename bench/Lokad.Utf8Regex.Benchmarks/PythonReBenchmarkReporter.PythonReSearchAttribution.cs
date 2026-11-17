@@ -153,10 +153,12 @@ internal static partial class PythonReBenchmarkReporter
         {
             return (false, 0, 0);
         }
+var start = match.StartOffsetInBytes;
+        var length = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
-        if (!match.TryGetByteRange(out var start, out var length))
+        if (!match.Success)
         {
-            return (true, match.IndexInUtf16, match.IndexInUtf16 + match.LengthInUtf16);
+            return (true, match.StartOffsetInBytes, match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
 
         var end = start + length;
@@ -198,10 +200,12 @@ internal static partial class PythonReBenchmarkReporter
             outcome = default;
             return false;
         }
+var start = match.StartOffsetInBytes;
+        var length = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
-        if (!match.TryGetByteRange(out var start, out var length))
+        if (!match.Success)
         {
-            outcome = (true, match.IndexInUtf16, match.IndexInUtf16 + match.LengthInUtf16);
+            outcome = (true, match.StartOffsetInBytes, match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes));
             return true;
         }
 

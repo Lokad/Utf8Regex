@@ -42,8 +42,8 @@ public sealed class Utf8PublicConstructionTests
             MaxInstructionCapacity = 10000, MaxBytes = 1000000 });
         var match = regex.Match("x😀😀y"u8);
         Assert.True(match.Success);
-        Assert.Equal(1, match.IndexInBytes);
-        Assert.Equal(8, match.LengthInBytes);
+        Assert.Equal(1, match.StartOffsetInBytes);
+        Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         Assert.Equal(100000ul, regex.ResourcePolicy.MaxWorkSteps);
     }
 
@@ -65,7 +65,7 @@ public sealed class Utf8PublicConstructionTests
 
         var match = regex.Match("x😀😀y"u8);
         Assert.True(match.Success);
-        Assert.Equal((1, 8), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((1, 8), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         // First template use happens after the construction authority has ended.
         Assert.Equal("x😀y"u8.ToArray(), regex.Replace("x😀😀y"u8, "${x}"));
 

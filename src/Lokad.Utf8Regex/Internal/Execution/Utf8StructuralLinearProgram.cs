@@ -54,11 +54,7 @@ internal enum Utf8AsciiDeterministicFixedWidthCheckKind : byte
 internal readonly struct Utf8AsciiDeterministicStep
 {
     private Utf8AsciiDeterministicStep(
-        Utf8AsciiDeterministicStepKind kind,
-        byte literal,
-        AsciiCharClass charClass,
-        int minCount,
-        int maxCount)
+        Utf8AsciiDeterministicStepKind kind, byte literal, AsciiCharClass charClass, int minCount, int maxCount)
     {
         Kind = kind;
         Literal = literal;
@@ -96,9 +92,7 @@ internal readonly struct Utf8AsciiDeterministicStep
 internal readonly struct Utf8AsciiDeterministicFixedWidthCheck
 {
     private Utf8AsciiDeterministicFixedWidthCheck(
-        Utf8AsciiDeterministicFixedWidthCheckKind kind,
-        byte literal,
-        AsciiCharClass charClass)
+        Utf8AsciiDeterministicFixedWidthCheckKind kind, byte literal, AsciiCharClass charClass)
     {
         Kind = kind;
         Literal = literal;
@@ -124,18 +118,7 @@ internal readonly struct Utf8AsciiDeterministicFixedWidthCheck
 internal readonly struct Utf8AsciiDeterministicProgram
 {
     public Utf8AsciiDeterministicProgram(
-        Utf8AsciiDeterministicStep[] steps,
-        AsciiFixedLiteralCheck[] fixedLiteralChecks,
-        int searchLiteralOffset,
-        byte[][] searchLiterals,
-        bool isEndAnchored,
-        bool ignoreCase,
-        Utf8AsciiDeterministicFixedWidthCheck[] fixedWidthChecks,
-        int fixedWidthLength,
-        bool isAbsoluteStartAnchored,
-        bool allowsTrailingNewlineBeforeEnd,
-        bool isStartAnchored,
-        bool isAbsoluteEndAnchored)
+        Utf8AsciiDeterministicStep[] steps, AsciiFixedLiteralCheck[] fixedLiteralChecks, int searchLiteralOffset, byte[][] searchLiterals, bool isEndAnchored, bool ignoreCase, Utf8AsciiDeterministicFixedWidthCheck[] fixedWidthChecks, int fixedWidthLength, bool isAbsoluteStartAnchored, bool allowsTrailingNewlineBeforeEnd, bool isStartAnchored, bool isAbsoluteEndAnchored)
     {
         Steps = steps;
         FixedLiteralChecks = fixedLiteralChecks;
@@ -301,15 +284,7 @@ internal readonly struct Utf8AsciiDeterministicMatch
 internal readonly struct Utf8StructuralLinearInstruction
 {
     private Utf8StructuralLinearInstruction(
-        Utf8StructuralLinearInstructionKind kind,
-        byte literal,
-        AsciiCharClass charClass,
-        int minCount,
-        int maxCount,
-        AsciiCharClass secondaryCharClass,
-        int secondaryMinCount,
-        int auxiliaryMinCount,
-        AsciiCharClass set)
+        Utf8StructuralLinearInstructionKind kind, byte literal, AsciiCharClass charClass, int minCount, int maxCount, AsciiCharClass secondaryCharClass, int secondaryMinCount, int auxiliaryMinCount, AsciiCharClass set)
     {
         Kind = kind;
         Literal = literal;
@@ -353,13 +328,7 @@ internal readonly struct Utf8StructuralLinearInstruction
         new(Utf8StructuralLinearInstructionKind.RunCharClass, 0, charClass, minCount, maxCount, default, 0, 0, default);
 
     public static Utf8StructuralLinearInstruction CreateRepeatedSegment(
-        AsciiCharClass charClass,
-        int minCount,
-        int maxCount,
-        AsciiCharClass secondaryCharClass,
-        int secondaryMinCount,
-        int auxiliaryMinCount,
-        AsciiCharClass set) =>
+        AsciiCharClass charClass, int minCount, int maxCount, AsciiCharClass secondaryCharClass, int secondaryMinCount, int auxiliaryMinCount, AsciiCharClass set) =>
         new(
             Utf8StructuralLinearInstructionKind.RepeatedSegment,
             0,
@@ -393,16 +362,7 @@ internal readonly struct Utf8StructuralLinearInstruction
 internal readonly struct Utf8StructuralLinearInstructionProgram
 {
     public Utf8StructuralLinearInstructionProgram(
-        Utf8StructuralLinearInstruction[] instructions,
-        int searchLiteralOffset,
-        byte[][] searchLiterals,
-        AsciiFixedLiteralCheck[] fixedLiteralChecks,
-        bool isStartAnchored,
-        bool isEndAnchored,
-        bool ignoreCase,
-        bool isAbsoluteStartAnchored,
-        bool allowsTrailingNewlineBeforeEnd,
-        bool isAbsoluteEndAnchored)
+        Utf8StructuralLinearInstruction[] instructions, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool ignoreCase, bool isAbsoluteStartAnchored, bool allowsTrailingNewlineBeforeEnd, bool isAbsoluteEndAnchored)
     {
         Instructions = instructions;
         SearchLiteralOffset = searchLiteralOffset;
@@ -597,18 +557,7 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
 internal readonly struct Utf8StructuralLinearProgram
 {
     private Utf8StructuralLinearProgram(
-        Utf8StructuralLinearProgramKind kind,
-        Utf8StructuralLinearInstructionProgram instructionProgram,
-        Utf8AsciiDeterministicProgram deterministicProgram,
-        AsciiSimplePatternPlan simplePatternPlan,
-        bool allowsUtf8ByteSafe,
-        AsciiStructuralTokenWindowPlan tokenWindowPlan,
-        AsciiStructuralQuotedRelationPlan quotedRelationPlan,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
-        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        Utf8SearchPlan searchPlan,
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8StructuralVerifierPlan structuralVerifierPlan)
+        Utf8StructuralLinearProgramKind kind, Utf8StructuralLinearInstructionProgram instructionProgram, Utf8AsciiDeterministicProgram deterministicProgram, AsciiSimplePatternPlan simplePatternPlan, bool allowsUtf8ByteSafe, AsciiStructuralTokenWindowPlan tokenWindowPlan, AsciiStructuralQuotedRelationPlan quotedRelationPlan, AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan, AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan, Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan, Utf8StructuralVerifierPlan structuralVerifierPlan)
     {
         Kind = kind;
         InstructionProgram = instructionProgram;
@@ -651,36 +600,27 @@ internal readonly struct Utf8StructuralLinearProgram
     public bool HasValue => Kind != Utf8StructuralLinearProgramKind.None;
 
     private static Utf8StructuralLinearProgram ForCharClassRun(
-        Utf8StructuralLinearInstructionProgram instructions,
-        Utf8AsciiDeterministicProgram deterministic,
-        bool allowsUtf8ByteSafe) =>
+        Utf8StructuralLinearInstructionProgram instructions, Utf8AsciiDeterministicProgram deterministic, bool allowsUtf8ByteSafe) =>
         new(Utf8StructuralLinearProgramKind.AsciiCharClassRun, instructions, deterministic, default,
             allowsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForFixedTokenPattern(
-        Utf8StructuralLinearInstructionProgram instructions,
-        Utf8AsciiDeterministicProgram deterministic,
-        AsciiSimplePatternPlan simplePatternPlan) =>
+        Utf8StructuralLinearInstructionProgram instructions, Utf8AsciiDeterministicProgram deterministic, AsciiSimplePatternPlan simplePatternPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, instructions, deterministic, simplePatternPlan,
             simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForLiteralFamilyRun(
-        Utf8StructuralLinearInstructionProgram instructions,
-        AsciiSimplePatternPlan simplePatternPlan) =>
+        Utf8StructuralLinearInstructionProgram instructions, AsciiSimplePatternPlan simplePatternPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, instructions, default, simplePatternPlan,
             simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForStructuralFamily(
-        AsciiStructuralIdentifierFamilyPlan familyPlan,
-        Utf8SearchPlan searchPlan,
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8StructuralVerifierPlan verifierPlan) =>
+        AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan, Utf8StructuralVerifierPlan verifierPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, default, default, default,
             false, default, default, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
 
     private static Utf8StructuralLinearProgram ForTokenWindow(
-        Utf8StructuralLinearInstructionProgram instructions,
-        AsciiStructuralTokenWindowPlan plan) =>
+        Utf8StructuralLinearInstructionProgram instructions, AsciiStructuralTokenWindowPlan plan) =>
         new(Utf8StructuralLinearProgramKind.AsciiTokenWindow, instructions, default, default,
             true, plan, default, default, default, default, default, default);
 
@@ -690,29 +630,17 @@ internal readonly struct Utf8StructuralLinearProgram
             false, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForQuotedRelation(
-        Utf8StructuralLinearInstructionProgram instructions,
-        AsciiStructuralQuotedRelationPlan plan) =>
+        Utf8StructuralLinearInstructionProgram instructions, AsciiStructuralQuotedRelationPlan plan) =>
         new(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, instructions, default, default,
             false, default, plan, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForOrderedLiteralWindow(
-        Utf8StructuralLinearInstructionProgram instructions,
-        AsciiOrderedLiteralWindowPlan plan,
-        Utf8SearchPlan searchPlan) =>
+        Utf8StructuralLinearInstructionProgram instructions, AsciiOrderedLiteralWindowPlan plan, Utf8SearchPlan searchPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, instructions, default, default,
             true, default, default, plan, default, searchPlan, default, default);
 
     public static Utf8StructuralLinearProgram Create(
-        NativeExecutionKind executionKind,
-        AsciiSimplePatternPlan simplePatternPlan,
-        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
-        AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan,
-        AsciiStructuralQuotedRelationPlan structuralQuotedRelationPlan,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
-        Utf8StructuralVerifierPlan structuralVerifier,
-        Utf8SearchPlan searchPlan,
-        Utf8StructuralSearchPlan structuralSearchPlan)
+        NativeExecutionKind executionKind, AsciiSimplePatternPlan simplePatternPlan, AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan, AsciiStructuralTokenWindowPlan structuralTokenWindowPlan, AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan, AsciiStructuralQuotedRelationPlan structuralQuotedRelationPlan, AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan, Utf8StructuralVerifierPlan structuralVerifier, Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan)
     {
         using var scope = Utf8ConstructionScope.Enter();
         if (executionKind == NativeExecutionKind.AsciiSimplePattern && simplePatternPlan.RunPlan.HasValue)
@@ -878,9 +806,9 @@ internal abstract class Utf8StructuralLinearRuntime
 
     /// <summary>
     /// Returns the first capture-zero match in the validated complete subject,
-    /// or <see cref="Utf8ValueMatch.NoMatch"/>, while charging the deadline.
+    /// or a default range, while charging the deadline.
     /// </summary>
-    public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
+    public abstract Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
     /// <summary>
     /// Finds the first match whose byte start is at or after
@@ -932,9 +860,9 @@ internal sealed class Utf8NoStructuralLinearRuntime : Utf8StructuralLinearRuntim
         return 0;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
+    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
-        return Utf8ValueMatch.NoMatch;
+        return default(Utf8CaptureRange);
     }
 
     public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
@@ -993,19 +921,19 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
         return count;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
+    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (!Utf8AsciiInstructionLinearExecutor.SupportsInput(Program, validation))
         {
-            return Utf8ValueMatch.NoMatch;
+            return default(Utf8CaptureRange);
         }
 
         var index = Program.DeterministicProgram.HasValue
             ? Utf8AsciiInstructionLinearExecutor.FindNextDeterministic(Program, input, 0, budget, out var matchedLength)
             : Utf8AsciiInstructionLinearExecutor.FindNext(Program, input, 0, budget, out matchedLength);
         return index < 0
-            ? Utf8ValueMatch.NoMatch
-            : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            ? default(Utf8CaptureRange)
+            : new Utf8CaptureRange(index, (index) + (matchedLength));
     }
 
     public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
@@ -1320,11 +1248,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicRawMatch(
-        in Utf8StructuralLinearProgram program,
-        ReadOnlySpan<byte> input,
-        ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionDeadline budget,
-        out Utf8AsciiDeterministicMatch match)
+        in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, ref Utf8AsciiDeterministicScanState state, Utf8ExecutionDeadline budget, out Utf8AsciiDeterministicMatch match)
     {
         match = default;
         if (!program.DeterministicProgram.HasValue)
@@ -1353,12 +1277,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicMatch(
-        in Utf8StructuralLinearProgram program,
-        ReadOnlySpan<byte> input,
-        ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionDeadline budget,
-        out int matchIndex,
-        out int matchedLength)
+        in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, ref Utf8AsciiDeterministicScanState state, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
         matchedLength = 0;
@@ -1485,11 +1404,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-        in Utf8StructuralLinearProgram program,
-        ReadOnlySpan<byte> input,
-        ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionDeadline budget,
-        out int matchIndex)
+        in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, ref Utf8AsciiDeterministicScanState state, Utf8ExecutionDeadline budget, out int matchIndex)
     {
         matchIndex = -1;
         if (!program.DeterministicProgram.HasValue)
@@ -2027,14 +1942,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     private static bool TryConsumeRepeatedSegment(
-        ReadOnlySpan<byte> input,
-        ref int index,
-        AsciiCharClass leadingCharClass,
-        AsciiCharClass trailingCharClass,
-        int trailingMinCount,
-        int separatorMinCount,
-        AsciiCharClass separatorSet,
-        out int separatorCount)
+        ReadOnlySpan<byte> input, ref int index, AsciiCharClass leadingCharClass, AsciiCharClass trailingCharClass, int trailingMinCount, int separatorMinCount, AsciiCharClass separatorSet, out int separatorCount)
     {
         separatorCount = 0;
         if ((uint)index >= (uint)input.Length || !leadingCharClass.Contains(input[index]))
@@ -2233,13 +2141,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     private static bool TryFindTrailingQuotedOperandWithinLines(
-        ReadOnlySpan<byte> input,
-        int startIndex,
-        AsciiStructuralQuotedRelationPlan plan,
-        AsciiStructuralQuotedOperandKind kind,
-        bool allowRepeat,
-        int maxLineBreaks,
-        out int matchEnd)
+        ReadOnlySpan<byte> input, int startIndex, AsciiStructuralQuotedRelationPlan plan, AsciiStructuralQuotedOperandKind kind, bool allowRepeat, int maxLineBreaks, out int matchEnd)
     {
         matchEnd = 0;
         var lineBreaks = 0;
@@ -2269,12 +2171,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     private static bool TryConsumeQuotedOperand(
-        ReadOnlySpan<byte> input,
-        int startIndex,
-        AsciiStructuralQuotedRelationPlan plan,
-        AsciiStructuralQuotedOperandKind kind,
-        bool allowRepeat,
-        out int endIndex)
+        ReadOnlySpan<byte> input, int startIndex, AsciiStructuralQuotedRelationPlan plan, AsciiStructuralQuotedOperandKind kind, bool allowRepeat, out int endIndex)
     {
         endIndex = 0;
         if (!TryConsumeSingleQuotedOperand(input, startIndex, plan, kind, out endIndex))
@@ -2296,11 +2193,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
     }
 
     private static bool TryConsumeSingleQuotedOperand(
-        ReadOnlySpan<byte> input,
-        int startIndex,
-        AsciiStructuralQuotedRelationPlan plan,
-        AsciiStructuralQuotedOperandKind kind,
-        out int endIndex)
+        ReadOnlySpan<byte> input, int startIndex, AsciiStructuralQuotedRelationPlan plan, AsciiStructuralQuotedOperandKind kind, out int endIndex)
     {
         endIndex = 0;
         return kind switch
@@ -2421,7 +2314,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
             : CountForward(input, verifierRuntime, budget);
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
+    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (UsesRightToLeft(PreparedRegex))
         {
@@ -2430,8 +2323,8 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
         var index = FindNext(input, verifierRuntime, 0, budget, out var matchedLength);
         return index < 0
-            ? Utf8ValueMatch.NoMatch
-            : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            ? default(Utf8CaptureRange)
+            : new Utf8CaptureRange(index, (index) + (matchedLength));
     }
 
     public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
@@ -2503,11 +2396,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     }
 
     internal bool TryFindNextStateful(
-        ReadOnlySpan<byte> input,
-        ref Utf8AsciiStructuralFamilyScanState state,
-        Utf8ExecutionDeadline budget,
-        out int matchIndex,
-        out int matchedLength)
+        ReadOnlySpan<byte> input, ref Utf8AsciiStructuralFamilyScanState state, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
         matchedLength = 0;

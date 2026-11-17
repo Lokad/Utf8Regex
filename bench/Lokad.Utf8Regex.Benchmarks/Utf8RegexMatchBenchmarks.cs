@@ -22,7 +22,7 @@ public class Utf8RegexMatchBenchmarks
     public int Utf8Regex()
     {
         var match = _context.Utf8Regex.Match(_context.InputBytes);
-        return match.Success ? match.IndexInUtf16 + match.LengthInUtf16 : -1;
+        return match.Success ? match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes) : -1;
     }
 
     [Benchmark]

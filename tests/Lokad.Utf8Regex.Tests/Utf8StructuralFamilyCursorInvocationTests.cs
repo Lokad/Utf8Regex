@@ -46,8 +46,8 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             foreach (Match expected in oracle.Matches(text))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
-                Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.AsSpan(cursor.Current.IndexInBytes, cursor.Current.LengthInBytes)));
+                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
+                Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.AsSpan(cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes))));
             }
             Assert.False(cursor.MoveNext());
             Assert.False(cursor.MoveNext());
@@ -129,12 +129,11 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var validation = Utf8Validation.Validate(input);
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input,
-                validation, Utf8ExecutionDeadline.Infinite, floor, floor);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, Utf8ExecutionDeadline.Infinite, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((expected.Index, expected.Length), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
+                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
             }
             Assert.False(cursor.MoveNext());
         }

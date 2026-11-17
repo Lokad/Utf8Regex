@@ -50,9 +50,9 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Same(plan.AlternateLiteralSearch.Value.SearchData.Buckets, plan.MultiLiteralSearch.ExactSearch.SearchData.Buckets);
             var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(plan.StructuralSearchPlan.Stages.Length)
                 + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchPlan>(1)
-                + (unicode ? Utf8ConstructionBudget.ArrayBytes<int>(literals.Length) : 0);
+               ;
             Assert.Equal(expected, owner.Budget.ReservedBytes);
-            Assert.Equal(Math.Max(payloadPeak + (unicode ? Utf8ConstructionBudget.ArrayBytes<int>(literals.Length) : 0), expected), owner.Budget.PeakBytes);
+            Assert.Equal(Math.Max(payloadPeak, expected), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             var input = "x😀barabaé中"u8.ToArray();
             var expectedFirst = literals.Select(literal => input.AsSpan().IndexOf(literal)).Where(index => index >= 0).DefaultIfEmpty(-1).Min();
@@ -203,7 +203,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (12, 7) : (1, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             var expected = options.HasFlag(RegexOptions.RightToLeft) ? new[] { (12, 7), (1, 10) } : new[] { (1, 10), (12, 7) };
             var cursor = regex.EnumerateMatches(input); var ranges = new List<(int, int)>();
-            while (cursor.MoveNext()) ranges.Add((cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+            while (cursor.MoveNext()) ranges.Add((cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             Assert.Equal(expected, ranges);
             Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();

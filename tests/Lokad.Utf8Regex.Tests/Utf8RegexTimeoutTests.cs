@@ -123,8 +123,8 @@ public sealed class Utf8RegexTimeoutTests
         var expectedMatch = oracle.Match(text);
         var actualMatch = regex.Match(input);
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
 
         Assert.Equal(oracle.Replace(text, "z"), Encoding.UTF8.GetString(regex.Replace(input, "z")));
 
@@ -137,7 +137,7 @@ public sealed class Utf8RegexTimeoutTests
         var actualIndexes = new List<int>();
         foreach (var match in regex.EnumerateMatches(input))
         {
-            actualIndexes.Add(match.IndexInUtf16);
+            actualIndexes.Add(match.StartOffsetInBytes);
         }
 
         Assert.Equal(expectedIndexes, actualIndexes);

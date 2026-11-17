@@ -215,14 +215,4 @@ public sealed class Utf8ValueMatchValidationReuseTests
 
     private static void AssertRange(Utf8CaptureRange match, string text, int index, int length)
         => Utf8MatchSequence.AssertRange(match, text, index, length);
-
-    private static void AssertRange(Utf8ValueMatch match, string text, int index, int length)
-    {
-        Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(index, match.IndexInUtf16);
-        Assert.Equal(length, match.LengthInUtf16);
-        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, index)), match.IndexInBytes);
-        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(index, length)), match.LengthInBytes);
-    }
 }

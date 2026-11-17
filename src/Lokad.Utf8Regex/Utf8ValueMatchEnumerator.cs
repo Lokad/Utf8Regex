@@ -24,18 +24,13 @@ public ref struct Utf8ValueMatchEnumerator
     }
 
     internal Utf8ValueMatchEnumerator(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        TimeSpan timeout,
-        CancellationToken token,
-        int startUnit)
-        : this(new Utf8OperationMatchCursor(program, input, map, timeout, token, startUnit))
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, TimeSpan timeout, CancellationToken token, int startByte)
+        : this(new Utf8OperationMatchCursor(program, input, timeout, token, startByte))
     {
     }
 
     /// <summary>Gets the match at the current enumerator position.</summary>
-    public Utf8ValueMatch Current => _cursor.CurrentValueMatch;
+    public Utf8CaptureRange Current => _cursor.CurrentValueMatch;
 
     /// <summary>Returns this value as the enumerator for <see langword="foreach"/> pattern matching.</summary>
     public Utf8ValueMatchEnumerator GetEnumerator() => this;
@@ -60,15 +55,14 @@ public ref struct Utf8ValueMatchEnumerator
         }
     }
 
-    internal Utf8ValueMatchEnumerator WithBaseOffsets(int byteOffset, int utf16Offset)
+    internal Utf8ValueMatchEnumerator WithBaseOffset(int byteOffset)
     {
-        _cursor = _cursor.WithBaseOffsets(byteOffset, utf16Offset);
+        _cursor = _cursor.WithBaseOffset(byteOffset);
         return this;
     }
 
     internal Utf8ValueMatchEnumerator WithTimeoutMapping(
-        ReadOnlySpan<byte> input,
-        Utf8Regex regex)
+        ReadOnlySpan<byte> input, Utf8Regex regex)
     {
         if (regex.MatchTimeout == Regex.InfiniteMatchTimeout)
         {

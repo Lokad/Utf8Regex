@@ -38,8 +38,8 @@ internal static class Utf8ScalarNullableOperationAssertions
             for (var next = index; next < rows.Length; next++)
             {
                 Assert.True(cursor.MoveNext());
-                Assert.True(cursor.Current.IsByteAligned);
-                Assert.Equal((rows[next].Byte, rows[next].Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                Assert.True(cursor.Current.Success);
+                Assert.Equal((rows[next].Byte, rows[next].Length), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             }
             Assert.False(cursor.MoveNext());
         }
@@ -52,7 +52,7 @@ internal static class Utf8ScalarNullableOperationAssertions
             foreach (var row in rows)
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((row.Byte, row.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                Assert.Equal((row.Byte, row.Length), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             }
             Assert.False(cursor.MoveNext());
             foreach (var count in new[] { 0, 1, 2 })

@@ -50,15 +50,15 @@ public sealed class Utf8SupplementaryCaseTests
                 var input = bytes.AsSpan(7, 6);
                 var match = regex.Match(input, source.Token);
                 Assert.True(match.Success);
-                Assert.Equal((1, 4), (match.IndexInBytes, match.LengthInBytes));
-                Assert.Equal(1, regex.Count(input, source.Token));
+                        Assert.Equal((1, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                        Assert.Equal(1, regex.Count(input, source.Token));
                 Assert.Equal(small, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token)).GetValueMemory().Span));
                 Assert.Equal("!x!", Encoding.UTF8.GetString(regex.Replace(input, "x", source.Token)));
             }
             var reference = new Utf8Regex(reverse ? @"^\1(.)$" : @"^(.)\1$",
                 options, Regex.InfiniteMatchTimeout, policy);
-            Assert.Equal(8, reference.Match(Encoding.UTF8.GetBytes(capital + small), source.Token).LengthInBytes);
-            var excluded = new Utf8Regex("^[^" + capital + "]$", options, Regex.InfiniteMatchTimeout, policy);
+                    Assert.Equal(8, (reference.Match(Encoding.UTF8.GetBytes(capital + small), source.Token).EndOffsetInBytes - reference.Match(Encoding.UTF8.GetBytes(capital + small), source.Token).StartOffsetInBytes));
+                    var excluded = new Utf8Regex("^[^" + capital + "]$", options, Regex.InfiniteMatchTimeout, policy);
             Assert.False(excluded.IsMatch(Encoding.UTF8.GetBytes(small), source.Token));
             Assert.True(excluded.IsMatch("😀"u8, source.Token));
         }

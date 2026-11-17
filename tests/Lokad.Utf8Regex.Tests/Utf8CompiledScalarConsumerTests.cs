@@ -44,9 +44,8 @@ public sealed class Utf8CompiledScalarConsumerTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
             var match = regex.Match(input);
-            Assert.True(match.Success); Assert.True(match.IsByteAligned);
-            Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
-                (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+            Assert.True(match.Success); Assert.True(match.Success);
+            Assert.Equal((indexBytes, lengthBytes), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
     }
 
@@ -93,14 +92,14 @@ public sealed class Utf8CompiledScalarConsumerTests
         var ranges = new List<(int, int)>();
         while (cursor.MoveNext())
         {
-            Assert.True(cursor.CurrentValueMatch.IsByteAligned);
-            ranges.Add((cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
+            Assert.True(cursor.CurrentValueMatch.Success);
+            ranges.Add((cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
         }
         Assert.Equal(rtl ? [(11, 0), (2, 8)] : new List<(int, int)> { (2, 8), (11, 0) }, ranges);
         CollectReleasedCursorStorage();
         Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
         Assert.True(sibling.MoveNext());
-        Assert.Equal(ranges[0], (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
+        Assert.Equal(ranges[0], (sibling.CurrentValueMatch.StartOffsetInBytes, (sibling.CurrentValueMatch.EndOffsetInBytes - sibling.CurrentValueMatch.StartOffsetInBytes)));
         while (sibling.MoveNext()) { }
         // Return only the ledger owner. All cursor and temporary table holders
         // leave this scope, but published credits remain on the invocation.
@@ -122,19 +121,18 @@ public sealed class Utf8CompiledScalarConsumerTests
         var pattern = nonBacktracking ? "😀|z" : @"(?<=é).|z";
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0));
         var input = "é😀z"u8.ToArray();
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input,
-            Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite, 2, 1);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite, 2);
         Assert.True(cursor.DebugIsOwnedSlice);
         retained = cursor.DebugInvocationReservedBytes;
         var invocation = cursor.ExportWorkingInvocation();
         var sibling = cursor;
-        Assert.True(cursor.MoveNext()); Assert.Equal((2, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
-        Assert.True(cursor.MoveNext()); Assert.Equal((6, 1), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
+        Assert.True(cursor.MoveNext()); Assert.Equal((2, 4), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
+        Assert.True(cursor.MoveNext()); Assert.Equal((6, 1), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
         Assert.False(cursor.MoveNext());
         CollectReleasedCursorStorage();
         Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
         Assert.True(sibling.MoveNext());
-        Assert.Equal((2, 4), (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
+        Assert.Equal((2, 4), (sibling.CurrentValueMatch.StartOffsetInBytes, (sibling.CurrentValueMatch.EndOffsetInBytes - sibling.CurrentValueMatch.StartOffsetInBytes)));
         while (sibling.MoveNext()) { }
         return invocation;
     }

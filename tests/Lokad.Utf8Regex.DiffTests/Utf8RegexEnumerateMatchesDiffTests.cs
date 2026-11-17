@@ -26,7 +26,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -44,18 +44,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string input = "😀 café 😀";
         var regex = new Utf8Regex("😀", RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, "😀", RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -67,18 +67,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string input = "é a éb é é";
         var regex = new Utf8Regex(@"\bé\b", RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, @"\bé\b", RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -90,18 +90,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string input = "café niño cafe niño café";
         var regex = new Utf8Regex("café|niño", RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, "café|niño", RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -113,18 +113,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string input = "café niño caféx xniño niño";
         var regex = new Utf8Regex(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, @"\b(?:café|niño)\b", RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -137,18 +137,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string pattern = @"\b(?:Task|ValueTask|IAsyncEnumerable)\b";
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, pattern, RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -160,18 +160,18 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         const string input = "café noir café gris café noir";
         var regex = new Utf8Regex("café(?= noir)", RegexOptions.CultureInvariant);
 
-        var actual = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
-        var expected = new List<(int Index, int Length, int ByteIndex, int ByteLength)>();
+        var expected = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in Regex.EnumerateMatches(input, "café(?= noir)", RegexOptions.CultureInvariant))
         {
             var prefix = input[..match.Index];
             var value = input.Substring(match.Index, match.Length);
-            expected.Add((match.Index, match.Length, Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
+            expected.Add((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(value)));
         }
 
         Assert.Equal(expected, actual);
@@ -186,7 +186,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -207,7 +207,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -228,7 +228,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -249,7 +249,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -271,7 +271,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -292,7 +292,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -313,7 +313,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -334,7 +334,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -355,7 +355,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -376,7 +376,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -397,7 +397,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -418,7 +418,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -439,7 +439,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -460,7 +460,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -482,7 +482,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -524,9 +524,9 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         foreach (var match in regex.EnumerateMatches(input))
         {
             matches.Add((
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                Encoding.UTF8.GetString(input, match.IndexInBytes, match.LengthInBytes)));
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes),
+                Encoding.UTF8.GetString(input, match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         }
 
         return matches;

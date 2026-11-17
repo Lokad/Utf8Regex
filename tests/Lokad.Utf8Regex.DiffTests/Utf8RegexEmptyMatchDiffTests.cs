@@ -59,7 +59,7 @@ public sealed class Utf8RegexEmptyMatchDiffTests
         var expected = new List<(int Index, int Length)>();
         foreach (var match in Regex.EnumerateMatches(input, pattern, RegexOptions.CultureInvariant))
         {
-            expected.Add((match.Index, match.Length));
+            expected.Add((Encoding.UTF8.GetByteCount(input.AsSpan(0, match.Index)), Encoding.UTF8.GetByteCount(input.AsSpan(match.Index, match.Length))));
         }
 
         foreach (var compiled in new[] { false, true })
@@ -70,7 +70,7 @@ public sealed class Utf8RegexEmptyMatchDiffTests
             var actual = new List<(int Index, int Length)>();
             foreach (var match in regex.EnumerateMatches(bytes))
             {
-                actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+                actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             }
 
             Assert.Equal(expected, actual);

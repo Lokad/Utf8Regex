@@ -28,7 +28,7 @@ public sealed class Utf8LiteralExistenceTests
                 var actual = regex.Match(input);
                 Assert.Equal(expected.Success, actual.Success);
                 if (expected.Success)
-                    Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.Slice(actual.IndexInBytes, actual.LengthInBytes)));
+                    Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.Slice(actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes))));
             }
         }
         var suffix = new Utf8Regex(".*(ss)", options);

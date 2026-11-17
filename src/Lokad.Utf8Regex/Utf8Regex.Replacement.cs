@@ -17,9 +17,7 @@ namespace Lokad.Utf8Regex;
 public sealed partial class Utf8Regex
 {
     private byte[] ReplaceCore(
-        ReadOnlySpan<byte> input,
-        Utf8AnalyzedReplacement replacement,
-        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
+        ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
@@ -63,8 +61,7 @@ public sealed partial class Utf8Regex
     }
 
     private static bool TryGetNativeReplacementBytes(
-        Utf8AnalyzedReplacement replacement,
-        out byte[] replacementBytes)
+        Utf8AnalyzedReplacement replacement, out byte[] replacementBytes)
     {
         if (replacement.IsLiteral)
         {
@@ -77,8 +74,7 @@ public sealed partial class Utf8Regex
     }
 
     private bool TryGetExactLiteralReplacementBytes(
-        Utf8AnalyzedReplacement replacement,
-        out byte[] replacementBytes)
+        Utf8AnalyzedReplacement replacement, out byte[] replacementBytes)
     {
         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase) ||
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literalUtf8)
@@ -150,11 +146,7 @@ public sealed partial class Utf8Regex
     }
 
     private OperationStatus TryReplaceCore(
-        ReadOnlySpan<byte> input,
-        Utf8AnalyzedReplacement replacement,
-        Span<byte> destination,
-        out int bytesWritten,
-        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
+        ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
         // Native emission still reads unmatched subject slices after writing
         // earlier pieces. Stage overlapping destinations in the existing owned
@@ -195,19 +187,17 @@ public sealed partial class Utf8Regex
         return scalarResult.Status;
     }
 
-    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
         ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, deadline);
 
-    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
     {
         // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var scalarAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
-            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
+
+            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false);
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
 
@@ -223,12 +213,7 @@ public sealed partial class Utf8Regex
 
     // Borrow the adapter's operation and result owner through final shaping.
     internal byte[]? ReplaceExactLiteralForResult(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> literalReplacementUtf8,
-        int maximumReplacementCount,
-        ref Utf8SliceInvocation invocation,
-        ref Utf8InvocationResultLedger results,
-        out int replacementCount)
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> literalReplacementUtf8, int maximumReplacementCount, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results, out int replacementCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
@@ -242,15 +227,14 @@ public sealed partial class Utf8Regex
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
     }
 
-    private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
+    private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
         // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
-            var scalarAnalysis = Utf8ValidatedInput.Create(input, InputValidation);
-            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
+
+            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false);
             var scalarSuccess = Utf8CursorReplaceEngine.TryReplace(
                 input,
                 replacementBytes,
@@ -277,11 +261,7 @@ public sealed partial class Utf8Regex
     }
 
     private bool TryReplaceViaNativePlan(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8AnalyzedReplacement replacement,
-        Utf8ExecutionDeadline budget,
-        out byte[] replaced)
+        ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8AnalyzedReplacement replacement, Utf8ExecutionDeadline budget, out byte[] replaced)
     {
         var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
         if (replacement.IsLiteral ||
@@ -368,8 +348,7 @@ public sealed partial class Utf8Regex
 
     private readonly record struct ReplacementCaptureFrame(Utf8ExecutionNode Node, int NextChild);
 
-    private static bool TryGetWholeLiteralCaptureNumber(Utf8ConstructionSession storage,
-        Utf8ExecutionNode node, out int captureNumber)
+    private static bool TryGetWholeLiteralCaptureNumber(Utf8ConstructionSession storage, Utf8ExecutionNode node, out int captureNumber)
     {
         var frames = storage.Buffer<ReplacementCaptureFrame>();
         var success = false;
@@ -453,8 +432,7 @@ public sealed partial class Utf8Regex
         return success;
     }
 
-    private static void PushReplacementCaptureFrame(Utf8ConstructionBudget budget,
-        Utf8ConstructionBuffer<ReplacementCaptureFrame> frames, Utf8ExecutionNode node)
+    private static void PushReplacementCaptureFrame(Utf8ConstructionBudget budget, Utf8ConstructionBuffer<ReplacementCaptureFrame> frames, Utf8ExecutionNode node)
     {
         budget.EnterDepth();
         try { frames.Push(new ReplacementCaptureFrame(node, -1)); }

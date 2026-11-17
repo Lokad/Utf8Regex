@@ -207,9 +207,9 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         var subject = Encoding.UTF8.GetBytes("😀ABCD中ABC😀A");
         Assert.True(regex.IsMatch(subject)); Assert.Equal(2, regex.Count(subject));
-        var match = regex.Match(subject); Assert.Equal(4, match.IndexInBytes); Assert.Equal(4, match.LengthInBytes);
+        var match = regex.Match(subject); Assert.Equal(4, match.StartOffsetInBytes); Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         var detail = Utf8MatchSequence.First(regex.CreateMatchCursor(subject)); Assert.Equal(4, detail.Value.StartOffsetInBytes); Assert.Equal(4, (detail.Value.EndOffsetInBytes - detail.Value.StartOffsetInBytes));
-        var count = 0; foreach (var item in regex.EnumerateMatches(subject)) { Assert.True(item.LengthInBytes >= 2); count++; }
+        var count = 0; foreach (var item in regex.EnumerateMatches(subject)) { Assert.True((item.EndOffsetInBytes - item.StartOffsetInBytes) >= 2); count++; }
         Assert.Equal(2, count); Assert.Equal("😀X中X😀A", Encoding.UTF8.GetString(regex.Replace(subject, "X")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }

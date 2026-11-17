@@ -74,16 +74,6 @@ public sealed class Utf8FiniteLiteralMatchTests
     private static void AssertRange(Utf8CaptureRange actual, string text, int start, int length)
         => Utf8MatchSequence.AssertRange(actual, text, start, length);
 
-    private static void AssertRange(Utf8ValueMatch actual, string text, int start, int length)
-    {
-        Assert.True(actual.Success);
-        Assert.True(actual.IsByteAligned);
-        Assert.Equal(start, actual.IndexInUtf16);
-        Assert.Equal(length, actual.LengthInUtf16);
-        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), actual.IndexInBytes);
-        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(start, length)), actual.LengthInBytes);
-    }
-
     [Theory]
     [InlineData("needle", "é😀needle rest", 3, 6)]
     [InlineData("(nee)(dle)", "é😀needle rest", 3, 6)]
@@ -226,13 +216,13 @@ public sealed class Utf8FiniteLiteralMatchTests
     [Theory]
     [InlineData("validation", false, "needle")] [InlineData("validation", true, "needle")]
     [InlineData("search", false, "needle")] [InlineData("search", true, "needle")]
-    [InlineData("projection", false, "needle")] [InlineData("projection", true, "needle")]
+
     [InlineData("validation", false, "needle|other|third|fourth|fifth")]
     [InlineData("validation", true, "needle|other|third|fourth|fifth")]
     [InlineData("search", false, "needle|other|third|fourth|fifth")]
     [InlineData("search", true, "needle|other|third|fourth|fifth")]
-    [InlineData("projection", false, "needle|other|third|fourth|fifth")]
-    [InlineData("projection", true, "needle|other|third|fourth|fifth")]
+
+
     public void EveryPhaseKeepsTheOriginalCancellationAndAbsoluteDeadline(string phase, bool expire, string pattern)
     {
         using var clock = Utf8DeadlineTestClock.Start();
@@ -254,8 +244,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (entered || phase == "search" && steps <= validationSteps ||
-                phase == "projection" && steps <= discoverySteps) return;
+            if (entered || phase == "search" && steps <= validationSteps) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });

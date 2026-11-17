@@ -7,15 +7,13 @@ internal ref partial struct Utf8OperationMatchCursor
 {
     private bool _hasAnchoredLiteralInvocation;
 
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal,
-        Utf8FallbackDirectFamilyKind kind, Utf8ValidationResult validation, Utf8SliceInvocation invocation)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8FallbackDirectFamilyKind kind, Utf8ValidationResult validation, Utf8SliceInvocation invocation)
         : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {
         // The borrowed invocation already owns the deadline and shared state.
         // Do not allocate a second finite invocation in the base constructor.
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
-        _asciiInput = validation.IsAscii;
         _hasAnchoredLiteralInvocation = true;
         if (kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
             _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
@@ -54,17 +52,14 @@ internal ref partial struct Utf8OperationMatchCursor
             _nativeStructuralExhausted = true;
             return Utf8ExecutionLimitKind.None;
         }
-        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(_asciiInput
-                ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental), _input,
-            _consumed, _consumedUtf16, start, literal.Length, literal.Length, ref _sliceInvocation,
-            out var projected, out var consumed, out var consumedUtf16);
+        var consumed = (start) + (literal.Length);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(start, (start) + (literal.Length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         breach = _sliceInvocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _current = projected;
         _consumed = consumed;
-        _consumedUtf16 = consumedUtf16;
         _nativeStructuralExhausted = true;
         found = true;
         return Utf8ExecutionLimitKind.None;

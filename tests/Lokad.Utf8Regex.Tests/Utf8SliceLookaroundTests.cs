@@ -211,15 +211,15 @@ public sealed class Utf8SliceLookaroundTests
         var actual = regex.Match(input);
         Assert.Equal(oracle.Success, actual.Success);
         Assert.True(actual.Success);
-        Assert.Equal(expectedIndex, actual.IndexInUtf16);
-        Assert.Equal(expectedLength, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedIndex)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedIndex, expectedLength)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
         Assert.Equal(expectedGroup, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         foreach (var item in regex.EnumerateMatches(input))
         {
-            Assert.Equal(expectedIndex, item.IndexInUtf16);
-            Assert.Equal(expectedLength, item.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedIndex)), item.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedIndex, expectedLength)), (item.EndOffsetInBytes - item.StartOffsetInBytes));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

@@ -2,6 +2,12 @@
 
 ## Unreleased — 0.5.0
 
+- Core whole-match results and span enumeration now use `Utf8CaptureRange` with
+  byte start/end endpoints. Remove `Utf8ValueMatch`, subject coordinate maps and
+  UTF-16 cursor scans. Default ranges remain distinct from successful empty hits;
+  scalar semantics, aliases and original interruption/resource controls remain.
+  Modeled work and working/result capacity requirements can decrease.
+
 - Remove Core `MatchDetailed` and its three legacy match/group/capture views.
   Use the memory capture cursor for immutable byte ranges and capture histories.
   Delete detailed-only UTF-16 projections and capture-map preparation. Misses

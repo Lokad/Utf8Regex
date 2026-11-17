@@ -17,7 +17,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.IsMatch("😀"u8));
         Assert.Equal(1, regex.Count("😀"u8));
-        Assert.Equal(4, regex.Match("😀"u8).LengthInBytes);
+        Assert.Equal(4, (regex.Match("😀"u8).EndOffsetInBytes - regex.Match("😀"u8).StartOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -58,7 +58,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         Assert.True(regex.IsMatch(input));
         Assert.False(regex.IsMatch(""u8));
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal((index, length), (regex.Match(input).IndexInBytes, regex.Match(input).LengthInBytes));
+        Assert.Equal((index, length), (regex.Match(input).StartOffsetInBytes, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes)));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         Assert.True(detailed.TryGetGroup("leaf", out var leaf));
@@ -68,7 +68,7 @@ public sealed class Utf8DeepScalarAdmissionTests
             Encoding.UTF8.GetString(regex.Replace(input, "<${leaf}>")));
         var cursor = regex.EnumerateMatches(input);
         Assert.True(cursor.MoveNext());
-        Assert.Equal((index, length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+        Assert.Equal((index, length), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
         Assert.False(cursor.MoveNext());
         var splits = new List<string>();
         foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());

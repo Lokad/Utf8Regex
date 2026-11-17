@@ -42,7 +42,7 @@ public sealed class LokadCodeRouteGuardrailTests
         // owned unit semantics for Unicode boundaries and UTF-16 projection.
         Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
         var match = regex.Match(bytes);
-        Assert.Equal(Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index, match.IndexInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index)), match.StartOffsetInBytes);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

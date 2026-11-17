@@ -185,10 +185,10 @@ public sealed class Utf8SliceAnchorTests
             var actual = new List<int>();
             foreach (var match in regex.EnumerateMatches(input))
             {
-                actual.Add(match.IndexInUtf16);
-                actual.Add(match.LengthInUtf16);
+                actual.Add(match.StartOffsetInBytes);
+                actual.Add((match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
-            Assert.Equal(expectedFlat, actual.ToArray());
+            Assert.Equal(Enumerable.Range(0, expectedFlat.Length / 2).SelectMany(i => new[] { Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedFlat[2 * i])), Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedFlat[2 * i], expectedFlat[2 * i + 1])) }), actual);
             Assert.Equal(expectedReplaced, Encoding.UTF8.GetString(regex.Replace(input, "Q")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, candidate.ToString());
         }
@@ -208,13 +208,13 @@ public sealed class Utf8SliceAnchorTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var actual = regex.Match(input);
         Assert.True(actual.Success);
-        Assert.Equal(expectedStart, actual.IndexInUtf16);
-        Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), actual.StartOffsetInBytes);
+        Assert.Equal(expectedEnd, actual.StartOffsetInBytes + (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
         foreach (var item in regex.EnumerateMatches(input))
         {
-            Assert.Equal(expectedStart, item.IndexInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), item.StartOffsetInBytes);
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -316,7 +316,7 @@ public sealed class Utf8SliceAnchorTests
         var enumerated = new List<int>();
         foreach (var item in regex.EnumerateMatches(input))
         {
-            enumerated.Add(item.IndexInUtf16);
+            enumerated.Add(item.StartOffsetInBytes);
         }
 
         Assert.Equal(expectedCount, enumerated.Count);

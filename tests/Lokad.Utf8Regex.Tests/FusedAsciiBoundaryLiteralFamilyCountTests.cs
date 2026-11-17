@@ -112,8 +112,8 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
         Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
         var expected = Regex.Match(input, Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var actual = regex.Match(bytes);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

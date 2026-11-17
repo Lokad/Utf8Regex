@@ -94,7 +94,7 @@ public sealed class Utf8SearchPlanTests
         Assert.DoesNotContain(regex.Inspection.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset);
         Assert.Null(regex.Inspection.PreparedRegex.ExecutionTree);
         Assert.Equal(1, regex.Count("a😀b"u8));
-        Assert.Equal(6, regex.Match("a😀b"u8).LengthInBytes);
+        Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
         Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, regex.Inspection.StructuralSearchPlan.Stages![^1].Kind);
     }
 
@@ -234,7 +234,7 @@ public sealed class Utf8SearchPlanTests
             Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input);
             Assert.True(match.Success);
-            Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal((0, input.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
     }
 
@@ -247,7 +247,7 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(regex.Inspection.SearchPlan.FallbackCandidatePlans);
         Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, regex.Inspection.SearchPlan.FallbackCandidateSource.Kind);
         Assert.Equal(1, regex.Count("a😀b"u8));
-        Assert.Equal(6, regex.Match("a😀b"u8).LengthInBytes);
+        Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
     }
 
     [Fact]
@@ -278,7 +278,6 @@ public sealed class Utf8SearchPlanTests
         var fallbackRegex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, boundaryRegex.Inspection.SearchPlan.ConfirmationPlan.Kind);
-        Assert.Equal(Utf8ProjectionKind.Utf16BoundaryMap, boundaryRegex.Inspection.SearchPlan.ProjectionPlan.Kind);
         Assert.Equal(Utf8ConfirmationKind.None, fallbackRegex.Inspection.SearchPlan.ConfirmationPlan.Kind);
     }
 
@@ -290,12 +289,10 @@ public sealed class Utf8SearchPlanTests
 
         Assert.Equal(Utf8SearchOperationKind.SearchThenConfirm, regex.Inspection.SearchPlan.EnumerationOperation.Kind);
         Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.Kind);
-        Assert.Equal(Utf8ProjectionKind.Utf16BoundaryMap, regex.Inspection.SearchPlan.EnumerationOperation.Projection.Kind);
 
         Assert.Equal(Utf8SearchOperationKind.PrefilterThenSearch, fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Kind);
         Assert.Equal(Utf8SearchOperationKind.PrefilterThenSearch, fallbackRegex.Inspection.SearchPlan.CountOperation.Kind);
         Assert.Equal(Utf8ConfirmationKind.None, fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Confirmation.Kind);
-        Assert.Equal(Utf8ProjectionKind.Utf16BoundaryMap, fallbackRegex.Inspection.SearchPlan.EnumerationOperation.Projection.Kind);
     }
 
     [Fact]
@@ -306,7 +303,6 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.CandidateSource.HasValue);
         Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.HasValue);
-        Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.Projection.HasValue);
 
         Assert.True(fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.CandidateSource.HasValue);
         Assert.False(fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Confirmation.HasValue);
@@ -402,10 +398,10 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(counter);
 
         Assert.True(counter!.TryMatch(hit, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.FirstMatchOperation, hit, regex.Inspection.SearchPlan.AlternateLiteralUtf16Lengths, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.FirstMatchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         Assert.True(interpreted.Success);
-        Assert.Equal(interpreted.IndexInBytes, emittedIndex);
-        Assert.Equal(interpreted.LengthInBytes, emittedLength);
+        Assert.Equal(interpreted.StartOffsetInBytes, emittedIndex);
+        Assert.Equal((interpreted.EndOffsetInBytes - interpreted.StartOffsetInBytes), emittedLength);
 
         Assert.False(counter.TryMatch(miss, out emittedIndex, out emittedLength));
         Assert.Equal(-1, emittedIndex);
@@ -431,10 +427,10 @@ public sealed class Utf8SearchPlanTests
             counter.IsMatch(input));
 
         Assert.True(counter.TryMatch(input, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(plan, plan.FirstMatchOperation, input, plan.AlternateLiteralUtf16Lengths, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(plan, plan.FirstMatchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         Assert.True(interpreted.Success);
-        Assert.Equal(interpreted.IndexInBytes, emittedIndex);
-        Assert.Equal(interpreted.LengthInBytes, emittedLength);
+        Assert.Equal(interpreted.StartOffsetInBytes, emittedIndex);
+        Assert.Equal((interpreted.EndOffsetInBytes - interpreted.StartOffsetInBytes), emittedLength);
     }
 
     [Fact]
@@ -459,8 +455,6 @@ public sealed class Utf8SearchPlanTests
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var hit = Encoding.UTF8.GetBytes("zzza123bzzz");
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
-
-        Assert.False(regex.Inspection.PreparedRegex.SearchPlan.FirstMatchOperation.Projection.HasValue);
         Assert.True(regex.IsMatch(hit));
         Assert.Equal(1, regex.Count(hit));
         Assert.False(regex.IsMatch(miss));
@@ -520,7 +514,7 @@ public sealed class Utf8SearchPlanTests
 
         var match = regex.Match(bytes);
         Assert.True(match.Success);
-        Assert.Equal(0, match.IndexInBytes);
+        Assert.Equal(0, match.StartOffsetInBytes);
     }
 
     [Fact]
@@ -622,10 +616,10 @@ public sealed class Utf8SearchPlanTests
             Assert.True(regex.IsMatch(bytes));
             Assert.Equal(1, regex.Count(bytes));
             var match = regex.Match(bytes);
-            Assert.Equal((0, bytes.Length), (match.IndexInBytes, match.LengthInBytes));
-            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
-            Assert.Equal((0, bytes.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
-        }
+                Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
+                Assert.Equal((0, bytes.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            }
         var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
         var input = Encoding.UTF8.GetBytes("   # NOQA: ABC123");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -887,8 +881,8 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         }
 
         var expectedDetailed = oracle.Match(inputText);
@@ -902,8 +896,8 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
         var regex = new Utf8Regex("(foo)\\1", RegexOptions.CultureInvariant);
         var first = regex.Match(input);
-        var second = regex.Match(input, first.IndexInBytes + first.LengthInBytes, []);
-        Assert.Equal((2, 6), (first.IndexInBytes, first.LengthInBytes));
+        var second = regex.Match(input, first.StartOffsetInBytes + (first.EndOffsetInBytes - first.StartOffsetInBytes), []);
+        Assert.Equal((2, 6), (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
         Assert.Equal((10, 6), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
     }
 

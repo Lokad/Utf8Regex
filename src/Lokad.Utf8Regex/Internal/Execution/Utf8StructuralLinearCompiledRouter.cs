@@ -20,12 +20,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryIsMatch(
-        Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime verifierRuntime,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out bool isMatch)
+        Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out bool isMatch)
     {
         // R05: the direct window executor measures gaps in bytes, selects the
         // trailing literal greedily, and projects byte offsets as UTF-16 units,
@@ -71,13 +66,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryCount(
-        Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime verifierRuntime,
-        PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out int count)
+        Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, PreparedAsciiFindPlan orderedWindowTrailingFindPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out int count)
     {
         // R05: the direct window executor measures gaps in bytes, selects the
         // trailing literal greedily, and projects byte offsets as UTF-16 units,
@@ -134,12 +123,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryMatch(
-        Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime verifierRuntime,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out Utf8ValueMatch match)
+        Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
     {
         // R05: the direct window executor measures gaps in bytes, selects the
         // trailing literal greedily, and projects byte offsets as UTF-16 units,
@@ -164,8 +148,8 @@ internal static class Utf8StructuralLinearCompiledRouter
                 budget,
                 out var matchedLength);
             match = index < 0
-                ? Utf8ValueMatch.NoMatch
-                : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+                ? default(Utf8CaptureRange)
+                : new Utf8CaptureRange(index, (index) + (matchedLength));
             return true;
         }
 
@@ -181,12 +165,12 @@ internal static class Utf8StructuralLinearCompiledRouter
                 budget,
                 out var matchedLength);
             match = index < 0
-                ? Utf8ValueMatch.NoMatch
-                : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+                ? default(Utf8CaptureRange)
+                : new Utf8CaptureRange(index, (index) + (matchedLength));
             return true;
         }
 
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         return false;
     }
 

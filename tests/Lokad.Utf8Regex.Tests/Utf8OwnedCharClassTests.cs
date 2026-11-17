@@ -84,8 +84,8 @@ public sealed class Utf8OwnedCharClassTests
                 var input = Encoding.UTF8.GetBytes(new Rune(code).ToString());
                 var match = regex.Match(input);
                 Assert.True(match.Success);
-                Assert.Equal(0, match.IndexInBytes);
-                Assert.Equal(input.Length, match.LengthInBytes);
+                Assert.Equal(0, match.StartOffsetInBytes);
+                Assert.Equal(input.Length, (match.EndOffsetInBytes - match.StartOffsetInBytes));
                 Assert.Equal(1, regex.Count(input));
             }
         }
@@ -152,8 +152,8 @@ public sealed class Utf8OwnedCharClassTests
                 Assert.Equal(expected, match.Success);
                 if (expected)
                 {
-                    Assert.Equal(0, match.IndexInBytes);
-                    Assert.Equal(input.Length, match.LengthInBytes);
+                    Assert.Equal(0, match.StartOffsetInBytes);
+                    Assert.Equal(input.Length, (match.EndOffsetInBytes - match.StartOffsetInBytes));
                 }
             }
         }
@@ -366,7 +366,7 @@ public sealed class Utf8OwnedCharClassTests
             Assert.Equal(new[] { 0, 3 }, boundaryOracle.Matches(sandwich).Select(static match => match.Index));
             var regex = new Utf8Regex(@"\b", RegexOptions.CultureInvariant);
             var positions = new List<int>();
-            foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(sandwich))) positions.Add(match.IndexInBytes);
+            foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(sandwich))) positions.Add(match.StartOffsetInBytes);
             Assert.Equal(new[] { 0, 5 }, positions);
         }
     }

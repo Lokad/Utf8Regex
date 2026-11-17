@@ -69,7 +69,7 @@ public sealed class Utf8AnchoredLinePairTests
         var expected = oracle.Match(text);
         var actual = regex.Match(Encoding.UTF8.GetBytes(text));
         Assert.Equal(expected.Success, actual.Success);
-        if (expected.Success) Assert.Equal(expected.Index, actual.IndexInUtf16);
+        if (expected.Success) Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
     }
 
     [Fact]

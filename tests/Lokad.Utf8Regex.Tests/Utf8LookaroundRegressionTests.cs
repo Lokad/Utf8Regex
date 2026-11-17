@@ -52,10 +52,10 @@ public sealed class Utf8LookaroundRegressionTests
 
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, match.IndexInBytes);
-            Assert.Equal(expectedEnd, match.IndexInBytes + match.LengthInBytes);
-            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(inputBytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
-            Assert.Equal(oracleMatch.Value, System.Text.Encoding.UTF8.GetString(inputBytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedStart)), match.StartOffsetInBytes);
+            Assert.Equal(expectedEnd, match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes));
+            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(inputBytes.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
+            Assert.Equal(oracleMatch.Value, System.Text.Encoding.UTF8.GetString(inputBytes.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         }
     }
 }

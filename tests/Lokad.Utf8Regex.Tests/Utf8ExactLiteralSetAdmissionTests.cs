@@ -297,11 +297,11 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
                 Assert.Equal(expected.Length != 0, first.Success);
                 var ranges = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input))
-                    ranges.Add((match.IndexInBytes, match.LengthInBytes));
+                    ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 Assert.Equal(expected.Select(match => (Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
                     Encoding.UTF8.GetByteCount(match.Value))), ranges);
                 if (first.Success)
-                    Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
+                    Assert.Equal(ranges[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             }
         }
     }
@@ -313,7 +313,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     {
         var regex = new Utf8Regex("(?:😀tail|😁tail|😀toe)", options); var subject = "xx😀tail|😁tail|😀toe"u8;
         Assert.Equal(3, regex.Count(subject)); var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         var expected = new[] { (2, 8), (11, 8), (20, 7) }; if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);
         Assert.Equal(expected, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

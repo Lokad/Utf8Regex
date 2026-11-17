@@ -72,7 +72,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
         {
             var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
-            Assert.Equal((0, length), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((0, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            Assert.Equal((0, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((0, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
 
@@ -93,7 +93,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
             {
                 var actual = new Utf8Regex(item.Item1, item.Item2 | lane).Match(Encoding.ASCII.GetBytes(item.Item4));
                 Assert.Equal(expected.Success, actual.Success);
-                if (expected.Success) Assert.Equal((expected.Index, expected.Length), (actual.IndexInBytes, actual.LengthInBytes));
+                if (expected.Success) Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(item.Item4.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(item.Item4.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
             }
         }
     }
@@ -178,8 +178,8 @@ public sealed class Utf8AnchoredProfileQualificationTests
         {
             var regex = new Utf8Regex(Quoted, options); Assert.Equal(2, regex.Count("\"😀\"\"a\""u8));
             var values = regex.EnumerateMatches("\"😀\"\"a\""u8); Assert.True(values.MoveNext());
-            Assert.Equal((0, 6), (values.Current.IndexInBytes, values.Current.LengthInBytes)); Assert.True(values.MoveNext());
-            Assert.Equal((6, 3), (values.Current.IndexInBytes, values.Current.LengthInBytes)); Assert.False(values.MoveNext());
+            Assert.Equal((0, 6), (values.Current.StartOffsetInBytes, (values.Current.EndOffsetInBytes - values.Current.StartOffsetInBytes))); Assert.True(values.MoveNext());
+            Assert.Equal((6, 3), (values.Current.StartOffsetInBytes, (values.Current.EndOffsetInBytes - values.Current.StartOffsetInBytes))); Assert.False(values.MoveNext());
         }
         Assert.Throws<ArgumentException>(() => new Utf8Regex(Quoted).IsMatch(new byte[] { 34, 34, 0xff }));
     }

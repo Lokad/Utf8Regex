@@ -57,10 +57,10 @@ public sealed class Utf8TerminalSetCountTests
         var bytes = Encoding.UTF8.GetBytes(text);
         var cursor = regex.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); var first = cursor.Current;
-        Assert.True(alias.MoveNext()); Assert.Equal(first.IndexInBytes, alias.Current.IndexInBytes);
-        Assert.Equal(first.LengthInBytes, alias.Current.LengthInBytes);
+        Assert.True(alias.MoveNext()); Assert.Equal(first.StartOffsetInBytes, alias.Current.StartOffsetInBytes);
+        Assert.Equal((first.EndOffsetInBytes - first.StartOffsetInBytes), (alias.Current.EndOffsetInBytes - alias.Current.StartOffsetInBytes));
         Assert.True(cursor.MoveNext());
-        Assert.Equal(first.IndexInBytes, alias.Current.IndexInBytes);
+        Assert.Equal(first.StartOffsetInBytes, alias.Current.StartOffsetInBytes);
         Assert.Equal(Regex.Count(text, pattern, options), regex.Count(bytes));
     }
 

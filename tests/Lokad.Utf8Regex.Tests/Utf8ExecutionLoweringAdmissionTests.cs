@@ -35,11 +35,11 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
                 var expected = accepted.Contains((char)value);
                 var match = new Utf8Regex(pattern, RegexOptions.CultureInvariant).Match([(byte)value]);
                 Assert.Equal(expected, match.Success);
-                if (expected) Assert.Equal(1, match.LengthInBytes);
+                if (expected) Assert.Equal(1, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
         }
-        Assert.Equal(2, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).LengthInBytes);
-        Assert.Equal(4, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).LengthInBytes);
+        Assert.Equal(2, (new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).StartOffsetInBytes));
+        Assert.Equal(4, (new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).StartOffsetInBytes));
         Assert.False(new Utf8Regex("\\p{L}+", RegexOptions.CultureInvariant).IsMatch("\0"u8));
     }
 

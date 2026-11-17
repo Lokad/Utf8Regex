@@ -33,10 +33,10 @@ public sealed class Utf8LiteralMatchProbeTests
                     Assert.Equal(expected.Success, match.Success);
                     if (match.Success)
                     {
-                        Assert.Equal(expected.IndexInBytes, match.IndexInBytes);
-                        Assert.Equal(expected.LengthInBytes, match.LengthInBytes);
-                        Assert.Equal(expected.IndexInUtf16, match.IndexInUtf16);
-                        Assert.Equal(expected.LengthInUtf16, match.LengthInUtf16);
+                        Assert.Equal(expected.StartOffsetInBytes, match.StartOffsetInBytes);
+                        Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+                        Assert.Equal(expected.StartOffsetInBytes, match.StartOffsetInBytes);
+                        Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
                     }
                 }
                 if (regex.Inspection.DebugTryIsMatchExactLiteral(input, out var exact))
@@ -46,8 +46,8 @@ public sealed class Utf8LiteralMatchProbeTests
                 if (regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(input, out var start, out var length))
                 {
                     Assert.True(expected.Success);
-                    Assert.Equal(expected.IndexInBytes, start);
-                    Assert.Equal(expected.LengthInBytes, length);
+                    Assert.Equal(expected.StartOffsetInBytes, start);
+                    Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), length);
                 }
             }
         }
@@ -60,8 +60,7 @@ public sealed class Utf8LiteralMatchProbeTests
         Assert.True(exact.Inspection.DebugTryIsMatchExactLiteral("😀é"u8, out var found));
         Assert.True(found);
         Assert.True(exact.Inspection.DebugTryMatchExactLiteral("😀é"u8, out var match));
-        Assert.Equal(4, match.IndexInBytes);
-        Assert.Equal(2, match.IndexInUtf16);
+        Assert.Equal(4, match.StartOffsetInBytes);
         var family = new Utf8Regex("cat|dog");
         Assert.True(family.Inspection.DebugTryIsMatchLiteralFamily("dog"u8, out found));
         Assert.True(found);

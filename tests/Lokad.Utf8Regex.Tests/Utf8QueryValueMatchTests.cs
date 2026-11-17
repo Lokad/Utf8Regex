@@ -44,7 +44,7 @@ public sealed class Utf8QueryValueMatchTests
                     var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                        (actual.IndexInBytes, actual.LengthInBytes));
+                        (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(actual, regex.Match(input));
                 }
@@ -61,7 +61,7 @@ public sealed class Utf8QueryValueMatchTests
         var input = Encoding.ASCII.GetBytes(new string('x', length - tail.Length) + tail);
         var tight = new Utf8Regex(Digits, Fold, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
+        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
         else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }
@@ -84,9 +84,9 @@ public sealed class Utf8QueryValueMatchTests
                     var input = Encoding.UTF8.GetBytes(text); var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                     var actual = regex.Match(input);
                     Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                        (actual.IndexInBytes, actual.LengthInBytes));
-                }
+                        if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
+                            (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                    }
             }
         }
         finally { CultureInfo.CurrentCulture = original; }

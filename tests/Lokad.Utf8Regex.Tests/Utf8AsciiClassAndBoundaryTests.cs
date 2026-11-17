@@ -128,10 +128,10 @@ public sealed class Utf8AsciiClassAndBoundaryTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
             var actual = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
+            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(expected, actual);
             var first = regex.Match(input);
-            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+            Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(value.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "Q")));

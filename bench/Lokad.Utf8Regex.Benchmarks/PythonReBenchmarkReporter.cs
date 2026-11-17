@@ -3479,15 +3479,17 @@ internal sealed class PythonReBenchmarkContext
         return new PythonReBenchmarkValueResult(true, startOffsetInBytes, endOffsetInBytes);
     }
 
-    private PythonReBenchmarkValueResult ProjectCoreOneShot(Utf8ValueMatch match)
+    private PythonReBenchmarkValueResult ProjectCoreOneShot(Utf8CaptureRange match)
     {
         if (!match.Success ||
-            _case.Operation == PythonReBenchmarkOperation.Match && match.IndexInUtf16 != 0)
+            _case.Operation == PythonReBenchmarkOperation.Match && match.StartOffsetInBytes != 0)
         {
             return default;
         }
+var indexInBytes = match.StartOffsetInBytes;
+        var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
-        if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+        if (!match.Success)
         {
             throw new InvalidOperationException("The exact-literal one-shot control has no byte range.");
         }
@@ -3874,10 +3876,10 @@ internal sealed class PythonReBenchmarkContext
             var match = enumerator.Current;
             checksum = Combine(
                 checksum,
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                match.IndexInBytes,
-                match.LengthInBytes);
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes),
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
 
         return checksum;
@@ -3992,7 +3994,9 @@ internal sealed class PythonReBenchmarkContext
         var values = new List<string>();
         foreach (var match in EnumerateCoreMatches())
         {
-            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+var indexInBytes = match.StartOffsetInBytes;
+            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
+            if (!match.Success)
             {
                 throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
             }
@@ -4013,7 +4017,9 @@ internal sealed class PythonReBenchmarkContext
         var byteValues = new List<byte[]>();
         foreach (var match in EnumerateCoreMatches())
         {
-            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+var indexInBytes = match.StartOffsetInBytes;
+            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
+            if (!match.Success)
             {
                 throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
             }
@@ -4034,7 +4040,9 @@ internal sealed class PythonReBenchmarkContext
         var ranges = new List<PythonReBenchmarkRange>();
         foreach (var match in EnumerateCoreMatches())
         {
-            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+var indexInBytes = match.StartOffsetInBytes;
+            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
+            if (!match.Success)
             {
                 throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
             }
@@ -4042,8 +4050,8 @@ internal sealed class PythonReBenchmarkContext
             ranges.Add(new PythonReBenchmarkRange(
                 indexInBytes,
                 lengthInBytes,
-                match.IndexInUtf16,
-                match.LengthInUtf16));
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         return ranges;

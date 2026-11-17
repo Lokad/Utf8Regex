@@ -6,8 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8CompiledOperationCursorFactory
 {
-    internal static bool CanCreateInvocationMatchCursor(Utf8PreparedRegex prepared, Utf8ValidationResult validation,
-        ref Utf8SliceInvocation invocation)
+    internal static bool CanCreateInvocationMatchCursor(Utf8PreparedRegex prepared, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation)
     {
         if ((prepared.SemanticRegex.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0) return false;
         switch (prepared.ExecutionKind)
@@ -46,10 +45,8 @@ internal static partial class Utf8CompiledOperationCursorFactory
         }
     }
 
-    // Transfer once, after any temporary public coordinate map has been dropped
-    // and its reservation released. No validation/deadline/token reset occurs.
-    internal static Utf8OperationMatchCursor CreateInvocationMatchCursor(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, Utf8SliceInvocation invocation, int byteFloor, int unitFloor)
+    // Transfer the original invocation without resetting validation, deadline or token.
+    internal static Utf8OperationMatchCursor CreateInvocationMatchCursor(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8SliceInvocation invocation, int byteFloor)
     {
         var cursor = prepared.ExecutionKind switch
         {
@@ -63,6 +60,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii),
             _ => throw new InvalidOperationException("The prepared plan cannot transfer a native invocation cursor."),
         };
-        return cursor.WithStartFloor(byteFloor, unitFloor);
+        return cursor.WithStartFloor(byteFloor);
     }
 }

@@ -174,7 +174,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         var regex = new Utf8Regex("(?i:abcdefgh😀|xyzuvw😀|qwerty😀)", options);
         var subject = "xxABCDEFGH😀|xyzuvw😀|QWERTY😀yy"u8;
         Assert.True(regex.IsMatch(subject)); Assert.Equal(3, regex.Count(subject));
-        var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (2, 12), (15, 10), (26, 10) }, ranges);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

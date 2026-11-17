@@ -27,7 +27,7 @@ public sealed class Utf8DecodedFallbackTests
             // Deseret case folding is defined over scalars, not surrogate halves.
             var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(bytes))
-                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+                ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal([(0, 4), (4, 4)], ranges);
         }
         else

@@ -51,13 +51,13 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var collected = new List<(int Index, int Length)>();
             foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
-                collected.Add((match.IndexInUtf16, match.LengthInUtf16));
+                collected.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             }
 
             var expected = new List<(int Index, int Length)>();
             foreach (Match match in runtime.Matches(text.Substring(offset)))
             {
-                expected.Add((match.Index + offset, match.Length));
+                expected.Add((Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + offset)), Encoding.UTF8.GetByteCount(match.Value)));
             }
 
             Assert.Equal(expected.Count, collected.Count);
@@ -99,8 +99,8 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Index, actual.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
 
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -181,13 +181,13 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (Match expectedMatch in oracle.Matches(text))
             {
-                expected.Add((expectedMatch.Index, expectedMatch.Length));
+                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
             }
 
             var actual = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (var valueMatch in enumRegex.EnumerateMatches(input))
             {
-                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
             }
 
             Assert.Equal(expected.Count, actual.Count);

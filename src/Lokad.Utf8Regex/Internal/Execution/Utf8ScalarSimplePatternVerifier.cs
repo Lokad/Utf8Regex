@@ -21,11 +21,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     // and the ASCII fast path decline to the existing routes. Hooks sit past
     // validation, so inputs are well-formed; malformed scalars fail the walk closed.
     public static bool TryIsMatch(
-        ReadOnlySpan<byte> input,
-        NativeExecutionKind kind,
-        in AsciiSimplePatternPlan plan,
-        Utf8ExecutionDeadline budget,
-        out bool isMatch)
+        ReadOnlySpan<byte> input, NativeExecutionKind kind, in AsciiSimplePatternPlan plan, Utf8ExecutionDeadline budget, out bool isMatch)
     {
         isMatch = false;
         if (!CanServeScalar(kind, plan, input))
@@ -38,11 +34,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     }
 
     public static bool TryCount(
-        ReadOnlySpan<byte> input,
-        NativeExecutionKind kind,
-        in AsciiSimplePatternPlan plan,
-        Utf8ExecutionDeadline budget,
-        out int count)
+        ReadOnlySpan<byte> input, NativeExecutionKind kind, in AsciiSimplePatternPlan plan, Utf8ExecutionDeadline budget, out int count)
     {
         count = 0;
         if (!CanServeScalar(kind, plan, input))
@@ -185,11 +177,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     }
 
     public static int FindNextScalar(
-        ReadOnlySpan<byte> input,
-        in AsciiSimplePatternPlan plan,
-        Utf8ExecutionDeadline budget,
-        int startByte,
-        out int matchedByteLength)
+        ReadOnlySpan<byte> input, in AsciiSimplePatternPlan plan, Utf8ExecutionDeadline budget, int startByte, out int matchedByteLength)
     {
         matchedByteLength = 0;
         // Byte-anchored literal candidates assume byte buildup past the match start,
@@ -215,11 +203,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     }
 
     private static bool TryMatchBranch(
-        ReadOnlySpan<byte> input,
-        in AsciiSimplePatternPlan plan,
-        int startByte,
-        Utf8ExecutionDeadline budget,
-        out int matchedByteLength)
+        ReadOnlySpan<byte> input, in AsciiSimplePatternPlan plan, int startByte, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
         budget.Step();
@@ -409,12 +393,7 @@ internal static class Utf8ScalarSimplePatternVerifier
         return false;
     }
     public static bool TryFindFirst(
-        ReadOnlySpan<byte> input,
-        NativeExecutionKind kind,
-        in AsciiSimplePatternPlan plan,
-        Utf8ExecutionDeadline budget,
-        out int startByte,
-        out int matchedByteLength)
+        ReadOnlySpan<byte> input, NativeExecutionKind kind, in AsciiSimplePatternPlan plan, Utf8ExecutionDeadline budget, out int startByte, out int matchedByteLength)
     {
         startByte = -1;
         matchedByteLength = 0;
@@ -429,29 +408,17 @@ internal static class Utf8ScalarSimplePatternVerifier
         return true;
     }
 
-    public static bool TryProjectMatch(
-        ReadOnlySpan<byte> input,
-        int startByte,
-        int matchedByteLength,
-        out Utf8ValueMatch match)
+    public static bool TryCreateScalarMatchRange(
+        ReadOnlySpan<byte> input, int startByte, int matchedByteLength, out Utf8CaptureRange match)
     {
-        // Both boundaries are scalar-aligned by construction (boundary-filtered
-        // starts plus whole-scalar consumption), so the boundary map projects
-        // them exactly; anything else fails closed to BCL routing.
-        match = Utf8ValueMatch.NoMatch;
-        if (startByte < 0 || matchedByteLength < 0 || startByte + matchedByteLength > input.Length)
-        {
-            return false;
-        }
+        match = default;
+        if ((uint)startByte > (uint)input.Length ||
+            (uint)matchedByteLength > (uint)(input.Length - startByte)) return false;
+        var end = startByte + matchedByteLength;
+        if (startByte < input.Length && (input[startByte] & 0xc0) == 0x80 ||
+            end < input.Length && (input[end] & 0xc0) == 0x80) return false;
 
-        var map = Utf8BoundaryMap.Create(input, Utf8Validation.DescribeValid(input));
-        if (!map.TryGetUtf16OffsetForByteOffset(startByte, out var startUnit) ||
-            !map.TryGetUtf16OffsetForByteOffset(startByte + matchedByteLength, out var endUnit))
-        {
-            return false;
-        }
-
-        match = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit, startByte, matchedByteLength);
+        match = new Utf8CaptureRange(startByte, (startByte) + (matchedByteLength));
         return true;
     }
 }

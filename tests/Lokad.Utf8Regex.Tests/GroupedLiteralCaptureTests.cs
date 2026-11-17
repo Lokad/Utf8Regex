@@ -356,7 +356,7 @@ public sealed class GroupedLiteralCaptureTests
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInBytes, valueMatch.LengthInBytes));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -1177,7 +1177,7 @@ public sealed class GroupedLiteralCaptureTests
         var actual = new System.Collections.Generic.List<string>();
         foreach (var m in regex.EnumerateMatches(input))
         {
-            actual.Add(m.IndexInBytes + ":" + m.LengthInBytes);
+            actual.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expected, actual);
     }

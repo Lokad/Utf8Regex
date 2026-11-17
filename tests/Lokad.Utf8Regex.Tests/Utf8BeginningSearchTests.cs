@@ -31,8 +31,8 @@ public sealed class Utf8BeginningSearchTests
             foreach (var offset in new[] { 0, padding, padding + 3, padding + 5, padding + 6, text.Length })
                 Assert.Equal(oracle.Matches(text, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
             var positions = new List<int>();
-            foreach (var match in regex.EnumerateMatches(input)) positions.Add(match.IndexInUtf16);
-            Assert.Equal(oracle.Matches(text).Select(match => match.Index).ToArray(), positions);
+            foreach (var match in regex.EnumerateMatches(input)) positions.Add(match.StartOffsetInBytes);
+            Assert.Equal(oracle.Matches(text).Select(match => System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index))).ToArray(), positions);
         }
     }
 
@@ -58,8 +58,8 @@ public sealed class Utf8BeginningSearchTests
         Assert.Equal(oracle.Count(text), regex.Count(input));
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         var positions = new List<int>();
-        foreach (var match in regex.EnumerateMatches(input)) positions.Add(match.IndexInUtf16);
-        Assert.Equal(oracle.Matches(text).Select(match => match.Index).ToArray(), positions);
+        foreach (var match in regex.EnumerateMatches(input)) positions.Add(match.StartOffsetInBytes);
+        Assert.Equal(oracle.Matches(text).Select(match => System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index))).ToArray(), positions);
     }
 
     [Fact]

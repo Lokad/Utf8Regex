@@ -75,10 +75,9 @@ public sealed class Utf8InputValidationTests
                 inputValidation: Utf8InputValidation.AssumeValid);
             var match = trusted.Match(input);
             Assert.True(match.Success);
-            Assert.Equal(8, match.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(pattern), match.LengthInBytes);
-            Assert.Equal(4, match.IndexInUtf16);
-            Assert.Equal(pattern.Length, match.LengthInUtf16);
+            Assert.Equal(8, match.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(pattern), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(pattern), (match.EndOffsetInBytes - match.StartOffsetInBytes));
             var strict = new Utf8Regex(pattern, options, resourcePolicy: policy);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => strict.Match(input));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
@@ -246,9 +245,9 @@ public sealed class Utf8InputValidationTests
         return result.ToArray();
     }
 
-    private static Utf8ValueMatch[] Matches(Utf8Regex regex, byte[] input)
+    private static Utf8CaptureRange[] Matches(Utf8Regex regex, byte[] input)
     {
-        var result = new List<Utf8ValueMatch>();
+        var result = new List<Utf8CaptureRange>();
         foreach (var match in regex.EnumerateMatches(input)) result.Add(match);
         return result.ToArray();
     }

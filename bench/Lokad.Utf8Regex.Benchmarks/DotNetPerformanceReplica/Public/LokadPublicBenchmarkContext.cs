@@ -201,7 +201,7 @@ internal sealed class LokadPublicBenchmarkContext
         return Operation switch
         {
             LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) ? match : Utf8ValueMatch.NoMatch),
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) ? match : default(Utf8CaptureRange)),
             _ => 0,
         };
     }
@@ -330,7 +330,7 @@ internal sealed class LokadPublicBenchmarkContext
         };
     }
 
-    private static int MeasureMatch(Utf8ValueMatch match) => match.Success ? match.IndexInUtf16 + match.LengthInUtf16 : -1;
+    private static int MeasureMatch(Utf8CaptureRange match) => match.Success ? match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes) : -1;
 
     private static int MeasureMatch(Match match) => match.Success ? match.Index + match.Length : -1;
 

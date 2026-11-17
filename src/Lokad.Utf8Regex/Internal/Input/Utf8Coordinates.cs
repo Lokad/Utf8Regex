@@ -16,4 +16,3 @@ internal readonly record struct Utf8BytePosition(int Value)
     }
 }
 
-internal readonly record struct Utf16Position(int Value);

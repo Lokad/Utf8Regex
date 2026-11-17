@@ -76,7 +76,7 @@ public sealed class PublicOperationConsistencyTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var ranges = new List<(int Start, int Length)>();
         foreach (var match in regex.EnumerateMatches(input))
-            ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(ranges.Count, regex.Count(input));
         Assert.Equal(ranges.Count != 0, regex.IsMatch(input));
         var first = regex.Match(input);
@@ -85,7 +85,7 @@ public sealed class PublicOperationConsistencyTests
         Assert.Equal(first.Success, detailed.Success);
         if (first.Success)
         {
-            Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
+            Assert.Equal(ranges[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             Assert.Equal(ranges[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
         using var cursor = regex.CreateMatchCursor(input,

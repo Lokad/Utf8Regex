@@ -32,15 +32,14 @@ UTF-8 continuation byte throw `ArgumentOutOfRangeException` for `startOffsetInBy
 The original token, deadline and cumulative limits apply through every advance.
 This replaces `EnumerateMatchesFromUtf16Offset` in 0.5 development. Offset
 existence uses `Match(input, startOffsetInBytes, captures, cancellationToken).Success`;
-All `FromUtf16Offset` matching APIs are removed. Derived UTF-16 coordinates on
-the legacy whole-subject `Utf8ValueMatch` have not yet been removed.
+All `FromUtf16Offset` matching APIs and UTF-16 result coordinates are removed.
+Whole-subject `Match` and span enumeration use the existing `Utf8CaptureRange`.
 
 `CountFromUtf16Offset` is also removed. Whole-subject `Count` remains. To count from
 a byte start, consume one `EnumerateMatches(input, startOffsetInBytes, token)`
 enumerator. Its original subject context, scalar progress, deadline and resource
-budget remain cumulative. Partial counts now pay that iterator's existing result-
-coordinate work/storage, which can cost more than the former counter; the general
-counter and iterator have not yet been consolidated.
+budget remain cumulative. Partial counts use the iterator's matching scratch;
+the general counter and iterator have not yet been consolidated.
 
 ### Caller-owned capture slots
 
@@ -355,9 +354,16 @@ separate Unicode 15.1 rules.
 
 ## Results, splitting and replacement
 
-`Utf8ValueMatch` is storable coordinate data; default means no match, distinct
-from a successful empty match. Unsuccessful values have zero UTF-16 coordinates;
-`TryGetByteRange` returns false/zero, and byte properties throw without a range.
+`Utf8CaptureRange` is storable byte-range data without an input owner. Default
+means no match: `Success` is false and both byte endpoints are zero. A successful
+empty match has `Success` true and equal start/end endpoints. Endpoints are always
+readable. Whole-match enumeration and `Match` use this same type; there is no
+alignment flag, optional byte-range projection or UTF-16 coordinate state. Native
+and scalar cursors retain only byte positions, and never scan gaps to derive
+character coordinates. Cursor copies retain independent positions while sharing
+the original cumulative invocation limits. Published ranges survive advance,
+failure and cursor exhaustion. Removing coordinate preparation can decrease
+modeled work, working and result-capacity needs.
 Capture cursors publish immutable byte-range snapshots without UTF-16 coordinate
 maps or captured strings. Capture storage is admitted before allocation and
 publication observes the original cancellation, deadline and cumulative limits.
@@ -372,8 +378,7 @@ captures as extra elements. `Utf8ValueSplit` stores only byte start and length;
 it has no UTF-16 coordinates or alignment flag. Its bytes form complete scalar
 segments. Controlled scalar splitting consumes the existing match cursor's byte
 outcomes without a subject coordinate map or UTF-16 totals. Count one retains
-only the original invocation and returns the whole subject. Legacy native match
-cursors can still derive coordinates internally until their separate migration.
+only the original invocation and returns the whole subject.
 Removing split maps lowers modeled working admission; match-state buffers and
 bounded work, cancellation and deadline checks remain. Views stay valid after
 EOF or interruption while their original input remains unchanged and alive.
@@ -677,8 +682,7 @@ capture histories and escape/newline semantics.
 
 The same ASCII size envelope can find a complete identifier token of the form
 `[A-Za-z][A-Za-z0-9]*` from zero origin using the existing checked finder. Its
-selected start can be nonzero; byte and derived UTF-16 coordinates retain that
-index. Discovery and publication share the original bounded work/token/deadline
+selected start can be nonzero; the result retains its original byte index. Discovery and publication share the original bounded work/token/deadline
 scope without VM repeat/capture arrays. This can reduce working/depth admission;
 mixed Unicode, larger subjects, nonzero origins, RTL/NonBacktracking, global
 IgnoreCase and unproved shapes keep their existing paths. Detailed captures are

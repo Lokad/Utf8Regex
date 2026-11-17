@@ -31,8 +31,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
                 {
                     var value = regex.Match(backing.AsSpan(1, input.Length), live.Token);
                     var expected = oracle.Match(text); Assert.Equal(expected.Success, value.Success);
-                    if (value.Success) Assert.Equal((0, expected.Length, 0, expected.Length),
-                        (value.IndexInBytes, value.LengthInBytes, value.IndexInUtf16, value.LengthInUtf16));
+                    if (value.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
@@ -66,10 +65,8 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
                     Assert.Equal(oracle.Count(text), regex.Count(input));
                     var actual = regex.Match(input);
                     Assert.True(expected.Success == actual.Success, $"{culture}/{invariant}: {text}");
-                    if (actual.Success) Assert.Equal((expected.Index, expected.Length,
-                        Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
-                        (actual.IndexInUtf16, actual.LengthInUtf16, actual.IndexInBytes, actual.LengthInBytes));
-                    Utf8MatchSequence.AssertCaptures(expected, Utf8MatchSequence.First(regex.CreateMatchCursor(input)), input, text);
+                        if (actual.Success) Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                        Utf8MatchSequence.AssertCaptures(expected, Utf8MatchSequence.First(regex.CreateMatchCursor(input)), input, text);
                 }
             }
         }
@@ -81,11 +78,11 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('A', length));
-        Assert.Equal(length, new Utf8Regex(Pattern, Options).Match(input).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern, Options).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern, Options).Match(input).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, Options, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
         // The scalar continuation also needs no mutable repeat buffers.
-        Assert.Equal(length, tight.Match(input).LengthInBytes);
+        Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
     }
 
     [Fact]

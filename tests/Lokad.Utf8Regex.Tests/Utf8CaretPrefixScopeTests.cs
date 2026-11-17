@@ -38,13 +38,13 @@ public sealed class Utf8CaretPrefixScopeTests
             Assert.Equal(expected.Success, match.Success);
             if (expected.Success)
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), match.IndexInBytes);
-                Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetValueMemory().Span));
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
+                    Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetValueMemory().Span));
             }
             var ranges = new List<(int Start, int Length)>();
             foreach (var item in regex.EnumerateMatches(input))
-                ranges.Add((item.IndexInBytes, item.LengthInBytes));
-            Assert.Equal(oracle.Matches(text).Select(item =>
+                    ranges.Add((item.StartOffsetInBytes, (item.EndOffsetInBytes - item.StartOffsetInBytes)));
+                Assert.Equal(oracle.Matches(text).Select(item =>
                 (Encoding.UTF8.GetByteCount(text.AsSpan(0, item.Index)), Encoding.UTF8.GetByteCount(item.Value))), ranges);
             Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
             // EnumerateSplits omits captured delimiters: derive the gaps from

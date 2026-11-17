@@ -20,8 +20,8 @@ public sealed class Utf8StructuralInputFactsTests
         Assert.True(Observe(() => regex.IsMatch(input, lifetime.Token)));
         Assert.Equal(2, Observe(() => regex.Count(input)));
         Assert.Equal(2, Observe(() => regex.Count(input, lifetime.Token)));
-        Assert.Equal((7, 12, 4, 10), Observe(() => Range(regex.Match(input, lifetime.Token))));
-        Assert.Equal([(7, 12, 4, 10), (22, 10, 17, 10)], Observe(Enumerate));
+        Assert.Equal((7, 12), Observe(() => Range(regex.Match(input, lifetime.Token))));
+        Assert.Equal([(7, 12), (22, 10)], Observe(Enumerate));
 
         T Observe<T>(Func<T> operation)
         {
@@ -35,9 +35,9 @@ public sealed class Utf8StructuralInputFactsTests
             finally { session.Complete(); }
         }
 
-        (int, int, int, int)[] Enumerate()
+        (int, int)[] Enumerate()
         {
-            var ranges = new List<(int, int, int, int)>();
+            var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input, lifetime.Token)) ranges.Add(Range(match));
             return ranges.ToArray();
         }
@@ -55,6 +55,6 @@ public sealed class Utf8StructuralInputFactsTests
         Assert.Throws<ArgumentException>(() => { foreach (var _ in regex.EnumerateMatches(input, lifetime.Token)) { } });
     }
 
-    private static (int, int, int, int) Range(Utf8ValueMatch match)
-        => (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16);
+    private static (int, int) Range(Utf8CaptureRange match)
+        => (match.StartOffsetInBytes, match.EndOffsetInBytes - match.StartOffsetInBytes);
 }

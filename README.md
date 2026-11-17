@@ -51,8 +51,8 @@ Classes, quantifiers, captures and empty-match advancement respect scalar bounda
 Core's default Validate policy checks the entire subject, including text after
 an early match. PythonRe and POSIX consume existing valid text; PCRE2 checks its
 native UTF-mode window and has an explicit trusted-input bypass.
-Byte coordinates are primary; UTF-16 coordinates and strings are derived
-conveniences. Keep borrowed input unchanged and its owner alive while a view or
+Match and capture results expose byte coordinates only. Callers derive any
+character positions or materialized strings they need. Keep borrowed input unchanged and its owner alive while a view or
 cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
 
 ## Subject input contracts

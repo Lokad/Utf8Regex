@@ -246,8 +246,8 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var expectedMatch = expected.Match(input);
         var actualMatch = actual.Match(bytes);
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
     }
 
     [Theory]
@@ -266,8 +266,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             Assert.Equal(1, regex.Count("𐐀 x𐐀x"u8));
             var match = regex.Match("𐐀 x𐐀x"u8);
             Assert.True(match.Success);
-            Assert.Equal((byteIndex, 4), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal((byteIndex == 0 ? 0 : 4, 2), (match.IndexInUtf16, match.LengthInUtf16));
+            Assert.Equal((byteIndex, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(byteIndex == 0 ? "<> x𐐀x" : "𐐀 x<>x", Encoding.UTF8.GetString(regex.Replace("𐐀 x𐐀x"u8, "<>")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
@@ -307,20 +306,19 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.Equal(expectedFirst.Success, actualFirst.Success);
         if (expectedFirst.Success)
         {
-            Assert.Equal(subject.Units(expectedFirst.Index, expectedFirst.Length), (actualFirst.IndexInUtf16, actualFirst.LengthInUtf16));
-            Assert.Equal(subject.Bytes(expectedFirst.Index, expectedFirst.Length), (actualFirst.IndexInBytes, actualFirst.LengthInBytes));
+            Assert.Equal(subject.Bytes(expectedFirst.Index, expectedFirst.Length), (actualFirst.StartOffsetInBytes, (actualFirst.EndOffsetInBytes - actualFirst.StartOffsetInBytes)));
         }
 
         var expectedMatches = new List<(int Index, int Length)>();
         foreach (var match in expected.EnumerateMatches(subject.Projected))
         {
-            expectedMatches.Add(subject.Units(match.Index, match.Length));
+            expectedMatches.Add(subject.Bytes(match.Index, match.Length));
         }
 
         var actualMatches = new List<(int Index, int Length)>();
         foreach (var match in actual.EnumerateMatches(bytes))
         {
-            actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actualMatches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal(expectedMatches, actualMatches);

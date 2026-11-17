@@ -208,7 +208,7 @@ public sealed partial class Utf8Regex
         };
     }
 
-    private Utf8ValueMatch MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    private Utf8CaptureRange MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
@@ -217,14 +217,14 @@ public sealed partial class Utf8Regex
             if (Utf8ScalarSimplePatternVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarStart, out var scalarLength))
             {
                 if (scalarStart >= 0 &&
-                    Utf8ScalarSimplePatternVerifier.TryProjectMatch(input, scalarStart, scalarLength, out var scalarMatch))
+                    Utf8ScalarSimplePatternVerifier.TryCreateScalarMatchRange(input, scalarStart, scalarLength, out var scalarMatch))
                 {
                     return scalarMatch;
                 }
 
                 if (scalarStart < 0)
                 {
-                    return Utf8ValueMatch.NoMatch;
+                    return default(Utf8CaptureRange);
                 }
             }
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
@@ -250,13 +250,14 @@ public sealed partial class Utf8Regex
             {
                 var analysis = Utf8ValidatedInput.Create(input, InputValidation);
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
+                    new Utf8OperationMatchCursor(input, _preparedRegex, budget))
                     .WithTimeoutMapping(input, this);
             }
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None) { InputValidation = InputValidation, SubjectValidationCompleted = true };
             if (validation.ByteLength != input.Length)
                 validation = Utf8Validation.Subject(input, ref invocation);
-            var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, out _);
+            invocation.ShareStorageForCursor();
+            var cursor = new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
 
@@ -265,10 +266,7 @@ public sealed partial class Utf8Regex
     }
 
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        int count,
-        Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline budget)
     {
         // R05: anchored ASCII literal families split through the anchor-enforcing owned
         // cursors (at most one match at a fixed position), mirroring enumeration; the

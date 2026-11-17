@@ -36,17 +36,17 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             var regex = new Utf8Regex(pattern, options, timeout);
             Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
 
-            var expectedMatches = oracle.Matches(text).Select(m => (m.Index, m.Length)).ToArray();
-            var actualMatches = new List<(int, int)>();
+                var expectedMatches = oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))).ToArray();
+                var actualMatches = new List<(int, int)>();
             var cursor = regex.EnumerateMatches(input);
             while (cursor.MoveNext())
             {
                 var match = cursor.Current;
-                Assert.True(match.IsByteAligned);
-                Assert.Equal(match.IndexInUtf16, match.IndexInBytes);
-                Assert.Equal(match.LengthInUtf16, match.LengthInBytes);
-                actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
-            }
+                    Assert.True(match.Success);
+                    Assert.Equal(match.StartOffsetInBytes, match.StartOffsetInBytes);
+                    Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+                    actualMatches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                }
             Assert.Equal(expectedMatches, actualMatches);
             Assert.False(cursor.MoveNext());
             AssertOwned(regex);
@@ -115,12 +115,12 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             var expected = new List<(int, int)>();
             foreach (var match in oracle.EnumerateMatches(text, offset))
             {
-                expected.Add((match.Index, match.Length));
+                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length))));
             }
             var actual = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
-                actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+                actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             }
             Assert.Equal(expected, actual);
             AssertOwned(regex);

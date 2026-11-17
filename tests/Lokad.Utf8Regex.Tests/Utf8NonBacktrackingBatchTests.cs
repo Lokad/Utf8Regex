@@ -40,8 +40,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             foreach (Match expected in matches)
             {
                 Assert.True(cursor.MoveNext(out var found));
-                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)),
-                    Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length))),
+                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length))),
                     (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
                 foreach (var number in oracle.GetGroupNumbers())
                 {
@@ -54,8 +53,7 @@ public sealed class Utf8NonBacktrackingBatchTests
                     for (var index = 0; index < captures.Length; index++)
                     {
                         var capture = wanted.Captures[index];
-                        Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)),
-                            Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length))),
+                        Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)), Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length))),
                             (captures[index].StartOffsetInBytes, captures[index].EndOffsetInBytes));
                     }
                 }
@@ -128,8 +126,8 @@ public sealed class Utf8NonBacktrackingBatchTests
                 while (cursor.MoveNext())
                 {
                     var expected = matches[index++];
-                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.Current.IndexInBytes);
-                    Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), cursor.Current.LengthInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.Current.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
                 }
                 Assert.Equal(matches.Count, index);
                 Assert.Equal(matches.Count != 0, alias.MoveNext());
@@ -206,10 +204,10 @@ public sealed class Utf8NonBacktrackingBatchTests
         var input = "😀😀"u8.ToArray();
         Assert.Equal(3, regex.Count(input));
         var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, 0), (4, 0), (8, 0) }, ranges);
         var fromOffset = new List<int>();
-        foreach (var match in regex.EnumerateMatches(input, 4)) fromOffset.Add(match.IndexInBytes);
+        foreach (var match in regex.EnumerateMatches(input, 4)) fromOffset.Add(match.StartOffsetInBytes);
         Assert.Equal(new[] { 4, 8 }, fromOffset);
         Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatches(input, 1); cursor.MoveNext(); });
         Assert.Equal("Q😀Q😀Q", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
@@ -365,7 +363,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             if (previous != 0) Assert.InRange(steps, previous, previous * 2 + 64);
             previous = steps;
             Assert.True(copy.MoveNext());
-            Assert.Equal(0, copy.Current.IndexInBytes);
+            Assert.Equal(0, copy.Current.StartOffsetInBytes);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -416,20 +414,21 @@ public sealed class Utf8NonBacktrackingBatchTests
     private static ulong ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var original = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out _);
+        invocation.ShareStorageForCursor();
+        var original = new Utf8OperationMatchCursor(program, input, invocation);
         var held = invocation.Ledger.ReservedBytes;
         FinishCopy(ref original);
         CollectLeases();
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.True(original.MoveNext());
-        Assert.Equal(0, original.CurrentValueMatch.IndexInBytes);
+        Assert.Equal(0, original.CurrentValueMatch.StartOffsetInBytes);
         var firstSteps = invocation.Budget.Steps;
         FinishCopy(ref original);
         Assert.True(invocation.Budget.Steps > firstSteps);
         CollectLeases();
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.True(original.MoveNext());
-        Assert.Equal(1, original.CurrentValueMatch.IndexInBytes);
+        Assert.Equal(1, original.CurrentValueMatch.StartOffsetInBytes);
         // Abandon the original; only the numeric invocation charge persists.
         return held;
     }

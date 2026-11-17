@@ -96,12 +96,12 @@ public sealed class Utf8FindByteFactsTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
             var actual = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(expected, actual);
+                foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal(expected, actual);
             var first = regex.Match(input);
             Assert.True(first.Success);
-            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
-        }
+                Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
+            }
     }
 
     [Fact]
@@ -212,12 +212,12 @@ public sealed class Utf8FindByteFactsTests
             Assert.Equal(row.Matches.Length, regex.Count(input));
             var expected = (options & RegexOptions.RightToLeft) == 0 ? row.Matches : row.Matches.Reverse().ToArray();
             var matches = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) matches.Add((match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(expected, matches);
+                foreach (var match in regex.EnumerateMatches(input)) matches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal(expected, matches);
             var first = regex.Match(input);
             Assert.True(first.Success);
-            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
-            foreach (var range in row.Matches)
+                Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
+                foreach (var range in row.Matches)
             {
                 var value = Encoding.UTF8.GetString(input.AsSpan(range.Start, range.Length));
                 Assert.Contains(prefixes, prefix => value.StartsWith(prefix, StringComparison.Ordinal));
@@ -396,15 +396,15 @@ public sealed class Utf8FindByteFactsTests
             {
                 var match = regex.Match(Encoding.UTF8.GetBytes(input));
                 Assert.True(match.Success);
-                Assert.Equal(1, match.IndexInBytes);
-                Assert.Equal(2, match.LengthInBytes);
+                Assert.Equal(1, match.StartOffsetInBytes);
+                Assert.Equal(2, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
             var wide = new Utf8Regex("x[😀🙏]", options);
             Assert.Equal(2, wide.Count("!x😀!x🙏!"u8));
             var matchWide = wide.Match("!x😀!x🙏!"u8);
             Assert.True(matchWide.Success);
-            Assert.Equal((options & RegexOptions.RightToLeft) == 0 ? 1 : 7, matchWide.IndexInBytes);
-            Assert.Equal(5, matchWide.LengthInBytes);
+            Assert.Equal((options & RegexOptions.RightToLeft) == 0 ? 1 : 7, matchWide.StartOffsetInBytes);
+            Assert.Equal(5, (matchWide.EndOffsetInBytes - matchWide.StartOffsetInBytes));
         }
     }
 
@@ -555,9 +555,9 @@ public sealed class Utf8FindByteFactsTests
             Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input);
             Assert.True(match.Success);
-            Assert.True(match.IsByteAligned);
-            Assert.Equal(1, match.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(row.Subject), match.LengthInBytes);
+            Assert.True(match.Success);
+            Assert.Equal(1, match.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(row.Subject), (match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
     }
 

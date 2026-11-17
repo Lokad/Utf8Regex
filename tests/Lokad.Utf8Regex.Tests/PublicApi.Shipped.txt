@@ -65,10 +65,10 @@ sealed class Utf8Regex
   method Int32[] GetGroupNumbers()
   method String GroupNameFromNumber(Int32 i)
   method String[] GetGroupNames()
+  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input)
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
+  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8ValueMatch Match(ReadOnlySpan<Byte> input)
-  method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken = default)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
@@ -129,19 +129,8 @@ sealed class Utf8RetainedRangeMatch : IDisposable
   property UInt64 ChargedBytes { get; }
   property Utf8RangeMatch Match { get; }
   method Void Dispose()
-readonly struct Utf8ValueMatch
-  ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16)
-  ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16, Int32 indexInBytes, Int32 lengthInBytes)
-  property Boolean IsByteAligned { get; }
-  property Boolean Success { get; }
-  property Int32 IndexInBytes { get; }
-  property Int32 IndexInUtf16 { get; }
-  property Int32 LengthInBytes { get; }
-  property Int32 LengthInUtf16 { get; }
-  property static Utf8ValueMatch NoMatch { get; }
-  method Boolean TryGetByteRange(out Int32 indexInBytes, out Int32 lengthInBytes)
 ref struct Utf8ValueMatchEnumerator
-  property Utf8ValueMatch Current { get; }
+  property Utf8CaptureRange Current { get; }
   method Boolean MoveNext()
   method Utf8ValueMatchEnumerator GetEnumerator()
 readonly ref struct Utf8ValueSplit

@@ -247,8 +247,8 @@ public sealed class Utf8SliceCategorySetTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var found = regex.Match(input);
         Assert.True(found.Success);
-        Assert.Equal(expectedStart, found.IndexInUtf16);
-        Assert.Equal(expectedLength, found.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), (found.EndOffsetInBytes - found.StartOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -300,7 +300,7 @@ public sealed class Utf8SliceCategorySetTests
         var wanted = new List<string>();
         foreach (Match match in oracle.Matches(inputText))
         {
-            wanted.Add(match.Index + ":" + match.Length);
+            wanted.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, match.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(match.Index, match.Length)));
         }
 
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -308,7 +308,7 @@ public sealed class Utf8SliceCategorySetTests
         var actual = new List<string>();
         foreach (var match in regex.EnumerateMatches(input))
         {
-            actual.Add(match.IndexInUtf16 + ":" + match.LengthInUtf16);
+            actual.Add(match.StartOffsetInBytes + ":" + (match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
 
         Assert.Equal(wanted, actual);
@@ -414,8 +414,8 @@ public sealed class Utf8SliceCategorySetTests
         {
             Assert.Equal(expectedStart, wanted.Index);
             Assert.Equal(expectedLength, wanted.Length);
-            Assert.Equal(expectedStart, found.IndexInUtf16);
-            Assert.Equal(expectedLength, found.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), (found.EndOffsetInBytes - found.StartOffsetInBytes));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

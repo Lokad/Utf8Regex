@@ -391,10 +391,10 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
             var found = regex.Match(input);
             Assert.True(found.Success);
-            Assert.Equal(expectedStart, found.IndexInUtf16);
-            Assert.Equal(expectedLength, found.LengthInUtf16);
-            Assert.Equal(expectedStart, found.IndexInBytes);
-            Assert.Equal(expectedLength, found.LengthInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), (found.EndOffsetInBytes - found.StartOffsetInBytes));
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), found.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedStart, expectedLength)), (found.EndOffsetInBytes - found.StartOffsetInBytes));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
     }
@@ -497,11 +497,11 @@ public sealed class Utf8SliceRtlOperationTests
         var flat = new List<int>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(inputText)))
         {
-            Assert.True(match.IsByteAligned);
-            flat.Add(match.IndexInUtf16);
-            flat.Add(match.LengthInUtf16);
+            Assert.True(match.Success);
+            flat.Add(match.StartOffsetInBytes);
+            flat.Add((match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
-        Assert.Equal(expected, flat);
+        Assert.Equal(Enumerable.Range(0, expected.Length / 2).SelectMany(i => new[] { Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected[2 * i])), Encoding.UTF8.GetByteCount(inputText.AsSpan(expected[2 * i], expected[2 * i + 1])) }), flat);
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
@@ -627,8 +627,8 @@ public sealed class Utf8SliceRtlOperationTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -646,12 +646,12 @@ public sealed class Utf8SliceRtlOperationTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -782,11 +782,11 @@ public sealed class Utf8SliceRtlOperationTests
         var flat = new List<int>();
         foreach (var match in regex.EnumerateMatches(subject.Input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt))))
         {
-            Assert.True(match.IsByteAligned);
-            flat.Add(match.IndexInUtf16);
-            flat.Add(match.LengthInUtf16);
+            Assert.True(match.Success);
+            flat.Add(match.StartOffsetInBytes);
+            flat.Add((match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
-        Assert.Equal(expectedFlat, flat);
+        Assert.Equal(Enumerable.Range(0, expectedFlat.Length / 2).SelectMany(i => new[] { Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedFlat[2 * i])), Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedFlat[2 * i], expectedFlat[2 * i + 1])) }), flat);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

@@ -122,7 +122,7 @@ public sealed class AsciiSimplePatternTests
         foreach (var match in actual.EnumerateMatches(utf8))
         {
             actualMatches.Add(System.Text.Encoding.UTF8.GetString(
-                utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+                utf8.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         }
 
         foreach (var split in actual.EnumerateSplits(utf8))
@@ -487,8 +487,8 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
 
             Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
@@ -496,13 +496,13 @@ public sealed class AsciiSimplePatternTests
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
             {
-                expectedPositions.Add(m.Index + ":" + m.Length);
+                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
             }
 
             var actualPositions = new List<string>();
             foreach (var m in regex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
 
             Assert.Equal(expectedPositions, actualPositions);
@@ -521,13 +521,13 @@ public sealed class AsciiSimplePatternTests
                 var expectedOffsetPositions = new List<string>();
                 foreach (Match m in oracle.Matches(inputText, offset))
                 {
-                    expectedOffsetPositions.Add(m.Index + ":" + m.Length);
+                    expectedOffsetPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
                 }
 
                 var actualOffsetPositions = new List<string>();
                 foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))))
                 {
-                    actualOffsetPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                    actualOffsetPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
                 }
 
                 Assert.Equal(expectedOffsetPositions, actualOffsetPositions);
@@ -560,7 +560,7 @@ public sealed class AsciiSimplePatternTests
             var actualPositions = new List<string>();
             foreach (var m in regex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
 
             Assert.Equal(new List<string> { expectedPositions }, actualPositions);
@@ -599,8 +599,8 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
 
             Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
@@ -608,13 +608,13 @@ public sealed class AsciiSimplePatternTests
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
             {
-                expectedPositions.Add(m.Index + ":" + m.Length);
+                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
             }
 
             var actualPositions = new List<string>();
             foreach (var m in regex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
 
             Assert.Equal(expectedPositions, actualPositions);
@@ -653,8 +653,8 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
 
             Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
@@ -662,13 +662,13 @@ public sealed class AsciiSimplePatternTests
             var expectedPositions = new List<string>();
             foreach (Match m in oracle.Matches(inputText))
             {
-                expectedPositions.Add(m.Index + ":" + m.Length);
+                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
             }
 
             var actualPositions = new List<string>();
             foreach (var m in regex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
 
             Assert.Equal(expectedPositions, actualPositions);
@@ -687,13 +687,13 @@ public sealed class AsciiSimplePatternTests
                 var expectedOffsetPositions = new List<string>();
                 foreach (Match m in oracle.Matches(inputText, offset))
                 {
-                    expectedOffsetPositions.Add(m.Index + ":" + m.Length);
+                    expectedOffsetPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
                 }
 
                 var actualOffsetPositions = new List<string>();
                 foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))))
                 {
-                    actualOffsetPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                    actualOffsetPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
                 }
 
                 Assert.Equal(expectedOffsetPositions, actualOffsetPositions);
@@ -888,13 +888,13 @@ public sealed class AsciiSimplePatternTests
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -982,13 +982,13 @@ public sealed class AsciiSimplePatternTests
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in enumRegex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -1134,8 +1134,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         }
 
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1363,8 +1363,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
 
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -1513,8 +1513,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
 
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -1660,8 +1660,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
 
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -1836,8 +1836,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
 
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -2014,8 +2014,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -2025,12 +2025,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -2142,8 +2142,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Utf8AsciiScalarOperationAssertions.Owned(matchRegex);
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -2182,12 +2182,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in regex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -2400,8 +2400,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Utf8AsciiScalarOperationAssertions.Owned(matchRegex);
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -2412,12 +2412,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var expected = oracle.Replace(text, template);
@@ -2608,12 +2608,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text, offset))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -2644,12 +2644,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text, offset))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.NotNull(regex.Inspection.PreparedRegex.ScalarProgram);
@@ -3053,8 +3053,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -3065,12 +3065,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3244,8 +3244,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
     }
 
@@ -3319,8 +3319,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         if (!compiled)
@@ -3336,12 +3336,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3517,12 +3517,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3964,8 +3964,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -3975,12 +3975,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -4365,8 +4365,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -4378,12 +4378,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4474,8 +4474,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -4486,12 +4486,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4561,8 +4561,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         if (!compiled)
@@ -4578,12 +4578,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4682,8 +4682,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -4695,12 +4695,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4782,8 +4782,8 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var detailedRegex = new Utf8Regex(pattern, options);
@@ -4795,12 +4795,12 @@ public sealed class AsciiSimplePatternTests
             var expectedPositions = new System.Collections.Generic.List<string>();
             foreach (Match m in oracle.Matches(text))
             {
-                expectedPositions.Add(m.Index + ":" + m.Length);
+                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
             }
             var actualPositions = new System.Collections.Generic.List<string>();
             foreach (var m in enumerateRegex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
             Assert.Equal(expectedPositions, actualPositions);
             Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4893,8 +4893,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -4904,12 +4904,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -14680,8 +14680,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -14692,12 +14692,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -14848,8 +14848,8 @@ public sealed class AsciiSimplePatternTests
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -14860,12 +14860,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -14934,19 +14934,19 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -15095,12 +15095,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -15171,8 +15171,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -15182,12 +15182,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -15257,12 +15257,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -15429,8 +15429,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -15440,12 +15440,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -15492,8 +15492,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -15503,12 +15503,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);
@@ -15552,13 +15552,13 @@ public sealed class AsciiSimplePatternTests
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -15608,8 +15608,8 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
         if (expectedMatch.Success)
         {
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
@@ -15619,12 +15619,12 @@ public sealed class AsciiSimplePatternTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         var splitRegex = new Utf8Regex(pattern, options);

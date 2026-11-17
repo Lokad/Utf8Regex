@@ -54,7 +54,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
         var input = "😀abcde é"u8;
         var ranges = new List<(int Start, int Length)>();
         foreach (var match in regex.EnumerateMatches(input))
-            ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, 0), (4, 4), (8, 1), (9, 0), (10, 0), (12, 0) }, ranges);
         Assert.Equal(6, regex.Count(input));
     }

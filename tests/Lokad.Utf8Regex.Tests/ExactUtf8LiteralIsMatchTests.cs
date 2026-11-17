@@ -123,15 +123,15 @@ public sealed class ExactUtf8LiteralIsMatchTests
         var actual = regex.Match(inputBytes);
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         if (!expected.Success)
         {
             return;
         }
 
-        Assert.True(actual.IsByteAligned);
-        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.IndexInBytes);
-        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), actual.LengthInBytes);
+        Assert.True(actual.Success);
+        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 }

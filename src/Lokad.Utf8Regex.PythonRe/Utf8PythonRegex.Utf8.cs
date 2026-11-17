@@ -260,7 +260,9 @@ public sealed partial class Utf8PythonRegex
             while (enumerator.MoveNext())
             {
                 var match = enumerator.Current;
-                if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+                var indexInBytes = match.StartOffsetInBytes;
+                var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
+                if (!match.Success)
                 {
                     ranges.Dispose();
                     ranges = default;

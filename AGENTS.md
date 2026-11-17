@@ -1,8 +1,8 @@
 # Lokad.Utf8Regex
 
 .NET 10/11 libraries matching Unicode scalars over strict UTF-8 spans, with primary
-byte coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates are
-derived interoperability, not matching units.
+byte coordinates. Dot matches 😀 once across four bytes. Match results expose
+bytes only; callers derive character positions when needed.
 
 ## Contracts and scope
 

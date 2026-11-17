@@ -32,8 +32,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
                     var actual = regex.Match(storage.AsSpan(1, input.Length), live.Token);
                     var expected = oracle.Match(text);
                     Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((0, expected.Length, 0, expected.Length),
-                        (actual.IndexInBytes, actual.LengthInBytes, actual.IndexInUtf16, actual.LengthInUtf16));
+                    if (actual.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(actual, regex.Match(input));
                 }
@@ -48,10 +47,10 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     {
         var text = "\"" + new string('a', length - 2) + "\"";
         var input = Encoding.ASCII.GetBytes(text);
-        Assert.Equal(length, new Utf8Regex(Pattern).Match(input).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
+        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
         else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }

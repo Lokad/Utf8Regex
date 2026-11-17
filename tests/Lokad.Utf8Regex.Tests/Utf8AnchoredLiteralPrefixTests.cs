@@ -114,8 +114,8 @@ public sealed class Utf8AnchoredLiteralPrefixTests
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             if (expected.Success)
             {
-                Assert.Equal(expected.Index, actual.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
         }
     }
@@ -167,7 +167,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
             while (enumerator.MoveNext())
             {
                 actualCount++;
-                Assert.Equal(0, enumerator.Current.IndexInUtf16);
+                Assert.Equal(0, enumerator.Current.StartOffsetInBytes);
             }
 
             Assert.Equal(expectedCount, actualCount);

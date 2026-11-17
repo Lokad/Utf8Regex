@@ -77,15 +77,15 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal((options & RegexOptions.RightToLeft) != 0 ? 13 : 1, match.IndexInBytes);
-        Assert.Equal(11, match.LengthInBytes);
+        Assert.Equal((options & RegexOptions.RightToLeft) != 0 ? 13 : 1, match.StartOffsetInBytes);
+        Assert.Equal(11, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        Assert.Equal(match.IndexInBytes, detailed.Value.StartOffsetInBytes);
-        Assert.Equal(match.LengthInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes));
+        Assert.Equal(match.StartOffsetInBytes, detailed.Value.StartOffsetInBytes);
+        Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes));
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.DebugIsOwnedSlice);
         var count = 0;
-        while (enumerator.MoveNext()) { Assert.Equal(11, enumerator.Current.LengthInBytes); count++; }
+        while (enumerator.MoveNext()) { Assert.Equal(11, (enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes)); count++; }
         Assert.Equal(2, count);
         Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X")));
         var splits = new List<string>();
@@ -694,8 +694,8 @@ public sealed class LokadPublicRouteGuardrailTests
             Assert.Equal(want.Success, got.Success);
             if (want.Success)
             {
-                Assert.Equal(want.Index, got.IndexInUtf16);
-                Assert.Equal(want.Length, got.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(row.Input.AsSpan(0, want.Index)), got.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(row.Input.AsSpan(want.Index, want.Length)), (got.EndOffsetInBytes - got.StartOffsetInBytes));
             }
         }
 

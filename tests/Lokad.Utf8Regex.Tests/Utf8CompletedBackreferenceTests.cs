@@ -53,8 +53,8 @@ public sealed class Utf8CompletedBackreferenceTests
         foreach (var actual in regex.EnumerateMatches(input))
         {
             var wanted = expected[index++];
-            Assert.Equal((wanted.Index, wanted.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), actual.IndexInBytes);
+            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(wanted.Index, wanted.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), actual.StartOffsetInBytes);
         }
         Assert.Equal(expected.Count, index);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));

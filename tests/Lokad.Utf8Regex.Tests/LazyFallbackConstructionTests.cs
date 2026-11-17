@@ -182,7 +182,7 @@ public sealed class LazyFallbackConstructionTests
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))));
         Utf8MatchSequence.AssertCaptures(oracle, actual, input, inputText);
         Assert.Equal(expectedSuccess, actual.Success);
-        if (expectedSuccess) Assert.Equal((expectedIndex, expectedEnd),
+        if (expectedSuccess) Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedIndex)), expectedEnd),
             (actual.Value.StartOffsetInBytes, actual.Value.EndOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
@@ -215,13 +215,13 @@ public sealed class LazyFallbackConstructionTests
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (Match expectedMatch in oracle.Matches(text))
             {
-                expected.Add((expectedMatch.Index, expectedMatch.Length));
+                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
             }
 
             var actual = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (var valueMatch in enumRegex.EnumerateMatches(input))
             {
-                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
             }
 
             Assert.Equal(expected.Count, actual.Count);
@@ -263,13 +263,13 @@ public sealed class LazyFallbackConstructionTests
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (Match expectedMatch in oracle.Matches(text))
             {
-                expected.Add((expectedMatch.Index, expectedMatch.Length));
+                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
             }
 
             var actual = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (var valueMatch in enumRegex.EnumerateMatches(input))
             {
-                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
             }
 
             Assert.Equal(expected.Count, actual.Count);
@@ -311,13 +311,13 @@ public sealed class LazyFallbackConstructionTests
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (Match expectedMatch in oracle.Matches(text))
             {
-                expected.Add((expectedMatch.Index, expectedMatch.Length));
+                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
             }
 
             var actual = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (var valueMatch in enumRegex.EnumerateMatches(input))
             {
-                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
             }
 
             Assert.Equal(expected.Count, actual.Count);
@@ -353,8 +353,8 @@ public sealed class LazyFallbackConstructionTests
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
             }
             Assert.False(actual.MoveNext());
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -474,12 +474,12 @@ public sealed class LazyFallbackConstructionTests
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
         {
-            expectedPositions.Add(m.Index + ":" + m.Length);
+            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
         }
         var actualPositions = new System.Collections.Generic.List<string>();
         foreach (var m in enumerateRegex.EnumerateMatches(input))
         {
-            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);

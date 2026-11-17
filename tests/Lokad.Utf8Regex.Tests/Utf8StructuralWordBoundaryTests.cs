@@ -47,14 +47,14 @@ public sealed class Utf8StructuralWordBoundaryTests
                 var match = regex.Match(subject);
                 Assert.Equal(expected.Length != 0, match.Success);
                 if (match.Success)
-                    Assert.Equal((expected[0].Index, expected[0].Length), (match.IndexInBytes, match.LengthInBytes));
-                var cursor = regex.EnumerateMatches(subject);
+                        Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[0].Index, expected[0].Length))), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                    var cursor = regex.EnumerateMatches(subject);
                 var index = 0;
                 while (cursor.MoveNext())
                 {
-                    Assert.Equal((expected[index].Index, expected[index].Length),
-                        (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
-                    index++;
+                        Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[index].Index, expected[index].Length))),
+                            (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
+                        index++;
                 }
                 Assert.Equal(expected.Length, index);
             }

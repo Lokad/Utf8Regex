@@ -209,14 +209,6 @@ internal static class Utf8AsciiScalarOperationAssertions
         Assert.Equal((start, start + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
 
-    private static void Value(Subject subject, Match expected, Utf8ValueMatch actual)
-    {
-        Assert.Equal(expected.Success, actual.Success);
-        if (!expected.Success) return;
-        Assert.True(actual.TryGetByteRange(out var index, out var length));
-        Assert.Equal(subject.Bytes(expected.Index, expected.Length), (index, length));
-    }
-
     private static void Sequence(Subject subject, Match[] expected, Utf8ValueMatchEnumerator cursor)
     {
         foreach (var match in expected)

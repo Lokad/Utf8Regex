@@ -7,8 +7,7 @@ namespace Lokad.Utf8Regex;
 /// <summary>Transfers the caller invocation into native structural enumeration.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryCreateNativeStructuralEnumerator(ReadOnlySpan<byte> input, CancellationToken token,
-        out Utf8ValueMatchEnumerator enumerator)
+    private bool TryCreateNativeStructuralEnumerator(ReadOnlySpan<byte> input, CancellationToken token, out Utf8ValueMatchEnumerator enumerator)
     {
         enumerator = default;
         var family = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily;
@@ -25,10 +24,10 @@ public sealed partial class Utf8Regex
             var native = validation.IsAscii && (!family ||
                 !_preparedRegex.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
                 !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap);
+            invocation.ShareStorageForCursor();
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)
-                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram,
-                    input, validation, ref invocation, out _);
+                : new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
         }

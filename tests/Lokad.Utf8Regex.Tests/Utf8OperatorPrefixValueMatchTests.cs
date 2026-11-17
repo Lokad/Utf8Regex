@@ -31,8 +31,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
                     var value = regex.Match(storage.AsSpan(1, input.Length), token.Token);
                     Assert.Equal(expected.Success, value.Success);
                     if (value.Success)
-                        Assert.Equal((0, expected.Length, 0, expected.Length),
-                            (value.IndexInBytes, value.LengthInBytes, value.IndexInUtf16, value.LengthInUtf16));
+                        Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
@@ -46,10 +45,10 @@ public sealed class Utf8OperatorPrefixValueMatchTests
     public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('+', length));
-        Assert.Equal(length, new Utf8Regex(Pattern).Match(input).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        Assert.Equal(length, tight.Match(input).LengthInBytes);
+        Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
     }
 
     [Fact]
@@ -64,9 +63,8 @@ public sealed class Utf8OperatorPrefixValueMatchTests
             var input = Encoding.UTF8.GetBytes(text); var actual = regex.Match(input, token.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (actual.Success)
-                Assert.Equal((expected.Index, expected.Length, Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), expected.Length),
-                    (actual.IndexInUtf16, actual.LengthInUtf16, actual.IndexInBytes, actual.LengthInBytes));
-        }
+                    Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+            }
         var offsetRegex = new Utf8Regex(Pattern);
         var offsetInput = "😀x+=rest"u8.ToArray();
         var selected = offsetRegex.Match(offsetInput, 5, []);
@@ -82,7 +80,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("op")).Span));
         Assert.Equal(1, captured.Count(bytes));
         var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), RegexOptions.NonBacktracking, Timeout.InfiniteTimeSpan, Policy);
-        Assert.Equal(3, nonBacktracking.Match(bytes, token.Token).LengthInBytes);
+        Assert.Equal(3, (nonBacktracking.Match(bytes, token.Token).EndOffsetInBytes - nonBacktracking.Match(bytes, token.Token).StartOffsetInBytes));
     }
 
     [Fact]

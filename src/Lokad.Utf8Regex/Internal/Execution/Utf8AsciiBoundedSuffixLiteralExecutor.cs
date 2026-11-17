@@ -31,21 +31,16 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         return count;
     }
 
-    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
+    public static Utf8CaptureRange Match(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
     {
         var index = FindNext(input, plan, 0, out var matchedLength, out _, budget);
         return index < 0
-            ? Utf8ValueMatch.NoMatch
-            : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            ? default(Utf8CaptureRange)
+            : new Utf8CaptureRange(index, (index) + (matchedLength));
     }
 
     public static int FindNext(
-        ReadOnlySpan<byte> input,
-        AsciiSimplePatternBoundedSuffixLiteralPlan plan,
-        int startIndex,
-        out int matchedLength,
-        out int literalIndex,
-        Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, int startIndex, out int matchedLength, out int literalIndex, Utf8ExecutionDeadline budget)
     {
         matchedLength = 0;
         literalIndex = -1;
@@ -118,13 +113,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
     }
 
     private static bool TryMatchAt(
-        ReadOnlySpan<byte> input,
-        AsciiSimplePatternBoundedSuffixLiteralPlan plan,
-        int literalIndex,
-        int suffixByteLength,
-        int minStartIndex,
-        out int matchStart,
-        out int matchedLength)
+        ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, int literalIndex, int suffixByteLength, int minStartIndex, out int matchStart, out int matchedLength)
     {
         matchStart = -1;
         matchedLength = 0;
@@ -166,11 +155,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
     }
 
     private static bool TryMatchScalarClassAt(
-        ReadOnlySpan<byte> input,
-        int byteOffset,
-        AsciiCharClass asciiClass,
-        Utf8SimplePatternScalarClassKind scalarClassKind,
-        out int byteLength)
+        ReadOnlySpan<byte> input, int byteOffset, AsciiCharClass asciiClass, Utf8SimplePatternScalarClassKind scalarClassKind, out int byteLength)
     {
         var first = input[byteOffset];
         if (first < 0x80)
@@ -190,11 +175,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
     }
 
     private static bool TryMatchScalarClassBefore(
-        ReadOnlySpan<byte> input,
-        int byteOffset,
-        AsciiCharClass asciiClass,
-        Utf8SimplePatternScalarClassKind scalarClassKind,
-        out int byteLength)
+        ReadOnlySpan<byte> input, int byteOffset, AsciiCharClass asciiClass, Utf8SimplePatternScalarClassKind scalarClassKind, out int byteLength)
     {
         var last = input[byteOffset - 1];
         if (last < 0x80)

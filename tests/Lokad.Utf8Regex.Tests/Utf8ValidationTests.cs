@@ -41,9 +41,6 @@ public sealed class Utf8ValidationTests
         Assert.Equal(5, result.Utf16Length);
         Assert.True(result.IsAscii);
         Assert.False(result.ContainsSupplementaryScalars);
-        Assert.Equal(5, result.EndBoundary.ByteOffset);
-        Assert.Equal(5, result.EndBoundary.Utf16Offset);
-        Assert.True(result.EndBoundary.IsScalarBoundary);
     }
 
     [Fact]
@@ -197,59 +194,7 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
-    public void SurrogateSplitBoundaryIsNotScalarBoundary()
-    {
-        var boundary = Utf16Boundary.SurrogateSplitBoundary(4, 7);
-
-        Assert.Equal(4, boundary.ByteOffset);
-        Assert.Equal(7, boundary.Utf16Offset);
-        Assert.Equal((byte)1, boundary.IntraScalarCodeUnitOffset);
-        Assert.False(boundary.IsScalarBoundary);
-    }
-
-    [Fact]
-    public void BoundaryMapResolvesScalarAndSurrogateSplitOffsets()
-    {
-        var input = "a😀b"u8;
-
-        var map = Utf8BoundaryMap.Create(input);
-
-        Assert.Equal(input.Length, map.ByteLength);
-        Assert.Equal("a😀b".Length, map.Utf16Length);
-        Assert.Equal(0, map.Resolve(0).ByteOffset);
-        Assert.Equal(1, map.Resolve(1).ByteOffset);
-        Assert.False(map.Resolve(2).IsScalarBoundary);
-        Assert.Equal(1, map.Resolve(2).ByteOffset);
-        Assert.Equal(5, map.Resolve(3).ByteOffset);
-        Assert.Equal(6, map.Resolve(4).ByteOffset);
-    }
-
-    [Fact]
-    public void BoundaryMapUsesIdentityOffsetsForAsciiInput()
-    {
-        var map = Utf8BoundaryMap.Create("hello"u8);
-
-        Assert.Equal(3, map.Resolve(3).ByteOffset);
-        Assert.True(map.Resolve(3).IsScalarBoundary);
-        Assert.True(map.TryGetByteRange(1, 3, out var indexInBytes, out var lengthInBytes));
-        Assert.Equal(1, indexInBytes);
-        Assert.Equal(3, lengthInBytes);
-    }
-
-    [Fact]
-    public void BoundaryMapCanComputeAlignedAndUnalignedRanges()
-    {
-        var map = Utf8BoundaryMap.Create("a😀b"u8);
-
-        Assert.True(map.TryGetByteRange(1, 2, out var alignedIndex, out var alignedLength));
-        Assert.Equal(1, alignedIndex);
-        Assert.Equal(4, alignedLength);
-
-        Assert.False(map.TryGetByteRange(2, 1, out _, out _));
-    }
-
-    [Fact]
-    public void InputAnalyzerValidatesBeforeLazilyBuildingBoundaryMap()
+    public void InputAnalyzerDescribesValidatedBytes()
     {
         var input = "a😀b"u8;
 
@@ -259,34 +204,9 @@ public sealed class Utf8ValidationTests
         Assert.Equal("a😀b".Length, analysis.Validation.Utf16Length);
         Assert.False(analysis.Validation.IsAscii);
         Assert.True(analysis.Validation.ContainsSupplementaryScalars);
-        Assert.Equal(1, analysis.BoundaryMap.Resolve(1).ByteOffset);
-        Assert.False(analysis.BoundaryMap.Resolve(2).IsScalarBoundary);
-        Assert.Equal(5, analysis.BoundaryMap.Resolve(3).ByteOffset);
-    }
 
-    [Fact]
-    public void ValidatedInputProjectsEveryMixedWidthScalarBoundary()
-    {
-        ReadOnlySpan<byte> input = "aé€😀z"u8;
-        var subject = Utf8ValidatedInput.Create(input);
-        var cursor = subject.CreateProjectionCursor();
-        var expected = new (int ByteOffset, int Utf16Offset)[]
-        {
-            (0, 0),
-            (1, 1),
-            (3, 2),
-            (6, 3),
-            (10, 5),
-            (11, 6),
-        };
 
-        foreach (var (byteOffset, utf16Offset) in expected)
-        {
-            var position = subject.GetBytePosition(byteOffset, nameof(byteOffset));
-            Assert.Equal(utf16Offset, cursor.Project(position).Value);
-        }
 
-        Assert.Equal(input.Length, cursor.BytesConsumed);
     }
 
     [Fact]
@@ -327,84 +247,12 @@ public sealed class Utf8ValidationTests
         for (var index = 0; index < boundaries.Count; index++)
         {
             Assert.Equal(boundaries[index].Bytes, position.Value);
-            Assert.Equal(boundaries[index].Utf16, subject.Project(position).Value);
             if (index == boundaries.Count - 1) break;
             Assert.True(subject.TryAdvanceScalar(position, out var next));
             Assert.True(next.Value > position.Value);
             position = next;
         }
         Assert.False(subject.TryAdvanceScalar(position, out _));
-    }
-
-    [Fact]
-    public void DenseMonotoneProjectionConsumesEachByteExactlyOnceAtEveryScale()
-    {
-        foreach (var repetitions in new[] { 1, 2, 4, 8, 256 })
-        {
-            var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aé€😀", repetitions)));
-            var subject = Utf8ValidatedInput.Create(input);
-            var cursor = subject.CreateProjectionCursor();
-            var offset = 0;
-            while (offset < input.Length)
-            {
-                var position = subject.GetBytePosition(offset, "offset");
-                _ = cursor.Project(position);
-                offset += input[offset] switch
-                {
-                    < 0x80 => 1,
-                    < 0xE0 => 2,
-                    < 0xF0 => 3,
-                    _ => 4,
-                };
-            }
-
-            _ = cursor.Project(subject.GetBytePosition(input.Length, "offset"));
-            Assert.Equal(input.Length, cursor.BytesConsumed);
-        }
-    }
-
-    [Fact]
-    public void AsciiValidationAndProjectionAreAllocationFree()
-    {
-        ReadOnlySpan<byte> input = "the quick brown fox jumps over the lazy dog"u8;
-        _ = MeasureAsciiProjectionAllocations(input);
-
-        var allocated = MeasureAsciiProjectionAllocations(input);
-
-        Assert.Equal(0, allocated);
-    }
-
-    [Fact]
-    public void RandomAccessProjectionIsMaterializedOnlyWhenRequested()
-    {
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aé€😀", 128)));
-        var subject = Utf8ValidatedInput.Create(input);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-
-        var map = subject.GetRandomAccessMap();
-
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.True(allocated > 0);
-        Assert.Equal(subject.Utf16Length, map.GetUtf16OffsetForByteOffset(input.Length));
-        for (var i = 0; i < 32; i++)
-        {
-            Assert.Equal(1, map.GetUtf16OffsetForByteOffset(1));
-            Assert.Equal(3, map.GetUtf16OffsetForByteOffset(6));
-        }
-    }
-
-    private static long MeasureAsciiProjectionAllocations(ReadOnlySpan<byte> input)
-    {
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var subject = Utf8ValidatedInput.Create(input);
-        var cursor = subject.CreateProjectionCursor();
-        for (var offset = 0; offset <= input.Length; offset++)
-        {
-            _ = cursor.Project(subject.GetBytePosition(offset, "offset"));
-        }
-
-        _ = subject.GetRandomAccessMap().Resolve(input.Length);
-        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     private static void ValidateBytePosition(byte[] input, int offset)

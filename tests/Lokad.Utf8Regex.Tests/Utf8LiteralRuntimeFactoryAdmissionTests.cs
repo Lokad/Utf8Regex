@@ -150,9 +150,9 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         {
             var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var input = Encoding.UTF8.GetBytes("😀|foobar|zoo|apple|cat|中文词|日本人|韩国人|😃|中文");
-            var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(ranges.Count, regex.Count(input)); Assert.Equal(ranges.Count > 0, regex.IsMatch(input));
-            var first = regex.Match(input); Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
+            var first = regex.Match(input); Assert.Equal(ranges[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             Assert.All(ranges, range => { Assert.NotEqual(0x80, input[range.Item1] & 0xc0); Assert.True(range.Item1 + range.Item2 == input.Length || (input[range.Item1 + range.Item2] & 0xc0) != 0x80); });
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }

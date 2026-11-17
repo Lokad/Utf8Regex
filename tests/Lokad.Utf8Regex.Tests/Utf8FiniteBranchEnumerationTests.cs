@@ -28,7 +28,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
             foreach (var text in new[] { "", "a", "b1", "b12", "ab12", "aab12", "ab1d ab12d",
                 " abxx b12 ab34 ", "b12ab34b56", "\nab12\nb34\n", new string('a', 4096) + "b12" })
             {
-                var expected = oracle.Matches(text).Select(m => (m.Index, m.Length)).ToArray();
+                var expected = oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))).ToArray();
                 var bytes = Encoding.UTF8.GetBytes(text);
                 for (var offset = 0; offset < 4; offset++)
                 {
@@ -36,7 +36,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
                     bytes.CopyTo(storage, offset);
                     var actual = new List<(int, int)>();
                     foreach (var match in regex.EnumerateMatches(storage.AsSpan(offset, bytes.Length), source.Token))
-                        actual.Add((match.IndexInBytes, match.LengthInBytes));
+                        actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                     Assert.Equal(expected, actual);
                 }
             }
@@ -75,8 +75,8 @@ public sealed class Utf8FiniteBranchEnumerationTests
         catch (Utf8ResourceLimitExceededException error)
         { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         Assert.Equal(retained, alias.Current);
-        Assert.Equal((5, 3), (retained.IndexInBytes, retained.LengthInBytes));
-        Assert.Equal((9, 4), (second.IndexInBytes, second.LengthInBytes));
+        Assert.Equal((5, 3), (retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)));
+        Assert.Equal((9, 4), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
         var independent = bounded.EnumerateMatches(input);
         Assert.True(independent.MoveNext());
         Assert.True(independent.MoveNext());
@@ -165,7 +165,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
         Assert.True(abandoned.MoveNext());
         var retained = abandoned.Current;
         Assert.Equal(2048, Drain(regex, input));
-        Assert.Equal((0, 3), (retained.IndexInBytes, retained.LengthInBytes));
+        Assert.Equal((0, 3), (retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)));
     }
 
     [Theory]
@@ -189,12 +189,12 @@ public sealed class Utf8FiniteBranchEnumerationTests
         var oracle = new Regex(pattern, (mode & ~RegexOptions.NonBacktracking) | RegexOptions.CultureInvariant);
         var actual = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(text)))
-            actual.Add((match.IndexInBytes, match.LengthInBytes));
-        Assert.Equal(oracle.Matches(text).Select(m => (m.Index, m.Length)), actual);
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+        Assert.Equal(oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))), actual);
         var scalar = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, limits);
         actual.Clear();
         foreach (var match in scalar.EnumerateMatches("😀ab12é b34"u8))
-            actual.Add((match.IndexInBytes, match.LengthInBytes));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (4, 4), (11, 3) }, actual);
     }
 

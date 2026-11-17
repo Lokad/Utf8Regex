@@ -222,7 +222,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
     {
         var regex = new Utf8Regex("(?i:😀Tail|😁Toe|éAA)", options); var input = "xx😀tAIL|😁tOE|éaa"u8;
         Assert.Equal(3, regex.Count(input)); var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         var expected = new[] { (2, 8), (11, 7), (19, 4) }; if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);
         Assert.Equal(expected, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

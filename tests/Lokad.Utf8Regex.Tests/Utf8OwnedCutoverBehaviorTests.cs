@@ -133,9 +133,9 @@ public sealed class Utf8OwnedCutoverBehaviorTests
                     return tag + "input '" + input + "':bcl-" + expected.Success + "/product-" + actual.Success;
                 }
 
-                if (expected.Success && (expected.Index != actual.IndexInUtf16 || expected.Length != actual.LengthInUtf16))
+                if (expected.Success && (Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)) != actual.StartOffsetInBytes || Encoding.UTF8.GetByteCount(expected.Value) != (actual.EndOffsetInBytes - actual.StartOffsetInBytes)))
                 {
-                    return tag + "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.IndexInUtf16 + "," + actual.LengthInUtf16 + ")";
+                    return tag + "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.StartOffsetInBytes + "," + (actual.EndOffsetInBytes - actual.StartOffsetInBytes) + ")";
                 }
 
                 if (expected.Success)

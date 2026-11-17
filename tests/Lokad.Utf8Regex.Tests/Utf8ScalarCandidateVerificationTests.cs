@@ -24,7 +24,6 @@ public sealed class Utf8ScalarCandidateVerificationTests
         var token = pattern.StartsWith("[A-Z]", StringComparison.Ordinal) ? "A😀😀 " : "foo😀😀 ";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(token, 40)));
         var validation = Utf8Validation.Validate(input);
-        Assert.False(prepared.SearchPlan.FirstMatchOperation.Projection.HasValue);
         var regex = new Utf8Regex(pattern, options | (emitted ? RegexOptions.Compiled : 0));
         Assert.Equal(40, regex.Count(input)); Assert.True(regex.IsMatch(input));
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
@@ -43,8 +42,8 @@ public sealed class Utf8ScalarCandidateVerificationTests
         Assert.True(runtime.IsMatch(input));
         Assert.Equal(40, runtime.Count(input));
         var match = runtime.Match(input);
-        Assert.True(match.Success); Assert.True(match.IsByteAligned);
-        Assert.Equal((0, 11, 0, 7), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+        Assert.True(match.Success); Assert.True(match.Success);
+        Assert.Equal((0, 11), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }

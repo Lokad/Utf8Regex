@@ -192,14 +192,14 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             leading.CopyTo(bytes, 0); trailing.CopyTo(bytes, leading.Length);
             budget.ChargeWork((ulong)bytes.Length + (ulong)leading.Length);
             var state = new CompositeConstructionState(new PreparedSubstringSearch(bytes, false),
-                leading.Length, GetLiteralUtf16Length(leading));
+                leading.Length);
             var result = budget.AllocateObject(state, static value => new CompositeTrailingLiteralSearch(
-                value.Search, value.MatchLengthInBytes, value.MatchLengthInUtf16));
+                value.Search, value.MatchLengthInBytes));
             scope.Complete(); return result;
         }
         finally { budget.LeaveDepth(); }
     }
 
     private readonly record struct CompositeConstructionState(PreparedSubstringSearch Search,
-        int MatchLengthInBytes, int MatchLengthInUtf16);
+        int MatchLengthInBytes);
 }

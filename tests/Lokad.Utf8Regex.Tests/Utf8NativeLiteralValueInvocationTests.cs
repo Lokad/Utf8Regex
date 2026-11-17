@@ -31,11 +31,11 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             var expected = oracle.Match(text);
             var actual = regex.Match(backing.AsSpan(1, bytes.Length), live.Token);
             Assert.True(actual.Success);
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.LengthInBytes);
-            byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+                byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
             Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, live.Token)).Message);
             Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Count(malformed, live.Token)).Message);
             Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Match(malformed, live.Token)).Message);
@@ -131,10 +131,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             var actual = regex.Match(input, source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (!expected.Success) continue;
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.LengthInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -238,36 +238,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, live.Token)).CancellationToken);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void RuntimeProjectionRetainsTheDeadlineUsedForDiscovery(bool reverse, bool folded)
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
-        var plan = Prepared(regex);
-        var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "target");
-        var search = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(plan.SearchPlan, input,
-            0, input.Length, reverse, ref search, out _, out var found));
-        Assert.True(found);
-        var searchSteps = search.Budget.Steps;
-        var runtime = Utf8LiteralCompiledEngineRuntime.Create(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
-        var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (!entered && steps > searchSteps) { entered = true; clock.Advance(250); }
-        });
-        try
-        {
-            var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
-            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => runtime.Match(input, default, deadline));
-            Assert.True(entered);
-        }
-        finally { session.Complete(); }
     }
 
     public static IEnumerable<object[]> ExcludedCases()

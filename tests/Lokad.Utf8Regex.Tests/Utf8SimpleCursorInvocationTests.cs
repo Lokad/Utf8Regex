@@ -123,17 +123,16 @@ public sealed class Utf8SimpleCursorInvocationTests
         var oracle = new Regex(pattern, Options(compiled));
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation,
-                Utf8ExecutionDeadline.Infinite, floor, floor);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, Utf8ExecutionDeadline.Infinite, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((expected.Index, expected.Length), (cursor.CurrentValueMatch.IndexInUtf16, cursor.CurrentValueMatch.LengthInUtf16));
+                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
             }
             Assert.False(cursor.MoveNext());
         }
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
-        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, budget, 0, 0);
+        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, budget, 0);
         clock.Advance(250);
         Exception? observed = null;
         try { _ = timed.MoveNext(); } catch (Exception exception) { observed = exception; }
@@ -143,13 +142,13 @@ public sealed class Utf8SimpleCursorInvocationTests
     public static IEnumerable<object[]> PhaseCases()
     {
         foreach (var compiled in new[] { false, true })
-        foreach (var phase in new[] { "validation", "search", "verifier", "projection" })
-        foreach (var expire in new[] { false, true }) yield return [compiled, phase, expire];
+            foreach (var phase in new[] { "validation", "search", "verifier" })
+                foreach (var expire in new[] { false, true }) yield return [compiled, phase, expire];
     }
 
     [Theory]
     [MemberData(nameof(PhaseCases))]
-    public void ValidationCandidateScanVerifierAndGapProjectionObserveInterruption(bool compiled, string phase, bool expire)
+    public void ValidationCandidateScanAndVerifierObserveInterruption(bool compiled, string phase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         // Stay inside the existing speculative preparation budget. Sixty
@@ -317,8 +316,8 @@ public sealed class Utf8SimpleCursorInvocationTests
                 foreach (Match expected in new Regex(pattern, Options(compiled)).Matches(text))
                 {
                     Assert.True(cursor.MoveNext());
-                    Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
-                }
+                            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
+                        }
                 Assert.False(cursor.MoveNext());
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

@@ -40,7 +40,7 @@ public class Utf8Pcre2MatchManyBenchmarks
         var enumerator = _context.Utf8Regex!.EnumerateMatches(_context.InputBytes);
         while (written < starts.Length && enumerator.MoveNext())
         {
-            starts[written] = enumerator.Current.IndexInBytes;
+            starts[written] = enumerator.Current.StartOffsetInBytes;
             written++;
         }
 

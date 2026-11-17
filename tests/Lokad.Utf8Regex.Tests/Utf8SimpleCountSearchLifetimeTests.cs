@@ -61,7 +61,7 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
                     var match = regex.Match(subject);
                     Assert.Equal(expected.Success, match.Success);
                     if (match.Success)
-                        Assert.Equal((expected.Index, expected.Length), (match.IndexInBytes, match.LengthInBytes));
+                        Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 }
             }
         }
@@ -81,7 +81,7 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
         Assert.Equal(2, ordinary.Count(input));
         Assert.Equal(2, finite.Count(input, tokens.Token));
         var match = ordinary.Match(input);
-        Assert.Equal((4, 4), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((4, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         var malformed = input.Concat(new byte[] { 255 }).ToArray();
         Assert.Throws<ArgumentException>(() => ordinary.Count(malformed));
         Assert.Throws<ArgumentException>(() => finite.Count(malformed));

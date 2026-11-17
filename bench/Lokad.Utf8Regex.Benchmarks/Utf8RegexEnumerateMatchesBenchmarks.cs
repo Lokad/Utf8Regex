@@ -24,7 +24,7 @@ public class Utf8RegexEnumerateMatchesBenchmarks
         var sum = 0;
         foreach (var match in _context.Utf8Regex.EnumerateMatches(_context.InputBytes))
         {
-            sum += match.IndexInUtf16;
+            sum += match.StartOffsetInBytes;
         }
 
         return sum;

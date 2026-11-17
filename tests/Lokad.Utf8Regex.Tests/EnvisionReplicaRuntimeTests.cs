@@ -85,8 +85,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -102,8 +102,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -119,8 +119,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -136,8 +136,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -153,8 +153,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -170,8 +170,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -187,11 +187,11 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.True(actual.IsByteAligned);
-        Assert.Equal(expected.Index, actual.IndexInBytes);
-        Assert.Equal(expected.Length, actual.LengthInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+        Assert.True(actual.Success);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -207,8 +207,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -247,8 +247,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -264,8 +264,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -281,8 +281,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -298,8 +298,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -315,8 +315,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -332,8 +332,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -349,11 +349,11 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.True(actual.IsByteAligned);
-        Assert.Equal(expected.Index, actual.IndexInBytes);
-        Assert.Equal(expected.Length, actual.LengthInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+        Assert.True(actual.Success);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -381,9 +381,9 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.True(actual.IsByteAligned);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+        Assert.True(actual.Success);
     }
 
     [Fact]
@@ -399,8 +399,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
     [Fact]
@@ -416,8 +416,8 @@ show scalar "y" with 2
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
 }

@@ -120,10 +120,10 @@ public sealed class Utf8OwnedRequiredLiteralsTests
             Assert.Equal(1, regex.Count(input));
             var first = regex.Match(input);
             Assert.True(first.Success);
-            Assert.Equal((0, input.Length), (first.IndexInBytes, first.LengthInBytes));
-            var matches = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) matches.Add((match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal([(0, input.Length)], matches);
+                Assert.Equal((0, input.Length), (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
+                var matches = new List<(int, int)>();
+                foreach (var match in regex.EnumerateMatches(input)) matches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal([(0, input.Length)], matches);
         }
     }
 

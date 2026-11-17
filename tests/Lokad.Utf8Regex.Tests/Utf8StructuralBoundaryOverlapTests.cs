@@ -59,15 +59,15 @@ public sealed class Utf8StructuralBoundaryOverlapTests
             while (cursor.MoveNext())
             {
                 var match = matches[index++];
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), cursor.Current.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(match.Value), cursor.Current.LengthInBytes);
-            }
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), cursor.Current.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(match.Value), (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
+                }
             Assert.Equal(matches.Count, index);
             if (matches.Count != 0)
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, matches[0].Index)), first.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(matches[0].Value), first.LengthInBytes);
-            }
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, matches[0].Index)), first.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(matches[0].Value), (first.EndOffsetInBytes - first.StartOffsetInBytes));
+                }
         }
     }
 
@@ -92,16 +92,16 @@ public sealed class Utf8StructuralBoundaryOverlapTests
             var first = regex.Match(input);
             if (expected.Count != 0)
             {
-                Assert.Equal(expected[0].Index, first.IndexInBytes);
-                Assert.Equal(expected[0].Length, first.LengthInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index)), first.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[0].Index, expected[0].Length)), (first.EndOffsetInBytes - first.StartOffsetInBytes));
             }
             var cursor = regex.EnumerateMatches(input);
             var index = 0;
             while (cursor.MoveNext())
             {
                 var match = expected[index++];
-                Assert.Equal(match.Index, cursor.Current.IndexInBytes);
-                Assert.Equal(match.Length, cursor.Current.LengthInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), cursor.Current.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length)), (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
             }
             Assert.Equal(expected.Count, index);
         }

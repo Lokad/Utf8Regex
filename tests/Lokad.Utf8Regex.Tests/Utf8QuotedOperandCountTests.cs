@@ -40,7 +40,7 @@ public sealed class Utf8QuotedOperandCountTests
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.Slice(whole.IndexInBytes, whole.LengthInBytes)));
+                Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.Slice(whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes))));
                 for (var group = 0; group < expected.Groups.Count; group++)
                     Assert.Equal(expected.Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(group).Span));
                 Assert.Equal(oracle.Count(text), regex.Count(input));

@@ -115,7 +115,7 @@ public sealed class Utf8CoreWorkPolicyTests
         Assert.Equal(7, dot.Count(input));
         var cursor = dot.EnumerateMatches("😀"u8);
         Assert.True(cursor.MoveNext());
-        Assert.Equal((0, 4), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+        Assert.Equal((0, 4), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
         Assert.False(cursor.MoveNext());
     }
 
@@ -229,7 +229,7 @@ public sealed class Utf8CoreWorkPolicyTests
         Assert.Equal(alias.DebugInvocationSteps, cursor.DebugInvocationSteps);
         try { cursor.MoveNext(); Assert.Fail("Denial remains sticky across aliases."); }
         catch (Utf8ResourceLimitExceededException error) { CheckFailure(error, cap); }
-        Assert.Equal("ab", Encoding.UTF8.GetString(input.AsSpan(retained.IndexInBytes, retained.LengthInBytes)));
+        Assert.Equal("ab", Encoding.UTF8.GetString(input.AsSpan(retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes))));
     }
 
     [Fact]
@@ -289,10 +289,6 @@ public sealed class Utf8CoreWorkPolicyTests
         Assert.Equal(cap, error.Limit);
         Assert.True(error.Requested > cap || cap == ulong.MaxValue && error.Requested == cap);
     }
-
-    private static string Range(Utf8ValueMatch value) => value.Success
-        ? $"True:{value.IndexInBytes}:{value.LengthInBytes}"
-        : "False";
     private static string Range(Utf8CaptureRange value) => value.Success
         ? $"True:{value.StartOffsetInBytes}:{value.EndOffsetInBytes - value.StartOffsetInBytes}"
         : "False";

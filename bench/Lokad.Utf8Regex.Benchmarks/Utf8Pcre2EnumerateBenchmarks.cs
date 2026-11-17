@@ -38,7 +38,7 @@ public class Utf8Pcre2EnumerateBenchmarks
         var enumerator = _context.Utf8Regex!.EnumerateMatches(_context.InputBytes);
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInBytes;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;

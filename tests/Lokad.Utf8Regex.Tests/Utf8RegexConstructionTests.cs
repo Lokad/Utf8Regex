@@ -331,9 +331,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("Alpha_42"u8.ToArray());
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(8, match.LengthInBytes);
-        Assert.Equal(8, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
     }
 
@@ -362,9 +362,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("A0f"u8.ToArray());
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(3, match.LengthInBytes);
-        Assert.Equal(3, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -374,9 +374,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("A0f"u8.ToArray());
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(3, match.LengthInBytes);
-        Assert.Equal(3, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -414,9 +414,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("A0f1c2"u8.ToArray());
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(6, match.LengthInBytes);
-        Assert.Equal(6, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(6, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(6, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(match.Success);
-        Assert.Equal(4, match.LengthInBytes);
+        Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -456,8 +456,8 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(9, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(9, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -568,9 +568,9 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(3, match.IndexInBytes);
-        Assert.Equal(6, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(3, match.StartOffsetInBytes);
+        Assert.Equal(6, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -661,7 +661,7 @@ public sealed class Utf8RegexConstructionTests
 
         var match = regex.Match("Today is 11/18/2019 and tomorrow is 11/19/2019."u8);
         Assert.True(match.Success);
-        Assert.Equal(("Today is ".Length, "11/18/2019".Length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal(("Today is ".Length, System.Text.Encoding.UTF8.GetByteCount("11/18/2019")), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(2, regex.Count("Today is 11/18/2019 and tomorrow is 11/19/2019."u8));
         Assert.False(regex.IsMatch("Today is xx/yy/zzzz and tomorrow is ??/??/????."u8));
     }
@@ -674,7 +674,7 @@ public sealed class Utf8RegexConstructionTests
         var input = "https://atlas.example.org/reports/export?id=42"u8;
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(2, regex.Count("https://a.example/x ftp://b.example/y"u8));
         Assert.False(regex.IsMatch("https://a https://b"u8));
     }
@@ -696,7 +696,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(expected, match.Success);
         if (expected)
         {
-            Assert.Equal(value.Length, match.LengthInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(value), (match.EndOffsetInBytes - match.StartOffsetInBytes));
         }
     }
 
@@ -800,9 +800,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("/// doc line\n"u8.ToArray());
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(13, match.LengthInBytes);
-        Assert.Equal(13, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -813,8 +813,8 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(13, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -979,8 +979,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal(3, match.IndexInBytes);
-        Assert.Equal(4, match.LengthInBytes);
+        Assert.Equal(3, match.StartOffsetInBytes);
+        Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -993,8 +993,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal(3, match.IndexInBytes);
-        Assert.Equal(5, match.LengthInBytes);
+        Assert.Equal(3, match.StartOffsetInBytes);
+        Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -1157,11 +1157,15 @@ public sealed class Utf8RegexConstructionTests
             var compiledMatch = compiled.Match(input);
 
             Assert.Equal(baselineMatch.Success, compiledMatch.Success);
-            Assert.Equal(baselineMatch.IsByteAligned, compiledMatch.IsByteAligned);
-            Assert.Equal(baselineMatch.IndexInUtf16, compiledMatch.IndexInUtf16);
-            Assert.Equal(baselineMatch.LengthInUtf16, compiledMatch.LengthInUtf16);
-            if (baselineMatch.TryGetByteRange(out var baselineIndexInBytes, out var baselineLengthInBytes) &&
-                compiledMatch.TryGetByteRange(out var compiledIndexInBytes, out var compiledLengthInBytes))
+            Assert.Equal(baselineMatch.Success, compiledMatch.Success);
+            Assert.Equal(baselineMatch.StartOffsetInBytes, compiledMatch.StartOffsetInBytes);
+            Assert.Equal((baselineMatch.EndOffsetInBytes - baselineMatch.StartOffsetInBytes), (compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes));
+            var baselineIndexInBytes = baselineMatch.StartOffsetInBytes;
+            var baselineLengthInBytes = (baselineMatch.EndOffsetInBytes - baselineMatch.StartOffsetInBytes);
+            var compiledIndexInBytes = compiledMatch.StartOffsetInBytes;
+            var compiledLengthInBytes = (compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes);
+            if (baselineMatch.Success &&
+                compiledMatch.Success)
             {
                 Assert.Equal(baselineIndexInBytes, compiledIndexInBytes);
                 Assert.Equal(baselineLengthInBytes, compiledLengthInBytes);
@@ -1178,11 +1182,15 @@ public sealed class Utf8RegexConstructionTests
             if (handled)
             {
                 Assert.Equal(compiledMatch.Success, directMatch.Success);
-                Assert.Equal(compiledMatch.IsByteAligned, directMatch.IsByteAligned);
-                Assert.Equal(compiledMatch.IndexInUtf16, directMatch.IndexInUtf16);
-                Assert.Equal(compiledMatch.LengthInUtf16, directMatch.LengthInUtf16);
-                if (compiledMatch.TryGetByteRange(out var compiledDirectIndexInBytes, out var compiledDirectLengthInBytes) &&
-                    directMatch.TryGetByteRange(out var directIndexInBytes, out var directLengthInBytes))
+                Assert.Equal(compiledMatch.Success, directMatch.Success);
+                Assert.Equal(compiledMatch.StartOffsetInBytes, directMatch.StartOffsetInBytes);
+                Assert.Equal((compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes), (directMatch.EndOffsetInBytes - directMatch.StartOffsetInBytes));
+                var compiledDirectIndexInBytes = compiledMatch.StartOffsetInBytes;
+                var compiledDirectLengthInBytes = (compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes);
+                var directIndexInBytes = directMatch.StartOffsetInBytes;
+                var directLengthInBytes = (directMatch.EndOffsetInBytes - directMatch.StartOffsetInBytes);
+                if (compiledMatch.Success &&
+                    directMatch.Success)
                 {
                     Assert.Equal(compiledDirectIndexInBytes, directIndexInBytes);
                     Assert.Equal(compiledDirectLengthInBytes, directLengthInBytes);
@@ -1235,7 +1243,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, compiled.Count(bytes));
         Assert.True(compiled.IsMatch(bytes));
         var match = compiled.Match(bytes);
-        Assert.Equal((0, 32, 0, 16), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+        Assert.Equal((0, 32), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -1472,7 +1480,7 @@ public sealed class Utf8RegexConstructionTests
 
         var match = compiled.Match(bytes);
         Assert.True(match.Success);
-        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
     }
 
     [Fact]
@@ -1523,10 +1531,10 @@ public sealed class Utf8RegexConstructionTests
             Assert.Equal(expectedMatch.Success, compiledMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, ordinaryMatch.IndexInBytes);
-                Assert.Equal(expectedMatch.Length, ordinaryMatch.LengthInBytes);
-                Assert.Equal(expectedMatch.Index, compiledMatch.IndexInBytes);
-                Assert.Equal(expectedMatch.Length, compiledMatch.LengthInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), ordinaryMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (ordinaryMatch.EndOffsetInBytes - ordinaryMatch.StartOffsetInBytes));
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), compiledMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (compiledMatch.EndOffsetInBytes - compiledMatch.StartOffsetInBytes));
             }
         }
     }
@@ -1653,7 +1661,7 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.IsMatch(input, pattern), compiled.IsMatch(bytes));
-        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes[compiled.Match(bytes).IndexInBytes..(compiled.Match(bytes).IndexInBytes + compiled.Match(bytes).LengthInBytes)]));
+        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes[compiled.Match(bytes).StartOffsetInBytes..(compiled.Match(bytes).StartOffsetInBytes + (compiled.Match(bytes).EndOffsetInBytes - compiled.Match(bytes).StartOffsetInBytes))]));
     }
 
     [Fact]
@@ -2043,7 +2051,7 @@ public sealed class Utf8RegexConstructionTests
         var match = compiled.Match(bytes);
 
         Assert.True(match.Success);
-        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+        Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
     }
 
     [Theory]
@@ -2185,8 +2193,8 @@ public sealed class Utf8RegexConstructionTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
         }
     }
@@ -2221,8 +2229,8 @@ public sealed class Utf8RegexConstructionTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
         }
     }
@@ -2281,9 +2289,9 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(4, match.IndexInBytes);
-        Assert.Equal(5, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(4, match.StartOffsetInBytes);
+        Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2307,7 +2315,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
+        Assert.True(match.Success);
     }
 
     [Fact]
@@ -2320,8 +2328,8 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(handled);
         Assert.True(match.Success);
-        Assert.Equal(0, match.IndexInBytes);
-        Assert.Equal(5, match.LengthInBytes);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2334,8 +2342,7 @@ public sealed class Utf8RegexConstructionTests
 
         var match = regex.Match(bytes);
         Assert.True(match.Success);
-        Assert.Equal(5, match.IndexInUtf16);
-        Assert.Equal(6, match.IndexInBytes);
+        Assert.Equal(6, match.StartOffsetInBytes);
     }
 
     [Fact]
@@ -2503,12 +2510,12 @@ public sealed class Utf8RegexConstructionTests
         foreach (var expected in oracle.EnumerateMatches(text))
         {
             Assert.True(actual.MoveNext());
-            Assert.Equal((expected.Index, expected.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
+            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Current.StartOffsetInBytes, (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes)));
         }
         Assert.False(actual.MoveNext());
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal(0, match.IndexInBytes);
+        Assert.Equal(0, match.StartOffsetInBytes);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -2521,8 +2528,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("public sealed class".Length, match.LengthInBytes);
-        Assert.Equal("publicclass noise ".Length, match.IndexInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount("public sealed class"), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal("publicclass noise ".Length, match.StartOffsetInBytes);
     }
 
     [Fact]
@@ -2534,7 +2541,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("publicclass ".Length, match.IndexInBytes);
+        Assert.Equal("publicclass ".Length, match.StartOffsetInBytes);
     }
 
     [Fact]
@@ -2546,8 +2553,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("class lowercase ".Length, match.IndexInBytes);
-        Assert.Equal("record CustomerExportJob".Length, match.LengthInBytes);
+        Assert.Equal("class lowercase ".Length, match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount("record CustomerExportJob"), (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2559,8 +2566,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("class lowercase ".Length, match.IndexInBytes);
-        Assert.Equal("record CustomerExportJob".Length, match.LengthInBytes);
+        Assert.Equal("class lowercase ".Length, match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount("record CustomerExportJob"), (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2573,8 +2580,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("LogWarningx ".Length, match.IndexInBytes);
-        Assert.Equal("LogInformation (".Length, match.LengthInBytes);
+        Assert.Equal("LogWarningx ".Length, match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount("LogInformation ("), (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2587,8 +2594,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
-        Assert.Equal("xpublic async public   asyncz ".Length, match.IndexInBytes);
-        Assert.Equal("public async".Length, match.LengthInBytes);
+        Assert.Equal("xpublic async public   asyncz ".Length, match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount("public async"), (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2610,8 +2617,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), regex.Count(bytes));
         var match = regex.Match(bytes);
         Assert.True(match.Success);
-        Assert.Equal(expected.Index, match.IndexInBytes);
-        Assert.Equal(expected.Length, match.LengthInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2725,9 +2732,9 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
         Assert.Null(regex.Inspection.FallbackReason);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(0, match.IndexInBytes);
-        Assert.Equal(17, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(17, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2738,10 +2745,10 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(0, match.IndexInBytes);
-        Assert.Equal(14, match.LengthInBytes);
-        Assert.Equal(14, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(14, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(14, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -2751,10 +2758,9 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("\"été\""u8);
 
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(0, match.IndexInBytes);
-        Assert.Equal(7, match.LengthInBytes);
-        Assert.Equal(5, match.LengthInUtf16);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(7, match.EndOffsetInBytes - match.StartOffsetInBytes);
     }
 
     [Fact]

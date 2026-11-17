@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // directly. Matching/counting never decode or build a coordinate map.
 internal static class Utf8PreparedScalarExecutor
 {
-    internal static bool IsMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
+    internal static bool IsMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
         var breach = TryIsMatch(prepared, input, validation, ref invocation, out var result);
@@ -17,8 +16,7 @@ internal static class Utf8PreparedScalarExecutor
         return result;
     }
 
-    internal static int Count(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
+    internal static int Count(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
         var breach = TryCount(prepared, input, validation, ref invocation, out var result);
@@ -26,8 +24,7 @@ internal static class Utf8PreparedScalarExecutor
         return result;
     }
 
-    internal static Utf8ValueMatch Match(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
+    internal static Utf8CaptureRange Match(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
         var breach = TryMatch(prepared, input, validation, ref invocation, out var result);
@@ -35,8 +32,7 @@ internal static class Utf8PreparedScalarExecutor
         return result;
     }
 
-    internal static Utf8ExecutionLimitKind TryIsMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out bool result)
+    internal static Utf8ExecutionLimitKind TryIsMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out bool result)
     {
         result = false;
         var breach = TryAcquire(prepared, input, ref validation, ref invocation, out var program, out var slots);
@@ -53,8 +49,7 @@ internal static class Utf8PreparedScalarExecutor
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
-    internal static Utf8ExecutionLimitKind TryCount(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out int result)
+    internal static Utf8ExecutionLimitKind TryCount(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out int result)
     {
         result = 0;
         var breach = TryAcquire(prepared, input, ref validation, ref invocation, out var program, out var slots);
@@ -72,10 +67,9 @@ internal static class Utf8PreparedScalarExecutor
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
-    internal static Utf8ExecutionLimitKind TryMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out Utf8ValueMatch result)
+    internal static Utf8ExecutionLimitKind TryMatch(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out Utf8CaptureRange result)
     {
-        result = Utf8ValueMatch.NoMatch;
+        result = default(Utf8CaptureRange);
         var breach = TryAcquire(prepared, input, ref validation, ref invocation, out var program, out var slots);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         try
@@ -90,15 +84,12 @@ internal static class Utf8PreparedScalarExecutor
                 invocation.Budget.ThrowIfCancellationRequested();
                 return breach;
             }
-            return Utf8ProjectionExecutor.TryProjectScalarVerification(input, validation,
-                outcome.StartByte, outcome.EndByte - outcome.StartByte, ref invocation, out result);
+            return Utf8SliceBufferWork.TryCreateMatchRange(outcome.StartByte, (outcome.StartByte) + (outcome.EndByte - outcome.StartByte), ref invocation, out result);
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
-    private static Utf8ExecutionLimitKind TryAcquire(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        ref Utf8ValidationResult validation, ref Utf8SliceInvocation invocation,
-        out Utf8SliceProgram program, out Utf8SliceSlots slots)
+    private static Utf8ExecutionLimitKind TryAcquire(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, ref Utf8ValidationResult validation, ref Utf8SliceInvocation invocation, out Utf8SliceProgram program, out Utf8SliceSlots slots)
     {
         slots = default;
         program = prepared.ScalarProgram ?? throw new InvalidOperationException("Prepared scalar execution requires its admitted program.");

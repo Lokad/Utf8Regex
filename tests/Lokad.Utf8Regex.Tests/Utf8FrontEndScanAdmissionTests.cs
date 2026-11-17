@@ -298,7 +298,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var regex = new Utf8Regex("'[^a]{2}'", RegexOptions.CultureInvariant);
         var match = regex.Match("'😀b'"u8);
         Assert.True(match.Success);
-        Assert.Equal(0, match.IndexInBytes);
-        Assert.Equal(7, match.LengthInBytes);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(7, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 }

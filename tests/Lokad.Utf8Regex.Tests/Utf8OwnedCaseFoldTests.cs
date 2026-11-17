@@ -53,9 +53,8 @@ public sealed class Utf8OwnedCaseFoldTests
             var input = Encoding.UTF8.GetBytes(subject);
             var match = regex.Match(input);
             Assert.True(match.Success);
-            Assert.Equal(input.Length, match.LengthInBytes);
-            Assert.Equal(1, match.LengthInUtf16);
-            Assert.Equal(1, regex.Count(input));
+                Assert.Equal(input.Length, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+                Assert.Equal(1, regex.Count(input));
         }
     }
 

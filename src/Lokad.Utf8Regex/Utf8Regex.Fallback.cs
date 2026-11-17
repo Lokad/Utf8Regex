@@ -15,12 +15,12 @@ namespace Lokad.Utf8Regex;
 /// <summary>Scalar fallback execution and native verification for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8ValueMatch MatchScalarProgram(ReadOnlySpan<byte> input, CancellationToken token)
+    private Utf8CaptureRange MatchScalarProgram(ReadOnlySpan<byte> input, CancellationToken token)
         => OwnedSliceMatch(input, _ownedSliceProgram, token);
 
-    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input)
+    private Utf8CaptureRange MatchFallback(ReadOnlySpan<byte> input)
     {
-        if (RejectsByRequiredPrefilter(input)) return Utf8ValueMatch.NoMatch;
+        if (RejectsByRequiredPrefilter(input)) return default(Utf8CaptureRange);
         return MatchScalarProgram(input, CancellationToken.None);
     }
 
@@ -36,9 +36,9 @@ public sealed partial class Utf8Regex
             (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored);
     }
 
-    internal bool TryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    internal bool TryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         if (!_hasDirectAnchoredValidatorWithoutValidation || _hasDirectAnchoredHeadTailWithoutValidation)
         {
             return false;
@@ -70,7 +70,7 @@ public sealed partial class Utf8Regex
 
             if (matched)
             {
-                match = new Utf8ValueMatch(true, true, 0, dateLength, 0, dateLength);
+                match = new Utf8CaptureRange(0, (0) + (dateLength));
             }
 
             return true;
@@ -91,7 +91,7 @@ public sealed partial class Utf8Regex
 
             if (matched)
             {
-                match = new Utf8ValueMatch(true, true, 0, optionalFieldLength, 0, optionalFieldLength);
+                match = new Utf8CaptureRange(0, (0) + (optionalFieldLength));
             }
 
             return true;
@@ -110,7 +110,7 @@ public sealed partial class Utf8Regex
 
         if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
         {
-            match = new Utf8ValueMatch(true, true, 0, matchedLength, 0, matchedLength);
+            match = new Utf8CaptureRange(0, (0) + (matchedLength));
         }
 
         return true;
@@ -195,8 +195,7 @@ public sealed partial class Utf8Regex
     }
 
     private bool TryIsMatchAnchoredBoundedDateWithoutValidation(
-        ReadOnlySpan<byte> input,
-        out bool isMatch)
+        ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
         if (!_anchoredBoundedDatePlan.HasValue)
@@ -219,9 +218,9 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool TryMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    private bool TryMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         // Anchored ASCII literal prefixes are byte-exact on every input: astral scalars
         // never start with ASCII bytes, so non-ASCII input stays direct rather than
         // requiring the general owned scalar route.
@@ -232,7 +231,7 @@ public sealed partial class Utf8Regex
         {
             if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredPrefixLength))
             {
-                match = new Utf8ValueMatch(true, true, 0, anchoredPrefixLength, 0, anchoredPrefixLength);
+                match = new Utf8CaptureRange(0, (0) + (anchoredPrefixLength));
             }
 
             return true;
@@ -248,10 +247,8 @@ public sealed partial class Utf8Regex
         {
             if (Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, _fallbackDirectFamily, out var suffixByteIndex, out var suffixLength))
             {
-                var suffixUtf16Index = Utf8InputAnalyzer.IsAscii(input)
-                    ? suffixByteIndex
-                    : Utf8Validation.DescribeValid(input[..suffixByteIndex]).Utf16Length;
-                match = new Utf8ValueMatch(true, true, suffixUtf16Index, suffixLength, suffixByteIndex, suffixLength);
+
+                match = new Utf8CaptureRange(suffixByteIndex, (suffixByteIndex) + (suffixLength));
             }
 
             return true;
@@ -269,7 +266,7 @@ public sealed partial class Utf8Regex
                 return false;
             }
 
-            match = new Utf8ValueMatch(true, true, 0, signedDecimalLength, 0, signedDecimalLength);
+            match = new Utf8CaptureRange(0, (0) + (signedDecimalLength));
             return true;
         }
 
@@ -288,7 +285,7 @@ public sealed partial class Utf8Regex
 
             if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match && tokenMatchedLength > 0)
             {
-                match = new Utf8ValueMatch(true, true, tokenMatchIndex, tokenMatchedLength, tokenMatchIndex, tokenMatchedLength);
+                match = new Utf8CaptureRange(tokenMatchIndex, (tokenMatchIndex) + (tokenMatchedLength));
             }
 
             return true;
@@ -317,7 +314,7 @@ public sealed partial class Utf8Regex
 
         if (matchedLength > 0)
         {
-            match = new Utf8ValueMatch(true, true, matchIndex, matchedLength, matchIndex, matchedLength);
+            match = new Utf8CaptureRange(matchIndex, (matchIndex) + (matchedLength));
         }
 
         return true;
@@ -397,8 +394,7 @@ public sealed partial class Utf8Regex
     }
 
     private bool TryIsMatchPrioritizedBooleanFamilyWithoutValidation(
-        ReadOnlySpan<byte> input,
-        out bool isMatch)
+        ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
         switch (_prioritizedBooleanFamilyKind)

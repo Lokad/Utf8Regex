@@ -16,7 +16,7 @@ namespace Lokad.Utf8Regex;
 /// <summary>Byte-offset operation adapters and direct probes for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         if (TryMatchAnchoredHeadTailWithoutValidation(input, out match))
         {
@@ -35,14 +35,14 @@ public sealed partial class Utf8Regex
 
         if (MatchTimeout != Regex.InfiniteMatchTimeout)
         {
-            match = Utf8ValueMatch.NoMatch;
+            match = default(Utf8CaptureRange);
             return false;
         }
 
         if (_program.CompiledEngineRuntime is { } runtime)
             return runtime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
 
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         return false;
     }
 
@@ -76,9 +76,9 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    internal bool TryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    internal bool TryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         if (!_hasDirectAnchoredHeadTailWithoutValidation)
         {
             return false;
@@ -96,7 +96,7 @@ public sealed partial class Utf8Regex
 
         if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match)
         {
-            match = new Utf8ValueMatch(true, true, 0, matchedLength, 0, matchedLength);
+            match = new Utf8CaptureRange(0, (0) + (matchedLength));
         }
 
         return true;
@@ -134,7 +134,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterIsMatch) &&
                 suffixAdapterIsMatch.Success &&
-                input.Project(start).Value <= suffixAdapterIsMatch.IndexInUtf16;
+                start.Value <= suffixAdapterIsMatch.StartOffsetInBytes;
         }
 
         // Anchored prefixes anchor to byte 0: nonzero starts miss definitively,
@@ -194,7 +194,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterCount) &&
                 suffixAdapterCount.Success &&
-                input.Project(start).Value <= suffixAdapterCount.IndexInUtf16
+                start.Value <= suffixAdapterCount.StartOffsetInBytes
                 ? 1
                 : 0;
         }
@@ -266,7 +266,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterEnumerate) &&
                 suffixAdapterEnumerate.Success &&
-                input.Project(start).Value <= suffixAdapterEnumerate.IndexInUtf16)
+                start.Value <= suffixAdapterEnumerate.StartOffsetInBytes)
             {
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
@@ -329,7 +329,7 @@ public sealed partial class Utf8Regex
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterEnumerate) &&
                     foldedSuffixAdapterEnumerate.Success &&
-                    input.Project(start).Value <= foldedSuffixAdapterEnumerate.IndexInUtf16)
+                    start.Value <= foldedSuffixAdapterEnumerate.StartOffsetInBytes)
                 {
                     return new Utf8ValueMatchEnumerator(
                         new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
@@ -349,12 +349,7 @@ public sealed partial class Utf8Regex
         {
             var floorBudget = CreateExecutionBudget();
             var floorCursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                _preparedRegex,
-                input.Bytes,
-                input.Validation,
-                floorBudget,
-                start.Value,
-                input.Project(start).Value);
+                _preparedRegex, input.Bytes, input.Validation, floorBudget, start.Value);
             return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
@@ -364,7 +359,7 @@ public sealed partial class Utf8Regex
         // unserved keeps the routing below.
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
-            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _ownedSliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
+            return OwnedSliceEnumerateMatchesFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, this);
         }
 
@@ -395,37 +390,33 @@ public sealed partial class Utf8Regex
         {
             return new Utf8ValueMatchEnumerator(
                 Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, input.Bytes,
-                    new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false),
-                    budget, start.Value, start.Value))
+                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false), budget, start.Value))
                 .WithTimeoutMapping(input.Bytes, this);
         }
 
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
-            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes,
-                _ownedSliceProgram,
-                input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
+            return OwnedSliceEnumerateMatchesFromByte(input.Bytes,
+                _ownedSliceProgram, start.Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, this);
         }
 
         if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
         {
-            var baseInUtf16 = input.Project(start);
+
             return CreateMatchEnumeratorViaCompiledEngine(remaining, default, budget)
-                .WithBaseOffsets(start.Value, baseInUtf16.Value);
+                .WithBaseOffset(start.Value);
         }
 
         var validation = input.GetSuffixValidation(start);
-        var utf16Start = input.Project(start);
+
         return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, budget)
-            .WithBaseOffsets(start.Value, utf16Start.Value);
+            .WithBaseOffset(start.Value);
     }
 
     private Utf8PreparedValueMatchEnumerator EnumeratePreparedMatchesAtByteOffset(
-        Utf8ValidatedInput input,
-        Utf8BytePosition start)
+        Utf8ValidatedInput input, Utf8BytePosition start)
     {
         return new Utf8PreparedValueMatchEnumerator(input.Bytes, _preparedRegex.SearchPlan.PreparedSearcher, start);
     }
@@ -498,8 +489,7 @@ public sealed partial class Utf8Regex
 
         // PCRE2-INTEGRATION-POINT: flavor-neutral prepared byte-range iteration.
         public Utf8PreparedValueMatchEnumerator EnumeratePreparedMatches(
-            Utf8ValidatedInput input,
-            Utf8BytePosition start)
+            Utf8ValidatedInput input, Utf8BytePosition start)
             => _owner.EnumeratePreparedMatchesAtByteOffset(input, start);
 
         public Utf8SearchPortfolioKind SearchPortfolioKind =>

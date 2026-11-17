@@ -139,13 +139,13 @@ public sealed class Utf8SliceBackrefTests
         var actual = regex.Match(input);
         Assert.Equal(oracle.Success, actual.Success);
         Assert.True(actual.Success);
-        Assert.Equal(expectedValue, inputText.Substring(actual.IndexInUtf16, actual.LengthInUtf16));
+        Assert.Equal(expectedValue, inputText.Substring(actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
         Assert.Equal(expectedGroup, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         foreach (var item in regex.EnumerateMatches(input))
         {
-            Assert.Equal(expectedValue, inputText.Substring(item.IndexInUtf16, item.LengthInUtf16));
+            Assert.Equal(expectedValue, inputText.Substring(item.StartOffsetInBytes, (item.EndOffsetInBytes - item.StartOffsetInBytes)));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -234,7 +234,7 @@ public sealed class Utf8SliceBackrefTests
     }
 
     [Fact]
-    public void OwnedAstralPrefixMatchProjectsUtf16Coordinates()
+    public void OwnedAstralPrefixMatchReturnsByteCoordinates()
     {
         var inputText = char.ConvertFromUtf32(0x1F600) + "aa";
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -243,8 +243,8 @@ public sealed class Utf8SliceBackrefTests
         var actual = regex.Match(input);
         Assert.Equal(oracle.Success, actual.Success);
         Assert.True(actual.Success);
-        Assert.Equal(2, actual.IndexInUtf16);
-        Assert.Equal(2, actual.LengthInUtf16);
+        Assert.Equal(4, actual.StartOffsetInBytes);
+        Assert.Equal(2, (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

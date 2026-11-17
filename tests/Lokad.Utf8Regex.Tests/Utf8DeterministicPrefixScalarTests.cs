@@ -168,9 +168,9 @@ public sealed class Utf8DeterministicPrefixScalarTests
             Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input);
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-            Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
-        }
+                Assert.Equal((0, input.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            }
     }
 
     [Fact]

@@ -391,8 +391,8 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
         var dotnetMatch = dotnet.Match(input);
 
         Assert.Equal(dotnetMatch.Success, utf8Match.Success);
-        Assert.Equal(dotnetMatch.Index, utf8Match.IndexInUtf16);
-        Assert.Equal(dotnetMatch.Length, utf8Match.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, dotnetMatch.Index)), utf8Match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(dotnetMatch.Index, dotnetMatch.Length)), (utf8Match.EndOffsetInBytes - utf8Match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -504,9 +504,9 @@ Watson should not count across a newline.
         var dotnetMatch = Regex.Match(input, pattern);
 
         Assert.True(match.Success);
-        Assert.Equal(dotnetMatch.Index, match.IndexInUtf16);
-        Assert.Equal(dotnetMatch.Length, match.LengthInUtf16);
-        Assert.Equal(dotnetMatch.Value, Encoding.UTF8.GetString(bytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, dotnetMatch.Index)), match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(dotnetMatch.Index, dotnetMatch.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(dotnetMatch.Value, Encoding.UTF8.GetString(bytes.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
     }
 
     [Theory]

@@ -93,7 +93,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success)
             {
-                Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
+                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
             }
 
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -113,10 +113,10 @@ public sealed class Utf8ScalarMinimumOverlapTests
             var positions = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input))
             {
-                Assert.True(match.IsByteAligned);
-                positions.Add((match.IndexInUtf16, match.LengthInUtf16));
+                Assert.True(match.Success);
+                positions.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             }
-            Assert.Equal(oracle.Matches(text).Select(m => (m.Index, m.Length)), positions);
+            Assert.Equal(oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))), positions);
             foreach (var count in new[] { 2, 3, int.MaxValue })
             {
                 var expectedSplits = new List<(string, int, int)>();
@@ -174,12 +174,12 @@ public sealed class Utf8ScalarMinimumOverlapTests
                 var expected = new List<(int, int)>();
                 foreach (var match in oracle.EnumerateMatches(text, start))
                 {
-                    expected.Add((match.Index, match.Length));
+                    expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length))));
                 }
                 var actual = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start))))
                 {
-                    actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+                    actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 }
                 Assert.Equal(expected, actual);
             }

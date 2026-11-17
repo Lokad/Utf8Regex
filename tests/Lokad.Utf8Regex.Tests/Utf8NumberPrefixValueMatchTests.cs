@@ -13,7 +13,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
         MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
-    private static Utf8ValueMatch Scalar(Utf8Regex regex, byte[] input, int start = 0)
+    private static Utf8CaptureRange Scalar(Utf8Regex regex, byte[] input, int start = 0)
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
@@ -24,10 +24,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
         {
             var result = Utf8SliceRunner.TryFindFirst(program, input, start, slots.Starts, slots.Ends, false, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
-            return result.Found ? new Utf8ValueMatch(true, true,
-                Encoding.UTF8.GetCharCount(input.AsSpan(0, result.StartByte)),
-                Encoding.UTF8.GetCharCount(input.AsSpan(result.StartByte, result.EndByte - result.StartByte)),
-                result.StartByte, result.EndByte - result.StartByte) : Utf8ValueMatch.NoMatch;
+            return result.Found ? new Utf8CaptureRange(result.StartByte, (result.StartByte) + (result.EndByte - result.StartByte)) : default(Utf8CaptureRange);
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
@@ -48,7 +45,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
                 var input = Encoding.ASCII.GetBytes(text);
                 byte[] storage = [0xff, .. input, 0xff];
                 var expected = Scalar(regex, input); var bcl = oracle.Match(text);
-                Assert.Equal((bcl.Success, bcl.Length), (expected.Success, expected.LengthInUtf16));
+                Assert.Equal((bcl.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(bcl.Index, bcl.Length))), (expected.Success, (expected.EndOffsetInBytes - expected.StartOffsetInBytes)));
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
@@ -66,10 +63,10 @@ public sealed class Utf8NumberPrefixValueMatchTests
     public void WholeSubjectBoundControlsAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('1', length));
-        Assert.Equal(length, new Utf8Regex(Pattern).Match(input).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
+        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
         else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }
@@ -125,7 +122,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         Assert.Equal(".34", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
-        Assert.Equal(9, value.LengthInBytes);
+        Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();

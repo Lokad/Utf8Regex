@@ -161,7 +161,9 @@ public sealed class Utf8ScalarSubjectTests
             Assert.Equal(expected.Length != 0, match.Success);
             if (match.Success)
             {
-                Assert.True(match.TryGetByteRange(out var index, out var length));
+                var index = match.StartOffsetInBytes;
+                var length = (match.EndOffsetInBytes - match.StartOffsetInBytes);
+                Assert.True(match.Success);
                 Assert.Equal(expected[0], (index, length));
             }
 
@@ -183,7 +185,9 @@ public sealed class Utf8ScalarSubjectTests
             var ranges = new List<(int, int)>();
             foreach (var value in regex.EnumerateMatches(input, token))
             {
-                Assert.True(value.TryGetByteRange(out var index, out var length));
+                var index = value.StartOffsetInBytes;
+                var length = (value.EndOffsetInBytes - value.StartOffsetInBytes);
+                Assert.True(value.Success);
                 ranges.Add((index, length));
             }
             Assert.Equal(expected, ranges);

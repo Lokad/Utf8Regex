@@ -208,19 +208,19 @@ public sealed class Utf8WindowByteBoundsTests
             var rtl = (options & RegexOptions.RightToLeft) != 0;
             var match = regex.Match(input);
             Assert.True(match.Success);
-            Assert.Equal(rtl ? row.First + 2 : 1, match.IndexInBytes);
-            Assert.Equal(rtl ? row.Second : row.First, match.LengthInBytes);
+            Assert.Equal(rtl ? row.First + 2 : 1, match.StartOffsetInBytes);
+            Assert.Equal(rtl ? row.Second : row.First, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-            Assert.Equal(match.IndexInBytes, context.Value.StartOffsetInBytes);
-            Assert.Equal(match.LengthInBytes, (context.Value.EndOffsetInBytes - context.Value.StartOffsetInBytes));
+            Assert.Equal(match.StartOffsetInBytes, context.Value.StartOffsetInBytes);
+            Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (context.Value.EndOffsetInBytes - context.Value.StartOffsetInBytes));
             Assert.Equal(rtl ? "second" : "first", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(1).Span));
             var enumerator = regex.EnumerateMatches(input);
             var count = 0;
             while (enumerator.MoveNext())
             {
                 var second = rtl ? count == 0 : count == 1;
-                Assert.Equal(second ? row.First + 2 : 1, enumerator.Current.IndexInBytes);
-                Assert.Equal(second ? row.Second : row.First, enumerator.Current.LengthInBytes);
+                Assert.Equal(second ? row.First + 2 : 1, enumerator.Current.StartOffsetInBytes);
+                Assert.Equal(second ? row.Second : row.First, (enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes));
                 count++;
             }
             Assert.Equal(2, count);

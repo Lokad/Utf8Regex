@@ -71,18 +71,18 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var expectedMatch = expected.Match(Subject);
         var actualMatch = actual.Match(input);
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-        Assert.Equal(Encoding.UTF8.GetByteCount(Subject.AsSpan(0, expectedMatch.Index)), actualMatch.IndexInBytes);
-        Assert.Equal(Encoding.UTF8.GetByteCount(Subject.AsSpan(expectedMatch.Index, expectedMatch.Length)), actualMatch.LengthInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(Subject.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(Subject.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
+        Assert.Equal(Encoding.UTF8.GetByteCount(Subject.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(Subject.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
 
         var expectedRanges = expected.Matches(Subject)
-            .Select(static match => (match.Index, match.Length))
+            .Select(match => (Encoding.UTF8.GetByteCount(Subject.AsSpan(0, match.Index)), Encoding.UTF8.GetByteCount(match.Value)))
             .ToArray();
         var actualRanges = new List<(int Index, int Length)>();
         foreach (var match in actual.EnumerateMatches(input))
         {
-            actualRanges.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actualRanges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal(expectedRanges, actualRanges);
@@ -205,16 +205,16 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var expectedMatch = expected.Match(subject);
         var actualMatch = actual.Match(input);
         Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
 
         var expectedRanges = expected.Matches(subject)
-            .Select(static match => (match.Index, match.Length))
+            .Select(match => (System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(match.Index, match.Length))))
             .ToArray();
         var actualRanges = new List<(int Index, int Length)>();
         foreach (var match in actual.EnumerateMatches(input))
         {
-            actualRanges.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actualRanges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal(expectedRanges, actualRanges);
@@ -250,27 +250,23 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         var expectedFirst = expected.Match(subject);
         var actualFirst = actual.Match(input);
-        Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-        Assert.Equal(expectedFirst.Length, actualFirst.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(0, expectedFirst.Index)), actualFirst.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(expectedFirst.Index, expectedFirst.Length)), (actualFirst.EndOffsetInBytes - actualFirst.StartOffsetInBytes));
         Assert.Equal(
             Encoding.UTF8.GetByteCount(subject.AsSpan(0, expectedFirst.Index)),
-            actualFirst.IndexInBytes);
+            actualFirst.StartOffsetInBytes);
 
         var expectedRanges = expected.Matches(subject)
             .Select(match => (
-                Utf16Index: match.Index,
-                Utf16Length: match.Length,
                 ByteIndex: Encoding.UTF8.GetByteCount(subject.AsSpan(0, match.Index)),
                 ByteLength: Encoding.UTF8.GetByteCount(subject.AsSpan(match.Index, match.Length))))
             .ToArray();
-        var actualRanges = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength)>();
+        var actualRanges = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in actual.EnumerateMatches(input))
         {
             actualRanges.Add((
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                match.IndexInBytes,
-                match.LengthInBytes));
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal(expectedRanges, actualRanges);
@@ -362,13 +358,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var expected = new List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -393,13 +389,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var expected = new List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);

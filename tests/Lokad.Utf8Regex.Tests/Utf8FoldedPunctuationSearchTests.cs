@@ -80,10 +80,10 @@ public sealed class Utf8FoldedPunctuationSearchTests
             Assert.Equal(reference.IsMatch(text), regex.IsMatch(input));
             var expected = reference.Match(text);
             var actual = regex.Match(input);
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
-            Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(input, "X")));
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                    Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(input, "X")));
             if (validation == Utf8InputValidation.Validate)
                 Assert.Throws<ArgumentException>(() => regex.Count(input.Concat(new byte[] { 0xff }).ToArray()));
         }

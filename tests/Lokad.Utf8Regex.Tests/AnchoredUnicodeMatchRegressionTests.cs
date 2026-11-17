@@ -35,9 +35,11 @@ public sealed class AnchoredUnicodeMatchRegressionTests
             Utf8MatchSequence.AssertCaptures(expectedMatch, actualDetailed, utf8, input);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-                Assert.True(actualMatch.TryGetByteRange(out var byteIndex, out var byteLength));
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
+                var byteIndex = actualMatch.StartOffsetInBytes;
+                var byteLength = (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes);
+                Assert.True(actualMatch.Success);
                 Assert.Equal(0, byteIndex);
                 Assert.Equal(utf8.Length, byteLength);
             }
@@ -46,14 +48,14 @@ public sealed class AnchoredUnicodeMatchRegressionTests
             var actualValues = new List<string>();
             foreach (var match in actual.EnumerateMatches(utf8))
             {
-                actualValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+                actualValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
             }
             Assert.Equal(expectedValues, actualValues);
 
             var actualOffsetValues = new List<string>();
             foreach (var match in actual.EnumerateMatches(utf8, 0))
             {
-                actualOffsetValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+                actualOffsetValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
             }
             Assert.Equal(expectedValues, actualOffsetValues);
         }

@@ -155,7 +155,6 @@ internal static partial class BenchmarkInspectReporter
             if (TryCreateExactCompositeTrailingSearch(
                     context.Utf8Regex,
                     out var compositeSearch,
-                    out _,
                     out _))
             {
                 MeasureUtf8CaseLane("CompositeTrailingSearchOnly", samples, iterations, () =>
@@ -180,7 +179,7 @@ internal static partial class BenchmarkInspectReporter
             {
                 context.Utf8Regex.Inspection.DebugTryMatchExactLiteral(context.InputBytes, out var match);
                 return match.Success
-                    ? match.IndexInBytes ^ match.LengthInBytes ^ match.IndexInUtf16 ^ match.LengthInUtf16
+                    ? HashCode.Combine(match.StartOffsetInBytes, match.EndOffsetInBytes)
                     : 0;
             });
             MeasureUtf8CaseLane("ValidationPlusExactMatch", samples, iterations, () =>
@@ -188,30 +187,27 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 context.Utf8Regex.Inspection.DebugTryMatchExactLiteral(context.InputBytes, out var match);
                 return match.Success
-                    ? match.IndexInBytes ^ match.LengthInBytes ^ match.IndexInUtf16 ^ match.LengthInUtf16
+                    ? HashCode.Combine(match.StartOffsetInBytes, match.EndOffsetInBytes)
                     : 0;
             });
 
             if (TryCreateExactCompositeTrailingSearch(
                     context.Utf8Regex,
                     out var compositeSearch,
-                    out var matchByteLength,
-                    out var matchUtf16Length))
+                    out var matchByteLength))
             {
                 MeasureUtf8CaseLane("CompositeTrailingMatchOnly", samples, iterations, () =>
                     ExecuteCompositeTrailingMatch(
                         context.InputBytes,
                         compositeSearch,
-                        matchByteLength,
-                        matchUtf16Length));
+                        matchByteLength));
                 MeasureUtf8CaseLane("ValidationPlusCompositeMatch", samples, iterations, () =>
                 {
                     Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                     return ExecuteCompositeTrailingMatch(
                         context.InputBytes,
                         compositeSearch,
-                        matchByteLength,
-                        matchUtf16Length);
+                        matchByteLength);
                 });
             }
         }
@@ -288,10 +284,6 @@ internal static partial class BenchmarkInspectReporter
                 MeasureUtf8CaseLane("CompiledUtf8IsMatchControl", samples, iterations, () =>
                     context.CompiledUtf8Regex.IsMatch(context.InputBytes) ? 1 : 0);
             }
-            MeasureUtf8CaseLane("FamilyProjectionOnly", samples, iterations, () =>
-                EncodeValueMatch(ProjectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes, confirmedMatch)));
-            MeasureUtf8CaseLane("CompiledFamilyProjectionOnly", samples, iterations, () =>
-                EncodeValueMatch(ProjectLiteralFamilyMatch(context.CompiledUtf8Regex, context.InputBytes, compiledConfirmedMatch)));
             MeasureUtf8CaseLane("DirectEnumerationFamilyMatchOnly", samples, iterations, () =>
                 EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes)));
             MeasureUtf8CaseLane("CompiledDirectEnumerationFamilyMatchOnly", samples, iterations, () =>
@@ -357,31 +349,6 @@ internal static partial class BenchmarkInspectReporter
                 ExecuteValidatedAsciiDirectEnumeration(context.Regex, context.InputBytes));
             MeasureUtf8CaseLane("ValidatedAsciiDirectCompiled", samples, iterations, () =>
                 ExecuteValidatedAsciiDirectEnumeration(context.CompiledRegex, context.InputBytes));
-        }
-        else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.EnumerateMatches &&
-                 (benchmarkCase.Options & RegexOptions.RightToLeft) != 0)
-        {
-            var expectedCoordinates = SumUtf8MatchCoordinates(context.Utf8Regex, context.InputBytes);
-            var ordinaryCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes);
-            var compiledCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes);
-            var ordinaryUtf16Coordinates = ExecuteValidatedReverseUtf16ProjectionEnumeration(context.Regex, context.InputBytes);
-            var compiledUtf16Coordinates = ExecuteValidatedReverseUtf16ProjectionEnumeration(context.CompiledRegex, context.InputBytes);
-            if (ordinaryCoordinates != expectedCoordinates ||
-                compiledCoordinates != expectedCoordinates ||
-                ordinaryUtf16Coordinates != expectedCoordinates ||
-                compiledUtf16Coordinates != expectedCoordinates)
-            {
-                throw new InvalidOperationException("Reverse-projection diagnostics do not preserve UTF-8 match coordinates.");
-            }
-
-            MeasureUtf8CaseLane("ValidatedReverseProjectionOrdinary", samples, iterations, () =>
-                ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes));
-            MeasureUtf8CaseLane("ValidatedReverseProjectionCompiled", samples, iterations, () =>
-                ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes));
-            MeasureUtf8CaseLane("ValidatedReverseUtf16ProjectionOrdinary", samples, iterations, () =>
-                ExecuteValidatedReverseUtf16ProjectionEnumeration(context.Regex, context.InputBytes));
-            MeasureUtf8CaseLane("ValidatedReverseUtf16ProjectionCompiled", samples, iterations, () =>
-                ExecuteValidatedReverseUtf16ProjectionEnumeration(context.CompiledRegex, context.InputBytes));
         }
 
         return 0;
@@ -475,7 +442,6 @@ internal static partial class BenchmarkInspectReporter
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, context.InputBytes));
         Measure("PublicIndexSum", iterations, () => ExecutePublicEnumeratorIndexSum(regex, context.InputBytes));
         Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(context.InputBytes));
-        Measure("BoundaryMapOnly", iterations, () => ExecuteBoundaryMapOnly(context.InputBytes));
 
         if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literal && regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } literal)
         {
@@ -485,10 +451,7 @@ internal static partial class BenchmarkInspectReporter
             if (regex.Inspection.SearchPlan.LiteralSearch is { } literalSearch)
             {
                 Measure("DirectSearchCount", iterations, () => ExecutePreparedSubstringCount(literalSearch, context.InputBytes));
-                Measure("DirectIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralDirectIncrementalIndexSum(literalSearch, literal, context.InputBytes, Utf8Validation.Validate(literal).Utf16Length));
-                Measure("DirectBoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralDirectBoundaryMapIndexSum(literalSearch, literal, context.InputBytes));
             }
-            Measure("BoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralBoundaryMapIndexSum(regex.Inspection.SearchPlan, literal, context.InputBytes));
         }
         else if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
         {
@@ -498,11 +461,9 @@ internal static partial class BenchmarkInspectReporter
             Measure("BudgetedConfirmedCount", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedCount(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: true));
             Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.PreparedRegex, context.InputBytes));
             Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.PreparedRegex, context.InputBytes));
-            Measure("DirectFamilyIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("BoundaryFilteredIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("ConfirmedIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: false));
             Measure("BudgetedConfirmedIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: true));
-            Measure("BoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryMapIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
         }
 
         Measure("DecodeThenRegex", iterations, () => ExecuteDecodeThenRegex(context));
@@ -547,40 +508,6 @@ internal static partial class BenchmarkInspectReporter
             SumUtf8SplitsManual(context.Utf8Regex, context.InputBytes));
         MeasureUtf8CaseLane("Utf8ManualCompiled", samples, iterations, () =>
             SumUtf8SplitsManual(context.CompiledUtf8Regex, context.InputBytes));
-        if (context.Utf8Regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } splitLiteral &&
-            context.Utf8Regex.Inspection.SearchPlan.LiteralSearch is { } splitLiteralSearch)
-        {
-            var literalUtf16Length = Utf8Validation.Validate(splitLiteral).Utf16Length;
-            var currentProjection = ExecuteExactUtf8LiteralDirectIncrementalIndexSum(
-                splitLiteralSearch,
-                splitLiteral,
-                context.InputBytes,
-                literalUtf16Length);
-            var trustedProjection = ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(
-                splitLiteralSearch,
-                splitLiteral,
-                context.InputBytes,
-                literalUtf16Length);
-            if (currentProjection != trustedProjection)
-            {
-                throw new InvalidOperationException("Trusted-valid UTF-16 projection disagrees with current incremental projection.");
-            }
-
-            MeasureUtf8CaseLane("SearchOnlyCount", samples, iterations, () =>
-                ExecutePreparedSubstringCount(splitLiteralSearch, context.InputBytes));
-            MeasureUtf8CaseLane("CurrentIncrementalIndexSum", samples, iterations, () =>
-                ExecuteExactUtf8LiteralDirectIncrementalIndexSum(
-                    splitLiteralSearch,
-                    splitLiteral,
-                    context.InputBytes,
-                    literalUtf16Length));
-            MeasureUtf8CaseLane("TrustedIncrementalIndexSum", samples, iterations, () =>
-                ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(
-                    splitLiteralSearch,
-                    splitLiteral,
-                    context.InputBytes,
-                    literalUtf16Length));
-        }
         MeasureUtf8CaseLane("LegacyDuplicateValidationOrdinary", samples, iterations, () =>
             ExecuteUtf8AfterDuplicateValidation(context, compiled: false));
         MeasureUtf8CaseLane("LegacyDuplicateValidationCompiled", samples, iterations, () =>
@@ -3716,8 +3643,6 @@ internal static partial class BenchmarkInspectReporter
         Measure("SearchOnlyCount", iterations, () => ExecuteExactUtf8LiteralFamilySearchCount(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
         Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.PreparedRegex, benchmarkCase.InputBytes));
         Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.PreparedRegex, benchmarkCase.InputBytes));
-        Measure("DirectFamilyIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
-        Measure("BoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryMapIndexSum(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => ExecuteReplicaUtf8EnumerateMatchIndexSum(benchmarkCase));
         Measure("DecodeThenRegex", iterations, () => ExecuteReplicaDecodeEnumerateMatchIndexSum(benchmarkCase));
         Measure("PredecodedRegex", iterations, () => ExecuteReplicaPredecodedEnumerateMatchIndexSum(benchmarkCase, decoded));
@@ -5930,7 +5855,7 @@ internal static partial class BenchmarkInspectReporter
         {
             Utf8RegexBenchmarkOperation.IsMatch => context.Utf8Regex.IsMatch(context.InputBytes) ? 1 : 0,
             Utf8RegexBenchmarkOperation.Count => context.Utf8Regex.Count(context.InputBytes),
-            Utf8RegexBenchmarkOperation.Match => context.Utf8Regex.Match(context.InputBytes).IndexInUtf16,
+            Utf8RegexBenchmarkOperation.Match => context.Utf8Regex.Match(context.InputBytes).StartOffsetInBytes,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf8Matches(context),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumUtf8Splits(context),
             Utf8RegexBenchmarkOperation.Replace => context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
@@ -5941,8 +5866,7 @@ internal static partial class BenchmarkInspectReporter
     private static bool TryCreateExactCompositeTrailingSearch(
         Utf8Regex regex,
         out PreparedSubstringSearch search,
-        out int matchByteLength,
-        out int matchUtf16Length)
+        out int matchByteLength)
     {
         var searchPlan = regex.Inspection.SearchPlan;
         if (searchPlan.HasBoundaryRequirements ||
@@ -5953,22 +5877,19 @@ internal static partial class BenchmarkInspectReporter
         {
             search = default;
             matchByteLength = 0;
-            matchUtf16Length = 0;
             return false;
         }
 
         byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
         search = new PreparedSubstringSearch(compositeLiteral, ignoreCase: false);
         matchByteLength = leadingLiteral.Length;
-        matchUtf16Length = Utf8Validation.Validate(leadingLiteral).Utf16Length;
         return true;
     }
 
     private static int ExecuteCompositeTrailingMatch(
         byte[] input,
         PreparedSubstringSearch search,
-        int matchByteLength,
-        int matchUtf16Length)
+        int matchByteLength)
     {
         var matchByteIndex = search.IndexOf(input);
         if (matchByteIndex < 0)
@@ -5976,20 +5897,16 @@ internal static partial class BenchmarkInspectReporter
             return 0;
         }
 
-        var matchUtf16Index = matchByteIndex == 0
-            ? 0
-            : Utf8Validation.Validate(input.AsSpan(0, matchByteIndex)).Utf16Length;
-        return matchByteIndex ^ matchByteLength ^ matchUtf16Index ^ matchUtf16Length;
+        return HashCode.Combine(matchByteIndex, matchByteLength);
     }
 
-    private static Utf8ValueMatch ExecuteDirectLiteralFamilyMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
+    private static Utf8CaptureRange ExecuteDirectLiteralFamilyMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
         var plan = regex.Inspection.SearchPlan;
         return Utf8BackendInstructionExecutor.MatchLiteralFamily(
             plan,
             plan.EnumerationOperation,
             input,
-            plan.AlternateLiteralUtf16Lengths,
             Utf8ExecutionDeadline.Infinite,
             (regex.Options & RegexOptions.RightToLeft) != 0);
     }
@@ -6237,49 +6154,24 @@ internal static partial class BenchmarkInspectReporter
         return Utf8SliceScalarClasses.IsWord(value, includeJoiners: true, ecma: false);
     }
 
-    private static Utf8ValueMatch ProjectLiteralFamilyMatch(
-        Utf8Regex regex,
-        ReadOnlySpan<byte> input,
-        PreparedSearchMatch match)
-    {
-        var plan = regex.Inspection.SearchPlan;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        return Utf8BackendInstructionExecutor.ProjectLiteralFamilyMatch(
-            plan.EnumerationOperation,
-            input,
-            plan.AlternateLiteralUtf16Lengths,
-            consumedBytes: 0,
-            consumedUtf16: 0,
-            in match,
-            ref invocation,
-            out _,
-            out _);
-    }
-
     private static int EncodePreparedSearchMatch(PreparedSearchMatch match)
     {
         return HashCode.Combine(match.Index, match.Length, match.LiteralId);
     }
 
-    private static bool MatchesExactly(Utf8ValueMatch left, Utf8ValueMatch right)
+    private static bool MatchesExactly(Utf8CaptureRange left, Utf8CaptureRange right)
     {
         return left.Success == right.Success &&
-            left.IsByteAligned == right.IsByteAligned &&
-            left.IndexInUtf16 == right.IndexInUtf16 &&
-            left.LengthInUtf16 == right.LengthInUtf16 &&
-            left.IndexInBytes == right.IndexInBytes &&
-            left.LengthInBytes == right.LengthInBytes;
+            left.Success == right.Success &&
+            left.StartOffsetInBytes == right.StartOffsetInBytes &&
+            left.EndOffsetInBytes == right.EndOffsetInBytes;
     }
 
-    private static int EncodeValueMatch(Utf8ValueMatch match)
+    private static int EncodeValueMatch(Utf8CaptureRange match)
     {
         return match.Success
             ? HashCode.Combine(
-                match.IsByteAligned,
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                match.IndexInBytes,
-                match.LengthInBytes)
+                match.Success, match.StartOffsetInBytes, match.EndOffsetInBytes)
             : 0;
     }
 
@@ -6295,7 +6187,7 @@ internal static partial class BenchmarkInspectReporter
         {
             Utf8RegexBenchmarkOperation.IsMatch => context.CompiledUtf8Regex.IsMatch(context.InputBytes) ? 1 : 0,
             Utf8RegexBenchmarkOperation.Count => context.CompiledUtf8Regex.Count(context.InputBytes),
-            Utf8RegexBenchmarkOperation.Match => context.CompiledUtf8Regex.Match(context.InputBytes).IndexInUtf16,
+            Utf8RegexBenchmarkOperation.Match => context.CompiledUtf8Regex.Match(context.InputBytes).StartOffsetInBytes,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf8Matches(context.CompiledUtf8Regex, context.InputBytes),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumUtf8Splits(context.CompiledUtf8Regex, context.InputBytes),
             Utf8RegexBenchmarkOperation.Replace => context.CompiledUtf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
@@ -6984,7 +6876,7 @@ internal static partial class BenchmarkInspectReporter
         var sum = 0;
         foreach (var match in regex.EnumerateMatches(input))
         {
-            sum += match.IndexInUtf16;
+            sum += match.StartOffsetInBytes;
         }
 
         return sum;
@@ -6999,14 +6891,14 @@ internal static partial class BenchmarkInspectReporter
     private static int FirstUtf8EnumeratorMatch(Utf8Regex regex, byte[] input)
     {
         var enumerator = regex.EnumerateMatches(input);
-        return enumerator.MoveNext() ? enumerator.Current.IndexInUtf16 : -1;
+        return enumerator.MoveNext() ? enumerator.Current.StartOffsetInBytes : -1;
     }
 
     private static int FirstCopiedUtf8EnumeratorMatch(Utf8Regex regex, byte[] input)
     {
         var source = regex.EnumerateMatches(input);
         var enumerator = source.GetEnumerator();
-        return enumerator.MoveNext() ? enumerator.Current.IndexInUtf16 : -1;
+        return enumerator.MoveNext() ? enumerator.Current.StartOffsetInBytes : -1;
     }
 
     private static int SumUtf8Splits(Utf8RegexBenchmarkContext context)
@@ -7191,7 +7083,7 @@ internal static partial class BenchmarkInspectReporter
                 asciiInput: true));
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInUtf16;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;
@@ -7200,11 +7092,6 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteValidationOnly(byte[] input)
     {
         return Utf8Validation.Validate(input).Utf16Length;
-    }
-
-    private static int ExecuteBoundaryMapOnly(byte[] input)
-    {
-        return Utf8BoundaryMap.Create(input).Utf16Length;
     }
 
     private static int ExecutePublicEnumeratorMoveNextCount(Utf8Regex regex, byte[] input)
@@ -7225,7 +7112,7 @@ internal static partial class BenchmarkInspectReporter
         var enumerator = regex.EnumerateMatches(input);
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInUtf16;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;
@@ -7237,7 +7124,7 @@ internal static partial class BenchmarkInspectReporter
         var enumerator = benchmarkCase.Utf8Regex.EnumerateMatches(benchmarkCase.InputBytes);
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInUtf16;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;
@@ -7269,13 +7156,11 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
     {
         var count = 0;
-        var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
         var enumerator = new Utf8ValueMatchEnumerator(
             new Utf8OperationMatchCursor(
                 input,
                 regexPlan,
                 literal,
-                literalUtf16Length,
                 budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
@@ -7288,17 +7173,15 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
     {
         var sum = 0;
-        var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
         var enumerator = new Utf8ValueMatchEnumerator(
             new Utf8OperationMatchCursor(
                 input,
                 regexPlan,
                 literal,
-                literalUtf16Length,
                 budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInUtf16;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;
@@ -7319,102 +7202,6 @@ internal static partial class BenchmarkInspectReporter
             count++;
             remaining = remaining[(index + literal.Length)..];
         }
-    }
-
-    private static int ExecuteExactUtf8LiteralBoundaryMapIndexSum(Utf8SearchPlan plan, byte[] literal, byte[] input)
-    {
-        var sum = 0;
-        var boundaryMap = Utf8BoundaryMap.Create(input);
-        var remaining = input.AsSpan();
-        var consumed = 0;
-        while (true)
-        {
-            var index = Utf8SearchExecutor.FindFirst(plan, remaining);
-            if (index < 0)
-            {
-                return sum;
-            }
-
-            var absolute = consumed + index;
-            sum += boundaryMap.GetUtf16OffsetForByteOffset(absolute);
-            var advance = index + literal.Length;
-            remaining = remaining[advance..];
-            consumed += advance;
-        }
-    }
-
-    private static int ExecuteExactUtf8LiteralDirectBoundaryMapIndexSum(PreparedSubstringSearch search, byte[] literal, byte[] input)
-    {
-        var sum = 0;
-        var boundaryMap = Utf8BoundaryMap.Create(input);
-        var span = input.AsSpan();
-        var consumed = 0;
-        while (consumed <= span.Length - literal.Length)
-        {
-            var found = search.IndexOf(span[consumed..]);
-            if (found < 0)
-            {
-                return sum;
-            }
-
-            var absolute = consumed + found;
-            sum += boundaryMap.GetUtf16OffsetForByteOffset(absolute);
-            consumed = absolute + literal.Length;
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteExactUtf8LiteralDirectIncrementalIndexSum(PreparedSubstringSearch search, byte[] literal, byte[] input, int literalUtf16Length)
-    {
-        var sum = 0;
-        var span = input.AsSpan();
-        var remaining = span;
-        var consumedBytes = 0;
-        var consumedUtf16 = 0;
-        while (consumedBytes <= span.Length - literal.Length)
-        {
-            var found = search.IndexOf(remaining);
-            if (found < 0)
-            {
-                return sum;
-            }
-
-            var relativeUtf16Index = found == 0 ? 0 : Utf8Validation.Validate(remaining[..found]).Utf16Length;
-            sum += consumedUtf16 + relativeUtf16Index;
-            var advance = found + literal.Length;
-            remaining = remaining[advance..];
-            consumedBytes += advance;
-            consumedUtf16 += relativeUtf16Index + literalUtf16Length;
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(PreparedSubstringSearch search, byte[] literal, byte[] input, int literalUtf16Length)
-    {
-        var sum = 0;
-        var span = input.AsSpan();
-        var remaining = span;
-        var consumedBytes = 0;
-        var consumedUtf16 = 0;
-        while (consumedBytes <= span.Length - literal.Length)
-        {
-            var found = search.IndexOf(remaining);
-            if (found < 0)
-            {
-                return sum;
-            }
-
-            var relativeUtf16Index = found == 0 ? 0 : GetTrustedUtf16Length(remaining[..found]);
-            sum += consumedUtf16 + relativeUtf16Index;
-            var advance = found + literal.Length;
-            remaining = remaining[advance..];
-            consumedBytes += advance;
-            consumedUtf16 += relativeUtf16Index + literalUtf16Length;
-        }
-
-        return sum;
     }
 
     private static int GetTrustedUtf16Length(ReadOnlySpan<byte> input)
@@ -7461,41 +7248,6 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteExactUtf8LiteralFamilyBoundaryMapIndexSum(Utf8SearchPlan plan, byte[] input)
-    {
-        var sum = 0;
-        var boundaryMap = Utf8BoundaryMap.Create(input);
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        var span = input.AsSpan();
-        while (plan.PreparedSearcher.TryFindNextNonOverlappingMatch(span, ref state, out var match))
-        {
-            sum += boundaryMap.GetUtf16OffsetForByteOffset(match.Index);
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(Utf8SearchPlan plan, byte[] input)
-    {
-        var sum = 0;
-        var remaining = input.AsSpan();
-        var consumedUtf16 = 0;
-        var utf16Lengths = plan.AlternateLiteralUtf16Lengths ?? [];
-        while (plan.PreparedSearcher.TryFindFirstMatch(remaining, out var match))
-        {
-            var relativeUtf16Index = match.Index == 0 ? 0 : Utf8Validation.Validate(remaining[..match.Index]).Utf16Length;
-            sum += consumedUtf16 + relativeUtf16Index;
-            var matchedUtf16Length = (uint)match.LiteralId < (uint)utf16Lengths.Length
-                ? utf16Lengths[match.LiteralId]
-                : Utf8Validation.Validate(remaining.Slice(match.Index, match.Length)).Utf16Length;
-            var advance = match.Index + match.Length;
-            remaining = remaining[advance..];
-            consumedUtf16 += relativeUtf16Index + matchedUtf16Length;
-        }
-
-        return sum;
-    }
-
     private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var count = 0;
@@ -7516,7 +7268,7 @@ internal static partial class BenchmarkInspectReporter
             new Utf8OperationMatchCursor(input, regexPlan, budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
-            sum += enumerator.Current.IndexInUtf16;
+            sum += enumerator.Current.StartOffsetInBytes;
         }
 
         return sum;
@@ -7589,195 +7341,6 @@ internal static partial class BenchmarkInspectReporter
         return SumRegexMatches(regex, decoded);
     }
 
-    private static int ExecuteValidatedReverseProjectionEnumeration(Regex regex, byte[] input)
-    {
-        var validation = Utf8InputAnalyzer.ValidateOnly(input);
-        var decoded = Encoding.UTF8.GetString(input);
-        var byteOffset = input.Length;
-        var utf16Offset = validation.Utf16Length;
-        var lastSplitUtf16Offset = -1;
-        var lastSplitByteOffset = -1;
-        var checksum = 0;
-        foreach (var match in regex.EnumerateMatches(decoded))
-        {
-            var end = ProjectReverseBoundary(
-                input,
-                match.Index + match.Length,
-                ref byteOffset,
-                ref utf16Offset,
-                ref lastSplitUtf16Offset,
-                ref lastSplitByteOffset);
-            var start = ProjectReverseBoundary(
-                input,
-                match.Index,
-                ref byteOffset,
-                ref utf16Offset,
-                ref lastSplitUtf16Offset,
-                ref lastSplitByteOffset);
-            checksum = AddMatchCoordinates(
-                checksum,
-                match.Index,
-                match.Length,
-                start,
-                end);
-        }
-
-        return checksum;
-    }
-
-    private static int ExecuteValidatedReverseUtf16ProjectionEnumeration(Regex regex, byte[] input)
-    {
-        _ = Utf8InputAnalyzer.ValidateOnly(input);
-        var decoded = Encoding.UTF8.GetString(input);
-        var byteOffset = input.Length;
-        var utf16Offset = decoded.Length;
-        var lastSplitUtf16Offset = -1;
-        var lastSplitByteOffset = -1;
-        var checksum = 0;
-        foreach (var match in regex.EnumerateMatches(decoded))
-        {
-            var end = ProjectReverseUtf16Boundary(
-                decoded,
-                match.Index + match.Length,
-                ref byteOffset,
-                ref utf16Offset,
-                ref lastSplitUtf16Offset,
-                ref lastSplitByteOffset);
-            var start = ProjectReverseUtf16Boundary(
-                decoded,
-                match.Index,
-                ref byteOffset,
-                ref utf16Offset,
-                ref lastSplitUtf16Offset,
-                ref lastSplitByteOffset);
-            checksum = AddMatchCoordinates(
-                checksum,
-                match.Index,
-                match.Length,
-                start,
-                end);
-        }
-
-        return checksum;
-    }
-
-    private static Utf16Boundary ProjectReverseUtf16Boundary(
-        string decoded,
-        int targetUtf16Offset,
-        ref int byteOffset,
-        ref int utf16Offset,
-        ref int lastSplitUtf16Offset,
-        ref int lastSplitByteOffset)
-    {
-        if (targetUtf16Offset == lastSplitUtf16Offset)
-        {
-            return Utf16Boundary.SurrogateSplitBoundary(lastSplitByteOffset, targetUtf16Offset);
-        }
-
-        if (targetUtf16Offset > utf16Offset)
-        {
-            throw new InvalidOperationException("RTL match ranges were not returned in descending order.");
-        }
-
-        if (targetUtf16Offset > 0 &&
-            targetUtf16Offset < decoded.Length &&
-            char.IsSurrogatePair(decoded[targetUtf16Offset - 1], decoded[targetUtf16Offset]))
-        {
-            var scalarStart = targetUtf16Offset - 1;
-            byteOffset -= Encoding.UTF8.GetByteCount(decoded.AsSpan(scalarStart, utf16Offset - scalarStart));
-            utf16Offset = scalarStart;
-            lastSplitUtf16Offset = targetUtf16Offset;
-            lastSplitByteOffset = byteOffset;
-            return Utf16Boundary.SurrogateSplitBoundary(byteOffset, targetUtf16Offset);
-        }
-
-        byteOffset -= Encoding.UTF8.GetByteCount(
-            decoded.AsSpan(targetUtf16Offset, utf16Offset - targetUtf16Offset));
-        utf16Offset = targetUtf16Offset;
-        return Utf16Boundary.ScalarBoundary(byteOffset, utf16Offset);
-    }
-
-    private static Utf16Boundary ProjectReverseBoundary(
-        byte[] input,
-        int targetUtf16Offset,
-        ref int byteOffset,
-        ref int utf16Offset,
-        ref int lastSplitUtf16Offset,
-        ref int lastSplitByteOffset)
-    {
-        if (targetUtf16Offset == lastSplitUtf16Offset)
-        {
-            return Utf16Boundary.SurrogateSplitBoundary(lastSplitByteOffset, targetUtf16Offset);
-        }
-
-        while (utf16Offset > targetUtf16Offset)
-        {
-            var status = Rune.DecodeLastFromUtf8(input.AsSpan(0, byteOffset), out var rune, out var consumed);
-            if (status != OperationStatus.Done)
-            {
-                throw new InvalidOperationException("Validated UTF-8 input could not be reverse-projected.");
-            }
-
-            byteOffset -= consumed;
-            utf16Offset -= rune.Utf16SequenceLength;
-            if (rune.Utf16SequenceLength == 2 && targetUtf16Offset == utf16Offset + 1)
-            {
-                lastSplitUtf16Offset = targetUtf16Offset;
-                lastSplitByteOffset = byteOffset;
-                return Utf16Boundary.SurrogateSplitBoundary(byteOffset, targetUtf16Offset);
-            }
-        }
-
-        if (utf16Offset != targetUtf16Offset)
-        {
-            throw new InvalidOperationException("RTL match ranges were not returned in descending order.");
-        }
-
-        return Utf16Boundary.ScalarBoundary(byteOffset, utf16Offset);
-    }
-
-    private static int SumUtf8MatchCoordinates(Utf8Regex regex, byte[] input)
-    {
-        var boundaryMap = Utf8BoundaryMap.Create(input);
-        var checksum = 0;
-        foreach (var match in regex.EnumerateMatches(input))
-        {
-            var start = boundaryMap.Resolve(match.IndexInUtf16);
-            var end = boundaryMap.Resolve(match.IndexInUtf16 + match.LengthInUtf16);
-            var expectedAligned = start.IsScalarBoundary && end.IsScalarBoundary;
-            if (match.IsByteAligned != expectedAligned ||
-                (expectedAligned &&
-                 (match.IndexInBytes != start.ByteOffset ||
-                  match.LengthInBytes != end.ByteOffset - start.ByteOffset)))
-            {
-                throw new InvalidOperationException("Utf8Regex match coordinates disagree with the validated boundary map.");
-            }
-
-            checksum = AddMatchCoordinates(
-                checksum,
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                start,
-                end);
-        }
-
-        return checksum;
-    }
-
-    private static int AddMatchCoordinates(
-        int checksum,
-        int indexInUtf16,
-        int lengthInUtf16,
-        Utf16Boundary start,
-        Utf16Boundary end)
-    {
-        checksum = unchecked((checksum * 31) + indexInUtf16);
-        checksum = unchecked((checksum * 31) + lengthInUtf16);
-        checksum = unchecked((checksum * 31) + (start.IsScalarBoundary ? start.ByteOffset : -1));
-        checksum = unchecked((checksum * 31) + (end.IsScalarBoundary ? end.ByteOffset - start.ByteOffset : -1));
-        return checksum;
-    }
-
     private static int CountUtf8Splits(Utf8Regex regex, byte[] input)
     {
         var count = 0;
@@ -7793,8 +7356,6 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var consumedBytes = 0;
-        var consumedUtf16 = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var span = input.AsSpan();
         while (plan.PreparedSearcher.TryFindNextNonOverlappingMatch(span, ref state, out var match))
@@ -7804,17 +7365,7 @@ internal static partial class BenchmarkInspectReporter
                 continue;
             }
 
-            var valueMatch = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
-                plan.EnumerationOperation.Projection,
-                span,
-                plan.AlternateLiteralUtf16Lengths,
-                consumedBytes,
-                consumedUtf16,
-                match,
-                ref invocation,
-                out consumedBytes,
-                out consumedUtf16);
-            sum += valueMatch.IndexInUtf16;
+            sum += match.Index;
         }
 
         return sum;
@@ -7854,8 +7405,6 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var consumedBytes = 0;
-        var consumedUtf16 = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var span = input.AsSpan();
         var budget = Utf8ExecutionDeadline.Infinite;
@@ -7881,17 +7430,7 @@ internal static partial class BenchmarkInspectReporter
                 continue;
             }
 
-            var valueMatch = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
-                plan.EnumerationOperation.Projection,
-                span,
-                plan.AlternateLiteralUtf16Lengths,
-                consumedBytes,
-                consumedUtf16,
-                match,
-                ref invocation,
-                out consumedBytes,
-                out consumedUtf16);
-            sum += valueMatch.IndexInUtf16;
+            sum += match.Index;
         }
     }
 

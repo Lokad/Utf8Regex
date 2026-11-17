@@ -6,11 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8SimplePatternCompiledSearchGuidedRouter
 {
     public static bool TryMatchWithoutValidation(
-        AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan,
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        bool allowsTrailingNewlineBeforeEnd,
-        ReadOnlySpan<byte> input,
-        out Utf8ValueMatch match)
+        AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, bool allowsTrailingNewlineBeforeEnd, ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         if (anchoredBoundedDatePlan.HasValue)
         {
@@ -22,13 +18,13 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
                 out var needsValidation);
             if (directDate)
             {
-                match = new Utf8ValueMatch(true, true, 0, boundedDateLength, 0, boundedDateLength);
+                match = new Utf8CaptureRange(0, (0) + (boundedDateLength));
                 return true;
             }
 
             if (!needsValidation)
             {
-                match = Utf8ValueMatch.NoMatch;
+                match = default(Utf8CaptureRange);
                 return true;
             }
         }
@@ -42,29 +38,23 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
                 out var needsValidation);
             if (directGroup)
             {
-                match = new Utf8ValueMatch(true, true, 0, groupedMatchLength, 0, groupedMatchLength);
+                match = new Utf8CaptureRange(0, (0) + (groupedMatchLength));
                 return true;
             }
 
             if (!needsValidation)
             {
-                match = Utf8ValueMatch.NoMatch;
+                match = default(Utf8CaptureRange);
                 return true;
             }
         }
 
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         return false;
     }
 
     public static bool TryIsMatch(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out bool isMatch)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out bool isMatch)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)
         {
@@ -89,14 +79,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
     }
 
     public static bool TryCount(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
-        Utf8CompiledSymmetricLiteralWindowCounter? compiledSymmetricLiteralWindowCounter,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out int count)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan, Utf8CompiledSymmetricLiteralWindowCounter? compiledSymmetricLiteralWindowCounter, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out int count)
     {
         if (repeatedDigitGroupPlan.HasValue)
         {
@@ -140,23 +123,17 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
     }
 
     public static bool TryMatch(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8ExecutionDeadline budget,
-        out Utf8ValueMatch match)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)
         {
             if (Utf8AsciiRepeatedDigitGroupExecutor.TryFind(input, repeatedDigitGroupPlan, out var groupedIndex, out var groupedLength))
             {
-                match = new Utf8ValueMatch(true, true, groupedIndex, groupedLength, groupedIndex, groupedLength);
+                match = new Utf8CaptureRange(groupedIndex, (groupedIndex) + (groupedLength));
                 return true;
             }
 
-            match = Utf8ValueMatch.NoMatch;
+            match = default(Utf8CaptureRange);
             return true;
         }
 
@@ -172,7 +149,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
             return true;
         }
 
-        match = Utf8ValueMatch.NoMatch;
+        match = default(Utf8CaptureRange);
         return false;
     }
 }

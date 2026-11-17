@@ -267,8 +267,8 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
             Assert.Equal(expected.Success, match.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Index, match.IndexInUtf16);
-                Assert.Equal(expected.Length, match.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
 
             Assert.Equal(oracle.Count(input), product.Count(bytes));
@@ -389,8 +389,8 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         Assert.Equal(expected.Success, match.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, match.IndexInUtf16);
-            Assert.Equal(expected.Length, match.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
             var actualDetailed = Utf8MatchSequence.First(product.CreateMatchCursor(input));
             for (var g = 0; g < expected.Groups.Count; g++)
             {
@@ -430,8 +430,8 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
             Assert.Equal(expected.Success, match.Success);
             if (expected.Success)
             {
-                Assert.Equal(expected.Index, match.IndexInUtf16);
-                Assert.Equal(expected.Length, match.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
 
             Assert.Equal(oracle.Count(input), product.Count(bytes));

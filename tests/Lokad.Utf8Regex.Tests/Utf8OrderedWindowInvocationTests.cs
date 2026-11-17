@@ -91,17 +91,17 @@ public sealed class Utf8OrderedWindowInvocationTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (actualMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-                Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.IndexInBytes, actualMatch.LengthInBytes)));
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
+                Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.StartOffsetInBytes, (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes))));
             }
             var expected = oracle.EnumerateMatches(text);
             var actual = regex.EnumerateMatches(input, token);
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
             }
             Assert.False(actual.MoveNext());
             Assert.False(actual.MoveNext());

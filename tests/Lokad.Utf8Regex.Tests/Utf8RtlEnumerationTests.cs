@@ -56,13 +56,13 @@ public sealed class Utf8RtlEnumerationTests
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -100,13 +100,13 @@ public sealed class Utf8RtlEnumerationTests
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
-            expected.Add((expectedMatch.Index, expectedMatch.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (var valueMatch in regex.EnumerateMatches(input))
         {
-            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected.Count, actual.Count);

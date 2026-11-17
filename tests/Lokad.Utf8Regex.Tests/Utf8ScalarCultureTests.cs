@@ -60,8 +60,8 @@ public sealed class Utf8ScalarCultureTests
                         }
                     }
                     var positions = new List<(int Index, int Length)>();
-                    foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInUtf16, match.LengthInUtf16));
-                    Assert.True(oracle.Matches(text).Select(m => (m.Index, m.Length)).SequenceEqual(positions),
+                    foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                    Assert.True(oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))).SequenceEqual(positions),
                         $"Cursor ranges for pattern {pattern}, subject {text}, culture {culture}, options {options}");
                     var expectedSplits = new List<string>();
                     foreach (var range in oracle.EnumerateSplits(text, int.MaxValue)) expectedSplits.Add(text[range]);
@@ -100,14 +100,14 @@ public sealed class Utf8ScalarCultureTests
                 var value = prefix + "\U0001f600" + (all ? "\U0001f600" : "");
                 Assert.True(regex.IsMatch(input, source.Token));
                 Assert.Equal(1, regex.Count(input, source.Token));
-                Assert.Equal(length, regex.Match(input).LengthInBytes);
+                Assert.Equal(length, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
                 var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
                 Assert.Equal((0, length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
                 Assert.Equal(value, System.Text.Encoding.UTF8.GetString(found.GetValueMemory().Span));
                 Assert.Equal(body.Contains('+') ? "\U0001f600\U0001f600" : "\U0001f600", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
                 var cursor = regex.EnumerateMatches(input, source.Token);
                 Assert.True(cursor.MoveNext());
-                Assert.Equal(length, cursor.Current.LengthInBytes);
+                Assert.Equal(length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
                 Assert.False(cursor.MoveNext());
                 var replacement = "<" + value + ">" + (all ? "" : "\U0001f600");
                 Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>", source.Token));

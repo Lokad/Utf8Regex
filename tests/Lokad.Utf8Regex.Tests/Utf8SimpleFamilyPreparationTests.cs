@@ -65,7 +65,7 @@ public sealed class Utf8SimpleFamilyPreparationTests
 
     private static void Compare(Regex oracle, Utf8Regex regex, string text)
     {
-        var expected = oracle.Matches(text).Select(x => (x.Index, x.Length)).ToArray();
+        var expected = oracle.Matches(text).Select(x => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, x.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(x.Index, x.Length)))).ToArray();
         var bytes = Encoding.UTF8.GetBytes(text);
         for (var offset = 0; offset < 5; offset++)
         {
@@ -75,10 +75,10 @@ public sealed class Utf8SimpleFamilyPreparationTests
             Assert.Equal(expected.Length, regex.Count(input));
             var first = regex.Match(input);
             Assert.Equal(expected.Length != 0, first.Success);
-            if (first.Success) Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+            if (first.Success) Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             var actual = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches(input))
-                actual.Add((match.IndexInBytes, match.LengthInBytes));
+                actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(expected, actual);
         }
     }

@@ -25,11 +25,11 @@ public sealed class Utf8ResidualScalarRouteTests
             var match = regex.Match(input);
             Assert.Equal(index >= 0, match.Success);
             if (match.Success)
-                Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes));
-            var ranges = new List<(int, int)>();
+                    Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                var ranges = new List<(int, int)>();
             foreach (var found in regex.EnumerateMatches(input))
-                ranges.Add((found.IndexInBytes, found.LengthInBytes));
-            Assert.Equal(index >= 0 ? new[] { (index, length) } : Array.Empty<(int, int)>(), ranges);
+                    ranges.Add((found.StartOffsetInBytes, (found.EndOffsetInBytes - found.StartOffsetInBytes)));
+                Assert.Equal(index >= 0 ? new[] { (index, length) } : Array.Empty<(int, int)>(), ranges);
             AssertOwned(regex);
         }
     }
@@ -53,8 +53,8 @@ public sealed class Utf8ResidualScalarRouteTests
             Assert.Equal(expected, regex.ByteOffsetExecution.CountPrepared(input, input.GetBytePosition(0, "start")));
             var match = regex.Match(bytes);
             Assert.Equal(expected != 0, match.Success);
-            if (match.Success) Assert.Equal((0, bytes.Length), (match.IndexInBytes, match.LengthInBytes));
-            AssertOwned(regex);
+                if (match.Success) Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                AssertOwned(regex);
         }
     }
 

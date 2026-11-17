@@ -129,7 +129,10 @@ public sealed class Utf8SliceSparseGroupTests
                 while (expected.MoveNext())
                 {
                     Assert.True(actual.MoveNext());
-                    Assert.True(actual.Current.TryGetByteRange(out var index, out var length));
+                    var rangeResult8358 = actual.Current;
+                    var index = rangeResult8358.StartOffsetInBytes;
+                    var length = (rangeResult8358.EndOffsetInBytes - rangeResult8358.StartOffsetInBytes);
+                    Assert.True(rangeResult8358.Success);
                     Assert.Equal(subject.ByteRange(expected.Current.Index, expected.Current.Length), (index, length));
                 }
                 Assert.False(actual.MoveNext());
@@ -147,8 +150,8 @@ public sealed class Utf8SliceSparseGroupTests
                     // single whole-input result; do not copy the enumerator bug.
                     Assert.Equal(new[] { subject.Projected }, oracle.Split(subject.Projected, count));
                     Assert.True(actual.MoveNext());
-                    Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                    Assert.Equal(text, actual.Current.GetValueString());
+                        Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
+                        Assert.Equal(text, actual.Current.GetValueString());
                     Assert.False(actual.MoveNext());
                     continue;
                 }
@@ -256,18 +259,6 @@ public sealed class Utf8SliceSparseGroupTests
         Assert.Equal(expected.Success, actual.Success);
         var (start, length) = subject.ByteRange(expected.Index, expected.Length);
         Assert.Equal((start, start + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
-    }
-
-    internal static void AssertValue(Match expected, Utf8ValueMatch actual, Utf8ScalarCaptureFixture.Subject? subject = null)
-    {
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(subject?.UnitRange(expected.Index, expected.Length) ?? (expected.Index, expected.Length),
-            (actual.IndexInUtf16, actual.LengthInUtf16));
-        if (subject is not null && expected.Success)
-        {
-            Assert.True(actual.TryGetByteRange(out var index, out var length));
-            Assert.Equal(subject.ByteRange(expected.Index, expected.Length), (index, length));
-        }
     }
 
 

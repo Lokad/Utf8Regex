@@ -32,7 +32,7 @@ using Lokad.Utf8Regex;
 
 var regex = new Utf8Regex(".");
 int count = regex.Count("A😀"u8); // 2 scalars
-var match = regex.Match("😀"u8); // 4 bytes, 2 derived UTF-16 units
+var match = regex.Match("😀"u8); // Utf8CaptureRange: byte endpoints [0, 4)
 ```
 
 Core's `Utf8InputValidation.Validate` is the default: it checks the entire subject,
@@ -42,8 +42,8 @@ construction or through a factory only when the host guarantees valid UTF-8 and
 unchanged borrowed bytes. Read-only `InputValidation` reports that choice.
 Supported Core matching, counting, replacement, splitting and cursor operations inherit
 it. Pattern/replacement validation keeps its separate profile rules. There is no
-per-call validation override. Required coordinates and result shaping may still
-scan input.
+per-call validation override. Match results expose byte endpoints only; callers
+derive any character positions. Required result shaping may still scan input.
 
 PythonRe models Python `re` over `str`; PythonRe and POSIX take already-valid,
 unchanged UTF-8 text without regex-operation validity passes or validation options.

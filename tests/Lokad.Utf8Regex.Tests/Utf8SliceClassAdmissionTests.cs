@@ -115,8 +115,8 @@ public sealed class Utf8SliceClassAdmissionTests
         while (expected.MoveNext())
         {
             Assert.True(actual.MoveNext());
-            Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-            Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
         }
         Assert.False(actual.MoveNext());
         foreach (var offset in new[] { 0, 1, 2, text.Length })

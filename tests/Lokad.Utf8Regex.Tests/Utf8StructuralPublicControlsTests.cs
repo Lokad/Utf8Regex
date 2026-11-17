@@ -27,12 +27,11 @@ public sealed class Utf8StructuralPublicControlsTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
             var first = regex.Match(input);
-            Assert.Equal((7, Encoding.UTF8.GetByteCount(value), 4, value.Length),
-                (first.IndexInBytes, first.LengthInBytes, first.IndexInUtf16, first.LengthInUtf16));
+            Assert.Equal((7, Encoding.UTF8.GetByteCount(value)), (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             var count = 0;
             foreach (var match in regex.EnumerateMatches(input))
             {
-                Assert.Equal((first.IndexInBytes, first.LengthInBytes), (match.IndexInBytes, match.LengthInBytes));
+                Assert.Equal((first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 count++;
             }
             Assert.Equal(1, count);

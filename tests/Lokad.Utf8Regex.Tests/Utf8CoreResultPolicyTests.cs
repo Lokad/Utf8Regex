@@ -79,7 +79,7 @@ public sealed class Utf8CoreResultPolicyTests
         catch (RegexMatchTimeoutException error) { Assert.Empty(error.Input); Assert.Equal(".", error.Pattern); }
         try { _ = alias.MoveNext(); Assert.Fail("A copy must keep the same deadline."); }
         catch (RegexMatchTimeoutException error) { Assert.Empty(error.Input); }
-        Assert.Equal((0, 4), (retained.IndexInBytes, retained.LengthInBytes));
+        Assert.Equal((0, 4), (retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)));
         Assert.Equal("😀"u8.ToArray(), input[..4]);
 
         ticks = 0;
@@ -109,7 +109,7 @@ public sealed class Utf8CoreResultPolicyTests
         var expected = Run(new Utf8Regex(pattern, options), operation, input, token);
         Assert.Equal(expected, Run(Create(pattern, 1000000, options), operation, input, token));
         Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, options), operation, input, token));
-        if (operation is "is" or "count" or "match" or "slot-match" or "split" or "split-count")
+        if (operation is "is" or "count" or "match" or "slot-match" or "matches" or "matches-offset" or "split" or "split-count")
             Assert.Equal(expected, Run(Create(pattern, 1, options), operation, input, token));
         else AssertResultFailure(() => Run(Create(pattern, 1, options), operation, input, token), 1);
     }
@@ -171,7 +171,7 @@ public sealed class Utf8CoreResultPolicyTests
             Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);
-        Assert.Equal(4, dot.Match("😀"u8).LengthInBytes);
+        Assert.Equal(4, (dot.Match("😀"u8).EndOffsetInBytes - dot.Match("😀"u8).StartOffsetInBytes));
     }
 
     [Fact]
@@ -184,23 +184,6 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal(1, context.GetCaptures(regex.GroupNumberFromName("x")).Length);
         Assert.Equal("中", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         AssertResultFailure(() => Utf8MatchSequence.First(Create("(?<x>.)+", 1, options).CreateMatchCursor(input)), 1);
-    }
-
-    [Fact]
-    public void MajorMapAllocationIsDeniedBeforeAcquisitionAndPreservesBorrowedCapacity()
-    {
-        var validation = new Utf8ValidationResult(0, 5000000, false, false);
-        var warm = new Utf8SliceInvocation(new(0, 0, 0, 1), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, Utf8BoundaryMap.TryCreate([], validation, ref warm, out _, out _));
-        var invocation = new Utf8SliceInvocation(new(0, 0, 0, 1), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var failure = Utf8BoundaryMap.TryCreate([], validation, ref invocation, out _, out var reservation);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, failure);
-        Assert.Equal(0UL, reservation);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        Assert.True(allocated < 16384, $"Denied map allocated {allocated} bytes.");
     }
 
     [Fact]
@@ -225,42 +208,52 @@ public sealed class Utf8CoreResultPolicyTests
     [Fact]
     public void ResultTrafficIsSharedAcrossInvocationCopiesAndNeverRefundedByRelease()
     {
-        var input = "é😀"u8;
-        var validation = Utf8Validation.Validate(input);
+        var program = new Utf8Regex("(?<x>a)+").Inspection.AvailableOwnedSliceProgram!;
         var probe = new Utf8SliceInvocation(new(0, 0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        var map = Utf8BoundaryMap.Create(input, validation, ref probe, out var bytes);
-        probe.Ledger.Release(bytes);
-        Assert.Equal(bytes, probe.Budget.ResultBytes);
+        var first = Collect(ref probe);
+        var bytes = probe.Budget.ResultBytes;
+        Assert.True(bytes > 0);
         var invocation = new Utf8SliceInvocation(new(0, 0, 0, bytes), Regex.InfiniteMatchTimeout, default);
-        var retained = Utf8BoundaryMap.Create(input, validation, ref invocation, out var firstBytes);
+        var retained = Collect(ref invocation);
         var alias = invocation;
-        invocation.Ledger.Release(firstBytes);
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, Utf8BoundaryMap.TryCreate(input, validation, ref alias, out _, out _));
+        Assert.Equal(bytes, alias.Budget.ResultBytes);
+        var denied = Collect(ref alias);
+        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, denied.Breach);
+        Assert.False(denied.Found);
         Assert.Equal(alias.Budget.ResultBytes, invocation.Budget.ResultBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(3, retained.GetUtf16OffsetForByteOffset(6));
-        Assert.Equal(map.ByteLength, retained.ByteLength);
+        Assert.Equal(first.CaptureStarts![0], retained.CaptureStarts![0]);
+        Assert.Equal(first.CaptureLengths![0], retained.CaptureLengths![0]);
+
+        Utf8SliceSearchOutcome Collect(ref Utf8SliceInvocation state)
+        {
+            var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref state);
+            var outcome = default(Utf8SliceSearchOutcome);
+            try { return outcome = Utf8SliceRunner.TryFindFirst(program, "aa"u8, 0, slots.Starts, slots.Ends, true, ref state); }
+            finally
+            {
+                Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref state);
+                Utf8SliceRunner.ReleaseSlots(slots, ref state);
+            }
+        }
     }
 
     [Fact]
-    public void CopiedPublicCursorsAndRetainedViewsRemainValidWithExactMapAdmission()
+    public void CopiedPublicByteRangesAndSplitViewsNeedNoResultPayloadCapacity()
     {
         var input = Encoding.UTF8.GetBytes("é😀 ab ab");
-        var probe = new Utf8SliceInvocation(new(0, 0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8Validation.Validate(input);
-        _ = Utf8BoundaryMap.Create(input, validation, ref probe, out var bytes);
-        var regex = Create("ab", bytes);
+        var regex = Create("ab", 1);
         var cursor = regex.EnumerateMatches(input);
         var copy = cursor;
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;
         Assert.True(copy.MoveNext());
-        Assert.Equal(retained.IndexInBytes, copy.Current.IndexInBytes);
+        Assert.Equal(retained.StartOffsetInBytes, copy.Current.StartOffsetInBytes);
         Assert.True(cursor.MoveNext());
         Assert.False(cursor.MoveNext());
         Assert.True(copy.MoveNext());
         Assert.False(copy.MoveNext());
-        Assert.Equal("ab", Encoding.UTF8.GetString(input.AsSpan(retained.IndexInBytes, retained.LengthInBytes)));
+        Assert.Equal("ab", Encoding.UTF8.GetString(input.AsSpan(retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes))));
         var splits = regex.EnumerateSplits(input);
         Assert.True(splits.MoveNext());
         var view = splits.Current;

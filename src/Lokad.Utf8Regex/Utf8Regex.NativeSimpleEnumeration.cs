@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex;
 /// <summary>Transfers the caller invocation into simple-pattern enumeration.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryCreateNativeSimpleEnumerator(ReadOnlySpan<byte> input, CancellationToken token,
-        out Utf8ValueMatchEnumerator enumerator)
+    private bool TryCreateNativeSimpleEnumerator(ReadOnlySpan<byte> input, CancellationToken token, out Utf8ValueMatchEnumerator enumerator)
     {
         enumerator = default;
         if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
@@ -28,9 +27,10 @@ public sealed partial class Utf8Regex
             // guarantees complete UTF-8 boundaries. Keep the same invocation.
             var byteSafe = _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue
                 ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
+            invocation.ShareStorageForCursor();
             var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
-                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, out _);
+                : new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
         }

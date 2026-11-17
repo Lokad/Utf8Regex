@@ -76,7 +76,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
         }
         var alternative = new Utf8Regex("\ud83d|a", options);
         var match = alternative.Match("\ufffda"u8);
-        Assert.Equal((3, 1), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((3, 1), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         AssertOwned(alternative);
     }
 

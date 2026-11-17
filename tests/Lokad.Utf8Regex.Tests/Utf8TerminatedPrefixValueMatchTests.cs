@@ -29,7 +29,7 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
             try
             {
                 var actual = regex.Match(storage.AsSpan(1, bytes.Length), token.Token);
-                Assert.Equal(success, actual.Success); Assert.Equal(expected.Length, actual.LengthInUtf16);
+                Assert.Equal(success, actual.Success); Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                 Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, diagnostics.ExecutionRoute);
             }
             finally { diagnostics.Complete(); }
@@ -41,9 +41,9 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
     public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var bytes = Encoding.ASCII.GetBytes("///" + new string('x', length - 4) + "\n");
-        Assert.Equal(length, new Utf8Regex(Pattern).Match(bytes).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern).Match(bytes).EndOffsetInBytes - new Utf8Regex(Pattern).Match(bytes).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 });
-        Assert.Equal(length, tight.Match(bytes).LengthInBytes);
+        Assert.Equal(length, (tight.Match(bytes).EndOffsetInBytes - tight.Match(bytes).StartOffsetInBytes));
     }
 
     [Fact]
@@ -70,8 +70,8 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         {
             var expected = new Regex(pattern, options).Match(text);
             var actual = new Utf8Regex(pattern, options).Match(Encoding.UTF8.GetBytes(text));
-            Assert.Equal((expected.Success, expected.Index, expected.Length), (actual.Success, actual.IndexInUtf16, actual.LengthInUtf16));
-        }
+                    Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                }
         byte[] malformed = [.. input, 0xff]; Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);

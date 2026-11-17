@@ -66,7 +66,7 @@ public sealed class Utf8CoreDepthPolicyTests
         var cursor = regex.EnumerateMatches(input); Assert.True(cursor.MoveNext()); var retained = cursor.Current; var alias = cursor;
         try { alias.MoveNext(); Assert.Fail("Depth denial must remain an exception."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
         try { cursor.MoveNext(); Assert.Fail("Aliases must share the first denial."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
-        Assert.Equal(0, retained.IndexInBytes); Assert.Equal(2, retained.LengthInBytes);
+        Assert.Equal(0, retained.StartOffsetInBytes); Assert.Equal(2, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
         Assert.True(regex.IsMatch("ab"u8)); // A separate invocation keeps its own authority.
     }
     [Theory]
@@ -142,7 +142,7 @@ public sealed class Utf8CoreDepthPolicyTests
         // stack; table width is workspace, not execution depth.
         var cursor = Create(prefix, 1, options).EnumerateMatches("😀"u8);
         Assert.True(cursor.MoveNext());
-        Assert.Equal(4, cursor.Current.LengthInBytes);
+        Assert.Equal(4, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
         Assert.False(cursor.MoveNext());
         smallInvocation.Ledger.Release(7);
         largeInvocation.Ledger.Release(7);

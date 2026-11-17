@@ -34,7 +34,7 @@ public sealed class KelvinSimplePatternRegressionTests
             var actualValues = new List<string>();
             foreach (var match in actual.EnumerateMatches(utf8))
             {
-                actualValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+                actualValues.Add(Encoding.UTF8.GetString(utf8.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
             }
             Assert.Equal(expectedValues, actualValues);
         }

@@ -116,7 +116,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
         Assert.True(regex.Inspection.SearchPlan.PrefilterPlan.HasValue);
         Assert.Equal(PreparedSearcherKind.ExactLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
         var match = regex.Match("😀 # noqa: A123, B456"u8);
-        Assert.True(match.Success); Assert.Equal(5, match.IndexInBytes);
+        Assert.True(match.Success); Assert.Equal(5, match.StartOffsetInBytes);
         Assert.Equal(1, regex.Count("😀 # noqa: A123, B456"u8));
     }
 

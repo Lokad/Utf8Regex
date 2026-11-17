@@ -153,8 +153,8 @@ public sealed class Utf8SliceNonBacktrackingTests
         Assert.Equal(expected.Success, found.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Index, found.IndexInUtf16);
-            Assert.Equal(expected.Length, found.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), found.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), (found.EndOffsetInBytes - found.StartOffsetInBytes));
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -270,8 +270,8 @@ public sealed class Utf8SliceNonBacktrackingTests
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (expectedMatch.Success)
             {
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var detailedRegex = new Utf8Regex(pattern, options);
@@ -287,12 +287,12 @@ public sealed class Utf8SliceNonBacktrackingTests
             var expectedPositions = new System.Collections.Generic.List<string>();
             foreach (Match m in oracle.Matches(text))
             {
-                expectedPositions.Add(m.Index + ":" + m.Length);
+                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
             }
             var actualPositions = new System.Collections.Generic.List<string>();
             foreach (var m in enumerateRegex.EnumerateMatches(input))
             {
-                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
             }
             Assert.Equal(expectedPositions, actualPositions);
             Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);

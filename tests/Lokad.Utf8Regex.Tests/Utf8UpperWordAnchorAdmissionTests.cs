@@ -134,7 +134,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
         byte[] input = Encoding.UTF8.GetBytes("😀 class Worker_State; érecord Bogus; record CustomerExportJob; struct worker_state");
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         Assert.Equal(2, regex.Count(input));
-        var first = regex.Match(input); Assert.Equal(5, first.IndexInBytes);
-        Assert.Equal("class Worker_State"u8.ToArray(), input.AsSpan(first.IndexInBytes, first.LengthInBytes).ToArray());
+        var first = regex.Match(input); Assert.Equal(5, first.StartOffsetInBytes);
+        Assert.Equal("class Worker_State"u8.ToArray(), input.AsSpan(first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)).ToArray());
     }
 }

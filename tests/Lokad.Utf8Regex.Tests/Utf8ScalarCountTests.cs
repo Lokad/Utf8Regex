@@ -85,13 +85,11 @@ public sealed class Utf8ScalarCountTests
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, validation, deadline);
         int[] bytes = [0, 2, 6, 10, 11];
-        int[] units = [0, 1, 3, 5, 6];
         for (var index = 0; index < bytes.Length; index++)
         {
             Assert.True(cursor.MoveNext());
-            Assert.True(cursor.CurrentValueMatch.IsByteAligned);
-            Assert.Equal(bytes[index], cursor.CurrentValueMatch.IndexInBytes);
-            Assert.Equal(units[index], cursor.CurrentValueMatch.IndexInUtf16);
+            Assert.True(cursor.CurrentValueMatch.Success);
+            Assert.Equal(bytes[index], cursor.CurrentValueMatch.StartOffsetInBytes);
         }
         Assert.False(cursor.MoveNext());
     }
@@ -137,7 +135,7 @@ public sealed class Utf8ScalarCountTests
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(input));
         Assert.Equal(boundaries.Length, regex.Count(input));
-        Assert.Equal(reverse ? input.Length : 0, regex.Match(input).IndexInBytes);
+        Assert.Equal(reverse ? input.Length : 0, regex.Match(input).StartOffsetInBytes);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(1, detailed.GroupNumbers.Length);
         Assert.Equal(reverse ? input.Length : 0, detailed.Value.StartOffsetInBytes);
@@ -150,9 +148,9 @@ public sealed class Utf8ScalarCountTests
             foreach (var position in expectedBytes)
             {
                 Assert.True(cursor.MoveNext());
-                Assert.True(cursor.Current.IsByteAligned);
-                Assert.Equal(position, cursor.Current.IndexInBytes);
-                Assert.Equal(0, cursor.Current.LengthInBytes);
+                Assert.True(cursor.Current.Success);
+                Assert.Equal(position, cursor.Current.StartOffsetInBytes);
+                Assert.Equal(0, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
             }
             Assert.False(cursor.MoveNext());
         }

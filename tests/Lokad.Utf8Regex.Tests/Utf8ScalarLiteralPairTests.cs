@@ -46,7 +46,7 @@ public sealed class Utf8ScalarLiteralPairTests
     private static (int Index, int Length)[] Ranges(Utf8Regex regex, byte[] input)
     {
         var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         return ranges.ToArray();
     }
 

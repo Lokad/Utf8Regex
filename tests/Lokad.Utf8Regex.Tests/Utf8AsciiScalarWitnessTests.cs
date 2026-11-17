@@ -69,7 +69,10 @@ public sealed class Utf8AsciiScalarWitnessTests
         foreach (var range in expected)
         {
             Assert.True(cursor.MoveNext());
-            Assert.True(cursor.Current.TryGetByteRange(out var index, out var length));
+            var rangeResult3010 = cursor.Current;
+            var index = rangeResult3010.StartOffsetInBytes;
+            var length = (rangeResult3010.EndOffsetInBytes - rangeResult3010.StartOffsetInBytes);
+            Assert.True(rangeResult3010.Success);
             Assert.Equal(range, (index, length));
         }
         Assert.False(cursor.MoveNext());

@@ -6,10 +6,9 @@ internal ref partial struct Utf8OperationMatchCursor
 
     // Count one retains the invocation alone. Other splits consume actual byte
     // outcomes from the same scalar discovery as legacy match enumeration.
-    internal static Utf8OperationMatchCursor CreateSplitCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8SliceInvocation invocation, bool tailOnly)
+    internal static Utf8OperationMatchCursor CreateSplitCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation, bool tailOnly)
         => tailOnly ? new Utf8OperationMatchCursor(input, invocation)
-            : new Utf8OperationMatchCursor(program, input, null, invocation, program.RightToLeft ? input.Length : 0);
+            : new Utf8OperationMatchCursor(program, input, invocation, program.RightToLeft ? input.Length : 0);
 
     private Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
     {
@@ -26,7 +25,7 @@ internal ref partial struct Utf8OperationMatchCursor
         range = default;
         if (!MoveNext()) return false;
         var match = CurrentValueMatch;
-        range = new Utf8CaptureRange(match.IndexInBytes, match.IndexInBytes + match.LengthInBytes);
+        range = new Utf8CaptureRange(match.StartOffsetInBytes, match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes));
         return true;
     }
 

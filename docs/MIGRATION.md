@@ -68,7 +68,7 @@ Core replaces `EnumerateMatchesFromUtf16Offset` with a byte-start overload:
 var regex = new Utf8Regex("x");
 foreach (var match in regex.EnumerateMatches("é😀x"u8, startOffsetInBytes: 6))
 {
-    // match.IndexInBytes == 6; match.LengthInBytes == 1
+    // match.StartOffsetInBytes == 6; match.EndOffsetInBytes == 7
 }
 ```
 
@@ -76,8 +76,18 @@ Pass a scalar boundary in the original input, not a position in a sliced suffix.
 Lookbehind and anchors retain the full subject; RTL uses the supplied byte start
 as its right-hand search boundary. Empty progress advances by complete scalars.
 An optional cancellation token remains active with the same deadline and cumulative
-resource limits throughout enumeration. This change does not yet remove the
-remaining UTF-16 result properties on legacy whole-subject results.
+resource limits throughout enumeration. Whole-subject `Match` and enumeration
+now return the existing `Utf8CaptureRange`: `Success`, `StartOffsetInBytes` and
+`EndOffsetInBytes`. `Utf8ValueMatch`, its constructors, UTF-16 fields, alignment
+flag and optional byte-range getter are removed. The default range is unsuccessful
+with zero endpoints; a successful empty match has equal endpoints and `Success`
+true. Callers derive character positions themselves. These results retain no
+subject owner. Cursor copies retain independent positions and shared invocation
+limits; already-published ranges remain valid after advance or failure.
+
+Matching cursors no longer prepare coordinate maps or scan gaps for UTF-16 totals.
+Modeled work and working/result capacity requirements can decrease. Original
+byte context, scalar progress, cancellation and deadlines remain enforced.
 
 Split results now expose only `IndexInBytes` and `LengthInBytes`. Remove uses of
 `IndexInUtf16`, `LengthInUtf16` and `IsByteAligned` on `Utf8ValueSplit`; Core split
@@ -97,8 +107,8 @@ foreach (var match in regex.EnumerateMatches("é😀x x"u8, startOffsetInBytes: 
 ```
 
 One enumeration preserves cumulative work, deadline, cancellation and resource
-admission. Its current coordinate/result preparation can require more work or
-storage than the removed offset counter. The whole-subject Count implementation
+admission. Its matching scratch can require more work or storage than the
+removed offset counter. The whole-subject Count implementation
 is unchanged by this API removal.
 
 ### Byte-start matching with captures

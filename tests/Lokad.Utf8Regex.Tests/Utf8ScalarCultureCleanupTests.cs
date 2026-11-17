@@ -43,7 +43,7 @@ public sealed class Utf8ScalarCultureCleanupTests
             var input = Encoding.UTF8.GetBytes(text);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
-            Assert.Equal(input.Length, regex.Match(input).LengthInBytes);
+            Assert.Equal(input.Length, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
@@ -54,7 +54,7 @@ public sealed class Utf8ScalarCultureCleanupTests
             Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
-            Assert.Equal(input.Length, cursor.Current.LengthInBytes);
+            Assert.Equal(input.Length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
             Assert.False(cursor.MoveNext());
             var splits = new List<string>();
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
@@ -98,8 +98,8 @@ public sealed class Utf8ScalarCultureCleanupTests
                 if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
                 Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
                 var positions = new List<(int, int)>();
-                foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInUtf16, match.LengthInUtf16));
-                Assert.Equal(oracle.Matches(text).Select(m => (m.Index, m.Length)), positions);
+                foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal(oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))), positions);
             }
         }
         finally { CultureInfo.CurrentCulture = saved; }

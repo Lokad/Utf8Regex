@@ -37,7 +37,7 @@ public sealed class Utf8TokenClassificationScalarTests
             var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-            Assert.Equal((index, length), (match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
@@ -172,8 +172,8 @@ public sealed class Utf8TokenClassificationScalarTests
             {
                 var input = Encoding.UTF8.GetBytes(text); var expected = oracle.Match(text);
                 Assert.Equal(oracle.Count(text), prepared.Count(input)); Assert.Equal(expected.Success, prepared.TryFindNext(input, 0, out var index, out var length));
-                if (expected.Success) Assert.Equal((expected.Index, expected.Length), (index, length));
-            }
+                    if (expected.Success) Assert.Equal((expected.Index, expected.Length), (index, length));
+                }
         }
         ScalarRange("[a]+::[xy]+\\.[12]+", "a::xy.12", 0, 8);
     }

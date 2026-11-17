@@ -158,17 +158,6 @@ public sealed class Utf8CoreWorkingPolicyTests
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
     }
 
-    [Fact]
-    public void ArrayRepresentabilityFailureDoesNotInventAConfiguredBudgetDenial()
-    {
-        var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
-            Utf8BoundaryMap.TryCreate([], new(0, int.MaxValue, false, false), ref invocation, out _, out _));
-        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Throws<InvalidOperationException>(() => invocation.Budget.CreateResourceFailure());
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -180,7 +169,8 @@ public sealed class Utf8CoreWorkingPolicyTests
         var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var probe = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, out _);
+        invocation.ShareStorageForCursor();
+        var probe = new Utf8OperationMatchCursor(program, input, invocation);
         Assert.True(probe.MoveNext());
         var cap = probe.DebugPeakWorkingBytes;
         var regex = Create(pattern, cap, options);
@@ -192,7 +182,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         catch (Utf8ResourceLimitExceededException error) { Denied(error, cap); }
         try { cursor.MoveNext(); Assert.Fail("Copies must share the first denial."); }
         catch (Utf8ResourceLimitExceededException error) { Denied(error, cap); }
-        Assert.Equal((0, 2), (retained.IndexInBytes, retained.LengthInBytes));
+        Assert.Equal((0, 2), (retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)));
         Assert.True(regex.IsMatch("ab"u8));
     }
 

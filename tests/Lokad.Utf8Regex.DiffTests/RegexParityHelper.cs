@@ -130,11 +130,11 @@ internal sealed class RegexParityContext
         return count;
     }
 
-    private static void AssertEquivalentMatch(Match expected, Utf8ValueMatch actual)
+    private void AssertEquivalentMatch(Match expected, Utf8CaptureRange actual)
     {
         Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(Encoding.UTF8.GetByteCount(Case.Input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
     }
 
     private void AssertEquivalentCaptureMatch(Regex oracle, Match expected, Utf8RangeMatch actual)

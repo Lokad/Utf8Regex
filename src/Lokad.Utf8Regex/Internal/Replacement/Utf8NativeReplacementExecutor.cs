@@ -18,9 +18,7 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     public static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        ref Utf8OperationMatchCursor cursor)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, ref Utf8OperationMatchCursor cursor)
     {
         var ledger = new Utf8ReplacementRangeLedger();
         try
@@ -49,18 +47,15 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static Utf8ReplacementOutputLength BuildRanges(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        ref Utf8OperationMatchCursor cursor,
-        ref Utf8ReplacementRangeLedger ledger)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, ref Utf8OperationMatchCursor cursor, ref Utf8ReplacementRangeLedger ledger)
     {
         var outputLength = new Utf8ReplacementOutputLength(input.Length);
         while (cursor.MoveNext())
         {
             var current = cursor.CurrentValueMatch;
-            ledger.Add(new Utf8ReplacementRange(current.IndexInBytes, current.LengthInBytes), cursor.WorkingBufferControl);
+            ledger.Add(new Utf8ReplacementRange(current.StartOffsetInBytes, (current.EndOffsetInBytes - current.StartOffsetInBytes)), cursor.WorkingBufferControl);
             outputLength.ReplaceRange(
-                current.LengthInBytes,
+                (current.EndOffsetInBytes - current.StartOffsetInBytes),
                 GetReplacementLength(input, plan, current));
         }
 
@@ -68,9 +63,7 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static int GetReplacementLength(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        Utf8ValueMatch match)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Utf8CaptureRange match)
     {
         var length = 0;
         foreach (var instruction in plan.Instructions)
@@ -80,10 +73,10 @@ internal static class Utf8NativeReplacementExecutor
                 length += instruction.Kind switch
                 {
                     Utf8ReplacementInstructionKind.Literal => instruction.LiteralUtf8.Length,
-                    Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0 => match.LengthInBytes,
-                    Utf8ReplacementInstructionKind.WholeMatch => match.LengthInBytes,
-                    Utf8ReplacementInstructionKind.LeftPortion => match.IndexInBytes,
-                    Utf8ReplacementInstructionKind.RightPortion => input.Length - (match.IndexInBytes + match.LengthInBytes),
+                    Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0 => (match.EndOffsetInBytes - match.StartOffsetInBytes),
+                    Utf8ReplacementInstructionKind.WholeMatch => (match.EndOffsetInBytes - match.StartOffsetInBytes),
+                    Utf8ReplacementInstructionKind.LeftPortion => match.StartOffsetInBytes,
+                    Utf8ReplacementInstructionKind.RightPortion => input.Length - (match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes)),
                     Utf8ReplacementInstructionKind.WholeString => input.Length,
                     _ => 0,
                 };
@@ -94,10 +87,7 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static byte[] EmitAllocated(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        Utf8ReplacementOutputLength outputLength,
-        ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Utf8ReplacementOutputLength outputLength, ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
     {
         var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, control, out var reservation);
         try
@@ -110,10 +100,7 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static void Emit(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> ranges, scoped Utf8InvocationBufferControl control)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Span<byte> destination, ReadOnlySpan<Utf8ReplacementRange> ranges, scoped Utf8InvocationBufferControl control)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);
@@ -128,10 +115,7 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static void AppendReplacement(
-        ref Utf8ReplacementOutputSink sink,
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        Utf8ReplacementRange match, scoped Utf8InvocationBufferControl control)
+        ref Utf8ReplacementOutputSink sink, ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Utf8ReplacementRange match, scoped Utf8InvocationBufferControl control)
     {
         foreach (var instruction in plan.Instructions)
         {

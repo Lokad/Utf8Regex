@@ -47,8 +47,8 @@ public sealed class Utf8UnobservedValueCaptureTests
         Assert.Equal(1, regex.Count(input, token.Token));
         var value = regex.Match(input, token.Token);
         Assert.True(value.Success);
-        Assert.Equal(2, value.IndexInBytes);
-        Assert.Equal(9, value.LengthInBytes);
+        Assert.Equal(2, value.StartOffsetInBytes);
+        Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
         using var cursor = regex.CreateMatchCursor(input);
@@ -82,7 +82,7 @@ public sealed class Utf8UnobservedValueCaptureTests
         var admitted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 256, MaxWorkSteps = 100000 });
         Assert.True(admitted.IsMatch(input));
-        Assert.Equal(9, admitted.Match(input).LengthInBytes);
+        Assert.Equal(9, (admitted.Match(input).EndOffsetInBytes - admitted.Match(input).StartOffsetInBytes));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(admitted.CreateMatchCursor(input))).ResourceKind);
         var denied = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,

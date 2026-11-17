@@ -15,7 +15,7 @@ public sealed class Utf8RegexEnumerateAsciiSimplePatternDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();
@@ -36,7 +36,7 @@ public sealed class Utf8RegexEnumerateAsciiSimplePatternDiffTests
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+            actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         var expected = new List<(int Index, int Length)>();

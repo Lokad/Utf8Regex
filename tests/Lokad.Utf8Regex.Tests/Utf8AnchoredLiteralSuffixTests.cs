@@ -125,8 +125,8 @@ public sealed class Utf8AnchoredLiteralSuffixTests
             Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             if (expected.Success)
             {
-                Assert.Equal(expected.Index, actual.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
         }
     }
@@ -181,7 +181,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
                 actualCount++;
                 // Suffix matches end at the input end (or right before a single
                 // trailing line feed for the lax `$`/`\Z` forms).
-                var endInBytes = enumerator.Current.IndexInBytes + enumerator.Current.LengthInBytes;
+                var endInBytes = enumerator.Current.StartOffsetInBytes + (enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes);
                 Assert.True(endInBytes == input.Length || (endInBytes == input.Length - 1 && input[input.Length - 1] == (byte)'\n'));
             }
 

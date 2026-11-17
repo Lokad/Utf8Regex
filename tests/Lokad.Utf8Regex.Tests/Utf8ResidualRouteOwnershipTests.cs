@@ -33,7 +33,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches(bytes, start.Value)));
         var enumerated = new List<(int, int)>();
         foreach (var value in regex.ByteOffsetExecution.EnumerateMatches(subject, start))
-            enumerated.Add((value.IndexInBytes, value.LengthInBytes));
+            enumerated.Add((value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
         Assert.Equal([(12, length)], enumerated);
         Assert.False(regex.Match(bytes, bytes.Length, []).Success);
         AssertNoBclEngine(regex);
@@ -49,7 +49,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         var regex = new Utf8Regex(@"\bword\b", Options(compiled) | RegexOptions.RightToLeft);
         var input = Encoding.UTF8.GetBytes(supplementary ? "𐐀word word😀 word" : "word word");
         var actual = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         (int, int)[] expected = supplementary ? [(18, 4), (9, 4)] : [(5, 4), (0, 4)];
         Assert.Equal(expected, actual);
         AssertNoBclEngine(regex);
@@ -67,7 +67,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", Options(compiled));
         var match = regex.Match(Encoding.UTF8.GetBytes(text));
         Assert.Equal(success, match.Success);
-        if (success) Assert.Equal((0, 7), (match.IndexInBytes, match.LengthInBytes));
+        if (success) Assert.Equal((0, 7), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         AssertNoBclEngine(regex);
     }
 
@@ -107,7 +107,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
             Assert.Equal(success ? 1 : 0, regex.Count(bytes));
             var value = regex.Match(bytes);
             Assert.Equal(success, value.Success);
-            if (success) Assert.Equal((0, bytes.Length), (value.IndexInBytes, value.LengthInBytes));
+            if (success) Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
             Assert.Equal(success, Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).Success);
             Assert.Equal(success ? "Q" : text, Encoding.UTF8.GetString(regex.Replace(bytes, "Q")));
             AssertNoBclEngine(regex);

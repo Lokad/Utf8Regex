@@ -81,12 +81,12 @@ public sealed class RightToLeftEnumerationTests
 
             foreach (var match in expected.EnumerateMatches(input, utf16Offset))
             {
-                expectedMatches.Add((match.Index, match.Length));
+                expectedMatches.Add((System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(match.Index, match.Length))));
             }
 
             foreach (var match in actual.EnumerateMatches(bytes, Encoding.UTF8.GetByteCount(input.AsSpan(0, utf16Offset))))
             {
-                actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
+                actualMatches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             }
 
             Assert.Equal(expectedMatches, actualMatches);
@@ -107,10 +107,10 @@ public sealed class RightToLeftEnumerationTests
             var actual = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
             var bytes = Encoding.UTF8.GetBytes(input);
             var expectedMatches = new List<(int Index, int Length)>();
-            var actualMatches = new List<Utf8ValueMatch>();
+            var actualMatches = new List<Utf8CaptureRange>();
             foreach (var match in expected.EnumerateMatches(input))
             {
-                expectedMatches.Add((match.Index, match.Length));
+                expectedMatches.Add((System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(match.Index, match.Length))));
             }
 
             foreach (var match in actual.EnumerateMatches(bytes))
@@ -123,25 +123,11 @@ public sealed class RightToLeftEnumerationTests
             {
                 var expectedMatch = expectedMatches[i];
                 var actualMatch = actualMatches[i];
-                var expectedAligned = IsScalarBoundary(input, expectedMatch.Index) &&
-                    IsScalarBoundary(input, expectedMatch.Index + expectedMatch.Length);
-
-                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-                Assert.Equal(expectedAligned, actualMatch.IsByteAligned);
-                if (expectedAligned)
-                {
-                    Assert.Equal(
-                        Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)),
-                        actualMatch.IndexInBytes);
-                    Assert.Equal(
-                        Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)),
-                        actualMatch.LengthInBytes);
-                }
-                else
-                {
-                    Assert.False(actualMatch.TryGetByteRange(out _, out _));
-                }
+                Assert.True(actualMatch.Success);
+                Assert.Equal((expectedMatch.Index, expectedMatch.Length),
+                    (actualMatch.StartOffsetInBytes, actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
+                Assert.True(actualMatch.StartOffsetInBytes == bytes.Length || (bytes[actualMatch.StartOffsetInBytes] & 0xc0) != 0x80);
+                Assert.True(actualMatch.EndOffsetInBytes == bytes.Length || (bytes[actualMatch.EndOffsetInBytes] & 0xc0) != 0x80);
             }
         }
     }
@@ -162,27 +148,23 @@ public sealed class RightToLeftEnumerationTests
         var expectedFirst = expected.Match(input);
         var actualFirst = actual.Match(bytes);
         Assert.Equal(expectedFirst.Success, actualFirst.Success);
-        Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-        Assert.Equal(expectedFirst.Length, actualFirst.LengthInUtf16);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedFirst.Index)), actualFirst.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expectedFirst.Index, expectedFirst.Length)), (actualFirst.EndOffsetInBytes - actualFirst.StartOffsetInBytes));
 
-        var expectedMatches = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength)>();
+        var expectedMatches = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in expected.EnumerateMatches(input))
         {
             expectedMatches.Add((
-                match.Index,
-                match.Length,
                 Encoding.UTF8.GetByteCount(input.AsSpan(0, match.Index)),
                 Encoding.UTF8.GetByteCount(input.AsSpan(match.Index, match.Length))));
         }
 
-        var actualMatches = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength)>();
+        var actualMatches = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in actual.EnumerateMatches(bytes))
         {
             actualMatches.Add((
-                match.IndexInUtf16,
-                match.LengthInUtf16,
-                match.IndexInBytes,
-                match.LengthInBytes));
+                match.StartOffsetInBytes,
+                (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal(expectedMatches, actualMatches);
@@ -204,8 +186,4 @@ public sealed class RightToLeftEnumerationTests
             Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>")));
     }
 
-    private static bool IsScalarBoundary(string input, int utf16Offset)
-        => utf16Offset == 0 ||
-           utf16Offset == input.Length ||
-           !char.IsSurrogatePair(input[utf16Offset - 1], input[utf16Offset]);
 }

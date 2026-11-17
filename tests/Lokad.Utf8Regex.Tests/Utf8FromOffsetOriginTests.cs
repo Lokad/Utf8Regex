@@ -21,7 +21,7 @@ public sealed class Utf8FromOffsetOriginTests
         foreach (var offset in new[] { 1, 3 })
         {
             var expected = runtime.Match(text, offset);
-            Utf8ValueMatch? first = null;
+            Utf8CaptureRange? first = null;
             foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 first = match;
@@ -41,7 +41,7 @@ public sealed class Utf8FromOffsetOriginTests
         var runtime = new Regex("\\bword\\b", RegexOptions.CultureInvariant);
 
         var expected = runtime.Match(text, 1);
-        Utf8ValueMatch? first = null;
+        Utf8CaptureRange? first = null;
         foreach (var match in regex.EnumerateMatches(input, 1))
         {
             first = match;
@@ -60,7 +60,7 @@ public sealed class Utf8FromOffsetOriginTests
         var runtime = new Regex("(?<=a)b", RegexOptions.CultureInvariant);
 
         var expected = runtime.Match(text, 2);
-        Utf8ValueMatch? first = null;
+        Utf8CaptureRange? first = null;
         foreach (var match in regex.EnumerateMatches(input, 2))
         {
             first = match;
@@ -69,7 +69,7 @@ public sealed class Utf8FromOffsetOriginTests
 
         Assert.True(expected.Success);
         Assert.True(first?.Success ?? false);
-        Assert.Equal(expected.Index, first?.IndexInUtf16 ?? -1);
+        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), first?.StartOffsetInBytes ?? -1);
     }
 
     public static IEnumerable<object?[]> FromOffsetParityCases()
@@ -101,7 +101,7 @@ public sealed class Utf8FromOffsetOriginTests
         for (var offset = 0; offset <= Math.Min(3, text.Length); offset++)
         {
             var expected = runtime.Match(text, offset);
-            Utf8ValueMatch? first = null;
+            Utf8CaptureRange? first = null;
             foreach (var match in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))))
             {
                 first = match;
@@ -115,15 +115,14 @@ public sealed class Utf8FromOffsetOriginTests
             }
 
             Assert.True(first?.Success ?? false);
-            Assert.Equal(expected.Index, first?.IndexInUtf16 ?? -1);
-            Assert.Equal(expected.Length, first?.LengthInUtf16 ?? -1);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), first?.StartOffsetInBytes ?? -1);
             var aligned = IsScalarBoundary(text, expected.Index) &&
                 IsScalarBoundary(text, expected.Index + expected.Length);
-            Assert.Equal(aligned, first?.IsByteAligned ?? false);
+            Assert.True(aligned);
             if (aligned)
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(0, expected.Index)), first?.IndexInBytes ?? -1);
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(expected.Index, expected.Length)), first?.LengthInBytes ?? -1);
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(0, expected.Index)), first?.StartOffsetInBytes ?? -1);
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(expected.Index, expected.Length)), first?.EndOffsetInBytes - first?.StartOffsetInBytes ?? -1);
             }
         }
     }

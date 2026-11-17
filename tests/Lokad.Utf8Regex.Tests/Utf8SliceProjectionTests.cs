@@ -26,12 +26,12 @@ public sealed class Utf8SliceProjectionTests
         if (!expectedIndex.Equals(-1))
         {
             Assert.True(actual.Success);
-            Assert.Equal(expectedIndex, actual.IndexInUtf16);
-            Assert.Equal(expectedLength, actual.LengthInUtf16);
-            Assert.Equal(oracle.Index, actual.IndexInUtf16);
-            Assert.Equal(oracle.Length, actual.LengthInUtf16);
-            Assert.True(actual.IsByteAligned);
-            Assert.Equal(Encoding.UTF8.GetString(input[actual.IndexInBytes..(actual.IndexInBytes + actual.LengthInBytes)]), oracle.Value);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedIndex)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedIndex, expectedLength)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, oracle.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(oracle.Index, oracle.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+            Assert.True(actual.Success);
+            Assert.Equal(Encoding.UTF8.GetString(input[actual.StartOffsetInBytes..(actual.StartOffsetInBytes + (actual.EndOffsetInBytes - actual.StartOffsetInBytes))]), oracle.Value);
         }
         else
         {
@@ -93,11 +93,11 @@ public sealed class Utf8SliceProjectionTests
         var input = Encoding.UTF8.GetBytes("aab aabb aaabbb");
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal((0, 3), (enumerator.Current.IndexInUtf16, enumerator.Current.LengthInUtf16));
+        Assert.Equal((0, 3), (enumerator.Current.StartOffsetInBytes, (enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes)));
         var second = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(input))
         {
-            second.Add((match.IndexInUtf16, match.LengthInUtf16));
+            second.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
 
         Assert.Equal([(0, 3), (4, 4), (9, 6)], second);

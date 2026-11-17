@@ -245,8 +245,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         var input = Encoding.UTF8.GetBytes("😀" + literal + "中");
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal(4, regex.Match(input).IndexInBytes);
-        Assert.Equal(literal.Length, regex.Match(input).LengthInBytes);
+        Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(literal), (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
     }
     [Fact]
     public void ExpansionAcceptsExactlySixtyFourBranchesAndAnEmptyLiteral()
@@ -310,8 +310,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(folded ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         var input = Encoding.UTF8.GetBytes("😀A" + suffix + "中B" + suffix);
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal(4, regex.Match(input).IndexInBytes);
-        Assert.Equal(513, regex.Match(input).LengthInBytes);
+        Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
+        Assert.Equal(513, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
         Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
     }
     [Fact]
@@ -411,8 +411,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             regex.Inspection.ExecutionKind);
         var input = Encoding.UTF8.GetBytes("😀A" + suffix + "中");
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal(4, regex.Match(input).IndexInBytes);
-        Assert.Equal(suffix.Length + 1, regex.Match(input).LengthInBytes);
+        Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
+        Assert.Equal(suffix.Length + 1, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
         Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
     }
     [Theory]
@@ -427,9 +427,9 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | row.Flags | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var input = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
-            var match = regex.Match(input); Assert.Equal(4, match.IndexInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, match.LengthInBytes);
-            Assert.Equal(match.IndexInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.StartOffsetInBytes);
-            var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal(match.LengthInBytes, item.LengthInBytes); count++; }
+            var match = regex.Match(input); Assert.Equal(4, match.StartOffsetInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+            Assert.Equal(match.StartOffsetInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.StartOffsetInBytes);
+            var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (item.EndOffsetInBytes - item.StartOffsetInBytes)); count++; }
             Assert.Equal(2, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "X")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }

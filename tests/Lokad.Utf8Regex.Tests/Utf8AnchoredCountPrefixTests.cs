@@ -34,8 +34,8 @@ public sealed class Utf8AnchoredCountPrefixTests
                 Assert.Equal(first.Groups["tail"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(actual.GroupNumberFromName("tail")).Span));
             var ranges = new List<(int Index, int Length)>();
             foreach (var match in actual.EnumerateMatches(input))
-                ranges.Add((match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(expected.Matches(text).Select(match => (
+                    ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.Equal(expected.Matches(text).Select(match => (
                 Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
                 Encoding.UTF8.GetByteCount(match.Value))).ToArray(), ranges);
             Assert.Equal(ranges.Count, actual.Count(input));

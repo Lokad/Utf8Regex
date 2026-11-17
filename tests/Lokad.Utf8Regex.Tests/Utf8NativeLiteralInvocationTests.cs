@@ -146,8 +146,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant);
         var plan = Prepared(regex);
         var input = Encoding.UTF8.GetBytes("target" + new string('中', 5000) + "target" + new string('é', 5000) + "target");
-        var baseline = new Utf8OperationMatchCursor(input, plan, false, reverse,
-            new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var baseline = new Utf8OperationMatchCursor(input, plan, false, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var hits = 0;
         while (baseline.TryMoveNextLiteral(out var found) == Utf8ExecutionLimitKind.None && found) hits++;
         Assert.Equal(3, hits);
@@ -237,13 +236,12 @@ public sealed class Utf8NativeLiteralInvocationTests
         var options = RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), false, reverse,
-            new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), false, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         foreach (Match expected in new Regex(pattern, options).Matches(text))
         {
             Assert.True(cursor.MoveNext());
-            Assert.Equal(expected.Index, cursor.CurrentValueMatch.IndexInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.IndexInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.StartOffsetInBytes);
         }
         Assert.False(cursor.MoveNext());
     }
@@ -341,8 +339,8 @@ public sealed class Utf8NativeLiteralInvocationTests
                 foreach (Match expected in new Regex(pattern, options).Matches(text))
                 {
                     Assert.True(actual.MoveNext());
-                    Assert.Equal(expected.Index, actual.Current.IndexInUtf16);
-                    Assert.Equal(expected.Length, actual.Current.LengthInUtf16);
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Current.StartOffsetInBytes);
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
                 }
             Assert.False(actual.MoveNext());
         }
@@ -375,7 +373,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None) | (reverse ? RegexOptions.RightToLeft : RegexOptions.None));
         var enumerator = regex.EnumerateMatches("target target"u8, source.Token);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal(reverse ? 7 : 0, enumerator.Current.IndexInUtf16);
+        Assert.Equal(reverse ? 7 : 0, enumerator.Current.StartOffsetInBytes);
         source.Cancel();
         var cancelled = false;
         try { _ = enumerator.MoveNext(); }
@@ -398,9 +396,9 @@ public sealed class Utf8NativeLiteralInvocationTests
             foreach (Match expected in new Regex(pattern, options).Matches(text))
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.Current.LengthInUtf16);
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Current.IndexInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Current.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
+                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Current.StartOffsetInBytes);
             }
             Assert.False(actual.MoveNext());
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

@@ -13,7 +13,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000,
         MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
-    private static Utf8ValueMatch Scalar(Utf8Regex regex, byte[] input)
+    private static Utf8CaptureRange Scalar(Utf8Regex regex, byte[] input)
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
@@ -25,10 +25,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, invocation.AnchorOriginByte,
                 slots.Starts, slots.Ends, false, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
-            return outcome.Found ? new Utf8ValueMatch(true, true,
-                Encoding.UTF8.GetCharCount(input.AsSpan(0, outcome.StartByte)),
-                Encoding.UTF8.GetCharCount(input.AsSpan(outcome.StartByte, outcome.EndByte - outcome.StartByte)),
-                outcome.StartByte, outcome.EndByte - outcome.StartByte) : Utf8ValueMatch.NoMatch;
+            return outcome.Found ? new Utf8CaptureRange(outcome.StartByte, (outcome.StartByte) + (outcome.EndByte - outcome.StartByte)) : default(Utf8CaptureRange);
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
@@ -85,10 +82,10 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
     public void TheEnvelopeHasAnExplicitWholeSubjectBound(int length)
     {
         var input = Encoding.ASCII.GetBytes("///" + new string('x', length - 3));
-        Assert.Equal(length, new Utf8Regex(Pattern).Match(input).LengthInBytes);
+        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, tight.Match(input).LengthInBytes);
+        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
         else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }

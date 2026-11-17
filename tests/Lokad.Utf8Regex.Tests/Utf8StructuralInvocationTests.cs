@@ -181,9 +181,9 @@ public sealed class Utf8StructuralInvocationTests
             var actual = regex.Match(input, source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (!expected.Success) continue;
-            Assert.Equal(expected.Index, actual.IndexInUtf16);
-            Assert.Equal(expected.Length, actual.LengthInUtf16);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -222,17 +222,17 @@ public sealed class Utf8StructuralInvocationTests
             var expectedMatch = oracle.Match(text);
             var actualMatch = regex.Match(input, token);
             Assert.True(actualMatch.Success);
-            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
-            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
-            Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.IndexInBytes, actualMatch.LengthInBytes)));
-            var expected = oracle.EnumerateMatches(text);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
+                Assert.Equal(expectedMatch.Value, Encoding.UTF8.GetString(input.AsSpan(actualMatch.StartOffsetInBytes, (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes))));
+                var expected = oracle.EnumerateMatches(text);
             var actual = regex.EnumerateMatches(input, token);
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
-            }
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+                    Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
+                }
             Assert.False(actual.MoveNext());
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
@@ -255,14 +255,14 @@ public sealed class Utf8StructuralInvocationTests
         Assert.Equal(oracle.Count(text), regex.Count(input, token));
         var match = regex.Match(input, token);
         Assert.True(match.Success);
-        Assert.Equal(oracle.Match(text).Value, Encoding.UTF8.GetString(input.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+        Assert.Equal(oracle.Match(text).Value, Encoding.UTF8.GetString(input.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         var expected = oracle.EnumerateMatches(text);
         var actual = regex.EnumerateMatches(input, token);
         while (expected.MoveNext())
         {
             Assert.True(actual.MoveNext());
-            Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-            Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
         }
         Assert.False(actual.MoveNext());
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

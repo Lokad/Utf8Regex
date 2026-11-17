@@ -98,7 +98,7 @@ public sealed class Utf8SingleCategoryCountTests
         var diagnostic = regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes(subject));
         Assert.Equal(new Regex(pattern).Count(subject), diagnostic.Result); Assert.Equal(NativeRoute, diagnostic.ExecutionRoute);
         var match = regex.Match(Encoding.UTF8.GetBytes(subject));
-        Assert.True(match.Success); Assert.Equal(8, match.IndexInBytes); Assert.Equal(1, match.LengthInBytes);
+        Assert.True(match.Success); Assert.Equal(8, match.StartOffsetInBytes); Assert.Equal(1, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Theory]

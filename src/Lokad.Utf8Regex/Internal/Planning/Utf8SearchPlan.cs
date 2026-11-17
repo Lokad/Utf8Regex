@@ -34,7 +34,6 @@ internal readonly struct Utf8SearchPlan
         var maxPossibleLength = facts.MaxPossibleLength;
         var leadingBoundary = facts.LeadingBoundary;
         var trailingBoundary = facts.TrailingBoundary;
-        ProjectionPlan = default;
         Kind = kind;
         LiteralUtf8 = literalUtf8;
         CanGuideFallbackStarts = canGuideFallbackStarts;
@@ -49,9 +48,6 @@ internal readonly struct Utf8SearchPlan
             ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiFoldedByteLiteral)
             : null;
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
-        AlternateLiteralUtf16Lengths = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.ExactUtf8Literals
-            ? CreateAlternateLiteralUtf16Lengths(alternateLiteralsUtf8)
-            : null;
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
         // Direct portfolios already own the exact tables used by compatibility
         // consumers. Borrow them instead of acquiring the same payload twice.
@@ -109,7 +105,6 @@ internal readonly struct Utf8SearchPlan
         MaxPossibleLength = maxPossibleLength;
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
-        ProjectionPlan = CreateProjectionPlan(Kind);
     }
 
     public static Utf8SearchPlan Prepare(Utf8SearchFacts facts)
@@ -127,28 +122,6 @@ internal readonly struct Utf8SearchPlan
         finally { budget.LeaveDepth(); }
     }
 
-    // Derived string-coordinate cache only. The engine discovers byte extents
-    // over scalars; this table avoids re-reading each matched literal when a
-    // caller requests UTF-16 interoperability coordinates.
-    private static int[] CreateAlternateLiteralUtf16Lengths(byte[][] literals)
-    {
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            var lengths = budget.AllocateArray<int>(literals.Length, false);
-            for (var index = 0; index < literals.Length; index++)
-            {
-                budget.ChargeWork(1 + (ulong)literals[index].Length);
-                lengths[index] = Utf8Validation.Validate(literals[index]).Utf16Length;
-            }
-            scope.Complete();
-            return lengths;
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
     private static T[]? NullIfEmpty<T>(T[] values) => values.Length == 0 ? null : values;
 
     public Utf8SearchKind Kind { get; }
@@ -162,8 +135,6 @@ internal readonly struct Utf8SearchPlan
     public PreparedSubstringSearch? LiteralSearch { get; }
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
-
-    public int[]? AlternateLiteralUtf16Lengths { get; }
 
     public PreparedLiteralSetSearch? AlternateLiteralSearch { get; }
 
@@ -191,16 +162,14 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
-    public Utf8ProjectionPlan ProjectionPlan { get; }
-
     public Utf8SearchOperationPlan CountOperation =>
-        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, default);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
 
     public Utf8SearchOperationPlan FirstMatchOperation =>
-        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, default);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
 
     public Utf8SearchOperationPlan EnumerationOperation =>
-        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, ProjectionPlan);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
 
     public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;
 
@@ -283,20 +252,8 @@ internal readonly struct Utf8SearchPlan
         return default;
     }
 
-    private static Utf8ProjectionPlan CreateProjectionPlan(Utf8SearchKind kind)
-    {
-        return kind switch
-        {
-            Utf8SearchKind.ExactUtf8Literals
-                => new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-            _ => new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap),
-        };
-    }
-
     private static PreparedSearcher CreatePreparedSearcher(
-        Utf8SearchKind kind,
-        PreparedSubstringSearch? literalSearch,
-        PreparedMultiLiteralSearch multiLiteralSearch)
+        Utf8SearchKind kind, PreparedSubstringSearch? literalSearch, PreparedMultiLiteralSearch multiLiteralSearch)
     {
         return kind switch
         {
@@ -311,9 +268,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static Utf8SearchPortfolioKind DeterminePortfolioKind(
-        Utf8SearchKind kind,
-        PreparedSearcher preparedSearcher,
-        PreparedMultiLiteralSearch multiLiteralSearch)
+        Utf8SearchKind kind, PreparedSearcher preparedSearcher, PreparedMultiLiteralSearch multiLiteralSearch)
     {
         return kind switch
         {
@@ -346,8 +301,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static PreparedMultiLiteralSearch CreateMultiLiteralSearch(
-        Utf8SearchKind kind,
-        byte[][]? alternateLiteralsUtf8)
+        Utf8SearchKind kind, byte[][]? alternateLiteralsUtf8)
     {
         return kind switch
         {
@@ -360,8 +314,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static PreparedSearcher CreateRequiredPrefilter(
-        byte[]? requiredPrefilterLiteralUtf8,
-        byte[][]? requiredPrefilterAlternateLiteralsUtf8)
+        byte[]? requiredPrefilterLiteralUtf8, byte[][]? requiredPrefilterAlternateLiteralsUtf8)
     {
         if (requiredPrefilterLiteralUtf8 is { Length: > 0 } literal)
         {
@@ -377,8 +330,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static PreparedSearcher CreateSecondaryRequiredPrefilter(
-        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet,
-        int secondaryRequiredPrefilterQuotedAsciiLength)
+        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet, int secondaryRequiredPrefilterQuotedAsciiLength)
     {
         return secondaryRequiredPrefilterQuotedAsciiSet.HasValue &&
                secondaryRequiredPrefilterQuotedAsciiLength > 0
@@ -389,10 +341,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static PreparedWindowSearch CreateWindowSearch(
-        byte[][]? orderedWindowLeadingLiteralsUtf8,
-        byte[]? orderedWindowTrailingLiteralUtf8,
-        int? orderedWindowMaxGap,
-        bool orderedWindowSameLine)
+        byte[][]? orderedWindowLeadingLiteralsUtf8, byte[]? orderedWindowTrailingLiteralUtf8, int? orderedWindowMaxGap, bool orderedWindowSameLine)
     {
         if (orderedWindowLeadingLiteralsUtf8 is not { Length: > 0 } leadingLiterals ||
             orderedWindowTrailingLiteralUtf8 is not { Length: > 0 } trailingLiteral)
@@ -441,9 +390,7 @@ internal readonly struct Utf8SearchPlan
     };
 
     private static Utf8StructuralSearchPlan[]? CreateFallbackRequiredWindowPrefilterPlans(
-        byte[][]? requiredPrefilterAlternateLiteralsUtf8,
-        in PreparedSearcher requiredPrefilterSearcher,
-        in PreparedSearcher secondaryRequiredPrefilterSearcher)
+        byte[][]? requiredPrefilterAlternateLiteralsUtf8, in PreparedSearcher requiredPrefilterSearcher, in PreparedSearcher secondaryRequiredPrefilterSearcher)
     {
         if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literals ||
             !secondaryRequiredPrefilterSearcher.HasValue) return null;
@@ -475,8 +422,7 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static Utf8StructuralSearchPlan[]? CreateFallbackCandidatePlans(
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8StructuralSearchPlan[]? requiredWindowPrefilterPlans)
+        Utf8StructuralSearchPlan structuralSearchPlan, Utf8StructuralSearchPlan[]? requiredWindowPrefilterPlans)
     {
         if (structuralSearchPlan.HasValue)
         {
@@ -557,8 +503,7 @@ internal enum Utf8AlternateLiteralOverlapKind : byte
 internal readonly struct Utf8FixedDistanceSet
 {
     private Utf8FixedDistanceSet(
-        int distance,
-        AsciiCharClass byteSet)
+        int distance, AsciiCharClass byteSet)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;

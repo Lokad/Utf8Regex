@@ -165,8 +165,8 @@ public sealed class Utf8ProgramContinuationTests
             Assert.Equal(expected.Success, actual.Success);
             if (actual.Success)
             {
-                Assert.Equal(expected.Index, actual.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.LengthInUtf16);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, detailed.Success);

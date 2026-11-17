@@ -364,8 +364,8 @@ public sealed class Utf8SliceUnicodeAtomTests
         foreach (var range in expected)
         {
             Assert.True(cursor.MoveNext());
-            Assert.True(cursor.Current.IsByteAligned);
-            Assert.Equal(range, (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+            Assert.True(cursor.Current.Success);
+            Assert.Equal(range, (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
         }
         Assert.False(cursor.MoveNext());
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
@@ -446,7 +446,7 @@ public sealed class Utf8SliceUnicodeAtomTests
             regex.EnumerateMatches(input, byteOffset, token)).ParamName);
     }
 
-    private static void AssertMatch(string text, Match expected, Utf8ValueMatch actual) =>
+    private static void AssertMatch(string text, Match expected, Utf8CaptureRange actual) =>
         AssertMatch(new FixtureSubject(text, projectSupplementary: false), expected, actual);
 
     private static void AssertMatch(FixtureSubject subject, Match expected, Utf8CaptureRange actual)
@@ -457,19 +457,12 @@ public sealed class Utf8SliceUnicodeAtomTests
             (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
 
-    private static void AssertMatch(FixtureSubject subject, Match expected, Utf8ValueMatch actual) =>
-        AssertRange(subject, expected.Success, expected.Index, expected.Length, actual);
-
-    private static void AssertRange(FixtureSubject subject, bool success, int index, int length, Utf8ValueMatch actual)
+    private static void AssertRange(FixtureSubject subject, bool success, int index, int length, Utf8CaptureRange actual)
     {
         var expected = subject.Coordinates(index, length);
         Assert.Equal(success, actual.Success);
-        Assert.Equal(expected.Start, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        if (!success) return;
-        Assert.True(actual.IsByteAligned);
-        Assert.True(actual.TryGetByteRange(out var byteStart, out var byteLength));
-        Assert.Equal((expected.ByteStart, expected.ByteLength), (byteStart, byteLength));
+        Assert.Equal((expected.ByteStart, expected.ByteStart + expected.ByteLength),
+            (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
 
     private static void AssertDetailed(FixtureSubject subject, Match expected, Utf8RangeMatch actual)

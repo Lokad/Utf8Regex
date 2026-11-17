@@ -135,34 +135,6 @@ public sealed class Utf8CandidatePlanAdmissionTests
     }
 
     [Fact]
-    public void DerivedUtf16LengthsAreAdmittedBeforeReadingBorrowedScalarLiterals()
-    {
-        var helper = typeof(Utf8SearchPlan).GetMethod("CreateAlternateLiteralUtf16Lengths", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(helper);
-        int[] Invoke(byte[][] literals)
-        {
-            try { return (int[])helper.Invoke(null, [literals])!; }
-            catch (TargetInvocationException error) when (error.InnerException is not null) { ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
-        }
-        byte[][] literals = ["é"u8.ToArray(), "😀"u8.ToArray(), "中"u8.ToArray()];
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            Assert.Equal(new[] { 1, 2, 1 }, Invoke(literals));
-            Assert.Equal(Utf8ConstructionBudget.ArrayBytes<int>(3), owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-        }
-        using (var denied = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue))
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Invoke([[0xff]]));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind); Assert.Equal(0ul, denied.Budget.ReservedBytes);
-        }
-        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
-        {
-            var regex = new Utf8Regex("é|😀|中", options | RegexOptions.CultureInvariant);
-            var match = Utf8MatchSequence.First(regex.CreateMatchCursor("x😀y"u8.ToArray()));
-        }
-    }
-
-    [Fact]
     public void PlanRootsHonorDepthBeforeAcquisitionAndRecoverInTheSameOwner()
     {
         var searcher = Searcher("a"); var emptyFacts = Utf8SearchFacts.Create(Utf8SearchKind.None);

@@ -65,9 +65,9 @@ public sealed class Utf8OperationCursorArchitectureTests
         Assert.Equal(interpreted.Replace(input, "<$&>"), compiled.Replace(input, "<$&>"));
     }
 
-    private static List<Utf8ValueMatch> CollectMatches(Utf8Regex regex, byte[] input)
+    private static List<Utf8CaptureRange> CollectMatches(Utf8Regex regex, byte[] input)
     {
-        var matches = new List<Utf8ValueMatch>();
+        var matches = new List<Utf8CaptureRange>();
         foreach (var match in regex.EnumerateMatches(input))
         {
             matches.Add(match);

@@ -66,7 +66,10 @@ public sealed class Utf8ScalarCaptureFixtureTests
         foreach (var range in expected)
         {
             Assert.True(cursor.MoveNext());
-            Assert.True(cursor.Current.TryGetByteRange(out var index, out var length));
+            var rangeResult3046 = cursor.Current;
+            var index = rangeResult3046.StartOffsetInBytes;
+            var length = (rangeResult3046.EndOffsetInBytes - rangeResult3046.StartOffsetInBytes);
+            Assert.True(rangeResult3046.Success);
             Assert.Equal(range, (index, length));
         }
         Assert.False(cursor.MoveNext(), $"Unexpected extra match for witness {patternId}.");

@@ -21,5 +21,4 @@ internal readonly struct Utf8ValidationResult
 
     public bool ContainsSupplementaryScalars { get; }
 
-    public Utf16Boundary EndBoundary => Utf16Boundary.ScalarBoundary(ByteLength, Utf16Length);
 }

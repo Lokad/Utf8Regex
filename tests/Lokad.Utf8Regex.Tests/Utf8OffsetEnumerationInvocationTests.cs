@@ -55,7 +55,10 @@ public sealed class Utf8OffsetEnumerationInvocationTests
                 {
                     Assert.True(cursor.MoveNext());
                     var end = expected.Index + expected.Length;
-                    Assert.True(cursor.Current.TryGetByteRange(out var index, out var length));
+                    var rangeResult3067 = cursor.Current;
+                    var index = rangeResult3067.StartOffsetInBytes;
+                    var length = (rangeResult3067.EndOffsetInBytes - rangeResult3067.StartOffsetInBytes);
+                    Assert.True(rangeResult3067.Success);
                     Assert.Equal((projection.ByteBoundaries[expected.Index], projection.ByteBoundaries[end] - projection.ByteBoundaries[expected.Index]),
                         (index, length));
                 }
@@ -132,7 +135,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             var actual = new List<(int, int)>();
             while (cursor.MoveNext())
             {
-                actual.Add((cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                actual.Add((cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             }
             Assert.Equal(expected, actual);
             Assert.False(cursor.MoveNext());
@@ -189,7 +192,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             var failure = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches(mixed, 3); });
             Assert.Equal("startOffsetInBytes", failure.ParamName);
             var forward = regex.EnumerateMatches(mixed, 6);
-            while (forward.MoveNext()) Assert.True(forward.Current.IsByteAligned);
+            while (forward.MoveNext()) Assert.True(forward.Current.Success);
             var reverse = new Utf8Regex(pattern, options | RegexOptions.RightToLeft).EnumerateMatches(mixed, 6);
             Assert.True(reverse.DebugIsOwnedSlice);
             using var source = new CancellationTokenSource();
@@ -291,7 +294,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         Assert.Equal(Utf8ExecutionLimitKind.None, original.TryMoveNextAnchoredLiteral(out var found));
         Assert.True(found);
         var expected = new Regex((prefix ? "^" : "") + new string('a', 4097) + (prefix ? "" : kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix ? "$" : "\\z")).Match(text);
-        Assert.Equal((expected.Index, expected.Length), (original.CurrentValueMatch.IndexInUtf16, original.CurrentValueMatch.LengthInUtf16));
+        Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (original.CurrentValueMatch.StartOffsetInBytes, (original.CurrentValueMatch.EndOffsetInBytes - original.CurrentValueMatch.StartOffsetInBytes)));
         for (ulong cap = 1; cap < original.DebugInvocationSteps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
@@ -329,7 +332,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var validation = Utf8Validation.Validate(input, ref invocation);
         Assert.True(Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(prepared, validation, ref invocation));
         var steps = invocation.Budget.Steps;
-        var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, validation, invocation, 8193, 8193);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, validation, invocation, 8193);
         Assert.True(cursor.DebugInvocationSteps >= steps);
         Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
         Assert.False(cursor.DebugIsOwnedSlice);

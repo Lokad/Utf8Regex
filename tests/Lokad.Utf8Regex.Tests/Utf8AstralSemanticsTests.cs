@@ -103,8 +103,8 @@ public sealed class Utf8AstralSemanticsTests
             if (match.Success) AssertRange(input, expected[0], match);
             else
             {
-                Assert.Equal((0, 0), (match.IndexInUtf16, match.LengthInUtf16));
-                Assert.False(match.TryGetByteRange(out _, out _));
+                Assert.Equal((0, 0), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                Assert.False(match.Success);
             }
 
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token));
@@ -158,17 +158,15 @@ public sealed class Utf8AstralSemanticsTests
     private static (int Index, int Length)[] Ranges(int[] coordinates) => Enumerable.Range(0, coordinates.Length / 2)
         .Select(index => (coordinates[index * 2], coordinates[index * 2 + 1])).ToArray();
 
-    private static (int Index, int Length) Utf16Range(byte[] input, (int Index, int Length) range) =>
-        (Encoding.UTF8.GetCharCount(input.AsSpan(0, range.Index)), Encoding.UTF8.GetCharCount(input.AsSpan(range.Index, range.Length)));
-
     private static string Value(byte[] input, (int Index, int Length) range) => Encoding.UTF8.GetString(input.AsSpan(range.Index, range.Length));
 
-    private static void AssertRange(byte[] input, (int Index, int Length) expected, Utf8ValueMatch actual)
+    private static void AssertRange(byte[] input, (int Index, int Length) expected, Utf8CaptureRange actual)
     {
-        Assert.True(actual.IsByteAligned);
-        Assert.True(actual.TryGetByteRange(out var index, out var length));
+        Assert.True(actual.Success);
+        var index = actual.StartOffsetInBytes;
+        var length = (actual.EndOffsetInBytes - actual.StartOffsetInBytes);
+        Assert.True(actual.Success);
         Assert.Equal(expected, (index, length));
-        Assert.Equal(Utf16Range(input, expected), (actual.IndexInUtf16, actual.LengthInUtf16));
     }
 
     private static void AssertAlignedCaptures(byte[] input, in Utf8RangeMatch context)

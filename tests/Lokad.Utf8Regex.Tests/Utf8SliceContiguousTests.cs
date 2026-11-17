@@ -125,7 +125,7 @@ public sealed class Utf8SliceContiguousTests
         var expected = new List<(int Index, int Length)>();
         foreach (Match m in oracle.Matches(inputText))
         {
-            expected.Add((m.Index, m.Length));
+            expected.Add((System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length))));
         }
 
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -133,7 +133,7 @@ public sealed class Utf8SliceContiguousTests
         var actual = new List<(int Index, int Length)>();
         foreach (var m in regex.EnumerateMatches(input))
         {
-            actual.Add((m.IndexInUtf16, m.LengthInUtf16));
+            actual.Add((m.StartOffsetInBytes, (m.EndOffsetInBytes - m.StartOffsetInBytes)));
         }
 
         Assert.Equal(expected, actual);

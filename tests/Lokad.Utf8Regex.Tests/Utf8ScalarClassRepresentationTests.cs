@@ -59,8 +59,8 @@ public sealed class Utf8ScalarClassRepresentationTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
             var actual = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(expected, actual);
+                    foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                    Assert.Equal(expected, actual);
             var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(first.Success);
             Assert.Equal(expected[0], (first.Value.StartOffsetInBytes, (first.Value.EndOffsetInBytes - first.Value.StartOffsetInBytes)));
@@ -165,10 +165,10 @@ public sealed class Utf8ScalarClassRepresentationTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
             var ranges = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(expected, ranges);
             var first = regex.Match(input);
-            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+            Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected[0], (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(expected[0].Item1, expected[0].Item2)), System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
@@ -333,7 +333,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             var expected = singles ? new[] { (1, 4), (5, 4) } : new[] { (1, 8) };
             if (rtl) Array.Reverse(expected);
             var actual = new List<(int, int)>();
-            foreach (var value in regex.EnumerateMatches(input)) actual.Add((value.IndexInBytes, value.LengthInBytes));
+            foreach (var value in regex.EnumerateMatches(input)) actual.Add((value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
             Assert.Equal(expected, actual);
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(match.Success);

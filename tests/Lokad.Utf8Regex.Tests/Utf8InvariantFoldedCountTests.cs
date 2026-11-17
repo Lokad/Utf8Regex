@@ -27,15 +27,15 @@ public sealed class Utf8InvariantFoldedCountTests
             var regex = new Utf8Regex(pattern, options, inputValidation: policy);
             Assert.Equal(reference.IsMatch(text), regex.IsMatch(bytes));
             Assert.Equal(reference.Count(text), regex.Count(bytes));
-            var expected = reference.Matches(text).Select(m => (m.Index, m.Length,
-                Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), Encoding.UTF8.GetByteCount(m.Value))).ToArray();
-            var actual = new List<(int, int, int, int)>();
-            foreach (var match in regex.EnumerateMatches(bytes))
-                actual.Add((match.IndexInUtf16, match.LengthInUtf16, match.IndexInBytes, match.LengthInBytes));
-            Assert.Equal(expected, actual);
+                    var expected = reference.Matches(text).Select(m => (
+                        Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), Encoding.UTF8.GetByteCount(m.Value))).ToArray();
+                    var actual = new List<(int, int)>();
+                    foreach (var match in regex.EnumerateMatches(bytes))
+                        actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+                    Assert.Equal(expected, actual);
             var first = regex.Match(bytes);
-            Assert.Equal(expected[0], (first.IndexInUtf16, first.LengthInUtf16, first.IndexInBytes, first.LengthInBytes));
-            Assert.Equal(reference.Replace(text, "$0:X"), Encoding.UTF8.GetString(regex.Replace(bytes, "$0:X")));
+                    Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
+                    Assert.Equal(reference.Replace(text, "$0:X"), Encoding.UTF8.GetString(regex.Replace(bytes, "$0:X")));
             Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
             if (mode != RegexOptions.RightToLeft)
             {

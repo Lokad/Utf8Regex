@@ -8,6 +8,25 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Shared bounded-buffer checkpoint and copy mechanics for owned shaping.</summary>
 internal static class Utf8SliceBufferWork
 {
+    // Discovery supplies scalar-aligned endpoints. Publication still observes
+    // the original invocation after matching, without a coordinate scan.
+    internal static Utf8ExecutionLimitKind TryCreateMatchRange(int start, int end, ref Utf8SliceInvocation invocation, out Utf8CaptureRange match)
+    {
+        match = default;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        invocation.Budget.ThrowIfCancellationRequested();
+        match = new Utf8CaptureRange(start, end);
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    internal static Utf8CaptureRange CreateMatchRange(int start, int end, ref Utf8SliceInvocation invocation)
+    {
+        var breach = TryCreateMatchRange(start, end, ref invocation, out var match);
+        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Whole-match publication exceeded {breach}.");
+        return match;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void ChargeResultBytes(ulong bytes, ref Utf8SliceInvocation invocation)
     {

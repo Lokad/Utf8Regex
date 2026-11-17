@@ -110,8 +110,8 @@ public sealed class Utf8TokenMaskPreparationTests
             {
                 var input = Encoding.UTF8.GetBytes(text); var expected = oracle.Match(text);
                 Assert.Equal(oracle.Count(text), search.Count(input)); Assert.Equal(expected.Success, search.TryFindNext(input, 0, out var index, out var length));
-                if (expected.Success) Assert.Equal((expected.Index, expected.Length), (index, length));
-            }
+                    if (expected.Success) Assert.Equal((expected.Index, expected.Length), (index, length));
+                }
         }
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
@@ -119,9 +119,9 @@ public sealed class Utf8TokenMaskPreparationTests
             var input = "😀 a:abc12 é"u8;
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
-            Assert.Equal((5, 7), (match.IndexInBytes, match.LengthInBytes)); Assert.Equal((5, 7), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
+            Assert.Equal((5, 7), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((5, 7), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(1, regex.Count("a:abc12"u8));
-            Assert.Equal(7, regex.Match("a:abc12"u8).LengthInBytes);
+            Assert.Equal(7, (regex.Match("a:abc12"u8).EndOffsetInBytes - regex.Match("a:abc12"u8).StartOffsetInBytes));
         }
     }
 

@@ -26,7 +26,7 @@ public class Utf8OperationCursorBenchmarks
     public bool IsMatch() => _regex.IsMatch(_input);
 
     [Benchmark]
-    public Utf8ValueMatch Match() => _regex.Match(_input);
+    public Utf8CaptureRange Match() => _regex.Match(_input);
 
     [Benchmark]
     public int Count() => _regex.Count(_input);
@@ -37,7 +37,7 @@ public class Utf8OperationCursorBenchmarks
         var count = 0;
         foreach (var match in _regex.EnumerateMatches(_input))
         {
-            count += match.LengthInBytes;
+            count += (match.EndOffsetInBytes - match.StartOffsetInBytes);
         }
 
         return count;

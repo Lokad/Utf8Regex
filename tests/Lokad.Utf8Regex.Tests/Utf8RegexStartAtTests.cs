@@ -58,8 +58,8 @@ public sealed class Utf8RegexStartAtTests
 
         var match = enumerator.Current;
         Assert.True(match.Success);
-        Assert.Equal(2, match.IndexInUtf16);
-        Assert.Equal(3, match.LengthInUtf16);
+        Assert.Equal(2, match.StartOffsetInBytes);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -72,11 +72,10 @@ public sealed class Utf8RegexStartAtTests
 
         var match = enumerator.Current;
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(1, match.IndexInUtf16);
-        Assert.Equal(3, match.LengthInUtf16);
-        Assert.Equal(2, match.IndexInBytes);
-        Assert.Equal(3, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(2, match.StartOffsetInBytes);
+        Assert.Equal(3, (match.EndOffsetInBytes - match.StartOffsetInBytes));
     }
 
     [Fact]
@@ -91,11 +90,10 @@ public sealed class Utf8RegexStartAtTests
 
         var match = enumerator.Current;
         Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(15, match.IndexInUtf16);
-        Assert.Equal(12, match.LengthInUtf16);
-        Assert.Equal(16, match.IndexInBytes);
-        Assert.Equal(12, match.LengthInBytes);
+        Assert.True(match.Success);
+        Assert.Equal(12, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(16, match.StartOffsetInBytes);
+        Assert.Equal(12, (match.EndOffsetInBytes - match.StartOffsetInBytes));
         Assert.False(enumerator.MoveNext());
     }
 

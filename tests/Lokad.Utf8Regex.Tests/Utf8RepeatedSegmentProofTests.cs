@@ -33,15 +33,15 @@ public sealed class Utf8RepeatedSegmentProofTests
                 if (actual.Success)
                 {
                     var first = expected[0];
-                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first.Index)), actual.IndexInBytes);
-                    Assert.Equal(Encoding.UTF8.GetByteCount(first.Value), actual.LengthInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first.Index)), actual.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(first.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                     Assert.Equal(first.Value, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
                     if (first.Groups.Count > 1) Assert.Equal(first.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
                 }
                 var cursor = regex.EnumerateMatches(input); var alias = cursor; var count = 0;
                 while (cursor.MoveNext())
                 {
-                    Assert.Equal(Encoding.UTF8.GetByteCount(expected[count].Value), cursor.Current.LengthInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(expected[count].Value), (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
                     count++;
                 }
                 Assert.Equal(expected.Length, count); count = 0;

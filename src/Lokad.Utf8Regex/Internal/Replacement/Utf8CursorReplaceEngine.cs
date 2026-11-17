@@ -5,10 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 internal static class Utf8CursorReplaceEngine
 {
     internal static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacement,
-        ref Utf8OperationMatchCursor cursor,
-        out int replacementCount)
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement, ref Utf8OperationMatchCursor cursor, out int replacementCount)
     {
         var ledger = new Utf8ReplacementRangeLedger();
         ulong outputReservation = 0;
@@ -30,11 +27,7 @@ internal static class Utf8CursorReplaceEngine
     }
 
     internal static bool TryReplace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacement,
-        Span<byte> destination,
-        ref Utf8OperationMatchCursor cursor,
-        out int bytesWritten)
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement, Span<byte> destination, ref Utf8OperationMatchCursor cursor, out int bytesWritten)
     {
         var ledger = new Utf8ReplacementRangeLedger();
         try
@@ -63,33 +56,22 @@ internal static class Utf8CursorReplaceEngine
     }
 
     private static Utf8ReplacementOutputLength BuildRanges(
-        int inputLength,
-        int replacementLength,
-        ref Utf8OperationMatchCursor cursor,
-        ref Utf8ReplacementRangeLedger ledger)
+        int inputLength, int replacementLength, ref Utf8OperationMatchCursor cursor, ref Utf8ReplacementRangeLedger ledger)
     {
         var outputLength = new Utf8ReplacementOutputLength(inputLength);
         while (cursor.MoveNext())
         {
             var match = cursor.CurrentValueMatch;
-            if (!match.IsByteAligned)
-            {
-                throw new InvalidOperationException("A replacement match is not aligned to UTF-8 scalar boundaries.");
-            }
 
-            ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes), cursor.WorkingBufferControl);
-            outputLength.ReplaceRange(match.LengthInBytes, replacementLength);
+            ledger.Add(new Utf8ReplacementRange(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)), cursor.WorkingBufferControl);
+            outputLength.ReplaceRange((match.EndOffsetInBytes - match.StartOffsetInBytes), replacementLength);
         }
 
         return outputLength;
     }
 
     private static void Emit(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacement,
-        Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> matches,
-        bool reverse, scoped Utf8InvocationBufferControl control)
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement, Span<byte> destination, ReadOnlySpan<Utf8ReplacementRange> matches, bool reverse, scoped Utf8InvocationBufferControl control)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);

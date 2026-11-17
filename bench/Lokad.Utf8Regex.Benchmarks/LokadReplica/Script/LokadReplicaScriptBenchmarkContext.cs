@@ -103,9 +103,9 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var expected = oracle.Match(text);
             var match = actual.Match(input);
             if (match.Success != expected.Success || expected.Success &&
-                (match.IndexInUtf16 != expected.Index || match.LengthInUtf16 != expected.Length ||
-                 match.IndexInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
-                 match.LengthInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))))
+                (match.StartOffsetInBytes != expected.Index || (match.EndOffsetInBytes - match.StartOffsetInBytes) != expected.Length ||
+                 match.StartOffsetInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
+                 (match.EndOffsetInBytes - match.StartOffsetInBytes) != Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))))
                 throw new InvalidOperationException("Lexer benchmark match ranges disagree after UTF-8 coordinate projection.");
             return expected;
         }
@@ -211,7 +211,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var match = Utf8MatchInspection.MatchCompiled(CompiledUtf8Regex, sample, validation);
             if (match.Success)
             {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
+                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -349,7 +349,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             CompiledUtf8Regex.TryMatchDirectWithoutValidation(sample, out var match);
             if (match.Success)
             {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
+                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -389,7 +389,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         {
             if (Utf8Regex.TryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
             {
-                total += match.LengthInUtf16;
+                total += (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -429,7 +429,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         {
             if (Utf8Regex.TryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
             {
-                total += match.LengthInUtf16;
+                total += (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -549,7 +549,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var match = Utf8Regex.Match(sample);
             if (match.Success)
             {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
+                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -576,7 +576,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             Utf8Regex.TryMatchDirectWithoutValidation(sample, out var match);
             if (match.Success)
             {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
+                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 
@@ -698,7 +698,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var match = CompiledUtf8Regex.Match(sample);
             if (match.Success)
             {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
+                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
         }
 

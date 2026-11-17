@@ -1170,7 +1170,10 @@ internal static partial class BenchmarkInspectReporter
         var enumerator = context.Utf8Regex!.EnumerateMatches(context.InputBytes);
         while (enumerator.MoveNext())
         {
-            if (!enumerator.Current.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+var rangeResult61356 = enumerator.Current;
+            var indexInBytes = rangeResult61356.StartOffsetInBytes;
+            var lengthInBytes = (rangeResult61356.EndOffsetInBytes - rangeResult61356.StartOffsetInBytes);
+            if (!rangeResult61356.Success)
             {
                 throw new InvalidOperationException("Utf8Regex benchmark enumerator produced a non-byte-aligned match.");
             }

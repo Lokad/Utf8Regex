@@ -120,7 +120,7 @@ public sealed class Utf8ScalarDiscoveryTests
             Assert.Equal("😀"u8.ToArray(), detail.GetGroupMemory(1).ToArray());
             var cursor = regex.EnumerateMatches(input, start, token);
             Assert.True(cursor.MoveNext());
-            Assert.Equal((1, 4), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+            Assert.Equal((1, 4), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
             Assert.False(cursor.MoveNext());
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

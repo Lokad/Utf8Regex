@@ -40,26 +40,28 @@ public sealed class Utf8CursorInvocationReservationTests
         var validation = Utf8Validation.Validate("😀é😀"u8, ref invocation);
         try
         {
-            _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref invocation, out _);
+            invocation.ShareStorageForCursor();
+            _ = new Utf8OperationMatchCursor(Program(regex), "😀é😀"u8, invocation);
             Assert.Fail("The full same-invocation allowance must deny another map.");
         }
         catch (InvalidOperationException) { Assert.Equal(before, invocation.Ledger.ReservedBytes); }
         var fresh = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096), Regex.InfiniteMatchTimeout, default);
         Assert.True(fresh.Ledger.TryReserve(7));
-        var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), "😀é😀"u8, validation, ref fresh, out _);
+        fresh.ShareStorageForCursor();
+        var cursor = new Utf8OperationMatchCursor(Program(regex), "😀é😀"u8, fresh);
         Assert.True(cursor.MoveNext());
-        Assert.Equal((0, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
+        Assert.Equal((0, 4), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference[] ExerciseLinearCopies(Utf8SliceProgram program, ref Utf8SliceInvocation invocation, out ulong held)
     {
         var validation = Utf8Validation.Validate("😀é😀"u8, ref invocation);
-        var cursor = Utf8OperationMatchCursor.CreateMapped(program, "😀é😀"u8, validation, ref invocation, out var map);
+        invocation.ShareStorageForCursor();
+        var cursor = new Utf8OperationMatchCursor(program, "😀é😀"u8, invocation);
         var table = Table(ref cursor)!;
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        WeakReference[] arrays = [new(typeof(Utf8BoundaryMap).GetField("_byteOffsets", flags)!.GetValue(map)!),
-            new(typeof(Utf8NonBacktrackingSearchState).GetField("_boundaries", flags)!.GetValue(table)!),
+        WeakReference[] arrays = [new(typeof(Utf8NonBacktrackingSearchState).GetField("_boundaries", flags)!.GetValue(table)!),
             new(typeof(Utf8NonBacktrackingSearchState).GetField("_viability", flags)!.GetValue(table)!)];
         held = invocation.Ledger.ReservedBytes;
         var copy = cursor;
@@ -73,7 +75,7 @@ public sealed class Utf8CursorInvocationReservationTests
         Assert.True(cursor.MoveNext());
         Assert.False(cursor.MoveNext());
         Assert.False(cursor.MoveNext());
-        Assert.Equal((0, 4, 0, 2), (retained.IndexInBytes, retained.LengthInBytes, retained.IndexInUtf16, retained.LengthInUtf16));
+        Assert.Equal((0, 4), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         return arrays;
     }
@@ -119,7 +121,8 @@ public sealed class Utf8CursorInvocationReservationTests
             Assert.True(invocation.Ledger.TryReserve(7));
             try
             {
-                _ = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, out _);
+                invocation.ShareStorageForCursor();
+                _ = new Utf8OperationMatchCursor(Program(regex), input, invocation);
                 Assert.True(invocation.Ledger.ReservedBytes > 7);
                 success = true;
             }
@@ -141,7 +144,6 @@ public sealed class Utf8CursorInvocationReservationTests
         Assert.Empty(typeof(Utf8StorageLedger).GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic));
         var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         Assert.Null(typeof(Utf8NonBacktrackingSearchState).GetMethod("Finalize", flags));
-        Assert.Null(typeof(Utf8BoundaryMap).GetField("_storageLease", flags));
         // Borrowing caller admission authority does not restore payload roots,
         // collection-triggered refunds or a retained-object accounting graph.
         Assert.DoesNotContain(typeof(Utf8StorageLedger).GetFields(flags), field =>

@@ -111,7 +111,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
         };
     }
 
-    private static int MeasureMatch(Utf8ValueMatch match) => match.Success ? match.IndexInUtf16 + match.LengthInUtf16 : -1;
+    private static int MeasureMatch(Utf8CaptureRange match) => match.Success ? match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes) : -1;
 
     private static int MeasureMatch(Match match) => match.Success ? match.Index + match.Length : -1;
 

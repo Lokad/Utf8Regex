@@ -13,9 +13,9 @@ internal static class Utf8MatchInspection
                ? runtime.IsMatch(input, validation, Utf8ExecutionDeadline.Infinite)
                : Utf8PreparedScalarExecutor.IsMatch(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite));
 
-    public static Utf8ValueMatch MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+    public static Utf8CaptureRange MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
         => Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
-            ? Utf8ValueMatch.NoMatch
+            ? default(Utf8CaptureRange)
             : regex.Inspection.CompiledRuntime is { } runtime
                 ? runtime.Match(input, validation, Utf8ExecutionDeadline.Infinite)
                 : Utf8PreparedScalarExecutor.Match(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite);
@@ -116,19 +116,19 @@ internal static class Utf8MatchInspection
     }
 
     public static bool DebugTryMatchExactLiteral(
-        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         var runtime = GetLiteralRuntime(inspection);
         if (runtime is null || runtime._usesRightToLeft)
         {
-            match = Utf8ValueMatch.NoMatch;
+            match = default(Utf8CaptureRange);
             return false;
         }
         match = inspection.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral => runtime.MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             NativeExecutionKind.ExactUtf8Literal => runtime.MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
-            _ => Utf8ValueMatch.NoMatch,
+            _ => default(Utf8CaptureRange),
         };
         return inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
     }
@@ -185,13 +185,13 @@ internal static class Utf8MatchInspection
 
     public static int ProjectWholeMatchOnly(int matchedLength)
     {
-        var match = new Utf8ValueMatch(true, true, 0, matchedLength, 0, matchedLength);
-        return match.IndexInUtf16 + match.LengthInUtf16;
+        var match = new Utf8CaptureRange(0, (0) + (matchedLength));
+        return match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
     }
 
     public static int ProjectByteAlignedMatchOnly(int index, int matchedLength)
     {
-        var match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-        return match.IndexInUtf16 + match.LengthInUtf16;
+        var match = new Utf8CaptureRange(index, (index) + (matchedLength));
+        return match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
     }
 }

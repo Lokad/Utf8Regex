@@ -81,8 +81,7 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), 1, token.Token)));
         var denied = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.Count(denied.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4))).ResourceKind);
+        Assert.Equal(3, Utf8MatchSequence.Count(denied.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4)));
     }
 
     [Fact]

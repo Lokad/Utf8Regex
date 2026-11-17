@@ -27,20 +27,16 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
         return count;
     }
 
-    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
+    public static Utf8CaptureRange Match(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
     {
         var matchIndex = FindNext(input, plan, 0, budget, out var matchedLength);
         return matchIndex < 0
-            ? Utf8ValueMatch.NoMatch
-            : new Utf8ValueMatch(true, true, matchIndex, matchedLength, matchIndex, matchedLength);
+            ? default(Utf8CaptureRange)
+            : new Utf8CaptureRange(matchIndex, (matchIndex) + (matchedLength));
     }
 
     private static int FindNext(
-        ReadOnlySpan<byte> input,
-        AsciiSimplePatternSymmetricLiteralWindowPlan plan,
-        int startIndex,
-        Utf8ExecutionDeadline budget,
-        out int matchedLength)
+        ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         if (startIndex < 0 || startIndex >= input.Length)
@@ -105,13 +101,7 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
     }
 
     private static bool TryMatchLeadingLiteral(
-        ReadOnlySpan<byte> input,
-        int candidateStart,
-        AsciiSimplePatternSymmetricLiteralWindowPlan plan,
-        ReadOnlySpan<byte> firstLiteral,
-        ReadOnlySpan<byte> secondLiteral,
-        out ReadOnlySpan<byte> leadingLiteral,
-        out ReadOnlySpan<byte> trailingLiteral)
+        ReadOnlySpan<byte> input, int candidateStart, AsciiSimplePatternSymmetricLiteralWindowPlan plan, ReadOnlySpan<byte> firstLiteral, ReadOnlySpan<byte> secondLiteral, out ReadOnlySpan<byte> leadingLiteral, out ReadOnlySpan<byte> trailingLiteral)
     {
         leadingLiteral = default;
         trailingLiteral = default;
@@ -153,12 +143,7 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
     }
 
     private static bool TryMatchTrailingLiteral(
-        ReadOnlySpan<byte> input,
-        AsciiSimplePatternSymmetricLiteralWindowPlan plan,
-        int leadingStart,
-        ReadOnlySpan<byte> leadingLiteral,
-        ReadOnlySpan<byte> trailingLiteral,
-        out int matchedLength)
+        ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, int leadingStart, ReadOnlySpan<byte> leadingLiteral, ReadOnlySpan<byte> trailingLiteral, out int matchedLength)
     {
         matchedLength = 0;
         var trailingSearchStart = leadingStart + leadingLiteral.Length + plan.MinGap;

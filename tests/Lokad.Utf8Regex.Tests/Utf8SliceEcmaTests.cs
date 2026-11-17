@@ -88,27 +88,34 @@ public sealed class Utf8SliceEcmaTests
             while (expected.MoveNext())
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
-                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
-                Assert.Equal((bytes[expected.Current.Index],
-                    bytes[expected.Current.Index + expected.Current.Length] - bytes[expected.Current.Index]),
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(bmp.AsSpan(0, expected.Current.Index)), actual.Current.StartOffsetInBytes);
+                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(bmp.AsSpan(expected.Current.Index, expected.Current.Length)), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
+                var rangeResult4909 = actual.Current;
+                var byteIndex = rangeResult4909.StartOffsetInBytes;
+                var byteLength = (rangeResult4909.EndOffsetInBytes - rangeResult4909.StartOffsetInBytes);
+                Assert.True(rangeResult4909.Success);
+                Assert.Equal((bytes[expected.Current.Index], bytes[expected.Current.Index + expected.Current.Length] - bytes[expected.Current.Index]),
                     (byteIndex, byteLength));
                 count++;
             }
             if (pattern is @"\D" or @"\S" or @"\W" or @"[\D]" or @"[\S]" or @"[\W]")
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal((bmp.Length, 2), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
-                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
+                var rangeResult5530 = actual.Current;
+                var byteIndex = rangeResult5530.StartOffsetInBytes;
+                var byteLength = (rangeResult5530.EndOffsetInBytes - rangeResult5530.StartOffsetInBytes);
+                Assert.True(rangeResult5530.Success);
                 Assert.Equal((bytes[^1], 4), (byteIndex, byteLength));
                 count++;
             }
             else if (pattern == @"\B")
             {
                 Assert.True(actual.MoveNext());
-                Assert.Equal((text.Length, 0), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
-                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
+                Assert.Equal((Encoding.UTF8.GetByteCount(text), 0), (actual.Current.StartOffsetInBytes, actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
+                var rangeResult5958 = actual.Current;
+                var byteIndex = rangeResult5958.StartOffsetInBytes;
+                var byteLength = (rangeResult5958.EndOffsetInBytes - rangeResult5958.StartOffsetInBytes);
+                Assert.True(rangeResult5958.Success);
                 Assert.Equal((input.Length, 0), (byteIndex, byteLength));
                 count++;
             }

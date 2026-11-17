@@ -4,9 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 internal static class Utf8SearchStrategySelector
 {
     public static Utf8SearchOperationPlan Create(
-        in Utf8SearchPlan plan,
-        Utf8ConfirmationPlan confirmation,
-        Utf8ProjectionPlan projection)
+        in Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation)
     {
         var prefilterEngine = plan.PrefilterPlan.PrimarySource;
         if (!prefilterEngine.HasValue) prefilterEngine = plan.PrefilterPlan.SecondarySource;
@@ -30,7 +28,6 @@ internal static class Utf8SearchStrategySelector
                 nativeSource,
                 prefilterEngine,
                 confirmation,
-                projection,
                 kind == Utf8SearchOperationKind.HybridSearch
                     ? Utf8SearchObservabilityKind.Effectiveness
                     : Utf8SearchObservabilityKind.CandidateCounts);
@@ -47,7 +44,6 @@ internal static class Utf8SearchStrategySelector
                 fallbackSource,
                 prefilterEngine,
                 confirmation,
-                projection,
                 Utf8SearchObservabilityKind.CandidateCounts);
         }
 

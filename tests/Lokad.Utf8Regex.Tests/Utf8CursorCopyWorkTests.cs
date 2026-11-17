@@ -185,8 +185,8 @@ public sealed class Utf8CursorCopyWorkTests
         var index = 1;
         while (original.MoveNext())
         {
-            Assert.Equal((expected[index].Index, expected[index].Length),
-                (original.Current.IndexInUtf16, original.Current.LengthInUtf16));
+            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[index].Index, expected[index].Length))),
+                (original.Current.StartOffsetInBytes, (original.Current.EndOffsetInBytes - original.Current.StartOffsetInBytes)));
             Assert.Equal(retained, copy.Current);
             Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
             index++;
@@ -196,8 +196,8 @@ public sealed class Utf8CursorCopyWorkTests
         // The first copy's EOF must not change the other copy's position.
         while (copy.MoveNext())
         {
-            Assert.Equal((expected[index].Index, expected[index].Length),
-                (copy.Current.IndexInUtf16, copy.Current.LengthInUtf16));
+            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[index].Index, expected[index].Length))),
+                (copy.Current.StartOffsetInBytes, (copy.Current.EndOffsetInBytes - copy.Current.StartOffsetInBytes)));
             Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
             index++;
         }
@@ -274,8 +274,8 @@ public sealed class Utf8CursorCopyWorkTests
     {
         var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
-        return owned ? Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation,
-                ref invocation, out _)
+        invocation.ShareStorageForCursor();
+        return owned ? new Utf8OperationMatchCursor(Program(regex), input, invocation)
             : new Utf8OperationMatchCursor(input, Prepared(regex), true, false, invocation);
     }
 

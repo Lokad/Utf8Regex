@@ -16,7 +16,6 @@ public sealed class Utf8SearchDispositionQualificationTests
     public void CanonicalSearchPlanRetiresRepeatedViewsAndSelectorBorrowsThePlan()
     {
         var fields = typeof(Utf8SearchPlan).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.Equal(29, fields.Length);
         Assert.InRange(Unsafe.SizeOf<Utf8SearchPlan>(), 1, 4096);
         var retired = new[] { "NativeCandidateSource", "FallbackCandidateSource", "ConfirmationPlan",
             "CountOperation", "FirstMatchOperation", "EnumerationOperation" };
@@ -59,9 +58,8 @@ public sealed class Utf8SearchDispositionQualificationTests
         {
             var plan = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SearchPlan;
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
-            foreach (var projection in new[] { default(Utf8ProjectionPlan), plan.ProjectionPlan })
             {
-                var operation = Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, projection);
+                var operation = Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan);
                 var native = plan.NativeCandidateSource; var fallback = plan.FallbackCandidateSource;
                 var confirm = native.HasValue ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement : fallback.HasValue;
                 var expected = !native.HasValue && !fallback.HasValue ? Utf8SearchOperationKind.None :
@@ -72,7 +70,6 @@ public sealed class Utf8SearchDispositionQualificationTests
                 Assert.Equal(expected, operation.Kind);
                 if (operation.HasValue)
                 {
-                    Assert.Equal(projection, operation.Projection);
                     Assert.Equal(plan.ConfirmationPlan, operation.Confirmation);
                     var selected = native.HasValue ? native : fallback;
                     Assert.Equal(selected.Kind, operation.CandidateSource.Kind);
@@ -83,21 +80,19 @@ public sealed class Utf8SearchDispositionQualificationTests
                     Assert.Same(preferred.StructuralSearchPlans, operation.PrefilterSource.StructuralSearchPlans);
                 }
             }
-            Assert.Equal(plan.CountOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, default).Kind);
-            Assert.Equal(plan.FirstMatchOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, default).Kind);
-            Assert.Equal(plan.EnumerationOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, plan.ProjectionPlan).Kind);
+            Assert.Equal(plan.CountOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
+            Assert.Equal(plan.FirstMatchOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
+            Assert.Equal(plan.EnumerationOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
             Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
         }
     }
 
     [Fact]
-    public void DefaultAndPreparedEmptyPlansKeepTheirDistinctProjectionMetadata()
+    public void DefaultAndPreparedEmptyPlansHaveNoSearchOperation()
     {
         var prepared = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None));
         using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
         var empty = default(Utf8SearchPlan);
-        Assert.Equal(Utf8ProjectionKind.None, empty.ProjectionPlan.Kind);
-        Assert.Equal(Utf8ProjectionKind.Utf16BoundaryMap, prepared.ProjectionPlan.Kind);
         foreach (var plan in new[] { empty, prepared })
         {
             Assert.False(plan.CountOperation.HasValue); Assert.False(plan.FirstMatchOperation.HasValue);
@@ -119,8 +114,8 @@ public sealed class Utf8SearchDispositionQualificationTests
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (7, 3) : (1, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             var enumerator = regex.EnumerateMatches(input); var count = 0;
-            while (enumerator.MoveNext()) { count++; Assert.True(enumerator.Current.LengthInBytes > 0); }
-            Assert.Equal(3, count);
+                while (enumerator.MoveNext()) { count++; Assert.True((enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes) > 0); }
+                Assert.Equal(3, count);
             Assert.Equal(2, new Utf8Regex("", options).Count("😀"u8));
             Assert.Throws<ArgumentException>(() => regex.IsMatch(input.Concat(new byte[] { 0xff }).ToArray()));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();

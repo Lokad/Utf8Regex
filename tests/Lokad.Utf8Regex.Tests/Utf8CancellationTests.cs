@@ -168,7 +168,7 @@ public sealed class Utf8CancellationTests
         var token = CancellationToken.None;
         Assert.Equal(regex.IsMatch(s_input), regex.IsMatch(s_input, token));
         Assert.Equal(regex.Count(s_input), regex.Count(s_input, token));
-        Assert.Equal((regex.Match(s_input).IndexInUtf16, regex.Match(s_input).LengthInUtf16), (regex.Match(s_input, token).IndexInUtf16, regex.Match(s_input, token).LengthInUtf16));
+        Assert.Equal((regex.Match(s_input).StartOffsetInBytes, (regex.Match(s_input).EndOffsetInBytes - regex.Match(s_input).StartOffsetInBytes)), (regex.Match(s_input, token).StartOffsetInBytes, (regex.Match(s_input, token).EndOffsetInBytes - regex.Match(s_input, token).StartOffsetInBytes)));
         Assert.Equal(Encoding.UTF8.GetString(regex.Replace(s_input, "pet")), Encoding.UTF8.GetString(regex.Replace(s_input, "pet", token)));
     }
 

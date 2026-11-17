@@ -30,7 +30,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.IsMatch("a??b"u8));
         Assert.False(regex.IsMatch("a😀b"u8));
-        Assert.Equal(10, regex.Match("a😀😀b"u8).LengthInBytes);
+        Assert.Equal(10, (regex.Match("a😀😀b"u8).EndOffsetInBytes - regex.Match("a😀😀b"u8).StartOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -61,7 +61,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
             Assert.Equal(expected, detailed.Success);
             if (expected)
             {
-                Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+                Assert.Equal((0, input.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
                 if (capture)
                 {
@@ -75,7 +75,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
             Assert.Equal(expected, cursor.MoveNext());
             if (expected)
             {
-                Assert.Equal((0, input.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                Assert.Equal((0, input.Length), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
                 Assert.False(cursor.MoveNext());
             }
             Assert.Equal(expected ? "<" + (capture ? body : text) + ">" : text,

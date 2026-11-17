@@ -36,7 +36,7 @@ public sealed class Utf8ReferenceValueMatchTests
                 try
                 {
                     var actual = regex.Match(storage.AsSpan(1, bytes.Length), token.Token);
-                    Assert.Equal((expected.Success, expected.Length), (actual.Success, actual.LengthInUtf16));
+                    Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, diagnostics.ExecutionRoute);
                 }
                 finally { diagnostics.Complete(); }
@@ -63,7 +63,7 @@ public sealed class Utf8ReferenceValueMatchTests
                     foreach (var text in new[] { "I1", "i1", "K1", "K1", "İ1", "ı1", "a١٢", "I1:b2", "a١:b٢" })
                     {
                         var expected = oracle.Match(text); var actual = regex.Match(Encoding.UTF8.GetBytes(text));
-                        Assert.Equal((expected.Success, expected.Length), (actual.Success, actual.LengthInUtf16));
+                        Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                     }
                     CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(name);
                 }
@@ -72,7 +72,7 @@ public sealed class Utf8ReferenceValueMatchTests
         finally { CultureInfo.CurrentCulture = saved; }
         var supplementary = new Utf8Regex(Cell, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Match("a𝟙"u8);
         Assert.True(supplementary.Success);
-        Assert.Equal((5, 3), (supplementary.LengthInBytes, supplementary.LengthInUtf16));
+        Assert.Equal((0, 5), (supplementary.StartOffsetInBytes, supplementary.EndOffsetInBytes));
     }
 
     [Theory]
@@ -85,7 +85,7 @@ public sealed class Utf8ReferenceValueMatchTests
             var bytes = Encoding.ASCII.GetBytes(text);
             var tight = new Utf8Regex(pattern, RegexOptions.IgnoreCase, Timeout.InfiniteTimeSpan,
                 Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            if (length <= 2048) Assert.Equal(length, tight.Match(bytes).LengthInBytes);
+            if (length <= 2048) Assert.Equal(length, (tight.Match(bytes).EndOffsetInBytes - tight.Match(bytes).StartOffsetInBytes));
             else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(bytes)).ResourceKind);
         }
@@ -108,7 +108,7 @@ public sealed class Utf8ReferenceValueMatchTests
         {
             var subject = "a123"; var expected = new Regex(Cell, mode | RegexOptions.IgnoreCase).Match(subject);
             var actual = new Utf8Regex(Cell, mode | RegexOptions.IgnoreCase).Match(bytes);
-            Assert.Equal((expected.Success, expected.Length), (actual.Success, actual.LengthInUtf16));
+            Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
         }
         byte[] malformed = [.. bytes, 0xff]; Assert.Throws<ArgumentException>(() => regex.Match(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();

@@ -30,8 +30,7 @@ public sealed class Utf8IdentifierValueMatchTests
                     var value = regex.Match(backing.AsSpan(1, input.Length), live.Token);
                     var expected = oracle.Match(text);
                     Assert.Equal(expected.Success, value.Success);
-                    if (value.Success) Assert.Equal((expected.Index, expected.Length, expected.Index, expected.Length),
-                        (value.IndexInBytes, value.LengthInBytes, value.IndexInUtf16, value.LengthInUtf16));
+                    if (value.Success) Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
@@ -46,7 +45,7 @@ public sealed class Utf8IdentifierValueMatchTests
     {
         var input = Encoding.ASCII.GetBytes(new string('0', length - 3) + "abc");
         var unlimited = new Utf8Regex(Pattern).Match(input);
-        Assert.Equal((length - 3, 3), (unlimited.IndexInBytes, unlimited.LengthInBytes));
+        Assert.Equal((length - 3, 3), (unlimited.StartOffsetInBytes, (unlimited.EndOffsetInBytes - unlimited.StartOffsetInBytes)));
         var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
         Assert.Equal(unlimited, tight.Match(input));

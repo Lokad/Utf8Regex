@@ -35,7 +35,7 @@ public sealed class Utf8HexColorValueMatchTests
                 var input = Encoding.ASCII.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
                 var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var bcl = oracle.Match(text);
                 Assert.Equal(bcl.Success, expected.Success);
-                if (bcl.Success) ;
+                Utf8MatchSequence.AssertCaptures(bcl, expected, input, text);
                 using var token = new CancellationTokenSource();
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
@@ -43,7 +43,7 @@ public sealed class Utf8HexColorValueMatchTests
                     var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                        (actual.IndexInBytes, actual.LengthInBytes));
+                        (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                     Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                 }
                 finally { session.Complete(); }
@@ -63,9 +63,9 @@ public sealed class Utf8HexColorValueMatchTests
             {
                 var input = Encoding.UTF8.GetBytes(text); var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var actual = regex.Match(input);
                 Assert.Equal(expected.Success, actual.Success);
-                if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                    (actual.IndexInBytes, actual.LengthInBytes));
-            }
+                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
+                        (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                }
         }
         var offset = new Utf8Regex(Color, Fold); var bytes = "#abc"u8.ToArray();
         Assert.True(offset.Match(bytes, 0, []).Success);
@@ -79,7 +79,7 @@ public sealed class Utf8HexColorValueMatchTests
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
                 var regex = new Utf8Regex(Color, RegexOptions.IgnoreCase);
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal(7, regex.Match("#AbC123\n"u8).LengthInBytes);
+                Assert.Equal(7, (regex.Match("#AbC123\n"u8).EndOffsetInBytes - regex.Match("#AbC123\n"u8).StartOffsetInBytes));
             }
         }
         finally { CultureInfo.CurrentCulture = original; }
@@ -90,7 +90,7 @@ public sealed class Utf8HexColorValueMatchTests
     {
         var tight = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan,
             Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        Assert.Equal(7, tight.Match("#ABC123"u8).LengthInBytes);
+        Assert.Equal(7, (tight.Match("#ABC123"u8).EndOffsetInBytes - tight.Match("#ABC123"u8).StartOffsetInBytes));
         var denied = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan, Funded with { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("#ABC123"u8)).ResourceKind);

@@ -79,8 +79,8 @@ public sealed class Utf8ScalarNonBacktrackingTests
             }
         }
         var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInUtf16, match.LengthInUtf16));
-        Assert.Equal(oracle.Matches(text).Select(match => (match.Index, match.Length)), ranges);
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
+        Assert.Equal(oracle.Matches(text).Select(match => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length)))), ranges);
         Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -126,7 +126,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal(2, new Utf8Regex(".*?", options).Count("😀"u8));
         var dots = new Utf8Regex("(.)", options);
         var ranges = new List<(int, int)>();
-        foreach (var item in dots.EnumerateMatches(input)) ranges.Add((item.IndexInBytes, item.LengthInBytes));
+        foreach (var item in dots.EnumerateMatches(input)) ranges.Add((item.StartOffsetInBytes, (item.EndOffsetInBytes - item.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, 1), (1, 4), (5, 4), (9, 1) }, ranges);
         Assert.True(dots.Inspection.PreparedRegex.ScalarProgram is not null);
     }

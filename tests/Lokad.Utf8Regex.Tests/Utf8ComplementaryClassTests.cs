@@ -44,7 +44,7 @@ public sealed class Utf8ComplementaryClassTests
             var regex = new Utf8Regex(pattern, options);
             var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches("aAé😀\n"u8))
-                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+                ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(new[] { (2, 2), (4, 4), (8, 1) }, ranges);
         }
     }
@@ -92,7 +92,7 @@ public sealed class Utf8ComplementaryClassTests
             Assert.Equal(4, regex.Count("é😀b\n"u8));
             var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches("é😀b\n"u8))
-                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+                ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(new[] { (0, 2), (2, 4), (6, 1), (7, 1) }, ranges);
         }
     }

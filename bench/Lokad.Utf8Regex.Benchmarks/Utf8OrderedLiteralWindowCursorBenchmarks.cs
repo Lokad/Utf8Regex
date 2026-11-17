@@ -44,7 +44,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
         var checksum = 0;
         foreach (var match in _utf8.EnumerateMatches(_input))
         {
-            checksum += match.IndexInUtf16 + match.LengthInUtf16;
+            checksum += match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
         }
         return checksum;
     }

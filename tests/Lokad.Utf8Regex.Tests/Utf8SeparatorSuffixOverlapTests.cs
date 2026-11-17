@@ -49,18 +49,18 @@ public sealed class Utf8SeparatorSuffixOverlapTests
             Assert.Equal(expected.Count != 0, first.Success);
             if (first.Success)
             {
-                Assert.Equal(expected[0].Value, Encoding.UTF8.GetString(input.AsSpan(first.IndexInBytes, first.LengthInBytes)));
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index)), first.IndexInBytes);
-            }
+                    Assert.Equal(expected[0].Value, Encoding.UTF8.GetString(input.AsSpan(first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes))));
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index)), first.StartOffsetInBytes);
+                }
             var actual = regex.EnumerateMatches(input, cancellation.Token);
             var index = 0;
             while (actual.MoveNext())
             {
                 Assert.True(index < expected.Count);
                 var match = expected[index++];
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), actual.Current.IndexInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(match.Value), actual.Current.LengthInBytes);
-            }
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), actual.Current.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(match.Value), (actual.Current.EndOffsetInBytes - actual.Current.StartOffsetInBytes));
+                }
             Assert.Equal(expected.Count, index);
         }
     }

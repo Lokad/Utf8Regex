@@ -170,7 +170,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             var wanted = oracle.Match(text);
-            Assert.Equal((wanted.Index, wanted.Length), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
+            Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(wanted.Index, wanted.Length))), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
             foreach (var number in oracle.GetGroupNumbers())
                 Assert.Equal(wanted.Groups[number].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
         }
@@ -196,11 +196,11 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
         var first = regex.Match(input);
-        Assert.Equal((0, input.Length), (first.IndexInBytes, first.LengthInBytes));
+        Assert.Equal((0, input.Length), (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
         var ranges = new List<(int, int)>();
-        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, input.Length) }, ranges);
         Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
         Assert.Equal(Encoding.UTF8.GetBytes("<" + text + ">"), regex.Replace(input, "<$&>"u8));

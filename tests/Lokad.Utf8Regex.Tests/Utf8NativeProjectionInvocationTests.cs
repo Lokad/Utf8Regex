@@ -64,123 +64,6 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(0UL, only.Ledger.ReservedBytes);
     }
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EveryValidationAndProjectionWorkCutoffKeepsResultsUnpublishedAndCallerLeases(bool project)
-    {
-        var gap = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é中\U0001f600", 6000)));
-        byte[] input = [.. gap, .. "abc"u8.ToArray()];
-        var baseline = Metered();
-        if (project)
-            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ProjectionExecutor.TryProjectMatch(new(Utf8ProjectionKind.Utf16Incremental),
-                input, 0, 0, gap.Length, 3, 3, ref baseline, out _, out _, out _));
-        else Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref baseline, out _));
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            if (project)
-            {
-                var breach = Utf8ProjectionExecutor.TryProjectMatch(new(Utf8ProjectionKind.Utf16Incremental), input,
-                    0, 0, gap.Length, 3, 3, ref invocation, out var match, out var nextBytes, out var nextUnits);
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
-                Assert.False(match.Success);
-                Assert.Equal(0, nextBytes);
-                Assert.Equal(0, nextUnits);
-            }
-            else
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8Validation.TryValidate(input, ref invocation, out var validation));
-                Assert.Equal(0, validation.ByteLength);
-                var only = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-                Assert.True(only.Ledger.TryReserve(7));
-                Assert.Throws<InvalidOperationException>(() => Utf8Validation.ThrowIfInvalidOnly(input, ref only));
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, only.Budget.LimitBreach);
-                Assert.Equal(cap + 1, only.Budget.Steps);
-                Assert.Equal(7UL, only.Ledger.ReservedBytes);
-            }
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
-        var recovery = Metered();
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidate(input, ref recovery, out var recovered));
-        Assert.Equal(24003, recovered.Utf16Length);
-    }
-    [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, false, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(false, true, true)]
-    public void LongValidationAndProjectionPollOriginalTokenAndDeadline(bool project, bool expire, bool validityOnly)
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var gap = Encoding.UTF8.GetBytes(validityOnly
-            ? new string('x', 320000) + "😀"
-            : new string('中', 160000));
-        byte[] input = [.. gap, .. "abc"u8.ToArray()];
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
-        var entered = false;
-        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } };
-        var match = Utf8ValueMatch.NoMatch;
-        var nextBytes = 0;
-        var nextUnits = 0;
-        void Run()
-        {
-            if (project) Utf8ProjectionExecutor.TryProjectMatch(new(Utf8ProjectionKind.Utf16Incremental), input,
-                0, 0, gap.Length, 3, 3, ref invocation, out match, out nextBytes, out nextUnits);
-            else if (validityOnly) Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
-            else Utf8Validation.TryValidate(input, ref invocation, out _);
-        }
-        if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
-        else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
-        Assert.True(entered);
-        Assert.False(match.Success);
-        Assert.Equal(0, nextBytes);
-        Assert.Equal(0, nextUnits);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-    }
-    [Theory]
-    [InlineData((int)Utf8ProjectionKind.ByteOnly)]
-    [InlineData((int)Utf8ProjectionKind.Utf16Incremental)]
-    [InlineData((int)Utf8ProjectionKind.Utf16BoundaryMap)]
-    public void ProjectionCoordinatesRetainIncrementalConsumedState(int kind)
-    {
-        const string gapText = "é中\U0001f600";
-        var gap = Encoding.UTF8.GetBytes(gapText);
-        byte[] input = [.. "xx"u8.ToArray(), .. gap, .. "abc"u8.ToArray()];
-        var invocation = Metered();
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ProjectionExecutor.TryProjectMatch(new((Utf8ProjectionKind)kind), input,
-            2, 2, gap.Length + 2, 3, 3, ref invocation, out var actual, out var nextBytes, out var nextUnits));
-        var expectedIndex = 2 + (kind == (int)Utf8ProjectionKind.ByteOnly ? gap.Length : gapText.Length);
-        Assert.Equal(expectedIndex, actual.IndexInUtf16);
-        Assert.Equal(gap.Length + 2, actual.IndexInBytes);
-        Assert.Equal(3, actual.LengthInUtf16);
-        Assert.Equal(input.Length, nextBytes);
-        Assert.Equal(expectedIndex + 3, nextUnits);
-    }
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LiteralFamilyProjectionUsesCachedOrValidatedMatchLength(bool cached)
-    {
-        const string prefix = "é中\U0001f600";
-        const string literal = "中\U0001f600";
-        var prefixBytes = Encoding.UTF8.GetBytes(prefix);
-        var literalBytes = Encoding.UTF8.GetBytes(literal);
-        byte[] input = [.. prefixBytes, .. literalBytes];
-        var invocation = Metered();
-        var match = new PreparedSearchMatch(prefixBytes.Length, literalBytes.Length, 0);
-        var actual = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-            input, cached ? [literal.Length] : null, 0, 0, match, ref invocation, out var nextBytes, out var nextUnits);
-        Assert.Equal(prefix.Length, actual.IndexInUtf16);
-        Assert.Equal(literal.Length, actual.LengthInUtf16);
-        Assert.Equal(input.Length, nextBytes);
-        Assert.Equal(prefix.Length + literal.Length, nextUnits);
-    }
-    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
@@ -203,8 +86,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
         var cursor = family switch
         {
-            6 or 7 => new Utf8OperationMatchCursor(input, literal, budget,
-                family == 6 ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix),
+            6 or 7 => new Utf8OperationMatchCursor(input, literal, budget, family == 6 ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix),
             8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, false, true),
             _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
         };

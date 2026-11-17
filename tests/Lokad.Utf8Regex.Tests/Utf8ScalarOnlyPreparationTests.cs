@@ -23,7 +23,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
         Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         var count = 0;
         foreach (var value in regex.EnumerateMatches(input))
-        { Assert.Equal(8, value.LengthInBytes); count++; }
+        { Assert.Equal(8, (value.EndOffsetInBytes - value.StartOffsetInBytes)); count++; }
         Assert.Equal(2, count);
         Assert.Equal("😀<abab>中<abab>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
         var parts = new List<string>();
@@ -74,7 +74,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
         Assert.True(prepared.FallbackDirectFamily.HasValue);
         Assert.NotNull(prepared.ExecutionTree);
         Assert.Equal(1, regex.Count("cat cat"u8));
-        Assert.Equal(3, regex.Match("cat cat"u8).LengthInBytes);
+        Assert.Equal(3, (regex.Match("cat cat"u8).EndOffsetInBytes - regex.Match("cat cat"u8).StartOffsetInBytes));
     }
 
     private static void AssertScalarPreparation(Utf8Regex regex)

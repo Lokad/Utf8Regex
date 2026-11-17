@@ -28,8 +28,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8ResourceLimitExceededException CreateExecutionResourceFailure()
         => _sliceInvocation.Budget.CreateResourceFailure();
 
-    internal System.Text.RegularExpressions.RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input,
-        string pattern, TimeSpan timeout)
+    internal System.Text.RegularExpressions.RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input, string pattern, TimeSpan timeout)
         => Utf8Regex.CreateMatchTimeoutException(_sliceInvocation.Ledger.HasMemoryAllowance ? default : input,
             pattern, timeout, _sliceInvocation.Budget.Limits);
 
@@ -44,8 +43,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
 
     internal Utf8AsciiDeterministicScanState DebugDeterministicScanState => _deterministicScanState;
-
-    internal (int Bytes, int Utf16) DebugConsumed => (_consumed, _consumedUtf16);
+    internal int DebugConsumed => _consumed;
 
     internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
@@ -62,30 +60,20 @@ internal ref partial struct Utf8OperationMatchCursor
     private readonly EnumeratorMode _mode;
     private readonly Utf8OperationMatchCursorPlans _plans;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
-    private readonly int[]? _alternateLiteralUtf16Lengths;
-    private readonly bool _asciiInput;
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
-    private Utf8BoundaryMap? _boundaryMap;
     private readonly Utf8ExecutionDeadline _budget;
-    private readonly int _literalUtf16Length;
-    private readonly Utf8ProjectionPlan _projectionPlan;
     private readonly Utf8SearchOperationPlan _program;
     private ReadOnlySpan<byte> _remaining;
     private int _consumed;
-    private int _consumedUtf16;
     private PreparedMultiLiteralScanState _multiLiteralScanState;
     private Utf8AsciiDeterministicScanState _deterministicScanState;
-    private Utf8ValueMatch _current;
-    private int _lastLiteralFamilyBranchId;
+    private Utf8CaptureRange _current;
     private int _baseByteOffset;
-    private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
     private Utf8NonBacktrackingSearchState? _nonBacktrackingState;
     private int _nonBacktrackingBoundary;
-    // Owned VM state and native projection share this cursor's invocation.
-    // Literal discovery and projection use one state; other native families
-    // still need scan-wide token/finite-policy routing and accounting.
+    // Native discovery/publication and the owned VM retain one invocation.
     private Utf8SliceInvocation _sliceInvocation;
     private bool _nativeStructuralExhausted;
     private bool _preserveOffsetCurrent;
@@ -98,26 +86,17 @@ internal ref partial struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _asciiInput = asciiInput;
         _literal = literal;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = literal.Length;
-        // This nonempty-literal mode projects incrementally and never uses the
-        // whole-subject UTF-16 length owned by the empty-literal mode.
-        _projectionPlan = default;
         _program = default;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = executionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral => EnumeratorMode.ExactAsciiLiteral,
@@ -128,14 +107,10 @@ internal ref partial struct Utf8OperationMatchCursor
 
     // Transfer invocation ownership exactly once when constructing a literal
     // cursor. Validation already performed by its caller keeps its charged work.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
-        bool asciiInput, bool rightToLeft, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."),
-            regexPlan.ExecutionKind, invocation.Budget.Deadline, asciiInput)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool asciiInput, bool rightToLeft, Utf8SliceInvocation invocation)
+        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."), regexPlan.ExecutionKind, invocation.Budget.Deadline, asciiInput)
     {
         _sliceInvocation = invocation;
-        _literalUtf16Length = regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
-            ? Utf8Validation.Validate(_literal, ref _sliceInvocation).Utf16Length : _literalUtf16Length;
         _mode = (regexPlan.ExecutionKind, rightToLeft) switch
         {
             (NativeExecutionKind.ExactAsciiLiteral, false) => EnumeratorMode.ExactAsciiLiteral,
@@ -158,26 +133,17 @@ internal ref partial struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _asciiInput = asciiInput;
         _literal = literal;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = executionKind == NativeExecutionKind.ExactUtf8Literal
-            ? Utf8Validation.Validate(literal, ref _sliceInvocation).Utf16Length
-            : literal.Length;
-        _projectionPlan = default;
         _program = default;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = (executionKind, rightToLeft) switch
         {
             (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
@@ -192,90 +158,63 @@ internal ref partial struct Utf8OperationMatchCursor
 
 
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        Utf8PreparedRegex regexPlan,
-        bool useStructuralLinearProgram,
-        Utf8ExecutionDeadline budget,
-        bool asciiInput)
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool useStructuralLinearProgram, Utf8ExecutionDeadline budget, bool asciiInput)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         ref readonly var structuralLinearProgram = ref regexPlan.StructuralLinearProgram;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
         _literal = null;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = 0;
-        _asciiInput = asciiInput;
-        _projectionPlan = useStructuralLinearProgram ? default : searchPlan.ProjectionPlan;
         _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = useStructuralLinearProgram
             ? (structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow
                 ? EnumeratorMode.AsciiOrderedLiteralWindow
                 : structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
                 ? EnumeratorMode.AsciiFixedTokenPattern
                 : EnumeratorMode.AsciiDeterministicPattern)
-            : EnumeratorMode.AsciiSimplePattern;
+            : !asciiInput && !regexPlan.SimplePatternPlan.IsUtf8ByteSafe
+                ? EnumeratorMode.AsciiSimplePatternScalar
+                : EnumeratorMode.AsciiSimplePattern;
     }
 
-    public Utf8ValueMatch CurrentValueMatch => ApplyBaseOffsets(_current);
+    public Utf8CaptureRange CurrentValueMatch => ApplyBaseOffsets(_current);
 
     // Transfer the already validated caller invocation into a simple-pattern
     // cursor, retaining work counters, deadline, token and borrowed reservations.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
-        Utf8SliceInvocation invocation, bool asciiInput)
-        : this(input, regexPlan, regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue,
-            invocation.Budget.Deadline, asciiInput)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation, bool asciiInput)
+        : this(input, regexPlan, regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue, invocation.Budget.Deadline, asciiInput)
     {
         _sliceInvocation = invocation;
     }
 
-    /// <summary>Gets the alternate index of the last literal match, or -1 when the last
-    /// successful move did not come from a literal search. Singular literals always report 0.</summary>
-    internal int LastLiteralFamilyBranchId =>
-        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals or EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlAsciiLiteralIgnoreCase or EnumeratorMode.RtlExactUtf8Literal
-            ? _lastLiteralFamilyBranchId
-            : -1;
-
-    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map, Utf8SliceInvocation invocation)
-        : this(program, input, map, invocation, program.RightToLeft ? input.Length : 0)
+    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
+        : this(program, input, invocation, program.RightToLeft ? input.Length : 0)
     {
     }
 
-    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap? map, Utf8SliceInvocation invocation, int startByte)
+    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation, int startByte)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
         _literal = null;
         _input = input;
-        _boundaryMap = map;
         _budget = Utf8ExecutionDeadline.Infinite;
-        _literalUtf16Length = 0;
-        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _remaining = default;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _lastLiteralFamilyBranchId = 0;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _sliceProgram = program;
         _sliceInvocation = invocation;
         _sliceInvocation.ShareStorageForCursor();
@@ -296,63 +235,15 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.OwnedSlice;
     }
 
-    // Entry work and the map reservation move together into the legacy cursor.
-    internal static Utf8OperationMatchCursor CreateMapped(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, scoped ref Utf8SliceInvocation invocation,
-        out Utf8BoundaryMap map)
-    {
-        invocation.ShareStorageForCursor();
-        map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
-        try
-        {
-            return new Utf8OperationMatchCursor(program, input, map, invocation);
-        }
-        catch
-        {
-            invocation.Ledger.Release(reservation);
-            map = default;
-            throw;
-        }
-    }
-
-    internal static Utf8OperationMatchCursor CreateMappedFromByte(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        scoped ref Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startByte)
-    {
-        invocation.ShareStorageForCursor();
-        try
-        {
-            if ((uint)startByte > (uint)input.Length || startByte < input.Length && (input[startByte] & 0xc0) == 0x80)
-                throw new ArgumentOutOfRangeException(nameof(startByte));
-            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation, startByte);
-            return cursor;
-        }
-        catch
-        {
-            invocation.Ledger.Release(reservation);
-            map = default;
-            throw;
-        }
-    }
-
-    internal void ReleaseOwnedBoundaryMap()
+    internal void ReleaseOwnedSearchState()
     {
         _nonBacktrackingState = null;
-        // Published payloads stay numerically charged for the shared invocation.
-        // The map/table references are ordinary managed roots, with no lease.
-        _boundaryMap = null;
     }
 
-    // Explicit UTF-16 interoperability starts resolve once to the original byte
-    // boundary. Matching and empty progress then use complete scalars only.
+    // Byte starts retain the original subject for assertions and scalar progress.
     internal Utf8OperationMatchCursor(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        TimeSpan timeout,
-        CancellationToken token,
-        int startUnit)
-        : this(program, input, map, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token),
-            map.Resolve(startUnit).ByteOffset)
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, TimeSpan timeout, CancellationToken token, int startByte)
+        : this(program, input, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token), startByte)
     {
     }
 
@@ -377,19 +268,9 @@ internal ref partial struct Utf8OperationMatchCursor
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
             if (outcome.Found)
             {
-                // Legacy match enumeration still requests this projection;
-                // byte-only splits never construct or retain its map.
-                var projected = Utf8ValueMatch.NoMatch;
-                if (_boundaryMap is { } map)
-                {
-                    var start = map.GetUtf16OffsetForByteOffset(outcome.StartByte);
-                    var end = map.GetUtf16OffsetForByteOffset(outcome.EndByte);
-                    projected = new Utf8ValueMatch(true, true, start, end - start,
-                        outcome.StartByte, outcome.EndByte - outcome.StartByte);
-                }
                 CheckOwnedSliceCursorBoundary();
-                if (_boundaryMap is not null) _current = projected;
                 range = new Utf8CaptureRange(outcome.StartByte, outcome.EndByte);
+                _current = range;
                 var edge = _sliceProgram.RightToLeft ? outcome.StartByte : outcome.EndByte;
                 if (outcome.EndByte > outcome.StartByte)
                 {
@@ -401,13 +282,13 @@ internal ref partial struct Utf8OperationMatchCursor
             }
 
             CheckOwnedSliceCursorBoundary();
-            ReleaseOwnedBoundaryMap();
+            ReleaseOwnedSearchState();
             _sliceProgram = null;
             return false;
         }
         catch
         {
-            ReleaseOwnedBoundaryMap();
+            ReleaseOwnedSearchState();
             _sliceProgram = null;
             throw;
         }
@@ -423,70 +304,27 @@ internal ref partial struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
         _literal = literal;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = literal.Length;
-        _projectionPlan = default;
         _program = default;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _lastLiteralFamilyBranchId = 0;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _sliceProgram = null;
         _slicePositionByte = 0;
         _sliceOriginByte = 0;
         _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        Utf8PreparedRegex regexPlan,
-        Utf8BoundaryMap boundaryMap,
-        Utf8ExecutionDeadline budget)
-    {
-        _plans = regexPlan.OperationMatchCursorPlans;
-        _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
-        _asciiInput = false;
-        _literal = null;
-        _input = input;
-        _boundaryMap = boundaryMap;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = 0;
-        _projectionPlan = default;
-        _program = default;
-        _remaining = input;
-        _consumed = 0;
-        _consumedUtf16 = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _lastLiteralFamilyBranchId = 0;
-        _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
-        _sliceProgram = null;
-        _slicePositionByte = 0;
-        _sliceOriginByte = 0;
-        _mode = EnumeratorMode.AsciiSimplePatternScalar;
-    }
-
     // Anchored ASCII literal suffix enumeration: at most one match at the input
     // end (or right before a single trailing line feed for the lax kind).
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        byte[] literal,
-        Utf8ExecutionDeadline budget,
-        Utf8FallbackDirectFamilyKind familyKind)
+        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8FallbackDirectFamilyKind familyKind)
         : this(input, literal, budget)
     {
         // The mode carries strictness so verification needs no extra fields.
@@ -503,6 +341,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     public bool MoveNext()
     {
+        _budget.CheckNow();
         if (_hasAnchoredLiteralInvocation)
         {
             var breach = TryMoveNextAnchoredLiteral(out var found);
@@ -529,7 +368,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            _current = new Utf8ValueMatch(true, true, 0, literal.Length, 0, literal.Length);
+            _current = new Utf8CaptureRange(0, (0) + (literal.Length));
             return true;
         }
 
@@ -556,14 +395,13 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            _current = new Utf8ValueMatch(true, true, 0, foldedPrefixLiteral.Length, 0, foldedPrefixLiteral.Length);
+            _current = new Utf8CaptureRange(0, (0) + (foldedPrefixLiteral.Length));
             return true;
         }
 
         // Anchored suffix verification mirrors Utf8AsciiAnchoredSuffixFamilyExecutor
         // inline: the cursor keeps no plan reference, and the mode carries lax versus
-        // strict end handling. Only the start index needs UTF-16 mapping on
-        // non-ASCII input; ASCII literal lengths match in both encodings.
+        // strict end handling. Results retain the original byte endpoints.
         if (_mode is EnumeratorMode.AnchoredAsciiLiteralSuffix or EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd)
         {
             if (_consumed != 0)
@@ -593,19 +431,13 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            var suffixStartUtf16 = suffixStart;
-            if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            {
-                suffixStartUtf16 = Utf8SliceBufferWork.CountUtf16(_input[..suffixStart], ref _sliceInvocation);
-            }
 
-            _current = new Utf8ValueMatch(true, true, suffixStartUtf16, suffixLiteral.Length, suffixStart, suffixLiteral.Length);
+            _current = new Utf8CaptureRange(suffixStart, (suffixStart) + (suffixLiteral.Length));
             return true;
         }
 
         // Folded anchored suffixes mirror the exact block with per-byte invariant
-        // folding; the mode carries lax versus strict end handling, and only the
-        // start index needs UTF-16 mapping on non-ASCII input.
+        // folding; the mode carries lax versus strict end handling.
         if (_mode is EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix or EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
         {
             if (_consumed != 0)
@@ -635,13 +467,8 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            var foldedSuffixStartUtf16 = foldedSuffixStart;
-            if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            {
-                foldedSuffixStartUtf16 = Utf8SliceBufferWork.CountUtf16(_input[..foldedSuffixStart], ref _sliceInvocation);
-            }
 
-            _current = new Utf8ValueMatch(true, true, foldedSuffixStartUtf16, foldedSuffixLiteral.Length, foldedSuffixStart, foldedSuffixLiteral.Length);
+            _current = new Utf8CaptureRange(foldedSuffixStart, (foldedSuffixStart) + (foldedSuffixLiteral.Length));
             return true;
         }
 
@@ -666,8 +493,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            var projected = Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), _input,
-                0, 0, match.Index, match.Length, match.Length, ref _sliceInvocation, out _, out _);
+            var projected = Utf8SliceBufferWork.CreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation);
             _current = projected;
             _consumed = match.Index + match.Length;
             return true;
@@ -720,31 +546,25 @@ internal ref partial struct Utf8OperationMatchCursor
         }
 
         _consumed = nextStart;
-        _consumedUtf16 = nextStart;
         _remaining = _input[nextStart..];
         return true;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, int literalUtf16Length, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, Utf8ExecutionDeadline budget)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
         _literal = literal;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = literalUtf16Length;
-        _projectionPlan = searchPlan.EnumerationOperation.Projection;
         _program = searchPlan.EnumerationOperation;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _mode = EnumeratorMode.ExactUtf8Literal;
     }
 
@@ -769,8 +589,7 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     // The caller transfers the state already used for whole-subject validation.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
-        bool inputIsAscii, Utf8SliceInvocation invocation)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool inputIsAscii, Utf8SliceInvocation invocation)
         : this(input, regexPlan, regexPlan.ExecutionKind, inputIsAscii, invocation.Budget.Deadline)
     {
         _sliceInvocation = invocation;
@@ -782,104 +601,72 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        Utf8PreparedRegex regexPlan,
-        NativeExecutionKind executionKind,
-        bool inputIsAscii,
-        Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, bool inputIsAscii, Utf8ExecutionDeadline budget)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
         _literal = null;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = 0;
-        // Proven ASCII has identical byte and UTF-16 coordinates for exact and
-        // folded families; no inter-match gap needs another validation scan.
-        var useByteOnlyProjection = inputIsAscii;
-        _projectionPlan = useByteOnlyProjection
-            ? new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly)
-            : searchPlan.EnumerationOperation.Projection;
-        _program = useByteOnlyProjection
-            ? searchPlan.EnumerationOperation.WithProjection(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly))
-            : searchPlan.EnumerationOperation;
+        _program = searchPlan.EnumerationOperation;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             ? EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
             : EnumeratorMode.ExactUtf8Literals;
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-        : this(input, (Utf8BoundaryMap?)null, budget)
+        : this(input, budget)
     {
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
         _literal = Array.Empty<byte>();
         _input = input;
-        _boundaryMap = boundaryMap;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = 0;
-        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.EmptyLiteral;
     }
 
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
-        Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch, Utf8ExecutionDeadline budget)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = smallAsciiLiteralFamilySearch;
-        _alternateLiteralUtf16Lengths = null;
         _literal = null;
         _input = input;
-        _boundaryMap = null;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _literalUtf16Length = 0;
-        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly);
         _program = default;
         _remaining = input;
         _consumed = 0;
-        _consumedUtf16 = 0;
         _multiLiteralScanState = default;
         _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
     }
 
     // R05: offset enumeration starts the scan at the floor unit over the full input so
     // line anchors keep their true left context; at floor zero this is the default state.
-    public Utf8OperationMatchCursor WithStartFloor(int startByteOffset, int startUtf16Offset)
+    public Utf8OperationMatchCursor WithStartFloor(int startByteOffset)
     {
         if (_sliceProgram is not null)
         {
@@ -894,7 +681,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;
-        _consumedUtf16 = startUtf16Offset;
         _deterministicScanState = new Utf8AsciiDeterministicScanState(startByteOffset, startByteOffset);
         _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
         _structuralSearchState = new Utf8StructuralSearchState(new PreparedSearchScanState(startByteOffset, default), default);
@@ -909,7 +695,7 @@ internal ref partial struct Utf8OperationMatchCursor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
-        // Candidate progress is tentative until its confirmation and projection
+        // Candidate progress is tentative until its confirmation and publication
         // both succeed. A denied move retains the previous public result.
         var pending = _structuralSearchState;
         breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_plans.StructuralSearchPlan,
@@ -924,8 +710,7 @@ internal ref partial struct Utf8OperationMatchCursor
             _nativeStructuralExhausted = true;
             return Utf8ExecutionLimitKind.None;
         }
-        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), _input,
-            0, 0, match.Index, match.Length, match.Length, ref _sliceInvocation, out var projected, out _, out _);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _structuralSearchState = pending;
@@ -935,10 +720,9 @@ internal ref partial struct Utf8OperationMatchCursor
         return Utf8ExecutionLimitKind.None;
     }
 
-    public Utf8OperationMatchCursor WithBaseOffsets(int byteOffset, int utf16Offset)
+    public Utf8OperationMatchCursor WithBaseOffset(int byteOffset)
     {
         _baseByteOffset = byteOffset;
-        _baseUtf16Offset = utf16Offset;
         return this;
     }
 
@@ -958,7 +742,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8ExecutionLimitKind TryMoveNextLiteral(out bool found)
     {
         found = false;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         var literal = _literal;
         if (literal is not { Length: > 0 }) return Utf8ExecutionLimitKind.None;
         var reverse = _mode is EnumeratorMode.RtlExactAsciiLiteral or
@@ -967,22 +751,16 @@ internal ref partial struct Utf8OperationMatchCursor
         var breach = Utf8SearchExecutor.TryFindLiteral(plan, _input, reverse ? 0 : _consumed,
             reverse ? _remaining.Length : _input.Length, reverse, ref _sliceInvocation, out var index);
         if (breach != Utf8ExecutionLimitKind.None || index < 0) return breach;
-
-        var projection = new Utf8ProjectionPlan(_asciiInput ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental);
-        breach = Utf8ProjectionExecutor.TryProjectMatch(projection, _input,
-            reverse ? 0 : _consumed, reverse ? 0 : _consumedUtf16, index,
-            literal.Length, _literalUtf16Length, ref _sliceInvocation,
-            out var match, out var nextBytes, out var nextUnits);
+        var nextBytes = (index) + (literal.Length);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(index, (index) + (literal.Length), ref _sliceInvocation, out var match);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _current = match;
         if (reverse) _remaining = _input[..index];
         else
         {
             _consumed = nextBytes;
-            _consumedUtf16 = nextUnits;
             _remaining = _input[_consumed..];
         }
-        _lastLiteralFamilyBranchId = 0;
         found = true;
         return Utf8ExecutionLimitKind.None;
     }
@@ -1006,7 +784,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8ExecutionLimitKind TryMoveNextLiteralFamily(out bool found)
     {
         found = false;
-        _current = Utf8ValueMatch.NoMatch;
+        _current = default(Utf8CaptureRange);
         var pendingState = _multiLiteralScanState;
         ref readonly var searchPlan = ref _plans.SearchPlan;
         var breach = Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(searchPlan, _program,
@@ -1017,17 +795,12 @@ internal ref partial struct Utf8OperationMatchCursor
             _multiLiteralScanState = pendingState;
             return Utf8ExecutionLimitKind.None;
         }
-        var units = _alternateLiteralUtf16Lengths is { } lengths && (uint)match.LiteralId < (uint)lengths.Length
-            ? lengths[match.LiteralId] : match.Length;
-        breach = Utf8ProjectionExecutor.TryProjectMatch(_projectionPlan, _input,
-            _consumed, _consumedUtf16, match.Index, match.Length, units,
-            ref _sliceInvocation, out var projected, out var bytes, out var utf16);
+        var bytes = (match.Index) + (match.Length);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _multiLiteralScanState = pendingState;
-        _lastLiteralFamilyBranchId = match.LiteralId;
         _current = projected;
         _consumed = bytes;
-        _consumedUtf16 = utf16;
         _remaining = _input[_consumed..];
         found = true;
         return Utf8ExecutionLimitKind.None;
@@ -1040,13 +813,7 @@ internal ref partial struct Utf8OperationMatchCursor
             return false;
         }
 
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: matchIndex,
-            lengthInUtf16: matchLength,
-            indexInBytes: matchIndex,
-            lengthInBytes: matchLength);
+        _current = new Utf8CaptureRange(matchIndex, (matchIndex) + (matchLength));
         return true;
     }
 
@@ -1071,7 +838,7 @@ internal ref partial struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref _plans.SearchPlan;
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
         // Anchors see the complete subject, while discovery starts at the
-        // caller's floor. No result or floor is published before projection.
+        // caller's floor. No result or floor is published before publication.
         breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(_input, searchPlan, simplePatternPlan, _consumed, ref _sliceInvocation, out var absolute, out var length);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (absolute < 0)
@@ -1082,34 +849,23 @@ internal ref partial struct Utf8OperationMatchCursor
             _nativeStructuralExhausted = true;
             return Utf8ExecutionLimitKind.None;
         }
-        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(_asciiInput
-                ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental), _input,
-            _consumed, _consumedUtf16, absolute, length, length, ref _sliceInvocation,
-            out var projected, out var consumed, out var consumedUtf16);
+        var consumed = (absolute) + (length);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(absolute, (absolute) + (length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _current = projected;
         _consumed = consumed;
-        _consumedUtf16 = consumedUtf16;
         _remaining = _input[_consumed..];
         found = true;
         return Utf8ExecutionLimitKind.None;
     }
 
     // Scalar simple-pattern enumeration: every scalar start steps through the shared
-    // scalar verifier and projects through the boundary map. Construction sites qualify
-    // up front (astral-free non-ASCII with scalar-verifiable tokens), so matches here
-    // are always scalar-aligned; a projection miss throws instead of hiding later
-    // matches.
+    // scalar verifier. Construction sites qualify astral-free non-ASCII subjects
+    // with scalar-verifiable tokens, yielding complete scalar byte ranges.
     private bool MoveNextScalarSimplePattern()
     {
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        if (_boundaryMap is null)
-        {
-            return false;
-        }
-
-        var map = _boundaryMap.Value;
         _budget.Step();
         var relative = Utf8ScalarSimplePatternVerifier.FindNextScalar(_remaining, in simplePatternPlan, _budget, 0, out var matchByteLength);
         if (relative < 0)
@@ -1118,15 +874,8 @@ internal ref partial struct Utf8OperationMatchCursor
         }
 
         var matchByte = _consumed + relative;
-        if (!map.TryGetUtf16OffsetForByteOffset(matchByte, out var startUnit) ||
-            !map.TryGetUtf16OffsetForByteOffset(matchByte + matchByteLength, out var endUnit))
-        {
-            throw new InvalidOperationException("The scalar match is not aligned to UTF-8 scalar boundaries.");
-        }
-
-        _current = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit, matchByte, matchByteLength);
+        _current = new Utf8CaptureRange(matchByte, (matchByte) + (matchByteLength));
         _consumed = matchByte + matchByteLength;
-        _consumedUtf16 = endUnit;
         _remaining = _input[_consumed..];
         return true;
     }
@@ -1160,16 +909,13 @@ internal ref partial struct Utf8OperationMatchCursor
             _deterministicScanState = pending;
             return Utf8ExecutionLimitKind.None;
         }
-        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(_asciiInput
-                ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental), _input,
-            _consumed, _consumedUtf16, match.Index, match.Length, match.Length, ref _sliceInvocation,
-            out var projected, out var consumed, out var consumedUtf16);
+        var consumed = (match.Index) + (match.Length);
+        breach = Utf8SliceBufferWork.TryCreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _deterministicScanState = pending;
         _current = projected;
         _consumed = consumed;
-        _consumedUtf16 = consumedUtf16;
         found = true;
         return Utf8ExecutionLimitKind.None;
     }
@@ -1182,17 +928,11 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         if (_consumed < 0)
         {
-            _current = Utf8ValueMatch.NoMatch;
+            _current = default(Utf8CaptureRange);
             return false;
         }
 
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: _consumedUtf16,
-            lengthInUtf16: 0,
-            indexInBytes: _consumed,
-            lengthInBytes: 0);
+        _current = new Utf8CaptureRange(_consumed, (_consumed) + (0));
         if (_consumed == _input.Length)
             _consumed = -1;
         else
@@ -1200,27 +940,21 @@ internal ref partial struct Utf8OperationMatchCursor
             if (Rune.DecodeFromUtf8(_input[_consumed..], out var scalar, out var width) != OperationStatus.Done)
                 throw Utf8Validation.CreateInvalidUtf8Exception(_consumed);
             _consumed += width;
-            _consumedUtf16 += scalar.Utf16SequenceLength;
         }
         return true;
     }
 
 
 
-    private Utf8ValueMatch ApplyBaseOffsets(Utf8ValueMatch match)
+    private Utf8CaptureRange ApplyBaseOffsets(Utf8CaptureRange match)
     {
-        if (!match.Success || (_baseByteOffset | _baseUtf16Offset) == 0)
+        if (!match.Success || _baseByteOffset == 0)
         {
             return match;
         }
 
-        return new Utf8ValueMatch(
-            success: true,
-            isByteAligned: match.IsByteAligned,
-            indexInUtf16: _baseUtf16Offset + match.IndexInUtf16,
-            lengthInUtf16: match.LengthInUtf16,
-            indexInBytes: match.IsByteAligned ? _baseByteOffset + match.IndexInBytes : match.IndexInBytes,
-            lengthInBytes: match.LengthInBytes);
+        return new Utf8CaptureRange(_baseByteOffset + match.StartOffsetInBytes,
+            _baseByteOffset + match.EndOffsetInBytes);
     }
 
     private enum EnumeratorMode : byte

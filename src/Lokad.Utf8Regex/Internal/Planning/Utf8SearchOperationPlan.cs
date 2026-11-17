@@ -26,18 +26,12 @@ internal enum Utf8SearchObservabilityKind : byte
 internal readonly struct Utf8SearchOperationPlan
 {
     private Utf8SearchOperationPlan(
-        Utf8SearchOperationKind kind,
-        Utf8CandidateSearchPlan candidateSource,
-        Utf8CandidateSearchPlan prefilterSource,
-        Utf8ConfirmationPlan confirmation,
-        Utf8ProjectionPlan projection,
-        Utf8SearchObservabilityKind observabilityKind)
+        Utf8SearchOperationKind kind, Utf8CandidateSearchPlan candidateSource, Utf8CandidateSearchPlan prefilterSource, Utf8ConfirmationPlan confirmation, Utf8SearchObservabilityKind observabilityKind)
     {
         Kind = kind;
         CandidateSource = candidateSource;
         PrefilterSource = prefilterSource;
         Confirmation = confirmation;
-        Projection = projection;
         ObservabilityKind = observabilityKind;
     }
 
@@ -49,19 +43,12 @@ internal readonly struct Utf8SearchOperationPlan
 
     public Utf8ConfirmationPlan Confirmation { get; }
 
-    public Utf8ProjectionPlan Projection { get; }
-
     public Utf8SearchObservabilityKind ObservabilityKind { get; }
 
     public bool HasValue => Kind != Utf8SearchOperationKind.None;
 
     public static Utf8SearchOperationPlan Create(
-        Utf8SearchOperationKind kind,
-        Utf8CandidateSearchPlan candidateSource,
-        Utf8CandidateSearchPlan prefilterSource,
-        Utf8ConfirmationPlan confirmation,
-        Utf8ProjectionPlan projection,
-        Utf8SearchObservabilityKind observabilityKind)
+        Utf8SearchOperationKind kind, Utf8CandidateSearchPlan candidateSource, Utf8CandidateSearchPlan prefilterSource, Utf8ConfirmationPlan confirmation, Utf8SearchObservabilityKind observabilityKind)
     {
         if (kind == Utf8SearchOperationKind.None)
         {
@@ -73,18 +60,6 @@ internal readonly struct Utf8SearchOperationPlan
             candidateSource,
             prefilterSource,
             confirmation,
-            projection,
             observabilityKind);
     }
-
-    public Utf8SearchOperationPlan WithProjection(Utf8ProjectionPlan projection)
-        => HasValue
-            ? new Utf8SearchOperationPlan(
-                Kind,
-                CandidateSource,
-                PrefilterSource,
-                Confirmation,
-                projection,
-                ObservabilityKind)
-            : default;
 }
