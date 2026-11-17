@@ -279,8 +279,6 @@ internal sealed class Utf8CaptureCatalog
         => SparseMapping is null ? (uint)number < (uint)GroupNumbers.Length ? number : -1
             : SparseMapping.TryGetValue(number, out var ordinal) ? ordinal : -1;
 
-    internal int OrdinalFromName(string name) => OrdinalFromNumber(GroupNumberFromName(name));
-
     internal static bool TryParseNumber(string text, out int number)
         => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out number);
 

@@ -160,14 +160,6 @@ internal readonly struct Utf8IlEmitter
         Emit(OpCodes.Br, failureLabel);
     }
 
-    public void EmitLocalsEqualBranch(Utf8IlLocal leftLocal, Utf8IlLocal rightLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        LoadLocal(leftLocal);
-        LoadLocal(rightLocal);
-        Emit(OpCodes.Beq, successLabel);
-        Emit(OpCodes.Br, failureLabel);
-    }
-
     public void EmitSpanLiteralEquals(Utf8IlLocal startLocal, ReadOnlySpan<byte> literal, int skipPrefixCount, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
     {
         for (var i = skipPrefixCount; i < literal.Length; i++)
@@ -175,18 +167,6 @@ internal readonly struct Utf8IlEmitter
             LoadInputByte(startLocal, i);
             LdcI4(literal[i]);
             Emit(OpCodes.Bne_Un, failureLabel);
-        }
-
-        Emit(OpCodes.Br, successLabel);
-    }
-
-    public void EmitSpanLiteralEqualsIgnoreCase(Utf8IlLocal startLocal, ReadOnlySpan<byte> literal, int skipPrefixCount, Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        for (var i = skipPrefixCount; i < literal.Length; i++)
-        {
-            LoadInputByte(startLocal, i);
-            StoreLocal(valueLocal);
-            EmitAsciiCaseInsensitiveByteEqualsOrBranchFailure(valueLocal, literal[i], failureLabel);
         }
 
         Emit(OpCodes.Br, successLabel);
@@ -270,33 +250,6 @@ internal readonly struct Utf8IlEmitter
         Emit(OpCodes.Br, failureLabel);
     }
 
-    public void EmitAsciiCaseInsensitiveByteEqualsOrBranchFailure(Utf8IlLocal valueLocal, int expected, Utf8IlLabel failureLabel)
-    {
-        if (expected is >= 'a' and <= 'z')
-        {
-            var matchedLabel = DefineLabel();
-            EmitEqualityBranch(valueLocal, expected, matchedLabel);
-            EmitEqualityBranch(valueLocal, expected - 32, matchedLabel);
-            Emit(OpCodes.Br, failureLabel);
-            MarkLabel(matchedLabel);
-            return;
-        }
-
-        if (expected is >= 'A' and <= 'Z')
-        {
-            var matchedLabel = DefineLabel();
-            EmitEqualityBranch(valueLocal, expected, matchedLabel);
-            EmitEqualityBranch(valueLocal, expected + 32, matchedLabel);
-            Emit(OpCodes.Br, failureLabel);
-            MarkLabel(matchedLabel);
-            return;
-        }
-
-        var nextLabel = DefineLabel();
-        EmitEqualityBranch(valueLocal, expected, nextLabel, failureLabel);
-        MarkLabel(nextLabel);
-    }
-
     public void EmitRangeBranch(Utf8IlLocal valueLocal, int lowerInclusive, int upperInclusive, Utf8IlLabel successLabel)
     {
         var doneLabel = DefineLabel();
@@ -361,48 +314,6 @@ internal readonly struct Utf8IlEmitter
         }
     }
 
-    public void EmitPredicateBranch(AsciiCharClassPredicateKind predicateKind, Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        switch (predicateKind)
-        {
-            case AsciiCharClassPredicateKind.Digit:
-                EmitRangeBranch(valueLocal, '0', '9', successLabel);
-                Emit(OpCodes.Br, failureLabel);
-                return;
-
-            case AsciiCharClassPredicateKind.AsciiLetter:
-                EmitRangeBranch(valueLocal, 'A', 'Z', successLabel);
-                EmitRangeBranch(valueLocal, 'a', 'z', successLabel);
-                Emit(OpCodes.Br, failureLabel);
-                return;
-
-            case AsciiCharClassPredicateKind.AsciiLetterOrDigit:
-                EmitRangeBranch(valueLocal, 'A', 'Z', successLabel);
-                EmitRangeBranch(valueLocal, 'a', 'z', successLabel);
-                EmitRangeBranch(valueLocal, '0', '9', successLabel);
-                Emit(OpCodes.Br, failureLabel);
-                return;
-
-            case AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore:
-                EmitRangeBranch(valueLocal, 'A', 'Z', successLabel);
-                EmitRangeBranch(valueLocal, 'a', 'z', successLabel);
-                EmitRangeBranch(valueLocal, '0', '9', successLabel);
-                EmitEqualityBranch(valueLocal, '_', successLabel, failureLabel);
-                return;
-
-            case AsciiCharClassPredicateKind.AsciiHexDigit:
-                EmitRangeBranch(valueLocal, '0', '9', successLabel);
-                EmitRangeBranch(valueLocal, 'A', 'F', successLabel);
-                EmitRangeBranch(valueLocal, 'a', 'f', successLabel);
-                Emit(OpCodes.Br, failureLabel);
-                return;
-
-            default:
-                Emit(OpCodes.Br, failureLabel);
-                return;
-        }
-    }
-
     public void EmitSmallPositiveSetBranch(ReadOnlySpan<byte> allowed, Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
     {
         if (allowed.Length == 0)
@@ -430,41 +341,5 @@ internal readonly struct Utf8IlEmitter
                 if (allowed.Contains((byte)value)) EmitEqualityBranch(valueLocal, value, successLabel);
         }
         Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitTrimSingleTrailingLf(Utf8IlLocal inputLengthLocal, Utf8IlLocal effectiveLengthLocal, Utf8IlLocal valueLocal)
-    {
-        var hasContentLabel = DefineLabel();
-        var trimLabel = DefineLabel();
-        var afterTrimLabel = DefineLabel();
-
-        LoadLocal(inputLengthLocal);
-        Emit(OpCodes.Brtrue, hasContentLabel);
-        Emit(OpCodes.Br, afterTrimLabel);
-
-        MarkLabel(hasContentLabel);
-        LoadInputByte(inputLengthLocal, -1);
-        StoreLocal(valueLocal);
-        EmitEqualityBranch(valueLocal, '\n', trimLabel, afterTrimLabel);
-
-        MarkLabel(trimLabel);
-        LoadLocal(inputLengthLocal);
-        LdcI4(1);
-        Emit(OpCodes.Sub);
-        StoreLocal(effectiveLengthLocal);
-
-        MarkLabel(afterTrimLabel);
-    }
-
-    public void EmitReturnInt(int value)
-    {
-        LdcI4(value);
-        Emit(OpCodes.Ret);
-    }
-
-    public void EmitReturnLocal(Utf8IlLocal local)
-    {
-        LoadLocal(local);
-        Emit(OpCodes.Ret);
     }
 }

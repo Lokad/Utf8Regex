@@ -42,10 +42,6 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
-    public static bool IsPreparedTokenCountFamily(Utf8FallbackDirectFamilyKind kind)
-        => kind is Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
-        Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount;
-
     public static bool IsAsciiDefinitiveMatchFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
         Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
