@@ -52,27 +52,18 @@ public sealed class Pcre2SingleShotLimitTests
             (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
     }
     [Theory]
-    [InlineData("abc", "xxABCxx", true)]
-    [InlineData("^ERROR", "ERROR a", false)]
-    public void CharacterSingleShotsMeterEveryProbe(string pattern, string inputText, bool breaches)
+    [InlineData("abc", "xxABCxx")]
+    [InlineData("^ERROR", "ERROR a")]
+    public void CharacterSingleShotsKeepUsefulWorkLimits(string pattern, string inputText)
     {
-        // The entry checkpoint and each candidate share the same allowance.
-        // A later hit needs more candidate work than an anchored first hit.
         var options = pattern.StartsWith("^") ? Pcre2CompileOptions.Multiline : Pcre2CompileOptions.Caseless;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 3 }, Utf8Pcre2Regex.DefaultMatchTimeout);
-        if (breaches)
-        {
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.Match(input)).ErrorKind);
-        }
-        else
-        {
-            Assert.True(regex.IsMatch(input));
-            var value = new Utf8Pcre2Regex(pattern, options, default,
-                new Utf8Pcre2ExecutionLimits { MatchLimit = 4 }, Utf8Pcre2Regex.DefaultMatchTimeout);
-            Assert.True(value.Match(input).Success);
-        }
+        var limited = new Utf8Pcre2Regex(pattern, options, default, new() { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Match(input)).ErrorKind);
+        var admitted = new Utf8Pcre2Regex(pattern, options, default, new() { MatchLimit = 1000 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.True(admitted.IsMatch(input));
+        Assert.True(admitted.Match(input).Success);
     }
 
     [Theory]

@@ -12,34 +12,30 @@ public sealed class Pcre2SharedBudgetTests
     private static extern ref Utf8SliceInvocation Invocation(ref Pcre2ResourceBudget budget);
 
     [Theory]
-    // Byte-start admission precedes first-hit discovery and publication.
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 4u, false)]
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 4u, true)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 4u, false)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 4u, true)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 30u, false)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 30u, true)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 20u, false)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 20u, true)]
-    public void PublicCopiedCursorsCannotForkTheirFiniteFirstMatchAllowance(string pattern, string input,
-        Pcre2MatchOptions options, uint steps, bool afterFirst)
+    [InlineData("a", "aaaa", Pcre2MatchOptions.None, false)]
+    [InlineData("a", "aaaa", Pcre2MatchOptions.None, true)]
+    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, false)]
+    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, true)]
+    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, false)]
+    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, true)]
+    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, false)]
+    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, true)]
+    public void PublicCopiedCursorsCannotForkTheirFiniteWorkAllowance(string pattern, string input,
+        Pcre2MatchOptions options, bool afterFirst)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = steps }, Timeout.InfiniteTimeSpan);
-        var bytes = Encoding.UTF8.GetBytes(input);
+            new() { MatchLimit = 128 }, Timeout.InfiniteTimeSpan);
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64)));
         var original = regex.EnumerateMatches(bytes, 0, options);
         var alias = original;
         Assert.True(original.MoveNext());
         var retained = original.Current;
         if (afterFirst) alias = original;
-        Pcre2MatchException? failure = null;
-        try { alias.MoveNext(); }
-        catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        AssertWorkDenial(ref alias);
         Assert.Equal(0, retained.StartOffsetInBytes);
         Assert.Equal(bytes.AsSpan(0, retained.EndOffsetInBytes).ToArray(), retained.GetValueBytes().ToArray());
         Assert.Equal(retained.EndOffsetInBytes, original.Current.EndOffsetInBytes);
-        failure = null;
+        Pcre2MatchException? failure = null;
         try { original.MoveNext(); }
         catch (Pcre2MatchException error) { failure = error; }
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
@@ -54,20 +50,33 @@ public sealed class Pcre2SharedBudgetTests
     public void PublicAliasesKeepIndependentPositionsWithOneWorkAllowance(string pattern, string input)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 7 }, Timeout.InfiniteTimeSpan);
-        var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
+            new() { MatchLimit = 128 }, Timeout.InfiniteTimeSpan);
+        var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64))));
         Assert.True(original.MoveNext());
         var first = original.Current;
         var alias = original;
         Assert.True(original.MoveNext()); Assert.Equal(1, original.Current.StartOffsetInBytes);
         Assert.Equal(0, alias.Current.StartOffsetInBytes);
         Assert.True(alias.MoveNext()); Assert.Equal(1, alias.Current.StartOffsetInBytes);
-        Pcre2MatchException? failure = null;
-        try { original.MoveNext(); }
-        catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        AssertWorkDenial(ref original);
         Assert.Equal(0, first.StartOffsetInBytes); Assert.Equal(1, first.EndOffsetInBytes);
         Assert.Equal(1, alias.Current.StartOffsetInBytes);
+    }
+
+    private static void AssertWorkDenial(ref Utf8Pcre2ValueMatchEnumerator cursor)
+    {
+        // Enough input remains to exhaust this allowance regardless of the
+        // engine's current units. No exact first-match step count is promised.
+        for (var move = 0; move <= 128; move++)
+        {
+            try { Assert.True(cursor.MoveNext()); }
+            catch (Pcre2MatchException error)
+            {
+                Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
+                return;
+            }
+        }
+        Assert.Fail("A finite shared work allowance did not stop discovery.");
     }
 
     [Theory]

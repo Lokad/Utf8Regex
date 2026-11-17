@@ -9,63 +9,6 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-internal sealed class Pcre2CharacterProgram
-{
-    internal Pcre2CharacterProgram(
-        Pcre2CharacterToken[] tokens,
-        Pcre2CompileRequest request,
-        byte? leadingAsciiByte,
-        bool leadingExtendedGraphemeCluster,
-        bool usesCodeUnit)
-    {
-        Tokens = tokens;
-        Request = request;
-        LeadingAsciiByte = leadingAsciiByte;
-        LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
-        UsesCodeUnit = usesCodeUnit;
-    }
-
-    internal Pcre2CharacterToken[] Tokens { get; }
-
-    internal int MinimumByteLength => Tokens.Count(static token => Pcre2BacktrackingAnalysis.ConsumesInput(token.Kind));
-
-    internal Pcre2CompileRequest Request { get; }
-
-    internal byte? LeadingAsciiByte { get; }
-
-    internal bool LeadingExtendedGraphemeCluster { get; }
-
-    internal bool UsesCodeUnit { get; }
-
-    internal bool CanCountSingleCharacterClassDirectly =>
-        Tokens is [{ Kind: Pcre2CharacterTokenKind.CharacterClass }] &&
-        (Request.Options &
-            (Pcre2CompileOptions.Anchored |
-             Pcre2CompileOptions.EndAnchored |
-             Pcre2CompileOptions.FirstLine)) == 0;
-
-    internal bool TryGetDirectCountCategory(out UnicodeCategory category)
-    {
-        category = default;
-        if (!CanCountSingleCharacterClassDirectly)
-        {
-            return false;
-        }
-
-        var token = Tokens[0];
-        if ((token.Options & Pcre2CharacterOptions.Caseless) != 0 ||
-            token.CharacterClass.Negated ||
-            token.CharacterClass.Terms is not
-                [{ Kind: Pcre2CharacterClassTermKind.Property, Name: "SM", Negated: false }])
-        {
-            return false;
-        }
-
-        category = UnicodeCategory.MathSymbol;
-        return true;
-    }
-}
-
 [Flags]
 internal enum Pcre2CharacterOptions : byte
 {
@@ -295,21 +238,6 @@ internal sealed class Pcre2CharacterClass
 
 internal static class Pcre2CharacterCompiler
 {
-    internal static Pcre2CharacterProgram? Compile(Pcre2CompileRequest request)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        construction.Budget.ChargeWork((ulong)request.ConstructionPattern.Length + 1);
-        using var parser = new Pcre2CharacterParser(request);
-        if (!parser.TryParse(out var tokens)) return null;
-        if (request.UsesCrLfNewlines)
-            request = request with { SkipsCrLfContinuation = !tokens.Any(HasExplicitCrOrLf) &&
-                !LeadingFilterRejectsCr(tokens) };
-        var result = new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
-            tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
-            tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit));
-        construction.Complete();
-        return result;
-    }
 
     internal static bool TryCompileSingleToken(
         Pcre2CompileRequest request,
@@ -324,19 +252,6 @@ internal static class Pcre2CharacterCompiler
         if (!parser.TryParseOne(out token, out patternLength)) return false;
         construction.Complete();
         return true;
-    }
-
-    private static byte? GetLeadingAsciiByte(Pcre2CharacterToken[] tokens)
-    {
-        if (tokens.Length == 0 ||
-            tokens[0].Kind != Pcre2CharacterTokenKind.Literal ||
-            !tokens[0].Literal.IsAscii ||
-            (tokens[0].Options & Pcre2CharacterOptions.Caseless) != 0)
-        {
-            return null;
-        }
-
-        return (byte)tokens[0].Literal.Value;
     }
 
     // Preserve the syntax fact even for zero repeats and unused definitions.
@@ -366,16 +281,6 @@ internal static class Pcre2CharacterCompiler
         _ => false,
     };
 
-    private static bool LeadingFilterRejectsCr(ReadOnlySpan<Pcre2CharacterToken> tokens)
-    {
-        foreach (var token in tokens)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (Pcre2BacktrackingAnalysis.ConsumesInput(token.Kind)) return LeadingFilterRejectsCr(token);
-        }
-        return false;
-    }
-
     private static bool IsNegatedSingleton(Pcre2CharacterClass characterClass) =>
         characterClass.Negated && characterClass.Terms is
             [{ Kind: Pcre2CharacterClassTermKind.Range, Range: { Low: var low, High: var high } }] && low == high;
@@ -390,12 +295,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
     private int _nextCheckpoint;
     private int _offset;
     private Pcre2CharacterOptions _options;
-    private bool _requiresCharacterProgram;
-
-    internal Pcre2CharacterParser(Pcre2CompileRequest request)
-        : this(request, 0, Pcre2CharacterOptionsFactory.FromCompileOptions(request.Options))
-    {
-    }
 
     internal Pcre2CharacterParser(
         Pcre2CompileRequest request,
@@ -407,90 +306,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
         _tokens = new Utf8ConstructionBuffer<Pcre2CharacterToken>(_budget, instructions: true);
         _offset = patternOffset;
         _options = options;
-        _requiresCharacterProgram = (request.Options &
-            (Pcre2CompileOptions.Caseless |
-             Pcre2CompileOptions.Extended |
-             Pcre2CompileOptions.ExtendedMore |
-             Pcre2CompileOptions.FirstLine)) != 0;
-    }
-
-    internal bool TryParse(out Pcre2CharacterToken[] tokens)
-    {
-        while (_offset < _pattern.Length)
-        {
-            Checkpoint(_offset);
-            if (TrySkipExtendedTrivia())
-            {
-                continue;
-            }
-
-            var start = _offset;
-            var ch = _pattern[_offset];
-            if (ch == '(')
-            {
-                if (!TryParseGlobalOptions())
-                {
-                    return Fail(out tokens);
-                }
-
-                continue;
-            }
-
-            if (ch is ')' or '|' or '*' or '+' or '?' or '{')
-            {
-                return Fail(out tokens);
-            }
-
-            if (ch == '[')
-            {
-                if (!TryParseClass(out var characterClass))
-                {
-                    return Fail(out tokens);
-                }
-
-                Add(Pcre2CharacterToken.CreateClass(characterClass, _options));
-                continue;
-            }
-
-            if (ch == '\\')
-            {
-                if (!TryParseEscape(start))
-                {
-                    return Fail(out tokens);
-                }
-
-                continue;
-            }
-
-            _offset++;
-            switch (ch)
-            {
-                case '.':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options));
-                    break;
-                case '^':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options));
-                    break;
-                case '$':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options));
-                    break;
-                default:
-                    _offset = start;
-                    if (!TryReadPatternRune(out var literal, out var length))
-                    {
-                        return Fail(out tokens);
-                    }
-
-                    Add(Pcre2CharacterToken.CreateLiteral(literal, _options));
-                    break;
-            }
-        }
-
-        var serves = _requiresCharacterProgram || _tokens.Count == 0;
-        foreach (var token in _tokens.Span) serves |= token.Kind != Pcre2CharacterTokenKind.Literal;
-        if (!serves) return Fail(out tokens);
-        tokens = _tokens.Take();
-        return true;
     }
 
     internal bool TryParseOne(out Pcre2CharacterToken token, out int patternLength)
@@ -553,87 +368,8 @@ internal sealed class Pcre2CharacterParser : IDisposable
         }
     }
 
-    private bool TryParseGlobalOptions()
-    {
-        if (_offset + 2 >= _pattern.Length || _pattern[_offset + 1] != '?')
-        {
-            return false;
-        }
-
-        var cursor = _offset + 2;
-        var resetAll = false;
-        if (cursor < _pattern.Length && _pattern[cursor] == '^')
-        {
-            _options = Pcre2CharacterOptions.None;
-            resetAll = true;
-            cursor++;
-        }
-
-        var unset = false;
-        var hyphenSeen = false;
-        var enabledX = false;
-        var enabledMore = false;
-        var disabledX = false;
-        while (cursor < _pattern.Length && _pattern[cursor] != ')')
-        {
-            Checkpoint(cursor);
-            if (_pattern[cursor] == '-')
-            {
-                if (hyphenSeen || resetAll)
-                {
-                    return false;
-                }
-
-                unset = true;
-                hyphenSeen = true;
-                cursor++;
-                continue;
-            }
-
-            var option = _pattern[cursor] switch
-            {
-                'i' => Pcre2CharacterOptions.Caseless,
-                'r' => Pcre2CharacterOptions.RestrictCaseless,
-                'm' => Pcre2CharacterOptions.Multiline,
-                's' => Pcre2CharacterOptions.DotAll,
-                'x' => Pcre2CharacterOptions.Extended,
-                'n' or 'U' => Pcre2CharacterOptions.None,
-                _ => Pcre2CharacterOptions.None,
-            };
-            if (option == Pcre2CharacterOptions.None && _pattern[cursor] is not ('n' or 'U'))
-            {
-                return false;
-            }
-
-            if (option == Pcre2CharacterOptions.Extended)
-            {
-                var doubled = cursor + 1 < _pattern.Length && _pattern[cursor + 1] == 'x';
-                if (unset) disabledX = true;
-                else { enabledX = true; enabledMore |= doubled; }
-                if (doubled) cursor++;
-            }
-            else
-            {
-                _options = unset ? _options & ~option : _options | option;
-            }
-
-            cursor++;
-        }
-
-        if (cursor >= _pattern.Length || _pattern[cursor] != ')')
-        {
-            return false;
-        }
-
-        _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(_options, enabledX, enabledMore, disabledX);
-        _offset = cursor + 1;
-        _requiresCharacterProgram = true;
-        return true;
-    }
-
     private bool TryParseEscape(int start)
     {
-        _requiresCharacterProgram = true;
         _offset++;
         if (_offset >= _pattern.Length)
         {
@@ -1334,39 +1070,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
         return digit >= 0 && digit < radix;
     }
 
-    private bool TrySkipExtendedTrivia()
-    {
-        var moved = false;
-        while (_offset < _pattern.Length)
-        {
-            Checkpoint(_offset);
-            if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
-            {
-                _requiresCharacterProgram = true;
-                moved = true;
-                continue;
-            }
-            if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0) break;
-            if (IsExtendedPatternWhitespace(_pattern[_offset]))
-            {
-                _offset++;
-                moved = true;
-                continue;
-            }
-
-            if (_pattern[_offset] != '#')
-            {
-                break;
-            }
-
-            moved = true;
-            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
-            _offset++;
-        }
-
-        return moved;
-    }
-
     public void Dispose() => _tokens.Dispose();
 
     private void Checkpoint(int position)
@@ -1418,12 +1121,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
         _tokens.Add(token);
     }
 
-    private static bool Fail(out Pcre2CharacterToken[] tokens)
-    {
-        tokens = [];
-        return false;
-    }
-
 }
 
 internal readonly record struct Pcre2CharacterMatch(
@@ -1441,101 +1138,6 @@ internal readonly record struct Pcre2CharacterMatch(
 
 internal static class Pcre2CharacterRunner
 {
-    internal static int CountSingleCharacterClass(
-        Pcre2CharacterProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BytePosition start)
-    {
-        var token = program.Tokens[0];
-        var ucp = (program.Request.Options & Pcre2CompileOptions.Ucp) != 0;
-        var count = 0;
-        var index = start.Value;
-        var skipCrLf = program.Request.SkipsCrLfContinuation;
-        while (TryDecode(input, index, out var scalar, out var width))
-        {
-            if (token.CharacterClass.Matches(scalar, ucp, token.Options))
-            {
-                count++;
-            }
-            else if (skipCrLf && scalar.Value == '\r' && index + width < input.Length && input[index + width] == (byte)'\n')
-            {
-                index++;
-            }
-
-            index += width;
-        }
-
-        return count;
-    }
-
-    internal static Pcre2CharacterMatch Match(
-        Pcre2CharacterProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget)
-    {
-        var bytes = input.Bytes;
-        var anchored = (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
-            (matchOptions & Pcre2MatchOptions.Anchored) != 0;
-        var candidate = start.Value;
-        while (candidate <= bytes.Length)
-        {
-            budget.ChargeCandidate();
-            if (TryMatchAt(program, bytes, candidate, start.Value, matchOptions, ref budget, out var end) &&
-                ((program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0 || end == bytes.Length) &&
-                ((matchOptions & Pcre2MatchOptions.EndAnchored) == 0 || end == bytes.Length) &&
-                ((matchOptions & Pcre2MatchOptions.NotEmpty) == 0 || end != candidate) &&
-                ((matchOptions & Pcre2MatchOptions.NotEmptyAtStart) == 0 || candidate != start.Value || end != candidate))
-            {
-                return Pcre2CharacterMatch.Create(candidate, end);
-            }
-
-            if (anchored || !TryAdvanceCandidate(
-                    program,
-                    ref input,
-                    candidate,
-                    !budget.RequiresCandidateMetering,
-                    ref budget,
-                    out candidate))
-            {
-                break;
-            }
-        }
-
-        return Pcre2CharacterMatch.NoMatch;
-    }
-
-    private static bool TryMatchAt(
-        Pcre2CharacterProgram program,
-        ReadOnlySpan<byte> input,
-        int candidate,
-        int firstMatchingPosition,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget,
-        out int end)
-    {
-        var index = candidate;
-        foreach (var token in program.Tokens)
-        {
-            if (!TryMatchToken(
-                    token,
-                    program.Request,
-                    input,
-                    index,
-                    firstMatchingPosition,
-                    matchOptions,
-                    ref budget,
-                    out index))
-            {
-                end = 0;
-                return false;
-            }
-        }
-
-        end = index;
-        return true;
-    }
 
     internal static bool TryMatchToken(
         in Pcre2CharacterToken token,
@@ -1650,31 +1252,6 @@ internal static class Pcre2CharacterRunner
             default:
                 return false;
         }
-    }
-
-    internal static bool TryAdvanceCandidate(
-        Pcre2CharacterProgram program,
-        ref Utf8ValidatedInput input,
-        int candidate,
-        bool allowAcceleration,
-        ref Pcre2ResourceBudget budget,
-        out int next)
-    {
-        if (program.LeadingExtendedGraphemeCluster &&
-            (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
-            Pcre2GraphemeClusterSemantics.TryGetWidth(input.Bytes, candidate, ref budget, out var width))
-        {
-            next = candidate + width;
-            return true;
-        }
-
-        return TryAdvanceCandidate(
-            program.Request,
-            program.LeadingAsciiByte,
-            ref input,
-            candidate,
-            allowAcceleration,
-            out next);
     }
 
     internal static bool TryAdvanceCandidate(

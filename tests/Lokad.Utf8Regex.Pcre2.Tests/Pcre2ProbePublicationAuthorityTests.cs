@@ -74,6 +74,18 @@ public sealed class Pcre2ProbePublicationAuthorityTests
         Assert.Equal((1, 7), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
     }
 
+    [Theory]
+    [InlineData(Pcre2PartialMode.None, Utf8Pcre2ProbeKind.FullMatch)]
+    [InlineData(Pcre2PartialMode.Soft, Utf8Pcre2ProbeKind.FullMatch)]
+    [InlineData(Pcre2PartialMode.Hard, Utf8Pcre2ProbeKind.PartialMatch)]
+    public void GroupedFlatLiteralRetainsScalarProbeSemantics(Pcre2PartialMode mode, Utf8Pcre2ProbeKind kind)
+    {
+        var regex = new Utf8Pcre2Regex(@"(?:^é😀\z)");
+        var result = regex.Probe("é😀"u8, mode);
+        Assert.Equal(kind, result.Kind);
+        Assert.Equal((0, 6), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
+    }
+
     [Fact]
     public void LiteralFullArrayHasAnExactMajorCapacityCutoffWhilePartialStaysInline()
     {

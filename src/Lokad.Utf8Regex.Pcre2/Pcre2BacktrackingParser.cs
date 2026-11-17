@@ -18,7 +18,6 @@ internal sealed class Pcre2BacktrackingParser
     private bool _ungreedy;
     private bool _noAutoCapture;
     private bool _allowDuplicateNames;
-    private bool _sawControlFlow;
     private int _captureCount;
     private readonly List<Pcre2NameEntry> _nameEntries = [];
     private readonly Dictionary<int, string> _captureSlotNames = [];
@@ -54,8 +53,7 @@ internal sealed class Pcre2BacktrackingParser
 
     internal bool TryParse(out IPcre2BacktrackingNode root)
     {
-        if (!TryParseAlternation(false, out root) || _offset != _pattern.Length ||
-            (!_sawControlFlow && !RequiresProfileOptions))
+        if (!TryParseAlternation(false, out root) || _offset != _pattern.Length)
         {
             root = Pcre2EmptyBacktrackingNode.Instance;
             return false;
@@ -82,8 +80,6 @@ internal sealed class Pcre2BacktrackingParser
             {
                 break;
             }
-
-            _sawControlFlow = true;
             _offset++;
         }
 
@@ -170,7 +166,6 @@ internal sealed class Pcre2BacktrackingParser
         {
             if (_pattern.StartsWithAscii(_offset, "\\K"))
             {
-                _sawControlFlow = true;
                 _offset += 2;
                 node = Pcre2MatchBoundaryResetBacktrackingNode.Instance;
                 return true;
@@ -211,7 +206,6 @@ internal sealed class Pcre2BacktrackingParser
 
                 if (TryParseAssertionOpening(out var assertionKind, out var assertionOpeningLength))
                 {
-                    _sawControlFlow = true;
                     _offset += assertionOpeningLength;
                     var outerOptions = _options;
                     var outerUngreedy = _ungreedy;
@@ -245,7 +239,6 @@ internal sealed class Pcre2BacktrackingParser
                         out var scopedAllowDuplicateNames,
                         out var scopedOpeningLength))
                 {
-                    _sawControlFlow = true;
                     var outerOptions = _options;
                     var outerUngreedy = _ungreedy;
                     var outerNoAutoCapture = _noAutoCapture;
@@ -277,7 +270,6 @@ internal sealed class Pcre2BacktrackingParser
                 var explicitNoncapturing = _pattern.StartsWithAscii(_offset, "(?:");
                 if (explicitNoncapturing || _noAutoCapture && !_pattern.StartsWithAscii(_offset, "(?"))
                 {
-                    _sawControlFlow = true;
                     _offset += explicitNoncapturing ? 3 : 1;
                     var outerOptions = _options;
                     var outerUngreedy = _ungreedy;
@@ -302,7 +294,6 @@ internal sealed class Pcre2BacktrackingParser
 
                 if (TryParseCaptureOpening(out var captureName, out var openingLength))
                 {
-                    _sawControlFlow = true;
                     var slot = ++_captureCount;
                     if (captureName.Length != 0)
                     {
@@ -771,8 +762,6 @@ internal sealed class Pcre2BacktrackingParser
         {
             return true;
         }
-
-        _sawControlFlow = true;
         var preference = _ungreedy ? Pcre2RepeatPreference.Lazy : Pcre2RepeatPreference.Greedy;
         SkipExtendedTrivia();
         if (_offset < _pattern.Length && _pattern[_offset] == '?')
@@ -794,7 +783,6 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseAtomicGroup(out IPcre2BacktrackingNode node)
     {
-        _sawControlFlow = true;
         var longForm = _pattern.StartsWithAscii(_offset, "(*atomic:", ignoreCase: true);
         _offset += longForm ? 9 : 3;
         var outerOptions = _options;
@@ -882,8 +870,6 @@ internal sealed class Pcre2BacktrackingParser
         {
             return false;
         }
-
-        _sawControlFlow = true;
         _offset = end + 1;
         node = new Pcre2ControlVerbBacktrackingNode(verbKind, name.ToString());
         return true;
@@ -1014,8 +1000,6 @@ internal sealed class Pcre2BacktrackingParser
         {
             return false;
         }
-
-        _sawControlFlow = true;
         _offset += 3;
         if (_pattern.StartsWithAscii(_offset, "DEFINE)"))
         {
@@ -1229,7 +1213,6 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseBranchReset(out IPcre2BacktrackingNode node)
     {
         UsesBranchReset = true;
-        _sawControlFlow = true;
         _offset += 3;
         var captureBase = _captureCount;
         var maximumCaptureCount = captureBase;
@@ -1488,7 +1471,6 @@ internal sealed class Pcre2BacktrackingParser
                 // PCRE2 permits an empty option directive; Core grammar does not.
                 if (cursor == _offset + 2)
                 {
-                    _sawControlFlow = true;
                     RequiresProfileOptions = true;
                 }
                 _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
@@ -1573,7 +1555,6 @@ internal sealed class Pcre2BacktrackingParser
             if ((_offset & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
             {
-                _sawControlFlow = true;
                 continue;
             }
             if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0) return;

@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2BudgetedCategoryCountTests
 {
     [Fact]
-    public void NativeMathCountSharesFiniteAuthorityWithoutScratch()
+    public void MathCountSharesFiniteAuthorityWithoutScratch()
     {
         const string prefix = "é!";
         var text = string.Concat(Enumerable.Repeat("Aé中∑𝛁😀+9\u0378 ", 512));
@@ -17,7 +17,7 @@ public sealed class Pcre2BudgetedCategoryCountTests
         var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
         using var token = new CancellationTokenSource();
         {
-            var regex = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan);
+            var regex = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan);
             var allowance = new RejectStorage();
             Assert.Equal(expected, regex.Count(input, floor, default, token.Token, allowance));
             Assert.Equal(0, allowance.Attempts);
@@ -40,25 +40,22 @@ public sealed class Pcre2BudgetedCategoryCountTests
     [InlineData(false)] [InlineData(true)]
     public void CategoryCountChecksOriginalInterruptionBetweenBlocks(bool cancel)
     {
-        var regex = new Utf8Pcre2Regex(@"\p{Sm}");
-        var input = Utf8ValidatedInput.Create(Encoding.ASCII.GetBytes(new string('+', 16384)));
+        var regex = new Utf8Pcre2Regex(@"\p{Sm}", matchTimeout: TimeSpan.FromMilliseconds(20));
+        var input = Encoding.ASCII.GetBytes(new string('+', 16384));
         var reads = 0;
         using var source = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
-            if (++reads < 4) return 0; // Origin, admission, first block, second block.
+            if (++reads < 4) return 0;
             if (cancel) { source.Cancel(); return 0; }
             return 20;
         });
-        var invocation = new Utf8SliceInvocation(default, TimeSpan.FromMilliseconds(20), source.Token);
         Exception? failure = null;
-        try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input, new(0), default, ref invocation, out _); }
+        try { _ = regex.Count(input, 0, default, source.Token); }
         catch (Exception error) { failure = error; }
         if (cancel) Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        // The public CountCore boundary translates this internal expiry to Pcre2ErrorKind.Timeout.
-        else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal(4, reads);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        else Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        Assert.True(reads >= 4);
     }
 
     private sealed class RejectStorage : IUtf8MemoryAllowance

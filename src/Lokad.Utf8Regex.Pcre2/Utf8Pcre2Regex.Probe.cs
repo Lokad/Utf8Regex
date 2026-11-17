@@ -115,10 +115,8 @@ public sealed partial class Utf8Pcre2Regex
         canRetry = false;
         // Use admitted tokens and the existing whole-subject assertion semantics;
         // the requested start is not a new beginning of subject or line.
-        Pcre2CharacterToken? first = compiled.Operations.Match is Pcre2CharacterDirectProgram character && character.Program.Tokens.Length > 0
-            ? character.Program.Tokens[0]
-            : compiled.ProbeRoot is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence &&
-              sequence.Children[0] is Pcre2TokenBacktrackingNode token ? token.Token : null;
+        Pcre2CharacterToken? first = compiled.ProbeRoot is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence &&
+            sequence.Children[0] is Pcre2TokenBacktrackingNode token ? token.Token : null;
         if (first is not { Kind: Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject or Pcre2CharacterTokenKind.FirstMatchingPosition } assertion)
             return true;
         canRetry = assertion.Kind == Pcre2CharacterTokenKind.BeginningOfLine &&
@@ -694,10 +692,8 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaCrlfDotQuantifier(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int startOffsetInBytes, int minCount, int maxCount, bool lazy, Pcre2CompiledProgram compiled)
     {
-        var dot = compiled.Operations.Match is Pcre2CharacterDirectProgram character
-            ? character.Program.Tokens[0]
-            : ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)
-                compiled.ProbeRoot!).Body).Token;
+        var dot = compiled.ProbeRoot is Pcre2TokenBacktrackingNode single ? single.Token
+            : ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)compiled.ProbeRoot!).Body).Token;
         var excludesNewline = dot.Kind == Pcre2CharacterTokenKind.AnyNotNewline ||
             (dot.Options & Pcre2CharacterOptions.DotAll) == 0;
         var candidate = startOffsetInBytes;
@@ -743,10 +739,12 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaLiteralAssertions(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int startOffsetInBytes, byte[] literal, Pcre2CompiledProgram compiled)
     {
-        var tokens = ((Pcre2CharacterDirectProgram)compiled.Operations.Match).Program.Tokens;
-        var intrinsic = tokens[0].Kind is Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject;
+        var nodes = ((Pcre2SequenceBacktrackingNode)compiled.ProbeRoot!).Children;
+        var firstToken = ((Pcre2TokenBacktrackingNode)nodes[0]).Token;
+        var lastToken = ((Pcre2TokenBacktrackingNode)nodes[^1]).Token;
+        var intrinsic = firstToken.Kind is Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject;
         var first = intrinsic ? 1 : 0;
-        Pcre2CharacterToken? leading = tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary ? tokens[first] : null;
+        Pcre2CharacterToken? leading = ((Pcre2TokenBacktrackingNode)nodes[first]).Token.Kind == Pcre2CharacterTokenKind.WordBoundary ? ((Pcre2TokenBacktrackingNode)nodes[first]).Token : null;
         var search = startOffsetInBytes;
         while (search <= input.Length && CanStartCandidate(search))
         {
@@ -770,15 +768,15 @@ public sealed partial class Utf8Pcre2Regex
                 // even when no literal prefix remains; explicit anchors retain
                 // their first-candidate optimization and cannot bump to EOF.
                 if (!_anchored && CanStartCandidate(input.Length) && (!intrinsic || search == input.Length &&
-                    (tokens[0].Options & Pcre2CharacterOptions.Multiline) != 0) &&
-                    tokens[^1].Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
+                    (firstToken.Options & Pcre2CharacterOptions.Multiline) != 0) &&
+                    lastToken.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
                     return Partial(Project(0, input.Length, input.Length));
                 return NoMatch();
             }
             var start = search + index;
             if (LeadingBoundaryAccepts(leading, compiled.Request, input, start))
             {
-                var result = ProbeTrailingAssertion(input, partialMode, start, start + literal.Length, tokens[^1], compiled.Request);
+                var result = ProbeTrailingAssertion(input, partialMode, start, start + literal.Length, lastToken, compiled.Request);
                 if (result.Kind != Utf8Pcre2ProbeKind.NoMatch) return result;
             }
             if (_anchored || intrinsic || !_input.TryAdvanceScalar(new Utf8BytePosition(start), out var next)) return NoMatch();
@@ -802,7 +800,7 @@ public sealed partial class Utf8Pcre2Regex
         if (remaining.StartsWith(literalUtf8))
         {
             var end = startOffsetInBytes + literalUtf8.Length;
-            var assertion = ((Pcre2CharacterDirectProgram)compiled.Operations.Match).Program.Tokens[^1];
+            var assertion = ((Pcre2TokenBacktrackingNode)((Pcre2SequenceBacktrackingNode)compiled.ProbeRoot!).Children[^1]).Token;
             return ProbeTrailingAssertion(input, partialMode, startOffsetInBytes, end, assertion, compiled.Request);
         }
 

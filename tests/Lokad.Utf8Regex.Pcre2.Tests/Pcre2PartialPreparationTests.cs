@@ -13,15 +13,13 @@ public sealed class Pcre2PartialPreparationTests
     public void PartialPreparationUsesRemainingParentBytesAndWork(bool character, bool work)
     {
         var request = Request(character ? "^" + new string('a', 4096) + @"\b" : "(a)b+");
-        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.Root;
-        var tokens = character ? Pcre2CharacterCompiler.Compile(request)! : null;
+        var tree = Pcre2BacktrackingCompiler.Compile(request)!.Root;
         using var parent = new Utf8ConstructionScope(ulong.MaxValue, work ? 1_000_000ul : 64ul, work ? 16ul : ulong.MaxValue, 256);
         var held = parent.Budget.AllocateArray<byte>(8, false);
         var before = parent.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (character) _ = Pcre2PartialProbeCompiler.Compile(tokens!, request);
-            else _ = Pcre2PartialProbeCompiler.Compile(tree!, request);
+            _ = Pcre2PartialProbeCompiler.Compile(tree, request);
         });
         Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(before, parent.Budget.ReservedBytes);
@@ -33,11 +31,10 @@ public sealed class Pcre2PartialPreparationTests
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
     [InlineData(true, false)] [InlineData(true, true)]
-    public void OriginalInterruptionIsObservedInsideBothProducers(bool character, bool timeout)
+    public void OriginalInterruptionIsObservedInsideBothPreparationForms(bool character, bool timeout)
     {
         var request = Request(character ? "^" + new string('a', 4096) + @"\b" : "(a)b+");
-        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.Root;
-        var tokens = character ? Pcre2CharacterCompiler.Compile(request)! : null;
+        var tree = Pcre2BacktrackingCompiler.Compile(request)!.Root;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
@@ -52,8 +49,7 @@ public sealed class Pcre2PartialPreparationTests
         };
         var failure = Record.Exception(() =>
         {
-            if (character) _ = Pcre2PartialProbeCompiler.Compile(tokens!, request);
-            else _ = Pcre2PartialProbeCompiler.Compile(tree!, request);
+            _ = Pcre2PartialProbeCompiler.Compile(tree, request);
         });
         Assert.Equal(3, checkpoints);
         if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
@@ -82,14 +78,15 @@ public sealed class Pcre2PartialPreparationTests
     public void LiteralOperandIsOwnedAndAdmittedBeforePublication()
     {
         var request = Request("^" + new string('a', 4096) + @"\b");
-        var tokens = Pcre2CharacterCompiler.Compile(request)!;
+        var tree = Pcre2BacktrackingCompiler.Compile(request)!.Root;
         using var parent = new Utf8ConstructionScope(ulong.MaxValue, 1_000_000, ulong.MaxValue, 256);
-        var result = Pcre2PartialProbeCompiler.Compile(tokens, request);
+        var result = Pcre2PartialProbeCompiler.Compile(tree, request);
         Assert.Equal(Pcre2PartialProbeProgramKind.AnchoredExactLiteral, result.Kind);
         var operand = Assert.Single(result.Operands);
         Assert.Equal(new string('a', 4096), Encoding.UTF8.GetString(operand));
         Assert.True(parent.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<byte>(operand.Length));
         Assert.Equal(0ul, parent.Budget.Depth);
+        parent.Dispose();
         var regex = new Utf8Pcre2Regex(request.Pattern);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe(operand, Pcre2PartialMode.Soft).Kind);
     }

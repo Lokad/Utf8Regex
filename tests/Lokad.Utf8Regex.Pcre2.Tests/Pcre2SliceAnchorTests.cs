@@ -3,11 +3,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R03 anchor slice for the PCRE2 profile: anchor-bearing compound shapes run
-// Count, first-match, enumeration, and replacement on the shared slice runner
-// (IsMatch keeps its specialized AsciiRegular program where one exists);
-// simple anchor shapes keep their pre-existing Character programs. Non-LF
-// newline conventions decline to backtracking.
+// Shared scalar execution serves compatible anchors. PCRE2-specific newline,
+// nullable multiline-caret and end-only-dollar behavior stays profile-owned.
 public sealed class Pcre2SliceAnchorTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
@@ -55,10 +52,7 @@ public sealed class Pcre2SliceAnchorTests
     public void OwnedIsMatchMatchesNativeSemantics(
         string pattern, string inputText, bool expected)
     {
-        // Zero-arg IsMatch rides core reuse (slice-serving, fallback-free).
-        // The explicit-startpoint driver keeps the pre-existing AsciiRegular
-        // route, which builds the foundation fallback; that residual is
-        // out of scope for the anchor slice and pinned only behaviorally.
+        // Default and explicit-start entry points share the same semantics.
         var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
         Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);

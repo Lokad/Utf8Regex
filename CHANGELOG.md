@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Retire PCRE2's separate character-sequence execution and parse, including
+  single-class counters and cursor state. Preserve partial probes through the
+  existing parsed tree, and keep PCRE2 caret/end-only-dollar semantics when Core
+  execution would differ. Resource requirements and execution costs can change.
+
 - Remove PCRE2's standalone token-repeat program, counters and cursor variant.
   Existing shared scalar/profile programs preserve quantifier and global-empty
   semantics, grapheme/newline/byte-token behavior, captures and controls. Resource

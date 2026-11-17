@@ -213,9 +213,6 @@ public sealed partial class Utf8Pcre2Regex
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
-            if (Pcre2Runner.TryIsMatchWithoutCoordinates(_program, input, startOffsetInBytes, matchOptions,
-                ref invocation, out var coordinateFreeResult))
-                return coordinateFreeResult;
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))
@@ -1035,7 +1032,6 @@ public sealed partial class Utf8Pcre2Regex
             MinRequiredLengthInBytes = _program.Operations.Match switch
             {
                 Pcre2LiteralDirectProgram program => program.Program.LiteralUtf8.Length,
-                Pcre2CharacterDirectProgram program => program.Program.MinimumByteLength,
                 Pcre2BacktrackingDirectProgram program => program.Program.AnalyzedMinimumByteLength,
                 Pcre2SliceDirectProgram program => program.Fallback.AnalyzedMinimumByteLength,
                 _ => 0,
@@ -1320,7 +1316,6 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_program.Operations.Replace is not (
             Pcre2LiteralDirectProgram or
-            Pcre2CharacterDirectProgram or
             Pcre2BacktrackingDirectProgram))
         {
             plan = default;
@@ -1741,7 +1736,6 @@ public sealed partial class Utf8Pcre2Regex
 
     private bool GenericProgramUsesCodeUnit => _program.Operations.Match switch
     {
-        Pcre2CharacterDirectProgram { Program.UsesCodeUnit: true } => true,
         Pcre2BacktrackingDirectProgram { Program.UsesCodeUnit: true } => true,
         _ => false,
     };

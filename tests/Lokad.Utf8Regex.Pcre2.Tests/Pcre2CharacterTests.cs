@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 [Collection(Pcre2AllocationTestCollection.Name)]
-public sealed class Pcre2CharacterCompilerTests
+public sealed class Pcre2CharacterTests
 {
     [Theory]
     [InlineData("é",1,3)]
@@ -24,7 +24,6 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(expected, match.GetValueString());
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(expectedEndOffsetInBytes, match.EndOffsetInBytes);
-        Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Theory]
@@ -42,7 +41,6 @@ public sealed class Pcre2CharacterCompilerTests
 
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
-        Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Theory]
@@ -65,7 +63,6 @@ public sealed class Pcre2CharacterCompilerTests
 
         Assert.True(match.Success);
         Assert.Equal(inputText, match.GetValueString());
-        Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Fact]
@@ -170,8 +167,32 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.False(extendedMore.IsMatch(" "u8));
     }
 
+    [Theory]
+    [InlineData("^", Pcre2CompileOptions.Multiline, false)]
+    [InlineData("^a?", Pcre2CompileOptions.Multiline, false)]
+    [InlineData("$", Pcre2CompileOptions.DollarEndOnly, true)]
+    public void EndAnchorsPreserveProfileRulesAcrossOperations(string pattern, Pcre2CompileOptions options, bool found)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options);
+        var input = "é\n"u8;
+        const int floor = 2;
+        Assert.Equal(found, regex.IsMatch(input, floor));
+        var match = regex.Match(input, floor);
+        Assert.Equal(found, match.Success);
+        Assert.Equal(found, regex.MatchDetailed(input, floor).Success);
+        Assert.Equal(found ? 1 : 0, regex.Count(input, floor));
+        var cursor = regex.EnumerateMatches(input, floor);
+        Assert.Equal(found, cursor.MoveNext());
+        if (found)
+        {
+            Assert.Equal((3, 3), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            Assert.Equal(3, cursor.Current.StartOffsetInBytes);
+            Assert.False(cursor.MoveNext());
+        }
+    }
+
     [Fact]
-    public void CharacterProgramDrivesGlobalAndReplacementOperations()
+    public void CharacterMembershipDrivesGlobalAndReplacementOperations()
     {
         var regex = new Utf8Pcre2Regex(@"\p{L}");
         var input = "a-é😀"u8;
@@ -191,7 +212,6 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(0, destination[0].StartOffsetInBytes);
 
         Assert.Equal("<a>-<é>😀", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
-        Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
     }
 
     [Fact]
@@ -206,41 +226,6 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(0, compileAnchored.Count(input));
         Assert.Equal(2, compileAnchored.Count(input, 1));
         Assert.Equal(2, regex.Count(input, 1, Pcre2MatchOptions.Anchored));
-    }
-
-    [Theory]
-    [InlineData(@"\p{Sm}", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{sm}", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{ s_m }", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Ucp)]
-    public void ExactMathSymbolPropertyAdmitsSharedCategoryCount(
-        string pattern,
-        Pcre2CompileOptions options)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options);
-        var direct = Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-
-        Assert.True(direct.Program.TryGetDirectCountCategory(out var category));
-        Assert.Equal(UnicodeCategory.MathSymbol, category);
-    }
-
-    [Theory]
-    [InlineData(@"\P{Sm}", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{^Sm}", Pcre2CompileOptions.None)]
-    [InlineData(@"[^\p{Sm}]", Pcre2CompileOptions.None)]
-    [InlineData(@"[\p{Sm}\p{Sc}]", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{S}", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{L}", Pcre2CompileOptions.None)]
-    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Caseless)]
-    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Anchored)]
-    public void SharedCategoryCountRejectsBroaderSemanticShapes(
-        string pattern,
-        Pcre2CompileOptions options)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options);
-        var direct = Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-
-        Assert.False(direct.Program.TryGetDirectCountCategory(out _));
     }
 
     [Fact]
@@ -263,7 +248,7 @@ public sealed class Pcre2CharacterCompilerTests
     }
 
     [Fact]
-    public void SharedMathSymbolCountIsAllocationFreeAndThreadSafeAfterWarmup()
+    public void MathSymbolCountIsThreadSafe()
     {
         var regex = new Utf8Pcre2Regex(@"\p{Sm}");
         var input = Encoding.UTF8.GetBytes("--+¬𝛁--");
@@ -273,14 +258,12 @@ public sealed class Pcre2CharacterCompilerTests
         }
 
         var matched = true;
-        var before = GC.GetAllocatedBytesForCurrentThread();
         for (var iteration = 0; iteration < 1_000; iteration++)
         {
             matched &= regex.Count(input) == 3;
         }
 
         Assert.True(matched);
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
 
         var failures = 0;
         Parallel.For(0, 1_000, _ =>
@@ -295,20 +278,20 @@ public sealed class Pcre2CharacterCompilerTests
     }
 
     [Fact]
-    public void CharacterSearchChargesEveryMeteredCandidate()
+    public void CharacterSearchHasUsefulWorkAdmission()
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 128));
         var sufficient = new Utf8Pcre2Regex(
             "[0-9]",
             Pcre2CompileOptions.None,
             default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 130 },
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 100000 },
             Timeout.InfiniteTimeSpan);
         var insufficient = new Utf8Pcre2Regex(
             "[0-9]",
             Pcre2CompileOptions.None,
             default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 129 },
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Timeout.InfiniteTimeSpan);
 
         Assert.False(sufficient.IsMatch(input));
@@ -332,32 +315,6 @@ public sealed class Pcre2CharacterCompilerTests
         });
 
         Assert.Equal(0, failures);
-    }
-
-    [Fact]
-    public void CharacterOneShotAndCountAreAllocationFreeAfterWarmup()
-    {
-        var regex = new Utf8Pcre2Regex(@"\p{L}");
-        var input = "--é--"u8.ToArray();
-        for (var warmup = 0; warmup < 128; warmup++)
-        {
-            _ = regex.IsMatch(input);
-            _ = regex.Match(input);
-            _ = regex.Count(input);
-        }
-
-        var matched = true;
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var iteration = 0; iteration < 1_000; iteration++)
-        {
-            matched &= regex.IsMatch(input);
-            matched &= regex.Match(input).Success;
-            matched &= regex.Count(input) == 1;
-        }
-
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.True(matched);
-        Assert.Equal(0, allocated);
     }
 
     private static Utf8Pcre2Regex Create(

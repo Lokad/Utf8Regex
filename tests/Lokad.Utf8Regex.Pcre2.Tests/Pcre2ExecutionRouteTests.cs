@@ -36,12 +36,11 @@ public sealed class Pcre2ExecutionRouteTests
     }
 
     [Fact]
-    public void IgnoreCaseLiteralUsesPcre2CharacterProgram()
+    public void IgnoreCaseLiteralPreservesItsCounts()
     {
         var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count("HttpClient x httpclient HTTPCLIENT"u8));
     }
 

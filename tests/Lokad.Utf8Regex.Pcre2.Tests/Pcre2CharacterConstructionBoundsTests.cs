@@ -56,7 +56,7 @@ public sealed class Pcre2CharacterConstructionBoundsTests
             if (timeout) ticks = 20; else cancellation.Cancel();
         };
         var pattern = string.Concat(Enumerable.Repeat(@"\X", 1000));
-        Exception? failure = Record.Exception(() => Pcre2CharacterCompiler.Compile(
+        Exception? failure = Record.Exception(() => Pcre2BacktrackingCompiler.Compile(
             new(pattern, default, default, default, Timeout.InfiniteTimeSpan)));
         Assert.True(interrupted);
         if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
@@ -67,7 +67,7 @@ public sealed class Pcre2CharacterConstructionBoundsTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void LiteralAndCharacterProgramsDoNotRetainBacktrackingRoots(bool character)
+    public void ProgramsWithoutPartialSupportDoNotRetainProbeTrees(bool character)
     {
         var pattern = character ? string.Concat(Enumerable.Repeat(@"\X", 1000)) : new string('a', 4096);
         var regex = new Utf8Pcre2Regex(pattern);

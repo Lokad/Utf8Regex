@@ -70,17 +70,15 @@ public sealed class Pcre2ValueCallbackAuthorityTests
     }
 
     [Theory]
-    [InlineData("x", "αx😀xβ", "αR😀Rβ", "Pcre2Literal")]
-    [InlineData("[x]", "αx😀xβ", "αR😀Rβ", "Pcre2Character")]
-    [InlineData("a+", "éaaa😀aaβ", "éR😀Rβ", "Pcre2Slice")]
-    [InlineData("a|ab", "éab😀aβ", "éRb😀Rβ", "Pcre2LiteralFamily")]
-    [InlineData("", "😀", "R😀R", "Pcre2Literal")]
-    [InlineData(".", "é😀", "RR", "Pcre2Character")]
-    public void ActualValueSelectorsAndScalarRangesSurviveOutputBorrowing(string pattern, string input, string expected,
-        string kind)
+    [InlineData("x", "αx😀xβ", "αR😀Rβ")]
+    [InlineData("[x]", "αx😀xβ", "αR😀Rβ")]
+    [InlineData("a+", "éaaa😀aaβ", "éR😀Rβ")]
+    [InlineData("a|ab", "éab😀aβ", "éRb😀Rβ")]
+    [InlineData("", "😀", "R😀R")]
+    [InlineData(".", "é😀", "RR")]
+    public void ScalarRangesSurviveOutputBorrowing(string pattern, string input, string expected)
     {
         var regex = Create(pattern, default);
-        Assert.Equal(kind, regex.DebugCompiledProgram.Operations.Enumerate.Kind.ToString());
         foreach (var text in new[] { false, true })
         {
             var state = new Observation();

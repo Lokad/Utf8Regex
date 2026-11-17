@@ -28,36 +28,23 @@ Results expose byte endpoints without UTF-16 projection or prefix scans. Explici
 checks. Assembled text and callback outputs keep their independent well-formedness
 requirements.
 
-The former ordered-window Count wrapper is retired. These patterns use existing
-profile or shared scalar programs, according to their supported options. Work,
-depth and covered storage remain route-dependent; their numerical requirements
-and operating costs can increase or decrease. Lazy bounded-window alternatives
-retain their existing compatibility exclusion and profile backtracking priority.
+Execution strategies are internal. Matching preserves scalar boundaries, capture
+priority, global empty/nonempty retries, newline/options and original resource
+and interruption authority. Literal mechanisms remain; nonliteral shape programs
+and the separate character-sequence parser/executor have been retired in favor of
+existing general programs. Shared token semantics remain owned by this profile.
+Supported partial probes are prepared from the same admitted semantic tree,
+without a second parser or token array. Structurally equivalent noncapturing
+literal groups can use the same preparation; unsupported partial shapes still
+fail explicitly. PCRE2 multiline caret and end-only-dollar behavior retain profile
+execution where Core semantics differ.
 
-Palindrome, leading-dot-star/literal and separated-run Boolean overlays are also
-retired. Their matching uses the existing profile or shared scalar programs;
-captures, option handling and original interruption/admission remain. Numerical
-work/depth/scratch requirements and costs can increase when a shortcut disappears.
-
-Bounded-ASCII, regular-ASCII and anchored-DFA Boolean overlays and their private
-DFA compiler are retired under the same contract. Construction still admits major
-buffers and bounds program expansion; helper-only DFA accounting is gone. Existing
-profile and shared scalar programs retain captures, option semantics and original
-controls. Numerical construction/execution requirements and operating costs change
-with the selected program.
-
-Multiline-prefix, prefix/repeat and alternation/repeat overlays and their cursor
-variants are retired. Existing profile/shared scalar execution owns these calls;
-literal helpers with genuine consumers remain. Fixed-scratch line discovery and
-Count can now succeed under depth/heap budgets that previously refused the
-backtracking fallback. Growing state still requires admission and obeys its limits.
-
-Standalone token-repeat execution, its counters and its cursor variant are also
-retired. Existing general programs preserve greedy/lazy/possessive priority,
-global nonempty retries, grapheme/newline/explicit-byte tokens and captures.
-Callback group-zero projection can avoid a temporary group array; admission still
-covers the buffers actually needed, and numerical requirements can decrease or
-increase with the selected program. Shared token and character support remains.
+Work, depth and covered storage are route-dependent. Numerical requirements and
+operating costs can increase or decrease as strategies change. Fixed-scratch or
+direct byte-range operations need no mandatory heap loan; major growing buffers
+and program expansion still require admission. Group-zero callbacks can avoid a
+temporary group array. These controls bound modeled work and admitted storage,
+not total heap, stack or process memory.
 
 ## Surface and admission
 
