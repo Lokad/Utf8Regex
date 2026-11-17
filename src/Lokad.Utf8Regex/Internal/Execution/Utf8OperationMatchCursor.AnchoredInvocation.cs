@@ -7,7 +7,7 @@ internal ref partial struct Utf8OperationMatchCursor
 {
     private bool _hasAnchoredLiteralInvocation;
 
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8FallbackDirectFamilyKind kind, Utf8SliceInvocation invocation)
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8AnchoredLiteralKind kind, Utf8SliceInvocation invocation)
         : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {
         // The borrowed invocation already owns the deadline and shared state.
@@ -15,12 +15,12 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _hasAnchoredLiteralInvocation = true;
-        if (kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        if (kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
             _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
     // Full-subject anchors retain their original context at a nonzero floor.
-    // Candidate verification and UTF-16 projection commit with the range only
+    // Candidate verification and publication commit with the range only
     // after the final invocation checkpoint; denied moves retain all progress.
     internal Utf8ExecutionLimitKind TryMoveNextAnchoredLiteral(out bool found)
     {

@@ -504,9 +504,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.TryMatchDirectWithoutValidation("123alpha9"u8, out var match);
+        var match = regex.Match("123alpha9"u8);
 
-        Assert.True(handled);
         Assert.True(match.Success);
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);
@@ -518,9 +517,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.TryMatchDirectWithoutValidation("123__"u8, out var match);
+        var match = regex.Match("123__"u8);
 
-        Assert.True(handled);
         Assert.False(match.Success);
     }
 
@@ -676,9 +674,8 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledDocLineDirectHookHandlesMatchWithoutValidation()
     {
         var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var handled = regex.TryMatchDirectWithoutValidation("/// doc line\n"u8, out var match);
+        var match = regex.Match("/// doc line\n"u8);
 
-        Assert.True(handled);
         Assert.True(match.Success);
         Assert.True(match.Success);
         Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
@@ -732,7 +729,6 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -741,7 +737,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Theory]
@@ -753,7 +748,6 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.WordRunCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -867,8 +861,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Null(regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1401,10 +1393,6 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = @"[A-Za-z]+://[A-Za-z0-9.]+[A-Za-z0-9/]+";
         const string input = "é https://atlas.example/path 夏";
         var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
-
-        Assert.Equal(
-            nameof(Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount),
-            regex.Inspection.DebugFallbackDirectFamilyKind);
         Assert.Equal(Regex.Count(input, pattern), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
@@ -2401,7 +2389,6 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match("/// summary line\n"u8);
 
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Null(regex.Inspection.FallbackReason);
         Assert.True(match.Success);
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);

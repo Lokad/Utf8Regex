@@ -21,7 +21,6 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
         {
             var regex = new Utf8Regex(Pattern, Options | mode, Timeout.InfiniteTimeSpan,
                 Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal("AnchoredIdentifierPrefix", regex.Inspection.DebugFallbackDirectFamilyKind);
             var oracle = new Regex(Pattern, Options | mode);
             foreach (var text in new[] { "", "_abc", "9abc", "a", "I_i0", "AbC123_DEF-tail", "a\0tail", "a\nZ", "\nabc" })
             {
@@ -32,7 +31,6 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
                     var value = regex.Match(backing.AsSpan(1, input.Length), live.Token);
                     var expected = oracle.Match(text); Assert.Equal(expected.Success, value.Success);
                     if (value.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
                 finally { session.Complete(); }
@@ -52,8 +50,6 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
                 var options = RegexOptions.IgnoreCase | (invariant ? RegexOptions.CultureInvariant : RegexOptions.None);
                 var regex = new Utf8Regex(Pattern, options); var oracle = new Regex(Pattern, options);
-                Assert.Equal(culture == "tr-TR" && !invariant ? "None" : "AnchoredIdentifierPrefix",
-                    regex.Inspection.DebugFallbackDirectFamilyKind);
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 // The shared scalar fixture recompiles its oracle under the
                 // current culture. These classes consume only BMP scalars, so

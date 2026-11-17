@@ -88,10 +88,9 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
-        var ipv4 = _utf8Regex?.CanUseAsciiIpv4Boolean == true;
         // Keep capture-free unmetered calls on their established cursor.
         // Captured booleans can discard the VM's otherwise unused capture state.
-        if (ipv4 || (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
+        if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
              MatchTimeout != Timeout.InfiniteTimeSpan || _scalarProgram.GroupCount != 0) &&
             !_scalarProgram.CanMatchEmpty &&
             !_scalarProgram.HasContiguousAnchor && !_scalarProgram.RightToLeft &&
@@ -105,20 +104,6 @@ public sealed partial class Utf8PythonRegex
                 // a boolean needs neither capture slots nor coordinate metadata.
                 // Keep interruption and the existing finder under one authority.
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-                if (ipv4)
-                {
-                    // The complete capture-free ASCII grammar is unanchored:
-                    // a scalar-valid suffix preserves existence and needs no VM
-                    // workspace. Still admit any enclosing numeric working loan.
-                    var breach = invocation.TryReserveWorking(0);
-                    var matched = false;
-                    if (breach == Utf8ExecutionLimitKind.None)
-                        breach = Utf8AsciiIpv4TokenExecutor.TryIsMatchAsciiIpv4Token(
-                            input[startOffsetInBytes..], ref invocation, out matched);
-                    if (breach != Utf8ExecutionLimitKind.None)
-                        throw invocation.Budget.CreateResourceFailure();
-                    return matched;
-                }
                 if (!_utf8Regex.TryFindNativeLiteralForResult(input, startOffsetInBytes,
                     ref invocation, out var found, out _, out _))
                     throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");

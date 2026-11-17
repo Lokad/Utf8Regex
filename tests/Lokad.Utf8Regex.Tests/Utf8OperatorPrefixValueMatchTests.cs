@@ -19,7 +19,6 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         {
             var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
                 Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal("AnchoredOperatorRun", regex.Inspection.DebugFallbackDirectFamilyKind);
             foreach (var text in new[] { "", "word+=", " +", "+", "==!=rest", "+-^*/.<>~!&|?=tail", "=\0tail", "=\r\n+", "\n++" })
             {
                 var expected = new Regex(Pattern, mode | RegexOptions.CultureInvariant).Match(text);
@@ -31,7 +30,6 @@ public sealed class Utf8OperatorPrefixValueMatchTests
                     Assert.Equal(expected.Success, value.Success);
                     if (value.Success)
                         Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
                 finally { session.Complete(); }

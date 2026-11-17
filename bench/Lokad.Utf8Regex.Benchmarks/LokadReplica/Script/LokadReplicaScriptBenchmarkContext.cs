@@ -9,15 +9,9 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal sealed class LokadReplicaScriptBenchmarkContext
 {
-    private static readonly PreparedByteSetState s_asciiLetters = PreparedByteSetState.FromValues(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
-    private static readonly PreparedByteSetState s_asciiAlphaNumeric = PreparedByteSetState.FromValues(
-        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
-
     private static ReadOnlySpan<byte> ImportPrefix => "import"u8;
     private static ReadOnlySpan<byte> ImportOptionalSegment => "shared"u8;
     private static ReadOnlySpan<byte> RegionMarkerPrefix => "///#"u8;
-    private static ReadOnlySpan<byte> DocLinePrefix => "///"u8;
     private static readonly Utf8AsciiLiteralFinder s_importFinder = new(ImportPrefix);
     private static readonly Utf8AsciiLiteralFinder s_regionMarkerFinder = new(RegionMarkerPrefix);
 
@@ -218,46 +212,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteLokadScriptLexerPrimitiveOnly()
-    {
-        EnsurePrefixMatchLoop();
-        return BenchmarkCase.Id switch
-        {
-            "lokad/lexer/identifier" => ExecuteAcrossSamples(static sample =>
-                Utf8AsciiPrefixTokenExecutor.TryMatchIdentifierPrefixIgnoreCase(sample, out var matchedLength) ? matchedLength : 0),
-            "lokad/lexer/number" => ExecuteAcrossSamples(static sample =>
-                Utf8AsciiPrefixTokenExecutor.TryMatchNumberPrefix(sample, out var matchedLength) ? matchedLength : 0),
-            "lokad/lexer/operator-run" => ExecuteAcrossSamples(static sample =>
-                Utf8AsciiPrefixTokenExecutor.TryMatchOperatorRunPrefix(sample, out var matchedLength) ? matchedLength : 0),
-            "lokad/lexer/doc-line" => ExecuteAcrossSamples(static sample =>
-                Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(sample, DocLinePrefix, (byte)'\n', out var matchedLength) ? matchedLength : 0),
-            "lokad/lexer/string" => ExecuteAcrossSamples(static sample =>
-                Utf8AsciiPrefixTokenExecutor.TryMatchQuotedStringPrefix(sample, out var matchedLength) ? matchedLength : 0),
-            _ => throw new InvalidOperationException($"No direct Lokad script lexer primitive is defined for case '{BenchmarkCase.Id}'."),
-        };
-    }
-
-    public int ExecuteLokadScriptLexerWellFormedPrimitiveOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(sample);
-            total += BenchmarkCase.Id switch
-            {
-                "lokad/lexer/identifier" => Utf8AsciiPrefixTokenExecutor.TryMatchIdentifierPrefixIgnoreCase(sample, out var matchedLength) ? matchedLength : 0,
-                "lokad/lexer/number" => Utf8AsciiPrefixTokenExecutor.TryMatchNumberPrefix(sample, out var matchedLength) ? matchedLength : 0,
-                "lokad/lexer/operator-run" => Utf8AsciiPrefixTokenExecutor.TryMatchOperatorRunPrefix(sample, out var matchedLength) ? matchedLength : 0,
-                "lokad/lexer/doc-line" => Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(sample, DocLinePrefix, (byte)'\n', out var matchedLength) ? matchedLength : 0,
-                "lokad/lexer/string" => Utf8AsciiPrefixTokenExecutor.TryMatchQuotedStringPrefix(sample, out var matchedLength) ? matchedLength : 0,
-                _ => throw new InvalidOperationException($"No direct Lokad script lexer primitive is defined for case '{BenchmarkCase.Id}'."),
-            };
-        }
-
-        return total;
-    }
-
     public int ExecuteLokadScriptDirectUrlMatcher()
     {
         EnsurePrefixMatchLoop();
@@ -279,21 +233,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             if (matched)
             {
                 total += sample.Length;
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteAsciiTokenFinderModel()
-    {
-        EnsurePrefixMatchLoop();
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            if (Utf8AsciiTokenFinderExecutor.TryFindNext(sample, 0, s_asciiLetters, s_asciiAlphaNumeric, out _, out var matchedLength))
-            {
-                total += matchedLength;
             }
         }
 
@@ -430,17 +369,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             {
                 total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
             }
-        }
-
-        return total;
-    }
-
-    private int ExecuteAcrossSamples(Func<byte[], int> projector)
-    {
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            total += projector(sample);
         }
 
         return total;
@@ -639,68 +567,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         }
 
         return lines;
-    }
-
-    private static bool IsDashboardUrlMatch(ReadOnlySpan<byte> input)
-    {
-        var dashboardIndex = input.IndexOf("/d/"u8);
-        if (dashboardIndex < 0)
-        {
-            return false;
-        }
-
-        var tabIndex = input[(dashboardIndex + 3)..].IndexOf("?t="u8);
-        if (tabIndex < 0)
-        {
-            return false;
-        }
-
-        var idStart = dashboardIndex + 3;
-        var idLength = tabIndex;
-        if (idLength <= 0 || input[idStart..(idStart + idLength)].IndexOfAnyExceptInRange((byte)'0', (byte)'9') >= 0)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsDownloadUrlMatch(ReadOnlySpan<byte> input)
-    {
-        var downloadIndex = input.IndexOf("/gateway/BigFiles/Browse/Download?hash="u8);
-        if (downloadIndex < 0)
-        {
-            return false;
-        }
-
-        var hashStart = downloadIndex + "/gateway/BigFiles/Browse/Download?hash=".Length;
-        if ((uint)hashStart >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        var nameRelative = input[hashStart..].IndexOf("&name="u8);
-        if (nameRelative < 0)
-        {
-            return false;
-        }
-
-        var hash = input[hashStart..(hashStart + nameRelative)];
-        if (hash.IsEmpty)
-        {
-            return false;
-        }
-
-        foreach (var value in hash)
-        {
-            var folded = (byte)(value | 0x20);
-            if (!((uint)(value - '0') <= 9 || (uint)(folded - 'a') <= ('f' - 'a')))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
 

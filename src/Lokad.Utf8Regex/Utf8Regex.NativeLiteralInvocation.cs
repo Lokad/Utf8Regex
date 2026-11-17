@@ -31,12 +31,6 @@ public sealed partial class Utf8Regex
     // as Core Count. Result discovery retains its existing three-needle proof.
     internal bool CanCountNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8);
 
-    // A profile can borrow the complete ASCII language proof and bounded
-    // boolean executor, under its own validated subject and invocation.
-    internal bool CanUseAsciiIpv4Boolean =>
-        _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
-        CanUseNativeScalarTokenSearch(_ownedSliceProgram, 0);
-
     // Borrow the adapter's already validated subject and invocation. Returning
     // false declines the route without searching; found describes an accepted
     // complete match, not a necessary start hint. The caller owns projection.

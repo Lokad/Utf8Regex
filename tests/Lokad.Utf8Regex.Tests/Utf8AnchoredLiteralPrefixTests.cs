@@ -26,9 +26,9 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     [MemberData(nameof(AcceptCases))]
     public void AnchoredLiteralShapesClassifyToPrefixFamily(string pattern)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex.RuntimeTree);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, plan.Kind);
     }
 
     public static IEnumerable<object?[]> FoldedAcceptCases()
@@ -41,9 +41,9 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     [MemberData(nameof(FoldedAcceptCases))]
     public void FoldedAnchoredLiteralShapesClassifyToFoldedPrefixFamily(string pattern)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).SemanticRegex.RuntimeTree);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, plan.Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix, plan.Kind);
     }
 
     public static IEnumerable<object?[]> DeclineCases()
@@ -66,9 +66,9 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     [MemberData(nameof(DeclineCases))]
     public void OtherShapesKeepExistingClassification(string pattern, RegexOptions options)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree);
 
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, plan.Kind);
     }
 
     public static IEnumerable<object?[]> BehaviorCases()

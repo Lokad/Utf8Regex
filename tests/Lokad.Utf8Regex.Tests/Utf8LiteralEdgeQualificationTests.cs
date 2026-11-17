@@ -11,18 +11,18 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LiteralEdgeQualificationTests
 {
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private static Utf8FallbackDirectFamilyPlan Plan(string pattern, RegexOptions options) => Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
+    private static Utf8AnchoredLiteralPlan Plan(string pattern, RegexOptions options) => Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree);
     private static Utf8OwnedRegexTree Tree(string pattern, RegexOptions options)
     { var tree = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree; Assert.NotNull(tree); return tree; }
     private static MethodInfo Classifier()
     {
-        var type = typeof(Utf8FrontEnd).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8FallbackLiteralClassifier"); Assert.NotNull(type);
+        var type = typeof(Utf8FrontEnd).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8AnchoredLiteralClassifier"); Assert.NotNull(type);
         Assert.Empty(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance));
         var method = type.GetMethod("Classify", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public); Assert.NotNull(method); return method;
     }
-    private static Utf8FallbackDirectFamilyPlan Classify(MethodInfo method, Utf8OwnedRegexTree tree)
+    private static Utf8AnchoredLiteralPlan Classify(MethodInfo method, Utf8OwnedRegexTree tree)
     {
-        try { return Assert.IsType<Utf8FallbackDirectFamilyPlan>(method.Invoke(null, [tree])); }
+        try { return Assert.IsType<Utf8AnchoredLiteralPlan>(method.Invoke(null, [tree])); }
         catch (TargetInvocationException error) when (error.InnerException is not null) { ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
     }
     private static void Range(string pattern, string text, RegexOptions options, int index, int length)
@@ -37,7 +37,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     {
         const string pattern = @"^(?<x>\x61)(?:\u0062)";
         var plan = Plan(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind); Assert.Equal("ab"u8.ToArray(), plan.LiteralUtf8);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, plan.Kind); Assert.Equal("ab"u8.ToArray(), plan.LiteralUtf8);
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             Range(pattern, "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
@@ -54,11 +54,11 @@ public sealed class Utf8LiteralEdgeQualificationTests
     {
         foreach (var pattern in new[] { @"(?:\x61)(?<x>b)\Z", @"(?-m:ab$)" })
         {
-            Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, Plan(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant).Kind);
+            Assert.Equal(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix, Plan(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant).Kind);
             Range(pattern, "😀ab\n", RegexOptions.Multiline | RegexOptions.CultureInvariant, 4, 2);
         }
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd, Plan(@"(?:a)(?:\x62)\z", RegexOptions.CultureInvariant).Kind);
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, Plan(@"(?m:ab$)", RegexOptions.CultureInvariant).Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd, Plan(@"(?:a)(?:\x62)\z", RegexOptions.CultureInvariant).Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix, Plan(@"(?m:ab$)", RegexOptions.CultureInvariant).Kind);
         Range(@"(?m:ab$)", "😀ab\ncd", RegexOptions.CultureInvariant, 4, 2);
     }
 
@@ -66,13 +66,13 @@ public sealed class Utf8LiteralEdgeQualificationTests
     public void UniformLexicalFoldingQualifiesButMixedSensitiveLettersKeepScalarExecution()
     {
         const string prefix = @"\A(?i:a)(?i:b)"; const string suffix = @"(?i:a)(?i:b)\z";
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, Plan(prefix, RegexOptions.CultureInvariant).Kind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd, Plan(suffix, RegexOptions.CultureInvariant).Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix, Plan(prefix, RegexOptions.CultureInvariant).Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd, Plan(suffix, RegexOptions.CultureInvariant).Kind);
         Range(prefix, "AB😀", RegexOptions.CultureInvariant, 0, 2); Range(suffix, "😀AB", RegexOptions.CultureInvariant, 4, 2);
         foreach (var pattern in new[] { @"\Aa(?i:b)", @"\A(?i:a)b" })
         {
-            Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, Plan(pattern, RegexOptions.CultureInvariant).Kind);
-            Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, Plan(pattern, RegexOptions.CultureInvariant).Kind);
+            Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix, Plan(pattern, RegexOptions.CultureInvariant).Kind);
+            Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, Plan(pattern, RegexOptions.CultureInvariant).Kind);
         }
         Assert.False(new Utf8Regex(@"\Aa(?i:b)").IsMatch("AB"u8)); Assert.False(new Utf8Regex(@"\A(?i:a)b").IsMatch("AB"u8));
     }
@@ -80,49 +80,39 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void WiderCaseFibersDeclineTheByteShortcutAndMatchCompleteScalars()
     {
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, Plan("^k", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Kind);
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix, Plan("k$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix, Plan("^k", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix, Plan("k$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Kind);
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         { Range("^k", "K😀", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | compiled, 0, 3); Range("k$", "😀K", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | compiled, 4, 3); }
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, Plan("^I", RegexOptions.IgnoreCase).Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix, Plan("^I", RegexOptions.IgnoreCase).Kind);
     }
 
     [Fact]
     public void LeadingDotLiteralRangesStopAtNewlinesAndChooseTheFirstSuccessfulLine()
     {
-        Assert.True(Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.TryFindMatch("x\nab"u8, "ab"u8, out var index, out var length)); Assert.Equal((2, 2), (index, length));
-        Assert.True(Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.TryFindMatch("xxab\nzzab"u8, "ab"u8, out index, out length)); Assert.Equal((0, 4), (index, length));
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         { Range(".*ab", "x\nab", RegexOptions.CultureInvariant | compiled, 2, 2); Range(".*ab", "xxab\nzzab", RegexOptions.CultureInvariant | compiled, 0, 4); Range(".*ab", "😀x\nab", RegexOptions.CultureInvariant | compiled, 6, 2); }
-    }
-
-    [Fact]
+    }    [Fact]
     public void LeadingDotLiteralMayConsumeNewlinesInsideTheLiteralButNotInsideDot()
     {
-        const string pattern = @".*\x0AZ";
-        Assert.Equal(Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral, Plan(pattern, RegexOptions.CultureInvariant).Kind);
-        Range(pattern, "x\nZ\nZ", RegexOptions.CultureInvariant, 0, 3);
+        Range(@".*\x0AZ", "x\nZ\nZ", RegexOptions.CultureInvariant, 0, 3);
         foreach (var literal in new[] { "a", "aZ", "\nZ", "Z\n", "\r\n" })
         {
-            var oracle = new Regex(".*" + Regex.Escape(literal)); var bytes = Encoding.UTF8.GetBytes(literal);
+            var pattern = ".*" + Regex.Escape(literal); var oracle = new Regex(pattern); var regex = new Utf8Regex(pattern);
             foreach (var text in Subjects(5, ""))
             {
-                var input = Encoding.UTF8.GetBytes(text); var expected = oracle.Match(text);
-                Assert.Equal(expected.Success, Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.TryFindMatch(input, bytes, out var index, out var length));
-                Assert.Equal(expected.Success, Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, bytes));
-                if (expected.Success) Assert.Equal((expected.Index, expected.Length), (index, length));
+                var input = Encoding.UTF8.GetBytes(text); var expected = oracle.Match(text); var actual = regex.Match(input);
+                Assert.Equal(expected.Success, actual.Success); Assert.Equal(expected.Success, regex.IsMatch(input));
+                if (actual.Success) Assert.Equal((expected.Index, expected.Length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
         }
-    }
-    private static IEnumerable<string> Subjects(int remaining, string prefix)
+    }private static IEnumerable<string> Subjects(int remaining, string prefix)
     { yield return prefix; if (remaining == 0) yield break; foreach (var value in "aZ\n\r") foreach (var text in Subjects(remaining - 1, prefix + value)) yield return text; }
 
     [Fact]
     public void CompleteScalarDotProofDeclinesSinglelineLazyAtomicAndDifferentRepeatBounds()
     {
-        Assert.Equal(Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral, Plan(@"[^\n]*\x61b", RegexOptions.CultureInvariant).Kind);
-        foreach (var pattern in new[] { @"(?s:.*)ab", @".*?ab", @".+ab", @"(?>.*)ab", @"[a\n]*ab" })
-            Assert.NotEqual(Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral, Plan(pattern, RegexOptions.CultureInvariant).Kind);
+
         Range(@"(?s:.*)ab", "x\nab", RegexOptions.CultureInvariant, 0, 4);
         Range(@".*?ab", "x\nab", RegexOptions.CultureInvariant, 2, 2);
     }
@@ -130,10 +120,10 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void ScalarByteRangesRemainPrimaryAcrossDirectionAndNulAliases()
     {
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, Plan(@"\A\0a", RegexOptions.CultureInvariant).Kind);
+        Assert.Equal(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, Plan(@"\A\0a", RegexOptions.CultureInvariant).Kind);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled, RegexOptions.CultureInvariant | RegexOptions.RightToLeft, RegexOptions.CultureInvariant | RegexOptions.RightToLeft | RegexOptions.Compiled })
         { Range(@"\A\0a", "\0a😀", options, 0, 2); Range(@"a\0\z", "😀a\0", options, 4, 2); }
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, Plan(@"\A😀a", RegexOptions.CultureInvariant).Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, Plan(@"\A😀a", RegexOptions.CultureInvariant).Kind);
         Range(@"\A😀a", "😀a", RegexOptions.CultureInvariant, 0, 5);
     }
 
@@ -141,7 +131,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     public void EveryLiteralProofCutoffRetainsOnlyItsFinalPayloadAndRestoresParentLoans()
     {
         var method = Classifier();
-        foreach (var pattern in new[] { @"\A(?<x>a)(?:b)", @"(?i:a)(?i:b)\z", @"[^\n]*\x61b" })
+        foreach (var pattern in new[] { @"\A(?<x>a)(?:b)", @"(?i:a)(?i:b)\z" })
         {
             var tree = Tree(pattern, RegexOptions.CultureInvariant); ulong peak, work;
             using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -180,6 +170,6 @@ public sealed class Utf8LiteralEdgeQualificationTests
         var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
         foreach (var name in new[] { "ClassifyPattern", "TryParseAnchoredAsciiLiteralPrefix", "TryParseAnchoredAsciiLiteralSuffix", "TryParseLeadingAnyRunTrailingAsciiLiteral", "TryDecodeStrictAsciiRegexLiteral", "IsEscapedAsciiRegexLiteral", "IsRegexMetaChar" })
-            Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
+            Assert.DoesNotContain(typeof(Utf8AnchoredLiteralClassifier).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
 }

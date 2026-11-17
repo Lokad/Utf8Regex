@@ -37,12 +37,12 @@ public sealed class Utf8UriExistenceTests
     }
 
     [Fact]
-    public void FiniteExistenceNeedsNoVmScratchButRetainsAdmissionAndStrictValidation()
+    public void FiniteExistenceRetainsFundedAdmissionAndScalarSemantics()
     {
         Assert.True(Limited(100000).IsMatch("𐐀://😀😀"u8));
         Assert.False(Limited(100000).IsMatch("x://😀"u8));
         ulong firstSuccess = 0;
-        for (ulong cap = 1; cap <= 32; cap++)
+        for (ulong cap = 1; cap <= 512; cap++)
         {
             try
             {
@@ -57,12 +57,12 @@ public sealed class Utf8UriExistenceTests
                 Assert.True(error.Requested > error.Limit);
             }
         }
-        Assert.InRange(firstSuccess, 2UL, 32UL);
+        Assert.InRange(firstSuccess, 2UL, 512UL);
         var lateMalformed = Encoding.UTF8.GetBytes(new string('x', (1 << 20))).Append((byte)255).ToArray();
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(lateMalformed)).ResourceKind);
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(100000, options).IsMatch("x://ab"u8));
+            Assert.True(Limited(100000, options).IsMatch("x://ab"u8));
     }
 
     [Theory]
@@ -132,5 +132,5 @@ public sealed class Utf8UriExistenceTests
 
     private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null)
         => new(Pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
 }

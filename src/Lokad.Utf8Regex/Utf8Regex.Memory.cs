@@ -84,40 +84,15 @@ public sealed partial class Utf8Regex
         try
         {
             int result;
-            // Borrow the same complete family proofs/counters as ordinary Count.
-            // They need no capture scratch but still meter every bounded block.
-            if (!UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
-                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
             {
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
-                    _fallbackDirectFamily, ref invocation, out result);
+                var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
+                    input, false, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             }
-            else
-            {
-                // Complete word and literal counters need subject authority,
-                // without a whole-input description or ASCII classification.
-                var wordCandidate = !UsesRightToLeft() &&
-                    (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
-                    _fallbackDirectFamily is { Kind: Utf8FallbackDirectFamilyKind.WordRunCount, MinCount: > 0 };
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                if (wordCandidate)
-                {
-                    var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidated(input,
-                        _fallbackDirectFamily.MinCount, _ownedSliceProgram.RequiresUnicodeWordBoundary,
-                        ref invocation, out result);
-                    if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-                }
-                else if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
-                {
-                    var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
-                        input, false, ref invocation, out result);
-                    if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-                }
-                else result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
-                    _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-            }
+            else result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
             FinishFundedInvocation(ref invocation);
             return result;
         }

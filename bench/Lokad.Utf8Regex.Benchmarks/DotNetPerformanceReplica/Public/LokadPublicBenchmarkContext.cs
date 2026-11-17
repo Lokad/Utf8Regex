@@ -228,18 +228,6 @@ internal sealed class LokadPublicBenchmarkContext
         return Utf8MatchInspection.ProjectByteAlignedMatchOnly(_compiledLiteralFamilyRawIndex, _compiledLiteralFamilyRawLength);
     }
 
-    public int ExecuteUriTokenWholeOnly()
-    {
-        if (Operation != LokadPublicBenchmarkOperation.IsMatch)
-        {
-            return 0;
-        }
-
-        return Utf8AsciiUriTokenExecutor.TryMatchWhole(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
     private int Execute(Utf8Regex regex)
     {
         return Operation switch

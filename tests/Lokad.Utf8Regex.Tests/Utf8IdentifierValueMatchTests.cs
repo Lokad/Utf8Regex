@@ -19,7 +19,6 @@ public sealed class Utf8IdentifierValueMatchTests
         {
             var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
                 Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal("AsciiIdentifierToken", regex.Inspection.DebugFallbackDirectFamilyKind);
             var oracle = new Regex(Pattern, mode);
             foreach (var text in new[] { "", "123_", "a", "ABC123", "!!abc12.def", "\0\r\n_19a0", "9_A_B", "!a!b" })
             {
@@ -31,7 +30,6 @@ public sealed class Utf8IdentifierValueMatchTests
                     var expected = oracle.Match(text);
                     Assert.Equal(expected.Success, value.Success);
                     if (value.Success) Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken, session.ExecutionRoute);
                     Assert.Equal(value, regex.Match(input));
                 }
                 finally { session.Complete(); }

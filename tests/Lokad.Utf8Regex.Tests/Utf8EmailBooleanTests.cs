@@ -41,20 +41,19 @@ public sealed class Utf8EmailBooleanTests
     [InlineData("a@a.ab\r\n", false)]
     [InlineData("a@a.ab#", false)]
     [InlineData("a@@a.ab", false)]
-    public void BoundedAsciiWholeProofNeedsNoVmWorkspace(string text, bool expected)
+    public void AsciiWholeGrammarPreservesFundedResults(string text, bool expected)
     {
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(expected, regex.IsMatch(input, token.Token));
-                Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                 Assert.Equal(expected, regex.IsMatch(input));
             }
             finally { session.Complete(); }
@@ -79,20 +78,6 @@ public sealed class Utf8EmailBooleanTests
                 Assert.Equal(expected, regex.IsMatch(input, token.Token));
             }
         }
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void NativeEnvelopeHasAnExplicitBound(int length)
-    {
-        var input = Encoding.ASCII.GetBytes(new string('a', length - 5) + "@x.ab");
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
-        Assert.True(regex.IsMatch(input));
-        var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.True(tight.IsMatch(input));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.IsMatch(input)).ResourceKind);
     }
 
     [Fact]
@@ -121,7 +106,7 @@ public sealed class Utf8EmailBooleanTests
         for (ulong work = 1; work < 100; work++)
         {
             var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             try { Assert.Equal(expected, regex.IsMatch(input)); succeeded = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }

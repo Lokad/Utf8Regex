@@ -270,7 +270,7 @@ public sealed partial class Utf8PythonRegex
                 // Preparation can discover useful native result lanes or exact
                 // start hints. Discard roots declined by every current consumer;
                 // their transient construction remains conservatively admitted.
-                if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult || core.CanUseAsciiIpv4Boolean ||
+                if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult ||
                     PythonReScalarMatchState.CanUseCandidateRegex(_scalarProgram, core))
                     _utf8Regex = core;
             }

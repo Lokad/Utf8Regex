@@ -272,17 +272,17 @@ internal ref partial struct Utf8OperationMatchCursor
     // Anchored ASCII literal suffix enumeration: at most one match at the input
     // end (or right before a single trailing line feed for the lax kind).
     public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8FallbackDirectFamilyKind familyKind)
+        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8AnchoredLiteralKind familyKind)
         : this(input, literal, budget)
     {
         // The mode carries strictness so verification needs no extra fields.
         _mode = familyKind switch
         {
-            Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
-            Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
-            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
-            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
-            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
+            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
+            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
+            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
+            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
+            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
             _ => EnumeratorMode.Exhausted,
         };
     }
@@ -338,7 +338,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 return false;
             }
 
-            if (!Utf8AsciiAnchoredPrefixFamilyExecutor.FoldedSequenceEquals(_input[..foldedPrefixLiteral.Length], foldedPrefixLiteral))
+            if (!Utf8AnchoredLiteralPrefixExecutor.FoldedSequenceEquals(_input[..foldedPrefixLiteral.Length], foldedPrefixLiteral))
             {
                 return false;
             }
@@ -347,7 +347,7 @@ internal ref partial struct Utf8OperationMatchCursor
             return true;
         }
 
-        // Anchored suffix verification mirrors Utf8AsciiAnchoredSuffixFamilyExecutor
+        // Anchored suffix verification mirrors Utf8AnchoredLiteralSuffixExecutor
         // inline: the cursor keeps no plan reference, and the mode carries lax versus
         // strict end handling. Results retain the original byte endpoints.
         if (_mode is EnumeratorMode.AnchoredAsciiLiteralSuffix or EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd)
@@ -410,7 +410,7 @@ internal ref partial struct Utf8OperationMatchCursor
             }
 
             var foldedSuffixStart = foldedSuffixEnd - foldedSuffixLiteral.Length;
-            if (foldedSuffixStart < 0 || !Utf8AsciiAnchoredPrefixFamilyExecutor.FoldedSequenceEquals(_input.Slice(foldedSuffixStart, foldedSuffixLiteral.Length), foldedSuffixLiteral))
+            if (foldedSuffixStart < 0 || !Utf8AnchoredLiteralPrefixExecutor.FoldedSequenceEquals(_input.Slice(foldedSuffixStart, foldedSuffixLiteral.Length), foldedSuffixLiteral))
             {
                 return false;
             }

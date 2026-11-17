@@ -30,8 +30,6 @@ public sealed class Utf8HexColorValueMatchTests
             var options = Fold | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
             var oracle = new Regex(pattern, options);
-            Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole,
-                regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
             foreach (var text in new[] { "", "#", "ab", "abc", "ABC", "#aBc", "abcd", "abcdef", "#ABC123",
                 "#abcd", "aBc123\n", "#abc\n", "abc\r\n", "abc\n\n", "abcdefg", "abc def", "#12g", "abc\0" })
             {
@@ -47,7 +45,6 @@ public sealed class Utf8HexColorValueMatchTests
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                 }
                 finally { session.Complete(); }
             }
@@ -89,10 +86,10 @@ public sealed class Utf8HexColorValueMatchTests
     }
 
     [Fact]
-    public void ValueRangeNeedsNoCaptureWorkspaceButOriginalWorkAdmissionRemains()
+    public void ValueRangePreservesFundedResultsAndWorkAdmission()
     {
         var tight = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            Funded with { MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
         Assert.Equal(7, (tight.Match("#ABC123"u8).EndOffsetInBytes - tight.Match("#ABC123"u8).StartOffsetInBytes));
         var denied = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan, Funded with { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,

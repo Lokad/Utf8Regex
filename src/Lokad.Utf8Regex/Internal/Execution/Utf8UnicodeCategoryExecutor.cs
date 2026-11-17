@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-// PCRE2-INTEGRATION-POINT: flavor-neutral category counting over already-validated UTF-8.
+// PCRE2-INTEGRATION-POINT: flavor-neutral category counting over caller-valid UTF-8.
 internal static class Utf8UnicodeCategoryExecutor
 {
     // ASCII categories are fixed scalar facts. Borrow the compiler's embedded
@@ -27,26 +27,22 @@ internal static class Utf8UnicodeCategoryExecutor
     ];
     private static readonly PreparedByteSetState s_asciiMathSymbols = PreparedByteSetState.FromValues("+<=>|~"u8);
 
-    // Only whole-pattern single-category or letter proofs may enter this route. Each
+    // The caller supplies a complete single-category language proof. Each
     // admitted primitive sees at most 4096 bytes, ending on a validated scalar
     // boundary. Keep the existing SIMD algorithm and charge even unlimited calls.
     internal static Utf8ExecutionLimitKind TryCountValidated(ReadOnlySpan<byte> input,
-        in Utf8FallbackDirectFamilyPlan family,
+        UnicodeCategory category,
         ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
-        var letters = family.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterCount;
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(letters
-            ? Utf8ExecutionRoute.FallbackDirectUnicodeLetter : Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
+
         for (var offset = 0; offset < input.Length;)
         {
             var breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
-            count += letters
-                ? Utf8UnicodeLetterCounter.CountLetters(input.Slice(offset, length))
-                : CountCategory(input.Slice(offset, length), family.UnicodeCategory);
+            count += CountCategory(input.Slice(offset, length), category);
             offset += length;
         }
         var publication = invocation.TryChargeInputStep();

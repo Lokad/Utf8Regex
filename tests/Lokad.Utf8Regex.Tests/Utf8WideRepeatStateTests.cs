@@ -52,19 +52,6 @@ public sealed class Utf8WideRepeatStateTests
     }
 
     [Theory]
-    [InlineData("a{0,2147483647}", false)]
-    [InlineData("[a-z]{0,2147483647}", false)]
-    [InlineData("(?:a){0,2147483647}", false)]
-    [InlineData("a*", true)]
-    [InlineData("[a-z]*", true)]
-    [InlineData("(?:a)*", true)]
-    public void SentinelBasedDirectQueriesDeclineFiniteMaximum(string pattern, bool expected)
-    {
-        var tree = Assert.IsType<Utf8OwnedRegexTree>(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
-        Assert.Equal(expected, Utf8FallbackTreeQuery.TryRepeat(tree.Root, out _, out _, out _));
-    }
-
-    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     [InlineData(RegexOptions.RightToLeft)]

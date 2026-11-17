@@ -81,7 +81,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
         var cursor = family switch
         {
-            6 or 7 => new Utf8OperationMatchCursor(input, literal, budget, family == 6 ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix),
+            6 or 7 => new Utf8OperationMatchCursor(input, literal, budget, family == 6 ? Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix : Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix),
             8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, true),
             _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
         };

@@ -23,7 +23,7 @@ public sealed partial class Utf8Regex
             {
 
                 cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, invocation).WithStartFloor(startOffsetInBytes)
+                    ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithStartFloor(startOffsetInBytes)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
             }
             else
@@ -57,16 +57,16 @@ public sealed partial class Utf8Regex
         // and the general scalar program use original bytes without this pass.
         var needsFacts = _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiOrderedLiteralWindow or
             NativeExecutionKind.AsciiStructuralIdentifierFamily ||
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix or
-                Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or
-                Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
+            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix or
+                Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or
+                Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
         if (needsFacts) validation = Utf8InputAnalyzer.Describe(input, ref invocation);
-        anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
-            (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd ||
+        anchored = eligible && _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
+            (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or
+                Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd ||
              validation.IsAscii && (Options & RegexOptions.CultureInvariant) != 0 &&
-                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix or
-                    Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
+                _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix or
+                    Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
         var native = eligible && !program.IgnoreCase &&
             Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
         return anchored || native;
@@ -87,7 +87,7 @@ public sealed partial class Utf8Regex
             {
 
                 cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _fallbackDirectFamily.Kind, invocation).WithStartFloor(startOffsetInBytes)
+                    ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithStartFloor(startOffsetInBytes)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
             }
             else

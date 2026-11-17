@@ -12,15 +12,14 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
 
     [Fact]
-    public void BoundedAsciiValueCallsUseTheExistingCompleteQuotedGrammar()
+    public void AsciiValueCallsUseTheCompleteQuotedGrammar()
     {
         using var live = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = mode | RegexOptions.CultureInvariant;
             var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
-                Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal("AnchoredQuotedStringPrefix", regex.Inspection.DebugFallbackDirectFamilyKind);
+                Policy with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var oracle = new Regex(Pattern, options);
             foreach (var text in new[] { "", "no quote", "\"", "\"\"tail", "\"abc\"tail", "\"a\\\"b\"tail",
                 "\"a\\\\b\"tail", "\"a\nb\"tail", "\"a\\\nb\"tail", "\"a\0b\"tail", "\"abc\\", "x\"a\"", "\n\"a\"" })
@@ -33,26 +32,11 @@ public sealed class Utf8QuotedPrefixValueMatchTests
                     var expected = oracle.Match(text);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(actual, regex.Match(input));
                 }
                 finally { session.Complete(); }
             }
         }
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectBoundsKeepTheirWorkingAdmission(int length)
-    {
-        var text = "\"" + new string('a', length - 2) + "\"";
-        var input = Encoding.ASCII.GetBytes(text);
-        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
-        var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }
 
     [Fact]
@@ -96,10 +80,10 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     public void EveryWorkCutoffRefusesPartialPublication(string text, bool success)
     {
         var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
-        for (ulong work = 1; work < 100; work++)
+        for (ulong work = 1; work < 512; work++)
         {
             var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Policy with { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Policy with { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException failure)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }

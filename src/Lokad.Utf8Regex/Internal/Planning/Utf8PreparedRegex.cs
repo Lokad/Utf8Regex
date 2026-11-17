@@ -9,14 +9,14 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 /// </summary>
 internal sealed class Utf8PreparedRegex
 {
-    private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
+    private readonly Utf8AnchoredLiteralPlan _anchoredLiteral;
     private readonly Utf8OperationMatchCursorPlans _operationMatchCursorPlans;
 
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes => 2048;
 
     private Utf8PreparedRegex(
-        Utf8FallbackDirectFamilyPlan fallbackDirectFamily,
+        Utf8AnchoredLiteralPlan anchoredLiteral,
         Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8PreparedSemanticRegex semanticRegex,
         Utf8RegexFeatures features,
@@ -36,7 +36,7 @@ internal sealed class Utf8PreparedRegex
         byte[]? literalUtf8,
         string? fallbackReason)
     {
-        _fallbackDirectFamily = fallbackDirectFamily;
+        _anchoredLiteral = anchoredLiteral;
         _operationMatchCursorPlans = operationMatchCursorPlans;
         SemanticRegex = semanticRegex;
         Features = features;
@@ -76,14 +76,14 @@ internal sealed class Utf8PreparedRegex
         AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         byte[]? literalUtf8,
         string? fallbackReason,
-        Utf8FallbackDirectFamilyPlan fallbackDirectFamily)
+        Utf8AnchoredLiteralPlan anchoredLiteral)
     {
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CheckBytes(ObjectBytes);
         scope.Budget.ChargeWork(2);
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
-            fallbackDirectFamily,
+            anchoredLiteral,
             operationMatchCursorPlans,
             semanticRegex,
             features,
@@ -146,5 +146,5 @@ internal sealed class Utf8PreparedRegex
 
     public string? FallbackReason { get; }
 
-    public ref readonly Utf8FallbackDirectFamilyPlan FallbackDirectFamily => ref _fallbackDirectFamily;
+    public ref readonly Utf8AnchoredLiteralPlan AnchoredLiteral => ref _anchoredLiteral;
 }

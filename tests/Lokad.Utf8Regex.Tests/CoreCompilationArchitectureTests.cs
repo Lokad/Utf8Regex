@@ -47,7 +47,7 @@ public sealed class CoreCompilationArchitectureTests
             var identifiers = CSharpSyntaxTree.ParseText(executionSource).GetRoot().DescendantTokens()
                 .Where(token => token.IsKind(SyntaxKind.IdentifierToken)).Select(token => token.ValueText);
             Assert.DoesNotContain(nameof(Utf8NativeExecutionAnalyzer), identifiers);
-            Assert.DoesNotContain(nameof(Utf8FallbackRegexFamilyAnalyzer), identifiers);
+            Assert.DoesNotContain(nameof(Utf8AnchoredLiteralClassifier), identifiers);
         }
     }
 

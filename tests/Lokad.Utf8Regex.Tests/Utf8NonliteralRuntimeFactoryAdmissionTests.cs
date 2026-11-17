@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -72,7 +71,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             Utf8OperationMatchCursorPlans.Create(search, program, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
-            p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
+            p.LiteralUtf8, "unsupported_loop", p.AnchoredLiteral);
 
     public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 3)
                                                      from bytes in new[] { false, true } select new object[] { kind, bytes };

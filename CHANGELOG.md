@@ -2,6 +2,13 @@
 
 ## Unreleased — 0.5.0
 
+- Retire Core's nonliteral fallback classifiers, payloads and shortcuts, including
+  token/URI/IP, word/category counting and anchored validators. Matching uses the
+  existing scalar programs; adapters no longer borrow the retired IP proof.
+  Preserve qualified anchored-literal search and shared helpers with real consumers.
+  Numerical work/storage needs and execution costs can increase; scalar results,
+  capture lifetimes, synchronous interruption and resource admission remain.
+
 - Remove the nonliteral simple-pattern engine, its standalone deterministic/
   fixed-token programs, selectors, cursor modes and replay benchmarks. Keep
   bounded finite-literal expansion and shared structural helpers. These patterns

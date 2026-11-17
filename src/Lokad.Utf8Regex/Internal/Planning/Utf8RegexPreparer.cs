@@ -17,12 +17,12 @@ internal static class Utf8RegexPreparer
         {
             var scalarProgram = Utf8SliceParser.TryParse(scalarOptions,
                 analyzedRegex.SemanticRegex.RuntimeTree);
-            var fallbackDirectFamily = Utf8FallbackRegexFamilyAnalyzer.Classify(analyzedRegex);
+            var anchoredLiteral = Utf8AnchoredLiteralClassifier.Classify(analyzedRegex.SemanticRegex.RuntimeTree);
             var fallbackReason = analyzedRegex.FallbackReason;
             if (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
                 string.Equals(fallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
-                fallbackDirectFamily.HasValue &&
-                fallbackDirectFamily.SupportsNativeFallbackRoute)
+                anchoredLiteral.HasValue &&
+                anchoredLiteral.IsExact)
             {
                 fallbackReason = null;
             }
@@ -39,7 +39,7 @@ internal static class Utf8RegexPreparer
             };
             // General scalar execution and capture-free literal search do not
             // consume this copied tree. Captured/native shape preparation still does.
-            var tree = (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !fallbackDirectFamily.HasValue) ||
+            var tree = (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !anchoredLiteral.HasValue) ||
                 (executionBackend == Utf8ExecutionBackend.NativeLiteral && scalarProgram is { GroupCount: 0 })
                 ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
@@ -89,7 +89,7 @@ structuralSearchPlan, structuralVerifier.AsciiProgram);
                 analyzedRegex.OrderedLiteralWindowPlan,
                 analyzedRegex.LiteralUtf8,
                 fallbackReason,
-                fallbackDirectFamily);
+                anchoredLiteral);
             scope.Complete();
             return result;
         }

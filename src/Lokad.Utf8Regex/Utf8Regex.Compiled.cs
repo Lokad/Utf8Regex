@@ -142,7 +142,7 @@ public sealed partial class Utf8Regex
         // Anchored literal prefixes count directly through the router below: at most one
         // anchored match, byte-exact on every input, without general scalar discovery.
         // Folded prefixes ride the same router arm, which switches on the kind.
-        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix)
+        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix)
         {
             return _compiledEngineRuntime.Count(input, validation, budget);
         }
@@ -150,8 +150,8 @@ public sealed partial class Utf8Regex
         // Anchored literal suffixes count the same way: at most one match at the
         // input end, byte-exact on every input. Folded suffixes ride the same router
         // arm, which switches on the kind.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
+        if (_anchoredLiteral.IsExactSuffix ||
+            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
         {
             return _compiledEngineRuntime.Count(input, validation, budget);
         }
@@ -188,8 +188,8 @@ public sealed partial class Utf8Regex
         // R05: anchored ASCII literal families split through the anchor-enforcing owned
         // cursors (at most one match at a fixed position), mirroring enumeration; the
         // split router admits these families past the simple-pattern gate below.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredSplitLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredSplitLiteral)
         {
             return new Utf8ValueSplitEnumerator(
                 input,
@@ -200,24 +200,24 @@ public sealed partial class Utf8Regex
         // Folded anchored prefixes split the same single anchored hit with per-byte
         // invariant folding; Kelvin and Turkic divergences stay fenced in the split
         // router upstream.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedSplitLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedSplitLiteral)
         {
             return new Utf8ValueSplitEnumerator(
                 input,
-                new Utf8OperationMatchCursor(input, foldedSplitLiteral, budget, _fallbackDirectFamily.Kind),
+                new Utf8OperationMatchCursor(input, foldedSplitLiteral, budget, _anchoredLiteral.Kind),
                 count);
         }
 
         // Folded anchored suffixes split the same single tail hit with per-byte invariant
         // folding under the same router fence contract as prefixes.
-        if ((Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredSplitSuffix)
+        if ((_anchoredLiteral.IsExactSuffix ||
+            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredSplitSuffix)
         {
             return new Utf8ValueSplitEnumerator(
                 input,
-                new Utf8OperationMatchCursor(input, anchoredSplitSuffix, budget, _fallbackDirectFamily.Kind),
+                new Utf8OperationMatchCursor(input, anchoredSplitSuffix, budget, _anchoredLiteral.Kind),
                 count);
         }
 

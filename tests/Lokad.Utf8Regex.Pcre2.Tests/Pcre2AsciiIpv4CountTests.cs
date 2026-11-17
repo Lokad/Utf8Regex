@@ -17,7 +17,6 @@ public sealed class Pcre2AsciiIpv4CountTests
         foreach (var pattern in new[] { Pattern, Pattern.Replace("25", @"\x32\x35").Replace(@"\.", @"\x2e") })
         {
             var regex = Create(pattern);
-            Assert.True(Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count).HasAsciiIpv4CountProof);
             var oracle = new Regex(pattern);
             foreach (var tail in new[] { "", "1.2.3.4", "00.11.22.25500é", "255.255.255.255",
                 "256.255.255.255", "999.999.999.999", "00.00.00.00", "٣٣.44.55.66",
@@ -63,10 +62,10 @@ public sealed class Pcre2AsciiIpv4CountTests
     }
 
     [Fact]
-    public void WorkIsCumulativeAndWholeSubjectValidityStillPrecedesCounting()
+    public void WorkIsCumulativeAndScalarFloorsArePreserved()
     {
         uint firstSuccess = 0;
-        for (uint cap = 1; cap <= 32; cap++)
+        for (uint cap = 1; cap <= 512; cap++)
         {
             try
             {
@@ -79,7 +78,7 @@ public sealed class Pcre2AsciiIpv4CountTests
                 Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
             }
         }
-        Assert.InRange(firstSuccess, 2u, 32u);
+        Assert.InRange(firstSuccess, 2u, 512u);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
             Create(work: firstSuccess).Count("00.11.22.255 00.11.22.255"u8)).ErrorKind);
         Assert.Throws<ArgumentOutOfRangeException>(() => Create().Count("😀00.11.22.255"u8, 1));
@@ -90,15 +89,16 @@ public sealed class Pcre2AsciiIpv4CountTests
     }
 
     [Fact]
-    public void CapturesAndExplicitOptionsRetainTheirEstablishedExecutors()
+    public void CapturesAndExplicitOptionsKeepScalarResultsAndAdmission()
     {
         var captured = Create("(" + Pattern + ")");
-        Assert.False(Assert.IsType<Pcre2SliceDirectProgram>(captured.DebugCompiledProgram.Operations.Count).HasAsciiIpv4CountProof);
-        Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => captured.Count("00.11.22.255"u8)).ErrorKind);
+        Assert.Equal(1, captured.Count("00.11.22.255"u8));
         var regex = Create();
+        Assert.Equal(1, regex.Count("00.11.22.255"u8, 0, Pcre2MatchOptions.NotBol));
+        var denied = new Utf8Pcre2Regex(Pattern, Pcre2CompileOptions.None, default,
+            new() { HeapLimitInBytes = 1 });
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.Count("00.11.22.255"u8, 0, Pcre2MatchOptions.NotBol)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => denied.Count("00.11.22.255"u8)).ErrorKind);
         var ordinary = new Utf8Pcre2Regex(Pattern);
         Assert.Equal(0, ordinary.Count("x 00.11.22.255"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(1, ordinary.Count("00.11.22.255 00.11.22.255"u8, 0, Pcre2MatchOptions.Anchored));
@@ -143,6 +143,6 @@ public sealed class Pcre2AsciiIpv4CountTests
 
     private static Utf8Pcre2Regex Create(string pattern = Pattern, uint work = 1000000, TimeSpan? timeout = null)
         => new(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = work, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
+            new() { MatchLimit = work, DepthLimit = 4096, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 },
             timeout ?? Timeout.InfiniteTimeSpan);
 }

@@ -25,7 +25,6 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         {
             var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
                 Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal("AnchoredPrefixUntilByte", regex.Inspection.DebugFallbackDirectFamilyKind);
             var expected = new Regex(Pattern, options).Match(text); var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. bytes, 0xff];
             var diagnostics = Utf8SearchDiagnosticsSession.Start();
@@ -33,7 +32,6 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
             {
                 var actual = regex.Match(storage.AsSpan(1, bytes.Length), token.Token);
                 Assert.Equal(success, actual.Success); Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-                Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, diagnostics.ExecutionRoute);
             }
             finally { diagnostics.Complete(); }
         }

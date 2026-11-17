@@ -1941,8 +1941,6 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8PrefixWellFormedOnly);
         Measure("DirectMatchHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
-        Measure("LexerPrimitiveOnly", iterations, context.ExecuteLokadScriptLexerPrimitiveOnly);
-        Measure("WellFormedPrimitive", iterations, context.ExecuteLokadScriptLexerWellFormedPrimitiveOnly);
         Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
@@ -1991,7 +1989,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.TotalInputBytes}");
         Console.WriteLine($"SampleCount       : {context.Samples.Length}");
 
-        Measure("TokenFinderModel", iterations, context.ExecuteAsciiTokenFinderModel);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
@@ -2546,7 +2543,6 @@ internal static partial class BenchmarkInspectReporter
                     }
                     if (context.CaseId is "common/uri-match" or "common/uri-miss")
                     {
-                        Measure("UriTokenWhole", iterations, context.ExecuteUriTokenWholeOnly);
                     }
                     if (context.Operation == LokadPublicBenchmarkOperation.Match &&
                         context.CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(context.InputBytes, out _, out _))
@@ -2859,8 +2855,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"BaselineRuntime   : {context.Utf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
         Console.WriteLine($"CompiledRuntime   : {context.CompiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
-        Console.WriteLine($"BaselineDirectFam : {context.Utf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
-        Console.WriteLine($"CompiledDirectFam : {context.CompiledUtf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
+        Console.WriteLine($"BaselineAnchor    : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
+        Console.WriteLine($"CompiledAnchor    : {context.CompiledUtf8Regex.Inspection.DebugAnchoredLiteralKind}");
         Console.WriteLine($"BaselineSupportsWellFormed : {context.Utf8Regex.Inspection.DebugSupportsWellFormedOnlyMatch}");
         Console.WriteLine($"CompiledSupportsWellFormed : {context.CompiledUtf8Regex.Inspection.DebugSupportsWellFormedOnlyMatch}");
         Console.WriteLine($"BaselineWellFormedMissDefinitive : {context.Utf8Regex.Inspection.DebugWellFormedOnlyMatchMissIsDefinitive}");
@@ -2927,7 +2923,7 @@ internal static partial class BenchmarkInspectReporter
         var regex = new Utf8Regex(pattern, options);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
+        Console.WriteLine($"AnchoredLiteral   : {regex.Inspection.DebugAnchoredLiteralKind}");
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
@@ -2943,7 +2939,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"Pattern           : {utf8Case.Pattern}");
             Console.WriteLine($"Options           : {utf8Case.Options}");
-            Console.WriteLine($"DirectFamily      : {context.Utf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
+            Console.WriteLine($"AnchoredLiteral   : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
             Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
             Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
@@ -2957,7 +2953,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"Pattern           : {context.Pattern}");
             Console.WriteLine($"Options           : {dotNetPerformanceCase.Options}");
-            Console.WriteLine($"DirectFamily      : {context.Utf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
+            Console.WriteLine($"AnchoredLiteral   : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
             Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
             Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
@@ -2971,7 +2967,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"Pattern           : {context.CompiledPattern}");
             Console.WriteLine($"Options           : {lokadCodeCase.Options}");
-            Console.WriteLine($"DirectFamily      : {context.Utf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
+            Console.WriteLine($"AnchoredLiteral   : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
             Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
             Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
@@ -2985,7 +2981,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"Pattern           : {context.Pattern}");
             Console.WriteLine($"Options           : {lokadScriptCase.Utf8Options}");
-            Console.WriteLine($"DirectFamily      : {context.Utf8Regex.Inspection.DebugFallbackDirectFamilyKind}");
+            Console.WriteLine($"AnchoredLiteral   : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
             Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
             Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
@@ -4261,7 +4257,7 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
+        Console.WriteLine($"AnchoredLiteral   : {regex.Inspection.DebugAnchoredLiteralKind}");
         Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
         Console.WriteLine($"ScalarPrepared    : {regex.Inspection.PreparedRegex.ScalarProgram is not null}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");

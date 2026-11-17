@@ -35,12 +35,12 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
     [InlineData("[|\n/// text\n")] [InlineData("///\n\n")]
     [InlineData("/// text\n\n")] [InlineData("[|wrong")]
     [InlineData("")] [InlineData(" // text")]
-    public void BoundedAsciiRangesNeedNoCaptureWorkspace(string text)
+    public void AsciiRangesPreserveFundedScalarResults(string text)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var input = Encoding.ASCII.GetBytes(text);
             byte[] storage = [0xff, .. input, 0xff];
             var expected = Scalar(regex, input);
@@ -49,7 +49,6 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             try
             {
                 Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), token.Token));
-                Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                 Assert.Equal(expected, regex.Match(input));
             }
             finally { session.Complete(); }
@@ -74,19 +73,6 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
                 Assert.Equal(expected, regex.Match(input, token.Token));
             }
         }
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void TheEnvelopeHasAnExplicitWholeSubjectBound(int length)
-    {
-        var input = Encoding.ASCII.GetBytes("///" + new string('x', length - 3));
-        Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
-        var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }
 
     [Fact]
@@ -116,7 +102,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         for (ulong work = 1; work < 100; work++)
         {
             var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             try { Assert.Equal(success, regex.Match(input).Success); succeeded = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }

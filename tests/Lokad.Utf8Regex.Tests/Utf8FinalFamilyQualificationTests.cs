@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
@@ -16,29 +14,6 @@ public sealed class Utf8FinalFamilyQualificationTests
     private const string Hex = @"^(?<before>.*)(https://go(\.testing)?\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \n]+)?(?<rest>.*)$";
     private const string HexRoute = "/gateway/BigFiles/Browse/Download?hash=";
     private const RegexOptions Fold = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-    private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private static Utf8OwnedRegexTree Tree(string pattern, RegexOptions options)
-    { var tree = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree; Assert.NotNull(tree); return tree; }
-    private static string Describe(Utf8TreeNode node) => $"{node.Kind}({node.M},{node.N},{(int)node.Ch},{node.Str},[{string.Join(',', node.ScalarClass?.Data ?? [])}])" +
-        string.Concat(Enumerable.Range(0, node.ChildCount).Select(index => "{" + Describe(node.Child(index)) + "}"));
-    private static MethodInfo Classifier(string name, Utf8OwnedRegexTree tree)
-    {
-        var type = typeof(Utf8FrontEnd).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd." + name);
-        Assert.True(type is not null, Describe(tree.Root)); Assert.NotNull(type);
-        Assert.Empty(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance));
-        var method = type.GetMethod("Classify", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public); Assert.NotNull(method); return method;
-    }
-    private static Utf8FallbackDirectFamilyPlan Classify(MethodInfo method, Utf8OwnedRegexTree tree)
-    {
-        try { return Assert.IsType<Utf8FallbackDirectFamilyPlan>(method.Invoke(null, [tree])); }
-        catch (TargetInvocationException error) when (error.InnerException is not null) { ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
-    }
-    private static Utf8FallbackDirectFamilyPlan Plan(string pattern, RegexOptions options, Utf8FallbackDirectFamilyKind kind)
-    {
-        var tree = Tree(pattern, options); var method = Classifier(kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole
-            ? "Utf8FallbackFinalProfileClassifier" : "Utf8FallbackQueryClassifier", tree);
-        var plan = Classify(method, tree); Assert.True(plan.Kind == kind, Describe(tree.Root)); return plan;
-    }
     private static void PublicRange(string pattern, RegexOptions options, string text, int index, int length, bool rtl)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -49,16 +24,11 @@ public sealed class Utf8FinalFamilyQualificationTests
             Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
     }
-    private static bool NativeQuery(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan plan, out int length) =>
-        plan.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole
-            ? Utf8AsciiAnchoredUrlExecutor.TryMatchDigitsQueryWhole(input, plan, out length)
-            : Utf8AsciiAnchoredUrlExecutor.TryMatchHexQueryWhole(input, plan, out length);
 
     [Fact]
     public void EmailProofBorrowsAliasesCapturesAndAsciiIntersections()
     {
         var alias = Email.Replace("^", @"\A").Replace("@", @"(?<at>\x40)").Replace("[0-9]", @"\p{Nd}").Replace("$", @"\Z");
-        Plan(alias, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole);
         PublicRange(alias, RegexOptions.CultureInvariant, "a@[١.٢.٣.٤]", 0, 15, true);
         Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias).CreateMatchCursor("a@a.ab"u8.ToArray())).TryGetGroup("at", out var group));
         Assert.Equal((1, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
@@ -67,16 +37,14 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void EmailWholeEndpointsAgreeWithIndependentAsciiGrammar()
     {
-        Plan(Email, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole);
-        var oracle = new Regex(Email, RegexOptions.CultureInvariant);
+        var oracle = new Regex(Email, RegexOptions.CultureInvariant); var regex = new Utf8Regex(Email, RegexOptions.CultureInvariant);
         foreach (var local in new[] { "a", "1", "-", ".", "a_b", "", "é" })
         foreach (var domain in new[] { "a.ab", "a.1", "a.a", "a.abcdefghijkl", "a.abcdefghijklm", "a.ab]", "[1.2.3.4]", "[1.2.3.ab", "[1.2.3.4", "[1.2.3.4444]" })
         foreach (var suffix in new[] { "", "\n", "\n\n", "\r", " " })
         {
-            var text = local + "@" + domain + suffix; var expected = oracle.Match(text);
-            if (local == "é") continue; // This comparator lane deliberately overlaps ASCII.
-            var actual = Utf8AsciiEmailWholeExecutor.TryMatchWhole(Encoding.ASCII.GetBytes(text), out var length);
-            Assert.Equal(expected.Success, actual); if (actual) Assert.Equal(expected.Length, length);
+            var text = local + "@" + domain + suffix; var expected = oracle.Match(text); var actual = regex.Match(Encoding.UTF8.GetBytes(text));
+            Assert.Equal(expected.Success, actual.Success);
+            if (actual.Success) Assert.Equal(expected.Length, actual.EndOffsetInBytes);
         }
     }
 
@@ -84,73 +52,43 @@ public sealed class Utf8FinalFamilyQualificationTests
     public void UngroupedEmailTailAlternativeKeepsItsOwnedUnanchoredGrammar()
     {
         var pattern = Email.Replace("([a-zA-Z]{2,12}|[0-9]{1,3})", "[a-zA-Z]{2,12}|[0-9]{1,3}");
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole, Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.None)).Kind);
         PublicRange(pattern, RegexOptions.None, "1]", 0, 2, true);
-        var tree = Tree(pattern, RegexOptions.None);
-        Assert.False(Classify(Classifier("Utf8FallbackFinalProfileClassifier", tree), tree).HasValue);
     }
 
     [Fact]
     public void QueryMarkersRequireEqualsAndOptionalTrigramCanBacktrack()
     {
-        var digits = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(Digits, Fold));
-        var hex = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(Hex, Fold));
-        Assert.False(NativeQuery("~/d/1?tX"u8, digits, out _));
-        Assert.True(NativeQuery(Encoding.ASCII.GetBytes("~" + HexRoute + "&name=x"), hex, out _));
-        Assert.True(NativeQuery(Encoding.ASCII.GetBytes("~" + HexRoute + "?path=x\r&name=y"), hex, out _));
-        Plan(Digits, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
-        Plan(Hex, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole);
+        Assert.False(new Utf8Regex(Digits, Fold).IsMatch("~/d/1?tX"u8));
+        var hex = new Utf8Regex(Hex, Fold);
+        Assert.True(hex.IsMatch(Encoding.ASCII.GetBytes("~" + HexRoute + "&name=x")));
+        Assert.True(hex.IsMatch(Encoding.ASCII.GetBytes("~" + HexRoute + "?path=x\r&name=y")));
     }
 
     [Fact]
     public void QueryValueClassesAndFinalLfOwnTheirExactByteExtent()
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(Digits, Fold)); var oracle = new Regex(Digits, Fold);
+        var oracle = new Regex(Digits, Fold); var regex = new Utf8Regex(Digits, Fold);
         foreach (var text in new[] { "x\r~/d/1?t=x", "~/d/1?t=x\n", "~/d/1?t=x \n", "~/d/1?t=x\nz", "~/d/1?t=\n", "~/d/1?t=?", "~/d/1?t=x?tail\n" })
         {
-            var expected = oracle.Match(text); var actual = NativeQuery(Encoding.ASCII.GetBytes(text), plan, out var length);
-            Assert.Equal(expected.Success, actual); if (actual) Assert.Equal(expected.Length, length);
+            var expected = oracle.Match(text); var actual = regex.Match(Encoding.ASCII.GetBytes(text));
+            Assert.Equal(expected.Success, actual.Success); if (actual.Success) Assert.Equal(expected.Length, actual.EndOffsetInBytes);
         }
-        Plan(Digits, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
         PublicRange(Digits, Fold, "😀~/d/١?t=é\n", 0, 16, true);
-        var invalid = new byte[] { (byte)'a', 0xff };
-        foreach (var pattern in new[] { Email, Digits, Hex })
-        {
-            var regex = new Utf8Regex(pattern, pattern == Digits || pattern == Hex ? Fold | RegexOptions.Compiled : RegexOptions.Compiled);
-        }
     }
 
     [Fact]
     public void QueryProofBorrowsFragmentedScopedLiteralsAndCapturedCulture()
     {
         var alias = @"(?i:\A" + Digits[1..^1].Replace("https", @"(?<scheme>\x68)ttps") + @"\Z)";
-        var plan = Plan(alias, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
-        Assert.Equal("https://go.lokad.com"u8.ToArray(), plan.PrimaryPrefixUtf8); Assert.Equal("t"u8.ToArray(), plan.RequiredParameterUtf8);
-        var original = CultureInfo.CurrentCulture;
-        try
-        {
-            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var tree = Tree(Digits, RegexOptions.IgnoreCase); var method = Classifier("Utf8FallbackQueryClassifier", tree);
-            Assert.False(Classify(method, tree).HasValue);
-            Plan(Digits, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
-        }
-        finally { CultureInfo.CurrentCulture = original; }
+        PublicRange(alias, RegexOptions.CultureInvariant, "https://go.lokad.com/d/1?t=x", 0, 28, true);
         var before = new string('a', 110);
-        var boundary = Digits.Replace("https://go", before);
-        var bounded = Plan(boundary, Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
-        Assert.Equal(128, bounded.SecondaryPrefixUtf8.Length);
-        Assert.Equal((UInt128)1 << 124, bounded.Url.PrefixWildcards.Secondary);
-        var hit = Encoding.ASCII.GetBytes(before + ".testing.lokadXcom/d/1?t=x");
-        Assert.True(NativeQuery(hit, bounded, out var length)); Assert.Equal(hit.Length, length);
-        var tooLong = Digits.Replace("https://go", before + "a");
-        var tooLongTree = Tree(tooLong, Fold);
-        Assert.False(Classify(Classifier("Utf8FallbackQueryClassifier", tooLongTree), tooLongTree).HasValue);
-        Assert.Equal(1, new Utf8Regex(tooLong, Fold).Count(Encoding.ASCII.GetBytes(before + "a.testing.lokadXcom/d/1?t=x")));
-        var sensitive = Tree(Digits.Replace("https", "(?-i:https)"), Fold);
-        Assert.False(Classify(Classifier("Utf8FallbackQueryClassifier", sensitive), sensitive).HasValue);
-        var nul = Plan(Digits.Replace("https://go", @"\x00"), Fold, Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole);
-        Assert.True(NativeQuery("\0.lokadXcom/d/1?t=x"u8, nul, out var nulLength));
-        Assert.Equal(19, nulLength);
+        foreach (var prefix in new[] { before, before + "a" })
+        {
+            var regex = new Utf8Regex(Digits.Replace("https://go", prefix), Fold);
+            var hit = Encoding.ASCII.GetBytes(prefix + ".testing.lokadXcom/d/1?t=x");
+            Assert.Equal(hit.Length, regex.Match(hit).EndOffsetInBytes);
+        }
+        Assert.Equal(19, new Utf8Regex(Digits.Replace("https://go", @"\x00"), Fold).Match("\0.lokadXcom/d/1?t=x"u8).EndOffsetInBytes);
     }
 
     [Fact]
@@ -158,7 +96,6 @@ public sealed class Utf8FinalFamilyQualificationTests
     {
         foreach (var pattern in new[] { Digits, Hex })
         {
-            var plan = Plan(pattern, Fold, pattern == Digits ? Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole : Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole);
             var oracle = new Regex(pattern, Fold);
             foreach (var prefix in new[] { "~", "https://go.lokad.com", "https://go.lokadXcom", "HTTPS://GO.TESTING.LOKAD.COM", "miss", "x\r~", "x\n~" })
             foreach (var trigram in new[] { "", "/abc", "/d", "/123", "/?" })
@@ -166,62 +103,9 @@ public sealed class Utf8FinalFamilyQualificationTests
                 new[] { HexRoute + "&name=x", HexRoute + "ab?path=x&name=y", HexRoute + "?path=x\n&name=y", HexRoute + "&name=x\nz", HexRoute + "&name=x?path=z", HexRoute + "&name=x \n" })
             {
                 var text = prefix + trigram + tail; var expected = oracle.Match(text); var input = Encoding.ASCII.GetBytes(text);
-                var actual = NativeQuery(input, plan, out var length); Assert.Equal(expected.Success, actual); if (actual) Assert.Equal(expected.Length, length);
+                var actual = new Utf8Regex(pattern, Fold).Match(input); Assert.Equal(expected.Success, actual.Success); if (actual.Success) Assert.Equal(expected.Length, actual.EndOffsetInBytes);
                 Assert.Equal(oracle.Count(text), new Utf8Regex(pattern, Fold | RegexOptions.Compiled).Count(input));
             }
         }
-    }
-
-    [Fact]
-    public void EveryFinalProofCutoffFundsOnlySelectedArraysAndRestoresParentState()
-    {
-        foreach (var item in new[] { (Email, RegexOptions.None, "Utf8FallbackFinalProfileClassifier"),
-            (Digits, Fold, "Utf8FallbackQueryClassifier"), (Hex, Fold, "Utf8FallbackQueryClassifier") })
-        {
-            var tree = Tree(item.Item1, item.Item2); var method = Classifier(item.Item3, tree); ulong peak, work, retained;
-            using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-            {
-                var plan = Classify(method, tree); Assert.True(plan.HasValue, Describe(tree.Root));
-                retained = item.Item3 == "Utf8FallbackFinalProfileClassifier" ? 0 :
-                    Utf8ConstructionBudget.ArrayBytes<byte>(plan.PrimaryPrefixUtf8.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(plan.SecondaryPrefixUtf8.Length) +
-                    Utf8ConstructionBudget.ArrayBytes<byte>(plan.RelativePrefixUtf8.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(plan.RouteMarkerUtf8.Length) +
-                    Utf8ConstructionBudget.ArrayBytes<byte>(plan.RequiredParameterUtf8.Length) + (plan.OptionalParameterUtf8.Length == 0 ? 0 : Utf8ConstructionBudget.ArrayBytes<byte>(plan.OptionalParameterUtf8.Length));
-                Assert.Equal(retained, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
-            }
-            Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 20000ul);
-            foreach (var bytes in new[] { true, false })
-            {
-                var successes = 0; var limit = bytes ? peak : work;
-                for (var cutoff = 0ul; cutoff <= limit; cutoff++)
-                {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-                    var failure = Record.Exception(() => Classify(method, tree));
-                    if (failure is null) { successes++; Assert.Equal(128ul + retained, owner.Budget.ReservedBytes); }
-                    else { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
-                    Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
-                }
-                if (bytes) Assert.InRange(successes, 1, (int)limit + 1); else Assert.Equal(1, successes);
-            }
-        }
-    }
-
-    [Fact]
-    public void ActualFinalWrappersUseSharedDepthAndTextScannersStayAbsent()
-    {
-        var tree = Tree(Email, RegexOptions.None); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).WithChild(root);
-        var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
-            tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
-        var method = Classifier("Utf8FallbackFinalProfileClassifier", tree); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 16);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
-        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "ClassifyRemainingPattern", "IsAnchoredAsciiEmailWhole", "TryParseAnchoredAsciiDigitsQueryWhole", "TryParseAnchoredAsciiHexQueryWhole",
-            "TryReadEscapedAsciiChar", "TryReadEscapedAsciiLiteral", "TryReadAsciiPrefixAlternation", "TryConsumeNamedCapturedOrRaw", "TryConsumeNamedOptional", "TryConsume", "TryConsumeCapturedOrRaw", "RequireBytes" })
-            Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
 }

@@ -724,7 +724,6 @@ public sealed class Pcre2ExecutionRouteTests
     {
         var regex = new Utf8Pcre2Regex(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("127.000.000.001"u8));
         Assert.False(regex.IsMatch("not an ip address"u8));
     }

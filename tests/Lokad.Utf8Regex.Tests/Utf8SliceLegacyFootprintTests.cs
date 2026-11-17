@@ -9,37 +9,35 @@ public sealed class Utf8SliceLegacyFootprintTests
 {
     public static IEnumerable<object?[]> SliceFootprintShapes()
     {
-        yield return new object?[] { "ab+", "unsupported_loop", "None" };
-        yield return new object?[] { "\\p{L}+", "unsupported_loop", "None" };
-        yield return new object?[] { "\\cA+", "unsupported_loop", "None" };
-        yield return new object?[] { "(a+)(b+)", "unsupported_loop", "None" };
-        yield return new object?[] { "a(?!b)", "unsupported_lookaround", "None" };
-        yield return new object?[] { "(?<=a)b", "unsupported_lookaround", "None" };
-        yield return new object?[] { "(a)\\1", "unsupported_backreference", "None" };
-        yield return new object?[] { "(?>ab)c", "unsupported_atomic", "None" };
-        yield return new object?[] { "(a)?(?(1)ab|cd)", "unsupported_conditional", "None" };
-        yield return new object?[] { "(?<o>a)(?<-o>b)", "unsupported_pattern", "None" };
-        yield return new object?[] { "(\\p{L}+)+$", "unsupported_loop", "None" };
-        yield return new object?[] { "\\p{L}{8,13}", "unsupported_loop", "UnicodeLetterBoundedCount" };
-        yield return new object?[] { "()", "unsupported_pattern", "None" };
-        yield return new object?[] { "(?<=((a)b))c", "unsupported_lookaround", "None" };
-        yield return new object?[] { "(a)(?>b+)(?(1)x|y)", "unsupported_conditional", "None" };
+        yield return new object?[] { "ab+", "unsupported_loop" };
+        yield return new object?[] { "\\p{L}+", "unsupported_loop" };
+        yield return new object?[] { "\\cA+", "unsupported_loop" };
+        yield return new object?[] { "(a+)(b+)", "unsupported_loop" };
+        yield return new object?[] { "a(?!b)", "unsupported_lookaround" };
+        yield return new object?[] { "(?<=a)b", "unsupported_lookaround" };
+        yield return new object?[] { "(a)\\1", "unsupported_backreference" };
+        yield return new object?[] { "(?>ab)c", "unsupported_atomic" };
+        yield return new object?[] { "(a)?(?(1)ab|cd)", "unsupported_conditional" };
+        yield return new object?[] { "(?<o>a)(?<-o>b)", "unsupported_pattern" };
+        yield return new object?[] { "(\\p{L}+)+$", "unsupported_loop" };
+        yield return new object?[] { "\\p{L}{8,13}", "unsupported_loop" };
+        yield return new object?[] { "()", "unsupported_pattern" };
+        yield return new object?[] { "(?<=((a)b))c", "unsupported_lookaround" };
+        yield return new object?[] { "(a)(?>b+)(?(1)x|y)", "unsupported_conditional" };
     }
 
     [Theory]
     [MemberData(nameof(SliceFootprintShapes))]
-    public void OwnedProgramRetainsNativeFactsAndScalarCoverage(
+    public void OwnedProgramRetainsScalarCoverageAndNecessaryFacts(
         string pattern,
-        string expectedReason,
-        string expectedFamily)
+        string expectedReason)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
         var prepared = regex.Inspection.PreparedRegex;
-        Assert.Equal(expectedFamily == "None", prepared.ExecutionTree is null);
-        Assert.Equal(expectedFamily, regex.Inspection.DebugFallbackDirectFamilyKind);
+        Assert.Null(prepared.ExecutionTree);
         Assert.Null(prepared.LiteralUtf8);
         Assert.NotNull(prepared.SemanticRegex.CaptureCatalog);
         Assert.NotNull(prepared.ScalarProgram);

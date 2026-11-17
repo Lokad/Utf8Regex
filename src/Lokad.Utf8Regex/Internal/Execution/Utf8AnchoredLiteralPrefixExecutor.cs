@@ -1,37 +1,14 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
+internal static class Utf8AnchoredLiteralPrefixExecutor
 {
-    public static bool TryMatchPrefix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, out int matchedLength)
+    public static bool TryMatchPrefix(ReadOnlySpan<byte> input, in Utf8AnchoredLiteralPlan plan, out int matchedLength)
     {
         matchedLength = 0;
         switch (plan.Kind)
         {
-            case Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix:
-                return Utf8AsciiPrefixTokenExecutor.TryMatchIdentifierPrefixIgnoreCase(input, out matchedLength);
 
-            case Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix:
-                return Utf8AsciiPrefixTokenExecutor.TryMatchNumberPrefix(input, out matchedLength);
-
-            case Utf8FallbackDirectFamilyKind.AnchoredOperatorRun:
-                return Utf8AsciiPrefixTokenExecutor.TryMatchOperatorRunPrefix(input, out matchedLength);
-
-            case Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix:
-                return Utf8AsciiPrefixTokenExecutor.TryMatchQuotedStringPrefix(input, out matchedLength);
-
-            case Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte:
-                return plan.LiteralUtf8 is { Length: > 0 } prefixUtf8 &&
-                    Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, prefixUtf8, plan.TerminatorByte, out matchedLength);
-
-            case Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail:
-                return plan.LiteralUtf8 is { Length: > 0 } requiredPrefixUtf8 &&
-                    Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredTrimmedOptionalLiteralPrefixTail(
-                        input,
-                        requiredPrefixUtf8,
-                        plan.SecondaryLiteralUtf8,
-                        out matchedLength);
-
-            case Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix:
+            case Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix:
                 if (plan.LiteralUtf8 is not { Length: > 0 } anchoredLiteral ||
                     anchoredLiteral.Length > input.Length ||
                     !input[..anchoredLiteral.Length].SequenceEqual(anchoredLiteral))
@@ -42,7 +19,7 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
                 matchedLength = anchoredLiteral.Length;
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix:
+            case Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix:
                 if (plan.LiteralUtf8 is not { Length: > 0 } foldedLiteral ||
                     foldedLiteral.Length > input.Length ||
                     !FoldedPrefixEquals(input, foldedLiteral))

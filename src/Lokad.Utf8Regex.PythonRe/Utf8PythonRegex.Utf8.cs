@@ -238,7 +238,7 @@ public sealed partial class Utf8PythonRegex
         // native enumerators, including direct families classified as fallback.
         if (_utf8Regex is null ||
             _utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            _utf8Regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.None)
+            _utf8Regex.Inspection.PreparedRegex.AnchoredLiteral.Kind == Utf8AnchoredLiteralKind.None)
         {
             ranges = default;
             return false;

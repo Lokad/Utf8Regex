@@ -18,14 +18,14 @@ public sealed class Utf8QueryValueMatchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void WholeRangesAndFinalLfNeedNoCaptureWorkspace(bool hex)
+    public void WholeRangesAndFinalLfPreserveFundedResults(bool hex)
     {
         var pattern = hex ? Hex : Digits;
         var tail = hex ? Route + "ABCD&path=a?name=x&name=y" : "/d/12?t=x";
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, Fold | mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var control = new Utf8Regex(pattern, Fold | mode, Timeout.InfiniteTimeSpan, Funded);
             var oracle = new Regex(pattern, Fold | mode);
             foreach (var text in new[] { "", "wrong", "~", "~" + tail, "~" + tail + "\n", "~" + tail + " \n",
@@ -44,25 +44,11 @@ public sealed class Utf8QueryValueMatchTests
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, session.ExecutionRoute);
                     Assert.Equal(actual, regex.Match(input));
                 }
                 finally { session.Complete(); }
             }
         }
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectBoundDefinesTheWorkingAdmissionEnvelope(int length)
-    {
-        const string tail = "~/d/1?t=x";
-        var input = Encoding.ASCII.GetBytes(new string('x', length - tail.Length) + tail);
-        var tight = new Utf8Regex(Digits, Fold, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-        if (length <= 2048) Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(input)).ResourceKind);
     }
 
     [Fact]
@@ -94,30 +80,6 @@ public sealed class Utf8QueryValueMatchTests
         Assert.False(offset.Match(bytes, 1, []).Success);
         var scoped = new Utf8Regex(Digits.Replace("https", "(?-i:https)"), Fold);
         Assert.False(scoped.Match("HTTPS://go.lokad.com/d/1?t=x"u8).Success);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EveryRetryWorkCutoffKeepsItsLoanAndCannotPublishAHit(bool hex)
-    {
-        var regex = new Utf8Regex(hex ? Hex : Digits, Fold);
-        var plan = regex.Inspection.PreparedRegex.FallbackDirectFamily;
-        var tail = hex ? Route + "ABCD?path=a?name=x&name=y" : "/d/1?t=x";
-        var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("~bad ", 40)) + "~" + tail);
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-        Assert.True(baseline.Ledger.TryReserve(13));
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiAnchoredUrlExecutor.TryMatchWhole(input, plan,
-            ref baseline, out var found, out var length));
-        Assert.True(found); Assert.Equal(input.Length, length); Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work <= baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var breach = Utf8AsciiAnchoredUrlExecutor.TryMatchWhole(input, plan, ref invocation, out var hit, out var selectedLength);
-            if (work == baseline.Budget.Steps) { Assert.Equal(Utf8ExecutionLimitKind.None, breach); Assert.True(hit); }
-            else { Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach); Assert.False(hit); Assert.Equal(0, selectedLength); }
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]

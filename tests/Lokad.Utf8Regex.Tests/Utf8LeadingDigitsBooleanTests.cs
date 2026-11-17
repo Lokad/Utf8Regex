@@ -42,20 +42,19 @@ public sealed class Utf8LeadingDigitsBooleanTests
     [InlineData("123x", false)]
     [InlineData("12\r\n", false)]
     [InlineData("100\tfoo", false)]
-    public void AsciiPrefixAndScalarTailNeedNoVmWorkspace(string text, bool expected)
+    public void AsciiPrefixAndScalarTailPreserveFundedResults(string text, bool expected)
     {
         var buffer = Encoding.UTF8.GetBytes("pad" + text + "tail");
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(expected, regex.IsMatch(input));
-                Assert.Equal(Utf8ExecutionRoute.FallbackDirectAnchoredDigitsTail, session.ExecutionRoute);
                 Assert.Equal(expected, regex.IsMatch(input, token.Token));
             }
             finally { session.Complete(); }
@@ -126,7 +125,7 @@ public sealed class Utf8LeadingDigitsBooleanTests
             var entered = false;
             var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
             var regex = new Utf8Regex(Pattern, RegexOptions.None, timeout,
-                new() { MaxWorkSteps = 10000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 10000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             using var currentToken = new CancellationTokenSource();
             var session = Utf8SearchDiagnosticsSession.Start(steps =>
             {
@@ -147,27 +146,6 @@ public sealed class Utf8LeadingDigitsBooleanTests
             }
             finally { session.Complete(); }
             Assert.True(regex.IsMatch("1-ok"u8));
-        }
-    }
-
-    [Fact]
-    public void EveryKernelWorkCutoffKeepsParentLoansAndPublishesNoPartialResult()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('1', 2050) + "-" + new string('x', 2050));
-        var complete = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiLeadingDigitsTailExecutor.TryIsMatchWellFormedWhole(
-            input, "- "u8, ref complete, out var handled, out var found));
-        Assert.True(handled); Assert.True(found);
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var breach = Utf8AsciiLeadingDigitsTailExecutor.TryIsMatchWellFormedWhole(input, "- "u8,
-                ref invocation, out handled, out found);
-            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, breach);
-            Assert.Equal(cap == complete.Budget.Steps, handled);
-            Assert.Equal(cap == complete.Budget.Steps, found);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
     }
 
@@ -201,7 +179,7 @@ public sealed class Utf8LeadingDigitsBooleanTests
             return 0;
         });
         var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1),
-            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
         Assert.True(regex.IsMatch("123-😀é"u8, token.Token));
         Assert.True(reads > 1);
         cancelAt = reads; reads = 0;

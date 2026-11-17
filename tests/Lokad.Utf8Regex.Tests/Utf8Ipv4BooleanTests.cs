@@ -29,7 +29,7 @@ public sealed class Utf8Ipv4BooleanTests
 
     [Theory]
     [InlineData(0)] [InlineData(2033)] [InlineData(2034)] [InlineData(2035)] [InlineData(4095)]
-    public void BoundedDiscoveryUsesNoVmWorkspaceAcrossScalarPrefixesAndWindows(int boundary)
+    public void ScalarDiscoveryPreservesPrefixesAndWindowBoundaries(int boundary)
     {
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
@@ -37,7 +37,7 @@ public sealed class Utf8Ipv4BooleanTests
         {
             var text = "é" + new string('x', boundary) + tail + "😀";
             var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var buffer = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var expected = Regex.IsMatch(text, Pattern);
@@ -45,7 +45,6 @@ public sealed class Utf8Ipv4BooleanTests
             try
             {
                 Assert.Equal(expected, regex.IsMatch(input, token.Token));
-                Assert.Equal(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad, session.ExecutionRoute);
                 Assert.Equal(expected, regex.IsMatch(input));
             }
             finally { session.Complete(); }
@@ -77,29 +76,6 @@ public sealed class Utf8Ipv4BooleanTests
         Assert.True(owner.Match(bytes, 2, []).Success);
         Assert.False(owner.Match(bytes, 6, []).Success);
         Assert.Equal("012.200.033.199", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-    }
-
-    [Fact]
-    public void EveryWorkCutoffKeepsParentLoansAndPublishesNoPartialBoolean()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "012.200.033.199");
-        var complete = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiIpv4TokenExecutor.TryIsMatchAsciiIpv4Token(input, ref complete, out var found));
-        Assert.True(found);
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var breach = Utf8AsciiIpv4TokenExecutor.TryIsMatchAsciiIpv4Token(input, ref invocation, out found);
-            Assert.Equal(cap == complete.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, breach);
-            Assert.Equal(cap == complete.Budget.Steps, found); Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref validation);
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = validation.Budget.Steps });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
     }
 
     [Theory]

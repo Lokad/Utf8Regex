@@ -606,41 +606,15 @@ not UTF-16 lengths or supplementary-scalar metadata. Only the route's actual ASC
 eligibility checks remain. Original work/interruption and admission stay active.
 Unicode subjects retain scalar matching.
 
-On subjects proved ASCII and of at most 2048 bytes, a proved zero-origin
-operator or quoted-string prefix can publish its value-Match range through the existing
-bounded prefix helper. The original invocation meters discovery and publication,
-including cancellation/deadline checks. Wider or mixed subjects, nonzero origins,
-RTL/NonBacktracking and detailed captures retain their existing paths. A tight
-working/result limit can therefore admit the range without VM capture workspace;
-this changes route-dependent resource cost, not matching semantics. Quoted-string
-value matching does not materialize captures; detailed matching keeps all scalar
-capture histories and escape/newline semantics.
-
-The same ASCII size envelope can find a complete identifier token of the form
-`[A-Za-z][A-Za-z0-9]*` from zero origin using the existing checked finder. Its
-selected start can be nonzero; the result retains its original byte index. Discovery and publication share the original bounded work/token/deadline
-scope without VM repeat/capture arrays. This can reduce working/depth admission;
-mixed Unicode, larger subjects, nonzero origins, RTL/NonBacktracking, global
-IgnoreCase and unproved shapes keep their existing paths. Detailed captures are
-unchanged.
-
-A proved anchored identifier prefix, such as invariant
-`\G[a-z][a-z0-9_]*` with IgnoreCase, can use the same ASCII size envelope and its
-existing prefix helper. The construction-captured culture must produce the
-complete ASCII head/tail masks; variants with different masks retain scalar
-execution. Unicode subjects, including Kelvin/Turkic scalars, retain scalar
-folding. Validation, bounded interruption/publication and detailed captures stay
-unchanged; this route can avoid VM workspace and nesting records.
-
-A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
-use zero-origin span Count by searching for that byte under the caller-valid
-input contract. The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
-work/interruption checkpoint and carry nonempty runs across block boundaries;
-the original invocation also checks final publication. Empty matches still
-advance one scalar. This constant-space counter needs no VM capture workspace,
-so tight working/result/depth limits can admit it. Work charges are bounded scan
-units rather than VM instructions. RTL, NonBacktracking, ECMAScript, folded and unproved
-grammar shapes keep their existing routes; detailed results are unchanged.
+Nonliteral facade shortcuts (URI/IP, identifier/query/reference validators,
+word/category and delimiter counters) are retired. These languages execute the
+existing scalar program, including finite and caller-funded operations. Modeled
+work, depth and working/result capacity follow that program and may increase;
+previous constant-space kernel cutoffs are not API guarantees. Scalar extents,
+captures, RTL/NonBacktracking, original synchronous cancellation/deadlines and
+major-buffer admission remain required. Anchored exact/folded literals keep their
+qualified byte searches and case-fiber exclusions. Genuine optimizations inside
+the scalar VM remain part of that program.
 
 The scalar counter for a complete capture-free greedy literal or contiguous
 ASCII range repeat can skip nonmembers through checked span search. Active runs
@@ -650,37 +624,6 @@ deadline and final publication check. Subjects satisfy the caller-valid text con
 or result payload is introduced.
 Nonmember work charges can fall from per-scalar steps to bounded scan units.
 Unproved classes, folding, RTL and NonBacktracking retain their existing paths.
-
-Greedy unbounded word repeats with a positive minimum, optionally enclosed by
-positive word boundaries and ordinary captures, can Count valid UTF-8 through
-their existing whole-pattern proof. One run counter uses the existing ASCII word
-lookup and decodes wider scalars with the shared Core predicate. Unicode scalar
-counts remain distinct from UTF-16 units. U+200C/U+200D participate in boundaries
-without being consumed by `\w`; bounded runs retain both edge conditions.
-No full-subject ASCII classification, coordinate totals or capture/VM scratch is
-needed, including caller-funded Count. The counter admits a work unit before
-each scalar-aligned block of at most32 bytes and before publication; the original
-token/deadline cover counting over valid unchanged borrowed text. Removing
-VM scratch/steps can lower work/depth/working requirements on mixed subjects.
-Lazy/finite-repeat and extended-class shapes, RTL,
-NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/depth/result policies can
-therefore admit a constant-space count that formerly required VM scratch; this
-changes route-dependent resource costs, not matching semantics.
-
-A complete case-sensitive single-category expression or proven Unicode-letter
-expression (`\p{L}`) can Count using the existing category/letter kernels,
-including caller-funded Count over caller-valid subjects. These counters classify
-every encountered scalar directly and need no UTF-16 or supplementary-width
-description. Trusted Count therefore omits the description pass and its work
-charges. Native counting and admission remain unchanged. One work unit admits at
-most 4096 bytes ending on a scalar boundary; publication has its own checkpoint.
-The original token/deadline cover counting, including supplementary
-scalars. This constant-space route needs no capture workspace or nesting records;
-tight working/depth/result limits can therefore admit it. RTL, NonBacktracking,
-ECMAScript and unproved compound expressions retain their owned routes; folded
-single-category expressions also retain their scalar route. Letter Count now
-uses this existing block admission rather than VM instruction charges, so its
-route-dependent work and working-storage costs can be lower.
 
 A complete greedy set repeat with a positive minimum (for example
 `[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. The
@@ -750,20 +693,12 @@ accepting API defines its covered lifetime.
 
 Core `IsMatch(input, token, workingMemoryAllowance)` and
 `Count(input, token, workingMemoryAllowance)` admit modeled temporary matching
-storage through that allowance. Subject preparation follows the selected validation
-policy under the original token/deadline; covered loans refund on completion or
-failure.
+storage through that allowance. Subjects are caller-valid unchanged UTF-8; the
+original token/deadline cover matching. Covered loans refund on completion or failure.
 Numeric work/depth/working/result limits remain independently enforceable. Fixed
 invocation metadata, borrowed input and the compiled expression are separate.
 Funded timeout diagnostics omit subject text rather than decoding it without
-admission. Native literal, word and category counters keep bounded metering.
-
-The proved Unicode word-delimited token counter charges ASCII head/body and
-interior-dot searches in blocks of at most 2048 bytes, with scalar word checks
-at Unicode fall-throughs. These are bounded native work units rather than one
-unit per ASCII character. The same invocation retains finite work admission,
-original cancellation/deadlines and terminal checks; no working/result payload
-is acquired by this counter.
+admission. Retained literal searches and scalar execution keep bounded metering.
 
 Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8RegexProgramOwner`. It admits conservative compilation capacities before

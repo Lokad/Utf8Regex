@@ -9,21 +9,9 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
     private const string IpPattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
 
     [Fact]
-    public void UnanchoredAsciiRegularUsesCoreOnlyForBooleanFacade()
+    public void UnanchoredAsciiGrammarKeepsBooleanAndCaptureResults()
     {
         var regex = new Utf8Pcre2Regex(IpPattern);
-        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(
-            regex.DebugCompiledProgram.Operations.IsMatch);
-
-        Assert.False(program.SupportsPreparedOffsets);
-        Assert.Equal(RegexOptions.None, program.Regex.Options);
-        Assert.Equal(
-            Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount,
-            program.Regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
-        Assert.Equal(
-            // The core slice owns transparent groups, so every op except the prepared IsMatch rides the slice overlay now.
-            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("prefix 192.168.001.001 suffix"u8));
         Assert.False(regex.IsMatch("prefix 999.999.999.999 suffix"u8));
 

@@ -27,7 +27,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(AcceptCases))]
     public void AnchoredLiteralShapesClassifyToSuffixFamily(string pattern, string expectedKind)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex.RuntimeTree);
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
     }
@@ -42,7 +42,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(FoldedAcceptCases))]
     public void FoldedAnchoredLiteralShapesClassifyToFoldedSuffixFamily(string pattern, string expectedKind)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).SemanticRegex.RuntimeTree);
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
     }
@@ -73,10 +73,10 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(DeclineCases))]
     public void OtherShapesKeepExistingClassification(string pattern, RegexOptions options)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
+        var plan = Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree);
 
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, plan.Kind);
-        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd, plan.Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix, plan.Kind);
+        Assert.NotEqual(Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd, plan.Kind);
     }
 
     public static IEnumerable<object?[]> BehaviorCases()

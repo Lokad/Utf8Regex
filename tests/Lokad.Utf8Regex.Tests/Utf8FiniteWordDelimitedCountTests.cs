@@ -9,7 +9,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
     private const string Pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
     private static Utf8Regex Create(RegexOptions options, ulong work)
         => new(Pattern, options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
 
     [Theory]
     [InlineData("", 0)]
@@ -27,7 +27,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
     [InlineData("a@𐐀.c", 1)]
     [InlineData("😀@b.c", 0)]
     [InlineData("a@b.c😀d@e.f", 2)]
-    public void ScalarCountsNeedNoVmStorageOrResultCapacity(string text, int expected)
+    public void ScalarCountsUseFundedExecution(string text, int expected)
     {
         var bytes = Encoding.UTF8.GetBytes("pad" + text + "tail");
         var length = Encoding.UTF8.GetByteCount(text);
@@ -77,44 +77,6 @@ public sealed class Utf8FiniteWordDelimitedCountTests
                 Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
             }
         }
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void KernelCancellationCoversSearchHeadAndBody(int phase)
-    {
-        var input = Encoding.UTF8.GetBytes(phase switch
-        {
-            0 => new string('x', 200000),
-            1 => new string('x', 200000) + "@b.c",
-            _ => "a@" + new string('b', 200000) + ".c",
-        });
-        using var cancellation = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), Regex.InfiniteMatchTimeout, cancellation.Token);
-        invocation.CheckpointHook = _ => cancellation.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out _));
-        Assert.Equal(cancellation.Token, failure.CancellationToken);
-        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void KernelDeadlineCoversSearchHeadAndBody(int phase)
-    {
-        var input = Encoding.UTF8.GetBytes(phase switch
-        {
-            0 => new string('x', 200000),
-            1 => new string('x', 200000) + "@b.c",
-            _ => "a@" + new string('b', 200000) + ".c",
-        });
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), TimeSpan.FromMilliseconds(200), default);
-        invocation.CheckpointHook = _ => ticks = 250;
-        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out _));
-        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
     }
 
     [Theory]

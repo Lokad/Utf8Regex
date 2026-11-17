@@ -42,24 +42,6 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
     }
 
     [Fact]
-    public void EmailPatternClassifiesAsUtf8WordDelimitedTokenCount()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
-    }
-
-    [Fact]
-    public void ExplicitAsciiEmailPatternRetainsAsciiDelimitedTokenCount()
-    {
-        var analysis = Utf8FrontEnd.Compile(
-            @"[A-Za-z0-9_\.+-]+@[A-Za-z0-9_\.-]+\.[A-Za-z0-9_\.-]+",
-            RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
-    }
-
-    [Fact]
     public void EmailCountMatchesDotNetOnRepresentativeInput()
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
@@ -133,22 +115,6 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
     }
 
     [Fact]
-    public void AnchoredAsciiEmailWholeExecutorMatchesRepresentativeInput()
-    {
-        Assert.True(Utf8AsciiEmailWholeExecutor.TryMatchWhole("ops.dispatch@northwind-control.net"u8, out var matchedLength));
-        Assert.Equal("ops.dispatch@northwind-control.net".Length, matchedLength);
-    }
-
-    [Fact]
-    public void UriPatternClassifiesAsUtf8UriToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
     public void UriCountMatchesDotNetOnRepresentativeInput()
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
@@ -174,15 +140,6 @@ Keep mailto://ops?bad and ssh://edge-node/control?mode=full#tail in scope.
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
-    }
-
-    [Fact]
-    public void IpPatternClassifiesAsAsciiDottedDecimalQuadCount()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
@@ -216,9 +173,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     public void FloatPatternClassifiesAsAnchoredAsciiSignedDecimalWhole()
     {
         var analysis = Utf8FrontEnd.Compile(@"^[-+]?\d*\.?\d*$", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole, analysis.FallbackDirectFamily.Kind);
-        Assert.False(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.False(analysis.AnchoredLiteral.IsExact);
     }
 
     [Fact]
@@ -393,14 +348,6 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
-    }
-
-    [Fact]
-    public void UnicodeMathSymbolPatternClassifiesAsUnicodeCategoryCount()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\p{Sm}", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, analysis.FallbackDirectFamily.Kind);
     }
 
     [Fact]

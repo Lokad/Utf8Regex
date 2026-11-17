@@ -19,7 +19,7 @@ public sealed partial class Utf8Regex
     internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
 
-        if (TryMatchDirectFallbackFamilyWithoutValidation(input, out match))
+        if (TryMatchAnchoredLiteral(input, out match))
         {
             return true;
         }
@@ -38,45 +38,28 @@ public sealed partial class Utf8Regex
     }
 
     internal bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        var prioritizeFallbackFamily = _hasDirectFallbackTokenFamilyWithoutValidation ||
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
-        if (prioritizeFallbackFamily &&
-            TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
-
-        if (!prioritizeFallbackFamily &&
-            TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
-
-        isMatch = false;
-        return false;
-    }
+        => TryIsMatchAnchoredLiteral(input, out isMatch);
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         // Anchored suffixes match at most once at a fixed end position: a start past
         // it misses definitively, otherwise the direct hit itself decides.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        if (_anchoredLiteral.IsExactSuffix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterIsMatch) &&
+            return TryMatchAnchoredLiteral(input.Bytes, out var suffixAdapterIsMatch) &&
                 suffixAdapterIsMatch.Success &&
                 start.Value <= suffixAdapterIsMatch.StartOffsetInBytes;
         }
 
         // Anchored prefixes anchor to byte 0: nonzero starts miss definitively,
         // offset 0 reuses the byte-exact prefix compare without BCL construction.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             return start.Value == 0 &&
-                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out _);
+                Utf8AnchoredLiteralPrefixExecutor.TryMatchPrefix(input.Bytes, _anchoredLiteral, out _);
         }
 
         // General scalar programs preserve the whole subject's anchor context.
@@ -106,19 +89,19 @@ public sealed partial class Utf8Regex
 
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        if (_anchoredLiteral.IsExactSuffix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterCount) &&
+            return TryMatchAnchoredLiteral(input.Bytes, out var suffixAdapterCount) &&
                 suffixAdapterCount.Success &&
                 start.Value <= suffixAdapterCount.StartOffsetInBytes
                 ? 1
                 : 0;
         }
 
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } adapterCountLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } adapterCountLiteral)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             if (start.Value != 0)
@@ -178,16 +161,16 @@ public sealed partial class Utf8Regex
     {
         // Anchored suffixes yield at most one match at the fixed end position
         // through the anchor-enforcing owned cursor; a start past it misses.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        if (_anchoredLiteral.IsExactSuffix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterEnumerate) &&
+            if (TryMatchAnchoredLiteral(input.Bytes, out var suffixAdapterEnumerate) &&
                 suffixAdapterEnumerate.Success &&
                 start.Value <= suffixAdapterEnumerate.StartOffsetInBytes)
             {
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    new Utf8OperationMatchCursor(input.Bytes, _anchoredLiteral.LiteralUtf8, CreateExecutionBudget(), _anchoredLiteral.Kind))
                     .WithTimeoutMapping(input.Bytes, this);
             }
 
@@ -198,8 +181,8 @@ public sealed partial class Utf8Regex
 
         // Anchored prefixes yield at most one match at byte 0 through the
         // anchor-enforcing owned cursor; nonzero starts are a definitive miss.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } adapterEnumerateLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } adapterEnumerateLiteral)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             if (start.Value != 0)
@@ -217,8 +200,8 @@ public sealed partial class Utf8Regex
         // Folded anchored prefixes enumerate the same single anchored hit with per-byte
         // invariant folding; nonzero starts miss definitively. Kelvin and Turkic
         // divergences fall through to the fenced BCL paths below.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedAdapterEnumerateLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedAdapterEnumerateLiteral)
         {
             if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
@@ -231,7 +214,7 @@ public sealed partial class Utf8Regex
                 }
 
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input.Bytes, foldedAdapterEnumerateLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    new Utf8OperationMatchCursor(input.Bytes, foldedAdapterEnumerateLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
                     .WithTimeoutMapping(input.Bytes, this);
             }
         }
@@ -239,18 +222,18 @@ public sealed partial class Utf8Regex
         // Folded anchored suffixes enumerate the same single tail hit with per-byte
         // invariant folding under the same fence contract; the suffix kernel projects
         // coordinates.
-        if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        if ((_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
             if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-                if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterEnumerate) &&
+                if (TryMatchAnchoredLiteral(input.Bytes, out var foldedSuffixAdapterEnumerate) &&
                     foldedSuffixAdapterEnumerate.Success &&
                     start.Value <= foldedSuffixAdapterEnumerate.StartOffsetInBytes)
                 {
                     return new Utf8ValueMatchEnumerator(
-                        new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                        new Utf8OperationMatchCursor(input.Bytes, _anchoredLiteral.LiteralUtf8, CreateExecutionBudget(), _anchoredLiteral.Kind))
                         .WithTimeoutMapping(input.Bytes, this);
                 }
 
@@ -355,12 +338,6 @@ public sealed partial class Utf8Regex
             if (_owner._compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex)
             {
                 return _owner.IsMatchAtByteOffset(Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0));
-            }
-
-            if (_owner.TryIsMatchPrioritizedBooleanFamilyWithoutValidation(bytes, out var isMatch) ||
-                _owner.TryIsMatchDirectWithoutValidation(bytes, out isMatch))
-            {
-                return isMatch;
             }
 
             if (_owner.TryMatchDirectWithoutValidation(bytes, out var match))

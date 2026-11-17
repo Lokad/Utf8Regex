@@ -12,16 +12,6 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-internal enum Utf8PrioritizedBooleanFamilyKind : byte
-{
-    None = 0,
-    LeadingAnyRunTrailingAsciiLiteral = 1,
-    AnchoredAsciiLeadingDigitsTail = 5,
-    AnchoredAsciiSignedDecimalWhole = 7,
-    AsciiUriToken = 9,
-    AsciiIpv4Token = 10,
-}
-
 /// <summary>Matches Unicode scalars directly over well-formed UTF-8 input.</summary>
 /// <remarks>Matching results expose byte ranges; callers derive character coordinates.</remarks>
 public sealed partial class Utf8Regex
@@ -35,7 +25,6 @@ public sealed partial class Utf8Regex
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
-    private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _prioritizePlainAsciiLiteralCount;
     private readonly int _fusedAsciiLiteralCountAnchorOffset;
     private readonly bool _prioritizeBoundaryLiteralFamilyCount;
@@ -109,7 +98,6 @@ public sealed partial class Utf8Regex
 
         _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits);
         var preparedRegex = _program.PreparedRegex;
-        _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
         _fusedAsciiLiteralCountAnchorOffset =
             _prioritizePlainAsciiLiteralCount &&
@@ -160,7 +148,7 @@ public sealed partial class Utf8Regex
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
         _ownedSliceProgram = ownedSliceProgram;
         _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
-            (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.FallbackDirectFamily.HasValue ||
+            (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.AnchoredLiteral.HasValue ||
              HasOwnedCaptures(preparedRegex.ExecutionTree));
         // Grouped literal metadata still proves replacement eligibility and an
         // anchored value-cursor shortcut. Full capture snapshots use the byte
@@ -171,15 +159,15 @@ public sealed partial class Utf8Regex
         // The anchored prefix table also supplies a value-cursor proof before
         // scalar selection. Preserve that dependency and its existing fences.
         _groupedLiteralSpanTable = _hasCaptures && hasNativeCaptureTree &&
-            (!scalarCaptureProjection || _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+            (!scalarCaptureProjection || _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
                 ? Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
         // The existing literal proof respects each anchor's scoped options. Borrow
         // its admitted bytes instead of collecting/copying the execution tree again.
         _caretAnchoredGroupedLiteralUtf8 =
             _groupedLiteralSpanTable is { } spanTable &&
             (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) == 0 &&
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } prefix &&
+            _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } prefix &&
             prefix.Length == spanTable.TotalLengthInUtf16
                 ? prefix : null;
         static bool CanPrioritizePlainAsciiLiteralCount(
@@ -202,28 +190,6 @@ public sealed partial class Utf8Regex
             }
 
             return true;
-        }
-
-        static Utf8PrioritizedBooleanFamilyKind SelectPrioritizedBooleanFamily(
-            Utf8PreparedRegex preparedRegex, RegexOptions options)
-        {
-            if (preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral)
-            {
-                return Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
-            }
-
-            return preparedRegex.FallbackDirectFamily.Kind switch
-            {
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
-                    Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
-                Utf8FallbackDirectFamilyKind.Utf8UriToken =>
-                    Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
-                Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount =>
-                    Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail =>
-                    Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail,
-                _ => Utf8PrioritizedBooleanFamilyKind.None,
-            };
         }
 
         _replacementCache = Utf8ReplacementPlanCache.Create();
@@ -288,16 +254,8 @@ public sealed partial class Utf8Regex
 
     private string[] _groupNames => _program.CaptureCatalog.GroupNames;
 
-    private ref readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
-        ref _preparedRegex.FallbackDirectFamily;
-
-    private bool _hasDirectFallbackTokenFamilyWithoutValidation =>
-        Utf8FallbackDirectFamilyCategories.IsTokenFindFamily(_fallbackDirectFamily.Kind);
-
-    private bool _hasDirectFallbackAsciiFamilyWithoutValidation =>
-        (_fallbackDirectFamily.SupportsAsciiDefinitiveIsMatch ||
-         _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole) &&
-        !_hasDirectFallbackTokenFamilyWithoutValidation;
+    private ref readonly Utf8AnchoredLiteralPlan _anchoredLiteral =>
+        ref _preparedRegex.AnchoredLiteral;
 
     private NativeExecutionKind ExecutionKind => _preparedRegex.ExecutionKind;
 
@@ -363,19 +321,6 @@ public sealed partial class Utf8Regex
         // deadline must start before validation/search under the existing owner.
         if (MatchTimeout != Regex.InfiniteMatchTimeout)
             return IsMatch(input, CancellationToken.None);
-
-        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole)
-        {
-            if (Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input, out _))
-            {
-                return true;
-            }
-
-            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0)
-            {
-                return false;
-            }
-        }
 
         try
         {
@@ -448,26 +393,6 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole &&
-            (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout))
-        {
-            var decimalInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-            try
-            {
-                if (!Utf8InputAnalyzer.IsAscii(input, ref decimalInvocation))
-                    return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref decimalInvocation);
-                var breach = Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input,
-                    ref decimalInvocation, out var matched);
-                if (breach != Utf8ExecutionLimitKind.None)
-                    throw CreateExecutionResourceFailure(ref decimalInvocation);
-                return matched;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-                decimalInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            {
-                throw CreateExecutionResourceFailure(ref decimalInvocation);
-            }
-        }
         if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(cancellationToken, false, out var structuralInvocation))
         {
@@ -500,11 +425,6 @@ public sealed partial class Utf8Regex
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
-        }
-
-        if (TryIsMatchPrioritizedBooleanFamilyWithoutValidation(input, out var prioritizedIsMatch))
-        {
-            return prioritizedIsMatch;
         }
 
         if (ShouldUseKelvinSignFallback(input))
@@ -610,72 +530,7 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
             return found;
         }
-        // Dot-star can consume nothing: existence is exactly the complete
-        // literal suffix's existence. A necessary literal of that full length
-        // is the suffix; a fragment from separate captures is insufficient.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
-            ReferenceEquals(program, _ownedSliceProgram) &&
-            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
-            _preparedRegex.SearchPlan.RequiredPrefilterSearcher is { Kind: PreparedSearcherKind.ExactLiteral } required &&
-            required.LiteralSearch.Length == _fallbackDirectFamily.LiteralUtf8.Length)
-        {
-            var breach = required.TryFindMatch(input, startByte, input.Length, false,
-                ref invocation, out _, out var found);
-            if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            invocation.Budget.ThrowIfCancellationRequested();
-            return found;
-        }
-        // Reuse the already-admitted scalar URI language and the Count scan.
-        // This is existence only: Match/captures retain scalar verification.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken &&
-            CanUseNativeScalarTokenSearch(program, startByte))
-            return Utf8UriTokenExecutor.IsMatchWellFormed(input, ref invocation);
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
-            CanUseNativeScalarTokenSearch(program, startByte))
-        {
-            var breach = Utf8AsciiIpv4TokenExecutor.TryIsMatchAsciiIpv4Token(input, ref invocation, out var found);
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad);
-            return found;
-        }
-        // This complete anchored grammar needs no capture state for existence.
-        // Wider leading/separator classes keep the scalar VM under this same
-        // invocation; the recognized ASCII prefix permits a scalar dot tail.
-        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
-            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail)
-        {
-            var breach = Utf8AsciiLeadingDigitsTailExecutor.TryIsMatchWellFormedWhole(input,
-                _fallbackDirectFamily.LiteralUtf8, ref invocation, out var handled, out var matched);
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            if (handled)
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredDigitsTail);
-                return matched;
-            }
-        }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
-        // The complete whole-email proof projects classes into ASCII. Keep
-        // wider aliases on the scalar VM and bound this legacy kernel's entire
-        // scan before entering it; capture/result operations stay unchanged.
-        if (startByte == 0 && input.Length <= 2048 && ReferenceEquals(program, _ownedSliceProgram) &&
-            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole)
-        {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            var ascii = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
-            var matched = ascii && Utf8AsciiEmailWholeExecutor.TryMatchWhole(input, out _);
-            breach = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            if (ascii)
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
-                return matched;
-            }
-        }
         var slots = new Utf8SliceSlots([], []);
         try
         {
@@ -755,69 +610,6 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        // A complete greedy star excluding one ASCII scalar needs only byte
-        // search after strict validation, including on mixed UTF-8 subjects.
-        // Carry validation, bounded scans and publication through one authority.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount &&
-            !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
-        {
-            var starInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-            try
-            {
-                Utf8SliceBufferWork.Checkpoint(ref starInvocation);
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiUntilByteStar);
-                var breach = Utf8AsciiUntilByteStarExecutor.TryCountValidated(input,
-                    _fallbackDirectFamily.TerminatorByte, ref starInvocation, out var starCount);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref starInvocation);
-                return starCount;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-                starInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            { throw CreateExecutionResourceFailure(ref starInvocation); }
-        }
-        // A complete single-category or letter proof needs no captures or VM workspace.
-        // Reuse the shared scalar counter over caller-valid text
-        // in bounded blocks under this same interruption/resource authority.
-        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount &&
-            !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
-        {
-            var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-            try
-            {
-                // Classification handles every encountered scalar directly;
-                // Count needs no whole-subject coordinate or width description.
-                Utf8SliceBufferWork.Checkpoint(ref categoryInvocation);
-                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
-                    _fallbackDirectFamily,
-                    ref categoryInvocation, out var categoryCount);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref categoryInvocation);
-                return categoryCount;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-                categoryInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            { throw CreateExecutionResourceFailure(ref categoryInvocation); }
-        }
-        // The whole-pattern word proof counts complete scalar runs without VM
-        // capture state. Boundary membership includes the Core joiner rule.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.WordRunCount &&
-            _fallbackDirectFamily.MinCount > 0 && !UsesRightToLeft() &&
-            (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
-        {
-            var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-            try
-            {
-                Utf8SliceBufferWork.Checkpoint(ref wordInvocation);
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUtf8WordRun);
-                var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidated(input,
-                    _fallbackDirectFamily.MinCount, _ownedSliceProgram.RequiresUnicodeWordBoundary,
-                    ref wordInvocation, out var wordCount);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref wordInvocation);
-                return wordCount;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-                wordInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            { throw CreateExecutionResourceFailure(ref wordInvocation); }
-        }
         if (HasFiniteExecutionLimits) return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         // This prepared Unicode strategy cannot use the ASCII structural or
         // metered literal routes. Dispatch it before those ineligible probes;
@@ -862,18 +654,6 @@ public sealed partial class Utf8Regex
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return count;
-        }
-        // This existing ordered grammar proof admits only ASCII scalars. Its
-        // checked byte kernel is therefore valid within a fully validated UTF-8
-        // subject too; wider scalars cannot contain an ASCII candidate byte.
-        // Controlled calls and direction/NB semantics retain their owned routes.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
-            !_ownedSliceProgram.RightToLeft && !_ownedSliceProgram.IsNonBacktracking &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
-            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad);
-            return Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
         }
 
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
@@ -959,27 +739,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         }
 
-        if (_fallbackDirectFamily.Kind is
-            Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
-            Utf8FallbackDirectFamilyKind.Utf8UriToken)
-        {
-            return CountViaCompiledEngine(input, default, CreateExecutionBudget());
-        }
-
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount ||
-            Utf8FallbackDirectFamilyCategories.IsTokenCountFamily(_fallbackDirectFamily.Kind))
-        {
-            if (!Utf8InputAnalyzer.IsAscii(input))
-            {
-                return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
-            }
-
-            var asciiValidation = new Utf8ValidationResult(
-                input.Length,
-                isAscii: true);
-            return CountViaCompiledEngine(input, asciiValidation, CreateExecutionBudget());
-        }
-
         if (CanUseFusedCompiledAsciiLiteralFamilyCount())
         {
 
@@ -1043,14 +802,6 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8) ||
-                CanUseNativeScalarTokenSearch(program, startByte))
-            {
-                // These complete counters consume validated bytes, not coordinate metadata.
-                // Keep structural validation and the existing counting kernel intact.
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
-            }
             if (HasFiniteExecutionLimits && startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
                 !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
@@ -1087,31 +838,8 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private bool CanUseNativeScalarTokenSearch(Utf8SliceProgram program, int startByte)
-        => startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) && !_hasCaptures &&
-            !program.RightToLeft && !program.IgnoreCase &&
-            (Options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) == 0 &&
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
-                Utf8FallbackDirectFamilyKind.Utf8UriToken or Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount;
-
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, ref Utf8SliceInvocation invocation)
     {
-        if (CanUseNativeScalarTokenSearch(program, startByte))
-        {
-            if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
-                return Utf8UriTokenExecutor.CountWellFormed(input, ref invocation);
-            if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount)
-            {
-                var tokenBreach = Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(input, ref invocation, out var tokenCount);
-                if (tokenBreach != Utf8ExecutionLimitKind.None)
-                    throw new InvalidOperationException("ASCII IPv4 count breached the invocation budget.");
-                return tokenCount;
-            }
-            var breach = Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out var count);
-            if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
-            return count;
-        }
         // Count publishes no capture values. Reuse the complete scalar-run proof
         // before expanded branch search or acquiring unused capture slots.
         if (Utf8SliceRunner.TryCountTerminalClassRepeat(program, input, startByte, ref invocation, out var terminal))
@@ -1374,48 +1102,6 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Native literal match breached the invocation budget.");
             return found ? Utf8SliceBufferWork.CreateMatchRange(selected.Index, (selected.Index) + (selected.Length), ref invocation) : default(Utf8CaptureRange);
         }
-        // These complete native grammars supply the selected value range without
-        // capture workspace. Bound the helpers' scans and require complete
-        // ASCII validation; detailed captures and wider subjects keep the VM.
-        var queryWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
-            Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole;
-        var colorWhole = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole;
-        var referenceWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole or
-            Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole;
-        var identifierToken = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiIdentifierToken;
-        if (startByte == 0 && input.Length <= 2048 &&
-            ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
-            !program.IsNonBacktracking &&
-            (queryWhole || colorWhole || referenceWhole ||
-                _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix || !program.IgnoreCase &&
-                (identifierToken || _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
-                    Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
-                    Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix)) &&
-            Utf8InputAnalyzer.IsAscii(input, ref invocation))
-        {
-            bool found; int length; Utf8ExecutionLimitKind breach;
-            var index = 0;
-            if (queryWhole)
-                breach = Utf8AsciiAnchoredUrlExecutor.TryMatchWhole(input, _fallbackDirectFamily, ref invocation,
-                    out found, out length);
-            else
-            {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-                // Color/reference proofs qualify their folded ASCII alphabets
-                // and final-LF semantics. The envelope bounds reference digit scans.
-                found = identifierToken ? Utf8AsciiTokenFinderExecutor.TryFindAsciiIdentifierToken(input, 0, out index, out length)
-                    : colorWhole ? Utf8AsciiHexColorExecutor.TryMatchWhole(input, out length)
-                    : referenceWhole ? Utf8AsciiAnchoredWholeFamilyExecutor.TryMatchWhole(input, _fallbackDirectFamily, out length)
-                    : Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
-                breach = invocation.TryChargeInputStep();
-            }
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(identifierToken
-                ? Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken : Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
-            return found ? Utf8SliceBufferWork.CreateMatchRange(index, (index) + (length), ref invocation) : default(Utf8CaptureRange);
-        }
         var slots = new Utf8SliceSlots([], []);
         try
         {
@@ -1480,8 +1166,8 @@ public sealed partial class Utf8Regex
         if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
         // anchor-enforcing owned cursor, without BCL construction.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredEnumerateLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredEnumerateLiteral)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             return new Utf8ValueMatchEnumerator(
@@ -1491,40 +1177,40 @@ public sealed partial class Utf8Regex
 
         // Anchored suffixes yield at most one match at the input end through the
         // anchor-enforcing owned cursor, without BCL construction.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        if (_anchoredLiteral.IsExactSuffix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8, CreateExecutionBudget(), _anchoredLiteral.Kind))
                 .WithTimeoutMapping(input, this);
         }
 
         // Folded anchored prefixes enumerate the same single anchored hit with
         // per-byte invariant folding. Kelvin and Turkic divergences fall through to
         // scalar execution below; all other inputs stay direct.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
+        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
         {
             if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, foldedPrefixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    new Utf8OperationMatchCursor(input, foldedPrefixLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
                     .WithTimeoutMapping(input, this);
             }
         }
 
         // Folded anchored suffixes enumerate the same single tail hit with per-byte
         // invariant folding, under the same fence contract as prefixes.
-        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedSuffixLiteral)
+        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd &&
+            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedSuffixLiteral)
         {
             if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
                     .WithTimeoutMapping(input, this);
             }
         }
@@ -1713,10 +1399,10 @@ public sealed partial class Utf8Regex
             : Utf8InputAnalyzer.Describe(input);
         // R05: anchored ASCII literal families split through the anchor-enforcing
         // owned cursors (at most one match at a fixed position), like enumeration.
-        var isAnchoredDirectSplitFamily = _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
-            (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix ||
-            Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
+        var isAnchoredDirectSplitFamily = _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
+            (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix ||
+            _anchoredLiteral.IsExactSuffix ||
+            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
         // Count zero requests an unlimited split. Window cursors can serve it
         // through the same advancing scan as the default (int.MaxValue) count.
         if ((count > 0 || count == 0 && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow) &&
@@ -2077,7 +1763,7 @@ public sealed partial class Utf8Regex
                                              NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals or
                                              NativeExecutionKind.AsciiOrderedLiteralWindow or
                                              NativeExecutionKind.AsciiStructuralIdentifierFamily) &&
-            !_preparedRegex.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch)
+            !_preparedRegex.AnchoredLiteral.IsExact)
         {
             return false;
         }

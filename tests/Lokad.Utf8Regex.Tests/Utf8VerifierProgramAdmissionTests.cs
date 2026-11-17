@@ -210,12 +210,6 @@ public sealed class Utf8VerifierProgramAdmissionTests
 
 internal static class Utf8VerifierTestPlans
 {
-    internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
-        => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram, p.OperationMatchCursorPlans,
-            p.StructuralSearchPlan, p.StructuralVerifier,
-            p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
-            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
 
     internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
@@ -224,7 +218,7 @@ internal static class Utf8VerifierTestPlans
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             search.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
-            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
+            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
 
     internal static Utf8PreparedRegex WithStructuralVerifier(Utf8StructuralVerifierPlan structuralVerifier)
     {
@@ -235,6 +229,6 @@ internal static class Utf8VerifierTestPlans
                 p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, structuralVerifier, p.StructuralIdentifierFamilyPlan,
             p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan,
-            p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
+            p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
     }
 }

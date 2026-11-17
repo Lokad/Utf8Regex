@@ -28,7 +28,7 @@ public sealed class Utf8UriVectorBoundaryTests
             AssertUriRanges(oracle, text, input);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, compiled.Count(input));
-            var whole = Utf8AsciiUriTokenExecutor.TryMatchWhole(input, out var matchedLength);
+            var match = regex.Match(input); var whole = match.Success && match.StartOffsetInBytes == 0 && match.EndOffsetInBytes == input.Length; var matchedLength = match.EndOffsetInBytes;
             Assert.Equal(expected == 1, whole);
             if (whole) Assert.Equal(input.Length, matchedLength);
         }
@@ -55,13 +55,12 @@ public sealed class Utf8UriVectorBoundaryTests
     }
     private static void AssertUriRanges(Regex oracle, string text, ReadOnlySpan<byte> input)
     {
-        var start = 0;
+        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant); var start = 0;
         foreach (Match expected in oracle.Matches(text))
         {
-            Assert.True(Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, start, out var index, out var length));
-            Assert.Equal((expected.Index, expected.Length), (index, length));
-            start = index + length;
+            var actual = regex.Match(input, start, Span<Utf8CaptureRange>.Empty);
+            Assert.True(actual.Success); Assert.Equal((expected.Index, expected.Length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+            start = actual.EndOffsetInBytes;
         }
-        Assert.False(Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, start, out _, out _));
-    }
-}
+        Assert.False(regex.Match(input, start, Span<Utf8CaptureRange>.Empty).Success);
+    }}

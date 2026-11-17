@@ -191,12 +191,10 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2SliceDirectProgram(
         Utf8SliceProgram sliceProgram,
-        Pcre2BacktrackingProgram fallback,
-        bool hasAsciiIpv4CountProof)
+        Pcre2BacktrackingProgram fallback)
     {
         SliceProgram = sliceProgram;
         Fallback = fallback;
-        HasAsciiIpv4CountProof = hasAsciiIpv4CountProof;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Slice;
@@ -204,8 +202,6 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
     internal Utf8SliceProgram SliceProgram { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
-
-    internal bool HasAsciiIpv4CountProof { get; }
 }
 
 internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
@@ -875,9 +871,7 @@ internal static class Pcre2CompiledProgramOverlay
         // Keep the complete admitted language fact, without retaining another
         // Core regex/root. Count can reuse its checked primitive under this
         // profile's original invocation; other operations keep the slice.
-        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback,
-            sliceProgram.GroupCount == 0 && preparedCore.Inspection.PreparedRegex.FallbackDirectFamily.Kind ==
-                Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount);
+        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback);
         if (countOnly) return operations with { Count = shared };
         return operations with
         {
@@ -1127,7 +1121,7 @@ internal static class Pcre2AsciiRegularIsMatchAnalyzer
             !request.Settings.AllowLookaroundBackslashK &&
             IsSupportedNode(root) &&
             (Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root) ||
-             regex.Inspection.PreparedRegex.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+             regex.Inspection.PreparedRegex.AnchoredLiteral.IsExact);
     }
 
     internal static bool IsSupportedNode(IPcre2BacktrackingNode node) => node switch
@@ -2487,9 +2481,8 @@ internal static class Pcre2GlobalOperationDriver
                 // Borrow the existing scalar-boundary counter under this same
                 // invocation, including unlimited calls. No VM state or second
                 // budget is needed for a complete single-category language.
-                var family = Utf8FallbackDirectFamilyPlan.ForUnicodeCategory(category);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(
-                    input.Bytes[start.Value..], family, ref invocation, out result);
+                    input.Bytes[start.Value..], category, ref invocation, out result);
                 Pcre2SliceDriver.ThrowIfSliceBreached(breach);
                 return true;
             }
@@ -2590,14 +2583,6 @@ internal static class Pcre2GlobalOperationDriver
                     result = checked(result + 1);
                 }
 
-                return true;
-            }
-
-            if (sliceProgram.HasAsciiIpv4CountProof)
-            {
-                var breach = Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(
-                    input.Bytes[start.Value..], ref invocation, out result);
-                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
                 return true;
             }
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,

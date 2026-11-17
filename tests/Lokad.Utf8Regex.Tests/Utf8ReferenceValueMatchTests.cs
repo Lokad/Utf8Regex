@@ -23,9 +23,7 @@ public sealed class Utf8ReferenceValueMatchTests
         {
             var options = mode | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
             var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            Assert.Equal(range ? Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole :
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
+                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "", "a", "a1", "A123", "I14", "K1", "a1\n", "a1\r\n", "a1\n\n",
                 "a1b2", "A123:B456", "I14k1", "a1:b2\n", "a1:b2\r\n", "a1::b2", "aa1", "a1!", " a1", "a1\0" })
@@ -36,7 +34,6 @@ public sealed class Utf8ReferenceValueMatchTests
                 {
                     var actual = regex.Match(storage.AsSpan(1, bytes.Length), token.Token);
                     Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(Utf8ExecutionRoute.NativeAsciiAnchoredValidator, diagnostics.ExecutionRoute);
                 }
                 finally { diagnostics.Complete(); }
             }
@@ -56,8 +53,8 @@ public sealed class Utf8ReferenceValueMatchTests
                 {
                     var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
                     var oracle = new Regex(pattern, RegexOptions.IgnoreCase);
-                    if (name != "en-US") Assert.Equal(Utf8FallbackDirectFamilyKind.None,
-                        regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
+                    if (name != "en-US") Assert.Equal(Utf8AnchoredLiteralKind.None,
+                        regex.Inspection.PreparedRegex.AnchoredLiteral.Kind);
                     CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                     foreach (var text in new[] { "I1", "i1", "K1", "K1", "İ1", "ı1", "a١٢", "I1:b2", "a١:b٢" })
                     {
@@ -72,22 +69,6 @@ public sealed class Utf8ReferenceValueMatchTests
         var supplementary = new Utf8Regex(Cell, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Match("a𝟙"u8);
         Assert.True(supplementary.Success);
         Assert.Equal((0, 5), (supplementary.StartOffsetInBytes, supplementary.EndOffsetInBytes));
-    }
-
-    [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void WholeSubjectBoundKeepsLongInputsOnTheScalarProgram(int length)
-    {
-        foreach (var pattern in new[] { Cell, Range })
-        {
-            var text = pattern == Cell ? "a" + new string('1', length - 1) : "a1:b" + new string('2', length - 4);
-            var bytes = Encoding.ASCII.GetBytes(text);
-            var tight = new Utf8Regex(pattern, RegexOptions.IgnoreCase, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
-            if (length <= 2048) Assert.Equal(length, (tight.Match(bytes).EndOffsetInBytes - tight.Match(bytes).StartOffsetInBytes));
-            else Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => tight.Match(bytes)).ResourceKind);
-        }
     }
 
     [Fact]

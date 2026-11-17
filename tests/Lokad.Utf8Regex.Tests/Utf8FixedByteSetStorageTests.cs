@@ -18,9 +18,6 @@ public sealed class Utf8FixedByteSetStorageTests
     }
 
     [Theory]
-    [InlineData(typeof(Utf8AsciiEmailWholeExecutor))]
-    [InlineData(typeof(Utf8AsciiPrefixTokenExecutor))]
-    [InlineData(typeof(Utf8AsciiTokenFinderExecutor))]
     [InlineData(typeof(Utf8UnicodeCategoryExecutor))]
     public void FixedExecutorTablesHaveNoRetainedHeapStorage(Type executor)
     {
@@ -50,27 +47,23 @@ public sealed class Utf8FixedByteSetStorageTests
     [InlineData(31)]
     public void FixedIdentifierAndOperatorRunsKeepEveryByteAcrossVectorBoundaries(int offset)
     {
+        var identifier = new Utf8Regex(@"\G[A-Za-z][A-Za-z0-9_]*");
+        var operators = new Utf8Regex(@"\G[=+\-^*/.<>~!&|?]+");
+        var token = new Utf8Regex("[A-Za-z][A-Za-z0-9]*");
         foreach (var length in new[] { 0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 129, 257 })
-            for (var value = 0; value < 256; value++)
-            {
-                var storage = new byte[offset + length + 2];
-                var input = storage.AsSpan(offset);
-                input.Fill((byte)'a'); input[^1] = (byte)value;
-                var letter = value is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
-                var digit = value is >= '0' and <= '9';
-                Assert.True(Utf8AsciiPrefixTokenExecutor.TryMatchIdentifierPrefixIgnoreCase(input, out var width));
-                Assert.Equal(length + 1 + (letter || digit || value == '_' ? 1 : 0), width);
-
-                input.Fill((byte)'+'); input[^1] = (byte)value;
-                Assert.True(Utf8AsciiPrefixTokenExecutor.TryMatchOperatorRunPrefix(input, out width));
-                Assert.Equal(length + 1 + ("=+-^*/.<>~!&|?"u8.Contains((byte)value) ? 1 : 0), width);
-
-                input.Fill((byte)'a'); input[0] = (byte)'!'; input[^1] = (byte)value;
-                var found = Utf8AsciiTokenFinderExecutor.TryFindAsciiIdentifierToken(input, 0, out var index, out width);
-                Assert.Equal(length > 0 || letter, found);
-                Assert.Equal(found ? 1 : -1, index);
-                Assert.Equal(found ? length + (letter || digit ? 1 : 0) : 0, width);
-            }
+        for (var value = 0; value < 128; value++)
+        {
+            var storage = new byte[offset + length + 2]; var input = storage.AsSpan(offset);
+            var letter = value is >= 'A' and <= 'Z' or >= 'a' and <= 'z'; var digit = value is >= '0' and <= '9';
+            input.Fill((byte)'a'); input[^1] = (byte)value;
+            Assert.Equal(length + 1 + (letter || digit || value == '_' ? 1 : 0), identifier.Match(input).EndOffsetInBytes);
+            input.Fill((byte)'+'); input[^1] = (byte)value;
+            Assert.Equal(length + 1 + ("=+-^*/.<>~!&|?"u8.Contains((byte)value) ? 1 : 0), operators.Match(input).EndOffsetInBytes);
+            input.Fill((byte)'a'); input[0] = (byte)'!'; input[^1] = (byte)value;
+            var match = token.Match(input);
+            Assert.Equal(length > 0 || letter, match.Success);
+            if (match.Success) Assert.Equal((1, 1 + length + (letter || digit ? 1 : 0)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        }
     }
 
     [Fact]
@@ -98,8 +91,8 @@ public sealed class Utf8FixedByteSetStorageTests
     [InlineData("x@a.co\n", true)]
     public void FixedEmailMembershipKeepsWholeMatchExtents(string text, bool expected)
     {
-        var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, Utf8AsciiEmailWholeExecutor.TryMatchWhole(input, out var width));
-        Assert.Equal(expected ? input.Length - (text.EndsWith('\n') ? 1 : 0) : 0, width);
-    }
-}
+        const string pattern = @"^[a-zA-Z0-9_\-\.]+@(\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.|([a-zA-Z0-9\-]+\.)+)([a-zA-Z]{2,12}|[0-9]{1,3})\]?$";
+        var input = Encoding.UTF8.GetBytes(text); var match = new Utf8Regex(pattern).Match(input);
+        Assert.Equal(expected, match.Success);
+        if (match.Success) Assert.Equal(input.Length - (text.EndsWith('\n') ? 1 : 0), match.EndOffsetInBytes);
+    }}

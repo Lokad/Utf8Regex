@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
@@ -15,27 +13,6 @@ public sealed class Utf8LinePrefixQualificationTests
     private const string Title = @"^\s*///(?<title>#.*)$";
     private const string Digits = @"^([0-9]+)(\-| |$)(.*)$";
     private const string Import = "^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$";
-    private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private static Utf8OwnedRegexTree Tree(string pattern, RegexOptions options)
-    { var tree = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree; Assert.NotNull(tree); return tree; }
-    private static string Describe(Utf8TreeNode node) => $"{node.Kind}({node.M},{node.N},{(int)node.Ch},{node.Str},[{string.Join(',', node.ScalarClass?.Data ?? [])}])" +
-        string.Concat(Enumerable.Range(0, node.ChildCount).Select(index => "{" + Describe(node.Child(index)) + "}"));
-    private static Utf8FallbackDirectFamilyPlan Plan(string pattern, RegexOptions options, Utf8FallbackDirectFamilyKind kind)
-    {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
-        Assert.True(plan.Kind == kind, Describe(Tree(pattern, options).Root)); return plan;
-    }
-    private static MethodInfo Classifier()
-    {
-        var type = typeof(Utf8FrontEnd).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8FallbackLineClassifier"); Assert.NotNull(type);
-        Assert.Empty(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance));
-        var method = type.GetMethod("Classify", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public); Assert.NotNull(method); return method;
-    }
-    private static Utf8FallbackDirectFamilyPlan Classify(MethodInfo method, Utf8OwnedRegexTree tree)
-    {
-        try { return Assert.IsType<Utf8FallbackDirectFamilyPlan>(method.Invoke(null, [tree])); }
-        catch (TargetInvocationException error) when (error.InnerException is not null) { ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
-    }
     private static void PublicRange(string pattern, RegexOptions options, string text, int index, int length, bool rtl)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -64,39 +41,26 @@ public sealed class Utf8LinePrefixQualificationTests
     [Fact]
     public void UntilTerminatorProofBorrowsFragmentedLiteralsAndNulScalarBoundaries()
     {
-        const string alias = @"\G(?<a>\x2f)(?:\x2f)/[^\n]*\x0a";
-        var plan = Plan(alias, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte);
-        Assert.Equal("///"u8.ToArray(), plan.LiteralUtf8); Assert.Equal((byte)'\n', plan.TerminatorByte);
-        PublicRange(alias, RegexOptions.CultureInvariant, "///😀\nrest", 0, 8, false);
-        const string nul = @"\Gx[^\x00]*\x00";
-        Plan(nul, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte);
-        PublicRange(nul, RegexOptions.CultureInvariant, "x😀\0", 0, 6, false);
-    }
-
-    [Fact]
+        PublicRange(@"\G(?<a>\x2f)(?:\x2f)/[^\n]*\x0a", RegexOptions.CultureInvariant, "///😀\nrest", 0, 8, false);
+        PublicRange("\\Gx[^\\0]*\\0", RegexOptions.CultureInvariant, "x😀\0", 0, 6, false);
+    }    [Fact]
     public void TrimmedOptionalWhitespaceCanConsumeLfIncludingTheFinalLf()
     {
-        foreach (var text in new[] { "///\n", "///\nbody", " \n[| ///\nbody" })
-        {
-            Assert.True(Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredTrimmedOptionalLiteralPrefixTail(Encoding.ASCII.GetBytes(text), "///"u8, "[|"u8, out var length));
-            Assert.Equal(text.Length, length); PublicRange(Trimmed, RegexOptions.CultureInvariant, text, 0, length, false);
-        }
+        foreach (var text in new[] { "///\n", "///\nbody", " \n[| ///\nbody" }) PublicRange(Trimmed, RegexOptions.CultureInvariant, text, 0, text.Length, false);
         PublicRange(Trimmed, RegexOptions.CultureInvariant, " /// 😀", 0, 11, false);
         Assert.True(Utf8MatchSequence.First(new Utf8Regex(Trimmed).CreateMatchCursor("///\n😀"u8.ToArray())).TryGetGroup("doc", out var group));
-        Assert.Equal((4, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
-    }
-
-    [Fact]
+        Assert.Equal((4, 8), (group.StartOffsetInBytes, group.EndOffsetInBytes));
+    }    [Fact]
     public void TrimmedAliasesAndLexicalAnchorsPreserveNativeAsciiEndpoints()
     {
         const string alias = @"(?-m:\A\s*(?:\x5b\x7c\s*)?\x2f(?<x>/)/\s?(?<doc>[^\n]*)\Z)";
-        var plan = Plan(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail);
         var oracle = new Regex(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant);
         foreach (var tail in Subjects("a \n\0", 4))
         foreach (var prefix in new[] { "///", "[| ///", " \n///" })
         {
             var text = prefix + tail; var expected = oracle.Match(text);
-            var found = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(Encoding.ASCII.GetBytes(text), plan, out var length);
+            var actual = new Utf8Regex(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant).Match(Encoding.ASCII.GetBytes(text));
+            var found = actual.Success; var length = actual.EndOffsetInBytes;
             Assert.Equal(expected.Success, found); if (found) Assert.Equal(expected.Length, length);
         }
     }
@@ -142,72 +106,16 @@ public sealed class Utf8LinePrefixQualificationTests
     [Fact]
     public void LeadingDigitTailRequiresEndArmAndDisjointNonLfSeparators()
     {
-        foreach (var pattern in new[] { @"^[0-9]+-.*$", @"^[0-9]+(1|$).*$", @"^[0-9]+(\n|$).*$" })
-            Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail, Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant)).Kind);
+
         PublicRange(@"^[0-9]+(1|$).*$", RegexOptions.CultureInvariant, "111x", 0, 4, true);
         PublicRange(@"^[0-9]+(\n|$).*$", RegexOptions.CultureInvariant, "1\n", 0, 2, false);
         const string alias = @"\A\p{Nd}+(?:\x2d|\x20|\Z)[^\n]*\Z";
-        var plan = Plan(alias, RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail);
         var oracle = new Regex(alias, RegexOptions.CultureInvariant);
         foreach (var text in Subjects("1- x\n", 5))
         {
-            var expected = oracle.Match(text); var actual = Utf8AsciiLeadingDigitsTailExecutor.TryMatchWhole(Encoding.ASCII.GetBytes(text), plan.LiteralUtf8, out var length);
+            var expected = oracle.Match(text); var match = new Utf8Regex(alias).Match(Encoding.ASCII.GetBytes(text)); var actual = match.Success; var length = match.EndOffsetInBytes;
             Assert.Equal(expected.Success, actual); if (actual) Assert.Equal(expected.Length, length);
         }
         PublicRange(alias, RegexOptions.CultureInvariant, "١-😀", 0, 7, true);
-    }
-
-    [Fact]
-    public void UnsafeLineWhitespaceDotsOptionsAndOptionalOverlapsKeepScalarGrammar()
-    {
-        var method = Classifier();
-        foreach (var item in new[] { (Trimmed, RegexOptions.Multiline), (Trimmed.Replace("*", "*?"), RegexOptions.None), (Until.Replace("*", "+"), RegexOptions.None),
-            (Trimmed.Replace(@"\[\|", "///"), RegexOptions.None) })
-            Assert.False(Classify(method, Tree(item.Item1, item.Item2)).HasValue);
-    }
-
-    [Fact]
-    public void EveryLineProofCutoffFundsOnlyFinalLiteralsAndRestoresParentState()
-    {
-        var method = Classifier();
-        foreach (var item in new[] { (Until, RegexOptions.CultureInvariant, 48ul), (Trimmed, RegexOptions.CultureInvariant, 96ul), (Digits, RegexOptions.CultureInvariant, 48ul) })
-        {
-            var tree = Tree(item.Item1, item.Item2); ulong peak, work;
-            using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-            { Assert.True(Classify(method, tree).HasValue, Describe(tree.Root)); Assert.Equal(item.Item3, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
-            Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 20000ul);
-            foreach (var bytes in new[] { true, false })
-            {
-                var successes = 0; var limit = bytes ? peak : work;
-                for (var cutoff = 0ul; cutoff <= limit; cutoff++)
-                {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-                    var failure = Record.Exception(() => Classify(method, tree));
-                    if (failure is null) { successes++; Assert.Equal(128ul + item.Item3, owner.Budget.ReservedBytes); }
-                    else { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
-                    Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
-                }
-                if (bytes) Assert.InRange(successes, 1, (int)limit + 1); else Assert.Equal(1, successes);
-            }
-        }
-    }
-
-    [Fact]
-    public void ActualLineWrappersUseSharedAdmittedFramesAndRetiredScannersStayAbsent()
-    {
-        var tree = Tree(Until, RegexOptions.CultureInvariant); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).WithChild(root);
-        var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
-            tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
-        var method = Classifier(); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
-        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "TryParseAnchoredPrefixUntilBytePattern", "TryParseAnchoredAsciiLeadingDigitsTail", "TryParseAnchoredTrimmedOptionalLiteralPrefixTailPattern", "TryParseOptionalLiteralWhitespaceGroup", "TryReadSingleAsciiLiteralAlternationOrDollar", "TryReadSingleAsciiLiteralBranch", "CompactRegexWhitespace", "TryDecodeAsciiLiteral" })
-            Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
 }

@@ -49,7 +49,7 @@ public sealed partial class Utf8Regex
         public string DebugCompiledEngineRuntimeType => CompiledRuntime?.GetType().Name ?? "None";
 
 
-        public string DebugFallbackDirectFamilyKind => _owner._preparedRegex.FallbackDirectFamily.Kind.ToString();
+        public string DebugAnchoredLiteralKind => _owner._preparedRegex.AnchoredLiteral.Kind.ToString();
 
         public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
             _owner._invariantCyrillicLiteralCountStrategy is not null;

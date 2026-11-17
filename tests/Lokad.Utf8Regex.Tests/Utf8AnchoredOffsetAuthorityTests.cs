@@ -15,10 +15,10 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         var literal = "abc"u8.ToArray();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromSeconds(20), default);
         var validation = Utf8InputAnalyzer.Describe(literal, ref invocation);
-        var warm = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, invocation);
+        var warm = new Utf8OperationMatchCursor(literal, literal, Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, invocation);
         Assert.True(warm.MoveNext());
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var cursor = new Utf8OperationMatchCursor(literal, literal, Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, invocation);
+        var cursor = new Utf8OperationMatchCursor(literal, literal, Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, invocation);
         var found = cursor.MoveNext();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(found);

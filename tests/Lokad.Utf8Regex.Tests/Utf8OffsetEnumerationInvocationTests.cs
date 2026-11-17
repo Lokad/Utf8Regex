@@ -254,18 +254,18 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     }
 
     [Theory]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, false)]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, true)]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, false)]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, true)]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd, false)]
-    [InlineData((int)Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd, true)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, false)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, true)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix, false)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix, true)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd, false)]
+    [InlineData((int)Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd, true)]
     public void EveryAnchoredVerificationAndProjectionCutoffKeepsFloorResultAndBorrowedStorage(int kindValue, bool mixed)
     {
-        var kind = (Utf8FallbackDirectFamilyKind)kindValue;
+        var kind = (Utf8AnchoredLiteralKind)kindValue;
         var literal = Encoding.UTF8.GetBytes(new string('a', 4097));
-        var prefix = kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix;
-        var text = prefix ? Encoding.UTF8.GetString(literal) + (mixed ? "é😀" : "xxx") : (mixed ? "é😀" + new string('x', 8193) : new string('x', 8193)) + Encoding.UTF8.GetString(literal) + (kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix ? "\n" : "");
+        var prefix = kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix;
+        var text = prefix ? Encoding.UTF8.GetString(literal) + (mixed ? "é😀" : "xxx") : (mixed ? "é😀" + new string('x', 8193) : new string('x', 8193)) + Encoding.UTF8.GetString(literal) + (kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix ? "\n" : "");
         var input = Encoding.UTF8.GetBytes(text);
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
@@ -273,7 +273,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var original = new Utf8OperationMatchCursor(input, literal, kind, baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, original.TryMoveNextAnchoredLiteral(out var found));
         Assert.True(found);
-        var expected = new Regex((prefix ? "^" : "") + new string('a', 4097) + (prefix ? "" : kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix ? "$" : "\\z")).Match(text);
+        var expected = new Regex((prefix ? "^" : "") + new string('a', 4097) + (prefix ? "" : kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix ? "$" : "\\z")).Match(text);
         Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (original.CurrentValueMatch.StartOffsetInBytes, (original.CurrentValueMatch.EndOffsetInBytes - original.CurrentValueMatch.StartOffsetInBytes)));
         for (ulong cap = 1; cap < original.DebugInvocationSteps; cap++)
         {

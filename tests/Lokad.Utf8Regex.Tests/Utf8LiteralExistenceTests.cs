@@ -39,13 +39,13 @@ public sealed class Utf8LiteralExistenceTests
     }
 
     [Fact]
-    public void FiniteBooleanSearchNeedsNoVmScratchButStillSpendsWork()
+    public void FiniteBooleanSearchRetainsFundedAdmissionAndWork()
     {
         var regex = Limited(100000);
         Assert.True(regex.IsMatch("é😀ss"u8));
         Assert.False(regex.IsMatch("é😀no"u8));
         var firstSuccess = 0UL;
-        for (ulong cap = 1; cap <= 32; cap++)
+        for (ulong cap = 1; cap <= 512; cap++)
         {
             try
             {
@@ -60,9 +60,9 @@ public sealed class Utf8LiteralExistenceTests
                 Assert.True(error.Requested > error.Limit);
             }
         }
-        Assert.InRange(firstSuccess, 2UL, 32UL);
+        Assert.InRange(firstSuccess, 2UL, 512UL);
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(100000, options).IsMatch("ss"u8));
+            Assert.True(Limited(100000, options).IsMatch("ss"u8));
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class Utf8LiteralExistenceTests
 
     private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null) =>
         new(".*(ss)", options, timeout ?? Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
 
     [Fact]
     public void CancellationFromTheLastObservedDeadlinePollCannotPublishSuccess()
