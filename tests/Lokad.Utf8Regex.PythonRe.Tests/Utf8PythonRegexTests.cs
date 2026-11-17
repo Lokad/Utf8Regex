@@ -94,7 +94,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(search.Success);
         Assert.Equal("π "u8.Length, search.StartOffsetInBytes);
         Assert.Equal("π Шерлок"u8.Length, search.EndOffsetInBytes);
-        Assert.Equal("Шерлок", search.GetValueString());
+        Assert.Equal("Шерлок", System.Text.Encoding.UTF8.GetString(search.GetValueBytes()));
         Assert.True(match.Success);
         Assert.Equal("Шерлок"u8.Length, match.EndOffsetInBytes);
         Assert.False(regex.Search("Ватсон"u8).Success);
@@ -280,7 +280,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(matchRegex.Match("foo xx"u8).Success);
         Assert.False(matchRegex.Match("xxfoo"u8).Success);
         Assert.True(fullRegex.FullMatch("ab"u8).Success);
-        Assert.Equal("ab", fullRegex.FullMatch("ab"u8).GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(fullRegex.FullMatch("ab"u8).GetValueBytes()));
     }
 
     [Fact]
@@ -379,7 +379,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(input.Length, match.EndOffsetInBytes);
-        Assert.Equal("start\n東京𝒜end", match.GetValueString());
+        Assert.Equal("start\n東京𝒜end", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.True(regex.FullMatch("startend"u8).Success);
         Assert.True(regex.FullMatch("start\0end"u8).Success);
     }
@@ -409,8 +409,8 @@ public sealed class Utf8PythonRegexTests
 
         Assert.False(new Utf8PythonRegex("start.*end").FullMatch("start\nend"u8).Success);
         Assert.True(ignoreCase.FullMatch("START\nEND"u8).Success);
-        Assert.Equal("middle", captured.FullMatchDetailed("startmiddleend"u8)
-            .GetGroup(1).Value.GetValueString());
+        Assert.Equal("middle", System.Text.Encoding.UTF8.GetString(captured.FullMatchDetailed("startmiddleend"u8)
+            .GetGroup(1).Value.GetValueBytes()));
         Assert.True(reluctant.FullMatch("start😀endend"u8).Success);
         Assert.True(finiteTimeout.FullMatch("start\n😀end"u8).Success);
     }
@@ -426,7 +426,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(input.Length, match.EndOffsetInBytes);
-        Assert.Equal("Шерлок Шерлок ", match.GetValueString());
+        Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.False(regex.FullMatch("xxШерлок x"u8, startOffsetInBytes: 2).Success);
     }
 
@@ -440,9 +440,9 @@ public sealed class Utf8PythonRegexTests
         var data = regex.FullMatchDetailedData(input, startOffsetInBytes: 2);
 
         Assert.True(detailed.Success);
-        Assert.Equal("Шерлок Шерлок ", detailed.Value.GetValueString());
+        Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
-        Assert.Equal("Шерлок ", word.Value.GetValueString());
+        Assert.Equal("Шерлок ", System.Text.Encoding.UTF8.GetString(word.Value.GetValueBytes()));
         Assert.True(data.Success);
         Assert.Equal("Шерлок Шерлок ", data.Value.ValueText);
         Assert.False(regex.FullMatchDetailedData("xxШерлок x"u8, startOffsetInBytes: 2).Success);
@@ -495,7 +495,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.True(match.TryGetFirstSetGroup("word", out var group));
         Assert.True(group.Success);
-        Assert.Equal("foo", group.Value.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -510,10 +510,10 @@ public sealed class Utf8PythonRegexTests
         Assert.True(search.Success);
         Assert.True(match.Success);
         Assert.True(full.Success);
-        Assert.Equal("foo-foo", full.Value.GetValueString());
+        Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(full.Value.GetValueBytes()));
         Assert.True(search.TryGetFirstSetGroup("word", out var word));
         Assert.True(word.Success);
-        Assert.Equal("foo", word.Value.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(word.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -533,18 +533,18 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(0, search.StartOffsetInBytes);
         Assert.Equal(4, search.EndOffsetInBytes);
         Assert.Equal("𝒜"u8.ToArray(), search.GetValueBytes().ToArray());
-        Assert.Equal("𝒜", search.GetValueString());
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(search.GetValueBytes()));
 
         Assert.True(detailed.Success);
         Assert.True(detailed.TryGetGroup(0, out var group));
         Assert.True(group.Success);
         Assert.Equal(0, group.Value.StartOffsetInBytes);
         Assert.Equal(4, group.Value.EndOffsetInBytes);
-        Assert.Equal("𝒜", group.Value.GetValueString());
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
     }
 
     [Fact]
-    public void StringFirstAccessorsWorkForNonContiguousUnicodeMatches()
+    public void BorrowedValueHostDecodingMatchesOwnedUnicodeProjection()
     {
         var regex = new Utf8PythonRegex(".");
 
@@ -552,10 +552,11 @@ public sealed class Utf8PythonRegexTests
         var detailed = regex.SearchDetailed("𝒜"u8);
         var detailedData = regex.SearchDetailedData("𝒜"u8);
 
-        Assert.Equal("𝒜", search.GetValueString());
-        Assert.Equal("𝒜", detailed.GetValueString());
-        Assert.True(detailed.TryGetGroupValueString(0, out var whole));
-        Assert.Equal("𝒜", whole);
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(search.GetValueBytes()));
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.True(detailed.TryGetGroup(0, out var whole));
+        Assert.True(whole.Success);
+        Assert.Equal("𝒜", System.Text.Encoding.UTF8.GetString(whole.Value.GetValueBytes()));
         Assert.Equal("𝒜", detailedData.Value.ValueText);
         Assert.True(detailedData.TryGetGroup(0, out var dataGroup));
         Assert.Equal("𝒜", dataGroup.ValueText);
@@ -959,7 +960,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);
         Assert.Equal(12, match.EndOffsetInBytes);
-        Assert.Equal("header:12345", match.GetValueString());
+        Assert.Equal("header:12345", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.False(regex.Match("header: tail"u8).Success);
         Assert.False(regex.Match("other:123"u8).Success);
 
@@ -973,9 +974,9 @@ public sealed class Utf8PythonRegexTests
         var reluctant = new Utf8PythonRegex("header:[0-9]+?");
         var captured = new Utf8PythonRegex("header:([0-9]+)");
         var finiteTimeout = new Utf8PythonRegex("header:[0-9]+", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
-        Assert.Equal("HEADER:123", ignoreCase.Match("HEADER:123"u8).GetValueString());
-        Assert.Equal("123", captured.MatchDetailed("header:123"u8).GetGroup(1).Value.GetValueString());
-        Assert.Equal("header:123", finiteTimeout.Match("header:123"u8).GetValueString());
+        Assert.Equal("HEADER:123", System.Text.Encoding.UTF8.GetString(ignoreCase.Match("HEADER:123"u8).GetValueBytes()));
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(captured.MatchDetailed("header:123"u8).GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("header:123", System.Text.Encoding.UTF8.GetString(finiteTimeout.Match("header:123"u8).GetValueBytes()));
         Assert.Equal(1, reluctant.Match("header:123"u8).EndOffsetInBytes - "header:"u8.Length);
 
         var offsetMatch = regex.Match("skipheader:123 tail"u8, "skip"u8.Length);

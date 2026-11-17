@@ -40,7 +40,7 @@ public sealed class PythonReResultDefaultsTests
             _ => regex.FullMatchDetailed("😀b"u8, 4, token),
         };
         Assert.False(view.Success);
-        Assert.Equal(view.Value.GetValueString(), data.Value.ValueText);
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(view.Value.GetValueBytes()), data.Value.ValueText);
     }
 
     [Fact]

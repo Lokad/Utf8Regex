@@ -34,7 +34,7 @@ public sealed class PythonReLiteralFullMatchTests
             if (success)
             {
                 Assert.Equal((start, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                Assert.Equal(pattern, match.GetValueString());
+                Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
             }
             Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         }

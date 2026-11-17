@@ -26,11 +26,11 @@ public sealed class PythonReLazyDisjointRepeatTests
         var regex = new Utf8PythonRegex(pattern);
         var match = regex.Search(input);
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(expected, Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes - match.StartOffsetInBytes);
         _ = regex.Count(input);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Fact]

@@ -34,10 +34,10 @@ public sealed class PythonReAtomicRepeatCommitTests
         var match = regex.Search(input);
         Assert.Equal(expected is not null, match.Success);
         if (expected is null) return;
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(expected, Encoding.UTF8.GetString(match.GetValueBytes()));
         _ = regex.Count(input);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Fact]

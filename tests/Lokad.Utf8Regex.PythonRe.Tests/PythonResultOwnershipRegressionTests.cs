@@ -26,7 +26,7 @@ public sealed class PythonResultOwnershipRegressionTests
         Assert.Equal("foo", named.ValueText);
         var context = regex.MatchDetailed(Utf8("foo"));
         Assert.True(context.TryGetFirstSetGroup("word", out var contextNamed));
-        Assert.Equal("foo", contextNamed.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(contextNamed.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class PythonResultOwnershipRegressionTests
         var second = regex.MatchDetailed(Utf8("foo"));
         Assert.Equal("word", second.GetNameEntries()[0].Name);
         Assert.True(second.TryGetFirstSetGroup("word", out var named));
-        Assert.Equal("foo", named.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(named.Value.GetValueBytes()));
     }
 
     [Fact]

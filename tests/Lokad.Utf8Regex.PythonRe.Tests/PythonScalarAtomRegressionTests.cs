@@ -36,8 +36,8 @@ public sealed class PythonScalarAtomRegressionTests
         var input = Utf8("\U0001f600]x]");
         var match = regex.SearchDetailed(input, 0);
         Assert.True(match.Success);
-        Assert.Equal("\U0001f600]", match.GetGroup(0).GetValueString());
-        Assert.Equal("\U0001f600]", match.GetGroup(1).GetValueString());
+        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(0).Value.GetValueBytes()));
+        Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
         Assert.Equal(new[] { "\U0001f600]", "x]" }, regex.FindAllToStrings(input).ScalarValues);
         Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
     }
@@ -187,7 +187,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.True(search.Success);
         Assert.Equal(match.Success, search.Success);
         Assert.Equal(full.Success, search.Success);
-        Assert.Equal(input, search.GetValueString());
+        Assert.Equal(input, System.Text.Encoding.UTF8.GetString(search.GetValueBytes()));
     }
 
     // These formerly skipped witnesses now pin complementary supplementary
@@ -228,7 +228,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
+            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 }

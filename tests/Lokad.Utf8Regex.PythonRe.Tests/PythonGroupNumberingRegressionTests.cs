@@ -92,13 +92,11 @@ public sealed class PythonGroupNumberingRegressionTests
         var context = regex.MatchDetailed(Utf8("ab"));
         Assert.True(context.Success);
         Assert.True(context.TryGetGroup(1, out var first));
-        Assert.Equal("a", first.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(first.Value.GetValueBytes()));
         Assert.True(context.TryGetGroup(2, out var second));
-        Assert.Equal("b", second.GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(second.Value.GetValueBytes()));
         Assert.True(context.TryGetFirstSetGroup("x", out var named));
-        Assert.Equal("a", named.GetValueString());
-        Assert.True(context.TryGetFirstSetGroupValueString("x", out var namedValue));
-        Assert.Equal("a", namedValue);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(named.Value.GetValueBytes()));
     }
 
     [Theory]
@@ -158,7 +156,7 @@ public sealed class PythonGroupNumberingRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
+            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 }

@@ -39,7 +39,7 @@ public sealed class PythonReOneShotProjectionTests
             var context = Context(regex, input, start, kind, cancellation);
             Assert.True(context.Success);
             Assert.Equal((startBytes, endBytes), (context.Value.StartOffsetInBytes, context.Value.EndOffsetInBytes));
-            Assert.Equal(text, context.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
             if (regex.IsMatch(input, start, cancellation)) Assert.True(regex.Search(input, start, cancellation).Success);
         }
     }
@@ -120,7 +120,7 @@ public sealed class PythonReOneShotProjectionTests
             Assert.True(owned.Success); Assert.True(context.Success);
             Assert.True(owned.TryGetFirstSetGroup(name, out var group));
             Assert.True(context.TryGetFirstSetGroup(name, out var borrowed));
-            Assert.Equal(text, group.ValueText); Assert.Equal(text, borrowed.GetValueString());
+            Assert.Equal(text, group.ValueText); Assert.Equal(text, System.Text.Encoding.UTF8.GetString(borrowed.Value.GetValueBytes()));
             Assert.Equal((begin,end),                (group.StartOffsetInBytes,group.EndOffsetInBytes));
             Assert.Equal((begin,end),                (borrowed.Value.StartOffsetInBytes,borrowed.Value.EndOffsetInBytes));
             Assert.Equal(1, owned.LastIndex); Assert.Equal(owned.LastIndex, context.LastIndex);
@@ -253,7 +253,7 @@ public sealed class PythonReOneShotProjectionTests
                 Assert.Equal(total, cursor.ReservedBytes); Assert.Equal(total, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
                 result.GetNameEntries()[0] = new PythonReNameEntry { Name = "changed", Number = 0 };
                 Assert.Equal("word", names[0].Name);
-                Assert.Equal("😀", result.GetValueString());
+                Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()));
             }
             else
             {
@@ -266,7 +266,7 @@ public sealed class PythonReOneShotProjectionTests
         }
         finally { cursor.Dispose(); }
         Assert.Equal(13UL, cursor.ReservedBytes); cursor.WorkingInvocation.Ledger.Release(13);
-        if (allow) { Assert.Equal("😀", result.GetValueString()); Assert.Equal("changed", result.GetNameEntries()[0].Name); }
+        if (allow) { Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes())); Assert.Equal("changed", result.GetNameEntries()[0].Name); }
     }
 
     [Theory]

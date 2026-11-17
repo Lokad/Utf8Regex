@@ -277,7 +277,7 @@ public sealed class PythonReCancellationTests
         var token = CancellationToken.None;
         Assert.Equal(regex.IsMatch(s_input, 4), regex.IsMatch(s_input, 4, token));
         Assert.Equal(regex.Count(s_input, 4), regex.Count(s_input, 4, token));
-        Assert.Equal(regex.Match(s_input, 4).GetValueString(), regex.Match(s_input, 4, token).GetValueString());
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 4).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 4, token).GetValueBytes()));
         Assert.Equal(regex.ReplaceToString(s_input, "pet", 0, 4), regex.ReplaceToString(s_input, "pet", 0, 4, token));
     }
 

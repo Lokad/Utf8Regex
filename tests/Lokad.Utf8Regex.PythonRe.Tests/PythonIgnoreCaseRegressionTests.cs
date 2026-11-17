@@ -163,7 +163,7 @@ public sealed class PythonIgnoreCaseRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
+            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 }

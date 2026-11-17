@@ -3,7 +3,8 @@
 `Lokad.Utf8Regex.PythonRe` is the optional managed Python `re` profile.
 It targets CPython **3.13.2 str-pattern semantics**, with owned Unicode **15.1.0**
 case, identifier and predefined-class data. It matches scalars over strict UTF-8;
-results expose byte coordinates only. Callers derive character positions from
+borrowed results expose byte spans and byte coordinates only, with no string
+getters. Callers decode selected bytes or derive character positions from
 their text when needed; no result exposes scalar or UTF-16 coordinates.
 
 See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
@@ -587,8 +588,8 @@ and cache retention into a total memory bound.
 
 Callbacks must be non-null even on misses; pre-cancellation wins.
 Checks surround caller execution, which cannot be preempted. Required return
-copying/encoding remains admitted; arbitrary callback allocations and later
-standalone getters do not.
+copying/encoding remains admitted; arbitrary callback allocations and later host
+decoding do not. Borrowed result views expose bytes; they have no string getters.
 
 ## Cursor and result lifetime
 

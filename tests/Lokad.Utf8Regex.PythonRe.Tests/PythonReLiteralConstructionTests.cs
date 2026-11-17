@@ -51,8 +51,8 @@ public sealed class PythonReLiteralConstructionTests
         var input = "é中é"u8.ToArray();
         var match = expression.SearchDetailed(input, 0);
         Assert.True(match.Success);
-        Assert.Equal("é", match.GetGroup(1).GetValueString());
-        Assert.Equal("中", match.GetGroup(2).GetValueString());
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("中", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).Value.GetValueBytes()));
         Assert.True(expression.FullMatch(input).Success);
     }
 

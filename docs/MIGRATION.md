@@ -80,6 +80,11 @@ Matching cursors no longer prepare coordinate maps or scan gaps for UTF-16 total
 PythonRe also removes `TryGetScalarRange` and its optional scalar-prefix index.
 Use capture byte endpoints and derive character positions in the host when needed;
 that work is outside the regex invocation's resource and interruption controls.
+PythonRe borrowed value/group/match views also remove `GetValueString` and the
+`TryGet...ValueString` helpers. Read `GetValueBytes()` on a value, or
+`Value.GetValueBytes()` on a group/match context. Resolve groups with `TryGetGroup`
+or `TryGetFirstSetGroup` and check `Success` to distinguish unmatched from empty.
+Decode the selected bytes in the host when required.
 Modeled work and working/result capacity requirements can decrease. Original
 byte context, scalar progress, cancellation and deadlines remain enforced.
 

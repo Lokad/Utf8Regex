@@ -226,7 +226,7 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀a"u8, 1));
         var context = regex.SearchDetailed("😀a"u8);
-        Assert.Equal("", context.GetValueString());
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
         Assert.NotEmpty(Create("(?P<x>a)", 1).GetGroupNames());
     }
 

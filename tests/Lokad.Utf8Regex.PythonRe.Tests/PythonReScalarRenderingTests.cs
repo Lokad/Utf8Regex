@@ -52,7 +52,7 @@ public sealed class PythonReScalarRenderingTests
             {
                 Assert.Equal(0, found.StartOffsetInBytes);
                 Assert.Equal(input.Length, found.EndOffsetInBytes);
-                Assert.Equal(subject, found.GetValueString());
+                Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(found.GetValueBytes()));
             }
             var detailed = regex.SearchDetailedData(input, 0, token);
             Assert.Equal(expected, detailed.Success);
@@ -88,7 +88,7 @@ public sealed class PythonReScalarRenderingTests
         var match = regex.FullMatchDetailed(input);
         Assert.True(match.Success);
         var group = match.GetGroup(1);
-        Assert.Equal("\U00010400", group.GetValueString());
+        Assert.Equal("\U00010400", System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes()));
         Assert.Equal(0, group.Value.StartOffsetInBytes);
         Assert.Equal(4, group.Value.EndOffsetInBytes);
     }

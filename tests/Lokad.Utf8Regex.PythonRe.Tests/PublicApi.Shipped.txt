@@ -41,7 +41,6 @@ readonly ref struct PythonRe.Utf8PythonGroupContext
   property Boolean Success { get; }
   property Int32 Number { get; }
   property PythonRe.Utf8PythonValueMatch Value { get; }
-  method String GetValueString()
 readonly struct PythonRe.Utf8PythonGroupMatchData
   property Boolean Success { get; init; }
   property Int32 EndOffsetInBytes { get; init; }
@@ -56,12 +55,9 @@ readonly ref struct PythonRe.Utf8PythonMatchContext
   property PythonRe.Utf8PythonValueMatch Value { get; }
   property String LastGroup { get; }
   method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupContext group)
-  method Boolean TryGetFirstSetGroupValueString(String name, out String value)
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupContext group)
-  method Boolean TryGetGroupValueString(Int32 number, out String value)
   method PythonRe.PythonReNameEntry[] GetNameEntries()
   method PythonRe.Utf8PythonGroupContext GetGroup(Int32 number)
-  method String GetValueString()
 sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   property PythonRe.Utf8PythonDetailedMatchData Current { get; }
   method Boolean MoveNext()
@@ -240,4 +236,3 @@ readonly ref struct PythonRe.Utf8PythonValueMatch
   property Int32 EndOffsetInBytes { get; }
   property Int32 StartOffsetInBytes { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()

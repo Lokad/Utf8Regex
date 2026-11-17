@@ -47,7 +47,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                 Assert.Equal(expected, match.Success);
                 if (!expected) continue;
                 Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                Assert.Equal(body, match.GetValueString());
+                Assert.Equal(body, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
             }
         }
     }
@@ -68,7 +68,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(0UL, denied.Budget.ReservedBytes);
         Assert.Equal(0UL, denied.Budget.WorkSteps);
-        Assert.Equal(Encoding.UTF8.GetString(input), match.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
             Assert.Equal(expected, match.Success);
             if (!expected) continue;
             Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.Equal(candidate, match.GetValueString());
+            Assert.Equal(candidate, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
@@ -136,7 +136,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var match = regex.FullMatch(input);
         Assert.True(match.Success);
         Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-        Assert.Equal(text, match.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(periodScalars == 60, regex.DebugIsScalarFullProgramValueCreated);
 
     }
@@ -318,7 +318,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var match = regex.FullMatch(input);
         Assert.True(match.Success); Assert.Equal(held, account.Used);
         regex.Dispose(); Assert.Equal(13UL, account.Used);
-        Assert.Equal(text, match.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Throws<ObjectDisposedException>(() => regex.FullMatch(input));
         account.Release(13);
     }

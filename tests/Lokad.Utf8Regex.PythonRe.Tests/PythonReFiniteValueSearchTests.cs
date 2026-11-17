@@ -28,7 +28,7 @@ public sealed class PythonReFiniteValueSearchTests
         {
             Assert.Equal((start, start + Encoding.UTF8.GetByteCount(pattern)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
             Assert.False(regex.Search("other"u8, 0, token.Token).Success && pattern.Length != 0);
-            Assert.Equal(pattern, match.GetValueString());
+            Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
         byte[] invalid = [.. input, 0xff];
 
@@ -122,7 +122,7 @@ public sealed class PythonReFiniteValueSearchTests
             Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
                 (match.StartOffsetInBytes, match.EndOffsetInBytes));
             Assert.False(owner.Search("absent"u8).Success);
-            Assert.Equal(pattern, match.GetValueString());
+            Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 

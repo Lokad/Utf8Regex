@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe borrowed-result string getters. Access value/capture bytes and
+  decode in the host when needed; matching and capture lifetimes are unchanged.
+
 - Remove PythonRe cursor scalar-coordinate queries and their optional prefix
   index. Captures retain byte coordinates; Unicode scalar matching is unchanged.
 

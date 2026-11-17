@@ -75,9 +75,9 @@ public sealed class PythonReSliceOwnershipTests
         var expected = Bcl(regex).Match("xxaaabbyy");
         var detailed = regex.SearchDetailed(Utf8("xxaaabbyy"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal(expected.Groups[0].Value, detailed.GetGroup(0).GetValueString());
-        Assert.Equal(expected.Groups[1].Value, detailed.GetGroup(1).GetValueString());
-        Assert.Equal(expected.Groups[2].Value, detailed.GetGroup(2).GetValueString());
+        Assert.Equal(expected.Groups[0].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
+        Assert.Equal(expected.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal(expected.Groups[2].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).Value.GetValueBytes()));
     }
 
     [Fact]
@@ -986,10 +986,10 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex("(?P<w>a)(b)", PythonReCompileOptions.None);
         var detailed = regex.SearchDetailed(Utf8("xab"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("b", detailed.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).Value.GetValueBytes()));
         Assert.True(detailed.TryGetFirstSetGroup("w", out var word));
-        Assert.Equal("a", word.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(word.Value.GetValueBytes()));
     }
 
     [Theory]

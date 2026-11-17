@@ -86,7 +86,7 @@ subject for diagnostics after expiry.
 Explicit `Compile` factories accept separate construction limits, timeout and
 token, and eagerly prepare FullMatch. Constructors keep fixed construction
 backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
-cache retention, incidental owners, standalone getters, callback allocations and
+cache retention, incidental owners, host decoding, callback allocations and
 host containers retain separate documented scope. The execution token must be
 passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 and [MIGRATION.md](../../docs/MIGRATION.md).

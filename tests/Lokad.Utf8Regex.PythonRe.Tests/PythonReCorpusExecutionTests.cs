@@ -39,7 +39,7 @@ public sealed class PythonReCorpusExecutionTests
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
                 }
 
                 break;
@@ -50,7 +50,7 @@ public sealed class PythonReCorpusExecutionTests
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
                 }
 
                 break;
@@ -61,7 +61,7 @@ public sealed class PythonReCorpusExecutionTests
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
                 }
 
                 break;

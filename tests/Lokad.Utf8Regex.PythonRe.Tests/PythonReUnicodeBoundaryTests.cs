@@ -64,8 +64,8 @@ public sealed class PythonReUnicodeBoundaryTests
     }
 
     private static void AssertRange(Utf8PythonValueMatch expected, Utf8PythonValueMatch actual)
-        => Assert.Equal((expected.Success, expected.StartOffsetInBytes, expected.EndOffsetInBytes, expected.GetValueString()),
-            (actual.Success, actual.StartOffsetInBytes, actual.EndOffsetInBytes, actual.GetValueString()));
+        => Assert.Equal((expected.Success, expected.StartOffsetInBytes, expected.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(expected.GetValueBytes())),
+            (actual.Success, actual.StartOffsetInBytes, actual.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(actual.GetValueBytes())));
 
     [Fact]
     public void PinnedMembershipRetainsNumericMarksJoinersAndNewerUnicodeDistinctions()

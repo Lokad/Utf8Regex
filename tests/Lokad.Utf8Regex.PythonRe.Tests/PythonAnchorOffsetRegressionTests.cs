@@ -78,7 +78,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         var regex = new Utf8PythonRegex("(?<=x)foo");
         var value = regex.FullMatch(Utf8("xfoo"), 1);
         Assert.True(value.Success);
-        Assert.Equal("foo", value.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
         var detailed = regex.FullMatchDetailedData(Utf8("xfoo"), 1);
         Assert.True(detailed.Success);
         Assert.Equal("foo", detailed.Value.ValueText);
@@ -142,7 +142,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {
-            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), match.GetValueString());
+            Assert.Equal(input.Substring(expectedStart, expectedEnd - expectedStart), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 }

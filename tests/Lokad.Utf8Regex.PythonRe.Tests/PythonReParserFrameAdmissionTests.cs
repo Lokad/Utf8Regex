@@ -103,7 +103,7 @@ public sealed class PythonReParserFrameAdmissionTests
         var regex = new Utf8PythonRegex("(?P<x>.)");
         var match = regex.SearchDetailed("😀"u8);
         Assert.True(match.Success);
-        Assert.Equal("😀", match.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal(4, match.Value.GetValueBytes().Length);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.ReservedBytes > 0);

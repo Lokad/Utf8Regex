@@ -55,7 +55,7 @@ public sealed class PythonReNativeLiteralValidationTests
         var value = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation);
         Assert.True(value.Success);
         Assert.Equal((3,9),            (value.StartOffsetInBytes,value.EndOffsetInBytes));
-        Assert.Equal("é😀", value.GetValueString());
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
     }
@@ -100,7 +100,7 @@ public sealed class PythonReNativeLiteralValidationTests
         Assert.False(regex.Search("Ватсон"u8).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal((3,9),            (first.StartOffsetInBytes,first.EndOffsetInBytes));
-        Assert.Equal("é😀", first.GetValueString());
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
         Assert.Equal("é😀", snapshot.Value.ValueText);
     }
 
@@ -126,7 +126,7 @@ public sealed class PythonReNativeLiteralValidationTests
         var byteStart = Encoding.UTF8.GetByteCount(text.AsSpan(0, start));
         Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
             (match.StartOffsetInBytes, match.EndOffsetInBytes));
-        Assert.Equal(pattern, match.GetValueString());
+        Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     private static void Run(Utf8PythonRegex regex, byte[] input, int operation, CancellationToken token)

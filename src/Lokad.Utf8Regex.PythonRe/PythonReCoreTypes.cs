@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Lokad.Utf8Regex.PythonRe;
 
 /// <summary>Maps a Python named group to its numeric capture slot.</summary>
@@ -22,20 +20,6 @@ internal readonly struct PythonReGroupData
 
     public int EndOffsetInBytes { get; init; }
 
-
-}
-
-internal static class PythonReValueTextExtractor
-{
-    public static string GetValueString(ReadOnlySpan<byte> input, PythonReGroupData data)
-    {
-        if (!data.Success)
-        {
-            return string.Empty;
-        }
-
-        return Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]);
-    }
 
 }
 
@@ -72,9 +56,6 @@ public readonly ref struct Utf8PythonValueMatch
 
         return _input[StartOffsetInBytes..EndOffsetInBytes];
     }
-
-    /// <summary>Gets the match value as a UTF-16 string, or an empty string after no match.</summary>
-    public string GetValueString() => PythonReValueTextExtractor.GetValueString(_input, _data);
 
     internal static Utf8PythonValueMatch Create(ReadOnlySpan<byte> input, PythonReGroupData data) => new(input, data);
 }
@@ -291,8 +272,6 @@ public readonly ref struct Utf8PythonGroupContext
     /// <summary>Gets the group's coordinate and byte-value view.</summary>
     public Utf8PythonValueMatch Value => Utf8PythonValueMatch.Create(_input, _data);
 
-    /// <summary>Gets the captured UTF-16 text, or an empty string when the group did not participate.</summary>
-    public string GetValueString() => Value.GetValueString();
 }
 
 /// <summary>Provides a stack-only detailed match view with numbered and named Python groups.</summary>
@@ -336,9 +315,6 @@ public readonly ref struct Utf8PythonMatchContext
         _groups is { Length: > 0 } groups && groups[0].Success
             ? Utf8PythonValueMatch.Create(_input, groups[0])
             : default;
-
-    /// <summary>Gets the matched UTF-16 text, or an empty string after no match.</summary>
-    public string GetValueString() => Value.GetValueString();
 
     /// <summary>Gets the number of capture slots, including group zero.</summary>
     public int CaptureSlotCount => _groups?.Length ?? 0;
@@ -392,34 +368,6 @@ public readonly ref struct Utf8PythonMatchContext
 
         group = default;
         return false;
-    }
-
-    /// <summary>Attempts to get the value of a participating numbered group.</summary>
-    /// <remarks>A successful empty capture returns <see langword="true"/> with an empty value.</remarks>
-    public bool TryGetGroupValueString(int number, out string value)
-    {
-        if (!TryGetGroup(number, out var group) || !group.Success)
-        {
-            value = string.Empty;
-            return false;
-        }
-
-        value = group.GetValueString();
-        return true;
-    }
-
-    /// <summary>Attempts to get the value of a participating named group.</summary>
-    /// <remarks>A successful empty capture returns <see langword="true"/> with an empty value.</remarks>
-    public bool TryGetFirstSetGroupValueString(string name, out string value)
-    {
-        if (!TryGetFirstSetGroup(name, out var group) || !group.Success)
-        {
-            value = string.Empty;
-            return false;
-        }
-
-        value = group.GetValueString();
-        return true;
     }
 
     /// <summary>Returns the mappings from named groups to capture slots.</summary>

@@ -52,7 +52,7 @@ public sealed class PythonReSliceInlineTests
         var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
         Assert.Equal("(?x:ab)+", PythonReDotNetReference.Render(regex));
         var input = Utf8("xababx");
-        Assert.Equal("abab", regex.Search(input).GetValueString());
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(regex.Search(input).GetValueBytes()));
         Assert.Equal(1, regex.Count(input));
     }
 
@@ -174,7 +174,7 @@ public sealed class PythonReSliceInlineTests
         Assert.True(expected.Success);
         var detailed = regex.SearchDetailed(Utf8("xaBB"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("aBB", detailed.GetGroup(0).GetValueString());
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("aBB", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).Value.GetValueBytes()));
     }
 }

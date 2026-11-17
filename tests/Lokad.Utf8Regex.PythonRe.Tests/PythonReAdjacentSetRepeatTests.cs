@@ -35,7 +35,7 @@ public sealed class PythonReAdjacentSetRepeatTests
             Assert.Equal(text, retained.Value.ValueText);
             Assert.Equal(1, owner.Count(input));
             Assert.Equal(text, retained.Value.ValueText);
-            Assert.Equal(text, value.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
 
         }
     }

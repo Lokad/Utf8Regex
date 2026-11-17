@@ -4567,7 +4567,7 @@ var indexInBytes = match.StartOffsetInBytes;
         {
             digest.Add(match.StartOffsetInBytes);
             digest.Add(match.EndOffsetInBytes);
-            digest.AddString(match.GetValueString());
+            digest.AddString(Encoding.UTF8.GetString(match.GetValueBytes()));
         }
 
         return digest.Value;

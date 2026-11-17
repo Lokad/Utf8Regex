@@ -100,7 +100,7 @@ public sealed class PythonReCaptureCompletionTests
         {
             var group = groups[number]; var value = actual.GetGroup(number);
             Assert.Equal(group.GetProperty("success").GetBoolean(), value.Success);
-            Assert.Equal(group.GetProperty("text").GetString(), value.GetValueString());
+            Assert.Equal(group.GetProperty("text").GetString(), System.Text.Encoding.UTF8.GetString(value.Value.GetValueBytes()));
             Assert.Equal(group.GetProperty("startByte").GetInt32(), value.Value.StartOffsetInBytes);
             Assert.Equal(group.GetProperty("endByte").GetInt32(), value.Value.EndOffsetInBytes);
         }
