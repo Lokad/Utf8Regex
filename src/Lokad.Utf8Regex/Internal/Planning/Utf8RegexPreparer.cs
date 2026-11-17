@@ -57,7 +57,6 @@ internal static class Utf8RegexPreparer
             var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
                 analyzedRegex.ExecutionKind,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
-                analyzedRegex.OrderedLiteralWindowPlan,
                 structuralVerifier,
                 searchPlan,
                 structuralSearchPlan);
@@ -80,7 +79,6 @@ structuralSearchPlan, structuralVerifier.AsciiProgram);
                 structuralSearchPlan,
                 structuralVerifier,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
-                analyzedRegex.OrderedLiteralWindowPlan,
                 analyzedRegex.LiteralUtf8,
                 fallbackReason,
                 anchoredLiteral);

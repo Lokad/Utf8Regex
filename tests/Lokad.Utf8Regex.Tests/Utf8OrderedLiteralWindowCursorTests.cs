@@ -34,7 +34,6 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             var timeout = finiteTimeout ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout;
             var oracle = new Regex(pattern, options, timeout);
             var regex = new Utf8Regex(pattern, options, timeout);
-            Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
 
                 var expectedMatches = oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))).ToArray();
                 var actualMatches = new List<(int, int)>();
@@ -43,8 +42,6 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             {
                 var match = cursor.Current;
                     Assert.True(match.Success);
-                    Assert.Equal(match.StartOffsetInBytes, match.StartOffsetInBytes);
-                    Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
                     actualMatches.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 }
             Assert.Equal(expectedMatches, actualMatches);

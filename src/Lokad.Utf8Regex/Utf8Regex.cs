@@ -29,7 +29,6 @@ public sealed partial class Utf8Regex
     private readonly int _fusedAsciiLiteralCountAnchorOffset;
     private readonly bool _prioritizeBoundaryLiteralFamilyCount;
     private readonly Utf8EmittedLiteralFamilyCounter? _fusedAsciiBoundaryLiteralFamilyCounter;
-    private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     internal readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
@@ -120,8 +119,6 @@ public sealed partial class Utf8Regex
         {
             _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
         }
-        _prioritizeOrderedLiteralWindowCount =
-            preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
         _invariantCyrillicLiteralCountStrategy =
             Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
@@ -405,11 +402,8 @@ public sealed partial class Utf8Regex
                 return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
-            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
-                ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                    _preparedRegex.SearchPlan, 0, ref structuralInvocation, out _, out var found)
-                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
-                    _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out _, out found);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out _, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return found;
@@ -618,30 +612,16 @@ public sealed partial class Utf8Regex
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        // A byte window proves its ASCII intersection only. Explicit Unicode
-        // class constraints (for example [^α-ω]) still require the scalar VM.
-        var scalarWindowCount = !_hasCaptures && !_ownedSliceProgram.HasUnicodePatternAtoms &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.SupportsValidatedUtf8Input;
-        if (TryStartNativeStructuralInvocation(cancellationToken, scalarWindowCount, out var structuralInvocation))
+        if (TryStartNativeStructuralInvocation(cancellationToken, false, out var structuralInvocation))
         {
-            // Scalar-aware Count needs validity authority, without coordinate
-            // totals or whole-input ASCII eligibility. Other kernels need ASCII.
-            var structuralSubjectEligible = scalarWindowCount;
-            if (scalarWindowCount) Utf8SliceBufferWork.Checkpoint(ref structuralInvocation);
-            else structuralSubjectEligible = Utf8InputAnalyzer.IsAscii(input, ref structuralInvocation);
-            if (!structuralSubjectEligible || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
+            var structuralIsAscii = Utf8InputAnalyzer.IsAscii(input, ref structuralInvocation);
+            if (!structuralIsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
-            if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow)
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
-            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
-                ? AsciiOrderedLiteralWindowExecutor.TryCount(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                    _preparedRegex.SearchPlan, ref structuralInvocation, out var count)
-                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(_preparedRegex.StructuralSearchPlan,
-                    _preparedRegex.StructuralVerifier.AsciiProgram, input, ref structuralInvocation, out count);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, ref structuralInvocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return count;
@@ -684,32 +664,8 @@ public sealed partial class Utf8Regex
             return packedNibbleLiteralFamilyCountStrategy.Count(input);
         }
 
-        if (_prioritizeOrderedLiteralWindowCount)
-        {
-            var orderedWindowPlan = _program.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
-            if (orderedWindowPlan.TrailingLiteralUtf8.Length >= 2 &&
-                AsciiOrderedLiteralWindowExecutor.CanUseSeparatorOnlySingleLiteralFastPath(orderedWindowPlan))
-            {
-                var orderedWindowBudget = CreateExecutionBudget();
-                if (AsciiOrderedLiteralWindowExecutor.TryCountSeparatorOnlySingleLiteralAscii(
-                        input,
-                        orderedWindowPlan,
-                        orderedWindowBudget,
-                        out var orderedWindowCount))
-                {
-                    Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
-                    return orderedWindowCount;
-                }
-
-                var windowInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, orderedWindowBudget, cancellationToken);
-                Utf8SliceBufferWork.Checkpoint(ref windowInvocation);
-                return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref windowInvocation);
-            }
-        }
-
         if (_prioritizePlainAsciiLiteralCount ||
-            _prioritizeBoundaryLiteralFamilyCount ||
-            _prioritizeOrderedLiteralWindowCount)
+            _prioritizeBoundaryLiteralFamilyCount)
         {
 
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());
@@ -973,11 +929,8 @@ public sealed partial class Utf8Regex
                 return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
-            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
-                ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                    _preparedRegex.SearchPlan, 0, ref structuralInvocation, out var match, out var found)
-                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
-                    _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out match, out found);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out var match, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return found ? Utf8SliceBufferWork.CreateMatchRange(match.Index, (match.Index) + (match.Length), ref structuralInvocation) : default(Utf8CaptureRange);
@@ -1394,12 +1347,10 @@ public sealed partial class Utf8Regex
             (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix ||
             _anchoredLiteral.IsExactSuffix ||
             _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
-        // Count zero requests an unlimited split. Window cursors can serve it
-        // through the same advancing scan as the default (int.MaxValue) count.
-        if ((count > 0 || count == 0 && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow) &&
+        if (count > 0 &&
             (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily))
         {
-            return CreateSplitEnumeratorViaCompiledEngine(input, validation, count == 0 ? int.MaxValue : count, budget)
+            return CreateSplitEnumeratorViaCompiledEngine(input, validation, count, budget)
                 .WithTimeoutMapping(this);
         }
 
@@ -1691,17 +1642,8 @@ public sealed partial class Utf8Regex
 
     internal bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
-        // Both ordinary and emitted window selections use the same owned
-        // cursor. Admission follows the window program, not the backend kind.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow)
-        {
-            return validation.IsAscii;
-        }
-
-        // R03: split segments are match-delimited gaps (BCL EnumerateSplits never splices
-        // group captures, unlike array Split), so grouped literal shapes split natively on the
-        // same group-agnostic cursors. Structural shapes additionally require the same
-        // byte-safe program conditions the split cursor factory serves (R05).
+        // Split segments are match-delimited gaps. Grouped literal shapes use
+        // the same group-agnostic cursors as ungrouped literals.
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
@@ -1740,7 +1682,7 @@ public sealed partial class Utf8Regex
     {
         return _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals
                 or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                or NativeExecutionKind.AsciiOrderedLiteralWindow or NativeExecutionKind.AsciiStructuralIdentifierFamily ||
+                or NativeExecutionKind.AsciiStructuralIdentifierFamily ||
             (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex &&
              !CanGuideFallbackVerification());
     }
@@ -1752,7 +1694,6 @@ public sealed partial class Utf8Regex
                                              NativeExecutionKind.ExactUtf8Literals or
                                              NativeExecutionKind.AsciiLiteralIgnoreCase or
                                              NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals or
-                                             NativeExecutionKind.AsciiOrderedLiteralWindow or
                                              NativeExecutionKind.AsciiStructuralIdentifierFamily) &&
             !_preparedRegex.AnchoredLiteral.IsExact)
         {

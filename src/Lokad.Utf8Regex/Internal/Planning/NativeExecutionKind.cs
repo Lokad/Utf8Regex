@@ -9,6 +9,5 @@ internal enum NativeExecutionKind
     ExactUtf8Literals = 5,
     AsciiStructuralIdentifierFamily = 6,
     AsciiLiteralIgnoreCaseLiterals = 7,
-    AsciiOrderedLiteralWindow = 11,
 }
 

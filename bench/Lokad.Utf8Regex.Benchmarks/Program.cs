@@ -185,11 +185,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-lokad-public-validator-deep", 
     return BenchmarkInspectReporter.RunMeasureLokadPublicValidatorDeep(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-lokad-public-ordered-window-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureLokadPublicOrderedWindowCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-small-ascii-literal-family-primitive-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilyPrimitiveCase(args[1], args.Length >= 3 ? args[2] : null);
@@ -393,16 +388,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-identifier-family-lokad-code-c
 if (args.Length >= 2 && args[0].Equals("--measure-compiled-structural-family-lokad-code-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureCompiledStructuralFamilyLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-ordered-window-lokad-code-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledOrderedWindowLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-single-literal-ordered-window-lokad-code-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledSingleLiteralOrderedWindowLokadCodeCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-structural-linear-rebar-case", StringComparison.Ordinal))

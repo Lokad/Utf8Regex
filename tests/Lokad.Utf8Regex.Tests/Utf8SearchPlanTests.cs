@@ -320,7 +320,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literal.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, identifier.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, window.Inspection.CompiledEngineKind);
         Assert.Equal(1, literal.Count("Task"u8));
         Assert.Equal(1, fallback.Count("axb"u8));
         Assert.Equal(1, identifier.Count("class Bravo"u8));

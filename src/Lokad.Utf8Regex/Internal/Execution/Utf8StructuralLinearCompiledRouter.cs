@@ -13,39 +13,9 @@ internal static class Utf8StructuralLinearCompiledRouter
             !UsesRightToLeft(options);
     }
 
-    public static bool CanUseDirectOrderedLiteralWindowRoute(Utf8PreparedRegex regexPlan, RegexOptions options)
-    {
-        return regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !UsesRightToLeft(options);
-    }
-
     public static bool TryIsMatch(
         Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out bool isMatch)
     {
-        // R05: the direct window executor measures gaps in bytes, selects the
-        // trailing literal greedily, and projects byte offsets as UTF-16 units,
-        // so non-ASCII input uses the complete-subject scalar program while
-        // ASCII input keeps the owned route below. The byte scan (not just the
-        // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
-            !validation.IsAscii &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-        {
-            isMatch = Utf8PreparedScalarExecutor.IsMatch(regexPlan, input, validation, budget);
-            return true;
-        }
-
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
-        {
-            isMatch = AsciiOrderedLiteralWindowExecutor.FindNext(
-                input,
-                regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                regexPlan.SearchPlan,
-                0,
-                budget,
-                out _) >= 0;
-            return true;
-        }
 
         if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
@@ -66,32 +36,8 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryCount(
-        Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, PreparedAsciiFindPlan orderedWindowTrailingFindPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out int count)
+        Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out int count)
     {
-        // R05: the direct window executor measures gaps in bytes, selects the
-        // trailing literal greedily, and projects byte offsets as UTF-16 units,
-        // so non-ASCII input uses the complete-subject scalar program while
-        // ASCII input keeps the owned route below. The byte scan (not just the
-        // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
-            !validation.IsAscii &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-        {
-            count = Utf8PreparedScalarExecutor.Count(regexPlan, input, validation, budget);
-            return true;
-        }
-
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
-            count = AsciiOrderedLiteralWindowExecutor.Count(
-                input,
-                regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                regexPlan.SearchPlan,
-                orderedWindowTrailingFindPlan,
-                budget);
-            return true;
-        }
 
         if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
@@ -125,33 +71,6 @@ internal static class Utf8StructuralLinearCompiledRouter
     public static bool TryMatch(
         Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
     {
-        // R05: the direct window executor measures gaps in bytes, selects the
-        // trailing literal greedily, and projects byte offsets as UTF-16 units,
-        // so non-ASCII input uses the complete-subject scalar program while
-        // ASCII input keeps the owned route below. The byte scan (not just the
-        // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
-            !validation.IsAscii &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-        {
-            match = Utf8PreparedScalarExecutor.Match(regexPlan, input, validation, budget);
-            return true;
-        }
-
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
-        {
-            var index = AsciiOrderedLiteralWindowExecutor.FindNext(
-                input,
-                regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                regexPlan.SearchPlan,
-                0,
-                budget,
-                out var matchedLength);
-            match = index < 0
-                ? default(Utf8CaptureRange)
-                : new Utf8CaptureRange(index, (index) + (matchedLength));
-            return true;
-        }
 
         if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {

@@ -217,7 +217,7 @@ internal static class Utf8VerifierTestPlans
             Utf8OperationMatchCursorPlans.Create(search, p.StructuralLinearProgram,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             search.StructuralSearchPlan, p.StructuralVerifier,
-            p.StructuralIdentifierFamilyPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
+            p.StructuralIdentifierFamilyPlan, p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
 
     internal static Utf8PreparedRegex WithStructuralVerifier(Utf8StructuralVerifierPlan structuralVerifier)
     {
@@ -227,6 +227,6 @@ internal static class Utf8VerifierTestPlans
             Utf8OperationMatchCursorPlans.Create(p.SearchPlan, p.StructuralLinearProgram,
                 p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, structuralVerifier, p.StructuralIdentifierFamilyPlan,
-            p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
+p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);
     }
 }

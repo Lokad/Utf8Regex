@@ -28,6 +28,12 @@ Results expose byte endpoints without UTF-16 projection or prefix scans. Explici
 checks. Assembled text and callback outputs keep their independent well-formedness
 requirements.
 
+The former ordered-window Count wrapper is retired. These patterns use existing
+profile or shared scalar programs, according to their supported options. Work,
+depth and covered storage remain route-dependent; their numerical requirements
+and operating costs can increase or decrease. Lazy bounded-window alternatives
+retain their existing compatibility exclusion and profile backtracking priority.
+
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,

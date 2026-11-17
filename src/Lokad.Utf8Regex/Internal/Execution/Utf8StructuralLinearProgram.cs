@@ -10,21 +10,17 @@ internal enum Utf8StructuralLinearProgramKind : byte
 {
     None = 0,
     AsciiStructuralFamily = 2,
-    AsciiOrderedLiteralWindow = 8,
 }
 
 internal readonly struct Utf8StructuralLinearProgram
 {
     private Utf8StructuralLinearProgram(
-        Utf8StructuralLinearProgramKind kind, bool allowsUtf8ByteSafe,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
+        Utf8StructuralLinearProgramKind kind,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
         Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifierPlan)
     {
         Kind = kind;
-        AllowsUtf8ByteSafe = allowsUtf8ByteSafe;
-        OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
         StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
         SearchPlan = searchPlan;
         StructuralSearchPlan = structuralSearchPlan;
@@ -32,10 +28,6 @@ internal readonly struct Utf8StructuralLinearProgram
     }
 
     public Utf8StructuralLinearProgramKind Kind { get; }
-
-    public bool AllowsUtf8ByteSafe { get; }
-
-    public AsciiOrderedLiteralWindowPlan OrderedLiteralWindowPlan { get; }
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
 
@@ -49,16 +41,11 @@ internal readonly struct Utf8StructuralLinearProgram
 
     private static Utf8StructuralLinearProgram ForStructuralFamily(
         AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan, Utf8StructuralVerifierPlan verifierPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, false, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
-
-    private static Utf8StructuralLinearProgram ForOrderedLiteralWindow(
-        AsciiOrderedLiteralWindowPlan plan, Utf8SearchPlan searchPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, true, plan, default, searchPlan, default, default);
+        new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
 
     public static Utf8StructuralLinearProgram Create(
         NativeExecutionKind executionKind,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         Utf8StructuralVerifierPlan structuralVerifier, Utf8SearchPlan searchPlan,
         Utf8StructuralSearchPlan structuralSearchPlan)
     {
@@ -67,10 +54,6 @@ internal readonly struct Utf8StructuralLinearProgram
         {
             NativeExecutionKind.AsciiStructuralIdentifierFamily when structuralVerifier.Kind == Utf8StructuralVerifierKind.AsciiStructuralProgram
                 => ForStructuralFamily(structuralIdentifierFamilyPlan, searchPlan, structuralSearchPlan, structuralVerifier),
-            NativeExecutionKind.AsciiOrderedLiteralWindow when orderedLiteralWindowPlan.HasValue
-                => ForOrderedLiteralWindow(
-                    orderedLiteralWindowPlan,
-                    searchPlan),
             _ => default,
         };
         scope.Complete();
@@ -127,7 +110,6 @@ internal abstract class Utf8StructuralLinearRuntime
             static value => value.StructuralLinearProgram.Kind switch
         {
             Utf8StructuralLinearProgramKind.AsciiStructuralFamily => new Utf8AsciiStructuralFamilyLinearRuntime(value),
-            Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow => new Utf8OrderedLiteralWindowRuntime(value),
             _ => new Utf8NoStructuralLinearRuntime(value),
         });
         scope.Complete();
@@ -163,92 +145,6 @@ internal sealed class Utf8NoStructuralLinearRuntime : Utf8StructuralLinearRuntim
         matchIndex = -1;
         matchedLength = 0;
         return false;
-    }
-}
-
-internal sealed class Utf8OrderedLiteralWindowRuntime : Utf8StructuralLinearRuntime
-{
-    private bool SupportsInput(Utf8ValidationResult validation)
-        => validation.IsAscii || Program.AllowsUtf8ByteSafe;
-
-    private int FindNext(ReadOnlySpan<byte> input, int startIndex,
-        Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        matchedLength = 0;
-        if (!Program.OrderedLiteralWindowPlan.HasValue) return -1;
-        var index = AsciiOrderedLiteralWindowExecutor.FindNext(input, Program.OrderedLiteralWindowPlan,
-            Program.SearchPlan, startIndex, budget, out matchedLength);
-        if (index >= 0)
-        {
-            var diagnostics = Utf8SearchDiagnosticsSession.Current;
-            diagnostics?.CountSearchCandidate();
-            diagnostics?.CountVerifierInvocation();
-            diagnostics?.CountVerifierMatch();
-        }
-        return index;
-    }
-
-    public Utf8OrderedLiteralWindowRuntime(Utf8PreparedRegex regexPlan)
-        : base(regexPlan)
-    {
-    }
-
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
-    {
-        return SupportsInput(validation) &&
-            FindNext(input, 0, budget, out _) >= 0;
-    }
-
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
-    {
-        if (!SupportsInput(validation))
-        {
-            return 0;
-        }
-
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
-
-        var count = 0;
-        var startIndex = 0;
-        while (startIndex <= input.Length)
-        {
-            var matchIndex = FindNext(input, startIndex, budget, out var matchedLength);
-            if (matchIndex < 0)
-            {
-                return count;
-            }
-
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return count;
-    }
-
-    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
-    {
-        if (!SupportsInput(validation))
-        {
-            return default(Utf8CaptureRange);
-        }
-
-        var index = FindNext(input, 0, budget, out var matchedLength);
-        return index < 0
-            ? default(Utf8CaptureRange)
-            : new Utf8CaptureRange(index, (index) + (matchedLength));
-    }
-
-    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
-    {
-        if (!SupportsInput(validation))
-        {
-            matchIndex = -1;
-            matchedLength = 0;
-            return false;
-        }
-
-        matchIndex = FindNext(input, startIndex, budget, out matchedLength);
-        return matchIndex >= 0;
     }
 }
 

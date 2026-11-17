@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -50,55 +49,21 @@ public sealed class Utf8OrderedWindowScalarCountTests
     }
 
     [Fact]
-    public void PublicMixedCountUsesExistingWindowCounter()
+    public void MixedWindowCountPreservesEveryScalarMatch()
     {
         var regex = new Utf8Regex(Window);
-        var sawWindow = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ =>
-        {
-            sawWindow |= new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod()?.DeclaringType == typeof(AsciiOrderedLiteralWindowExecutor));
-        });
-        try
-        {
-            // LF separates pairs so greedy dot cannot join adjacent matches;
-            // enough candidates reach a matching checkpoint after validation.
-            var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(
-                "é Holmes😀Watson\nWatson\rHolmes\n", 512)));
-            Assert.Equal(1024, regex.Count(input));
-            Assert.True(sawWindow);
-        }
-        finally { session.Complete(); }
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(
+            "é Holmes😀Watson\nWatson\rHolmes\n", 512)));
+        Assert.Equal(1024, regex.Count(input));
     }
 
     [Fact]
-    public void MixedCountKeepsWholeSubjectValidationAndOriginalCancellation()
+    public void MixedCountPreservesOriginalCancellation()
     {
         var regex = new Utf8Regex(Window);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Equal(cancellation.Token,
             Assert.Throws<OperationCanceledException>(() => regex.Count("é HolmesxWatson"u8, cancellation.Token)).CancellationToken);
-    }
-
-    [Fact]
-    public void MatchingCheckpointCancelsWithTheOriginalToken()
-    {
-        var regex = new Utf8Regex(Window);
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(
-            "é Holmes😀Watson\nWatson\rHolmes\n", 512)));
-        using var cancellation = new CancellationTokenSource();
-        var session = Utf8SearchDiagnosticsSession.Start(_ =>
-        {
-            if (new StackTrace().GetFrames().Any(frame =>
-                frame.GetMethod()?.DeclaringType == typeof(AsciiOrderedLiteralWindowExecutor)))
-                cancellation.Cancel();
-        });
-        try
-        {
-            Assert.Equal(cancellation.Token,
-                Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token)).CancellationToken);
-        }
-        finally { session.Complete(); }
     }
 }

@@ -47,16 +47,6 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
-    public void OrderedIdentifierWindowStaysOnStructuralEngine()
-    {
-        var regex = new Utf8Regex(@"\bHttpClient\b[\s\S]{0,80}\bSendAsync\b", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-    }
-
-    [Fact]
     public void ModifierToTypePairStaysOnStructuralEngine()
     {
         var regex = new Utf8Regex(@"\b(?:public|private|internal)\s+class\b", RegexOptions.CultureInvariant);

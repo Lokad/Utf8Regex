@@ -51,7 +51,6 @@ public sealed class Utf8NativeStructuralPreparationTests
         var root = route switch
         {
             2 => Text("ASCII"),
-            3 => Node(Utf8TreeNodeKind.Alternate, Text("ONE"), Text("TWO")),
             4 => Node(Utf8TreeNodeKind.Concatenate, Wrap(One(')'), depth), SetLoop("[ \\t]", 1, int.MaxValue), Text("tail")),
             6 => SetLoop("[ \\t]", 0, int.MaxValue),
             _ => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")),
@@ -60,13 +59,12 @@ public sealed class Utf8NativeStructuralPreparationTests
         };
         return route == 4 ? root : Wrap(root, depth);
     }
-    private static bool ProducesOutput(int route) => route is 2 or 3 or 4 or 8;
+    private static bool ProducesOutput(int route) => route is 2 or 4 or 8;
     private static void Run(int route, Utf8TreeNode root)
     {
         var name = route switch
         {
-            2 => "TryGetAsciiLiteral", 3 => "TryGetAsciiLiteralAlternation",
-            4 => "TryExtractAsciiStructuralSuffixParts", 6 => "TryGetIdentifierSeparatorLoop",
+            2 => "TryGetAsciiLiteral",             4 => "TryExtractAsciiStructuralSuffixParts", 6 => "TryGetIdentifierSeparatorLoop",
             _ => "TryExtractAsciiStructuralIdentifierFamily",
         };
         object?[] args = route switch
@@ -80,7 +78,6 @@ public sealed class Utf8NativeStructuralPreparationTests
         switch (route)
         {
             case 2: Assert.Equal("ASCII", Encoding.ASCII.GetString(Assert.IsType<byte[]>(args[1]))); break;
-            case 3: Assert.Equal(new[] { "ONE", "TWO" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString)); break;
             case 4:
                 var parts = Assert.IsType<AsciiStructuralSuffixPart[]>(args[3]);
                 Assert.Equal(3, parts.Length);
@@ -101,7 +98,7 @@ public sealed class Utf8NativeStructuralPreparationTests
     }
     public static IEnumerable<object[]> RootDenials()
     {
-        foreach (var route in new[] { 2, 3, 4, 6, 8 })
+        foreach (var route in new[] { 2, 4, 6, 8 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
     [Theory]
@@ -120,7 +117,7 @@ public sealed class Utf8NativeStructuralPreparationTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(2)] [InlineData(4)]
     [InlineData(6)] [InlineData(8)]
     public void WrapperDepthDenialUnwindsAncestorsAndAllowsLaterWork(int route)
     {
@@ -134,7 +131,7 @@ public sealed class Utf8NativeStructuralPreparationTests
         Assert.Equal(ProducesOutput(route), owner.Budget.ReservedBytes > 128); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(2)] [InlineData(4)]
     [InlineData(6)] [InlineData(8)]
     public void EveryWorkCutoffRecoversScratchAndKeepsAcceptedOutputLoans(int route)
     {
@@ -158,20 +155,19 @@ public sealed class Utf8NativeStructuralPreparationTests
         }
     }
     [Theory]
-    [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(8)]
+    [InlineData(2)] [InlineData(4)] [InlineData(8)]
     public void LateDeclineRecoversAllEarlierLiteralAndPrefixLoans(int route)
     {
         var root = route switch
         {
-            2 => Text("é😀"), 3 => Node(Utf8TreeNodeKind.Alternate, Text("good"), Text("é")),
-            4 => Node(Utf8TreeNodeKind.Concatenate, Text("good"), Node(Utf8TreeNodeKind.Empty)),
+            2 => Text("é😀"),             4 => Node(Utf8TreeNodeKind.Concatenate, Text("good"), Node(Utf8TreeNodeKind.Empty)),
             _ => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")), Node(Utf8TreeNodeKind.Empty)),
         };
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         object?[] args = route switch { 4 => [root, 0, 1, null],
             8 => [root, null, null, 0, null, null, 0, 0, null, null, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None], _ => [root, null] };
-        var name = route switch { 2 => "TryGetAsciiLiteral", 3 => "TryGetAsciiLiteralAlternation", 4 => "TryExtractAsciiStructuralSuffixParts",
+        var name = route switch { 2 => "TryGetAsciiLiteral", 4 => "TryExtractAsciiStructuralSuffixParts",
             _ => "TryExtractAsciiStructuralIdentifierFamily" };
         Assert.False(Assert.IsType<bool>(Call(name, args)));
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);

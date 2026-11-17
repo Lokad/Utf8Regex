@@ -377,7 +377,6 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2SingleTokenRepeat = 7,
     Pcre2AsciiRegularIsMatch = 8,
     Pcre2MultilinePrefix = 9,
-    Pcre2AsciiOrderedLiteralWindow = 10,
     Pcre2AsciiLiteralAlternationRepeat = 11,
     Pcre2SameStartLiteral = 12,
     Pcre2LiteralPrefixRepeat = 13,
@@ -654,17 +653,6 @@ internal static class Pcre2CompiledProgramOverlay
                 Enumerate = literalPrefixRepeat,
             };
         }
-        else if (preparedCore is { } orderedWindowPrimary &&
-            Pcre2AsciiOrderedLiteralWindowAnalyzer.TryCompile(
-                root,
-                request,
-                orderedWindowPrimary) is { } orderedWindow)
-        {
-            operations = operations with
-            {
-                Count = orderedWindow,
-            };
-        }
         else if (preparedCore is { } alternationRepeatPrimary &&
             Pcre2AsciiLiteralAlternationRepeatAnalyzer.TryCompile(
                 root,
@@ -861,9 +849,9 @@ internal static class Pcre2CompiledProgramOverlay
             return operations;
         }
 
-        // Lazy-gap windows keep the faithful backtracking engine: the shared slice
-        // runner plus the greedy window executor cannot reproduce lazy tail selection.
-        if (Pcre2AsciiOrderedLiteralWindowAnalyzer.IsLazyGapWindow(root))
+        // Keep previously excluded lazy bounded windows on profile backtracking.
+        // Retiring the Count shortcut does not qualify shared-slice tail priority.
+        if (IsLazyGapWindow(root))
         {
             return operations;
         }
@@ -892,6 +880,142 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileOptions.Ungreedy |
         Pcre2CompileOptions.NoAutoCapture |
         Pcre2CompileOptions.FirstLine;
+    private static bool IsGreedyLiteralWindowBranch(IPcre2BacktrackingNode node)
+    {
+        if (node is not Pcre2SequenceBacktrackingNode { Children.Length: >= 3 } sequence)
+        {
+            return false;
+        }
+
+        var repeatIndex = -1;
+        for (var i = 0; i < sequence.Children.Length; i++)
+        {
+            if (sequence.Children[i] is Pcre2TokenBacktrackingNode
+                {
+                    Token:
+                    {
+                        Kind: Pcre2CharacterTokenKind.Literal,
+                        Options: Pcre2CharacterOptions.None,
+                        Literal: var literal,
+                    },
+                } &&
+                literal.IsAscii &&
+                literal.Value != '\n')
+            {
+                continue;
+            }
+
+            if (repeatIndex < 0 &&
+                i > 0 &&
+                i < sequence.Children.Length - 1 &&
+                sequence.Children[i] is Pcre2RepeatBacktrackingNode
+                {
+                    Minimum: var minimum,
+                    Maximum: var maximum,
+                    Preference: Pcre2RepeatPreference.Greedy,
+                    Body: Pcre2TokenBacktrackingNode
+                    {
+                        Token:
+                        {
+                            Kind: Pcre2CharacterTokenKind.Any,
+                            Options: Pcre2CharacterOptions.None,
+                        },
+                    },
+                } &&
+                minimum >= 0 &&
+                maximum >= minimum &&
+                maximum != int.MaxValue)
+            {
+                repeatIndex = i;
+                continue;
+            }
+
+            return false;
+        }
+
+        return repeatIndex > 0 && repeatIndex < sequence.Children.Length - 1;
+    }
+
+    private static bool IsLazyGapWindow(IPcre2BacktrackingNode node)
+    {
+        if (node is not Pcre2AlternationBacktrackingNode { Alternatives.Length: 2 } alternation)
+        {
+            return false;
+        }
+
+        var sawLazy = false;
+        foreach (var branch in alternation.Alternatives)
+        {
+            if (IsLazyLiteralWindowBranch(branch))
+            {
+                sawLazy = true;
+                continue;
+            }
+
+            if (!IsGreedyLiteralWindowBranch(branch))
+            {
+                return false;
+            }
+        }
+
+        return sawLazy;
+    }
+
+    private static bool IsLazyLiteralWindowBranch(IPcre2BacktrackingNode node)
+    {
+        if (node is not Pcre2SequenceBacktrackingNode { Children.Length: >= 3 } sequence)
+        {
+            return false;
+        }
+
+        var repeatIndex = -1;
+        for (var i = 0; i < sequence.Children.Length; i++)
+        {
+            if (sequence.Children[i] is Pcre2TokenBacktrackingNode
+                {
+                    Token:
+                    {
+                        Kind: Pcre2CharacterTokenKind.Literal,
+                        Options: Pcre2CharacterOptions.None,
+                        Literal: var literal,
+                    },
+                } &&
+                literal.IsAscii &&
+                literal.Value != '\n')
+            {
+                continue;
+            }
+
+            if (repeatIndex < 0 &&
+                i > 0 &&
+                i < sequence.Children.Length - 1 &&
+                sequence.Children[i] is Pcre2RepeatBacktrackingNode
+                {
+                    Minimum: var minimum,
+                    Maximum: var maximum,
+                    Preference: Pcre2RepeatPreference.Lazy,
+                    Body: Pcre2TokenBacktrackingNode
+                    {
+                        Token:
+                        {
+                            Kind: Pcre2CharacterTokenKind.Any,
+                            Options: Pcre2CharacterOptions.None,
+                        },
+                    },
+                } &&
+                minimum >= 0 &&
+                maximum != int.MaxValue &&
+                maximum > minimum)
+            {
+                repeatIndex = i;
+                continue;
+            }
+
+            return false;
+        }
+
+        return repeatIndex > 0 && repeatIndex < sequence.Children.Length - 1;
+    }
 }
 
 internal sealed class Pcre2SingleTokenRepeatProgram
@@ -1038,7 +1162,6 @@ internal static class Pcre2ProgramInvariant
     internal static Utf8Regex? GetCoreRegex(IPcre2DirectProgram program) => program switch
     {
         Pcre2AsciiRegularIsMatchDirectProgram regular => regular.Regex,
-        Pcre2AsciiOrderedLiteralWindowDirectProgram window => window.Regex,
         Pcre2AsciiLiteralAlternationRepeatDirectProgram repeat => repeat.Regex,
         Pcre2LiteralFamilyDirectProgram family => family.Regex,
         _ => null,
@@ -2399,18 +2522,6 @@ internal static class Pcre2GlobalOperationDriver
                 multilinePrefixProgram,
                 input.Bytes,
                 start.Value);
-            return true;
-        }
-
-        if (program is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
-            input.Bytes[start.Value..].IndexOfAnyInRange((byte)0xf0, (byte)0xf4) < 0)
-        {
-            var suffix = Utf8ValidatedInput.BorrowBytes(input.Bytes[start.Value..]);
-            // This kind's prepared counter consumes only bytes; its analyzer
-            // and the supplementary-scalar guard above establish eligibility.
-            result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(suffix, new Utf8BytePosition(0));
             return true;
         }
 

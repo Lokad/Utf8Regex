@@ -53,16 +53,4 @@ internal readonly struct PreparedAsciiFindPlan
 
     public static PreparedAsciiFindPlan CreateFixedDistanceSet(Utf8FixedDistanceSet[] fixedDistanceSets) =>
         new(PreparedAsciiFindMode.FixedDistanceSet, default, default, fixedDistanceSets, 0);
-
-    public static PreparedAsciiFindPlan CreateForOrderedWindow(AsciiOrderedLiteralWindowPlan plan)
-    {
-        if (plan.TrailingLiteralsUtf8 is { Length: > 1 } trailingLiterals)
-        {
-            return CreateLiteralFamily(trailingLiterals);
-        }
-
-        return plan.TrailingLiteralUtf8.Length > 0
-            ? CreateLiteral(plan.TrailingLiteralUtf8)
-            : default;
-    }
 }

@@ -29,7 +29,6 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         byte[]? literalUtf8,
         string? fallbackReason)
     {
@@ -46,7 +45,6 @@ internal sealed class Utf8PreparedRegex
         StructuralSearchPlan = structuralSearchPlan;
         StructuralVerifier = structuralVerifier;
         StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
-        OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
     }
@@ -64,7 +62,6 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         byte[]? literalUtf8,
         string? fallbackReason,
         Utf8AnchoredLiteralPlan anchoredLiteral)
@@ -87,7 +84,6 @@ internal sealed class Utf8PreparedRegex
             structuralSearchPlan,
             structuralVerifier,
             structuralIdentifierFamilyPlan,
-            orderedLiteralWindowPlan,
             literalUtf8,
             fallbackReason);
         scope.Complete();
@@ -121,8 +117,6 @@ internal sealed class Utf8PreparedRegex
     public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
-
-    public AsciiOrderedLiteralWindowPlan OrderedLiteralWindowPlan { get; }
 
     public byte[]? LiteralUtf8 { get; }
 

@@ -15,9 +15,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
         var eligible = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue ||
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.HasValue;
+            _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue;
         if (!eligible ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
             _requiresKelvinSignFallback ||

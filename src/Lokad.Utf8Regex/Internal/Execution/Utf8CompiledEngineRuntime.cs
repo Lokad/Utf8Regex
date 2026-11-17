@@ -120,7 +120,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
-    private readonly PreparedAsciiFindPlan _orderedWindowTrailingFindPlan;
 
     internal Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
@@ -134,9 +133,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             out var preparedBoundaryLiteralFamily)
                 ? preparedBoundaryLiteralFamily
                 : null;
-        _orderedWindowTrailingFindPlan = _regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
-            ? PreparedAsciiFindPlan.CreateForOrderedWindow(_regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan)
-            : default;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -192,7 +188,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (Utf8StructuralLinearCompiledRouter.TryCount(
                 _regexPlan,
                 _verifierRuntime,
-                _orderedWindowTrailingFindPlan,
                 input,
                 validation,
                 budget,

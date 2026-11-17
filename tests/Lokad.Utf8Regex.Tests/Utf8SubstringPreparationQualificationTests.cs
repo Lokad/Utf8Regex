@@ -15,8 +15,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
     private static object? Field(PreparedSubstringSearch search, string name) =>
         typeof(PreparedSubstringSearch).GetField(name, Fields)!.GetValue(search);
     private delegate int ReverseCount(ReadOnlySpan<byte> input, in AsciiStructuralIdentifierFamilyPlan plan, byte[] suffix, int minimum);
-    private delegate bool TrailingMatch(ReadOnlySpan<byte> input, AsciiOrderedLiteralWindowPlan plan,
-        PreparedAsciiFindPlan find, int minimum, out int index);
+
 
     [Fact]
     public void CanonicalFoldedBytesAreBorrowedAndOnlyUsedShiftTablesAreRetained()
@@ -195,21 +194,15 @@ public sealed class Utf8SubstringPreparationQualificationTests
     }
 
     [Fact]
-    public void RuntimeWindowAndReverseSuffixKernelsDoNotPrepareDuringExecution()
+    public void ReverseSuffixKernelDoesNotPrepareDuringExecution()
     {
         var literal = "tail"u8.ToArray();
         var family = new AsciiStructuralIdentifierFamilyPlan(["head"u8.ToArray()], AsciiCharClass.ForByte((byte)' '), 1,
             null, null, 0, 0, literal, null, Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary);
         var reverse = typeof(Utf8AsciiStructuralIdentifierFamilyExecutor).GetMethod("CountSuffixOnlyReverseLiteral",
             BindingFlags.NonPublic | BindingFlags.Static)!.CreateDelegate<ReverseCount>();
-        var window = new AsciiOrderedLiteralWindowPlan("head"u8.ToArray(), null, literal, null, 8, 0, true,
-            default, null, false, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None,
-            Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary);
-        var trailing = typeof(AsciiOrderedLiteralWindowExecutor).GetMethod("TryFindNextTrailingBoundaryMatch",
-            BindingFlags.NonPublic | BindingFlags.Static)!.CreateDelegate<TrailingMatch>();
         using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
         Assert.Equal(2, reverse("head tail; head tail"u8, family, literal, 1));
-        Assert.True(trailing("xtail tail!"u8, window, default, 0, out var index)); Assert.Equal(6, index);
         Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.PeakBytes); Assert.Equal(0ul, zero.Budget.Depth);
     }
 

@@ -123,22 +123,6 @@ public sealed partial class Utf8Regex
 
     private int CountViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        // Ordered-window kernels count byte gaps. Mixed subjects require the
-        // cached scalar program before the internal ASCII router can run.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !validation.IsAscii)
-        {
-            if (Utf8InputAnalyzer.IsAscii(input))
-            {
-                // A default validation result does not prove the subject is
-                // mixed. Reuse this ASCII proof in the router below.
-                validation = new Utf8ValidationResult(input.Length, true);
-            }
-            else
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref invocation);
-            }
-        }
         // Anchored literal prefixes count directly through the router below: at most one
         // anchored match, byte-exact on every input, without general scalar discovery.
         // Folded prefixes ride the same router arm, which switches on the kind.

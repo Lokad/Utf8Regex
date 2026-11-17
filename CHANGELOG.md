@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Retire Core's ordered literal-window execution, cursor mode and PCRE2 Count
+  wrapper. Keep shared literal/candidate search and the PCRE2 lazy-gap compatibility
+  guard. Scalar programs preserve matching and interruption; execution costs and
+  numerical resource requirements can increase.
+
 - Remove token-window, repeated-segment and quoted-relation whole-pattern plans,
   their instruction carrier and the finite repeated-segment Count shortcut.
   Existing scalar execution preserves results and interruption; execution costs

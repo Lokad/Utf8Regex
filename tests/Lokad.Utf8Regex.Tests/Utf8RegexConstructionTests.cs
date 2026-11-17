@@ -1022,38 +1022,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void BaselineSymmetricLiteralWindowPlanRecognizesHolmesWatsonWindow()
-    {
-        var baseline = new Utf8Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None);
-        var plan = baseline.Inspection.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.Inspection.ExecutionKind);
-        Assert.True(plan.HasValue);
-        Assert.True(plan.HasPairedTrailingLiterals);
-        Assert.Equal(25, plan.MaxGap);
-        Assert.Equal("Holmes"u8.ToArray(), plan.LeadingLiteralsUtf8![0]);
-        Assert.Equal("Watson"u8.ToArray(), plan.TrailingLiteralsUtf8[0]);
-        Assert.Equal("Watson"u8.ToArray(), plan.LeadingLiteralsUtf8[1]);
-        Assert.Equal("Holmes"u8.ToArray(), plan.TrailingLiteralsUtf8[1]);
-    }
-
-    [Fact]
-    public void BaselineSymmetricLiteralWindowPlanRecognizesRiverWindow()
-    {
-        var baseline = new Utf8Regex("Tom.{10,25}river|river.{10,25}Tom", RegexOptions.None);
-        var plan = baseline.Inspection.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.Inspection.ExecutionKind);
-        Assert.True(plan.HasValue);
-        Assert.True(plan.HasPairedTrailingLiterals);
-        Assert.Equal(25, plan.MaxGap);
-        Assert.Equal("Tom"u8.ToArray(), plan.LeadingLiteralsUtf8![0]);
-        Assert.Equal("river"u8.ToArray(), plan.TrailingLiteralsUtf8[0]);
-        Assert.Equal("river"u8.ToArray(), plan.LeadingLiteralsUtf8[1]);
-        Assert.Equal("Tom"u8.ToArray(), plan.TrailingLiteralsUtf8[1]);
-    }
-
-    [Fact]
     public void BaselineBoundedSuffixLiteralCountMatchesDotNetOnMixedUtf8Input()
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
@@ -2055,16 +2023,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
 
-    [Fact]
-    public void ConstructorClassifiesPositiveSeparatorLiteralLookaheadAsOrderedLiteralWindow()
-    {
-        var regex = new Utf8Regex("HttpClient(?=\\s+client)", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-    }
-
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -2113,8 +2071,6 @@ public sealed class Utf8RegexConstructionTests
             public
             class Third
             """u8;
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
         // The separator may consume the newline in "public\nclass" before dot
         // begins; the old trailing-anchor shortcut incorrectly discarded it.
         var oracle = new Regex(regex.Pattern, RegexOptions.CultureInvariant);
@@ -2204,8 +2160,6 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "xpublic async public   asyncz public async"u8;
-
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -2227,8 +2181,6 @@ public sealed class Utf8RegexConstructionTests
             """;
         var bytes = Encoding.UTF8.GetBytes(input);
         var expected = Regex.Match(input, pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), regex.Count(bytes));
         var match = regex.Match(bytes);
         Assert.True(match.Success);

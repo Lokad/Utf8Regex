@@ -31,16 +31,6 @@ public sealed class LokadPublicRouteGuardrailTests
     }
 
     [Fact]
-    public void SherlockHolmesWindowStaysOnAsciiOrderedLiteralWindow()
-    {
-        var regex = new Utf8Regex(@"Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
-    }
-
-    [Fact]
     public void SherlockIngCountStaysOnAsciiSimplePatternInterpreter()
     {
         var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.None);
@@ -417,8 +407,6 @@ public sealed class LokadPublicRouteGuardrailTests
         var regex = new Utf8Regex(pattern, options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-
         foreach (var gap in new[] { 8, 9, 10, 11, 25, 26 })
         {
             var input = "river" + new string('x', gap) + "Tom";
@@ -506,8 +494,6 @@ public sealed class LokadPublicRouteGuardrailTests
             var regex = new Utf8Regex(control.Pattern, options);
             var oracle = new Regex(control.Pattern, options, Regex.InfiniteMatchTimeout);
             var inputBytes = System.Text.Encoding.UTF8.GetBytes(control.Input);
-
-            Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
             Assert.Equal(oracle.IsMatch(control.Input), regex.IsMatch(inputBytes));
             Assert.Equal(oracle.Matches(control.Input).Count, regex.Count(inputBytes));
         }

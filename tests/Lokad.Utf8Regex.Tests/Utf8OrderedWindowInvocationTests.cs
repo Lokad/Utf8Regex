@@ -13,42 +13,26 @@ public sealed class Utf8OrderedWindowInvocationTests
     [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
     [InlineData(4095)] [InlineData(4096)]
-    public void LongPrefixBoundariesKeepScalarGapsAndBorrowedLimits(int length)
+    public void LongPrefixesPreserveScalarGapsAndPublicAdmission(int length)
     {
         var head = string.Concat(Enumerable.Range(0, length).Select(index => (char)('a' + index % 23)));
-        var text = "é!" + head + "😀z";
-        var bytes = Encoding.UTF8.GetBytes(text);
+        var bytes = Encoding.UTF8.GetBytes("é!" + head + "😀z");
+        var regex = new Utf8Regex(head + ".{1,2}z");
         using var token = new CancellationTokenSource();
-        {
-            var regex = new Utf8Regex(head + ".{1,2}z");
-            var prepared = Prepared(regex);
-            Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-            var storage = new byte[bytes.Length + 2]; bytes.CopyTo(storage, 1);
-            var borrowed = storage.AsSpan(1, bytes.Length);
-            Assert.Equal(1, regex.Count(borrowed, token.Token));
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1),
-                Regex.InfiniteMatchTimeout, token.Token);
-            Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryFindNext(
-                borrowed, prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan,
-                0, ref invocation, out var match, out var found));
-            Assert.True(found);
-            Assert.Equal(3, match.Index);
-            Assert.Equal(length + 5, match.Length);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-            for (var cap = 1UL; cap < invocation.Budget.Steps; cap++)
-            {
-                var denied = new Utf8SliceInvocation(new(cap, 0, 1), Regex.InfiniteMatchTimeout, token.Token);
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, AsciiOrderedLiteralWindowExecutor.TryFindNext(
-                    borrowed, prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan,
-                    0, ref denied, out _, out var published));
-                Assert.False(published);
-                Assert.Equal(0UL, denied.Ledger.ReservedBytes);
-            }
-        }
+        byte[] storage = [0xff, .. bytes, 0xff];
+        var borrowed = storage.AsSpan(1, bytes.Length);
+        Assert.Equal(1, regex.Count(borrowed, token.Token));
+        var match = regex.Match(borrowed, token.Token);
+        Assert.True(match.Success);
+        Assert.Equal(3, match.StartOffsetInBytes);
+        Assert.Equal(3 + length + 5, match.EndOffsetInBytes);
+        var denied = new Utf8Regex(head + ".{1,2}z", resourcePolicy: new() { MaxWorkSteps = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
+        denied = new Utf8Regex(head + ".{1,2}z", resourcePolicy: new() { MaxWorkingBytes = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
     }
-
-    private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
-        (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 
     private static readonly string[] Patterns = [@"a\s+b", @"a\s{2,}b", @"a\s+?b", @"a.{0,4}b", @"river.{10,25}Tom",
         @"Holmes.{0,25}Watson|Watson.{0,25}Holmes", @"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b",
@@ -76,7 +60,6 @@ public sealed class Utf8OrderedWindowInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
         var oracle = new Regex(pattern, options);
         using var source = new CancellationTokenSource();
         var token = liveToken ? source.Token : default;
@@ -126,100 +109,15 @@ public sealed class Utf8OrderedWindowInvocationTests
                 const string alphabet = "aabbzzfoo bar\t\r\n";
                 var text = new string(Enumerable.Range(0, 72).Select(_ => alphabet[random.Next(alphabet.Length)]).ToArray());
                 var input = Encoding.UTF8.GetBytes(text);
-                var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-                var prepared = Prepared(regex);
-                var floor = 0;
+                var actual = regex.EnumerateMatches(input);
                 foreach (Match expected in oracle.Matches(text))
                 {
-                    Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryFindNext(input,
-                        prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, floor,
-                        ref invocation, out var actual, out var found));
-                    Assert.True(found, $"{pattern}: {text}");
-                    Assert.Equal((expected.Index, expected.Length), (actual.Index, actual.Length));
-                    floor = actual.Index + actual.Length;
+                    Assert.True(actual.MoveNext(), $"{pattern}: {text}");
+                    Assert.Equal((expected.Index, expected.Index + expected.Length),
+                        (actual.Current.StartOffsetInBytes, actual.Current.EndOffsetInBytes));
                 }
-                Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryFindNext(input,
-                    prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, floor,
-                    ref invocation, out _, out var terminal));
-                Assert.False(terminal, $"{pattern}: {text}");
+                Assert.False(actual.MoveNext());
             }
-        }
-    }
-
-    [Theory]
-    [InlineData(@"a\s+b")]
-    [InlineData(@"a.{0,4}b")]
-    [InlineData(@"(?:foo|bar).{0,8}z")]
-    [InlineData(@"Holmes.{0,25}Watson|Watson.{0,25}Holmes")]
-    public void EveryCountCutoffIncludesValidationAndNeverPublishesPartialTotalOrConsumesBorrowedLease(string pattern)
-    {
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        var input = Encoding.UTF8.GetBytes(new string('x', 4096) + " a  b a1b2b foo1z2z barz Holmes and Watson Watson and Holmes");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
-        Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryCount(input,
-            prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, ref baseline, out var total));
-        Assert.Equal(new Regex(pattern).Count(Encoding.UTF8.GetString(input)), total);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var validation = Utf8InputAnalyzer.TryDescribe(input, ref invocation, out _);
-            if (validation == Utf8ExecutionLimitKind.None)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, AsciiOrderedLiteralWindowExecutor.TryCount(input,
-                    prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, ref invocation, out var denied));
-                Assert.Equal(0, denied);
-            }
-            else Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, validation);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SeparatorBacktrackingDoesNotReplayOverlappingSearchWindows(bool lazy)
-    {
-        var pattern = lazy ? @"a\s+?.{0,8192}b" : @"a\s+.{0,8192}b";
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        var work = new List<ulong>();
-        foreach (var size in new[] { 4096, 8192 })
-        {
-            var input = Encoding.ASCII.GetBytes("a" + new string(' ', size));
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.Equal(Utf8ExecutionLimitKind.None, AsciiOrderedLiteralWindowExecutor.TryFindNext(input,
-                prepared.StructuralLinearProgram.OrderedLiteralWindowPlan, prepared.SearchPlan, 0, ref invocation, out _, out var found));
-            Assert.False(found);
-            work.Add(invocation.Budget.Steps);
-        }
-        Assert.True(work[1] <= 3 * work[0], $"Work grew from {work[0]} to {work[1]}.");
-    }
-
-    [Theory]
-    [InlineData(@"a.{0,4}b")]
-    [InlineData(@"(?:foo|bar).{0,8}z")]
-    public void CursorCutoffsRetainPreviousResultAndProgressAndBorrowedReservation(string pattern)
-    {
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        var input = "a1b2b\na3b\nfoo1z2z\nbarz"u8.ToArray();
-        var baselineInvocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var baseline = new Utf8OperationMatchCursor(input, prepared, baselineInvocation);
-        Assert.True(baseline.MoveNext());
-        var firstSteps = baseline.DebugInvocationSteps;
-        Assert.True(baseline.MoveNext());
-        for (var cap = firstSteps; cap < baseline.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var cursor = new Utf8OperationMatchCursor(input, prepared, invocation);
-            Assert.True(cursor.MoveNext());
-            var previous = cursor.CurrentValueMatch;
-            Exception? observed = null;
-            try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
-            Assert.IsType<InvalidOperationException>(observed);
-            Assert.Equal(previous, cursor.CurrentValueMatch);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
         }
     }
 
@@ -228,7 +126,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         foreach (var separator in new[] { false, true })
         foreach (var compiled in new[] { false, true })
         foreach (var operation in new[] { "ismatch", "count", "match", "enum" })
-        foreach (var phase in new[] { "validation", "confirmation" })
+        foreach (var phase in new[] { "search", "consumption" })
         foreach (var expire in new[] { false, true }) yield return [separator, compiled, operation, phase, expire];
     }
 
@@ -236,46 +134,30 @@ public sealed class Utf8OrderedWindowInvocationTests
     [MemberData(nameof(InterruptedCases))]
     public void PublicWindowPhasesCarryEntryInvocationAndMapCancellationOrExpiry(bool separator, bool compiled, string operation, string phase, bool expire)
     {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var pattern = separator ? @"a\s+b" : @"a.{0,200000}b";
+        var pattern = separator ? @"a\s+b" : @"a.{0,16384}b";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.NotNull(typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex));
-        var text = phase == "confirmation" ? "a" + new string(separator ? ' ' : 'x', 160000) + "b" : new string('x', 320000);
+        var text = phase == "consumption" ? "a" + new string(separator ? ' ' : 'x', 8192) + "b" : new string('x', 8192);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
+        long ticks = 0; var reads = 0; var trigger = int.MaxValue;
         using var source = new CancellationTokenSource();
-        var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || phase == "confirmation" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
-            if (phase == "validation") Assert.True(steps <= validationSteps);
-            entered = true;
-            if (expire) clock.Advance(250); else source.Cancel();
-        });
-        try
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        { if (++reads == trigger) { if (expire) ticks = 100; else source.Cancel(); } return ticks; });
+        var regex = new Utf8Regex(pattern, options, TimeSpan.FromMilliseconds(50));
+        void Run()
         {
-            void Run()
-            {
-                if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
-                else if (operation == "count") _ = regex.Count(input, source.Token);
-                else if (operation == "match") _ = regex.Match(input, source.Token);
-                else { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
-            }
-            if (expire)
-            {
-                var exception = Assert.Throws<RegexMatchTimeoutException>(Run);
-                Assert.Equal(pattern, exception.Pattern);
-                Assert.Equal(text, exception.Input);
-                Assert.Equal(regex.MatchTimeout, exception.MatchTimeout);
-            }
-            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
-            Assert.True(entered);
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
+            else if (operation == "count") _ = regex.Count(input, source.Token);
+            else if (operation == "match") _ = regex.Match(input, source.Token);
+            else { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
         }
-        finally { session.Complete(); }
+        reads = 0; Run(); Assert.True(reads >= 2); trigger = Math.Max(2, reads / 2); reads = 0;
+        if (expire)
+        {
+            var exception = Assert.Throws<RegexMatchTimeoutException>(Run);
+            Assert.Equal(pattern, exception.Pattern); Assert.Equal(text, exception.Input);
+            Assert.Equal(regex.MatchTimeout, exception.MatchTimeout);
+        }
+        else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
         Assert.True(regex.IsMatch("a b"u8));
     }
 
@@ -297,47 +179,17 @@ public sealed class Utf8OrderedWindowInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void CountCancellationAfterAcceptedWindowsCannotReturnPartialCount(bool compiled)
+    public void CountInterruptionCannotPublishPartialTotal(bool compiled)
     {
-        var regex = new Utf8Regex(@"a\s+b", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a b ", 4000)));
+        long ticks = 0; var reads = 0; var trigger = int.MaxValue;
         using var source = new CancellationTokenSource();
-        var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ => {
-            if (entered || Utf8SearchDiagnosticsSession.Current!.VerifierMatches < 8) return;
-            entered = true;
-            source.Cancel();
-        });
-        try
-        {
-            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
-            Assert.True(entered);
-        }
-        finally { session.Complete(); }
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        { if (++reads == trigger) source.Cancel(); return ticks; });
+        var regex = new Utf8Regex(@"a\s+b", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), TimeSpan.FromMilliseconds(50));
+        reads = 0; Assert.Equal(4000, regex.Count(input, source.Token));
+        Assert.True(reads > 4); trigger = reads / 2; reads = 0;
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
         Assert.Equal(4000, regex.Count(input));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void TerminalWindowCursorKeepsConstantWorkAndChecksTokenOrOriginalDeadline(bool expire)
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var prepared = Prepared(new Utf8Regex(@"a\s+b", RegexOptions.CultureInvariant));
-        using var source = new CancellationTokenSource();
-        var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200)) : Utf8ExecutionDeadline.Infinite;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), deadline, source.Token);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var cursor = new Utf8OperationMatchCursor(new byte[32000], prepared, invocation);
-        Assert.False(cursor.MoveNext());
-        var terminalSteps = cursor.DebugInvocationSteps;
-        for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
-        Assert.InRange(cursor.DebugInvocationSteps - terminalSteps, 3UL, 6UL);
-        if (expire) clock.Advance(250); else source.Cancel();
-        Exception? observed = null;
-        try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
-        Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
     }
 }

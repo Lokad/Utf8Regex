@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Diagnostics;
 
 internal enum Utf8ExecutionRoute : byte
 {
-    None = 0, CompiledFusedAsciiLiteralFamilyCount, CompiledFusedAsciiLiteralCount, CompiledFusedUtf8LiteralCount, CompiledFusedUtf8LiteralFamilyCount, RequiredPrefilterReject, FallbackDirectRegex, NativeStructuralLinearAutomaton, LiteralFamilyHybridEarliestAutomaton, LiteralFamilyPreparedNonOverlapping, LiteralFamilyPreparedWithRequirementsLengthOnly, LiteralFamilyPreparedWithRequirementsMatch, LiteralFamilyPackedNibbleSimdCount, NativeOrderedLiteralWindow, NativeStructuralFamilyEmit, NativeStructuralFamilySuffix, NativeStructuralFamilyLinear, FallbackDirectAnchoredAsciiLiteralPrefix, FallbackDirectAnchoredAsciiLiteralSuffix, FallbackDirectAnchoredDigitsTail
+    None = 0, CompiledFusedAsciiLiteralFamilyCount, CompiledFusedAsciiLiteralCount, CompiledFusedUtf8LiteralCount, CompiledFusedUtf8LiteralFamilyCount, RequiredPrefilterReject, FallbackDirectRegex, NativeStructuralLinearAutomaton, LiteralFamilyHybridEarliestAutomaton, LiteralFamilyPreparedNonOverlapping, LiteralFamilyPreparedWithRequirementsLengthOnly, LiteralFamilyPreparedWithRequirementsMatch, LiteralFamilyPackedNibbleSimdCount, NativeStructuralFamilyEmit, NativeStructuralFamilySuffix, NativeStructuralFamilyLinear, FallbackDirectAnchoredAsciiLiteralPrefix, FallbackDirectAnchoredAsciiLiteralSuffix, FallbackDirectAnchoredDigitsTail
 }
 
 internal static class Utf8ExecutionRouteText
@@ -22,7 +22,6 @@ internal static class Utf8ExecutionRouteText
         Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsLengthOnly => "literal_family_prepared_with_requirements_length_only",
         Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsMatch => "literal_family_prepared_with_requirements_match",
         Utf8ExecutionRoute.LiteralFamilyPackedNibbleSimdCount => "literal_family_packed_nibble_simd_count",
-        Utf8ExecutionRoute.NativeOrderedLiteralWindow => "native_ordered_literal_window",
         Utf8ExecutionRoute.NativeStructuralFamilyEmit => "native_structural_family_emit",
         Utf8ExecutionRoute.NativeStructuralFamilySuffix => "native_structural_family_suffix",
         Utf8ExecutionRoute.NativeStructuralFamilyLinear => "native_structural_family_linear",

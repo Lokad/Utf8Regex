@@ -255,21 +255,13 @@ repeated tail scans. Working admission observes enclosing loans with a zero-byte
 local request. Work/working/depth thresholds can consequently be lower than table
 execution; budget costs remain route/version dependent.
 
-`Count` can reuse the prepared literal-window counter on validated mixed UTF-8
-subjects for capture-free windows without separator classes and with dot gaps up
-to 2048 scalars. Gap endpoints count scalars while literal searches use byte
-coordinates. The original invocation observes cancellation/deadlines throughout;
-finite public numeric policies retain their owned counter. Working capacities
-and work charges can differ from general VM execution.
-
-Ordered-window branch admission covers one exact prefix comparison of at most
-2048 bytes; longer prefixes retain separately admitted comparison chunks.
-An already verified exact candidate can establish equality when the immutable
-literal family, branch ID and length agree. Boundaries and suffixes still require
-their own verification, including later same-start branches after a suffix fails.
-Branch order, boundary predicates, scalar gaps and publication checks keep the
-original interruption authority. Removing duplicate short-prefix admission can
-reduce numerical work requirements; basic metering remains active.
+Ordered literal-window whole-pattern execution is retired, including its Count,
+separator, lookahead and cursor shortcuts. Existing scalar programs determine
+greedy/lazy gap widths, branch priority, captures and byte ranges against the
+original subject. Shared literal and candidate-window searches remain filters;
+they do not establish a complete match. Execution cost and numerical work, depth
+and covered storage can increase. Admission before major allocation and original
+synchronous cancellation/deadlines remain required.
 
 ### Native pattern metadata
 

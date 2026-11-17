@@ -371,13 +371,9 @@ public sealed class Pcre2ExecutionRouteTests
     }
 
     [Fact]
-    public void OrderedWindowUsesPreparedCountAndBacktrackingForOtherOperations()
+    public void OrderedWindowPublicCountPreservesDisjointMatches()
     {
         var regex = new Utf8Pcre2Regex("Tom.{10,25}river|river.{10,25}Tom");
-
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2AsciiOrderedLiteralWindow, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
-        Assert.Equal(Pcre2CandidateSearchKind.BranchLeadingLiterals, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(2, regex.Count("Tom and Becky near the river xx river beside old Tom"u8));
     }
 

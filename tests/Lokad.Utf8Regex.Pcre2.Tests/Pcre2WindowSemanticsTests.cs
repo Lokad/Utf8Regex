@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
+public sealed class Pcre2WindowSemanticsTests
 {
     [Theory]
     [InlineData("é", 25, 1)]
@@ -14,7 +14,6 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
     public void CountKeepsScalarWindowWidthsWithoutUnusedCoordinates(string scalar, int width, int expected)
     {
         var regex = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
-        Assert.IsType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         const string prefix = "😀π ";
         var text = prefix + "Holmes" + string.Concat(Enumerable.Repeat(scalar, width)) + "Watson";
         var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
@@ -23,14 +22,10 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
     }
 
     [Fact]
-    public void SymmetricOrderedWindowReusesPreparedCountOnly()
+    public void WindowPublicOperationsPreserveRangesAndReplacement()
     {
         var regex = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
         var input = "Holmes and Watson\nWatson near Holmes\nHolmes\nWatson\nHolmesxxxxxxxxxxxxxxxxxxxxxxxxxWatson"u8;
-
-        Assert.Equal(
-            "IsMatch=Pcre2Backtracking, Count=Pcre2AsciiOrderedLiteralWindow, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
-            regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
         Assert.Equal("Holmes and Watson", regex.Match(input).GetValueString());
@@ -51,22 +46,18 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
     }
 
     [Fact]
-    public void IndependentOrderedWindowShapeUsesTheSameProof()
+    public void DifferentLiteralWindowsPreserveCounts()
     {
         var regex = new Utf8Pcre2Regex("Tom.{10,25}river|river.{10,25}Tom");
         var input = "Tom 1234567890 river\nriver 1234567890 Tom"u8;
-
-        Assert.IsType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
-            regex.DebugCompiledProgram.Operations.Count);
         Assert.Equal(2, regex.Count(input));
     }
 
     [Fact]
-    public void OrderedWindowMatchesEquivalentVmAcrossAsciiOffsets()
+    public void CapturingAndUncapturedWindowsAgreeAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
         var vm = new Utf8Pcre2Regex("(Holmes).{0,25}Watson|(Watson).{0,25}Holmes");
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
 
         foreach (var inputText in new[]
                  {
@@ -86,11 +77,9 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
     }
 
     [Fact]
-    public void OrderedWindowFallsBackForSupplementaryAndMeteredSubjects()
+    public void WindowsPreserveSupplementaryScalarsAndFiniteLimits()
     {
         var unicode = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
-        Assert.IsType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
-            unicode.DebugCompiledProgram.Operations.Count);
         Assert.Equal(1, unicode.Count("HolmeséWatson"u8));
         var unicodeInput = Encoding.UTF8.GetBytes($"Holmes{string.Concat(Enumerable.Repeat("😀", 25))}Watson");
         Assert.Equal(1, unicode.Count(unicodeInput));
@@ -104,43 +93,25 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Regex.InfiniteMatchTimeout);
-        Assert.IsType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
-            metered.DebugCompiledProgram.Operations.Count);
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => metered.Count("Holmes and Watson"u8)).ErrorKind);
     }
 
     [Fact]
-    public void OrderedWindowAnalyzerRejectsDifferentSemantics()
+    public void WindowPriorityAndNewlineOptionsKeepProfileSemantics()
     {
-        var explicitCr = new Utf8Pcre2Regex(
-            "Holmes.{0,25}Watson|Watson.{0,25}Holmes",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-            default(Utf8Pcre2ExecutionLimits),
-            Regex.InfiniteMatchTimeout);
-
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(explicitCr.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex("Holmes.{0,25}?Watson|Watson.{0,25}?Holmes")
-                .DebugCompiledProgram.Operations.Count);
-        // R03 dot slice: unbounded dot-star Count runs the shared
-        // slice runner with identical results; the window analyzer
-        // still rejects this shape for its own program.
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("Holmes.*Watson|Watson.*Holmes")
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsNotType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
-            new Utf8Pcre2Regex("Holmes.*Watson|Watson.*Holmes")
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2SliceDirectProgram>(
-            new Utf8Pcre2Regex("Hólmes.{0,25}Watson|Watson.{0,25}Hólmes")
-                .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            new Utf8Pcre2Regex(
-                "Holmes.{0,25}Watson|Watson.{0,25}Holmes",
-                Pcre2CompileOptions.Caseless)
-                .DebugCompiledProgram.Operations.Count);
+        const string greedy = "Holmes.{0,25}Watson|Watson.{0,25}Holmes";
+        const string lazy = "Holmes.{0,25}?Watson|Watson.{0,25}?Holmes";
+        var cr = new Utf8Pcre2Regex(greedy, Pcre2CompileOptions.None,
+            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr });
+        Assert.Equal(1, cr.Count("Holmes\nWatson"u8));
+        Assert.Equal(0, cr.Count("Holmes\rWatson"u8));
+        var text = "Holmes a Watson b Watson"u8.ToArray();
+        Assert.Equal("Holmes a Watson b Watson", new Utf8Pcre2Regex(greedy).Match(text).GetValueString());
+        Assert.Equal("Holmes a Watson", new Utf8Pcre2Regex(lazy).Match(text).GetValueString());
+        Assert.Equal("Watson a Holmes", new Utf8Pcre2Regex(lazy).Match("Watson a Holmes b Holmes"u8).GetValueString());
+        var folded = new Utf8Pcre2Regex(greedy, Pcre2CompileOptions.Caseless);
+        Assert.Equal("HolmeséWATSON", folded.Match("HolmeséWATSON"u8).GetValueString());
     }
 }

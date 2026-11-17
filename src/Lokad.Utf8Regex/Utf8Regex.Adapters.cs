@@ -274,16 +274,6 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !UsesRightToLeft() &&
-            Utf8InputAnalyzer.IsAscii(input.Bytes))
-        {
-            return new Utf8ValueMatchEnumerator(
-                Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, input.Bytes, new Utf8ValidationResult(input.Bytes.Length, true), budget, start.Value))
-                .WithTimeoutMapping(input.Bytes, this);
-        }
-
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {

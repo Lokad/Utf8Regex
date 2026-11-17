@@ -420,33 +420,6 @@ internal ref partial struct Utf8OperationMatchCursor
             return true;
         }
 
-        // Windows resume on the full subject so boundary guards retain their
-        // left context. Every admitted window consumes a nonempty ASCII literal;
-        // the factories reject non-ASCII subjects because gap counts are bytes.
-        if (_mode == EnumeratorMode.AsciiOrderedLiteralWindow)
-        {
-            ref readonly var windowProgram = ref _plans.StructuralLinearProgram;
-            // Search plans include all operation plans (currently several KiB).
-            // A cursor borrows the immutable plan rather than copying it per hit.
-            ref readonly var windowSearchPlan = ref _plans.SearchPlan;
-            var breach = _sliceInvocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
-            if (_nativeStructuralExhausted) { _sliceInvocation.Budget.ThrowIfCancellationRequested(); return false; }
-            breach = AsciiOrderedLiteralWindowExecutor.TryFindNext(_input, windowProgram.OrderedLiteralWindowPlan,
-                in windowSearchPlan, _consumed, ref _sliceInvocation, out var match, out var found);
-            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
-            if (!found)
-            {
-                _nativeStructuralExhausted = true;
-                return false;
-            }
-
-            var projected = Utf8SliceBufferWork.CreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation);
-            _current = projected;
-            _consumed = match.Index + match.Length;
-            return true;
-        }
-
         if (_mode == EnumeratorMode.AsciiStructuralIdentifierFamily)
         {
             var breach = TryMoveNextStructuralFamily(out var found);
@@ -533,11 +506,6 @@ internal ref partial struct Utf8OperationMatchCursor
         {
             _program = default;
             _mode = EnumeratorMode.AsciiStructuralIdentifierFamily;
-        }
-        else if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow)
-        {
-            _program = default;
-            _mode = EnumeratorMode.AsciiOrderedLiteralWindow;
         }
     }
 
@@ -806,7 +774,6 @@ internal ref partial struct Utf8OperationMatchCursor
         RtlExactAsciiLiteral = 22,
         RtlAsciiLiteralIgnoreCase = 23,
         RtlExactUtf8Literal = 24,
-        AsciiOrderedLiteralWindow = 26,
         AsciiStructuralIdentifierFamily = 27,
     }
 }

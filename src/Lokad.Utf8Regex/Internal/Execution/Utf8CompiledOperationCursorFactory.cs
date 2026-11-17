@@ -40,8 +40,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8OperationMatchCursor(
                     input, regexPlan, regexPlan.ExecutionKind, budget),
-            NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
-                => new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when CanUseStructuralFamilyCursor(regexPlan, validation)
                 => new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
             _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget),
@@ -76,11 +74,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     input,
                     new Utf8OperationMatchCursor(
                         input, regexPlan, regexPlan.ExecutionKind, budget),
-                    count),
-            NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
-                => new Utf8ValueSplitEnumerator(
-                    input,
-                    new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
                     count),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when regexPlan.Features.CaptureCount <= 1 &&
                 CanUseStructuralFamilyCursor(regexPlan, validation)

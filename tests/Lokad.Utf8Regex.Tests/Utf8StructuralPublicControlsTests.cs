@@ -44,7 +44,6 @@ public sealed class Utf8StructuralPublicControlsTests
 
     [Theory]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+")]
-    [InlineData(@"\bpublic\s+async\b")]
     public void SelectingPreparedEngineDoesNotAcquireDiscardedKernelBuffers(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

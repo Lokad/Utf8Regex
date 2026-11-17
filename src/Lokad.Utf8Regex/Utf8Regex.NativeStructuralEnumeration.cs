@@ -10,19 +10,18 @@ public sealed partial class Utf8Regex
     private bool TryCreateNativeStructuralEnumerator(ReadOnlySpan<byte> input, CancellationToken token, out Utf8ValueMatchEnumerator enumerator)
     {
         enumerator = default;
-        var family = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily;
-        if (!family && _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow) return false;
+        if (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily) return false;
         try
         {
             // The unlimited family cursor replaces BCL global discovery as well.
             // Values retain their existing cheap unmetered kernels.
-            if (!TryStartNativeStructuralInvocation(token, family, out var invocation)) return false;
+            if (!TryStartNativeStructuralInvocation(token, true, out var invocation)) return false;
             var isAscii = Utf8InputAnalyzer.IsAscii(input, ref invocation);
             // Mixed subjects require scalar gap widths and Unicode separator
             // semantics. Preserve the same invocation through the scalar VM.
-            var native = isAscii && (!family ||
+            var native = isAscii &&
                 !_preparedRegex.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
-                !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap);
+                !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap;
             invocation.ShareStorageForCursor();
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)

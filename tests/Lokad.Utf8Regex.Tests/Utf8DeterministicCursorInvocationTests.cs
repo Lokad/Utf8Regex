@@ -49,8 +49,9 @@ public sealed class Utf8DeterministicCursorInvocationTests
             var previous = cursor.Current;
             Assert.False(cursor.MoveNext());
             Assert.False(cursor.MoveNext());
-            // Native deterministic terminal replay retains its last published range.
-            if (Utf8Validation.Validate(input).IsAscii || Prepared(regex).StructuralLinearProgram.AllowsUtf8ByteSafe)
+            // The remaining native identifier cursor retains its last range.
+            if (regex.Inspection.ExecutionKind == Lokad.Utf8Regex.Internal.Planning.NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                Utf8Validation.Validate(input).IsAscii)
                 Assert.Equal(previous, cursor.Current);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

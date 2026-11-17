@@ -61,22 +61,7 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
     }
 
     [Fact]
-    public void UnicodeCountReusesBoundedWindowsButKeepsSeparatorAndLargeGapControlsGeneral()
-    {
-        var regex = new Utf8Regex("Tom.{10,25}river|river.{10,25}Tom", RegexOptions.Compiled);
-        var result = regex.CollectCountDiagnostics("é Tom0123456789river\nriver0123456789Tom"u8);
-        Assert.Equal(2, result.Result);
-        Assert.Equal("native_ordered_literal_window", result.ExecutionRoute);
-        Assert.Equal(2, regex.Count("é Tom0123456789river\nriver0123456789Tom"u8));
-        foreach (var pattern in new[] { @"a\s+b", "a.{2049,2050}b" })
-        {
-            var control = new Utf8Regex(pattern, RegexOptions.Compiled);
-            Assert.NotEqual("native_ordered_literal_window", control.CollectCountDiagnostics("é a b"u8).ExecutionRoute);
-        }
-    }
-
-    [Fact]
-    public void ScalarWindowCountValidatesTheEntireSubjectAndObservesOriginalCancellation()
+    public void ScalarWindowCountPreservesOriginalCancellationAndWorkLimit()
     {
         var regex = new Utf8Regex("a.{0,2}b", RegexOptions.Compiled);
         using var token = new CancellationTokenSource(); token.Cancel();
