@@ -110,9 +110,9 @@ public sealed class Utf8LiteralAssertionTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => { entered = true; if (expire) ticks = 50; else token.Cancel(); });
         try
         {
-            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, token.Token));
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: token.Token));
             else Assert.Equal(token.Token,
-                Assert.Throws<OperationCanceledException>(() => regex.Match(input, token.Token)).CancellationToken);
+                Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }

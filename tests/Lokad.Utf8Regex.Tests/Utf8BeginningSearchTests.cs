@@ -110,7 +110,7 @@ public sealed class Utf8BeginningSearchTests
         {
             void Run()
             {
-                if (findFirst) _ = regex.Match(input, source.Token);
+                if (findFirst) _ = regex.Match(input, cancellationToken: source.Token);
                 else _ = regex.Count(input, source.Token);
             }
             if (expire) Assert.Throws<RegexMatchTimeoutException>(Run);

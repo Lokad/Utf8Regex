@@ -7,6 +7,24 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CaptureSlotMatchTests
 {
+    [Theory]
+    [InlineData(RegexOptions.None, 3, 6)]
+    [InlineData(RegexOptions.RightToLeft, 12, 15)]
+    public void OmittedStartUsesDirectionAndSelectedEnd(RegexOptions options, int start, int end)
+    {
+        var regex = new Utf8Regex("(?<word>[a-z]+)", options | RegexOptions.CultureInvariant);
+        var input = "é one 😀 two"u8.ToArray();
+        var slots = new Utf8CaptureRange[2];
+        var match = regex.Match(input, captures: slots);
+        Assert.Equal((start, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(match, slots[0]);
+        Assert.Equal(match, slots[1]);
+        Assert.Equal(match, regex.Match(input));
+        var bounded = regex.Match(input, captures: slots, endOffsetInBytes: 11);
+        Assert.Equal((3, 6), (bounded.StartOffsetInBytes, bounded.EndOffsetInBytes));
+        Assert.Equal(bounded, slots[1]);
+    }
+
     public static IEnumerable<object[]> Cases()
     {
         string[] regular = ["", "ab", "é", "ab|a|bc|b", "ab|a|bc|b|é|d|ef|f", "(a)+(b)?", @"(?<10>a)(?<2>b)?(?<word>c)*",

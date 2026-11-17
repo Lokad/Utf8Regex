@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Unify Core Match with optional caller-owned capture slots and direction-aware
+  byte starts. Preserve whole-match fast paths; recompile old callers and name
+  positional cancellation tokens.
+
 - Consolidate PCRE2 operation overloads onto optional token-bearing signatures;
   retain unmetered literal shortcuts and controlled paths. Recompile old callers
   and name TryReplace's former options-only argument `substitutionOptions:`.

@@ -178,7 +178,7 @@ public sealed class Utf8StructuralInvocationTests
             Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
             var expected = oracle.Match(text);
-            var actual = regex.Match(input, source.Token);
+            var actual = regex.Match(input, cancellationToken: source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (!expected.Success) continue;
             Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
@@ -220,7 +220,7 @@ public sealed class Utf8StructuralInvocationTests
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
             Assert.Equal(oracle.Count(text), regex.Count(input, token));
             var expectedMatch = oracle.Match(text);
-            var actualMatch = regex.Match(input, token);
+            var actualMatch = regex.Match(input, cancellationToken: token);
             Assert.True(actualMatch.Success);
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
@@ -252,7 +252,7 @@ public sealed class Utf8StructuralInvocationTests
         var token = liveToken ? source.Token : default;
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
         Assert.Equal(oracle.Count(text), regex.Count(input, token));
-        var match = regex.Match(input, token);
+        var match = regex.Match(input, cancellationToken: token);
         Assert.True(match.Success);
         Assert.Equal(oracle.Match(text).Value, Encoding.UTF8.GetString(input.AsSpan(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))));
         var expected = oracle.EnumerateMatches(text);
@@ -292,7 +292,7 @@ public sealed class Utf8StructuralInvocationTests
             {
                 if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
                 else if (operation == "count") _ = regex.Count(input, source.Token);
-                else _ = regex.Match(input, source.Token);
+                else _ = regex.Match(input, cancellationToken: source.Token);
             }
             if (expire)
             {

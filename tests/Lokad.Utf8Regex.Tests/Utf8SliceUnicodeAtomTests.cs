@@ -93,7 +93,7 @@ public sealed class Utf8SliceUnicodeAtomTests
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(oracle.IsMatch(subject.Projected), regex.IsMatch(input, source.Token));
             Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
-            AssertMatch(subject, oracle.Match(subject.Projected), regex.Match(input, source.Token));
+            AssertMatch(subject, oracle.Match(subject.Projected), regex.Match(input, cancellationToken: source.Token));
             AssertDetailed(subject, oracle.Match(subject.Projected), Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)));
             AssertSequence(subject, oracle.EnumerateMatches(subject.Projected), regex.EnumerateMatches(input, source.Token));
             foreach (var count in new[] { 0, 2 })

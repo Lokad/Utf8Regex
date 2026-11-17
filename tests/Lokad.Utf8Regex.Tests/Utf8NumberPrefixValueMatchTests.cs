@@ -47,7 +47,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), token.Token));
+                    Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
                     Assert.Equal(expected, regex.Match(input));
                 }
                 finally { session.Complete(); }
@@ -67,13 +67,13 @@ public sealed class Utf8NumberPrefixValueMatchTests
                 var input = Encoding.UTF8.GetBytes(text);
                 var start = mode == RegexOptions.RightToLeft ? input.Length : 0;
                 Assert.Equal(Scalar(regex, input, start), regex.Match(input));
-                Assert.Equal(Scalar(regex, input, start), regex.Match(input, token.Token));
+                Assert.Equal(Scalar(regex, input, start), regex.Match(input, cancellationToken: token.Token));
             }
         }
         foreach (var options in new[] { RegexOptions.None, RegexOptions.NonBacktracking })
         {
             var regex = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), options, Timeout.InfiniteTimeSpan, Funded);
-            Assert.Equal(Scalar(regex, "-12.34e-5!"u8.ToArray()), regex.Match("-12.34e-5!"u8, token.Token));
+            Assert.Equal(Scalar(regex, "-12.34e-5!"u8.ToArray()), regex.Match("-12.34e-5!"u8, cancellationToken: token.Token));
         }
         var offsetRegex = new Utf8Regex(Pattern);
         var offsetInput = "😀x-12.34e-5!"u8.ToArray();
@@ -109,7 +109,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
         Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]
@@ -140,9 +140,9 @@ public sealed class Utf8NumberPrefixValueMatchTests
             return ticks;
         });
         var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
-        Assert.True(regex.Match("12.3e-4!"u8, token.Token).Success);
+        Assert.True(regex.Match("12.3e-4!"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("12.3e-4!"u8, token.Token)).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("12.3e-4!"u8, token.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("12.3e-4!"u8, cancellationToken: token.Token)).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("12.3e-4!"u8, cancellationToken: token.Token)).CancellationToken);
     }
 }

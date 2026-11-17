@@ -84,7 +84,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
             byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
             using var source = new CancellationTokenSource();
             source.Cancel();
-            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token));
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: source.Token));
             Assert.Equal(source.Token, error.CancellationToken);
         }
     }
@@ -106,7 +106,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
             byte[] malformed = [.. bytes, 0xff];
             using var source = new CancellationTokenSource();
             source.Cancel();
-            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, source.Token));
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: source.Token));
             Assert.Equal(source.Token, error.CancellationToken);
         }
     }
@@ -129,7 +129,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
             var regex = Create(pattern, mode, finite ? 1000000UL : null);
             foreach (var token in new[] { CancellationToken.None, source.Token })
             {
-                AssertRange(regex.Match(storage.AsSpan(7, bytes.Length), token), text, index, length);
+                AssertRange(regex.Match(storage.AsSpan(7, bytes.Length), cancellationToken: token), text, index, length);
             }
         }
     }
@@ -158,7 +158,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         using var source = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         foreach (var finite in new[] { false, true })
-            AssertRange(Create("(a+)", mode, finite ? 1000000UL : null).Match(bytes, source.Token), text, index, length);
+            AssertRange(Create("(a+)", mode, finite ? 1000000UL : null).Match(bytes, cancellationToken: source.Token), text, index, length);
     }
 
     [Theory]
@@ -199,7 +199,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
             var regex = Create("(a+)(b*)", mode, finite ? 1000000UL : null);
             using var source = new CancellationTokenSource();
             source.Cancel();
-            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, source.Token)).CancellationToken);
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: source.Token)).CancellationToken);
         }
     }
 

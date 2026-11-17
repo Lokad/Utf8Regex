@@ -26,7 +26,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    var value = regex.Match(storage.AsSpan(1, input.Length), token.Token);
+                    var value = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
                     Assert.Equal(expected.Success, value.Success);
                     if (value.Success)
                         Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
@@ -57,7 +57,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         {
             var expected = new Regex(Pattern, mode | RegexOptions.CultureInvariant).Match(text);
             var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, Policy);
-            var input = Encoding.UTF8.GetBytes(text); var actual = regex.Match(input, token.Token);
+            var input = Encoding.UTF8.GetBytes(text); var actual = regex.Match(input, cancellationToken: token.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (actual.Success)
                     Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
@@ -77,7 +77,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("op")).Span));
         Assert.Equal(1, captured.Count(bytes));
         var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), RegexOptions.NonBacktracking, Timeout.InfiniteTimeSpan, Policy);
-        Assert.Equal(3, (nonBacktracking.Match(bytes, token.Token).EndOffsetInBytes - nonBacktracking.Match(bytes, token.Token).StartOffsetInBytes));
+        Assert.Equal(3, (nonBacktracking.Match(bytes, cancellationToken: token.Token).EndOffsetInBytes - nonBacktracking.Match(bytes, cancellationToken: token.Token).StartOffsetInBytes));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         {
             byte[] malformed = [.. Encoding.UTF8.GetBytes(head), 0xff];
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, canceled.Token)).CancellationToken);
+            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: canceled.Token)).CancellationToken);
         }
     }
 
@@ -127,9 +127,9 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); } return ticks; });
         var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
-        Assert.True(regex.Match("+=!rest"u8, token.Token).Success);
+        Assert.True(regex.Match("+=!rest"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("+=!rest"u8, token.Token)).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("+=!rest"u8, token.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("+=!rest"u8, cancellationToken: token.Token)).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("+=!rest"u8, cancellationToken: token.Token)).CancellationToken);
     }
 }

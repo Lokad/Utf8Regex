@@ -18,7 +18,7 @@ RegexOptions options)
         Assert.True(Observe(() => regex.IsMatch(input, lifetime.Token)));
         Assert.Equal(2, Observe(() => regex.Count(input)));
         Assert.Equal(2, Observe(() => regex.Count(input, lifetime.Token)));
-        Assert.Equal((7, 12), Observe(() => Range(regex.Match(input, lifetime.Token))));
+        Assert.Equal((7, 12), Observe(() => Range(regex.Match(input, cancellationToken: lifetime.Token))));
         Assert.Equal([(7, 12), (22, 10)], Observe(Enumerate));
 
         T Observe<T>(Func<T> operation)

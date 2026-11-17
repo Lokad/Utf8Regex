@@ -5,11 +5,27 @@ namespace Lokad.Utf8Regex;
 
 public sealed partial class Utf8Regex
 {
-    /// <summary>Finds a match from a scalar-aligned byte start and writes its last captures into caller-owned slots.</summary>
-    /// <remarks>Slots follow GetGroupNumbers order, including zero. Short buffers do not change matching; excess entries remain untouched. Written slots clear on no match or failure after entry; pre-cancellation leaves output unchanged. The optional end bound is the matching end, retaining prefix/lookbehind context and original byte coordinates. Capture history remains available through CreateMatchCursor. Caller-owned output requires no result-storage allocation.</remarks>
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        Span<Utf8CaptureRange> captures, CancellationToken cancellationToken = default,
+    /// <summary>Finds a scalar match and optionally writes its last capture ranges into caller-owned slots.</summary>
+    /// <remarks>A null start selects zero forward or the selected end in right-to-left mode. Slots follow GetGroupNumbers order including zero. Short buffers do not change matching; excess entries remain untouched. Pre-cancellation leaves output unchanged; failure after capture entry clears written slots. The optional end retains prefix/lookbehind context. Capture history remains available through CreateMatchCursor. Keep borrowed bytes valid and unchanged.</remarks>
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int? startOffsetInBytes = null,
+        Span<Utf8CaptureRange> captures = default, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null, int? endOffsetInBytes = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (startOffsetInBytes is null && captures.IsEmpty &&
+            workingMemoryAllowance is null && endOffsetInBytes is null)
+        {
+            try { return MatchCore(input, cancellationToken); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
+        var start = startOffsetInBytes ?? (UsesRightToLeft() ? endOffsetInBytes ?? input.Length : 0);
+        return MatchCaptureSlotsCore(input, start, captures, cancellationToken,
+            workingMemoryAllowance, endOffsetInBytes);
+    }
+
+    private Utf8CaptureRange MatchCaptureSlotsCore(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        Span<Utf8CaptureRange> captures, CancellationToken cancellationToken,
+        IUtf8MemoryAllowance? workingMemoryAllowance, int? endOffsetInBytes)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var output = captures[..Math.Min(captures.Length, _program.CaptureCatalog.GroupNumbers.Length)];

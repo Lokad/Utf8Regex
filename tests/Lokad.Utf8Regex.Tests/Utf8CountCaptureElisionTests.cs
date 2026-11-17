@@ -50,7 +50,7 @@ public sealed class Utf8CountCaptureElisionTests
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
             Assert.True(regex.IsMatch(input, cancellation.Token));
-            Assert.True(regex.Match(input, cancellation.Token).Success);
+            Assert.True(regex.Match(input, cancellationToken: cancellation.Token).Success);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
             Assert.Equal(expected, regex.Count(input));

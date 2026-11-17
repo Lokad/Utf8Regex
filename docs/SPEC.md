@@ -6,6 +6,15 @@ for upgrade guidance. This contract describes supported behavior; the
 [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) and executable
 fixtures establish the implemented surface.
 
+Core Match has one public entry: optional byte start, caller-owned capture slots,
+cancellation token, working allowance and end bound. Null start selects zero
+forward or the selected end for RTL. Omitting capture storage preserves the
+default whole-match paths; explicit storage uses the established capture contract.
+Old binaries must recompile, and old positional token calls become named
+`cancellationToken:` calls. Subject-only and explicit capture calls keep their
+usual form; scalar boundaries, original interruption, admission and cursor history
+are unchanged.
+
 ## Matching and coordinates
 
 Core matches complete Unicode scalars over strict UTF-8. Dot consumes one scalar

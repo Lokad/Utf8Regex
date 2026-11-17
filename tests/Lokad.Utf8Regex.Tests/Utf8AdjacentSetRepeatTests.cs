@@ -104,7 +104,7 @@ public sealed class Utf8AdjacentSetRepeatTests
         try
         {
             if (expire) Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => owner.Match(input)).Pattern);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input, token.Token)).CancellationToken);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input, cancellationToken: token.Token)).CancellationToken);
         }
         finally { session.Complete(); }
         Assert.True(interrupted);

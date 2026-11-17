@@ -157,7 +157,7 @@ public sealed class Utf8ScalarSubjectTests
         {
             Assert.Equal(expected.Length != 0, regex.IsMatch(input, token));
             Assert.Equal(expected.Length, regex.Count(input, token));
-            var match = regex.Match(input, token);
+            var match = regex.Match(input, cancellationToken: token);
             Assert.Equal(expected.Length != 0, match.Success);
             if (match.Success)
             {
@@ -315,7 +315,7 @@ public sealed class Utf8ScalarSubjectTests
         {
             case "bool": _ = regex.IsMatch(input, token); break;
             case "count": _ = regex.Count(input, token); break;
-            case "value": _ = regex.Match(input, token); break;
+            case "value": _ = regex.Match(input, cancellationToken: token); break;
             case "detailed": _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)); break;
             case "enumerate": _ = regex.EnumerateMatches(input, token).MoveNext(); break;
             case "split": _ = regex.EnumerateSplits(input, token).MoveNext(); break;

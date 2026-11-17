@@ -41,7 +41,7 @@ public sealed class Utf8HexColorValueMatchTests
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
+                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
@@ -119,9 +119,9 @@ public sealed class Utf8HexColorValueMatchTests
         });
         var regex = new Utf8Regex(Color, Fold, timeout, Funded);
         if (expire) Assert.Equal(regex.MatchTimeout,
-            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, token.Token)).MatchTimeout);
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: token.Token)).MatchTimeout);
         else Assert.Equal(token.Token,
-            Assert.Throws<OperationCanceledException>(() => regex.Match(input, token.Token)).CancellationToken);
+            Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
         Assert.True(entered);
     }
 
@@ -138,6 +138,6 @@ public sealed class Utf8HexColorValueMatchTests
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token,
-            Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);
+            Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
     }
 }

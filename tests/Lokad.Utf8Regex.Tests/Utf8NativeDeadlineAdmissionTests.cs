@@ -25,7 +25,7 @@ public sealed class Utf8NativeDeadlineAdmissionTests
             {
                 0 => explicitToken ? regex.IsMatch(input, CancellationToken.None) : regex.IsMatch(input),
                 1 => (explicitToken ? regex.Count(input, CancellationToken.None) : regex.Count(input)) != 0,
-                _ => (explicitToken ? regex.Match(input, CancellationToken.None) : regex.Match(input)).Success,
+                _ => (explicitToken ? regex.Match(input, cancellationToken: CancellationToken.None) : regex.Match(input)).Success,
             });
             Assert.Equal(pattern, error.Pattern);
             Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);

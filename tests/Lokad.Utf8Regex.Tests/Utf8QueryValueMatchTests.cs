@@ -40,7 +40,7 @@ public sealed class Utf8QueryValueMatchTests
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), token.Token);
+                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
                         (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
@@ -100,8 +100,8 @@ public sealed class Utf8QueryValueMatchTests
         });
         try
         {
-            if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, token.Token)).MatchTimeout);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, token.Token)).CancellationToken);
+            if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: token.Token)).MatchTimeout);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
@@ -119,6 +119,6 @@ public sealed class Utf8QueryValueMatchTests
         Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("topicId")).Span)); Assert.Equal("tab", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("tab")).Span));
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
     }
 }

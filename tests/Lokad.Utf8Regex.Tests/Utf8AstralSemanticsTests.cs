@@ -98,7 +98,7 @@ public sealed class Utf8AstralSemanticsTests
         {
             Assert.Equal(expected.Length != 0, regex.IsMatch(input, token));
             Assert.Equal(expected.Length, regex.Count(input, token));
-            var match = regex.Match(input, token);
+            var match = regex.Match(input, cancellationToken: token);
             Assert.Equal(expected.Length != 0, match.Success);
             if (match.Success) AssertRange(input, expected[0], match);
             else

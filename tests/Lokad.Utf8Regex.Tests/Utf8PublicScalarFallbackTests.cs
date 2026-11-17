@@ -38,7 +38,7 @@ public sealed class Utf8PublicScalarFallbackTests
         {
             Assert.True(regex.IsMatch(input, token));
             Assert.Equal(count, regex.Count(input, token));
-            var match = regex.Match(input, token);
+            var match = regex.Match(input, cancellationToken: token);
             Assert.True(match.Success);
             Assert.True(match.Success);
             Assert.Equal(start, match.StartOffsetInBytes);

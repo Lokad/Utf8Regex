@@ -28,7 +28,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
                 var session = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), live.Token);
+                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: live.Token);
                     var expected = oracle.Match(text);
                     Assert.Equal(expected.Success, actual.Success);
                     if (actual.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
@@ -70,7 +70,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         {
             byte[] invalid = [.. Encoding.UTF8.GetBytes(text), 0xff];
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, canceled.Token)).CancellationToken);
+            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, cancellationToken: canceled.Token)).CancellationToken);
         }
     }
 
@@ -100,9 +100,9 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else live.Cancel(); } return ticks; });
         var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
-        Assert.True(regex.Match("\"abc\"tail"u8, live.Token).Success);
+        Assert.True(regex.Match("\"abc\"tail"u8, cancellationToken: live.Token).Success);
         trigger = reads; reads = 0;
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("\"abc\"tail"u8, live.Token)).MatchTimeout);
-        else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("\"abc\"tail"u8, live.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("\"abc\"tail"u8, cancellationToken: live.Token)).MatchTimeout);
+        else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("\"abc\"tail"u8, cancellationToken: live.Token)).CancellationToken);
     }
 }

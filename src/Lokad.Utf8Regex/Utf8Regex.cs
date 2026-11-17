@@ -784,36 +784,6 @@ public sealed partial class Utf8Regex
             !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind
                 ? 0 : program.GroupCount;
 
-    /// <summary>Finds the first match and returns its scalar-aligned byte range.</summary>
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input)
-    {
-        try
-        {
-            return MatchCore(input, CancellationToken.None);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
-    /// <summary>Finds the first scalar-aligned byte range, observing cancellation during validation, matching and publication.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
-        {
-            return MatchCore(input, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);

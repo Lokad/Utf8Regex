@@ -22,7 +22,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         byte[] storage = [0xff, .. bytes, 0xff];
         var borrowed = storage.AsSpan(1, bytes.Length);
         Assert.Equal(1, regex.Count(borrowed, token.Token));
-        var match = regex.Match(borrowed, token.Token);
+        var match = regex.Match(borrowed, cancellationToken: token.Token);
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);
         Assert.Equal(3 + length + 5, match.EndOffsetInBytes);
@@ -69,7 +69,7 @@ public sealed class Utf8OrderedWindowInvocationTests
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
             Assert.Equal(oracle.Count(text), regex.Count(input, token));
             var expectedMatch = oracle.Match(text);
-            var actualMatch = regex.Match(input, token);
+            var actualMatch = regex.Match(input, cancellationToken: token);
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
             if (actualMatch.Success)
             {
@@ -147,7 +147,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         {
             if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
             else if (operation == "count") _ = regex.Count(input, source.Token);
-            else if (operation == "match") _ = regex.Match(input, source.Token);
+            else if (operation == "match") _ = regex.Match(input, cancellationToken: source.Token);
             else { var cursor = regex.EnumerateMatches(input, source.Token); _ = cursor.MoveNext(); }
         }
         reads = 0; Run(); Assert.True(reads >= 2); trigger = Math.Max(2, reads / 2); reads = 0;

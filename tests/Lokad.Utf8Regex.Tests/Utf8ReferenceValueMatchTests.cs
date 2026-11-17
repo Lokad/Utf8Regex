@@ -32,7 +32,7 @@ public sealed class Utf8ReferenceValueMatchTests
                 var expected = oracle.Match(text); var diagnostics = Utf8SearchDiagnosticsSession.Start();
                 try
                 {
-                    var actual = regex.Match(storage.AsSpan(1, bytes.Length), token.Token);
+                    var actual = regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: token.Token);
                     Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                 }
                 finally { diagnostics.Complete(); }
@@ -107,9 +107,9 @@ public sealed class Utf8ReferenceValueMatchTests
             return ticks;
         });
         var regex = new Utf8Regex(Range, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(50), Funded);
-        Assert.True(regex.Match("a123:b456"u8, token.Token).Success);
+        Assert.True(regex.Match("a123:b456"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("a123:b456"u8, token.Token)).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("a123:b456"u8, token.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("a123:b456"u8, cancellationToken: token.Token)).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("a123:b456"u8, cancellationToken: token.Token)).CancellationToken);
     }
 }

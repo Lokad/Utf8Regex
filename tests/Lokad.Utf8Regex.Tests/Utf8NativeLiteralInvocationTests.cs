@@ -331,7 +331,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             if (patternId <= 3)
             {
                 Assert.Equal(0, regex.Count(input, source.Token));
-                Assert.False(regex.Match(input, source.Token).Success);
+                Assert.False(regex.Match(input, cancellationToken: source.Token).Success);
             }
             else
                 foreach (Match expected in new Regex(pattern, options).Matches(text))

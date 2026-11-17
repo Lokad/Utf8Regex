@@ -29,7 +29,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(backing.AsSpan(1, bytes.Length), live.Token));
             Assert.Equal(oracle.Count(text), regex.Count(backing.AsSpan(1, bytes.Length), live.Token));
             var expected = oracle.Match(text);
-            var actual = regex.Match(backing.AsSpan(1, bytes.Length), live.Token);
+            var actual = regex.Match(backing.AsSpan(1, bytes.Length), cancellationToken: live.Token);
             Assert.True(actual.Success);
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
@@ -37,7 +37,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
                 Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                 byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
             live.Cancel();
-            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, live.Token)).CancellationToken);
+            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: live.Token)).CancellationToken);
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             {
                 if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
                 else if (operation == "count") _ = regex.Count(input, source.Token);
-                else _ = regex.Match(input, source.Token);
+                else _ = regex.Match(input, cancellationToken: source.Token);
             }
             if (expire)
             {
@@ -125,7 +125,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
             Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
             var expected = oracle.Match(text);
-            var actual = regex.Match(input, source.Token);
+            var actual = regex.Match(input, cancellationToken: source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (!expected.Success) continue;
             Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
@@ -230,7 +230,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         live.Cancel();
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, live.Token)).CancellationToken);
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
-        Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, live.Token)).CancellationToken);
+        Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: live.Token)).CancellationToken);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -256,7 +256,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         Assert.Equal(oracle.IsMatch(subject.Projected), regex.IsMatch(input, source.Token));
         Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
         var expected = oracle.Match(subject.Projected);
-        var actual = regex.Match(input, source.Token);
+        var actual = regex.Match(input, cancellationToken: source.Token);
         Utf8SliceSparseGroupTests.AssertValue(expected, actual, subject);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(patterns[id], options), [text]);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

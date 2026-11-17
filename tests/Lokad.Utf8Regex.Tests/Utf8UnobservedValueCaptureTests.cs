@@ -45,7 +45,7 @@ public sealed class Utf8UnobservedValueCaptureTests
         using var token = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, token.Token));
         Assert.Equal(1, regex.Count(input, token.Token));
-        var value = regex.Match(input, token.Token);
+        var value = regex.Match(input, cancellationToken: token.Token);
         Assert.True(value.Success);
         Assert.Equal(2, value.StartOffsetInBytes);
         Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
@@ -130,7 +130,7 @@ public sealed class Utf8UnobservedValueCaptureTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (expire) ticks = 50; else token.Cancel(); });
         try
         {
-            var error = Record.Exception(() => { if (boolean) regex.IsMatch(input, token.Token); else regex.Match(input, token.Token); });
+            var error = Record.Exception(() => { if (boolean) regex.IsMatch(input, token.Token); else regex.Match(input, cancellationToken: token.Token); });
             if (expire) Assert.IsType<RegexMatchTimeoutException>(error);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         }

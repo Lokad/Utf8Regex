@@ -48,7 +48,7 @@ public sealed class Utf8SupplementaryCaseTests
                 var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
                 var bytes = Encoding.UTF8.GetBytes("padding!" + small + "!padding");
                 var input = bytes.AsSpan(7, 6);
-                var match = regex.Match(input, source.Token);
+                var match = regex.Match(input, cancellationToken: source.Token);
                 Assert.True(match.Success);
                         Assert.Equal((1, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                         Assert.Equal(1, regex.Count(input, source.Token));
@@ -57,7 +57,7 @@ public sealed class Utf8SupplementaryCaseTests
             }
             var reference = new Utf8Regex(reverse ? @"^\1(.)$" : @"^(.)\1$",
                 options, Regex.InfiniteMatchTimeout, policy);
-                    Assert.Equal(8, (reference.Match(Encoding.UTF8.GetBytes(capital + small), source.Token).EndOffsetInBytes - reference.Match(Encoding.UTF8.GetBytes(capital + small), source.Token).StartOffsetInBytes));
+                    Assert.Equal(8, (reference.Match(Encoding.UTF8.GetBytes(capital + small), cancellationToken: source.Token).EndOffsetInBytes - reference.Match(Encoding.UTF8.GetBytes(capital + small), cancellationToken: source.Token).StartOffsetInBytes));
                     var excluded = new Utf8Regex("^[^" + capital + "]$", options, Regex.InfiniteMatchTimeout, policy);
             Assert.False(excluded.IsMatch(Encoding.UTF8.GetBytes(small), source.Token));
             Assert.True(excluded.IsMatch("😀"u8, source.Token));

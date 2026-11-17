@@ -32,7 +32,7 @@ public sealed class Utf8FiniteLiteralMatchTests
                     var bytes = Encoding.UTF8.GetBytes(text);
                     byte[] storage = [0xff, .. bytes, 0xff];
                     var reference = expected.Match(text);
-                    AssertRange(regex.Match(storage.AsSpan(1, bytes.Length), source.Token), text,
+                    AssertRange(regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: source.Token), text,
                         reference.Index, reference.Length);
                 }
             }
@@ -49,7 +49,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
         using var source = new CancellationTokenSource();
         source.Cancel();
-        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, source.Token)).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: source.Token)).CancellationToken);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class Utf8FiniteLiteralMatchTests
             using var source = new CancellationTokenSource();
             var slice = input.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             AssertRange(regex.Match(slice), text, start, length);
-            AssertRange(regex.Match(slice, source.Token), text, start, length);
+            AssertRange(regex.Match(slice, cancellationToken: source.Token), text, start, length);
             Assert.True(regex.IsMatch(slice));
             Assert.True(regex.IsMatch(slice, source.Token));
         }
@@ -108,7 +108,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         {
             var regex = Create(literal, options: options);
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
-            AssertRange(regex.Match(input, source.Token), text, 2052, length);
+            AssertRange(regex.Match(input, cancellationToken: source.Token), text, 2052, length);
             Assert.True(regex.IsMatch(input, source.Token));
         }
     }
@@ -132,7 +132,7 @@ public sealed class Utf8FiniteLiteralMatchTests
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
                 new() { MaxWorkSteps = 1_000_000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
                         var expected = new Regex(pattern, options).Match(text);
-            AssertRange(regex.Match(input, source.Token), text, expected.Index, length);
+            AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, length);
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
             Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("hit")).Span));
             Assert.Equal(2, regex.Count(input, source.Token));
@@ -247,11 +247,11 @@ public sealed class Utf8FiniteLiteralMatchTests
         {
             if (expire)
             {
-                var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, source.Token));
+                var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: source.Token));
                 Assert.Equal(regex.Pattern, failure.Pattern);
                 Assert.Equal(regex.MatchTimeout, failure.MatchTimeout);
             }
-            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, source.Token)).CancellationToken);
+            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: source.Token)).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
@@ -265,7 +265,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         byte[] invalid = [.. "needle"u8, 0x80];
         using var source = new CancellationTokenSource();
         source.Cancel();
-        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, source.Token)).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, cancellationToken: source.Token)).CancellationToken);
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, source.Token)).CancellationToken);
         Assert.False(regex.Match("unrelated"u8).Success);
         Assert.False(regex.Match([]).Success);

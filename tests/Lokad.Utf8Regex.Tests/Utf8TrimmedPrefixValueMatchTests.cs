@@ -48,7 +48,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
-                Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), token.Token));
+                Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
                 Assert.Equal(expected, regex.Match(input));
             }
             finally { session.Complete(); }
@@ -70,7 +70,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
                 var input = Encoding.UTF8.GetBytes(text);
                 var expected = Scalar(regex, input);
                 Assert.Equal(expected, regex.Match(input));
-                Assert.Equal(expected, regex.Match(input, token.Token));
+                Assert.Equal(expected, regex.Match(input, cancellationToken: token.Token));
             }
         }
     }
@@ -89,7 +89,7 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         Assert.Equal("text", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("doc")).Span));
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]
@@ -121,9 +121,9 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             return ticks;
         });
         var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
-        Assert.True(regex.Match("/// text"u8, token.Token).Success);
+        Assert.True(regex.Match("/// text"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("/// text"u8, token.Token)).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("/// text"u8, token.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("/// text"u8, cancellationToken: token.Token)).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("/// text"u8, cancellationToken: token.Token)).CancellationToken);
     }
 }

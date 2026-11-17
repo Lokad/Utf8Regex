@@ -490,7 +490,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         using var source = new CancellationTokenSource();
         Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, oracle.Match(text).Index)), regex.Match(input, source.Token).StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, oracle.Match(text).Index)), regex.Match(input, cancellationToken: source.Token).StartOffsetInBytes);
         var enumerator = regex.EnumerateMatches(input, source.Token);
         foreach (Match expected in oracle.Matches(text))
         {

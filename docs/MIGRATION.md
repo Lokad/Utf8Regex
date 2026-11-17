@@ -422,3 +422,14 @@ mode remains explicit. Other ordinary source calls retain their short forms.
 Cancellation precedes input/offset/option work. Literal shortcuts, finite limits,
 explicit funding, captures/MARK, partial and transactional destination behavior
 remain supported. Subject bytes are already-valid and unchanged.
+
+### Core Match entry
+
+Core now exposes one Match signature with optional byte start, caller-owned
+capture slots, token, working allowance and end bound. A null start uses zero
+forward or the selected end in right-to-left mode. `regex.Match(subject)` keeps
+its existing no-capture paths; `regex.Match(subject, captures: slots)` fills the
+existing capture slots with a direction-aware default start. Explicit byte starts,
+end-bound context, capture history on cursors, funding and interruption remain.
+Recompile old binaries. Change an old positional token call to
+`regex.Match(subject, cancellationToken: token)`.

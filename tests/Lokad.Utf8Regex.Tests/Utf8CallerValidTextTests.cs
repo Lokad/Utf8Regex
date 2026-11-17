@@ -23,7 +23,7 @@ public sealed class Utf8CallerValidTextTests
             try
             {
             Assert.True(regex.IsMatch(input, source.Token));
-            var whole = regex.Match(input, source.Token);
+            var whole = regex.Match(input, cancellationToken: source.Token);
             Assert.Equal((2, 8), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
             var slots = new Utf8CaptureRange[regex.CaptureGroupCount + 1];
             Assert.Equal(whole, regex.Match(input, 0, slots, source.Token));
