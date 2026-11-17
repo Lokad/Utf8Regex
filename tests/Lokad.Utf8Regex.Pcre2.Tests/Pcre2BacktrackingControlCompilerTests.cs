@@ -19,8 +19,9 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     {
         var regex = new Utf8Pcre2Regex(pattern);
 
-        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        Assert.Equal(expected, regex.IsMatch(bytes));
+        Assert.Equal(expected, regex.Match(bytes).Success);
     }
 
     // R03 atomic slice: the core slice owns possessive groups, so the atomic

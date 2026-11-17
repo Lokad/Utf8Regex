@@ -539,20 +539,28 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    // The contiguous shape now rides the slice (its behavior stays pinned by
-    // InitialPositionRestrictionPreservesOffsetAndMultilineSemantics below).
-    // Inline-option shapes (e.g. (?m)^(a+)+b$) now ride the shared slice too;
-    // their behavior is pinned by Pcre2SliceInlineTests.
-    [InlineData("(?:^a|^b)c", true)]
-    public void BacktrackingPlanProvesOnlyMandatoryInitialPositionAnchors(
-        string pattern,
+    [InlineData("ac", 0, true)]
+    [InlineData("bc", 0, true)]
+    [InlineData("zac", 0, false)]
+    [InlineData("xbc", 1, false)]
+    [InlineData("ac", 1, false)]
+    [InlineData("", 0, false)]
+    public void MandatoryInitialAnchorsAcrossAlternativesPreservePublicResults(
+        string input,
+        int startOffsetInBytes,
         bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern);
+        var regex = new Utf8Pcre2Regex("(?:^a|^b)c");
+        var bytes = Encoding.UTF8.GetBytes(input);
 
-        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-
-        Assert.Equal(expected, direct.Program.RestrictsSearchToInitialCandidate);
+        Assert.Equal(expected, regex.IsMatch(bytes, startOffsetInBytes));
+        var match = regex.Match(bytes, startOffsetInBytes);
+        Assert.Equal(expected, match.Success);
+        if (expected)
+        {
+            Assert.Equal(0, match.StartOffsetInBytes);
+            Assert.Equal(2, match.EndOffsetInBytes);
+        }
     }
 
     [Fact]
