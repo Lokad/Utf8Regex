@@ -2597,10 +2597,6 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("AnchoredValidatorBoolOnly", iterations, context.ExecuteUtf8DirectBoolOnly);
                     }
-                    if (context.CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
-                    {
-                        Measure("DateTokenWhole", iterations, context.ExecuteDateTokenWholeOnly);
-                    }
                     if (context.CaseId is "common/uri-match" or "common/uri-miss")
                     {
                         Measure("UriTokenWhole", iterations, context.ExecuteUriTokenWholeOnly);

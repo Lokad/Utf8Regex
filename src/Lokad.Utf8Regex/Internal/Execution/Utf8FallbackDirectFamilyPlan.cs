@@ -19,7 +19,6 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     UnicodeLetterCount = 15,
     UnicodeCategoryCount = 16,
     Utf8UriToken = 17,
-    AsciiBoundedDateToken = 18,
     WordRunCount = 19,
     AnchoredAsciiSignedDecimalWhole = 20,
     AnchoredAsciiLeadingDigitsTail = 21,
@@ -70,18 +69,6 @@ internal readonly record struct Utf8FallbackCountBoundsPayload(
 
 internal readonly record struct Utf8FallbackLinePayload(
     byte TerminatorByte);
-
-internal readonly record struct Utf8FallbackDateTokenPayload(
-    byte FirstFieldMinCount,
-    byte FirstFieldMaxCount,
-    byte SecondFieldMinCount,
-    byte SecondFieldMaxCount,
-    byte ThirdFieldMinCount,
-    byte ThirdFieldMaxCount,
-    byte SeparatorByte,
-    byte SecondSeparatorByte,
-    bool RequireLeadingBoundary,
-    bool RequireTrailingBoundary);
 
 internal readonly record struct Utf8FallbackUnicodePayload(
     UnicodeCategory UnicodeCategory);
@@ -138,7 +125,8 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         Utf8FallbackLiteralPayload literals = default,
         Utf8FallbackTokenMasks tokenMasks = default,
         Utf8FallbackLinePayload line = default,
-        Utf8FallbackDateTokenPayload dateToken = default,
+        byte separatorByte = 0,
+        byte secondSeparatorByte = 0,
         Utf8FallbackUnicodePayload unicode = default,
         Utf8FallbackUrlPayload url = default)
     {
@@ -147,7 +135,8 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         Literals = literals;
         TokenMasks = tokenMasks;
         Line = line;
-        DateToken = dateToken;
+        SeparatorByte = separatorByte;
+        SecondSeparatorByte = secondSeparatorByte;
         Unicode = unicode;
         Url = url;
     }
@@ -161,8 +150,6 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
     public Utf8FallbackTokenMasks TokenMasks { get; }
 
     public Utf8FallbackLinePayload Line { get; }
-
-    public Utf8FallbackDateTokenPayload DateToken { get; }
 
     public Utf8FallbackUnicodePayload Unicode { get; }
 
@@ -181,21 +168,9 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public byte TerminatorByte => Line.TerminatorByte;
 
-    public byte FirstFieldMinCount => DateToken.FirstFieldMinCount;
+    public byte SeparatorByte { get; }
 
-    public byte FirstFieldMaxCount => DateToken.FirstFieldMaxCount;
-
-    public byte SecondFieldMinCount => DateToken.SecondFieldMinCount;
-
-    public byte SecondFieldMaxCount => DateToken.SecondFieldMaxCount;
-
-    public byte ThirdFieldMinCount => DateToken.ThirdFieldMinCount;
-
-    public byte ThirdFieldMaxCount => DateToken.ThirdFieldMaxCount;
-
-    public byte SeparatorByte => DateToken.SeparatorByte;
-
-    public byte SecondSeparatorByte => DateToken.SecondSeparatorByte;
+    public byte SecondSeparatorByte { get; }
 
     public UnicodeCategory UnicodeCategory => Unicode.UnicodeCategory;
 
@@ -210,10 +185,6 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
     public byte[] RequiredParameterUtf8 => Url.RequiredParameterUtf8;
 
     public byte[] OptionalParameterUtf8 => Url.OptionalParameterUtf8;
-
-    public bool RequireLeadingBoundary => DateToken.RequireLeadingBoundary;
-
-    public bool RequireTrailingBoundary => DateToken.RequireTrailingBoundary;
 
     public bool HasValue => Kind != Utf8FallbackDirectFamilyKind.None;
 
@@ -270,32 +241,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         => new(
             Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns,
             literals: new Utf8FallbackLiteralPayload(literalUtf8, null, null),
-            dateToken: new Utf8FallbackDateTokenPayload(0, 0, 0, 0, 0, 0, separatorByte, secondSeparatorByte, false, false));
-
-    public static Utf8FallbackDirectFamilyPlan ForBoundedDateToken(
-        byte firstFieldMinCount,
-        byte firstFieldMaxCount,
-        byte secondFieldMinCount,
-        byte secondFieldMaxCount,
-        byte thirdFieldMinCount,
-        byte thirdFieldMaxCount,
-        byte separatorByte,
-        byte secondSeparatorByte,
-        bool requireLeadingBoundary,
-        bool requireTrailingBoundary)
-        => new(
-            Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken,
-            dateToken: new Utf8FallbackDateTokenPayload(
-                firstFieldMinCount,
-                firstFieldMaxCount,
-                secondFieldMinCount,
-                secondFieldMaxCount,
-                thirdFieldMinCount,
-                thirdFieldMaxCount,
-                separatorByte,
-                secondSeparatorByte,
-                requireLeadingBoundary,
-                requireTrailingBoundary));
+            separatorByte: separatorByte, secondSeparatorByte: secondSeparatorByte);
 
     public static Utf8FallbackDirectFamilyPlan ForAsciiUntilByteStarCount(byte terminatorByte)
         => new(

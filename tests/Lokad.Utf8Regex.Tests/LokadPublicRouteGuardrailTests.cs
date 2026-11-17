@@ -157,8 +157,6 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         const string pattern = @"^\d{1,2}/\d{1,2}/\d{4}$";
         var regex = new Utf8Regex(pattern, options);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
         Assert.True(regex.TryIsMatchDirectWithoutValidation("12/12/2001"u8, out var directMatch));
         Assert.True(directMatch);
 
@@ -382,27 +380,10 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void CommonDateMatchUsesPrioritizedBoundedDateBooleanFamily(RegexOptions options)
+    public void CommonDateMatchKeepsScalarResults(RegexOptions options)
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
         var regex = new Utf8Regex(pattern, options);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
-        {
-            nameof(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken) => Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken,
-            _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
-        });
-        Assert.True(regex.TryMatchDirectWithoutValidation(
-            "Today is 11/18/2019."u8,
-            out var match));
-        Assert.True(match.Success);
-        Assert.True(regex.TryIsMatchDirectWithoutValidation(
-            "Today is 11/18/2019."u8,
-            out var isMatch));
-        Assert.True(isMatch);
-        Assert.False(regex.TryMatchDirectWithoutValidation(
-            "Today is 11/18/2019. \xC3"u8,
-            out _));
 
         string[] inputs =
         [
@@ -456,14 +437,8 @@ public sealed class LokadPublicRouteGuardrailTests
     }
 
     [Fact]
-    public void BoostdocsWholeDateMatchUsesNoValidationBoundedDateFastPath()
-    {
-        var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled);
-
-        Assert.True(regex.TryMatchDirectWithoutValidation("12/12/2001"u8, out var match));
-        Assert.True(match.Success);
-    }
-
+    public void WholeDatePreservesItsPublicByteRange()
+    { var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled); Assert.Equal(new Utf8CaptureRange(0, 10), regex.Match("12/12/2001"u8)); }
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]

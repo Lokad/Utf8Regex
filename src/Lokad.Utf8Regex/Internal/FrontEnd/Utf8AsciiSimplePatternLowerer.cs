@@ -124,8 +124,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         simplePatternPlan = new AsciiSimplePatternPlan(
             branches, searchLiteralOffset, searchLiterals, fixedLiteralChecks, isStartAnchored, isEndAnchored, allowsTrailingNewlineBeforeEnd, ignoreCase, IsUtf8ByteSafe(branches), TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default, anchoredHeadTailRunPlan: default, anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(storage, branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
                 ? anchoredValidatorPlan
-                : default, anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
-                ? anchoredBoundedDatePlan
                 : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {

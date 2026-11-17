@@ -202,51 +202,6 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     }
 
     [Fact]
-    public void DatePatternClassifiesAsAsciiBoundedDateToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
-    public void DashDatePatternClassifiesAsAsciiBoundedDateToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\-\d{1,2}\-\d{2,4}\b", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
-    public void IsoDatePatternClassifiesAsAsciiBoundedDateToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\b\d{4}\-\d{1,2}\-\d{1,2}\b", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
-    public void DottedDatePatternClassifiesAsAsciiBoundedDateToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
-    public void IsoDottedDatePatternClassifiesAsAsciiBoundedDateToken()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"\b\d{4}\.\d{1,2}\.\d{1,2}\b", RegexOptions.None);
-
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
-        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-    }
-
-    [Fact]
     public void DateIsMatchMatchesDotNetOnRepresentativeInput()
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";

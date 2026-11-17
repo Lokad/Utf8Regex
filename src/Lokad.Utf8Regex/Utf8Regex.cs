@@ -16,8 +16,6 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
 {
     None = 0,
     LeadingAnyRunTrailingAsciiLiteral = 1,
-    AnchoredBoundedDate = 2,
-    AsciiBoundedDateToken = 4,
     AnchoredAsciiLeadingDigitsTail = 5,
     AnchoredAsciiSignedDecimalWhole = 7,
     AsciiUriToken = 9,
@@ -214,11 +212,6 @@ public sealed partial class Utf8Regex
                 return Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
             }
 
-            if (preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
-            {
-                return Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate;
-            }
-
             return preparedRegex.FallbackDirectFamily.Kind switch
             {
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
@@ -227,8 +220,6 @@ public sealed partial class Utf8Regex
                     Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
                 Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
-                Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken =>
-                    Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken,
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail =>
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail,
                 _ => Utf8PrioritizedBooleanFamilyKind.None,
@@ -305,9 +296,6 @@ public sealed partial class Utf8Regex
 
     private AsciiSimplePatternAnchoredValidatorPlan _anchoredValidatorPlan =>
         _preparedRegex.SimplePatternPlan.AnchoredValidatorPlan;
-
-    private AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan =>
-        _preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan;
 
     private ref readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
         ref _preparedRegex.FallbackDirectFamily;
@@ -406,17 +394,6 @@ public sealed partial class Utf8Regex
             {
                 return false;
             }
-        }
-
-        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0)
-        {
-            return Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
-                input,
-                0,
-                _fallbackDirectFamily,
-                out _,
-                out _);
         }
 
         try

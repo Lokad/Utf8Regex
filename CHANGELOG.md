@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove the date-specific matchers and duplicate compiled-family routing.
+  Existing matchers preserve field, separator, boundary and capture semantics;
+  numerical resource requirements and execution costs can change.
+
 - Keep repeated-digit alternative results consistent when a cancellation token is
   supplied. Remove the specialized digit-group proof and executor that could fill
   excluded repeat lengths. Captures and interruption remain on existing matchers;

@@ -55,27 +55,6 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (_anchoredBoundedDatePlan.HasValue)
-        {
-            var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
-                input,
-                _anchoredBoundedDatePlan,
-                _allowsTrailingNewlineBeforeEnd,
-                out var dateLength,
-                out var dateNeedsValidation);
-            if (dateNeedsValidation)
-            {
-                return false;
-            }
-
-            if (matched)
-            {
-                match = new Utf8CaptureRange(0, 0 + (dateLength));
-            }
-
-            return true;
-        }
-
         var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
             input,
             _anchoredValidatorPlan,
@@ -115,11 +94,6 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
-
         var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
             input,
             _anchoredValidatorPlan,
@@ -132,30 +106,6 @@ public sealed partial class Utf8Regex
         }
 
         isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
-        return true;
-    }
-
-    private bool TryIsMatchAnchoredBoundedDateWithoutValidation(
-        ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        isMatch = false;
-        if (!_anchoredBoundedDatePlan.HasValue)
-        {
-            return false;
-        }
-
-        var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
-            input,
-            _anchoredBoundedDatePlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out _,
-            out var needsValidation);
-        if (needsValidation)
-        {
-            return false;
-        }
-
-        isMatch = matched;
         return true;
     }
 
@@ -349,9 +299,6 @@ public sealed partial class Utf8Regex
 
                 isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
                 return true;
-
-            case Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate:
-                return TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch);
 
             case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail:
                 if (Utf8AsciiLeadingDigitsTailExecutor.TryMatchPrintableAsciiWhole(

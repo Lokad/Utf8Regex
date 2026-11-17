@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal readonly struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
-        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
+        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
     {
         Branches = branches;
         MinLength = 0;
@@ -40,7 +40,6 @@ internal readonly struct AsciiSimplePatternPlan
         RunPlan = runPlan;
         AnchoredHeadTailRunPlan = anchoredHeadTailRunPlan;
         AnchoredValidatorPlan = anchoredValidatorPlan;
-        AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
     }
 
     public AsciiSimplePatternToken[][] Branches { get; }
@@ -79,57 +78,8 @@ internal readonly struct AsciiSimplePatternPlan
 
     public AsciiSimplePatternAnchoredValidatorPlan AnchoredValidatorPlan { get; }
 
-    public AsciiSimplePatternAnchoredBoundedDatePlan AnchoredBoundedDatePlan { get; }
+    public Utf8CompiledPatternCategory CompiledPatternCategory => AnchoredValidatorPlan.HasValue ? Utf8CompiledPatternCategory.AnchoredWhole : Utf8CompiledPatternCategory.None;
 
-    public Utf8CompiledPatternFamilyPlan CompiledPatternFamily => Utf8CompiledPatternFamilyPlan.FromSimplePatternPlan(this);
-
-    public Utf8CompiledPatternCategory CompiledPatternCategory => CompiledPatternFamily.Category;
-
-}
-
-internal enum Utf8CompiledPatternFamilyKind : byte
-{
-    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2
-}
-
-internal readonly struct Utf8CompiledPatternFamilyPlan
-{
-    private Utf8CompiledPatternFamilyPlan(
-        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan)
-    {
-        Kind = kind;
-        AnchoredValidatorPlan = anchoredValidatorPlan;
-        AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
-    }
-
-    public Utf8CompiledPatternFamilyKind Kind { get; }
-
-    public AsciiSimplePatternAnchoredValidatorPlan AnchoredValidatorPlan { get; }
-
-    public AsciiSimplePatternAnchoredBoundedDatePlan AnchoredBoundedDatePlan { get; }
-
-    public Utf8CompiledPatternCategory Category => Utf8CompiledPatternCategories.GetSimplePatternCategory(this);
-
-    private static Utf8CompiledPatternFamilyPlan ForAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default);
-
-    private static Utf8CompiledPatternFamilyPlan ForAnchoredBoundedDate(AsciiSimplePatternAnchoredBoundedDatePlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan);
-
-    public static Utf8CompiledPatternFamilyPlan FromSimplePatternPlan(AsciiSimplePatternPlan plan)
-    {
-        if (plan.AnchoredBoundedDatePlan.HasValue)
-        {
-            return ForAnchoredBoundedDate(plan.AnchoredBoundedDatePlan);
-        }
-
-        if (plan.AnchoredValidatorPlan.HasValue)
-        {
-            return ForAnchoredValidator(plan.AnchoredValidatorPlan);
-        }
-
-        return default;
-    }
 }
 
 internal readonly struct AsciiSimplePatternRunPlan
@@ -282,45 +232,4 @@ internal readonly struct AsciiSimplePatternAnchoredValidatorSegment
     public int MaxLength { get; }
 
     public bool IsLiteral => _literal is { Length: > 0 };
-}
-
-internal readonly struct AsciiSimplePatternAnchoredBoundedDatePlan
-{
-    public AsciiSimplePatternAnchoredBoundedDatePlan(
-        byte firstFieldMinCount,
-        byte firstFieldMaxCount,
-        byte secondFieldMinCount,
-        byte secondFieldMaxCount,
-        byte thirdFieldMinCount,
-        byte thirdFieldMaxCount,
-        byte separatorByte,
-        byte secondSeparatorByte)
-    {
-        FirstFieldMinCount = firstFieldMinCount;
-        FirstFieldMaxCount = firstFieldMaxCount;
-        SecondFieldMinCount = secondFieldMinCount;
-        SecondFieldMaxCount = secondFieldMaxCount;
-        ThirdFieldMinCount = thirdFieldMinCount;
-        ThirdFieldMaxCount = thirdFieldMaxCount;
-        SeparatorByte = separatorByte;
-        SecondSeparatorByte = secondSeparatorByte;
-    }
-
-    public byte FirstFieldMinCount { get; }
-
-    public byte FirstFieldMaxCount { get; }
-
-    public byte SecondFieldMinCount { get; }
-
-    public byte SecondFieldMaxCount { get; }
-
-    public byte ThirdFieldMinCount { get; }
-
-    public byte ThirdFieldMaxCount { get; }
-
-    public byte SeparatorByte { get; }
-
-    public byte SecondSeparatorByte { get; }
-
-    public bool HasValue => FirstFieldMinCount > 0;
 }

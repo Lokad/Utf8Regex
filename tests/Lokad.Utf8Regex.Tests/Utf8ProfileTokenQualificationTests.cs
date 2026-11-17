@@ -97,36 +97,47 @@ public sealed class Utf8ProfileTokenQualificationTests
     [Fact]
     public void FiveByteDateUsesItsDeclaredMinimumAndPreservesScalarRanges()
     {
-        var plan = Utf8FallbackDirectFamilyPlan.ForBoundedDateToken(1, 1, 1, 1, 1, 1, (byte)'/', (byte)'/', false, false);
-        Assert.True(Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken("1/2/3"u8, 0, plan, out var index, out var length));
-        Assert.Equal((0, 5), (index, length));
+        Range(@"\d{1}/\d{1}/\d{1}", "1/2/3", 0, 5);
         Assert.Equal(1, new Utf8Regex(@"\d{1}/\d{1}/\d{1}").Count("1/2/3"u8));
         Range(@"\d{1}/\d{1}/\d{1}", "😀 ١/٢/٣", 5, 8);
     }
 
     [Fact]
-    public void DateAliasesBorrowFieldsAndBoundariesWithoutOwningTheTree()
+    public void DateAliasesKeepScalarFieldsCapturesAndBoundaries()
     {
         const string pattern = @"\b(?<day>\p{Nd}{1,2})\x2f(?:[0-9]{1,2})\x2d\d{2,4}\b";
-        var plan = Plan(pattern, Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken);
-        Assert.Equal((1, 2, 1, 2, 2, 4), ((int)plan.FirstFieldMinCount, plan.FirstFieldMaxCount, plan.SecondFieldMinCount, plan.SecondFieldMaxCount, plan.ThirdFieldMinCount, plan.ThirdFieldMaxCount));
-        Assert.True(plan.RequireLeadingBoundary); Assert.True(plan.RequireTrailingBoundary);
         Range(pattern, "😀 ١/2-٢٠ ", 5, 9);
         Assert.True(Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ "))).TryGetGroup("day", out var captured));
         Assert.Equal((5, 2), (captured.StartOffsetInBytes, (captured.EndOffsetInBytes - captured.StartOffsetInBytes)));
         var input = Encoding.UTF8.GetBytes("𐐀1/2-20"); Assert.False(new Utf8Regex(pattern).IsMatch(input));
-        var method = Classifier();
-        foreach (var unproved in new[] { @"\d{0,2}/\d{1}/\d{1}", @"\d{1,2}?/\d{1}/\d{1}", @"(?:\d{2}){2}/\d{1}/\d{1}", @"[\dA]{1}/\d{1}/\d{1}", @"\d{1}.\d{1}/\d{1}" })
-            Assert.False(Classify(method, Tree(unproved)).HasValue);
         Range(@"\d{0,2}/\d{1}/\d{1}", "😀 /2/3", 5, 4);
     }
 
     [Fact]
-    public void BoundedDateNativeRangesAgreeWithIndependentAsciiOracleAtEveryFloor()
+    public void DatePublicRangesAgreeAtEveryByteFloor()
     {
-        var subjects = Enumerable.Range(0, 256).Select(bits => new string(Enumerable.Range(0, 7).Select(bit => (bits & (1 << bit)) == 0 ? '1' : '/').ToArray()));
+        var subjects = Enumerable.Range(0, 1 << 7).Select(bits => new string(Enumerable.Range(0, 7)
+            .Select(bit => (bits & (1 << bit)) == 0 ? '1' : '/').ToArray()));
+        using var source = new CancellationTokenSource();
         foreach (var pattern in new[] { @"\d{1}/\d{1}/\d{1}", @"\d{1,2}/\d{1,2}/\d{1,3}", @"\b\d{1,2}/\d{1,2}/\d{2,4}\b" })
-            AsciiOracle(pattern, subjects.Concat(["1/2/3", "11/22/333", "a1/2/33b", " 11/2/33 ", "1/2/3 1/2/3"]), Plan(pattern, Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken));
+        {
+            var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, resourcePolicy: new()
+            { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            foreach (var text in subjects.Concat(["1/2/3", "11/22/333", "a1/2/33b", " 11/2/33 ", "1/2/3 1/2/3"]))
+            {
+                var input = Encoding.ASCII.GetBytes(text);
+                Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
+                for (var floor = 0; floor <= input.Length; floor++)
+                {
+                    var expected = oracle.Match(text, floor);
+                    var actual = regex.Match(input, floor, Span<Utf8CaptureRange>.Empty, source.Token);
+                    Assert.Equal(expected.Success, actual.Success);
+                    if (expected.Success) Assert.Equal((expected.Index, expected.Length),
+                        (actual.StartOffsetInBytes, actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+                }
+            }
+        }
     }
 
     [Fact]
@@ -166,7 +177,7 @@ public sealed class Utf8ProfileTokenQualificationTests
     public void EveryProfileProofCutoffRollsBackScratchAndRetainsNoPayloadLoan()
     {
         var method = Classifier();
-        foreach (var pattern in new[] { Uri, Ip, @"\b\d{1,2}/\d{1,2}/\d{2,4}\b" })
+        foreach (var pattern in new[] { Uri, Ip })
         {
             var tree = Tree(pattern); ulong peak, work;
             using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -204,7 +215,7 @@ public sealed class Utf8ProfileTokenQualificationTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "TryParseUtf8UriToken", "TryParseAsciiIpv4Token", "TryParseAsciiBoundedDateToken", "TryConsumeDigitBound", "TryConsumeAsciiDateSeparator" })
+        foreach (var name in new[] { "TryParseUtf8UriToken", "TryParseAsciiIpv4Token" })
             Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
         Assert.DoesNotContain("AsciiIpv4Token", Enum.GetNames<Utf8FallbackDirectFamilyKind>());
     }

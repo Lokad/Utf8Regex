@@ -40,9 +40,6 @@ internal static class Utf8AsciiTokenFamilyExecutor
             case Utf8FallbackDirectFamilyKind.Utf8UriToken:
                 return Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, startIndex, out matchIndex, out matchedLength);
 
-            case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken:
-                return Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(input, startIndex, plan, out matchIndex, out matchedLength);
-
             default:
                 return false;
         }
@@ -60,8 +57,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
 
         if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
             Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
-            Utf8FallbackDirectFamilyKind.Utf8UriToken or
-            Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
+            Utf8FallbackDirectFamilyKind.Utf8UriToken)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {

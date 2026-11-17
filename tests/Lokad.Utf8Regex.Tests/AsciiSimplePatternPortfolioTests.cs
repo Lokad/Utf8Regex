@@ -14,15 +14,6 @@ public sealed class AsciiSimplePatternPortfolioTests
         Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
-    [Fact]
-    public void BoundedDatePlanCountsAsWholeInputCompiledSpecialization()
-    {
-        var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
-    }
-
     [Theory]
     [InlineData(RegexOptions.IgnoreCase)]
     [InlineData(RegexOptions.ECMAScript)]

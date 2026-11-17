@@ -562,7 +562,6 @@ internal static class Utf8NativeExecutionAnalyzer
                 new AsciiSimplePatternAnchoredValidatorSegment(tailCharClass, tailMin, int.MaxValue),
             ],
             ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0),
-            anchoredBoundedDatePlan: default,
             isAbsoluteStartAnchored: true,
             isAbsoluteEndAnchored: true);
 

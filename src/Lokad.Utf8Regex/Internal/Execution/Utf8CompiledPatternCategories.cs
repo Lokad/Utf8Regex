@@ -12,17 +12,6 @@ internal enum Utf8CompiledPatternCategory : byte
 
 internal static class Utf8CompiledPatternCategories
 {
-    public static Utf8CompiledPatternCategory GetSimplePatternCategory(Utf8CompiledPatternFamilyPlan family)
-    {
-        return family.Kind switch
-        {
-            Utf8CompiledPatternFamilyKind.AnchoredValidator or
-            Utf8CompiledPatternFamilyKind.AnchoredBoundedDate
-                => Utf8CompiledPatternCategory.AnchoredWhole,
-
-            _ => Utf8CompiledPatternCategory.None,
-        };
-    }
 
     public static Utf8CompiledPatternCategory GetNativeCategory(NativeExecutionKind kind)
     {

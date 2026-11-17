@@ -13,7 +13,7 @@ public sealed class Utf8LinearProgramConstructionTests
     private static Utf8StructuralLinearInstructionProgram Borrow(Utf8StructuralLinearInstruction[] code)
         => new(code, 0, [], [], false, false, false, false, false, false);
     private static AsciiSimplePatternPlan BorrowPlan(AsciiSimplePatternToken[] tokens, byte[][] literals)
-        => new([tokens], 0, literals, [], false, false, false, false, true, default, default, default, default, false, false);
+        => new([tokens], 0, literals, [], false, false, false, false, true, default, default, default, false, false);
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
@@ -101,7 +101,7 @@ public sealed class Utf8LinearProgramConstructionTests
         if (pattern == "[a-z]+")
         {
             var run = new AsciiSimplePatternRunPlan(AsciiCharClass.FromBytes("abcdefghijklmnopqrstuvwxyz"u8), 1, int.MaxValue);
-            simplePlan = new([], 0, [], [], false, false, false, false, true, run, default, default, default, false, false);
+            simplePlan = new([], 0, [], [], false, false, false, false, true, run, default, default, false, false);
         }
         else
         {

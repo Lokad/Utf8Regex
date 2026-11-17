@@ -4,8 +4,7 @@ using static Lokad.Utf8Regex.Internal.FrontEnd.Utf8FallbackTreeQuery;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // These fixed profiles borrow the owned grammar and retain only value plans.
-// Unicode URI predicates require a full language proof; date digits are an
-// ASCII intersection whose wider subjects remain with the scalar executor.
+// Unicode URI predicates require a full language proof.
 internal static class Utf8FallbackProfileClassifier
 {
     internal static Utf8FallbackDirectFamilyPlan Classify(Utf8OwnedRegexTree? tree)
@@ -16,35 +15,9 @@ internal static class Utf8FallbackProfileClassifier
         var body = Unwrap(tree.Root);
         if (body.Kind != Utf8TreeNodeKind.Concatenate) return default;
         var plan = TryUri(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8UriToken) :
-            TryIpv4(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount) : ClassifyDate(body);
+            TryIpv4(body) ? Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount) : default;
         if (plan.HasValue) scope.Complete();
         return plan;
-    }
-
-    private static Utf8FallbackDirectFamilyPlan ClassifyDate(Utf8TreeNode body)
-    {
-        var first = body.ChildCount > 0 && Unwrap(body.Child(0)).Kind == Utf8TreeNodeKind.Boundary ? 1 : 0;
-        var trailing = body.ChildCount > first && Unwrap(body.Child(body.ChildCount - 1)).Kind == Utf8TreeNodeKind.Boundary;
-        if (body.ChildCount != first + 5 + (trailing ? 1 : 0) ||
-            !TryDateField(body.Child(first), out var aMin, out var aMax) || !TrySeparator(body.Child(first + 1), out var aSeparator) ||
-            !TryDateField(body.Child(first + 2), out var bMin, out var bMax) || !TrySeparator(body.Child(first + 3), out var bSeparator) ||
-            !TryDateField(body.Child(first + 4), out var cMin, out var cMax)) return default;
-        return Utf8FallbackDirectFamilyPlan.ForBoundedDateToken(aMin, aMax, bMin, bMax, cMin, cMax, aSeparator, bSeparator, first != 0, trailing);
-    }
-
-    private static bool TryDateField(Utf8TreeNode node, out byte minimum, out byte maximum)
-    {
-        minimum = maximum = 0;
-        if (!TryRepeat(node, out var atom, out var min, out var max) || min <= 0 || max > byte.MaxValue ||
-            !TryMask(atom, out var mask) || mask != AsciiCharClass.FromBytes("0123456789"u8)) return false;
-        minimum = (byte)min; maximum = (byte)max; return true;
-    }
-
-    private static bool TrySeparator(Utf8TreeNode node, out byte separator)
-    {
-        separator = 0;
-        if (!TryLiteral(node, out var literal) || LiteralLength(literal) != 1) return false;
-        separator = FirstByte(literal); return separator is (byte)'/' or (byte)'-' or (byte)'.';
     }
 
     private static bool TryUri(Utf8TreeNode body) => body.ChildCount == 6 &&

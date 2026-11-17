@@ -35,6 +35,9 @@ public sealed class RegexDifferentialTests
         @"^(?:[0-9]{4}[- ]){1}(?:[0-9]{1}|[0-9]{3})$",
         @"^(?<chunk>[0-9]{4}[- ])(?<tail>[0-9]{1}|[0-9]{3})$",
         @"^\d{1,2}/\d{1,2}/\d{4}$", @"^[a-z][a-z0-9_]*\z",
+        @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", @"\b\d{1,2}\-\d{1,2}\-\d{2,4}\b",
+        @"\b\d{4}\-\d{1,2}\-\d{1,2}\b", @"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b",
+        @"\b\d{4}\.\d{1,2}\.\d{1,2}\b", @"(?m:^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$)",
         @"^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$",
         @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+",
         @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
@@ -67,6 +70,7 @@ public sealed class RegexDifferentialTests
             "SW1 1ZZ", "W1A 0AX", "M11AE", "B338TH", "CR2 6XH", "DN55 1PT",
             "A1 9A", "SW11ZZ", "SW1 1Z1", "SW1  1ZZ", "SW1é1ZZ",
             "1/2/01", "1/12/012", "12/1/0123", "12/12/0123", "12/12/0123\n", "1/2/0", "123/1/0123", "12-12-0123", "12/xx/0123",
+            "1-2-20", "2020-01-02", "2020.1.2", "1.2.2020", "١٢/٢/٢٠٠١", "a1/2/33b", "\n1/2/2020\n",
             "1234-5678-1234-456", "1234 5678 1234 4567", "1234-5678 1234-456", "1234-5678-1234-45",
             "1234-5678-1234-45678", "1234-5678_1234-456", "1234-5678-123x-456", "x1234-5678-1234-456",
             "1234-1", "1234-12", "1234-123", "1234-12\n", "1234 123", "é1234-12",
@@ -123,13 +127,14 @@ public sealed class RegexDifferentialTests
     public void DirectionAndLinearOptionsPreserveGeneratedCaptureResults(RegexOptions options)
     {
         using var cancellation = new CancellationTokenSource();
-        foreach (var pattern in new[] { @"(?<x>a)+(b)?", @"(?:ab|a)+?", "", @"[^\n]*", @"(?<x>\w+): (\w+)" })
+        foreach (var pattern in new[] { @"(?<x>a)+(b)?", @"(?:ab|a)+?", "", @"[^\n]*", @"(?<x>\w+): (\w+)",
+            @"(?<day>[0-9]{1,2})/[0-9]{1,2}/[0-9]{4}" })
         {
             var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
                 resourcePolicy: new() { MaxWorkSteps = 1_000_000 });
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
-            foreach (var text in new[] { "", "é aab ab\n", "é: Ω a: b", "abab", "\n\n" })
-            foreach (var start in Enumerable.Range(0, text.Length + 1))
+            foreach (var text in new[] { "", "é aab ab\n", "é: Ω a: b", "abab", "\n\n", "é1/2/2020", "12/12/2020\n" })
+                foreach (var start in Enumerable.Range(0, text.Length + 1))
                 AssertCursor(regex, oracle, text, text, start, cancellation.Token, $"{pattern}; {options}; start={start}");
         }
     }

@@ -29,8 +29,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
-        Utf8FallbackDirectFamilyKind.Utf8UriToken or
-        Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
+        Utf8FallbackDirectFamilyKind.Utf8UriToken;
 
     public static bool IsPreparedTokenFindFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
@@ -39,8 +38,7 @@ internal static class Utf8FallbackDirectFamilyCategories
     public static bool IsTokenCountFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
-        Utf8FallbackDirectFamilyKind.Utf8UriToken or
-        Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
+        Utf8FallbackDirectFamilyKind.Utf8UriToken;
 
     public static bool IsAsciiDefinitiveMatchFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
@@ -64,7 +62,6 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
-        Utf8FallbackDirectFamilyKind.Utf8UriToken or
-        Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
+        Utf8FallbackDirectFamilyKind.Utf8UriToken;
 
 }

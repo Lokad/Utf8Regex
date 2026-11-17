@@ -56,16 +56,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         out int matchedLength)
     {
 
-        if (regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
-        {
-            return Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
-                input,
-                regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan,
-                allowTrailingNewline,
-                out matchedLength,
-                out _);
-        }
-
         if (TryMatchDirectAnchoredFixedLengthSimplePattern(regexPlan, input, out matchedLength))
         {
             return true;
@@ -89,24 +79,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         ReadOnlySpan<byte> input,
         out int matchedLength)
     {
-
-        if (regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
-        {
-            var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
-                input,
-                regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan,
-                allowTrailingNewline,
-                out matchedLength,
-                out var needsValidation);
-            if (matched)
-            {
-                return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
-            }
-
-            return needsValidation
-                ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation
-                : Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
-        }
 
         if (Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(regexPlan))
         {

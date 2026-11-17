@@ -557,26 +557,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorExtractsAnchoredBoundedDatePlanForDateValidator()
-    {
-        var regex = new Utf8Regex("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-    }
-
-    [Fact]
-    public void ConstructorExtractsUnicodeDigitDatePlanWithAsciiInputGuard()
-    {
-        var regex = new Utf8Regex(@"^\d{1,2}/\d{1,2}/\d{4}$", RegexOptions.Compiled);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-    }
-
-    [Fact]
     public void DateTokensPreservePublicByteRanges()
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);

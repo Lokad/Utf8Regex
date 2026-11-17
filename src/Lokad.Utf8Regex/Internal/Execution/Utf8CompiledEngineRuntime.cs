@@ -123,20 +123,16 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly bool _canUseDirectAnchoredValidatorMatch;
     private readonly bool _anchoredValidatorAllowsTrailingNewline;
-    private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
 
     internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
         _regexPlan = plan;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan);
         _verifierRuntime = verifier;
-        var compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
         _canUseDirectAnchoredValidatorMatch =
-            compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredValidator ||
-            compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredBoundedDate;
+_regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue;
         _anchoredValidatorAllowsTrailingNewline = _canUseDirectAnchoredValidatorMatch &&
             _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-        _anchoredBoundedDatePlan = compiledPatternFamily.AnchoredBoundedDatePlan;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -176,15 +172,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         {
             match = default(Utf8CaptureRange);
             return false;
-        }
-
-        if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatchWithoutValidation(
-                _anchoredBoundedDatePlan,
-                _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd,
-                input,
-                out match))
-        {
-            return true;
         }
 
         if (_canUseDirectAnchoredValidatorMatch)
