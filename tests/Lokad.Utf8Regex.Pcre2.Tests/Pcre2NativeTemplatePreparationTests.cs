@@ -83,7 +83,7 @@ public sealed class Pcre2NativeTemplatePreparationTests
         {
             Assert.Throws<ArgumentException>(() => regex.Replace("zzz"u8, malformed, 0, options));
             var destination = new byte[] { 0xcc };
-            Assert.Throws<ArgumentException>(() => regex.TryReplace(subject, malformed, destination, out _, options));
+            Assert.Throws<ArgumentException>(() => regex.TryReplace(subject, malformed, destination, out _, substitutionOptions: options));
             Assert.Equal(0xcc, destination[0]);
         }
         using var token = new CancellationTokenSource(); token.Cancel();

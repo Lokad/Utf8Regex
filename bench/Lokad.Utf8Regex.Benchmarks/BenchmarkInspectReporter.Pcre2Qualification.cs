@@ -7,7 +7,8 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 9;
+    // Optional operation entries change managed call bindings; old paired bytes stay historical.
+    private const int Pcre2QualificationProtocolVersion = 10;
     private const int Pcre2QualificationAllocationProbeSamples = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 40;

@@ -41,7 +41,7 @@ it does not identify machine code or a particular fast path.
 backends. A scalar token can contribute one byte even when its accepted scalars
 require more; zero can mean that no positive bound was established.
 
-Subjects follow the UTF checking or trusted-input contract above. Normal character matching and
+Subjects follow the caller-valid input contract above. Normal character matching and
 empty-match progression use scalars and primary byte coordinates. Explicit `\C`
 is a separately opted-in byte atom: it can report a slice splitting a scalar.
 `\K` in an opted-in lookaround can report non-slice ranges. Check the reported
@@ -81,6 +81,14 @@ temporary loans refund synchronously. Program admission conservatively prepays
 the bounded replacement cache, including before first use. Substitution flags,
 byte starts, lazy errors and original operation controls remain. Output survives
 owner disposal; no additional retained-output receipt is needed for this route.
+
+Operation defaults now use one optional token-bearing signature per input/template
+representation. For example, `regex.Match(subject, cancellationToken: token)`
+starts at byte zero. Recompile old callers. When using TryReplace's retired
+options-only fifth argument, write `substitutionOptions: options`. Cancellation,
+finite limits and literal fast paths remain enforced. Benchmark call bindings
+have a new qualification protocol; recorded tables remain historical until the
+coherent refresh, with no rewritten samples.
 
 ## Example
 

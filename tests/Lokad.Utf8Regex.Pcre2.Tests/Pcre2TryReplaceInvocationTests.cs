@@ -150,7 +150,7 @@ public sealed class Pcre2TryReplaceInvocationTests
     {
         var storage = new byte[64]; "za😀a"u8.CopyTo(storage);
         Assert.Equal(OperationStatus.Done, Policy("a", 100000).TryReplace(storage.AsSpan(0, 7), "$0$0"u8,
-            storage.AsSpan(1, 4), out var written, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+            storage.AsSpan(1, 4), out var written, substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly));
         Assert.Equal(4, written);
         Assert.Equal("aaaa"u8.ToArray(), storage.AsSpan(1, written).ToArray());
     }

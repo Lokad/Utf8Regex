@@ -411,3 +411,14 @@ Matching/output workers and limits are unchanged. Cancellation still precedes
 program use and input/offset work. The separate explicit cursor allowance entry
 continues to reject null, preserve original-token precedence and refuse storage
 without an uncapped retry. No public validation policy or new execution mode.
+
+### PCRE2 operation signatures
+
+Short value/context/count, span enumeration, probe, substitution, destination and
+batch/group overloads now bind their existing long token-bearing entry using
+optional starts/options/cancellation. Recompile old binaries. For TryReplace,
+the old options-only fifth argument is now `substitutionOptions: options`; partial
+mode remains explicit. Other ordinary source calls retain their short forms.
+Cancellation precedes input/offset/option work. Literal shortcuts, finite limits,
+explicit funding, captures/MARK, partial and transactional destination behavior
+remain supported. Subject bytes are already-valid and unchanged.

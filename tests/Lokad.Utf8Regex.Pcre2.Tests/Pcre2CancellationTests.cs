@@ -21,7 +21,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(s_input, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -30,7 +30,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Count(s_input, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Count(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -39,7 +39,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -48,7 +48,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -57,7 +57,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.EnumerateMatches(s_input, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.EnumerateMatches(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -66,7 +66,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Probe(s_input, Pcre2PartialMode.None, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Probe(s_input, Pcre2PartialMode.None, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -75,7 +75,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar", cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -84,7 +84,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar"u8, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar"u8, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -93,7 +93,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "bar"u8, new byte[64], out _, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "bar"u8, new byte[64], out _, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -102,7 +102,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchMany(s_input, new Utf8Pcre2MatchData[8], out _, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchMany(s_input, new Utf8Pcre2MatchData[8], out _, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -111,7 +111,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = new Utf8Pcre2Regex("(?<w>foo)", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryGetFirstSetGroup(s_input, "w", out _, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryGetFirstSetGroup(s_input, "w", out _, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -121,18 +121,22 @@ public sealed class Pcre2CancellationTests
         var regex = Create();
         var token = CanceledToken();
         var invalid = new byte[] { 0xFF, 0xFF };
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, 0, Pcre2MatchOptions.None, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
     [Fact]
-    public void UncanceledTokenMatchesTokenlessResults()
+    public void OptionalArgumentsPreserveOffsetsOptionsAndDefaultSubstitution()
     {
         var regex = Create();
-        var token = CancellationToken.None;
-        Assert.Equal(regex.IsMatch(s_input, 0, Pcre2MatchOptions.None), regex.IsMatch(s_input, 0, Pcre2MatchOptions.None, token));
-        Assert.Equal(regex.Count(s_input, 0, Pcre2MatchOptions.None), regex.Count(s_input, 0, Pcre2MatchOptions.None, token));
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None, token).GetValueBytes()));
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None)), System.Text.Encoding.UTF8.GetString(regex.Replace(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)));
+        Assert.Equal(2, regex.Count(s_input, cancellationToken: default));
+        Assert.Equal(1, regex.Count(s_input, startOffsetInBytes: 4));
+        Assert.Equal(4, regex.Match(s_input, startOffsetInBytes: 4).StartOffsetInBytes);
+        Assert.False(regex.IsMatch(s_input, startOffsetInBytes: 1, matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.Equal("bar bar", Encoding.UTF8.GetString(regex.Replace(s_input, "bar")));
+        var destination = new byte[16];
+        Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryReplace(s_input, "bar"u8,
+            destination, out var written, substitutionOptions: Pcre2SubstitutionOptions.None));
+        Assert.Equal("bar bar", Encoding.UTF8.GetString(destination.AsSpan(0, written)));
     }
 }

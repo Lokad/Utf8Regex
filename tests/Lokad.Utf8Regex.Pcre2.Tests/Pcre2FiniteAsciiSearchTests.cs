@@ -7,6 +7,27 @@ public sealed class Pcre2FiniteAsciiSearchTests
 {
     private const string CreditCardPattern = @"(\d{4}[- ]){3}\d{3,4}";
 
+    [Fact]
+    public void OptionalBooleanEntryKeepsOffsetsOptionsAndInterruptionAuthoritative()
+    {
+        const string pattern = "(?|(abc)|(xyz))";
+        var regex = new Utf8Pcre2Regex(pattern);
+        var input = "😀abc tail"u8.ToArray();
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.IsMatch(input, cancellationToken: default));
+        Assert.False(regex.IsMatch(input, matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.True(regex.IsMatch(input, startOffsetInBytes: 4, matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch(input, startOffsetInBytes: 5));
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, cancellationToken: source.Token));
+        source.Cancel();
+        var error = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input,
+            startOffsetInBytes: -1, matchOptions: (Pcre2MatchOptions)int.MaxValue, cancellationToken: source.Token));
+        Assert.Equal(source.Token, error.CancellationToken);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch(input)).ErrorKind);
+    }
+
     [Theory]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2019", true)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/201A", false)]

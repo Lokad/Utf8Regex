@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Consolidate PCRE2 operation overloads onto optional token-bearing signatures;
+  retain unmetered literal shortcuts and controlled paths. Recompile old callers
+  and name TryReplace's former options-only argument `substitutionOptions:`.
+
 - Consolidate PythonRe short operation overloads onto existing optional
   token-bearing signatures. Recompile old callers and adapt shorter method-group
   delegates; preserve cancellation, funding, scalar and byte-output controls.

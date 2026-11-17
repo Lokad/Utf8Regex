@@ -10,6 +10,15 @@ See [release notes](../CHANGELOG.md), [migration](MIGRATION.md),
 [API snapshot](../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 Historical receipts retain their original product/runtime identities.
 
+Operation families use their existing token-bearing entry with optional byte
+start, match/substitution options and cancellation. Ordinary short source calls
+still work; old binary bindings must be recompiled. The retired TryReplace
+options-only fifth argument becomes named `substitutionOptions:`. Partial mode
+remains explicit. Entry cancellation precedes input/offset/option work. The
+unmetered literal shortcut remains available only at byte start zero with no
+match options and no cancelable token; finite limits/deadlines and explicit
+funding retain their controlled paths. No subject validation policy is added.
+
 ## Subject input contract
 
 The host supplies already-valid UTF-8 subjects and keeps borrowed bytes unchanged
