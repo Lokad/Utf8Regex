@@ -93,7 +93,9 @@ internal static partial class AsciiStructuralSuffixMatcher
             return false;
         }
 
-        for (var start = tailEnd - firstLiteral.Length; start >= searchStart; start--)
+        // A suffix can begin immediately after the greedy tail, or after
+        // backing off part of it. TryMatch checks the remaining subject length.
+        for (var start = tailEnd; start >= searchStart; start--)
         {
             if (TryMatch(input, start, suffixParts, out endIndex))
             {

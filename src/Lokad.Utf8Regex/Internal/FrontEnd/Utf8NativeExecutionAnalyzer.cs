@@ -30,12 +30,12 @@ internal static class Utf8NativeExecutionAnalyzer
             analyzedRegex = default;
             return false;
         }
-        if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
 
-        if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }

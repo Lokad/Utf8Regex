@@ -106,16 +106,16 @@ public sealed partial class Utf8Regex
                 : -1;
         _prioritizeBoundaryLiteralFamilyCount =
             (options & RegexOptions.RightToLeft) == 0 &&
-            (Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex) ||
-             preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-             preparedRegex.SearchPlan.HasBoundaryRequirements &&
-             Utf8EmittedLiteralFamilyCounter.CanCreate(
-                 preparedRegex.SearchPlan,
-                 preparedRegex.SearchPlan.CountOperation,
-                 preparedRegex.SearchPlan.FirstMatchOperation));
+            preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+            preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            Utf8EmittedLiteralFamilyCounter.CanCreate(
+                preparedRegex.SearchPlan,
+                preparedRegex.SearchPlan.CountOperation,
+                preparedRegex.SearchPlan.FirstMatchOperation);
         if (matchTimeout == Regex.InfiniteMatchTimeout &&
-            _program.CompiledEngineRuntime is Utf8StructuralLinearAutomatonCompiledEngineRuntime structuralRuntime &&
-            structuralRuntime.EmittedBoundaryLiteralFamily is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
+            (options & RegexOptions.RightToLeft) == 0 &&
+            _program.CompiledEngineRuntime is Utf8LiteralCompiledEngineRuntime literalRuntime &&
+            literalRuntime._emittedLiteralFamilyCounter is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
         {
             _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
         }

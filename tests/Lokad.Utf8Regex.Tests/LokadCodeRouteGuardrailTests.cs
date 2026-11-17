@@ -18,12 +18,12 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
-    public void MethodTokenFamilyStaysOnStructuralFamilyEngine()
+    public void MethodTokenFamilyUsesLiteralFamilyEngine()
     {
         var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -38,8 +38,7 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
         Assert.Equal(expected, regex.Count(bytes));
         Assert.Equal(expected > 0, regex.IsMatch(bytes));
-        // The compiled ASCII plan remains prepared, while mixed subjects use
-        // owned unit semantics for Unicode boundaries and UTF-16 projection.
+        // Mixed subjects preserve scalar word boundaries and byte coordinates.
         Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
         var match = regex.Match(bytes);
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index)), match.StartOffsetInBytes);

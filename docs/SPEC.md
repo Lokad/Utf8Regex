@@ -576,6 +576,11 @@ output staging and final output remain under their original admission and
 interruption controls.
 ASCII literal-family cursors publish byte coordinates directly. Search and
 per-match interruption checks remain; no subject coordinate map is built.
+Boundary-wrapped literal alternations, including shared prefixes, use literal
+analysis and the same emitted literal-family factory. Its existing eligible
+fused counter combines ASCII eligibility and counting; it does not validate UTF-8.
+Unicode neighbors, ordered prefix retries, RTL and controlled operations retain
+their applicable scalar boundary and interruption rules.
 Complete literal discovery can also use a proved positive literal suffix,
 confirmed under the same bounded comparison budget without consuming the suffix.
 Native counters admit their fixed scratch capacity against working bytes before

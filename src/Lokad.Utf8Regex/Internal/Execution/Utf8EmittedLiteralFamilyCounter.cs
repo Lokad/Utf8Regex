@@ -108,90 +108,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             firstMatchProgram.HasValue;
     }
 
-    internal static bool CanCreateBoundaryOnlyStructuralFamily(Utf8PreparedRegex regexPlan)
-    {
-        // Common-prefix analysis can represent a boundary-wrapped literal alternation as a
-        // structural family. With no separator, identifier, or suffix work, its execution
-        // semantics reconverge to the existing emitted boundary-literal-family kernel.
-        var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
-        var searchPlan = regexPlan.SearchPlan;
-        return RuntimeFeature.IsDynamicCodeSupported &&
-            regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            !familyPlan.HasSeparator &&
-            !familyPlan.HasIdentifier &&
-            familyPlan.SuffixParts.Length == 0 &&
-            (familyPlan.LeadingBoundary != Utf8BoundaryRequirement.None ||
-             familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None) &&
-            searchPlan.HasPreparedSearcher &&
-            searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
-            !searchPlan.HasTrailingLiteralRequirement &&
-            !searchPlan.HasAlternateLiteralPrefixOverlap &&
-            searchPlan.CountOperation.HasValue &&
-            searchPlan.FirstMatchOperation.HasValue;
-    }
-
-    internal static bool TryCreateBoundaryOnlyStructuralFamily(
-        Utf8PreparedRegex regexPlan,
-        out Utf8EmittedLiteralFamilyCounter? counter)
-    {
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        byte[][]? singleLiteralBuckets = null;
-        try
-        {
-            counter = null;
-            if (!CanCreateBoundaryOnlyStructuralFamily(regexPlan))
-            {
-                return false;
-            }
-
-            var searchPlan = regexPlan.SearchPlan;
-            var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
-            singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(searchPlan, out var loweredLiterals) ? loweredLiterals : null;
-            var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(searchPlan, out var commonPrefix, out var prefixLiterals)
-                ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
-                : ((byte[] CommonPrefix, byte[][] Literals)?)null;
-            counter = budget.AllocateObject(new ConstructionState(
-                searchPlan,
-                searchPlan.CountOperation,
-                searchPlan.FirstMatchOperation,
-                familyPlan.LeadingBoundary,
-                familyPlan.TrailingBoundary,
-                CompileCount(
-                    requiresConfirmation: true,
-                    useAsciiBoundaryOnlyFastConfirmation: true,
-                    retryOverlappingAfterRejection: false,
-                    singleLiteralBuckets,
-                    singleBucketPrefixFamily),
-                singleBucketPrefixFamily is { } fusedPrefixFamily &&
-                CanFuseAsciiValidation(fusedPrefixFamily.CommonPrefix, fusedPrefixFamily.Literals)
-                    ? CompileAsciiValidatedSingleBucketPrefixCount(
-                        fusedPrefixFamily.CommonPrefix,
-                        fusedPrefixFamily.Literals)
-                    : null,
-                CompileIsMatch(
-                    requiresConfirmation: true,
-                    useAsciiBoundaryOnlyFastConfirmation: true,
-                    retryOverlappingAfterRejection: false,
-                    singleLiteralBuckets,
-                    singleBucketPrefixFamily),
-                CompileTryMatch(
-                    requiresConfirmation: true,
-                    useAsciiBoundaryOnlyFastConfirmation: true,
-                    retryOverlappingAfterRejection: false,
-                    singleLiteralBuckets,
-                    singleBucketPrefixFamily)), static state => new Utf8EmittedLiteralFamilyCounter(state));
-            scope.Complete();
-            return true;
-        }
-        finally
-        {
-            if (singleLiteralBuckets is not null) budget.ReleaseArray(singleLiteralBuckets, false);
-            budget.LeaveDepth();
-        }
-    }
-
     internal static bool TryCreate(
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan countProgram,
@@ -227,7 +143,13 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
                     plan.HasAlternateLiteralProperStartOverlap,
                     singleLiteralBuckets,
                     singleBucketPrefixFamily),
-                AsciiValidatedCount: null,
+                canUseFastConfirmation &&
+                singleBucketPrefixFamily is { } fusedPrefixFamily &&
+                CanFuseAsciiValidation(fusedPrefixFamily.CommonPrefix, fusedPrefixFamily.Literals)
+                    ? CompileAsciiValidatedSingleBucketPrefixCount(
+                        fusedPrefixFamily.CommonPrefix,
+                        fusedPrefixFamily.Literals)
+                    : null,
                 CompileIsMatch(
                     firstMatchProgram.Confirmation.HasValue,
                     canUseFastConfirmation,

@@ -55,9 +55,7 @@ internal static class Utf8CompiledEngineSelector
         if (regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.DeterministicLinear &&
             (regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily))
         {
-            var emitted = Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regexPlan);
-            return new(Utf8CompiledEngineKind.StructuralLinearAutomaton,
-                emitted ? Utf8CompiledExecutionBackend.EmittedInstruction : Utf8CompiledExecutionBackend.Legacy);
+            return new(Utf8CompiledEngineKind.StructuralLinearAutomaton);
         }
 
         return new(Utf8CompiledEngineKind.FallbackRegex);

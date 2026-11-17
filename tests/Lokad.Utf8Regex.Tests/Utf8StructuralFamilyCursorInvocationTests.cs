@@ -10,6 +10,46 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8StructuralFamilyCursorInvocationTests
 {
+    [Theory]
+    [InlineData(false, @"(?:call|invoke)[ \t]+[A-Z][a-z]*\(")]
+    [InlineData(true, @"(?:call|invoke)[ \t]+[A-Z][a-z]*\(")]
+    [InlineData(false, @"(?:call|invoke)[ \t]+[A-Z][a-z]*e")]
+    [InlineData(true, @"(?:call|invoke)[ \t]+[A-Z][a-z]*e")]
+    [InlineData(false, @"(?:call|invoke)[ \t]+[A-Z][a-z]*ame")]
+    [InlineData(true, @"(?:call|invoke)[ \t]+[A-Z][a-z]*ame")]
+    public void IdentifierCountAgreesWithMatchAndCursor(bool compiled, string pattern)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var oracle = new Regex(pattern, options);
+        using var source = new CancellationTokenSource();
+        foreach (var finite in new[] { false, true })
+        foreach (var live in new[] { false, true })
+        {
+            var policy = finite ? new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000, MaxDepth = 8192,
+                MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20,
+            } : Utf8ResourcePolicy.Unlimited;
+            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+            foreach (var text in new[] { "!call Name(", "invoke X( call Abc(", "!call name(", "call Name", "é😀 call Name( invoke X(" })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                var token = live ? source.Token : default;
+                Assert.Equal(oracle.Count(text), regex.Count(input, token));
+                Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));
+                var cursor = regex.EnumerateMatches(input, token);
+                foreach (Match expected in oracle.Matches(text))
+                {
+                    Assert.True(cursor.MoveNext());
+                    Assert.Equal(expected.Value, Encoding.UTF8.GetString(input.AsSpan(
+                        cursor.Current.StartOffsetInBytes,
+                        cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
+                }
+                Assert.False(cursor.MoveNext());
+            }
+        }
+    }
+
     private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
         (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 
@@ -36,7 +76,6 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
         var oracle = new Regex(pattern, options);
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)

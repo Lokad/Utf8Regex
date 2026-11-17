@@ -8,6 +8,51 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
 {
     private const string Pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
 
+    [Theory]
+    [InlineData(Pattern)]
+    [InlineData(@"\b(?:Task|TaskFactory|TaskScheduler)\b")]
+    [InlineData(@"\B(?:foo|foobar)\B")]
+    [InlineData(@"(?<word>\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b)")]
+    public void SharedPrefixLiteralsPreserveBoundariesPriorityAndCaptures(string pattern)
+    {
+        using var source = new CancellationTokenSource();
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
+            RegexOptions.NonBacktracking, RegexOptions.IgnoreCase | RegexOptions.Compiled })
+        foreach (var controlled in new[] { false, true })
+        {
+            var options = RegexOptions.CultureInvariant | mode;
+            var regex = new Utf8Regex(pattern, options, resourcePolicy: controlled
+                ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }
+                : default);
+            var oracle = new Regex(pattern, options);
+            var token = controlled ? source.Token : default;
+            // BMP word neighbors and nonword emoji share the scalar boundary
+            // semantics of this literal-only grammar with the BCL comparator.
+            foreach (var text in new[] { "", "LogTrace xLogDebug LogInformation_ LogWarning LogError",
+                "TaskFactory TaskScheduler Task _foo_ _foobar_ xfoox", "éLogTrace LogDebugé α LogError 😀 LogWarning.\u0301",
+                "logtrace LOGERROR TasK Task LogWarning", "😀 Task LogError xfoo_" })
+            {
+                var bytes = Encoding.UTF8.GetBytes(text);
+                var expected = oracle.Matches(text);
+                Assert.Equal(expected.Count, regex.Count(bytes, token));
+                Assert.Equal(expected.Count != 0, regex.IsMatch(bytes, token));
+                using var cursor = regex.CreateMatchCursor(bytes, cancellationToken: token);
+                foreach (Match match in expected)
+                {
+                    Assert.True(cursor.MoveNext(out var actual));
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), actual.Value.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + match.Length)), actual.Value.EndOffsetInBytes);
+                    for (var group = 0; group < match.Groups.Count; group++)
+                    {
+                        Assert.Equal(match.Groups[group].Value, Encoding.UTF8.GetString(actual.GetGroupMemory(group).Span));
+                        Assert.Equal(match.Groups[group].Captures.Count, actual.GetCaptures(group).Length);
+                    }
+                }
+                Assert.False(cursor.MoveNext(out _));
+            }
+        }
+    }
+
     [Fact]
     public void CompiledPascalCaseFamilyFusesAsciiValidationWithCount()
     {

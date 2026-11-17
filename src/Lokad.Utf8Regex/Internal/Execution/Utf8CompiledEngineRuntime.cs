@@ -119,20 +119,12 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
 
-    internal Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
+    internal Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
     {
         _regexPlan = plan;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(plan);
         _verifierRuntime = verifier;
-        _emittedBoundaryLiteralFamily = emit &&
-            (_regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) == 0 &&
-            Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
-                _regexPlan,
-            out var preparedBoundaryLiteralFamily)
-                ? preparedBoundaryLiteralFamily
-                : null;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -143,20 +135,11 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: false);
 
-    internal Utf8EmittedLiteralFamilyCounter? EmittedBoundaryLiteralFamily =>
-        _emittedBoundaryLiteralFamily;
-
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
-
-        if (budget.IsInfinite &&
-            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
-        {
-            return emittedBoundaryLiteralFamily.IsMatch(input);
-        }
 
         if (Utf8StructuralLinearCompiledRouter.TryIsMatch(
                 _regexPlan,
@@ -178,13 +161,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
 
-        if (budget.IsInfinite &&
-            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilyEmit);
-            return emittedBoundaryLiteralFamily.Count(input);
-        }
-
         if (Utf8StructuralLinearCompiledRouter.TryCount(
                 _regexPlan,
                 _verifierRuntime,
@@ -204,15 +180,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
-
-        if (validation.IsAscii &&
-            budget.IsInfinite &&
-            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
-        {
-            return emittedBoundaryLiteralFamily.TryMatch(input, out var index, out var matchedLength)
-                ? new Utf8CaptureRange(index, (index) + (matchedLength))
-                : default(Utf8CaptureRange);
-        }
 
         if (Utf8StructuralLinearCompiledRouter.TryMatch(
                 _regexPlan,

@@ -60,15 +60,15 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorClassifiesBoundaryWrappedSharedPrefixLiteralAlternationAsStructuralFamily()
+    public void ConstructorKeepsBoundaryWrappedSharedPrefixAlternationOnLiteralExecution()
     {
         var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.StructuralIdentifierFamilyPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.StructuralIdentifierFamilyPlan.TrailingBoundary);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.TrailingBoundary);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
     }
 
     [Theory]
@@ -82,7 +82,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 

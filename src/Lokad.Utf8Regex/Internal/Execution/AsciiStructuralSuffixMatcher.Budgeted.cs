@@ -69,7 +69,7 @@ internal static partial class AsciiStructuralSuffixMatcher
             return TryMatch(input, tailEnd, suffixParts, ref invocation, out endIndex, out breach);
         var firstLiteral = suffixParts[0].LiteralUtf8;
         if (firstLiteral.Length == 0) return false;
-        for (var start = tailEnd - firstLiteral.Length; start >= searchStart; start--)
+        for (var start = tailEnd; start >= searchStart; start--)
         {
             if (TryMatch(input, start, suffixParts, ref invocation, out endIndex, out breach)) return true;
             if (breach != Utf8ExecutionLimitKind.None) return false;

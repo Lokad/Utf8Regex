@@ -2,6 +2,14 @@
 
 ## Unreleased — 0.5.0
 
+- Correct identifier-family suffix matching when the suffix begins at the end of
+  a greedy identifier tail, keeping Count and cursors consistent with Match.
+
+- Keep shared-prefix boundary literals on literal execution and consolidate their
+  emitted/fused counter factory. Preserve existing kernels, Unicode boundaries,
+  ordered alternatives and controlled matching while removing structural-emitter
+  plumbing.
+
 - Retire Core's ordered literal-window execution, cursor mode and PCRE2 Count
   wrapper. Keep shared literal/candidate search and the PCRE2 lazy-gap compatibility
   guard. Scalar programs preserve matching and interruption; execution costs and
