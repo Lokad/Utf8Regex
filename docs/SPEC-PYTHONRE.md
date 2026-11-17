@@ -56,6 +56,12 @@ impossible starting byte before mandatory-literal screening or VM scratch. This
 never establishes success; possible starts retain screening and verification.
 The original invocation still checks interruption and resource admission.
 
+Nonliteral prefix/digit Match and DotAll prefix/suffix FullMatch use the existing
+scalar programs, including first-use FullMatch preparation under the original
+invocation. Pure literal paths remain. Work/depth/scratch requirements depend on
+the selected program; retirement of a shortcut can increase these costs without
+changing the input, matching, lifetime or interruption contracts.
+
 Shared scalar execution can scan no-rewind, unbounded positive ASCII interval
 repeats in blocks of at most 2048 bytes. Basic work and original interruption are
 checked before each block and at completion, even without finite limits. Scalar

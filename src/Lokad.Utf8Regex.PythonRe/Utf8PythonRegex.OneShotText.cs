@@ -11,10 +11,9 @@ public sealed partial class Utf8PythonRegex
         using var programUse = EnterProgramUse();
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var native = kind == 2 && CanUseLiteralFullMatch ||
-            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            (kind is 0 or 1 && startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath ||
-             kind == 1 && startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null ||
-             kind == 2 && _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null);
+            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled &&
+            MatchTimeout == Timeout.InfiniteTimeSpan && kind is 0 or 1 &&
+            startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath;
         if (native)
         {
             var invocation = CreateInvocation(cancellationToken);

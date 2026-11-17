@@ -128,12 +128,10 @@ internal static partial class PythonReBenchmarkReporter
         CpythonStreamWorker worker)
     {
         var context = new PythonReBenchmarkContext(benchmarkCase);
-        if (!context.SupportsOneShotPhases ||
-            !context.UsesZeroOffsetUtf8ValueFastPath &&
-            !context.UsesAsciiLiteralPrefixDigitMatchFastPath)
+        if (!context.SupportsOneShotPhases)
         {
             throw new InvalidOperationException(
-                $"PythonRe one-shot scaling '{benchmarkCase.Id}' did not retain its direct one-shot route.");
+                $"PythonRe one-shot scaling '{benchmarkCase.Id}' does not support one-shot measurements.");
         }
 
         var eligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(

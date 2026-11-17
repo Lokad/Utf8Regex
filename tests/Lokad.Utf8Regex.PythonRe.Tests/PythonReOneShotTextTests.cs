@@ -71,13 +71,11 @@ public sealed class PythonReOneShotTextTests
     }
 
     [Fact]
-    public void NativeDotAllStringKeepsTheCompleteSuffixAndDoesNotPrepareAFullVm()
+    public void DotAllStringKeepsTheCompleteSuffix()
     {
         var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
         var input = "πstart\n東京😀end"u8.ToArray();
-        Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.Equal("start\n東京😀end", regex.FullMatchToString(input, 2));
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Null(regex.FullMatchToString("startendX"u8));
     }
 
@@ -125,22 +123,13 @@ public sealed class PythonReOneShotTextTests
     }
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(2, true)]
-    public void NativeStringLoanOverlapsItsParentUntilPublication(int kind, bool allow)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NativeStringLoanOverlapsItsParentUntilPublication(bool allow)
     {
-        var regex = kind switch
-        {
-            1 => new Utf8PythonRegex("ab[0-9]+"),
-            2 => new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll),
-            _ => new Utf8PythonRegex("😀"),
-        };
-        var expected = kind switch { 1 => "ab" + new string('7', 5000), 2 => "start😀end", _ => "😀" };
-        var input = Encoding.UTF8.GetBytes(kind == 2 ? "π" + expected : expected + "x");
+        var regex = new Utf8PythonRegex("😀");
+        const string expected = "😀";
+        var input = Encoding.UTF8.GetBytes(expected + "x");
         var extent = TextBytes(expected.Length);
         var invocation = new Utf8SliceInvocation(new(0, 0, 13 + extent - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
@@ -149,7 +138,7 @@ public sealed class PythonReOneShotTextTests
         try
         {
             Exception? failure = null;
-            try { result = regex.MaterializeNativeMatchText(input, kind == 2 ? 2 : 0, kind, ref invocation, ref results); }
+            try { result = regex.MaterializeNativeMatchText(input, 0, 0, ref invocation, ref results); }
             catch (InvalidOperationException error) { failure = error; }
             if (allow)
             {

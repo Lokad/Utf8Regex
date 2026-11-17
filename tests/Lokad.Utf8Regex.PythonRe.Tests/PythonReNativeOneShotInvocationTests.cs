@@ -113,28 +113,22 @@ public sealed class PythonReNativeOneShotInvocationTests
     [Theory]
     [InlineData(0, false)]
     [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(2, true)]
     [InlineData(3, false)]
     [InlineData(3, true)]
     [InlineData(4, false)]
     [InlineData(4, true)]
     public void EveryNativeValueOrTextWorkCutoffIsCumulativeAndUnpublished(int kind, bool text)
     {
-        var pattern = kind switch { 0 => "Шерлок", 1 => "ab[0-9]+", 2 => "ab.*xy", 4 => "needle", _ => "é😀" };
-        var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 1 => "ab123😀", 2 => "éab😀xy", 4 => "needle", _ => "xé😀z" });
-        var expected = kind switch { 0 => "Шерлок", 1 => "ab123", 2 => "ab😀xy", 4 => "needle", _ => "é😀" };
-        var regex = new Utf8PythonRegex(pattern, kind == 2 ? PythonReCompileOptions.DotAll : PythonReCompileOptions.None);
+        var pattern = kind switch { 0 => "Шерлок", 4 => "needle", _ => "é😀" };
+        var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 4 => "needle", _ => "xé😀z" });
+        var expected = kind switch { 0 => "Шерлок", 4 => "needle", _ => "é😀" };
+        var regex = new Utf8PythonRegex(pattern);
         if (kind == 0) Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
-        if (kind == 1) Assert.True(regex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
-        if (kind == 2) Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         // The supplementary sequence has an exact core backend, while Python's
         // narrower public classifier keeps scalar discovery. Retain this case
         // as an internal borrowed-backend witness, separately from public routes.
         if (kind == 3) Assert.Equal("ExactUtf8Literal", regex.DebugUtf8ExecutionKind);
-        var start = kind == 2 ? 2 : 0;
+        const int start = 0;
         var operationKind = kind switch { 3 => 0, 4 => 2, _ => kind };
         const ulong seed = 7;
         var measured = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
@@ -171,107 +165,5 @@ public sealed class PythonReNativeOneShotInvocationTests
             finally { results.Release(ref invocation); }
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
         }
-    }
-
-    [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(2, true)]
-    public void NativeScansObserveOriginalTokenAndDeadline(int lane, bool expire)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var prefix = Encoding.ASCII.GetBytes(new string('a', 65536));
-        var input = lane == 0 ? Encoding.ASCII.GetBytes("a" + new string('1', 65536))
-            : lane == 1 ? prefix : Encoding.ASCII.GetBytes("payload:" + new string('a', 65536));
-        var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20),
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-        while ((invocation.Budget.Steps & 63) != 0)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        var seed = invocation.Budget.Steps;
-        var entered = false;
-        invocation.CheckpointHook = step =>
-        {
-            Assert.True(step > seed); entered = true;
-            if (expire) ticks = 50; else token.Cancel();
-        };
-        var published = false;
-        Exception? failure = null;
-        try
-        {
-            if (lane == 0) _ = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, "a"u8, ref invocation);
-            else _ = PythonReAsciiPrefixDigitMatcher.MatchesPrefix(lane == 1 ? input : input.AsSpan(8), prefix, ref invocation);
-            published = true;
-        }
-        catch (Exception error) { failure = error; }
-        Assert.True(entered); Assert.False(published);
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
-        Assert.True(invocation.Budget.Steps > seed);
-    }
-
-    [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(2, true)]
-    public void NativeProjectionBorrowsTheTokenInsideLongDiscovery(int family, bool text)
-    {
-        var fragment = new string('a', 65536);
-        if (family != 0)
-        {
-            // Less literal preparation now admits this size under the fixed
-            // backstop. An explicit small construction cap must still deny;
-            // keep the original long fragment for the scan-interruption check.
-            var rejected = family == 1 ? fragment + ".*z" : "z.*" + fragment;
-            var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(rejected,
-                PythonReCompileOptions.DotAll, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
-                new Utf8ConstructionPolicy { MaxBytes = 1UL << 20 }, Regex.InfiniteMatchTimeout, CancellationToken.None));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, denied.ResourceKind);
-        }
-        var pattern = family switch { 0 => "a[0-9]+", 1 => fragment + ".*z", _ => "z.*" + fragment };
-        var input = Encoding.UTF8.GetBytes(family switch
-        {
-            0 => "a" + new string('1', 65536), 1 => fragment + "😀z", _ => "z😀" + fragment,
-        });
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.DotAll);
-        var probe = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
-        using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, token.Token);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        var entered = false;
-        invocation.CheckpointHook = steps =>
-        {
-            if (steps > validationSteps + 4) { entered = true; token.Cancel(); }
-        };
-        Utf8InvocationResultLedger results = default;
-        var published = false;
-        Exception? failure = null;
-        try
-        {
-            try
-            {
-                if (text) _ = regex.MaterializeNativeMatchText(input, 0, family == 0 ? 1 : 2, ref invocation, ref results);
-                else _ = regex.MaterializeNativeMatchValue(input, 0, family == 0 ? 1 : 2, ref invocation);
-                published = true;
-            }
-            catch (Exception error) { failure = error; }
-            Assert.True(entered); Assert.False(published);
-            Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(0UL, results.ReservedBytes); Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
-        finally { results.Release(ref invocation); }
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
     }
 }

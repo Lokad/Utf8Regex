@@ -93,9 +93,6 @@ public sealed partial class Utf8PythonRegex
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseOptionalExactCaptureFindAll;
     private readonly byte[]? _repeatedExactFindAllUtf8;
-    private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
-    private readonly byte[]? _asciiDotAllFullMatchPrefix;
-    private readonly byte[]? _asciiDotAllFullMatchSuffix;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private const int ReplacementPlanCacheCapacity = 16;
@@ -212,30 +209,6 @@ public sealed partial class Utf8PythonRegex
                 out var exactFindAllString)
                 ? exactFindAllString
                 : null;
-        _asciiLiteralPrefixDigitMatchPrefix = !HasFiniteExecutionLimits && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            parseResult.CaptureGroupCount == 0 &&
-            PythonReTranslator.TryGetAsciiLiteralPrefixDigitRepeat(
-                parseResult.Root,
-                parseResult.Options,
-                out var asciiLiteralPrefixDigitMatchPrefix)
-                ? asciiLiteralPrefixDigitMatchPrefix
-                : null;
-        byte[]? asciiDotAllFullMatchPrefix = null;
-        byte[]? asciiDotAllFullMatchSuffix = null;
-        if (!HasFiniteExecutionLimits && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            parseResult.CaptureGroupCount == 0 &&
-            PythonReTranslator.TryGetAsciiDotAllFullMatchPlan(
-                parseResult.Root,
-                parseResult.Options,
-                out var candidatePrefix,
-                out var candidateSuffix))
-        {
-            asciiDotAllFullMatchPrefix = candidatePrefix;
-            asciiDotAllFullMatchSuffix = candidateSuffix;
-        }
-
-        _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
-        _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         // Nullable iteration always uses the Python scalar program. Only the
         // exact empty literal has a separate Core value-operation consumer.
@@ -367,12 +340,6 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
         _repeatedExactFindAllUtf8 is not null && _utf8Regex is not null;
-
-    internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
-        _asciiLiteralPrefixDigitMatchPrefix is not null;
-
-    internal bool DebugUsesAsciiDotAllFullMatchFastPath =>
-        _asciiDotAllFullMatchPrefix is not null;
 
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;

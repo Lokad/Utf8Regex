@@ -376,8 +376,6 @@ public sealed class Utf8PythonRegexTests
         var startOffsetInBytes = "π"u8.Length;
 
         var match = regex.FullMatch(input, startOffsetInBytes);
-
-        Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.True(match.Success);
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(input.Length, match.EndOffsetInBytes);
@@ -401,13 +399,6 @@ public sealed class Utf8PythonRegexTests
             PythonReCompileOptions.DotAll,
             TimeSpan.FromSeconds(1));
 
-        Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
-        Assert.True(overlapping.DebugUsesAsciiDotAllFullMatchFastPath);
-        Assert.False(ignoreCase.DebugUsesAsciiDotAllFullMatchFastPath);
-        Assert.False(captured.DebugUsesAsciiDotAllFullMatchFastPath);
-        Assert.False(reluctant.DebugUsesAsciiDotAllFullMatchFastPath);
-        Assert.False(finiteTimeout.DebugUsesAsciiDotAllFullMatchFastPath);
-
         Assert.False(regex.FullMatch("xstartend"u8).Success);
         Assert.False(regex.FullMatch("startendx"u8).Success);
         Assert.False(regex.FullMatch("start-END"u8).Success);
@@ -420,6 +411,8 @@ public sealed class Utf8PythonRegexTests
         Assert.True(ignoreCase.FullMatch("START\nEND"u8).Success);
         Assert.Equal("middle", captured.FullMatchDetailed("startmiddleend"u8)
             .GetGroup(1).Value.GetValueString());
+        Assert.True(reluctant.FullMatch("start😀endend"u8).Success);
+        Assert.True(finiteTimeout.FullMatch("start\n😀end"u8).Success);
     }
 
     [Fact]
@@ -959,12 +952,10 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void MatchUsesValidatedAsciiLiteralPrefixDigitRoute()
+    public void MatchKeepsAsciiLiteralPrefixDigitSemantics()
     {
         var regex = new Utf8PythonRegex("header:[0-9]+");
         var match = regex.Match("header:12345 café"u8);
-
-        Assert.True(regex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);
         Assert.Equal(12, match.EndOffsetInBytes);
@@ -972,23 +963,19 @@ public sealed class Utf8PythonRegexTests
         Assert.False(regex.Match("header: tail"u8).Success);
         Assert.False(regex.Match("other:123"u8).Success);
 
-        var invalid = "header:123"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-
     }
 
     [Fact]
-    public void MatchRetainsFallbackOutsideAsciiLiteralPrefixDigitRoute()
+    public void MatchKeepsUnicodeAndGeneralPrefixDigitSemantics()
     {
         var regex = new Utf8PythonRegex("header:[0-9]+");
         var ignoreCase = new Utf8PythonRegex("header:[0-9]+", PythonReCompileOptions.IgnoreCase);
         var reluctant = new Utf8PythonRegex("header:[0-9]+?");
         var captured = new Utf8PythonRegex("header:([0-9]+)");
         var finiteTimeout = new Utf8PythonRegex("header:[0-9]+", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
-
-        Assert.False(ignoreCase.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
-        Assert.False(reluctant.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
-        Assert.False(captured.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
-        Assert.False(finiteTimeout.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.Equal("HEADER:123", ignoreCase.Match("HEADER:123"u8).GetValueString());
+        Assert.Equal("123", captured.MatchDetailed("header:123"u8).GetGroup(1).Value.GetValueString());
+        Assert.Equal("header:123", finiteTimeout.Match("header:123"u8).GetValueString());
         Assert.Equal(1, reluctant.Match("header:123"u8).EndOffsetInBytes - "header:"u8.Length);
 
         var offsetMatch = regex.Match("skipheader:123 tail"u8, "skip"u8.Length);

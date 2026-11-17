@@ -439,23 +439,6 @@ public sealed partial class Utf8PythonRegex
         // Consumers derive text sizing or coordinates only for a selected range.
         Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
         start = end = -1;
-        if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
-        {
-            start = 0;
-            end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, prefix, ref invocation);
-            return end != 0;
-        }
-        if (kind == 2 && _asciiDotAllFullMatchPrefix is { } head && _asciiDotAllFullMatchSuffix is { } tail)
-        {
-            var subject = input[startOffsetInBytes..];
-            if (subject.Length < head.Length || subject.Length - head.Length < tail.Length ||
-                !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject, head, ref invocation) ||
-                !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject[(subject.Length - tail.Length)..], tail, ref invocation))
-                return false;
-            start = startOffsetInBytes;
-            end = input.Length;
-            return true;
-        }
         if (_utf8Regex is null) throw new InvalidOperationException("Native result discovery requires its prepared core.");
         if (_utf8Regex.Inspection.PreparedRegex.LiteralUtf8 is { Length: 0 })
         {

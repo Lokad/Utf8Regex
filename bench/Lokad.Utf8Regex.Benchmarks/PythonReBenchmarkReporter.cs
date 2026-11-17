@@ -903,35 +903,16 @@ internal static partial class PythonReBenchmarkReporter
         var validatedExact = context.SupportsExactLiteralOneShotReplay
             ? context.ExecuteValidatedCoreRawOneShot()
             : expected;
-        var rawPrefixDigits = context.SupportsAsciiPrefixDigitOneShotReplay
-            ? context.ExecuteRawAsciiPrefixDigitOneShot()
-            : expected;
-        var validatedPrefixDigits = context.SupportsAsciiPrefixDigitOneShotReplay
-            ? context.ExecuteValidatedAsciiPrefixDigitOneShot()
-            : expected;
-        var rawDotAllFullMatch = context.SupportsAsciiDotAllFullMatchReplay
-            ? context.ExecuteRawAsciiDotAllFullMatch()
-            : expected;
-        var validatedDotAllFullMatch = context.SupportsAsciiDotAllFullMatchReplay
-            ? context.ExecuteValidatedAsciiDotAllFullMatch()
-            : expected;
         var predecoded = context.ExecutePredecodedOneShot();
         if (expected != direct ||
             expected != rawExact ||
             expected != validatedExact ||
-            expected != rawPrefixDigits ||
-            expected != validatedPrefixDigits ||
-            expected != rawDotAllFullMatch ||
-            expected != validatedDotAllFullMatch ||
             expected != predecoded)
         {
             throw new InvalidOperationException(
                 $"PythonRe one-shot phase diagnostic '{id}' produced incomparable results: " +
                 $"public={expected}, direct={direct}, raw-exact={rawExact}, " +
                 $"validated-exact={validatedExact}, " +
-                $"raw-prefix-digits={rawPrefixDigits}, validated-prefix-digits={validatedPrefixDigits}, " +
-                $"raw-dotall-fullmatch={rawDotAllFullMatch}, " +
-                $"validated-dotall-fullmatch={validatedDotAllFullMatch}, " +
                 $"predecoded={predecoded}.");
         }
 
@@ -955,18 +936,6 @@ internal static partial class PythonReBenchmarkReporter
         {
             PrintOperation("RawExactLiteral", MeasurePhase(context.ExecuteCoreRawOneShot));
             PrintOperation("ValidatedExactLiteral", MeasurePhase(context.ExecuteValidatedCoreRawOneShot));
-        }
-
-        if (context.SupportsAsciiPrefixDigitOneShotReplay)
-        {
-            PrintOperation("RawPrefixDigits", MeasurePhase(context.ExecuteRawAsciiPrefixDigitOneShot));
-            PrintOperation("ValidatedPrefixDigits", MeasurePhase(context.ExecuteValidatedAsciiPrefixDigitOneShot));
-        }
-
-        if (context.SupportsAsciiDotAllFullMatchReplay)
-        {
-            PrintOperation("RawDotAllFullMatch", MeasurePhase(context.ExecuteRawAsciiDotAllFullMatch));
-            PrintOperation("ValidatedDotAllFullMatch", MeasurePhase(context.ExecuteValidatedAsciiDotAllFullMatch));
         }
 
         PrintOperation("CoreDirect", MeasurePhase(context.ExecuteCoreDirectOneShot));
@@ -1887,11 +1856,6 @@ internal sealed class PythonReBenchmarkContext
     private readonly Utf8Regex? _oneShotCoreRegex;
     private readonly bool _supportsOneShotPhases;
     private readonly bool _supportsExactLiteralOneShotReplay;
-    private readonly bool _supportsAsciiPrefixDigitOneShotReplay;
-    private readonly byte[] _oneShotAsciiPrefix;
-    private readonly bool _supportsAsciiDotAllFullMatchReplay;
-    private readonly byte[] _oneShotDotAllPrefix;
-    private readonly byte[] _oneShotDotAllSuffix;
     private readonly string _decoded;
     private readonly byte[] _replacementBytes;
     private readonly string _dotNetReplacement;
@@ -2190,38 +2154,12 @@ internal sealed class PythonReBenchmarkContext
                 oneShotCoreRegex.Inspection.ExecutionKind is
                     NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
                 oneShotCoreRegex.Inspection.DebugTryMatchExactLiteral(InputBytes, out _);
-            var oneShotParseResult = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
-            var oneShotAsciiPrefix = Array.Empty<byte>();
-            _supportsAsciiPrefixDigitOneShotReplay =
-                benchmarkCase.Operation == PythonReBenchmarkOperation.Match &&
-                PythonReTranslator.TryGetAsciiLiteralPrefixDigitRepeat(
-                    oneShotParseResult.Root,
-                    oneShotParseResult.Options,
-                    out oneShotAsciiPrefix);
-            _oneShotAsciiPrefix = oneShotAsciiPrefix;
-            var oneShotDotAllPrefix = Array.Empty<byte>();
-            var oneShotDotAllSuffix = Array.Empty<byte>();
-            _supportsAsciiDotAllFullMatchReplay =
-                benchmarkCase.Operation == PythonReBenchmarkOperation.FullMatch &&
-                InputBytes.AsSpan().ContainsAnyExceptInRange((byte)0, (byte)0x7f) == false &&
-                PythonReTranslator.TryGetAsciiDotAllFullMatchPlan(
-                    oneShotParseResult.Root,
-                    oneShotParseResult.Options,
-                    out oneShotDotAllPrefix,
-                    out oneShotDotAllSuffix);
-            _oneShotDotAllPrefix = oneShotDotAllPrefix;
-            _oneShotDotAllSuffix = oneShotDotAllSuffix;
         }
         else
         {
             _oneShotCoreRegex = null;
             _supportsOneShotPhases = false;
             _supportsExactLiteralOneShotReplay = false;
-            _supportsAsciiPrefixDigitOneShotReplay = false;
-            _oneShotAsciiPrefix = [];
-            _supportsAsciiDotAllFullMatchReplay = false;
-            _oneShotDotAllPrefix = [];
-            _oneShotDotAllSuffix = [];
         }
     }
 
@@ -2281,15 +2219,6 @@ internal sealed class PythonReBenchmarkContext
 
     internal bool SupportsExactLiteralOneShotReplay => _supportsExactLiteralOneShotReplay;
 
-    internal bool SupportsAsciiPrefixDigitOneShotReplay => _supportsAsciiPrefixDigitOneShotReplay;
-
-    internal bool SupportsAsciiDotAllFullMatchReplay => _supportsAsciiDotAllFullMatchReplay;
-
-    internal bool UsesZeroOffsetUtf8ValueFastPath => _pythonRegex.DebugUsesZeroOffsetUtf8ValueFastPath;
-
-    internal bool UsesAsciiLiteralPrefixDigitMatchFastPath =>
-        _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath;
-
     internal string OneShotCoreExecutionKind => GetOneShotCoreRegex()
         .Inspection.ExecutionKind.ToString();
 
@@ -2306,11 +2235,7 @@ internal sealed class PythonReBenchmarkContext
             "value ranges from a nonzero byte offset"),
         PythonReBenchmarkOperation.Match => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath
-                ? "caller-valid UTF-8; direct anchored ASCII literal-prefix/digit-repeat value ranges"
-                : "anchored value ranges"),
-        PythonReBenchmarkOperation.FullMatch when _pythonRegex.DebugUsesAsciiDotAllFullMatchFastPath =>
-            "caller-valid UTF-8; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
+            "anchored value ranges"),
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             "OwnedScalar",
             "full-match value ranges"),
@@ -3381,60 +3306,6 @@ internal sealed class PythonReBenchmarkContext
 
         _ = Utf8InputAnalyzer.ValidateOnly(InputBytes);
         return ExecuteCoreRawOneShot();
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteRawAsciiPrefixDigitOneShot()
-    {
-        if (!SupportsAsciiPrefixDigitOneShotReplay)
-        {
-            throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
-        }
-
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
-        return end == 0
-            ? default
-            : new PythonReBenchmarkValueResult(true, 0, end);
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteValidatedAsciiPrefixDigitOneShot()
-    {
-        if (!SupportsAsciiPrefixDigitOneShotReplay)
-        {
-            throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
-        }
-
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(InputBytes, ref invocation);
-        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
-        return end == 0
-            ? default
-            : new PythonReBenchmarkValueResult(true, 0, end);
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteRawAsciiDotAllFullMatch()
-    {
-        if (!SupportsAsciiDotAllFullMatchReplay)
-        {
-            throw new InvalidOperationException("The ASCII dot-all FullMatch replay is unavailable.");
-        }
-
-        return InputBytes.Length >= _oneShotDotAllPrefix.Length + _oneShotDotAllSuffix.Length &&
-            InputBytes.AsSpan().StartsWith(_oneShotDotAllPrefix) &&
-            InputBytes.AsSpan().EndsWith(_oneShotDotAllSuffix)
-                ? new PythonReBenchmarkValueResult(true, 0, InputBytes.Length)
-                : default;
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteValidatedAsciiDotAllFullMatch()
-    {
-        if (!SupportsAsciiDotAllFullMatchReplay)
-        {
-            throw new InvalidOperationException("The ASCII dot-all FullMatch replay is unavailable.");
-        }
-
-        _ = Utf8InputAnalyzer.ValidateOnly(InputBytes);
-        return ExecuteRawAsciiDotAllFullMatch();
     }
 
     internal PythonReBenchmarkValueResult ExecuteCoreDirectOneShot()

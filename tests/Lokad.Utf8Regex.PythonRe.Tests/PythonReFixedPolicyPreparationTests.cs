@@ -37,13 +37,11 @@ public sealed class PythonReFixedPolicyPreparationTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OneShotNativeBuffersExistOnlyWhenTheirLifetimeAllowsExecution(bool finite)
+    public void ScalarOneShotValuesAndTextSupportFiniteWork(bool finite)
     {
         var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 } : default;
         var prefix = new Utf8PythonRegex("prefix[0-9]+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
         var full = new Utf8PythonRegex("pre.*post", PythonReCompileOptions.DotAll, Timeout.InfiniteTimeSpan, policy);
-        Assert.Equal(!finite, prefix.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
-        Assert.Equal(!finite, full.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.True(prefix.Match("prefix123"u8).Success);
         Assert.True(full.FullMatch("pre😀post"u8).Success);
         Assert.Equal("pre😀post", full.FullMatchToString("pre😀post"u8));

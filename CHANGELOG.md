@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe's constructor-selected prefix/digit Match and DotAll
+  prefix/suffix FullMatch shortcuts. Existing scalar execution preserves values,
+  captures, byte offsets and interruption; cold FullMatch preparation and numerical
+  work/storage costs can change. Pure literal paths remain.
+
 - Retire the remaining nonliteral identifier-family engines, verifiers and cursor
   mode, including their helper-only preparation accounting and benchmark replays.
   Preserve shared search and literal paths; scalar execution retains captures,

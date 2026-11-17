@@ -78,11 +78,6 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         using var programUse = EnterProgramUse();
-        if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null &&
-            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
-        {
-            return MatchValueNative(input, startOffsetInBytes, 1, cancellationToken);
-        }
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
@@ -115,9 +110,7 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        if (CanUseLiteralFullMatch ||
-            _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
-            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled)
+        if (CanUseLiteralFullMatch)
         {
             return MatchValueNative(input, startOffsetInBytes, 2, cancellationToken);
         }
