@@ -15,7 +15,7 @@ public sealed class PythonReRangeBufferTests
         Assert.True(Assert.IsType<bool>(fast.GetValue(regex)));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀fooébarx", repetitions)));
         var matches = regex.FindAll(input);
-        var strings = regex.FindAllToStrings(input).ScalarValues;
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues;
         var bytes = regex.FindAllToUtf8(input).ScalarValues;
         Assert.Equal(repetitions * 2, matches.Length);
         Assert.Equal(matches.Length, strings.Length);

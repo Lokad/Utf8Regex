@@ -48,68 +48,6 @@ public sealed partial class Utf8PythonRegex
         return FindAllCore(input, startOffsetInBytes, cancellationToken);
     }
 
-    /// <summary>Returns Python <c>findall</c> string values using capture-dependent shaping.</summary>
-    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input) => FindAllToStrings(input, 0);
-
-    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset.</summary>
-    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes) => FindAllToStringsCore(input, startOffsetInBytes, CancellationToken.None);
-
-    private Utf8PythonFindAllResult FindAllToStringsCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
-    {
-        using var programUse = EnterProgramUse();
-        if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
-            _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
-        {
-            FindAllScalarStrings(input, startOffsetInBytes, cancellationToken, out var scalarResult);
-            return scalarResult;
-        }
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (TryFindAllCanonicalLiteral(input, startOffsetInBytes, cancellationToken, out var canonicalResult)) return canonicalResult;
-        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
-        {
-            try
-            {
-                var values = ranges.AllocateResultArray<string>(ranges.Count);
-                string? canonical = null;
-                for (var i = 0; i < values.Length; i++)
-                {
-                    if ((i & 255) == 0) ranges.Checkpoint();
-                    values[i] = _repeatedExactFindAllUtf8 is not null
-                        ? canonical ??= ranges.GetText(input, ranges[i]) : ranges.GetText(input, ranges[i]);
-                }
-                ranges.Checkpoint();
-                return new Utf8PythonFindAllResult
-                {
-                    Shape = Utf8PythonFindAllShape.FullMatch,
-                    ScalarValues = values,
-                    TupleValues = []
-                };
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
-            {
-                throw ranges.ResourceFailure();
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input, Pattern);
-            }
-            finally { ranges.Dispose(); }
-        }
-        FindAllScalarStrings(input, startOffsetInBytes, cancellationToken, out var remaining);
-        return remaining;
-    }
-
-    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return FindAllToStringsCore(input, startOffsetInBytes, cancellationToken);
-    }
-
     /// <summary>Returns Python <c>findall</c> values as owned UTF-8 byte arrays.</summary>
     public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input) => FindAllToUtf8(input, 0);
 

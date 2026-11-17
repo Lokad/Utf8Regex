@@ -62,12 +62,11 @@ public sealed class PythonReTranslationContinuationTests
 
     [Theory]
     [InlineData(4097)] [InlineData(16385)]
-    public void NestedLiteralExtractionKeepsTheWholeLiteralAndFastPathDecisions(int depth)
+    public void NestedLiteralProofKeepsTheWholePublicMatch(int depth)
     {
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "éab" + new string(')', depth);
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        Assert.True(PythonReTranslator.TryGetCaseSensitiveExactLiteral(parse.Root, parse.Options, out var literal));
-        Assert.Equal("éab"u8.ToArray(), literal);
+        Assert.True(PythonReTranslator.IsExactLiteral(parse.Root));
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
         PythonReMatchAssert.Equal("éab", regex.Search("xéabz"u8));

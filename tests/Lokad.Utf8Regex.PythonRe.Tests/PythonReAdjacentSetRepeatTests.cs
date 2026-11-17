@@ -74,7 +74,7 @@ public sealed class PythonReAdjacentSetRepeatTests
         var results = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => results.FindAllToStrings("item   12345"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(results.FindAllToUtf8("item   12345"u8))).ResourceKind);
     }
 
     [Theory]

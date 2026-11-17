@@ -44,7 +44,7 @@ public sealed class PythonReAtomLoweringTests
             var regex=new Utf8PythonRegex(pattern,resourcePolicy:finite
                 ? new(){MaxWorkSteps=1000000,MaxWorkingBytes=1048576}:default);
             Assert.Equal(expected.Length,regex.Count(input));
-            Assert.Equal(expected,regex.FindAllToStrings(input).ScalarValues);
+            Assert.Equal(expected,PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         }
     }
 }

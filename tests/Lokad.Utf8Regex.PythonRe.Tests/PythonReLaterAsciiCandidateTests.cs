@@ -24,12 +24,12 @@ public sealed class PythonReLaterAsciiCandidateTests
         Assert.Equal("3", matches[0].Groups[1].ValueText);
         Assert.Equal(second, matches[1].Value.StartOffsetInBytes);
         Assert.Equal("45", matches[1].Groups[1].ValueText);
-        Assert.Equal(new[] { "3", "45" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "3", "45" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal(second, regex.Search(input, start + 1).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success);
         Assert.True(regex.Match(input, start).Success);
         Assert.True(regex.FullMatch(input.AsSpan(start, width + 1)).Success);
-        _ = regex.FindAllToStrings("unrelated"u8);
+        _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("unrelated"u8));
         Assert.Equal("3", matches[0].Groups[1].ValueText);
     }
 
@@ -41,7 +41,7 @@ public sealed class PythonReLaterAsciiCandidateTests
         using var regex = new Utf8PythonRegex(prefix + "([0-9]+)");
         var input = Encoding.UTF8.GetBytes(skipped + prefix + "7");
         Assert.Equal(Encoding.UTF8.GetByteCount(skipped), regex.Search(input).StartOffsetInBytes);
-        Assert.Equal(new[] { "7" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "7" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public sealed class PythonReLaterAsciiCandidateTests
         using var regex = new Utf8PythonRegex(pattern);
         var expected = new Regex(pattern, RegexOptions.CultureInvariant).Matches(text)
             .Select(match => match.Groups[1].Value).ToArray();
-        Assert.Equal(expected, regex.FindAllToStrings(Encoding.UTF8.GetBytes(text)).ScalarValues);
+        Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(text))).ScalarValues);
     }
 
     [Theory]
@@ -96,7 +96,7 @@ public sealed class PythonReLaterAsciiCandidateTests
             ? string.Concat(Enumerable.Repeat("x3", 32768)) + new string('a', 1025) + "3"
             : new string('a', 65536) + "3";
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(new[] { "3" }, regex.FindAllToStrings(input, 0, cancellation.Token).ScalarValues);
-        Assert.Empty(regex.FindAllToStrings(input.AsSpan(0, input.Length - 1), 0, cancellation.Token).ScalarValues);
+        Assert.Equal(new[] { "3" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, cancellation.Token)).ScalarValues);
+        Assert.Empty(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input.AsSpan(0, input.Length - 1), 0, cancellation.Token)).ScalarValues);
     }
 }

@@ -33,7 +33,7 @@ public sealed class PythonReShortFoldedPrefixTests
                 Assert.Equal(Encoding.UTF8.GetByteCount(expected[0]), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
             }
             Assert.Equal(expected.Length, owner.Count(input, start, token.Token));
-            Assert.Equal(expected, owner.FindAllToStrings(input, start, token.Token).ScalarValues);
+            Assert.Equal(expected, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input, start, token.Token)).ScalarValues);
         }
     }
 

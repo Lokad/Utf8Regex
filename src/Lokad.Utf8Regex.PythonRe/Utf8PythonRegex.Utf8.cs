@@ -190,43 +190,6 @@ public sealed partial class Utf8PythonRegex
         }
     }
 
-    private bool TryFindAllCanonicalLiteral(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonFindAllResult result)
-    {
-        result = default;
-        if (_repeatedExactFindAllUtf8 is not { } canonical || _utf8Regex is null) return false;
-        var invocation = CreateInvocation(cancellationToken);
-        Utf8InvocationResultLedger ledger = default;
-        try
-        {
-            var count = _utf8Regex.CountForResult(input, startOffsetInBytes, ref invocation);
-            var control = new Utf8InvocationBufferControl(ref invocation);
-            var values = ledger.AllocateArray<string>(count, ref invocation);
-            // Text is an explicit output projection, not retained preparation.
-            // Count first so misses acquire neither canonical text nor its charge.
-            var canonicalText = count == 0 ? string.Empty : Utf8SliceBufferWork.DecodeUtf8(canonical, ref invocation);
-            for (var offset = 0; offset < values.Length;)
-            {
-                Utf8InvocationOutput.Checkpoint(control);
-                var length = Math.Min(256, values.Length - offset);
-                values.AsSpan(offset, length).Fill(canonicalText);
-                offset += length;
-            }
-            Utf8InvocationOutput.Checkpoint(control);
-            result = new Utf8PythonFindAllResult { Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [] };
-            return true;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            throw invocation.Budget.CreateResourceFailure();
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input, Pattern);
-        }
-        finally { ledger.Release(ref invocation); }
-    }
-
     private bool TryCollectUtf8MatchRanges(
         ReadOnlySpan<byte> input,
         int startOffsetInBytes,

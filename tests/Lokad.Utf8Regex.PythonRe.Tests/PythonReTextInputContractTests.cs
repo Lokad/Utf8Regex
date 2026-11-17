@@ -54,7 +54,7 @@ public sealed class PythonReTextInputContractTests
             Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
             _ = regex.Match(input);
             _ = regex.FullMatch(input);
-            _ = regex.FindAllToStrings(input);
+            _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
             _ = regex.FindAllToUtf8(input);
             _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
             _ = regex.Replace(input, "X");

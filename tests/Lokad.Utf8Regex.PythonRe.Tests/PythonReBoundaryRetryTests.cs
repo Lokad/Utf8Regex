@@ -48,7 +48,7 @@ public sealed class PythonReBoundaryRetryTests
     public void EmptyThenConsumingAlternativesStillRetryTheSameScalar()
     {
         var regex = new Utf8PythonRegex(@"(?a:\b)|a");
-        Assert.Equal(new[] { "", "a", "a", "" }, regex.FindAllToStrings("aa"u8).ScalarValues);
+        Assert.Equal(new[] { "", "a", "a", "" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8("aa"u8)).ScalarValues);
         Assert.Equal(4, regex.Count("aa"u8));
         Assert.Equal(new string?[] { "", "", "", "", "" }, PythonReSplitAssert.Decode("aa"u8, regex.SplitRanges("aa"u8, 0, 0, default)));
     }

@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe FindAllToStrings and its text-only construction/canonicalization
+  machinery. FindAllToUtf8 retains Python-shaped owned byte results.
+
 - Remove PythonRe SplitToStrings, SplitDetailed and their text result type.
   SplitRanges retains segment/capture metadata; hosts decode selected bytes.
 

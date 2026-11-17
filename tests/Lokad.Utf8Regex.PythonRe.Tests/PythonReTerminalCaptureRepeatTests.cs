@@ -10,7 +10,7 @@ public sealed class PythonReTerminalCaptureRepeatTests
     public void EmptyRetryKeepsNonemptyCaptureAndCompletionMetadata()
     {
         var regex = Create();
-        var values = regex.FindAllToStrings("ab"u8).ScalarValues;
+        var values = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("ab"u8)).ScalarValues;
         Assert.Equal(new[] { "", "ab", "" }, values);
         var matches = regex.FindIterDetailed("ab"u8);
         Assert.Equal(3, matches.Length);

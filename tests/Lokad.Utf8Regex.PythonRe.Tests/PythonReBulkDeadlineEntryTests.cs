@@ -8,7 +8,7 @@ public sealed class PythonReBulkDeadlineEntryTests
 {
     [Theory]
     [InlineData(0, 0)] [InlineData(0, 1)]
-    [InlineData(1, 0)] [InlineData(1, 1)]
+
     [InlineData(2, 0)] [InlineData(2, 1)]
     public void ExpiredEntryPrecedesDiscovery(int operation, int start)
     {
@@ -26,7 +26,7 @@ public sealed class PythonReBulkDeadlineEntryTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void RetainedValuesAndScalarCoordinatesSurviveTimeoutAndFreshCalls(int operation)
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
@@ -60,7 +60,7 @@ public sealed class PythonReBulkDeadlineEntryTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = Encoding.UTF8.GetBytes(text);
-        for (var operation = 0; operation < 3; operation++)
+        foreach (var operation in new[] { 0, 2 })
             Assert.Equal(expected, Run(regex, input, start, operation));
     }
 
@@ -68,7 +68,6 @@ public sealed class PythonReBulkDeadlineEntryTests
         CancellationToken token = default) => operation switch
     {
         0 => string.Join("|", regex.FindAll(input, start, token).Select(x => x.ValueText)),
-        1 => string.Join("|", regex.FindAllToStrings(input, start, token).ScalarValues),
         _ => string.Join("|", regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString)),
     };
 }

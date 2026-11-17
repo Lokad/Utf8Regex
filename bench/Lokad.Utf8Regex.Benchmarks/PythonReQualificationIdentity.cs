@@ -54,7 +54,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.FullMatch => "managed-fullmatch-consumed-group-zero-v1",
             PythonReBenchmarkOperation.SearchDetailed => "managed-search-detailed-eager-v1",
             PythonReBenchmarkOperation.Count => "managed-count-scalar-v1",
-            PythonReBenchmarkOperation.FindAllStrings => "managed-findall-strings-eager-v1",
+            PythonReBenchmarkOperation.FindAllStrings => "managed-findall-utf8-host-strings-eager-v3",
             PythonReBenchmarkOperation.FindAllUtf8 => "managed-findall-utf8-eager-v1",
             PythonReBenchmarkOperation.FindIterDetailed => "managed-finditer-detailed-eager-v1",
             PythonReBenchmarkOperation.ReplaceString => "managed-replace-string-eager-v1",
@@ -71,7 +71,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SplitStringsLimited =>
                 $"managed-split-ranges-host-strings-limited-eager-v3;warmup={PythonReQualificationSplitWarmupCalls}",
             PythonReBenchmarkOperation.SplitDetailed => "managed-split-ranges-host-detailed-eager-v3",
-            PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-strings-from-offset-eager-v1",
+            PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-utf8-host-strings-from-offset-eager-v3",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });
 

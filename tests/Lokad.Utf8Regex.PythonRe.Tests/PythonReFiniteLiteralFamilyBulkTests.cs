@@ -16,7 +16,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     };
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void FiniteFamiliesKeepScalarFloorsPriorityAndRequiredValues(int operation)
     {
         foreach (var (pattern, text, start, expected) in new[]
@@ -42,7 +42,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void NativeFamilyAdmitsOnlyItsActualWorkingAndDepthRequirements(int operation)
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
@@ -52,7 +52,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void EveryCoveredPublicCutoffHasItsExactFailureKindAndFreshAllowance(int operation)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 16)));
@@ -89,7 +89,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void CombinedLimitsCannotBypassCollectionOrFinalOutputAdmission(int operation)
     {
         foreach (var kind in new[] { Utf8ResourceLimitKind.ExecutionWorkSteps,
@@ -108,7 +108,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void ByteBoundedEarlyTimeoutUsesCallerLimitsAndOriginalToken(int operation)
     {
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkingBytes = 1 << 20 },
@@ -129,8 +129,8 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
     [Theory]
     [InlineData(0, false)]
     [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
+
+
     [InlineData(2, false)]
     [InlineData(2, true)]
     public void NativeCollectionAndShapingShareMonotonicWorkAndOriginalInterruption(int operation, bool expire)
@@ -167,7 +167,6 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
         => operation switch
         {
             0 => string.Join("|", regex.FindAll(input, start, token).Select(x => x.ValueText)),
-            1 => string.Join("|", regex.FindAllToStrings(input, start, token).ScalarValues),
             _ => string.Join("|", regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString)),
         };
 }

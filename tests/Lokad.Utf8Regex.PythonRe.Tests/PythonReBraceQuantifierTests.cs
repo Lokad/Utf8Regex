@@ -97,7 +97,7 @@ public sealed class PythonReBraceQuantifierTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expected, regex.Count("😀😀"u8));
         Assert.Equal(expected == 5 ? ["", "😀", "", "😀", ""] : new[] { "😀😀", "" },
-            regex.FindAllToStrings("😀😀"u8).ScalarValues);
+            PythonReFindAllAssert.Decode(regex.FindAllToUtf8("😀😀"u8)).ScalarValues);
     }
 
     [Theory]

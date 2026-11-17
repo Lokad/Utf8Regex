@@ -63,7 +63,7 @@ public sealed class PythonReFundedExecutionTests
         for (ulong remaining = 128; remaining <= 131072; remaining *= 2)
         {
             account.Maximum = held + remaining;
-            Action[] operations = [() => regex.FindAll(input), () => regex.FindAllToStrings(input), () => regex.FindAllToUtf8(input)];
+            Action[] operations = [() => regex.FindAll(input), () => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)), () => regex.FindAllToUtf8(input)];
             foreach (var operation in operations)
             {
                 try { operation(); successes++; }
@@ -173,7 +173,7 @@ public sealed class PythonReFundedExecutionTests
         ("Count", () => regex.Count(input)), ("SearchDetailed", () => { _ = regex.SearchDetailed(input); }),
         ("MatchDetailed", () => { _ = regex.MatchDetailed(input); }), ("FullMatchDetailed", () => { _ = regex.FullMatchDetailed(input); }),
         ("SearchDetailedData", () => regex.SearchDetailedData(input)), ("MatchDetailedData", () => regex.MatchDetailedData(input)),
-        ("FullMatchDetailedData", () => regex.FullMatchDetailedData(input)),         ("FindAll", () => regex.FindAll(input)), ("FindAllToStrings", () => regex.FindAllToStrings(input)),
+        ("FullMatchDetailedData", () => regex.FullMatchDetailedData(input)),         ("FindAll", () => regex.FindAll(input)),
         ("FindAllToUtf8", () => regex.FindAllToUtf8(input)), ("FindIterDetailed", () => regex.FindIterDetailed(input)),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),

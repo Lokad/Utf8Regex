@@ -49,7 +49,7 @@ public sealed class PythonReCaptureAliasTests
             Assert.True(retained.TryGetFirstSetGroup(second, out var b));
             Assert.Equal("a", a.ValueText);
             Assert.Equal("b", b.ValueText);
-            Assert.Equal(["a", "b"], Assert.Single(regex.FindAllToStrings(input).TupleValues));
+            Assert.Equal(["a", "b"], Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
             Assert.Equal("a|b", regex.ReplaceToString(input, "\\g<" + first + ">|\\g<" + second + ">"));
             Assert.Equal("a", retained.Groups[1].ValueText);
             Assert.Equal("b", retained.Groups[2].ValueText);

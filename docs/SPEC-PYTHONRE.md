@@ -34,7 +34,7 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 | Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value, detailed and data forms agree. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
 | FindAll | Structural full-match records, not Python findall shaping |
-| FindAllToStrings / FindAllToUtf8 | Whole values with no captures, group values with one, tuple rows with several |
+| FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
 | FindIterDetailed | Materialized owned snapshots |
 | CreateMatchCursor | Incremental detailed snapshots over ReadOnlyMemory<byte>; explicit disposal on early stop |
 | Replace / Subn | Python template or detailed text/UTF-8 callback output; Subn includes replacement count |
@@ -280,20 +280,13 @@ UTF-8 directly, preserving lexical flag scopes. Exact literal preparation and
 prefix proofs also retain bytes. Scalar/cursor setup borrows its expression for
 timeout diagnostics; successful operations do not implicitly request `Pattern`.
 
-Canonical `FindAllToStrings` values are decoded only when that string output is
-requested. Repeated exact values share one string within an invocation; it is
-admitted as result/working capacity rather than borrowed from a prepared string.
-Within one capture tuple, groups whose byte range equals the first group's can
-reuse its owned immutable string. Tuple arrays remain independently mutable;
-no cross-match cache is created. Reused and absent groups retain interruption
-checks. Shared text is acquired once, so result traffic, live working admission
-and numerical work can decrease without weakening preallocation bounds.
-This can change covered capacity/work compared with earlier development builds.
-No-match operations acquire no canonical output string. Borrowed UTF-8/range
-results and retained-result lifetimes keep their existing contracts.
+`FindAllToStrings`, its shaped string result and text-only canonicalization are
+removed. `FindAllToUtf8` publishes admitted owned byte arrays with Python's
+scalar/tuple shaping and independently mutable capture slots. Host decoding is
+outside regex memory/work/interruption controls. Borrowed range results and
+retained-result lifetimes keep their existing contracts.
 Borrowed literal Count trusts the subject's valid-text contract without deriving
-discarded UTF-16 totals. Canonical text output sizes its returned value separately;
-no absolute-coordinate index is retained.
+discarded UTF-16 totals. No absolute-coordinate index is retained.
 
 String output trusts valid scalar ranges and reuses already-known lengths or
 coordinate facts. Unknown lengths up to 4096 UTF-8 bytes can use conservative

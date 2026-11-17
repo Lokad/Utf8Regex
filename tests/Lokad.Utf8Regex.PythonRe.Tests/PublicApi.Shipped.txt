@@ -26,11 +26,6 @@ readonly struct PythonRe.Utf8PythonDetailedMatchData
   property String LastGroup { get; }
   method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupMatchData group)
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupMatchData group)
-readonly struct PythonRe.Utf8PythonFindAllResult
-  property Int32 Count { get; }
-  property PythonRe.Utf8PythonFindAllShape Shape { get; init; }
-  property String[] ScalarValues { get; init; }
-  property String[][] TupleValues { get; init; }
 enum PythonRe.Utf8PythonFindAllShape : Int32 { FullMatch = 0, GroupTuple = 2, SingleGroup = 1 }
 readonly struct PythonRe.Utf8PythonFindAllUtf8Result
   property Byte[][] ScalarValues { get; init; }
@@ -136,9 +131,6 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method PythonRe.Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
-  method PythonRe.Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<Byte> input)
-  method PythonRe.Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
-  method PythonRe.Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
   method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)

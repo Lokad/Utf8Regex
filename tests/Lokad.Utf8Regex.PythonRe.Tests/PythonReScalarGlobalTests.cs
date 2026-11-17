@@ -48,8 +48,8 @@ public sealed partial class PythonReScalarGlobalTests
                     Assert.True(endByte == input.Length || (input[endByte] & 0xc0) != 0x80);
                 }
             }
-            var strings = regex.FindAllToStrings(input, start, token);
             var utf8 = regex.FindAllToUtf8(input, start, token);
+            var strings = PythonReFindAllAssert.Decode(utf8);
             var findall = e.GetProperty("findall");
             if (strings.Shape == Utf8PythonFindAllShape.GroupTuple)
             {
@@ -58,14 +58,12 @@ public sealed partial class PythonReScalarGlobalTests
                 for (var i = 0; i < tuples.Length; i++)
                 {
                     Assert.Equal(tuples[i], strings.TupleValues[i]);
-                    Assert.Equal(tuples[i], utf8.TupleValues[i].Select(Encoding.UTF8.GetString));
                 }
             }
             else
             {
                 var scalars = findall.Deserialize<string[]>() ?? [];
                 Assert.Equal(scalars, strings.ScalarValues);
-                Assert.Equal(scalars, utf8.ScalarValues.Select(Encoding.UTF8.GetString));
             }
             var split = e.GetProperty("split").Deserialize<string?[]>() ?? [];
             Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, limit, start, token)));
@@ -91,7 +89,7 @@ public sealed partial class PythonReScalarGlobalTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)] [InlineData(1)] [InlineData(3)] [InlineData(4)]
     [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
@@ -113,7 +111,6 @@ public sealed partial class PythonReScalarGlobalTests
                 {
                     case 0: regex.FindIterDetailed(input, 0, source.Token); break;
                     case 1: regex.FindAll(input, 0, source.Token); break;
-                    case 2: regex.FindAllToStrings(input, 0, source.Token); break;
                     case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
                     case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
                     case 6: regex.Replace(input, "x", 0, 0, source.Token); break;

@@ -143,8 +143,8 @@ public sealed class PythonReResultExtentTests
         });
         try
         {
-            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
-            else Assert.Throws<PublicationObservedException>(() => regex.FindAllToStrings(input));
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)));
+            else Assert.Throws<PublicationObservedException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)));
             Assert.True(entered);
         }
         finally { diagnostics.Complete(); }

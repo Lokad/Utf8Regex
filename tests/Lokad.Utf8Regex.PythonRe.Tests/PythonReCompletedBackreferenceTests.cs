@@ -37,8 +37,8 @@ public sealed class PythonReCompletedBackreferenceTests
             var repeated = Encoding.UTF8.GetBytes("😀 " + text + " " + text);
             Assert.Equal(JsonSerializer.Serialize(reference.FindIterDetailed(repeated)),
                 JsonSerializer.Serialize(regex.FindIterDetailed(repeated, 0, source.Token)));
-            Assert.Equal(reference.FindAllToStrings(repeated).ScalarValues,
-                regex.FindAllToStrings(repeated, 0, source.Token).ScalarValues);
+            Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(repeated)).ScalarValues,
+                PythonReFindAllAssert.Decode(regex.FindAllToUtf8(repeated, 0, source.Token)).ScalarValues);
             Assert.Equal(reference.ReplaceToString(repeated, "!"), regex.ReplaceToString(repeated, "!"));
         }
     }

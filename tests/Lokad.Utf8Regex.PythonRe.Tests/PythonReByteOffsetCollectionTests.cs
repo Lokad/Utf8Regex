@@ -25,7 +25,7 @@ public sealed class PythonReByteOffsetCollectionTests
             Assert.Equal(expected, matches.Select(static match => match.ValueText));
             Assert.Equal(start + 1, matches[0].StartOffsetInBytes);
             Assert.Equal(start + 4, matches[0].EndOffsetInBytes);
-            Assert.Equal(expected, regex.FindAllToStrings(input, start, token).ScalarValues);
+            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, start, token)).ScalarValues);
             Assert.Equal(expected, regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString));
             _ = regex.FindAll("later foo"u8);
             Assert.Equal("foo", matches[0].ValueText);

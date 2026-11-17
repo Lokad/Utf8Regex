@@ -20,11 +20,11 @@ public sealed class PythonReTerminalCaptureRootTests
         var word = new string('a', length);
         var text = "é😀bad-! " + word + "-12 tail-345";
         var input = Encoding.UTF8.GetBytes(text);
-        var values = regex.FindAllToStrings(input).TupleValues;
+        var values = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
         Assert.Equal(2, values.Length);
         Assert.Equal(new[] { word, "12" }, values[0]);
         Assert.Equal(new[] { "tail", "345" }, values[1]);
-        Assert.Empty(regex.FindAllToStrings(Encoding.UTF8.GetBytes(word + "!")).TupleValues);
+        Assert.Empty(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(word + "!"))).TupleValues);
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext());
         var first = cursor.Current;
@@ -42,7 +42,7 @@ public sealed class PythonReTerminalCaptureRootTests
     {
         var regex = new Utf8PythonRegex("item-([0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 item-345!");
-        Assert.Equal(new[] { "12", "345" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "12", "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         var bytes = regex.FindAllToUtf8(input).ScalarValues;
         Assert.Equal("12"u8.ToArray(), bytes[0]); Assert.Equal("345"u8.ToArray(), bytes[1]);
         var cursor = regex.CreateMatchCursor(input); var alias = cursor;
@@ -58,7 +58,7 @@ public sealed class PythonReTerminalCaptureRootTests
     {
         using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)-(?P<number>[0-9]+)");
         var input = Encoding.UTF8.GetBytes("é😀item-12 other-345!");
-        var strings = regex.FindAllToStrings(input).TupleValues;
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
         Assert.Equal(new[] { "item", "12" }, strings[0]); Assert.Equal(new[] { "other", "345" }, strings[1]);
         var bytes = regex.FindAllToUtf8(input).TupleValues;
         Assert.Equal("item"u8.ToArray(), bytes[0][0]); Assert.Equal("12"u8.ToArray(), bytes[0][1]);
@@ -87,7 +87,7 @@ public sealed class PythonReTerminalCaptureRootTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (expire) ticks = 100; else token.Cancel(); });
         try
         {
-            var failure = Record.Exception(() => regex.FindAllToStrings(bytes, 0, token.Token));
+            var failure = Record.Exception(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(bytes, 0, token.Token)));
             Assert.True(reached);
             if (expire) Assert.IsType<System.Text.RegularExpressions.RegexMatchTimeoutException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

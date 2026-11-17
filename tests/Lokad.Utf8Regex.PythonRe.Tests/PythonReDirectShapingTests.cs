@@ -61,14 +61,12 @@ public sealed class PythonReDirectShapingTests
                 Assert.Equal(ranges[i][1].GetInt32(), matches[i].StartOffsetInBytes);
                 Assert.Equal(ranges[i][2].GetInt32(), matches[i].EndOffsetInBytes);
             }
-            var strings = regex.FindAllToStrings(input, 0, token);
             var bytes = regex.FindAllToUtf8(input, 0, token);
-            Assert.Equal(shape, strings.Shape); Assert.Equal(shape, bytes.Shape);
+            Assert.Equal(shape, bytes.Shape);
             input.AsSpan().Fill((byte)'x');
+            var strings = PythonReFindAllAssert.Decode(bytes);
             Assert.Equal(scalarValues, strings.ScalarValues);
             Assert.Equal(tupleValues, strings.TupleValues);
-            Assert.Equal(scalarValues, bytes.ScalarValues.Select(Encoding.UTF8.GetString));
-            Assert.Equal(tupleValues, bytes.TupleValues.Select(t => t.Select(Encoding.UTF8.GetString).ToArray()).ToArray());
             Assert.Equal(ranges.Select(x => x[0].GetString()), matches.Select(x => x.ValueText));
         }
     }

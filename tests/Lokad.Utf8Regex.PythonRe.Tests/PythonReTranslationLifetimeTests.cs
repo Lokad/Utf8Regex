@@ -70,7 +70,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.True(regex.Search(input).Success);
             Assert.True(regex.FullMatch(input).Success);
             Assert.True(regex.SearchDetailedData(input).Success);
-            Assert.Equal(1, regex.FindAllToStrings(input).Count);
+            Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
             Assert.Equal("X", regex.ReplaceToString(input, "X"));
         }
     }
@@ -91,7 +91,7 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.Search(input).Success);
         Assert.True(regex.FullMatch(input).Success);
         Assert.True(regex.SearchDetailedData(input).Success);
-        Assert.Equal(1, regex.FindAllToStrings(input).Count);
+        Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
         Assert.Equal("X", regex.ReplaceToString(input, "X"));
     }
     [Theory]
@@ -127,7 +127,7 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
         PythonReMatchAssert.Equal("needle", regex.Search("xxneedlebar"u8));
         Assert.Equal(1, regex.Count("xxneedlebar"u8));
-        Assert.Equal(["needle"], regex.FindAllToStrings("xxneedlebar"u8).ScalarValues);
+        Assert.Equal(["needle"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8("xxneedlebar"u8)).ScalarValues);
         Assert.False(regex.IsMatch("needlex"u8));
         Assert.False(regex.Search("xxneedlexbar"u8).Success);
         Assert.False(regex.FullMatch("needlebar"u8).Success);

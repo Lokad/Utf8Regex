@@ -31,7 +31,7 @@ public sealed class PythonReLiteralAtomRepeatTests
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
                 Timeout.InfiniteTimeSpan, policy);
             using var token = new CancellationTokenSource();
-            Assert.Equal(expected, regex.FindAllToStrings(input, 0, token.Token).ScalarValues);
+            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
             Assert.Equal(expected, regex.FindAllToUtf8(input, 0, token.Token).ScalarValues.Select(Encoding.UTF8.GetString));
             Assert.Equal(expected.Length, regex.Count(input, 0, token.Token));
             Assert.Equal(expected.Length, regex.FindIterDetailed(input, 0, token.Token).Length);
@@ -54,7 +54,7 @@ public sealed class PythonReLiteralAtomRepeatTests
         var result = new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => result.FindAllToStrings(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(result.FindAllToUtf8(input))).ResourceKind);
         Assert.Throws<ArgumentException>(() => small.Count(new byte[] { (byte)'y', 255 }));
     }
 }

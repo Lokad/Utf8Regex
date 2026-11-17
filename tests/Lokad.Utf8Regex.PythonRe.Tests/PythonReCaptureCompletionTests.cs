@@ -29,7 +29,7 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(capture, result.Groups[last].ValueText);
 
             var expected = result.Groups.Skip(1).Select(group => group.Success ? group.ValueText : string.Empty).ToArray();
-            Assert.Equal(expected, Assert.Single(regex.FindAllToStrings(input).TupleValues));
+            Assert.Equal(expected, Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
             Assert.Equal(expected, Assert.Single(regex.FindAllToUtf8(input).TupleValues).Select(value => Encoding.UTF8.GetString(value)));
             Assert.Equal(last, regex.SearchDetailedData(input).LastIndex);
             Assert.Equal(last, result.LastIndex);

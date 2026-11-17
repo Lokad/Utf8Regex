@@ -103,7 +103,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             using var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
                 Regex.InfiniteMatchTimeout, Generous);
             Assert.Equal(4, regex.Count(input));
-            Assert.Equal(new[] { "12", "3", "4", "5" }, regex.FindAllToStrings(input).ScalarValues);
+            Assert.Equal(new[] { "12", "3", "4", "5" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         }
     }
     [Fact]

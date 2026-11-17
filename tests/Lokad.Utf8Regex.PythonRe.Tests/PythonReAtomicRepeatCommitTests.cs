@@ -57,7 +57,7 @@ public sealed class PythonReAtomicRepeatCommitTests
         var results = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => results.FindAllToStrings("aaab aab"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(results.FindAllToUtf8("aaab aab"u8))).ResourceKind);
         var depth = new Utf8PythonRegex("(?>x(?>a+))b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxDepth = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,

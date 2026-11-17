@@ -90,24 +90,6 @@ public enum Utf8PythonFindAllShape
     GroupTuple,
 }
 
-/// <summary>Contains UTF-16 string values returned with CPython <c>findall</c> shaping.</summary>
-public readonly struct Utf8PythonFindAllResult
-{
-    /// <summary>Gets whether each result is a scalar or capture tuple.</summary>
-    public Utf8PythonFindAllShape Shape { get; init; }
-
-    /// <summary>Gets full-match or single-group values for a scalar result shape.</summary>
-    public string[] ScalarValues { get; init; }
-
-    /// <summary>Gets capture tuples for the tuple result shape.</summary>
-    public string[][] TupleValues { get; init; }
-
-    /// <summary>Gets the number of matches represented by the active result collection.</summary>
-    public int Count => Shape == Utf8PythonFindAllShape.GroupTuple
-        ? TupleValues?.Length ?? 0
-        : ScalarValues?.Length ?? 0;
-}
-
 /// <summary>Contains owned UTF-8 values returned with CPython <c>findall</c> shaping.</summary>
 public readonly struct Utf8PythonFindAllUtf8Result
 {

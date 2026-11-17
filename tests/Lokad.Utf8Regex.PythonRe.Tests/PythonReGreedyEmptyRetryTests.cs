@@ -35,8 +35,8 @@ public sealed class PythonReGreedyEmptyRetryTests
             var actual = regex.FindIterDetailed(input, start, token.Token);
             Assert.Equal(expected.Select(m => m.Value), actual.Select(m => m.Value));
             Assert.Equal(expected.Length, regex.Count(input, start, token.Token));
-            Assert.Equal(reference.FindAllToStrings(input, start).ScalarValues,
-                regex.FindAllToStrings(input, start, token.Token).ScalarValues);
+            Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(input, start)).ScalarValues,
+                PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, start, token.Token)).ScalarValues);
             Assert.Equal(reference.FindAllToUtf8(input, start).ScalarValues.Select(Convert.ToHexString),
                 regex.FindAllToUtf8(input, start, token.Token).ScalarValues.Select(Convert.ToHexString));
             Assert.Equal(PythonReSplitAssert.Decode(input, reference.SplitRanges(input, 0, start, default)), PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, start, default)));

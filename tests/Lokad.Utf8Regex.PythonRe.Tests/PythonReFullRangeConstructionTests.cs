@@ -99,8 +99,8 @@ public sealed class PythonReFullRangeConstructionTests
 
     [Fact]
     public void NonconstantClassesStillUsePythonCasePartners()
-        => Assert.Equal(new[] { "K", "ſ", "İ", "ı" }, Compile(@"(?i)[a-z]")
-            .FindAllToStrings("Kſİı"u8).ScalarValues);
+        => Assert.Equal(new[] { "K", "ſ", "İ", "ı" }, PythonReFindAllAssert.Decode(Compile(@"(?i)[a-z]")
+            .FindAllToUtf8("Kſİı"u8)).ScalarValues);
 
     [Fact]
     public void TimeoutKeepsOriginalPatternAndDeadline()

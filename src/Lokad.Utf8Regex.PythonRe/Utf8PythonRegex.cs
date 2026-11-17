@@ -91,8 +91,6 @@ public sealed partial class Utf8PythonRegex
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
-    private readonly bool _canUseOptionalExactCaptureFindAll;
-    private readonly byte[]? _repeatedExactFindAllUtf8;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private const int ReplacementPlanCacheCapacity = 16;
@@ -196,19 +194,6 @@ public sealed partial class Utf8PythonRegex
             : parseResult.Options | PythonReCompileOptions.Unicode;
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
-        _canUseOptionalExactCaptureFindAll = !_canMatchEmpty &&
-            parseResult.CaptureGroupCount == 1 &&
-            PythonReTranslator.CanUseOptionalExactCaptureFindAll(
-                parseResult.Root,
-                parseResult.Options);
-        _repeatedExactFindAllUtf8 = !_canMatchEmpty &&
-            parseResult.CaptureGroupCount == 0 &&
-            PythonReTranslator.TryGetCaseSensitiveExactLiteral(
-                parseResult.Root,
-                parseResult.Options,
-                out var exactFindAllString)
-                ? exactFindAllString
-                : null;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         // Nullable iteration always uses the Python scalar program. Only the
         // exact empty literal has a separate Core value-operation consumer.
@@ -333,13 +318,6 @@ public sealed partial class Utf8PythonRegex
         _canUseZeroOffsetUtf8SearchValueFastPath;
 
     internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
-
-    internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _canUseOptionalExactCaptureFindAll;
-
-    internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllUtf8 is not null;
-
-    internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
-        _repeatedExactFindAllUtf8 is not null && _utf8Regex is not null;
 
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;

@@ -259,66 +259,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
-    private void FindAllScalarStrings(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonFindAllResult result)
-    {
-        result = default;
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
-        Utf8InvocationResultBuffer<string> scalars = default;
-        Utf8InvocationResultBuffer<string[]> tuples = default;
-        string? canonical = null;
-        try
-        {
-            var count = CaptureGroupCount;
-            while (cursor.MoveNext())
-            {
-                if (count <= 1)
-                {
-                    var success = cursor.TryGetCaptureByteRange(count, out var start, out var end);
-                    cursor.AddResult(ref scalars, !success ? string.Empty : count == 1 && _canUseOptionalExactCaptureFindAll
-                        ? canonical ??= cursor.GetText(start, end) : cursor.GetText(start, end));
-                }
-                else
-                {
-                    var tuple = cursor.AllocateResultArray<string>(count);
-                    if (cursor.TryGetCaptureByteRange(1, out var firstStart, out var firstEnd))
-                        tuple[0] = cursor.GetText(firstStart, firstEnd);
-                    else { cursor.Checkpoint(); tuple[0] = string.Empty; }
-                    for (var i = 1; i < count; i++)
-                    {
-                        if (cursor.TryGetCaptureByteRange(i + 1, out var start, out var end))
-                        {
-                            // Equal byte ranges share immutable owned text;
-                            // mutable tuple arrays remain independently owned.
-                            if (start == firstStart && end == firstEnd)
-                            { cursor.Checkpoint(); tuple[i] = tuple[0]; }
-                            else tuple[i] = cursor.GetText(start, end);
-                        }
-                        else { cursor.Checkpoint(); tuple[i] = string.Empty; }
-                    }
-                    cursor.AddResult(ref tuples, tuple);
-                }
-                // The next MoveNext checks the same invocation before discovery;
-                // staged values stay private until the final publication check.
-            }
-            var completed = new Utf8PythonFindAllResult
-            {
-                Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = cursor.CompleteResults(ref scalars),
-                TupleValues = cursor.CompleteResults(ref tuples)
-            };
-            cursor.Checkpoint();
-            result = completed;
-            return;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
-    }
-
     private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
     {

@@ -135,7 +135,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         var regex = new Utf8PythonRegex("(?i:(?P<word>sherlock))");
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " SHERLOCK x sherlock!");
-        Assert.Equal(new[] { "SHERLOCK", "sherlock" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "SHERLOCK", "sherlock" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal(padding + 1, regex.Search(input).StartOffsetInBytes);
         Assert.Equal(padding + 12, regex.Search(input, padding + 2).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
@@ -157,7 +157,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " aaa x aa!");
         using var token = new CancellationTokenSource();
-        Assert.Equal(new[] { "aaa", "aa" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "aaa", "aa" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal(padding + 1, regex.Search(input, 0, token.Token).StartOffsetInBytes);
         Assert.Equal(padding + 2, regex.Search(input, padding + 2).StartOffsetInBytes);
         Assert.Equal(padding + 7, regex.Search(input, padding + 4).StartOffsetInBytes);
@@ -269,17 +269,17 @@ public sealed class PythonReLeadingAsciiRangeTests
         var regex = new Utf8PythonRegex(Pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         using var token = new CancellationTokenSource();
-        Assert.Equal(new[] { "alpha", "beta", "gamma" }, regex.FindAllToStrings(input, 0, token.Token).ScalarValues);
+        Assert.Equal(new[] { "alpha", "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
         var matches = regex.FindIterDetailed(input, 0, token.Token);
         var first = matches[0];
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
         Assert.Equal("alpha", first.Groups[1].ValueText);
         Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
-        Assert.Equal(new[] { "beta", "gamma" }, regex.FindAllToStrings(input, matches[1].Value.StartOffsetInBytes, token.Token).ScalarValues);
+        Assert.Equal(new[] { "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes, token.Token)).ScalarValues);
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.FullMatch(input).Success);
         Assert.True(regex.Match(input, first.Value.StartOffsetInBytes).Success);
-        Assert.ThrowsAny<ArgumentException>(() => regex.FindAllToStrings(input, padding + 1));
+        Assert.ThrowsAny<ArgumentException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, padding + 1)));
         Assert.Equal("alpha", first.Groups[1].ValueText);
     }
 
@@ -297,7 +297,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("([ACE]+)", "BDACEBDE", new[] { "ACE", "E" })]
     [InlineData(@"([a-cx-z]+)-\1", "mno ab-ab xyz-xyz", new[] { "ab", "xyz" })]
     public void VerificationRetainsMinimumTailNegationAndFolding(string pattern, string text, string[] expected)
-        => Assert.Equal(expected, new Utf8PythonRegex(pattern).FindAllToStrings(Encoding.UTF8.GetBytes(text)).ScalarValues);
+        => Assert.Equal(expected, PythonReFindAllAssert.Decode(new Utf8PythonRegex(pattern).FindAllToUtf8(Encoding.UTF8.GetBytes(text))).ScalarValues);
 
     [Fact]
     public void ImpossibleStartsStillRespectOutputAdmission()
@@ -307,7 +307,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         {
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 resultLimit ? new() { MaxResultBytes = 1 } : new() { MaxWorkingBytes = 1 });
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FindAllToStrings("999 alpha,;"u8));
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8("999 alpha,;"u8)));
             Assert.Equal(resultLimit ? Utf8ResourceLimitKind.ExecutionResultBytes : Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         }
     }
@@ -338,7 +338,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         var input = "999😀one-12 z-3 bad!"u8;
-        var strings = regex.FindAllToStrings(input).TupleValues;
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
         var bytes = regex.FindAllToUtf8(input).TupleValues;
         Assert.Equal(2, strings.Length); Assert.Equal(2, bytes.Length);
         Assert.Equal(new[] { "one", "12" }, strings[0]); Assert.Equal(new[] { "z", "3" }, strings[1]);

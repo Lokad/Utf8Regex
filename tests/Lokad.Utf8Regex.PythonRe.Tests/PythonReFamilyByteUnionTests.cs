@@ -17,13 +17,13 @@ public sealed class PythonReFamilyByteUnionTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex("item-([0-9]+)");
         var matches = regex.FindIterDetailed(input, 4);
-        Assert.Equal(new[] { "12", "345" }, regex.FindAllToStrings(input, 4).ScalarValues);
+        Assert.Equal(new[] { "12", "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 4)).ScalarValues);
         Assert.Equal(2, matches.Length);
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix) + 7, matches[0].Value.StartOffsetInBytes);
         Assert.Equal("12", matches[0].Groups[1].ValueText);
         Assert.False(regex.Match(input, 4).Success);
         Assert.True(regex.FullMatch(input, matches[1].Value.StartOffsetInBytes).Success);
-        Assert.Equal(new[] { "345" }, regex.FindAllToStrings(input, matches[1].Value.StartOffsetInBytes).ScalarValues);
+        Assert.Equal(new[] { "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes)).ScalarValues);
 
     }
 

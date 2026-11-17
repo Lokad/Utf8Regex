@@ -126,15 +126,6 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeFindAllToStrings()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToStrings(s_input, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeFindAllToUtf8()
     {
         var regex = Create();

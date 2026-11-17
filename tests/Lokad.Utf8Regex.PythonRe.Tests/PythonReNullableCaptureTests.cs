@@ -43,7 +43,7 @@ public sealed class PythonReNullableCaptureTests
             Assert.True(regex.SearchDetailedData(input, 0, token).Success);
             Assert.Equal(fullMatch, regex.FullMatch(input, 0, token).Success);
             Assert.Equal(expectedRanges.Length, regex.Count(input, 0, token));
-            Assert.Equal(expectedCaptures.Select(value => value ?? ""), regex.FindAllToStrings(input, 0, token).ScalarValues);
+            Assert.Equal(expectedCaptures.Select(value => value ?? ""), PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token)).ScalarValues);
             var detailed = regex.FindIterDetailed(input, 0, token);
             Assert.Equal(expectedRanges, detailed.Select(value => (value.Value.StartOffsetInBytes, value.Value.EndOffsetInBytes)));
             using var cursor = regex.CreateMatchCursor(input, 0, token);

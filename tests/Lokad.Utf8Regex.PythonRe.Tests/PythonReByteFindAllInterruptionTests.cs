@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-public sealed class PythonReStringFindAllInterruptionTests
+public sealed class PythonReByteFindAllInterruptionTests
 {
     public static IEnumerable<object[]> Cases()
     {
@@ -31,9 +31,9 @@ public sealed class PythonReStringFindAllInterruptionTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 16)));
         var checkpoints = new List<ulong>();
-        Utf8PythonFindAllResult retained;
+        Utf8PythonFindAllUtf8Result retained;
         var observation = Utf8SearchDiagnosticsSession.Start(steps => checkpoints.Add(steps));
-        try { retained = regex.FindAllToStrings(input); }
+        try { retained = regex.FindAllToUtf8(input); }
         finally { observation.Complete(); }
         Assert.NotEmpty(checkpoints);
         var expected = Flatten(retained);
@@ -52,9 +52,9 @@ public sealed class PythonReStringFindAllInterruptionTests
                 if (expire) ticks = 50;
                 else token.Cancel();
             });
-            Utf8PythonFindAllResult? published = null;
+            Utf8PythonFindAllUtf8Result? published = null;
             Exception? failure;
-            try { failure = Record.Exception(() => published = regex.FindAllToStrings(input, 0, token.Token)); }
+            try { failure = Record.Exception(() => published = regex.FindAllToUtf8(input, 0, token.Token)); }
             finally { injection.Complete(); }
             Assert.True(entered);
             Assert.Null(published);
@@ -68,10 +68,11 @@ public sealed class PythonReStringFindAllInterruptionTests
             Assert.Equal(expected, Flatten(retained));
         }
         ticks = 0;
-        Assert.Equal(expected, Flatten(regex.FindAllToStrings(input)));
+        Assert.Equal(expected, Flatten(regex.FindAllToUtf8(input)));
     }
 
-    private static string[] Flatten(Utf8PythonFindAllResult result) =>
+    private static string[] Flatten(Utf8PythonFindAllUtf8Result result) =>
         result.Shape == Utf8PythonFindAllShape.GroupTuple
-            ? result.TupleValues.SelectMany(tuple => tuple).ToArray() : result.ScalarValues;
+            ? result.TupleValues.SelectMany(tuple => tuple).Select(value => Encoding.UTF8.GetString(value)).ToArray()
+            : result.ScalarValues.Select(value => Encoding.UTF8.GetString(value)).ToArray();
 }

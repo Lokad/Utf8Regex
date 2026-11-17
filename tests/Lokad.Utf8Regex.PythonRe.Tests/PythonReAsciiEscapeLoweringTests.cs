@@ -88,7 +88,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
             : @"(?ai:(\w))(?u:(\w))(?a:(\W))");
         var input = "aé😀 bé😀"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
-        var actual = regex.FindAllToStrings(input).TupleValues;
+        var actual = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
         Assert.Equal(new[] { "a", "é", "😀" }, actual[0]);
         Assert.Equal(new[] { "b", "é", "😀" }, actual[1]);
         Assert.Equal(2, actual.Length);

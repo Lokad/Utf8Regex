@@ -31,13 +31,13 @@ the owned engine. `LastIndex`/`LastGroup` identify the last capture to close on 
 successful path; an unnamed last capture has a null name. Unmatched captures keep
 the documented null/empty shaping for each API.
 
-Search, Match and FullMatch expose value, detailed, string and UTF-8 forms.
-`FindIterDetailed` returns owned capture snapshots. `FindAllToStrings` and
-`FindAllToUtf8` provide Python-shaped scalar/tuple outputs; `FindAll` is the
+Search, Match and FullMatch expose borrowed byte values and capture views, plus
+owned detailed snapshots. `FindIterDetailed` returns owned capture snapshots.
+`FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs; `FindAll` is the
 structural full-match collector. Split and template/callback replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
-positions require an explicit cursor query.
+positions are derived by the host when needed.
 
 `Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans as well as
 text templates. Native preparation/cache keys and literal/capture output remain
@@ -120,8 +120,8 @@ Fixed finite policies omit optional unmetered Core runtime/emission storage and
 native prefix buffers those instances cannot execute. Useful search/scalar
 preparation remains; lower construction charges can admit earlier-denied patterns.
 
-Optional Core preparations support native iteration, canonical literal FindAll
-string counting, literal values/results and scalar cursor start hints. The current
+Optional Core preparations support native iteration, byte-output FindAll,
+literal values/results and scalar cursor start hints. The current
 grammar-level iteration flag can also retain Core for patterns whose operations
 decline it. Tightening that flag is deferred after a bounded cost experiment;
 backend presence alone does not establish execution. A Core preparation may still
@@ -163,8 +163,9 @@ Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 `Search`, `Match` and `FullMatch` return borrowed byte ranges. Their former
 `ToString` operation variants are removed. Check `Success`, then decode
 `GetValueBytes()` in the host if text is needed; caller decoding is outside the
-regex invocation's resource and cancellation scope. `ReplaceToString` and
-`FindAllToStrings` still provide their documented aggregate output forms.
+regex invocation's resource and cancellation scope. `FindAllToStrings` is also
+removed; decode selected `FindAllToUtf8` values in the host. `ReplaceToString`
+still provides its documented output form.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
 `MoveNext` instead of materializing the complete `FindIterDetailed` array:
@@ -227,7 +228,9 @@ split rows explicitly decode those ranges in host code, including that work in
 timing and allocations to retain equal outputs against the comparators. Regex
 limits cover range metadata, while host strings remain outside them. Those rows
 have new operation identities; the tables below retain their historical text-API
-measurements until the next coherent refresh.
+measurements until the next coherent refresh. FindAll string rows likewise now
+include explicit host decoding of owned UTF-8 outputs, with new operation
+identities; historical string-sharing measurements retain their old provenance.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;

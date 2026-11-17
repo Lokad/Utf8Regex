@@ -160,7 +160,7 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         var input = "😀a"u8.ToArray();
         var regex = Create("(?P<first>😀)|(?P<second>a)", 1000000);
-        var strings = regex.FindAllToStrings(input);
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
         Assert.Equal(new[] { new[] { "😀", "" }, new[] { "", "a" } }, strings.TupleValues);
         var bytes = regex.FindAllToUtf8(input);
         Assert.Equal("😀"u8.ToArray(), bytes.TupleValues[0][0]);
@@ -171,7 +171,7 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal("😀", retained.Value.ValueText);
         Assert.True(retained.TryGetFirstSetGroup("first", out var first));
         Assert.Equal("😀", first.ValueText);
-        Denied(() => Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToStrings(input), 1);
+        Denied(() => PythonReFindAllAssert.Decode(Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToUtf8(input)), 1);
         Assert.Equal("😀", retained.Value.ValueText);
         Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }

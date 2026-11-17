@@ -63,7 +63,7 @@ public sealed class PythonReScalarRenderingTests
                 Assert.Equal(subject, detailed.Value.ValueText);
             }
         }
-        Assert.Equal(expected ? new[] { subject } : [], regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public sealed class PythonReScalarRenderingTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(expected, regex.FullMatch(input).Success);
-        Assert.Equal(expected ? new[] { subject } : [], regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
     }
 
     [Fact]

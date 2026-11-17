@@ -25,7 +25,7 @@ public sealed class PythonReFixedPolicyPreparationTests
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
         PythonReMatchAssert.Equal("abc", regex.Search(input));
-        Assert.Equal(["abc", "xyz", "abc"], regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(["abc", "xyz", "abc"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal("é😀 ! ! !", regex.ReplaceToString(input, "!"));
         Assert.Equal("abc", regex.SearchDetailedData(input).Value.ValueText);
         Assert.True(regex.FullMatch("xyz"u8).Success);

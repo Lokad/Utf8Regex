@@ -11,11 +11,11 @@ public sealed class PythonReSharedPrefixAdmissionTests
         using var regex = new Utf8PythonRegex("item-([0-9]+)", resourcePolicy: new()
         { MaxWorkSteps = 2000, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 });
         using var cancellation = new CancellationTokenSource();
-        var result = regex.FindAllToStrings(input, 0, cancellation.Token);
+        var result = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, cancellation.Token));
         Assert.Equal(Utf8PythonFindAllShape.SingleGroup, result.Shape);
         Assert.Equal("12", Assert.Single(result.ScalarValues));
         Assert.Empty(result.TupleValues);
-        _ = regex.FindAllToStrings("no match"u8);
+        _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("no match"u8));
         Assert.Equal("12", result.ScalarValues[0]);
     }
 }

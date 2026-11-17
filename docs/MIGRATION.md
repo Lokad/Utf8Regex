@@ -89,6 +89,10 @@ Replace PythonRe `SplitToStrings` and `SplitDetailed` with `SplitRanges`.
 `Number == 0` denotes a segment; positive numbers identify captured separators.
 Check `Success` before slicing: unmatched captures differ from successful empty
 ones. Host decoding and string arrays are outside regex resource controls.
+Replace PythonRe `FindAllToStrings` with `FindAllToUtf8`. Its `Shape`, `Count`,
+scalar values and tuple order retain Python shaping; decode selected owned byte
+arrays in the host. Unmatched findall groups remain empty values. The former
+string-sharing/canonicalization behavior is removed; host text is outside limits.
 Modeled work and working/result capacity requirements can decrease. Original
 byte context, scalar progress, cancellation and deadlines remain enforced.
 

@@ -51,10 +51,10 @@ public sealed class PythonReSubjectFactsTests
         var input = Encoding.UTF8.GetBytes(value + new string(suffix, 1 << 20));
         using var regex = new Utf8PythonRegex($@"\A({value})",
             resourcePolicy: new() { MaxWorkSteps = 128, MaxWorkingBytes = 32768, MaxResultBytes = 512 });
-        Assert.Equal(new[] { value }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { value }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => regex.FindAllToStrings(input, 0, cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, cancellation.Token)));
         Assert.Equal(cancellation.Token, error.CancellationToken);
     }
     [Fact]
@@ -105,7 +105,7 @@ public sealed class PythonReSubjectFactsTests
         Assert.Equal((7,16),(value.StartOffsetInBytes,value.EndOffsetInBytes));
         Assert.False(regex.Match(input).Success);
         Assert.True(regex.FullMatch(input, 7).Success);
-        Assert.Equal(new[] { "item", "1234" }, regex.FindAllToStrings(input).TupleValues[0]);
+        Assert.Equal(new[] { "item", "1234" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues[0]);
     }
     [Theory]
     [InlineData(false, 64)]

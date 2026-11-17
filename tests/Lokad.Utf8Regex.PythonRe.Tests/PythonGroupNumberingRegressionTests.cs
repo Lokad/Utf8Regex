@@ -35,7 +35,7 @@ public sealed class PythonGroupNumberingRegressionTests
         }
         AssertGroups(regex.SearchDetailedData(input));
         AssertGroups(regex.FullMatchDetailedData(input));
-        Assert.Equal(values.Skip(1), Assert.Single(regex.FindAllToStrings(input).TupleValues));
+        Assert.Equal(values.Skip(1), Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;
@@ -124,7 +124,7 @@ public sealed class PythonGroupNumberingRegressionTests
     [Fact]
     public void FindAllTuplesFollowPythonSlotOrder()
     {
-        var tuples = new Utf8PythonRegex("(?P<x>a)(b)").FindAllToStrings(Utf8("abab")).TupleValues;
+        var tuples = PythonReFindAllAssert.Decode(new Utf8PythonRegex("(?P<x>a)(b)").FindAllToUtf8(Utf8("abab"))).TupleValues;
         Assert.Equal(2, tuples.Length);
         Assert.Equal(["a", "b"], tuples[0]);
         Assert.Equal(["a", "b"], tuples[1]);

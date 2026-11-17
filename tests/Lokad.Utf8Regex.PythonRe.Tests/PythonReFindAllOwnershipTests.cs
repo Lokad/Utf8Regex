@@ -10,14 +10,14 @@ public sealed class PythonReFindAllOwnershipTests
     public void NestedTupleValuesKeepIndependentSlotsAndSurviveProgramDisposal()
     {
         var regex = new Utf8PythonRegex("((é😀))");
-        var tuples = regex.FindAllToStrings(Encoding.UTF8.GetBytes("é😀 é😀")).TupleValues;
+        var tuples = regex.FindAllToUtf8(Encoding.UTF8.GetBytes("é😀 é😀")).TupleValues;
         regex.Dispose();
         Assert.Equal(2, tuples.Length);
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[0]);
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1]);
-        tuples[0][0] = "changed";
-        Assert.Equal("é😀", tuples[0][1]);
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1]);
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[0].Select(Encoding.UTF8.GetString));
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1].Select(Encoding.UTF8.GetString));
+        tuples[0][0][0] = (byte)'x';
+        Assert.Equal("é😀", Encoding.UTF8.GetString(tuples[0][1]));
+        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1].Select(Encoding.UTF8.GetString));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class PythonReFindAllOwnershipTests
             MaxWorkSteps = 1000000
         });
         var text = new string('a', 4096);
-        var tuples = regex.FindAllToStrings(Encoding.UTF8.GetBytes(text)).TupleValues;
+        var tuples = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(text))).TupleValues;
         Assert.Single(tuples);
         Assert.Equal(new[] { text, text }, tuples[0]);
     }
@@ -57,8 +57,6 @@ public sealed class PythonReFindAllOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindAll(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
-        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
-        Assert.Equal(values, strings.ScalarValues);
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
         Assert.Equal(values, utf8.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
     }
@@ -78,7 +76,7 @@ public sealed class PythonReFindAllOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindAll(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
-        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
         Assert.Equal(groupValues, strings.ScalarValues);
     }
 
@@ -106,15 +104,13 @@ public sealed class PythonReFindAllOwnershipTests
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
+        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
         Assert.Equal(tuples.Length, strings.TupleValues.Length);
         for (var i = 0; i < tuples.Length; i++)
         {
             Assert.Equal(tuples[i], strings.TupleValues[i]);
         }
 
-        var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
-        Assert.Equal(tuples.Length, utf8.TupleValues.Length);
     }
 
     public static IEnumerable<object?[]> ManagedCases()
@@ -137,20 +133,20 @@ public sealed class PythonReFindAllOwnershipTests
     [Theory]
     [InlineData("[a-z]+", "alpha beta gamma 123 ", 1024, 3072)]
     [InlineData("[a-z]+[0-9]+", "item12 other345 ", 512, 1024)]
-    public void GenericBulkStringsDoNotAcquirePerMatchVmWorkspaces(
+    public void GenericBulkBytesDoNotAcquirePerMatchVmWorkspaces(
         string pattern, string unit, int repetitions, int expectedCount)
     {
         var text = string.Concat(Enumerable.Repeat(unit, repetitions));
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
-        for (var warmup = 0; warmup < 4; warmup++) regex.FindAllToStrings(input);
+        for (var warmup = 0; warmup < 4; warmup++) PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
 
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var result = regex.FindAllToStrings(input);
+        var result = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.Equal(expectedCount, result.Count);
-        // Required strings and roots fit comfortably. A fresh VM workspace for
+        // Required byte roots and host decoding fit comfortably. A fresh VM workspace for
         // each result previously allocated 3.7-5.4 MB on these public workloads.
         Assert.InRange(allocated, 0, 1_048_576);
         var oracle = new System.Text.RegularExpressions.Regex(pattern);

@@ -80,7 +80,7 @@ public sealed class PythonReCountOwnershipTests
         using var token = new CancellationTokenSource();
         Assert.Equal(3, count.Count(input));
         Assert.Equal(2, count.Count(input, 5, token.Token));
-        var values = new Utf8PythonRegex(pattern).FindAllToStrings(input);
+        var values = PythonReFindAllAssert.Decode(new Utf8PythonRegex(pattern).FindAllToUtf8(input));
         Assert.Equal(new[] { "c", "f", "b" }, values.ScalarValues);
     }
     [Fact]

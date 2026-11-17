@@ -144,7 +144,7 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), first.Value.StartOffsetInBytes);
         Assert.Equal(new[] { "item-123", "item", "123" }, first.Groups.Select(g => g.ValueText));
         Assert.Equal(2, owner.Count(input));
-        Assert.Equal(new[] { "item", "123", "other", "45" }, owner.FindAllToStrings(input).TupleValues.SelectMany(row => row));
+        Assert.Equal(new[] { "item", "123", "other", "45" }, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input)).TupleValues.SelectMany(row => row));
         Assert.Equal(oracle.Replace(text, "$2:$1"), owner.ReplaceToString(input, @"\2:\1"));
         Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;

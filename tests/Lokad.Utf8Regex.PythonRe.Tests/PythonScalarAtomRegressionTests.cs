@@ -38,7 +38,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.True(match.Success);
         Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(0).Value.GetValueBytes()));
         Assert.Equal("\U0001f600]", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).Value.GetValueBytes()));
-        Assert.Equal(new[] { "\U0001f600]", "x]" }, regex.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(new[] { "\U0001f600]", "x]" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
     }
 
@@ -84,7 +84,7 @@ public sealed class PythonScalarAtomRegressionTests
     public void DotCaptureAndBackreferenceSpanWholeScalars()
     {
         var emoji = char.ConvertFromUtf32(0x1F600);
-        Assert.Equal([emoji], new Utf8PythonRegex("(.)").FindAllToStrings(Utf8(emoji)).ScalarValues);
+        Assert.Equal([emoji], PythonReFindAllAssert.Decode(new Utf8PythonRegex("(.)").FindAllToUtf8(Utf8(emoji))).ScalarValues);
         AssertSearch(new Utf8PythonRegex("(.)\\1"), emoji + emoji, true, 0, 4);
     }
 
@@ -99,7 +99,7 @@ public sealed class PythonScalarAtomRegressionTests
     [Fact]
     public void DotFindAllProgressesByScalars()
     {
-        var values = new Utf8PythonRegex(".").FindAllToStrings(Utf8("a\U0001F600b")).ScalarValues;
+        var values = PythonReFindAllAssert.Decode(new Utf8PythonRegex(".").FindAllToUtf8(Utf8("a\U0001F600b"))).ScalarValues;
         Assert.Equal(["a", char.ConvertFromUtf32(0x1F600), "b"], values);
     }
 
