@@ -22,8 +22,7 @@ internal static class Utf8CompiledPatternCategories
             Utf8CompiledPatternFamilyKind.RepeatedDigitGroup
                 => Utf8CompiledPatternCategory.AnchoredWhole,
 
-            Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral or
-            Utf8CompiledPatternFamilyKind.SymmetricLiteralWindow
+            Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral
                 => Utf8CompiledPatternCategory.SearchGuided,
 
             _ => Utf8CompiledPatternCategory.None,

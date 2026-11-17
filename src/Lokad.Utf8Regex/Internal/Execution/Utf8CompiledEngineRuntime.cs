@@ -126,8 +126,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
     private readonly AsciiSimplePatternRepeatedDigitGroupPlan _repeatedDigitGroupPlan;
     private readonly AsciiSimplePatternBoundedSuffixLiteralPlan _boundedSuffixLiteralPlan;
-    private readonly AsciiSimplePatternSymmetricLiteralWindowPlan _symmetricLiteralWindowPlan;
-    private readonly Utf8CompiledSymmetricLiteralWindowCounter? _compiledSymmetricLiteralWindowCounter;
 
     internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
@@ -143,10 +141,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         _anchoredBoundedDatePlan = compiledPatternFamily.AnchoredBoundedDatePlan;
         _repeatedDigitGroupPlan = compiledPatternFamily.RepeatedDigitGroupPlan;
         _boundedSuffixLiteralPlan = compiledPatternFamily.BoundedSuffixLiteralPlan;
-        _symmetricLiteralWindowPlan = compiledPatternFamily.SymmetricLiteralWindowPlan;
-        _compiledSymmetricLiteralWindowCounter = emit && _symmetricLiteralWindowPlan.HasValue
-            ? Utf8CompiledSymmetricLiteralWindowCounter.Create(_symmetricLiteralWindowPlan)
-            : null;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -256,13 +250,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
             if (Utf8SimplePatternCompiledSearchGuidedRouter.TryIsMatch(
-                    _repeatedDigitGroupPlan,
-                    _boundedSuffixLiteralPlan,
-                    _symmetricLiteralWindowPlan,
-                    input,
-                    validation,
-                    budget,
-                    out var guidedIsMatch))
+                    _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedIsMatch))
             {
                 return guidedIsMatch;
             }
@@ -325,14 +313,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         }
 
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryCount(
-                _repeatedDigitGroupPlan,
-                _boundedSuffixLiteralPlan,
-                _symmetricLiteralWindowPlan,
-                _compiledSymmetricLiteralWindowCounter,
-                input,
-                validation,
-                budget,
-                out var guidedCount))
+                _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedCount))
         {
             return guidedCount;
         }
@@ -388,13 +369,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
             if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatch(
-                    _repeatedDigitGroupPlan,
-                    _boundedSuffixLiteralPlan,
-                    _symmetricLiteralWindowPlan,
-                    input,
-                    validation,
-                    budget,
-                    out var guidedMatch))
+                    _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedMatch))
             {
                 return guidedMatch;
             }

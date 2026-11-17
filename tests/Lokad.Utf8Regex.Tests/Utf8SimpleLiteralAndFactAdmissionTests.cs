@@ -21,8 +21,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
     private static AsciiSimplePatternPlan Plan(AsciiSimplePatternToken[][] branches, bool folded)
-        => new(branches, 0, [], [], false, false, false, folded, true,
-            default, default, default, default, default, default, default, default, false, false);
+        => new(branches, 0, [], [], false, false, false, folded, true, default, default, default, default, default, default, default, false, false);
     private static Utf8SearchFactData Data() => new()
     {
         LiteralUtf8 = "one"u8.ToArray(),
@@ -49,10 +48,13 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     };
     private static object Input(int route) => route switch
     {
-        0 => Data(), 1 => "ASCII\0"u8.ToArray(), 2 => AsciiCharClass.FromBytes("AaBb"u8), 3 => AsciiCharClass.FromBytes("Aa"u8),
+        0 => Data(),
+        1 => "ASCII\0"u8.ToArray(),
+        2 => AsciiCharClass.FromBytes("AaBb"u8),
+        3 => AsciiCharClass.FromBytes("Aa"u8),
         4 => Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiSimplePatternToken((byte)'!')]], false),
         _ => Utf8OwnedTreeParser.TryParse("[Aa]x", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
-            ?? throw new InvalidOperationException("Owned parsing failed."),
+            ?? throw new InvalidOperationException("Owned parsing failed.")
     };
     private static void Run(int route, object input)
     {
@@ -103,8 +105,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
-        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
-            _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, error.ResourceKind);
+        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, error.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }

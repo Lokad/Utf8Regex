@@ -566,7 +566,6 @@ internal static class Utf8NativeExecutionAnalyzer
             anchoredOptionalFieldPlan: default,
             repeatedDigitGroupPlan: default,
             boundedSuffixLiteralPlan: default,
-            symmetricLiteralWindowPlan: default,
             isAbsoluteStartAnchored: true,
             isAbsoluteEndAnchored: true);
 

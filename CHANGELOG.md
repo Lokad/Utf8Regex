@@ -9,6 +9,11 @@
   original interruption and useful resource limits remain. Numerical work/storage
   requirements can decrease. Malformed-subject matching results are unspecified.
 
+- Fix `Singleline` alternatives that split gap lengths across branches: preserve
+  the first successful alternative instead of merging its range with later ones.
+  Remove the redundant symmetric-window matcher and counter. Matching uses the
+  existing general paths; numerical resource requirements and unmetered costs can change.
+
 - Avoid scanning unused subject suffixes after ASCII eligibility is already known.
   Remove unused supplementary-scalar metadata and discarded split preparation.
   Strict pattern/template checks, matching semantics and interruption/admission remain.

@@ -122,30 +122,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         storage.Budget.ChargeWork((ulong)branches.Length);
         simplePatternPlan = new AsciiSimplePatternPlan(
-            branches,
-            searchLiteralOffset,
-            searchLiterals,
-            fixedLiteralChecks,
-            isStartAnchored,
-            isEndAnchored,
-            allowsTrailingNewlineBeforeEnd,
-            ignoreCase,
-            IsUtf8ByteSafe(branches),
-            TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default,
-            anchoredHeadTailRunPlan: default,
-            anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(storage, branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
+            branches, searchLiteralOffset, searchLiterals, fixedLiteralChecks, isStartAnchored, isEndAnchored, allowsTrailingNewlineBeforeEnd, ignoreCase, IsUtf8ByteSafe(branches), TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default, anchoredHeadTailRunPlan: default, anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(storage, branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
                 ? anchoredValidatorPlan
-                : default,
-            anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
+                : default, anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
                 ? anchoredBoundedDatePlan
-                : default,
-            anchoredOptionalFieldPlan: TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredOptionalFieldPlan)
+                : default, anchoredOptionalFieldPlan: TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredOptionalFieldPlan)
                 ? anchoredOptionalFieldPlan
-                : default,
-            repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
+                : default, repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
-                : default,
-            boundedSuffixLiteralPlan: !ignoreCase &&
+                : default, boundedSuffixLiteralPlan: !ignoreCase &&
                 TryExtractBoundedSuffixLiteralPlan(
                     storage, branches,
                     isStartAnchored,
@@ -153,12 +138,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     allowUnicodeWhitespace: (options & RegexOptions.ECMAScript) == 0,
                     out var boundedSuffixLiteralPlan)
                 ? boundedSuffixLiteralPlan
-                : default,
-            symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(storage, branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
-                ? symmetricLiteralWindowPlan
-                : default,
-            isAbsoluteStartAnchored: isAbsoluteStartAnchored,
-            isAbsoluteEndAnchored: isAbsoluteEndAnchored);
+                : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {
             1 => Utf8SearchFacts.Create(
@@ -173,7 +153,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                                                                     {
                                                                         AlternateLiteralsUtf8 = searchLiterals
                                                                     }),
-            _ => Utf8SearchFacts.Create(Utf8SearchKind.None),
+            _ => Utf8SearchFacts.Create(Utf8SearchKind.None)
         };
 
         return true;
@@ -195,11 +175,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
         if (plan.RepeatedDigitGroupPlan.HasValue) storage.Retain(plan.RepeatedDigitGroupPlan.SeparatorBytes);
         if (plan.BoundedSuffixLiteralPlan.HasValue) storage.Retain(plan.BoundedSuffixLiteralPlan.LiteralUtf8);
-        if (plan.SymmetricLiteralWindowPlan.HasValue)
-        {
-            storage.Retain(plan.SymmetricLiteralWindowPlan.FirstLiteralUtf8);
-            storage.Retain(plan.SymmetricLiteralWindowPlan.SecondLiteralUtf8);
-        }
     }
 
     private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);

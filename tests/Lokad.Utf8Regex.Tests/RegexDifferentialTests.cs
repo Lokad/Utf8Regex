@@ -8,6 +8,11 @@ public sealed class RegexDifferentialTests
     public static TheoryData<string> Patterns => new()
     {
         "Sherlock Holmes", @"Sherlock\s+Holmes", @"\w+\s+Holmes",
+        @"A.{0,1}B|B.{0,1}A|A.{2,3}B|B.{2,3}A",
+        @"(?s:A.{1,2}B|B.{1,2}A|A.{3,4}B|B.{3,4}A)",
+        @"(?s:(?:A.{1,2}B|A.{3,4}B)|(?:B.{1,2}A|B.{3,4}A))",
+        @"(?:A.{0,1}B|A.{2,3}B)|(?:B.{0,1}A|B.{2,3}A)",
+        @"(?<x>A.{0,1}B)|(?<x>B.{0,1}A)|(?<x>A.{2,3}B)|(?<x>B.{2,3}A)",
         @"\w+\s+\w+\s+Holmes", @"(?<word>\w+)\s+(Holmes|Watson)",
         @"\s[a-zA-Z]{0,12}ing\s", @"\s[a-zA-Z]{0,12}ing[\s.,;]",
         @"\b(?:the|and|that|have|for)\b", @"\d+(?:\.\d+)?",
@@ -46,7 +51,7 @@ public sealed class RegexDifferentialTests
     public void GeneratedSubjectsAgreeAcrossOperationsAndCallModes(string pattern)
     {
         var random = new Random(0x5ca1a);
-        string[] subjects = ["", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP", "BEGINBEGINENDEND",
+        string[] subjects = ["", "ABAB", "A1BA1B", "A\nB", "BABA", "AxxBAB", "A\nBABA", "BAAAB", "éABAB中 BABA", "é\ting", " aabb ", "Sherlock Holmes", "word Holmes", "STARTSTARTSTOPSTOP", "BEGINBEGINENDEND",
             "a0f", "A0f", "A0f\n", "A0g", "A0ff", "A0f1c2", "A0f1c2\n", "A0f1cg", "A0f1c2x",
             "Ab0", "Ab0\n", "ab0", "A_0", "Ab01", "ab01", "ab01\n", "AB01", "ab0x", "ab001",
             "A01ZZ", "A0 1ZZ", "A0Z1ZZ", "A0Z 1ZZ", "AB01ZZ", "AB0 1ZZ", "AB0Z1ZZ", "AB0Z 1ZZ",
@@ -126,6 +131,9 @@ public sealed class RegexDifferentialTests
     [InlineData("(?:a|.){1,2}")]
     [InlineData("(?:😀|é)+")]
     [InlineData(@"ab.[0-9]d")]
+    [InlineData(@"A.{0,1}B|B.{0,1}A|A.{2,3}B|B.{2,3}A")]
+    [InlineData(@"(?:A.{0,1}B|A.{2,3}B)|(?:B.{0,1}A|B.{2,3}A)")]
+    [InlineData(@"(?<x>A.{0,1}B)|(?<x>B.{0,1}A)|(?<x>A.{2,3}B)|(?<x>B.{2,3}A)")]
     public void SupplementaryScalarsUseOneOracleSymbolAndOriginalByteRanges(string pattern)
     {
         // Replace each emoji by one BMP symbol, then project oracle positions through
@@ -139,7 +147,7 @@ public sealed class RegexDifferentialTests
             var oracle = new Regex(pattern.Replace("😀", "\ue000"), options);
             for (var sample = 0; sample < 32; sample++)
             {
-                var text = sample == 0 ? "ab😀3d abé3d ab\n3d" :
+                var text = sample == 0 ? "ab😀3d abé3d ab\n3d ABAB A😀B" :
                     string.Concat(Enumerable.Range(0, random.Next(0, 12)).Select(_ => tokens[random.Next(tokens.Length)]));
                 var symbols = text.Replace("😀", "\ue000");
                 foreach (var start in new[] { 0, symbols.Length / 2, symbols.Length }.Distinct())
@@ -185,6 +193,26 @@ public sealed class RegexDifferentialTests
             }
         }
         Assert.False(cursor.MoveNext(out _), context);
+    }
+
+    [Theory]
+    [InlineData("A.{1,2}B|B.{1,2}A|A.{3,4}B|B.{3,4}A")]
+    [InlineData("(?:A.{1,2}B|A.{3,4}B)|(?:B.{1,2}A|B.{3,4}A)")]
+    public void SplitGapAlternativesPreservePriorityAndSingleline(string pattern)
+    {
+        foreach (var options in new[] { RegexOptions.Singleline, RegexOptions.Singleline | RegexOptions.Compiled })
+            foreach (var text in new[] { "A1BA1B", "A\nB", "B\nA", "éA\nB中A1BA1B" })
+            {
+                var regex = new Utf8Regex(pattern, options);
+                var oracle = new Regex(pattern, options);
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+                Assert.Equal(oracle.Count(text), regex.Count(input));
+                var expected = oracle.Match(text);
+                var actual = regex.Match(input);
+                Assert.Equal(expected.Success, actual.Success);
+                if (expected.Success) AssertRange(expected, actual.StartOffsetInBytes, actual.EndOffsetInBytes - actual.StartOffsetInBytes, text, pattern);
+            }
     }
 
     private static void AssertRange(Capture expected, int start, int length, string text, string context)

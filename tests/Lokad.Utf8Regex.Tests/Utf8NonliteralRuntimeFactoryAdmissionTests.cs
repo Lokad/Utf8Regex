@@ -18,23 +18,6 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         where kind is Utf8CompiledEngineKind.SimplePatternInterpreter or Utf8CompiledEngineKind.StructuralLinearAutomaton
         from limit in new[] { "bytes", "work", "depth" } select new object[] { (int)kind, limit };
 
-    [Fact]
-    public void RemainingPayloadStatesCoverStoredFieldsAndNoDiscardedImplementationSurvives()
-    {
-        Type[] types = [typeof(Utf8CompiledSymmetricLiteralWindowCounter)];
-        foreach (var type in types)
-        {
-            var state = type.GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
-            var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            var stateFields = state.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            Assert.Equal(fields.Select(f => f.FieldType.FullName).Order(), stateFields.Select(f => f.FieldType.FullName).Order());
-            Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
-        }
-        Assert.Single(typeof(Utf8StructuralLinearRuntime).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
-        foreach (var type in new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) })
-            Assert.Empty(type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
-    }
-
     private static Utf8CompiledEngineRuntime Build(int kind, Utf8PreparedRegex plan, Utf8VerifierRuntime verifier) =>
         Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
 
@@ -91,8 +74,8 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
 
-    public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 4)
-        from bytes in new[] { false, true } select new object[] { kind, bytes };
+    public static IEnumerable<object[]> Helpers() => from kind in Enumerable.Range(0, 3)
+                                                     from bytes in new[] { false, true } select new object[] { kind, bytes };
 
     [Theory]
     [MemberData(nameof(Helpers))]
@@ -108,29 +91,18 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             program = (Utf8StructuralLinearProgram)boxed;
         }
         var holderPlan = WithSearch(originalPlan, originalPlan.SearchPlan, program);
-        byte[] first = "ab"u8.ToArray(), second = "cd"u8.ToArray();
-        var symmetric = new AsciiSimplePatternSymmetricLiteralWindowPlan(first, second, default,
-            0, (byte)'a', (byte)'c', 0, 8, false, 1, (byte)'b', (byte)'d', 0, (byte)'a', (byte)'c');
         // Prepare primitive inputs explicitly. Public scalar admission may bypass
         // these legacy optimization shapes; this test qualifies holder accounting.
-        object Acquire() => kind < 3
-            ? Utf8StructuralLinearRuntime.Create(holderPlan)
-            : Utf8CompiledSymmetricLiteralWindowCounter.Create(symmetric);
+        object Acquire() => Utf8StructuralLinearRuntime.Create(holderPlan);
         ulong loan;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 0))
         {
             var result = Acquire(); loan = funded.Budget.ReservedBytes;
             Assert.Equal(2ul, funded.Budget.WorkSteps); Assert.Equal(0ul, funded.Budget.PeakDepth);
-            if (kind < 3)
             {
                 Assert.Equal(new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) }[kind], result.GetType());
                 Assert.Same(holderPlan, typeof(Utf8StructuralLinearRuntime).GetField("_regexPlan", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(result));
                 Assert.Equal(128ul, loan);
-            }
-            if (kind == 3)
-            {
-                Assert.Same(first, result.GetType().GetField("_firstLiteral", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(result));
-                Assert.Same(second, result.GetType().GetField("_secondLiteral", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(result));
             }
         }
         var maximum = bytes ? loan : 2ul;
@@ -149,7 +121,6 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             else { Assert.Null(error); Assert.Equal(128 + loan, owner.Budget.ReservedBytes); }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(allowance == maximum ? 4ul : 2ul, owner.Budget.WorkSteps);
-            Assert.Equal("ab"u8.ToArray(), first); Assert.Equal("cd"u8.ToArray(), second);
         }
     }
 

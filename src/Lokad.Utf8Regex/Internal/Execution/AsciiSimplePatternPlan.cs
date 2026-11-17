@@ -5,25 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal readonly struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
-        AsciiSimplePatternToken[][] branches,
-        int searchLiteralOffset,
-        byte[][] searchLiterals,
-        AsciiFixedLiteralCheck[] fixedLiteralChecks,
-        bool isStartAnchored,
-        bool isEndAnchored,
-        bool allowsTrailingNewlineBeforeEnd,
-        bool ignoreCase,
-        bool isUtf8ByteSafe,
-        AsciiSimplePatternRunPlan runPlan,
-        AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan,
-        AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan,
-        AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan,
-        AsciiSimplePatternAnchoredOptionalFieldPlan anchoredOptionalFieldPlan,
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
-        bool isAbsoluteStartAnchored,
-        bool isAbsoluteEndAnchored)
+        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternAnchoredOptionalFieldPlan anchoredOptionalFieldPlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
     {
         Branches = branches;
         MinLength = 0;
@@ -62,7 +44,6 @@ internal readonly struct AsciiSimplePatternPlan
         AnchoredOptionalFieldPlan = anchoredOptionalFieldPlan;
         RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
         BoundedSuffixLiteralPlan = boundedSuffixLiteralPlan;
-        SymmetricLiteralWindowPlan = symmetricLiteralWindowPlan;
     }
 
     public AsciiSimplePatternToken[][] Branches { get; }
@@ -109,8 +90,6 @@ internal readonly struct AsciiSimplePatternPlan
 
     public AsciiSimplePatternBoundedSuffixLiteralPlan BoundedSuffixLiteralPlan { get; }
 
-    public AsciiSimplePatternSymmetricLiteralWindowPlan SymmetricLiteralWindowPlan { get; }
-
     public Utf8CompiledPatternFamilyPlan CompiledPatternFamily => Utf8CompiledPatternFamilyPlan.FromSimplePatternPlan(this);
 
     public Utf8CompiledPatternCategory CompiledPatternCategory => CompiledPatternFamily.Category;
@@ -119,30 +98,19 @@ internal readonly struct AsciiSimplePatternPlan
 
 internal enum Utf8CompiledPatternFamilyKind : byte
 {
-    None = 0,
-    AnchoredValidator = 1,
-    AnchoredBoundedDate = 2,
-    RepeatedDigitGroup = 3,
-    BoundedSuffixLiteral = 4,
-    SymmetricLiteralWindow = 5,
+    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2, RepeatedDigitGroup = 3, BoundedSuffixLiteral = 4
 }
 
 internal readonly struct Utf8CompiledPatternFamilyPlan
 {
     private Utf8CompiledPatternFamilyPlan(
-        Utf8CompiledPatternFamilyKind kind,
-        AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan,
-        AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan,
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
-        AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan)
+        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan)
     {
         Kind = kind;
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
         RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
         BoundedSuffixLiteralPlan = boundedSuffixLiteralPlan;
-        SymmetricLiteralWindowPlan = symmetricLiteralWindowPlan;
     }
 
     public Utf8CompiledPatternFamilyKind Kind { get; }
@@ -155,24 +123,19 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
 
     public AsciiSimplePatternBoundedSuffixLiteralPlan BoundedSuffixLiteralPlan { get; }
 
-    public AsciiSimplePatternSymmetricLiteralWindowPlan SymmetricLiteralWindowPlan { get; }
-
     public Utf8CompiledPatternCategory Category => Utf8CompiledPatternCategories.GetSimplePatternCategory(this);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default, default, default);
+        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default, default);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredBoundedDate(AsciiSimplePatternAnchoredBoundedDatePlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan, default, default, default);
+        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan, default, default);
 
     private static Utf8CompiledPatternFamilyPlan ForRepeatedDigitGroup(AsciiSimplePatternRepeatedDigitGroupPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.RepeatedDigitGroup, default, default, plan, default, default);
+        new(Utf8CompiledPatternFamilyKind.RepeatedDigitGroup, default, default, plan, default);
 
     private static Utf8CompiledPatternFamilyPlan ForBoundedSuffixLiteral(AsciiSimplePatternBoundedSuffixLiteralPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral, default, default, default, plan, default);
-
-    private static Utf8CompiledPatternFamilyPlan ForSymmetricLiteralWindow(AsciiSimplePatternSymmetricLiteralWindowPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.SymmetricLiteralWindow, default, default, default, default, plan);
+        new(Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral, default, default, default, plan);
 
     public static Utf8CompiledPatternFamilyPlan FromSimplePatternPlan(AsciiSimplePatternPlan plan)
     {
@@ -194,11 +157,6 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
         if (plan.BoundedSuffixLiteralPlan.HasValue)
         {
             return ForBoundedSuffixLiteral(plan.BoundedSuffixLiteralPlan);
-        }
-
-        if (plan.SymmetricLiteralWindowPlan.HasValue)
-        {
-            return ForSymmetricLiteralWindow(plan.SymmetricLiteralWindowPlan);
         }
 
         return default;
@@ -562,77 +520,4 @@ internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
         RepeatedMaxLength >= RepeatedMinLength &&
         _literalUtf8 is { Length: > 0 } &&
         !_suffixCharClass.IsEmpty;
-}
-
-internal readonly struct AsciiSimplePatternSymmetricLiteralWindowPlan
-{
-    public AsciiSimplePatternSymmetricLiteralWindowPlan(
-        byte[] firstLiteralUtf8,
-        byte[] secondLiteralUtf8,
-        AsciiExactLiteralSearchData searchData,
-        int anchorOffset,
-        byte anchorByteA,
-        byte anchorByteB,
-        int minGap,
-        int maxGap,
-        bool gapSameLine,
-        int firstFilterOffset,
-        byte firstFilterByteA,
-        byte firstFilterByteB,
-        int secondFilterOffset,
-        byte secondFilterByteA,
-        byte secondFilterByteB)
-    {
-        FirstLiteralUtf8 = firstLiteralUtf8;
-        SecondLiteralUtf8 = secondLiteralUtf8;
-        SearchData = searchData;
-        AnchorOffset = anchorOffset;
-        AnchorByteA = anchorByteA;
-        AnchorByteB = anchorByteB;
-        MinGap = minGap;
-        MaxGap = maxGap;
-        GapSameLine = gapSameLine;
-        FirstFilterOffset = firstFilterOffset;
-        FirstFilterByteA = firstFilterByteA;
-        FirstFilterByteB = firstFilterByteB;
-        SecondFilterOffset = secondFilterOffset;
-        SecondFilterByteA = secondFilterByteA;
-        SecondFilterByteB = secondFilterByteB;
-    }
-
-    public byte[] FirstLiteralUtf8 { get; }
-
-    public byte[] SecondLiteralUtf8 { get; }
-
-    public AsciiExactLiteralSearchData SearchData { get; }
-
-    public int AnchorOffset { get; }
-
-    public byte AnchorByteA { get; }
-
-    public byte AnchorByteB { get; }
-
-    public int MinGap { get; }
-
-    public int MaxGap { get; }
-
-    public bool GapSameLine { get; }
-
-    public int FirstFilterOffset { get; }
-
-    public byte FirstFilterByteA { get; }
-
-    public byte FirstFilterByteB { get; }
-
-    public int SecondFilterOffset { get; }
-
-    public byte SecondFilterByteA { get; }
-
-    public byte SecondFilterByteB { get; }
-
-    public bool HasValue =>
-        FirstLiteralUtf8 is { Length: > 0 } &&
-        SecondLiteralUtf8 is { Length: > 0 } &&
-        MaxGap >= MinGap &&
-        FirstLiteralUtf8[0] != SecondLiteralUtf8[0];
 }
