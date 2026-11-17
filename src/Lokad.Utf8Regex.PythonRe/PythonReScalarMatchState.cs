@@ -11,9 +11,9 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 // Span and durable cursors borrow this single discovery implementation. Search positions and empty
-// advancement are bytes; a lazy prefix index serves requested explicit scalar coordinates.
+// advancement and returned capture ranges are bytes.
 // Python retains the last capture, so discovery does not collect capture history.
-internal partial struct PythonReScalarMatchState
+internal struct PythonReScalarMatchState
 {
     private readonly Utf8SliceProgram _program;
     private readonly Utf8Regex? _candidateRegex;
@@ -32,10 +32,6 @@ internal partial struct PythonReScalarMatchState
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
-    private int[]? _coordinatePrefixes;
-    private ulong _coordinatePrefixReservation;
-    private int _coordinatePrefixCount;
-    private int _asciiPrefixEnd;
     private readonly bool _leadingAsciiMayMatchUnicode;
     private bool _retryNonEmpty;
     private bool _finished;
@@ -586,10 +582,10 @@ internal partial struct PythonReScalarMatchState
                 if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                 var length = Math.Min(2048, input.Length - _position);
                 var block = input.Slice(_position, length);
-                // Only bytes actually skipped need the projected ASCII proof.
+                // Scan only bytes considered by this candidate search.
                 // A Unicode candidate remains a scalar start: all bytes before
                 // the first non-ASCII byte were ASCII, even at a block edge.
-                var nonAscii = _leadingAsciiMayMatchUnicode && _position + length > _asciiPrefixEnd
+                var nonAscii = _leadingAsciiMayMatchUnicode
                     ? block.IndexOfAnyInRange((byte)128, byte.MaxValue) : -1;
                 var ascii = nonAscii < 0 ? block : block[..nonAscii];
                 var offset = _leadingAsciiLow == _leadingAsciiHigh
@@ -833,7 +829,6 @@ internal partial struct PythonReScalarMatchState
         _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);
-        ReleaseCoordinatePrefixes();
         _finished = true;
     }
 }

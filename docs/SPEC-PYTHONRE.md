@@ -3,8 +3,8 @@
 `Lokad.Utf8Regex.PythonRe` is the optional managed Python `re` profile.
 It targets CPython **3.13.2 str-pattern semantics**, with owned Unicode **15.1.0**
 case, identifier and predefined-class data. It matches scalars over strict UTF-8;
-results expose byte coordinates. Scalar coordinates are available only through
-the cursor's explicit scalar-range query; no result exposes UTF-16 coordinates.
+results expose byte coordinates only. Callers derive character positions from
+their text when needed; no result exposes scalar or UTF-16 coordinates.
 
 See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
 [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). Exact declarations are pinned in the
@@ -133,16 +133,13 @@ and VM scratch requirements under the same invocation.
 
 Value `Search` from byte zero can borrow the existing complete literal search
 under finite limits, a live token and an absolute deadline. The caller supplies
-valid text; nonempty literal misses omit unused UTF-16 metadata,
-while hits derive their returned coordinates. No VM workspace or capture storage
+valid text; literal values return the searcher's byte endpoints without
+coordinate scans. No VM workspace or capture storage
 is needed for that route. Numerical work/depth/working requirements can decrease;
 actual payload admission and original interruption authority remain. Other
 patterns and nonzero offsets retain their existing routes.
-Successful literal values count coordinates over the valid scalar
-ranges, using the existing sizing helper's scalar-aligned blocks of at most 4096
-bytes. This replaces coordinate-only validation blocks of 2048 bytes and can
-reduce numerical work charges; the caller supplies valid UTF-8 text,
-and sizing/publication retain the same cancellation and deadline authority.
+Text publication, when requested by a remaining text-output API, sizes only its
+selected valid scalar ranges under the operation's cancellation and deadline.
 
 The shared scalar runner can also omit impossible plain-alternative frames using
 a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
@@ -295,7 +292,7 @@ No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
 Borrowed literal Count trusts the subject's valid-text contract without deriving
 discarded UTF-16 totals. Canonical text output sizes its returned value separately;
-only explicit scalar-coordinate queries prepare absolute-coordinate state.
+no absolute-coordinate index is retained.
 
 String output trusts valid scalar ranges and reuses already-known lengths or
 coordinate facts. Unknown lengths up to 4096 UTF-8 bytes can use conservative
@@ -546,8 +543,7 @@ The previously rejected program-sharing prototype is not delivered.
 
 Value results and borrowed capture contexts copy selected scalar byte endpoints
 without scanning their prefix or content for coordinates. Owned detailed results
-size and decode only requested captured text. These paths do not prepare the
-scalar-coordinate index; only an explicit scalar-range query does so.
+size and decode only requested captured text. No scalar-coordinate index is kept.
 Substitutions still copy required output and validate assembled raw-byte callback
 output. Returned arrays and strings consume modeled result capacity independently.
 Deleting coordinate scans/storage can lower numerical limits; selected-content
@@ -632,7 +628,7 @@ keep its memory manager alive when accessing `GetValueMemory`/`GetGroupMemory`.
 Unmatched captures have `Success=false` and zero offsets, distinct from successful
 empty captures. Byte offsets are relative to the supplied subject memory. No
 captured text, UTF-16 conversion or whole-subject coordinate map is materialized;
-these types expose byte coordinates only. Scalar-coordinate support remains open.
+these types expose byte coordinates only. Hosts derive character positions.
 Result arrays are admitted before acquisition under the result-traffic/working
 scopes. Ordinary range publication releases temporary funding; it does not bound
 caller retention.
@@ -725,42 +721,13 @@ text-template overload. Numeric work/depth/working/result limits and the origina
 operation token/deadline apply; neither caller buffers nor total process memory
 become covered by this API.
 
-`TryGetScalarRange(groupNumber, out startOffsetInScalars, out endOffsetInScalars,
-token = default)` queries the current capture after a detailed, range-only or
-retained range advance. It returns true for a participating capture, including
-empty; absent/unmatched groups return false and both positions are `-1`. Positions
-are zero-based Unicode-scalar offsets from the whole subject's beginning,
-including before a match's start for lookbehind captures. They are not grapheme,
-UTF-16 or byte positions. Match/group results expose only byte start/end offsets.
-The integers remain valid after advance/disposal; querying a cursor without a
-current match fails explicitly.
-
-Byte and text advances do no absolute-coordinate preparation. An explicit
-mixed-input scalar query beyond the first 256-byte block lazily admits one working
-array (scalar prefix counts
-per 256 UTF-8 bytes), extending initialized counts only through requested positions.
-ASCII proof is confined to the queried prefix, not an unused subject suffix;
-ASCII prefixes and shorter queries need no such allocation. The array counts
-scalar starts over caller-guaranteed valid bytes, including blocks cutting through
-scalars, with bounded scans inside the selected block on later queries.
-Scalar queries create no text or full-subject coordinate map. No UTF-16 counts
-are stored. Offsets in the first 256-byte block are counted directly without
-an index; proved prefix facts and existing counts are reused without describing the
-whole subject. Capacity grows geometrically up to the subject's possible entry
-count, with old/new capacity admitted before allocation and synchronous release
-of the old array afterward. Peak working requirements can include both arrays,
-while early queries avoid unused suffix work and capacity. The current array stays
-charged until cursor EOF, failure or disposal; repeated queries reuse it. Index
-storage is working memory, not cumulative result traffic. Each bounded 32-byte
-scan unit and query checkpoints consume the original cumulative work budget;
-depth/result limits retain their existing meaning.
-
-The creation token, original deadline and optional current-query token cover
-preparation and lookup. Completed query/advance tokens have no authority over
-later calls. A projection interruption or admission/work denial faults the cursor
-and synchronously refunds its temporary storage; earlier snapshots and copied
-integers stay valid. Concurrent/reentrant access remains rejected. Keep the
-borrowed subject unchanged and its owner alive under the existing cursor contract.
+Capture ranges expose byte start/end offsets. The former `TryGetScalarRange`
+query and its optional scalar-prefix index are removed. Unicode scalar matching,
+lookaround extents, empty progression and capture priority are unchanged. Hosts
+that need character positions derive them outside the regex invocation's work,
+memory and interruption scope. Cursor advances retain creation/current-call
+cancellation and the original deadline; retained byte snapshots keep their
+existing lifetime and admission contracts.
 
 `CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
 accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and

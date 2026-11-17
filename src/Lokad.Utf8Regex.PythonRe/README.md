@@ -100,12 +100,9 @@ Use `cursor.MoveNext(out Utf8PythonRangeMatch match)` for capture byte ranges
 without captured strings or a whole-subject coordinate map. Range metadata stays
 valid after advances/disposal; byte memory remains borrowed and must stay unchanged
 with its manager alive. A range advance clears the text-based `Current`.
-Only explicit scalar queries prepare a lazy scalar index through requested
-captures, including lookarounds. Byte and text results prepare no absolute
-coordinates. The index
-uses admitted working storage and is refunded synchronously; published arrays and
-strings retain their separate result charges. The index stores only scalar counts;
-short and ASCII-only projections need no index allocation.
+Results expose byte coordinates only; callers derive character positions from
+their text when needed. Regex operations prepare no scalar-coordinate index.
+Published arrays and strings retain their separate result charges.
 `SplitRanges` provides ordinary segments and captured separators as byte ranges,
 including unmatched captures, without decoding or copying their text. These paths
 retain finite limits and synchronous cancellation.

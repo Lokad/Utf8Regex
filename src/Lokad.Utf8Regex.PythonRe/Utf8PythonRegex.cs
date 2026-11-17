@@ -10,7 +10,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 /// <summary>Provides a culture-invariant CPython <c>re</c>-compatible surface over well-formed UTF-8 input.</summary>
-/// <remarks>The adapter preserves Python operation shaping while exposing UTF-8 byte ranges and explicit scalar-coordinate queries.</remarks>
+/// <remarks>The adapter preserves Python operation shaping while exposing UTF-8 byte ranges.</remarks>
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Compiles an expression over already-valid UTF-8 text.</summary>

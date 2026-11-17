@@ -46,6 +46,40 @@ public sealed class PythonReRangeResultTests
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
     }
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(253, 1)]
+    [InlineData(254, 7)]
+    [InlineData(255, 0)]
+    [InlineData(256, 1)]
+    [InlineData(257, 7)]
+    [InlineData(511, 1)]
+    public void CaptureByteEdgesFollowIndependentRunesAcrossBlocksAndBorrowedOffsets(int prefixLength, int borrowedOffset)
+    {
+        var text = new string('x', prefixLength) + "é😀a\u0301" + new string('y', 260) + "😀é\u0800\uD7FF\U0010ffff";
+        var input = Encoding.UTF8.GetBytes(text);
+        byte[] storage = [.. Enumerable.Repeat((byte)0xff, borrowedOffset), .. input, 0xff];
+        using var cursor = new Utf8PythonRegex("(?P<x>.)").CreateMatchCursor(storage.AsMemory(borrowedOffset, input.Length));
+        var position = 0;
+        Utf8PythonRangeMatch retained = default;
+        foreach (var rune in text.EnumerateRunes())
+        {
+            Assert.True(cursor.MoveNext(out var range));
+            for (var number = 0; number < 2; number++)
+            {
+                Assert.True(range.TryGetGroup(number, out var capture));
+                Assert.True(capture.Success);
+                Assert.Equal((position, position + rune.Utf8SequenceLength), (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
+            }
+            retained = range;
+            position += rune.Utf8SequenceLength;
+        }
+        Assert.Equal(input.Length, position);
+        Assert.False(cursor.MoveNext(out _));
+        cursor.Dispose();
+        Assert.True(retained.GetValueMemory().Span.SequenceEqual(input.AsSpan(input.Length - 4)));
+    }
+
     [Fact]
     public void OwnedAndRangeAdvancesShareOnePositionWithoutChangingRetainedValues()
     {

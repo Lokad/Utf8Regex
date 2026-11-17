@@ -20,7 +20,6 @@ public sealed class PythonRePrefixProjectionTests
         using var cursor = regex.CreateMatchCursor(input, start, default, account);
         Assert.True(cursor.MoveNext()); var retained = cursor.Current;
         Assert.Equal((start,endBytes),            (retained.Value.StartOffsetInBytes,retained.Value.EndOffsetInBytes));
-        Assert.True(cursor.TryGetScalarRange(0, out _, out _));
         var collection = Assert.Single(regex.FindIterDetailed(input, start));
         var oneShot = regex.SearchDetailedData(input, start);
         Assert.Equal(oneShot.Groups, retained.Groups); Assert.Equal(oneShot.Groups, collection.Groups);
@@ -29,7 +28,7 @@ public sealed class PythonRePrefixProjectionTests
     }
 
     [Fact]
-    public void DetailedIndexDoesNotConsumeResultTrafficAndRangesCanPrecedeDetails()
+    public void MixedRangeAndDetailedAdvancesKeepPrefixIndependentResultTraffic()
     {
         ulong? traffic = null;
         using var regex = new Utf8PythonRegex("(a)", resourcePolicy: new()
@@ -45,8 +44,8 @@ public sealed class PythonRePrefixProjectionTests
             var current = cursor.WorkingInvocation.Budget.ResultBytes;
             if (traffic is { } previous) Assert.Equal(previous, current);
             traffic = current;
-            Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
-            Assert.Equal(prefix.EnumerateRunes().Count() + 1, start); Assert.Equal(start + 1, end);
+            var start = Encoding.UTF8.GetByteCount(prefix) + 1;
+            Assert.Equal((start, start + 1), (detail.Groups[1].StartOffsetInBytes, detail.Groups[1].EndOffsetInBytes));
             cursor.Dispose(); Assert.Equal(0UL, account.Used);
             Assert.Equal("a", detail.Groups[1].ValueText);
             Assert.Equal("a", Encoding.UTF8.GetString(first.GetValueMemory().Span));
@@ -55,7 +54,7 @@ public sealed class PythonRePrefixProjectionTests
 
     [Theory]
     [InlineData(253)] [InlineData(255)] [InlineData(256)]
-    public void LookaroundEdgesAcrossAnIndexCutUseTheFurthestCapture(int prefixLength)
+    public void LookaroundCaptureBytesCrossFormerIndexCuts(int prefixLength)
     {
         var text = new string('x', prefixLength) + "éa😀" + new string('界', 10000);
         using var cursor = new Utf8PythonRegex("(?<=(é))a(?=(😀))", resourcePolicy: new()
@@ -63,8 +62,6 @@ public sealed class PythonRePrefixProjectionTests
         Assert.True(cursor.MoveNext()); var result = cursor.Current;
         Assert.Equal((prefixLength,prefixLength + 2),            (result.Groups[1].StartOffsetInBytes,result.Groups[1].EndOffsetInBytes));
         Assert.Equal((prefixLength + 3,prefixLength + 7),            (result.Groups[2].StartOffsetInBytes,result.Groups[2].EndOffsetInBytes));
-        Assert.True(cursor.TryGetScalarRange(2, out var start, out var end));
-        Assert.Equal((prefixLength + 2, prefixLength + 3), (start, end));
         cursor.Dispose(); Assert.Equal("😀", result.Groups[2].ValueText);
     }
 }

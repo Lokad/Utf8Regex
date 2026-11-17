@@ -14,9 +14,9 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Returned detailed snapshots own their values and remain usable after later advances or disposal.
 /// Work and modeled result capacity remain cumulative through moves and snapshot publication. Working release never refunds result traffic; caller-retained live memory has separate scope.
 /// Exclusive VM scratch is reused and stays charged while positioned, including during projection and host waits. EOF, failure and disposal release it synchronously. Scratch and publication overlap can require a higher working cap.
-/// Explicit scalar-range requests lazily prepare a scalar-only index. Byte results and text snapshots do not prepare absolute coordinates.
+/// Captures expose byte ranges only; callers derive character positions from their text when needed.
 /// </remarks>
-public sealed partial class Utf8PythonMatchCursor : IDisposable
+public sealed class Utf8PythonMatchCursor : IDisposable
 {
     private ReadOnlyMemory<byte> _input;
     private PythonReNameEntry[] _names;

@@ -77,6 +77,9 @@ subject owner. Cursor copies retain independent positions and shared invocation
 limits; already-published ranges remain valid after advance or failure.
 
 Matching cursors no longer prepare coordinate maps or scan gaps for UTF-16 totals.
+PythonRe also removes `TryGetScalarRange` and its optional scalar-prefix index.
+Use capture byte endpoints and derive character positions in the host when needed;
+that work is outside the regex invocation's resource and interruption controls.
 Modeled work and working/result capacity requirements can decrease. Original
 byte context, scalar progress, cancellation and deadlines remain enforced.
 
@@ -211,8 +214,8 @@ admission models major capacities, growth overlap and retained payloads, not exa
 heap/RSS or every helper allocation. Cumulative result/staging traffic can count
 shared storage again. Work units and capacity requirements vary by route/version;
 recheck representative finite policies when upgrading. Short Unicode output can
-use a conservative byte-derived string charge, and distant Python scalar queries
-can require extra working space for a scalar prefix index.
+use a conservative byte-derived string charge. Character-position projections
+performed by the host are outside regex resource controls.
 
 Cancellation is synchronous and retains the original token. One absolute deadline
 covers required input inspection, matching, shaping and cursor waits. Compatibility

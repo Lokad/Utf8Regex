@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe cursor scalar-coordinate queries and their optional prefix
+  index. Captures retain byte coordinates; Unicode scalar matching is unchanged.
+
 - Remove PythonRe SearchToString, MatchToString and FullMatchToString. Use the
   corresponding byte-result operation and decode in the host when needed.
 

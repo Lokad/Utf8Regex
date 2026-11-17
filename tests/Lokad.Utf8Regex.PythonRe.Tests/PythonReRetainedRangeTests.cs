@@ -195,4 +195,36 @@ public sealed class PythonReRetainedRangeTests
         public bool TryReserve(ulong bytes) => inner.TryReserve(bytes);
         public void Release(ulong bytes) { Interlocked.Increment(ref _releases); inner.Release(bytes); }
     }
+    [Fact]
+    public async Task SeparateProgramsShareBudgetAcrossRetainedMatchAndOutputLifetimes()
+    {
+        var account = new Allowance(8 << 20); Assert.True(account.TryReserve(17));
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        using var first = Compile("(?i)(?P<x>é+|a+)", account, policy);
+        using var second = Compile("(?P<d>[0-9]+)", account, policy);
+        using var advance = new CancellationTokenSource();
+        using var a = first.CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 300) + "😀 éé AA"));
+        using var b = second.CreateMatchCursor("😀 12"u8.ToArray());
+        Assert.True(a.MoveNextRetained(out var retained, advance.Token)); using var rangeReceipt = retained!;
+        Assert.True(b.MoveNext(out var digits)); advance.Cancel(); await Task.Yield();
+        first.Dispose();
+        Assert.True(rangeReceipt.Match.TryGetGroup(1, out var letters));
+        Assert.Equal((305, 309), (letters.StartOffsetInBytes, letters.EndOffsetInBytes));
+        Assert.Equal("x", rangeReceipt.Match.LastGroup);
+        using var output = second.SubnRetained("12"u8, @"[\g<d>]"); var escaped = output.Result;
+        second.Dispose();
+        Assert.True(digits.TryGetGroup(1, out var digitRange));
+        Assert.Equal((5, 7), (digitRange.StartOffsetInBytes, digitRange.EndOffsetInBytes));
+        using var resume = new CancellationTokenSource();
+        Assert.True(a.MoveNext(out var next, resume.Token)); resume.Cancel(); await Task.Yield();
+        Assert.True(next.TryGetGroup(1, out var nextLetters));
+        Assert.Equal((310, 312), (nextLetters.StartOffsetInBytes, nextLetters.EndOffsetInBytes));
+        Assert.False(a.MoveNext(out _)); Assert.False(b.MoveNext(out _));
+        Assert.Equal(17UL + rangeReceipt.ChargedBytes + output.ChargedBytes, account.Used);
+        Assert.Equal("éé", Encoding.UTF8.GetString(rangeReceipt.Match.GetGroupMemory(1).Span));
+        output.Dispose(); rangeReceipt.Dispose(); Assert.Equal(17UL, account.Used);
+        Assert.Equal("[12]", Encoding.UTF8.GetString(escaped.ResultBytes));
+        account.Release(17);
+    }
+
 }
