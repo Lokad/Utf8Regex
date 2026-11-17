@@ -128,7 +128,15 @@ public sealed class PythonGroupNumberingRegressionTests
         Assert.Equal(2, tuples.Length);
         Assert.Equal(["a", "b"], tuples[0]);
         Assert.Equal(["a", "b"], tuples[1]);
-        var matches = new Utf8PythonRegex("(?P<x>a)(b)").FindAll(Utf8("abab"));
+        var wholeMatches1 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor1 = new Utf8PythonRegex("(?P<x>a)(b)").CreateMatchCursor(Utf8("abab"), 0, default))
+        {
+            while (rangeCursor1.MoveNext(out var rangeMatch1))
+            {
+                wholeMatches1.Add(rangeMatch1);
+            }
+        }
+        var matches = wholeMatches1.ToArray();
         Assert.Equal(2, matches.Length);
     }
 

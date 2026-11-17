@@ -28,7 +28,15 @@ public sealed partial class PythonReScalarGlobalTests
             var detailed = regex.FindIterDetailed(input, start, token);
             var values = e.GetProperty("matches").Deserialize<string[]>() ?? [];
             Assert.Equal(values, detailed.Select(static m => m.Value.ValueText));
-            Assert.Equal(values, regex.FindAll(input, start, token).Select(static m => m.ValueText));
+            var wholeMatches13 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor13 = regex.CreateMatchCursor(input, start, token))
+            {
+                while (rangeCursor13.MoveNext(out var rangeMatch13))
+                {
+                    wholeMatches13.Add(rangeMatch13);
+                }
+            }
+            Assert.Equal(values, wholeMatches13.ToArray().Select(static m => System.Text.Encoding.UTF8.GetString(m.GetValueMemory().Span)));
             Assert.Equal(values.Length, regex.Count(input, start, token));
             var ranges = e.GetProperty("byte_ranges");
             var expectedGroups = e.GetProperty("groups");
@@ -78,7 +86,7 @@ public sealed partial class PythonReScalarGlobalTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)]  [InlineData(3)] [InlineData(4)]
     [InlineData(6)] [InlineData(8)] [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
@@ -99,7 +107,6 @@ public sealed partial class PythonReScalarGlobalTests
                 switch (operation)
                 {
                     case 0: regex.FindIterDetailed(input, 0, source.Token); break;
-                    case 1: regex.FindAll(input, 0, source.Token); break;
                     case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
                     case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
                     case 6: regex.Replace(input, "x", 0, 0, source.Token); break;

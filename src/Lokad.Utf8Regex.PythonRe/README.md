@@ -33,8 +33,9 @@ the documented null/empty shaping for each API.
 
 Search, Match and FullMatch expose borrowed byte values and capture views, plus
 owned detailed snapshots. `FindIterDetailed` returns owned capture snapshots.
-`FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs; `FindAll` is the
-structural full-match collector. Split ranges and byte-template replacement include
+`FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs. Whole-match
+ranges and capture memories come from `CreateMatchCursor`; hosts collect them when
+needed. Split ranges and byte-template replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
 positions are derived by the host when needed.
@@ -155,7 +156,11 @@ bool isMatch = regex.IsMatch("foo-foo"u8);
 var first = regex.Search("xx foo-foo yy"u8);
 int count = regex.Count("foo-foo x foo-foo"u8);
 byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>");
-Utf8PythonMatchData[] matches = regex.FindAll("foo-foo xx foo-foo"u8);
+using var matches = regex.CreateMatchCursor("foo-foo xx foo-foo"u8.ToArray());
+while (matches.MoveNext(out var match))
+{
+    Console.WriteLine($"{match.Value.StartOffsetInBytes}:{match.Value.EndOffsetInBytes}");
+}
 var iter = regex.FindIterDetailed("foo-foo xx foo-foo"u8);
 Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 ```
@@ -164,7 +169,10 @@ Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 `ToString` operation variants are removed. Check `Success`, then decode
 `GetValueBytes()` in the host if text is needed; caller decoding is outside the
 regex invocation's resource and cancellation scope. `FindAllToStrings` is also
-removed; decode selected `FindAllToUtf8` values in the host. `ReplaceToString`
+removed; decode selected `FindAllToUtf8` values in the host. The legacy structural
+`FindAll` collector and `Utf8PythonMatchData` are removed too. Cursor ranges borrow
+stable, unchanged subject memory; the host owns collected arrays/strings and
+their final admission/cancellation checks. `ReplaceToString`
 and `SubnToString` are removed too; decode the owned byte-template output when needed.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
@@ -241,7 +249,10 @@ identities; historical string-sharing measurements retain their old provenance.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;
-older receipts retain their original preparation rules.
+older receipts retain their original preparation rules. `FindAllStructural` now
+collects whole-match fields and text in the host over `CreateMatchCursor`, matching
+the comparator's structural output. Its managed operation identity changed;
+historical structural timings are not current performance evidence.
 
 <!-- BEGIN GENERATED PYTHONRE BENCHMARKS -->
 ## Benchmarks

@@ -22,9 +22,17 @@ public sealed class PythonReEmptyMatchTests
     [MemberData(nameof(EmptyRows))]
     public void FindAllVisitsEveryBoundaryOnce(string pattern, PythonReCompileOptions options, string inputText, int expected, string expectedStarts)
     {
-        var matches = new Utf8PythonRegex(pattern, options).FindAll(Encoding.UTF8.GetBytes(inputText));
+        var wholeMatches5 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor5 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
+        {
+            while (rangeCursor5.MoveNext(out var rangeMatch5))
+            {
+                wholeMatches5.Add(rangeMatch5);
+            }
+        }
+        var matches = wholeMatches5.ToArray();
         Assert.Equal(expected, matches.Length);
-        Assert.Equal(expectedStarts, string.Join(",", matches.Select(item => item.StartOffsetInBytes)));
+        Assert.Equal(expectedStarts, string.Join(",", matches.Select(item => item.Value.StartOffsetInBytes)));
     }
 
     [Theory]

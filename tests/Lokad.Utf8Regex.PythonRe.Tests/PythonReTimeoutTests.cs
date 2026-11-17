@@ -59,7 +59,7 @@ public sealed class PythonReTimeoutTests
 
         Assert.True(regex.Search(input).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.Single(regex.FindAll(input));
+        Assert.Equal(1, regex.FindAllToUtf8(input).Count);
         Assert.Equal("xxZxx", PythonReSubstitutionAssert.Decode(regex.Subn(input, "Z")).ResultText);
         Assert.Equal(2, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)).Length);
     }

@@ -5,8 +5,6 @@ public sealed class PythonReResultDefaultsTests
     [Fact]
     public void DefaultAndZeroInitializedResultsExposeEmptyTextAndCollections()
     {
-        Assert.Empty(default(Utf8PythonMatchData).ValueText);
-        Assert.Empty(new Utf8PythonMatchData { Success = false }.ValueText);
         Assert.Empty(default(Utf8PythonGroupMatchData).ValueText);
         Assert.Empty(new Utf8PythonGroupMatchData { Success = false }.ValueText);
         AssertEmpty(default);

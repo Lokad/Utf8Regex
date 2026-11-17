@@ -63,7 +63,7 @@ public sealed class PythonReFundedExecutionTests
         for (ulong remaining = 128; remaining <= 131072; remaining *= 2)
         {
             account.Maximum = held + remaining;
-            Action[] operations = [() => regex.FindAll(input), () => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)), () => regex.FindAllToUtf8(input)];
+            Action[] operations = [() => regex.FindAllToUtf8(input)];
             foreach (var operation in operations)
             {
                 try { operation(); successes++; }
@@ -93,7 +93,7 @@ public sealed class PythonReFundedExecutionTests
         var held = account.Used;
         var subject = Encoding.UTF8.GetBytes("cat a😀b " + new string('a', 262144));
         account.AfterGrant = () => ticks = 100;
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.FindAll(subject));
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.FindAllToUtf8(subject));
         account.AfterGrant = null;
         Assert.Empty(failure.Input); Assert.Equal(regex.Pattern, failure.Pattern); Assert.Equal(held, account.Used);
     }
@@ -130,7 +130,7 @@ public sealed class PythonReFundedExecutionTests
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         var held = account.Used; var reservations = account.Reservations;
         Assert.Equal(1, regex.Count("aaa"u8));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FindAll("aaa"u8));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FindAllToUtf8("aaa"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
     }
@@ -140,7 +140,7 @@ public sealed class PythonReFundedExecutionTests
     {
         var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account); var held = account.Used;
         using var canceled = new CancellationTokenSource(); account.AfterGrant = canceled.Cancel;
-        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.FindAll("aaa"u8, 0, canceled.Token)).CancellationToken);
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8("aaa"u8, 0, canceled.Token)).CancellationToken);
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("aaa"u8, 0, canceled.Token)).CancellationToken);
         account.AfterGrant = null; Assert.Equal(held, account.Used);
         await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
@@ -148,7 +148,7 @@ public sealed class PythonReFundedExecutionTests
             for (var i = 0; i < 32; i++)
             {
                 Assert.Equal(2, regex.Count("aaa aaa"u8));
-                Assert.Equal(2, regex.FindAll("aaa aaa"u8).Length);
+                Assert.Equal(2, regex.FindAllToUtf8("aaa aaa"u8).Count);
             }
         })));
         Assert.Equal(held, account.Used);
@@ -160,7 +160,7 @@ public sealed class PythonReFundedExecutionTests
         ("Count", () => regex.Count(input)), ("SearchDetailed", () => { _ = regex.SearchDetailed(input); }),
         ("MatchDetailed", () => { _ = regex.MatchDetailed(input); }), ("FullMatchDetailed", () => { _ = regex.FullMatchDetailed(input); }),
         ("SearchDetailedData", () => regex.SearchDetailedData(input)), ("MatchDetailedData", () => regex.MatchDetailedData(input)),
-        ("FullMatchDetailedData", () => regex.FullMatchDetailedData(input)),         ("FindAll", () => regex.FindAll(input)),
+        ("FullMatchDetailedData", () => regex.FullMatchDetailedData(input)),
         ("FindAllToUtf8", () => regex.FindAllToUtf8(input)), ("FindIterDetailed", () => regex.FindIterDetailed(input)),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),

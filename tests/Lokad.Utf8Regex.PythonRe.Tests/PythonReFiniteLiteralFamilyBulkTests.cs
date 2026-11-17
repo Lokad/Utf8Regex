@@ -15,9 +15,8 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
         MaxResultBytes = 1 << 20
     };
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void FiniteFamiliesKeepScalarFloorsPriorityAndRequiredValues(int operation)
+    [Fact]
+    public void FiniteFamiliesKeepScalarFloorsPriorityAndRequiredValues()
     {
         foreach (var (pattern, text, start, expected) in new[]
         {
@@ -32,28 +31,33 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
             var input = Encoding.UTF8.GetBytes(text);
             using var cancellation = new CancellationTokenSource();
-            Assert.Equal(expected, Run(regex, input, start, operation, cancellation.Token));
-            Assert.Equal(expected, Run(regex, input, start, operation));
+            Assert.Equal(expected, string.Join("|", (regex).FindAllToUtf8(input, start, cancellation.Token).ScalarValues.Select(Encoding.UTF8.GetString)));
+            Assert.Equal(expected, string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, input, 1, operation));
+            Assert.Throws<ArgumentOutOfRangeException>(() => string.Join("|", (regex).FindAllToUtf8(input, 1, default).ScalarValues.Select(Encoding.UTF8.GetString)));
         }
-        var ranges = new Utf8PythonRegex("é|😀", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous)
-            .FindAll("πé😀é"u8, 2);
+        var wholeMatches10 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor10 = new Utf8PythonRegex("é|😀", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous).CreateMatchCursor(("πé😀é"u8).ToArray(), 2, default))
+        {
+            while (rangeCursor10.MoveNext(out var rangeMatch10))
+            {
+                wholeMatches10.Add(rangeMatch10);
+            }
+        }
+        var ranges = wholeMatches10.ToArray();
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void NativeFamilyAdmitsOnlyItsActualWorkingAndDepthRequirements(int operation)
+    [Fact]
+    public void NativeFamilyAdmitsOnlyItsActualWorkingAndDepthRequirements()
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 10_000, MaxDepth = 1, MaxWorkingBytes = 1024, MaxResultBytes = 4096 });
         var input = Encoding.UTF8.GetBytes("π😀" + new string('x', 4096) + " cat horse cat");
-        Assert.Equal("cat|horse|cat", Run(regex, input, 6, operation));
+        Assert.Equal("cat|horse|cat", string.Join("|", (regex).FindAllToUtf8(input, 6, default).ScalarValues.Select(Encoding.UTF8.GetString)));
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void EveryCoveredPublicCutoffHasItsExactFailureKindAndFreshAllowance(int operation)
+    [Fact]
+    public void EveryCoveredPublicCutoffHasItsExactFailureKindAndFreshAllowance()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 16)));
         var expected = string.Join("|", Enumerable.Range(0, 16).SelectMany(_ => new[] { "cat", "horse" }));
@@ -69,7 +73,7 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
                 });
             void Denied(ulong cap)
             {
-                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(Create(cap), input, 0, operation));
+                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => string.Join("|", (Create(cap)).FindAllToUtf8(input, 0, default).ScalarValues.Select(Encoding.UTF8.GetString)));
                 Assert.Equal(kind, error.ResourceKind); Assert.Equal(cap, error.Limit); Assert.True(error.Requested > cap);
             }
             Denied(1);
@@ -77,20 +81,19 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
             while (high - low > 1)
             {
                 var middle = low + (high - low) / 2;
-                try { Assert.Equal(expected, Run(Create(middle), input, 0, operation)); high = middle; }
+                try { Assert.Equal(expected, string.Join("|", (Create(middle)).FindAllToUtf8(input, 0, default).ScalarValues.Select(Encoding.UTF8.GetString))); high = middle; }
                 catch (Utf8ResourceLimitExceededException error)
                 { Assert.Equal(kind, error.ResourceKind); Assert.Equal(middle, error.Limit); low = middle; }
             }
             var admitted = Create(high);
-            var retained = Run(admitted, input, 0, operation);
+            var retained = string.Join("|", (admitted).FindAllToUtf8(input, 0, default).ScalarValues.Select(Encoding.UTF8.GetString));
             Assert.Equal(expected, retained); Denied(high - 1);
-            Assert.Equal(retained, Run(admitted, input, 0, operation));
+            Assert.Equal(retained, string.Join("|", (admitted).FindAllToUtf8(input, 0, default).ScalarValues.Select(Encoding.UTF8.GetString)));
         }
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void CombinedLimitsCannotBypassCollectionOrFinalOutputAdmission(int operation)
+    [Fact]
+    public void CombinedLimitsCannotBypassCollectionOrFinalOutputAdmission()
     {
         foreach (var kind in new[] { Utf8ResourceLimitKind.ExecutionWorkSteps,
             Utf8ResourceLimitKind.ExecutionWorkingBytes, Utf8ResourceLimitKind.ExecutionResultBytes })
@@ -103,13 +106,12 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
                 MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1UL : policy.MaxResultBytes,
             };
             var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            Assert.Equal(kind, Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, "cat horse"u8.ToArray(), 0, operation)).ResourceKind);
+            Assert.Equal(kind, Assert.Throws<Utf8ResourceLimitExceededException>(() => string.Join("|", (regex).FindAllToUtf8("cat horse"u8.ToArray(), 0, default).ScalarValues.Select(Encoding.UTF8.GetString))).ResourceKind);
         }
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void ByteBoundedEarlyTimeoutUsesCallerLimitsAndOriginalToken(int operation)
+    [Fact]
+    public void ByteBoundedEarlyTimeoutUsesCallerLimitsAndOriginalToken()
     {
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkingBytes = 1 << 20 },
             new Utf8ResourcePolicy { MaxResultBytes = 1 << 20 }, Generous })
@@ -118,28 +120,24 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
             var input = new byte[] { 0xFF, 99, 97, 116 };
             long reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, 1, operation));
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, 1, default).ScalarValues.Select(Encoding.UTF8.GetString)));
             Assert.Empty(error.Input); Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
             Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                Run(regex, input, 1, operation, cancellation.Token)).CancellationToken);
+                string.Join("|", (regex).FindAllToUtf8(input, 1, cancellation.Token).ScalarValues.Select(Encoding.UTF8.GetString))).CancellationToken);
         }
     }
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-
-
-    [InlineData(2, false)]
-    [InlineData(2, true)]
-    public void NativeCollectionAndShapingShareMonotonicWorkAndOriginalInterruption(int operation, bool expire)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NativeCollectionAndShapingShareMonotonicWorkAndOriginalInterruption(bool expire)
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 512)));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var retained = Run(regex, "cat horse"u8.ToArray(), 0, operation);
+        var retained = string.Join("|", (regex).FindAllToUtf8("cat horse"u8.ToArray(), 0, default).ScalarValues.Select(Encoding.UTF8.GetString));
         ulong previous = 0;
         var monotonic = Utf8SearchDiagnosticsSession.Start(step => { Assert.True(step >= previous); previous = step; });
         try { Assert.Equal(1024, regex.FindAllToUtf8(input).Count); }
@@ -154,19 +152,12 @@ public sealed class PythonReFiniteLiteralFamilyBulkTests
         });
         try
         {
-            if (expire) Assert.Empty(Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, 0, operation)).Input);
+            if (expire) Assert.Empty(Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, 0, default).ScalarValues.Select(Encoding.UTF8.GetString))).Input);
             else Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                Run(regex, input, 0, operation, cancellation.Token)).CancellationToken);
+                string.Join("|", (regex).FindAllToUtf8(input, 0, cancellation.Token).ScalarValues.Select(Encoding.UTF8.GetString))).CancellationToken);
         }
         finally { interruption.Complete(); }
         Assert.True(entered); ticks = 0;
-        Assert.Equal(retained, Run(regex, "cat horse"u8.ToArray(), 0, operation));
+        Assert.Equal(retained, string.Join("|", (regex).FindAllToUtf8("cat horse"u8.ToArray(), 0, default).ScalarValues.Select(Encoding.UTF8.GetString)));
     }
-
-    private static string Run(Utf8PythonRegex regex, byte[] input, int start, int operation, CancellationToken token = default)
-        => operation switch
-        {
-            0 => string.Join("|", regex.FindAll(input, start, token).Select(x => x.ValueText)),
-            _ => string.Join("|", regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString)),
-        };
 }

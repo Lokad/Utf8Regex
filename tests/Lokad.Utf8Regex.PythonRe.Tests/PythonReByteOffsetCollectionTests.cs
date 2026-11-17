@@ -10,7 +10,7 @@ public sealed class PythonReByteOffsetCollectionTests
     [InlineData("foo|bar", "é😀")]
     [InlineData("foo", "ascii ")]
     [InlineData("foo|bar", "ascii ")]
-    public void NativeCollectionsPreserveByteAndDerivedCoordinates(string pattern, string prefix)
+    public void ByteCollectionsAndCursorRangesPreserveOriginalOffsets(string pattern, string prefix)
     {
         var input = Encoding.UTF8.GetBytes(prefix + " foo bar");
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -21,14 +21,22 @@ public sealed class PythonReByteOffsetCollectionTests
             var regex = Create(pattern, mode == 2);
             Assert.True(regex.DebugUsesUtf8RegexBackend);
             var token = mode == 1 ? live.Token : default;
-            var matches = regex.FindAll(input, start, token);
-            Assert.Equal(expected, matches.Select(static match => match.ValueText));
-            Assert.Equal(start + 1, matches[0].StartOffsetInBytes);
-            Assert.Equal(start + 4, matches[0].EndOffsetInBytes);
+            var wholeMatches3 = new List<Utf8PythonRangeMatch>();
+            using (var rangeCursor3 = regex.CreateMatchCursor(input, start, token))
+            {
+                while (rangeCursor3.MoveNext(out var rangeMatch3))
+                {
+                    wholeMatches3.Add(rangeMatch3);
+                }
+            }
+            var matches = wholeMatches3.ToArray();
+            Assert.Equal(expected, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)));
+            Assert.Equal(start + 1, matches[0].Value.StartOffsetInBytes);
+            Assert.Equal(start + 4, matches[0].Value.EndOffsetInBytes);
             Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, start, token)).ScalarValues);
             Assert.Equal(expected, regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString));
-            _ = regex.FindAll("later foo"u8);
-            Assert.Equal("foo", matches[0].ValueText);
+            _ = regex.FindAllToUtf8("later foo"u8);
+            Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(matches[0].GetValueMemory().Span));
         }
     }
 

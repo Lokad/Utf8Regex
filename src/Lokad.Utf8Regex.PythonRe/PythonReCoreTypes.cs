@@ -60,23 +60,6 @@ public readonly ref struct Utf8PythonValueMatch
     internal static Utf8PythonValueMatch Create(ReadOnlySpan<byte> input, PythonReGroupData data) => new(input, data);
 }
 
-/// <summary>Stores an owned projection of one Python-compatible match.</summary>
-public readonly struct Utf8PythonMatchData
-{
-    /// <summary>Gets whether the operation found a match.</summary>
-    public bool Success { get; init; }
-
-    /// <summary>Gets the match start as a zero-based byte offset, or zero after no match.</summary>
-    public int StartOffsetInBytes { get; init; }
-
-    /// <summary>Gets the exclusive match end as a zero-based byte offset, or zero after no match.</summary>
-    public int EndOffsetInBytes { get; init; }
-
-    /// <summary>Gets the matched text, or an empty string after no match.</summary>
-    public string ValueText { get => field ?? string.Empty; init; }
-
-}
-
 /// <summary>Describes CPython <c>findall</c> result shaping from the pattern's capture count.</summary>
 public enum Utf8PythonFindAllShape
 {

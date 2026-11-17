@@ -33,7 +33,6 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 | --- | --- |
 | Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value, detailed and data forms agree. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
-| FindAll | Structural full-match records, not Python findall shaping |
 | FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
 | FindIterDetailed | Materialized owned snapshots |
 | CreateMatchCursor | Incremental detailed snapshots over ReadOnlyMemory<byte>; explicit disposal on early stop |
@@ -265,7 +264,7 @@ workspace cleanup. Lazy, captured, alternating and constrained-tail programs kee
 their retry. Eliminated instructions lower work requirements,
 with the original cancellation/deadline and byte/depth/result admission preserved.
 
-Default match/group data expose empty text. Default and unsuccessful detailed
+Default owned detailed group data expose empty text. Default and unsuccessful detailed
 results expose empty capture/name arrays and group-zero text. Successful snapshots
 retain supplied arrays and their owned values across later calls/disposal.
 
@@ -285,6 +284,14 @@ removed. `FindAllToUtf8` publishes admitted owned byte arrays with Python's
 scalar/tuple shaping and independently mutable capture slots. Host decoding is
 outside regex memory/work/interruption controls. Borrowed range results and
 retained-result lifetimes keep their existing contracts.
+The legacy structural `FindAll` overloads and `Utf8PythonMatchData` are also
+removed. Whole-match records and byte extents come from `CreateMatchCursor` over
+stable `ReadOnlyMemory<byte>`. The host collects or decodes those results when
+needed; its aggregate/string allocations are outside regex controls. Transient
+spans can still use `FindAllToUtf8` directly for Python-shaped byte values; a host
+needing durable whole-match ranges must retain suitable subject memory. Range
+metadata survives cursor advances/disposal, while byte views keep the unchanged
+borrowed-input contract. Owned detailed projections remain a separate surface.
 Borrowed literal Count trusts the subject's valid-text contract without deriving
 discarded UTF-16 totals. No absolute-coordinate index is retained.
 

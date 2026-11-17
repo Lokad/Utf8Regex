@@ -225,39 +225,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
-    private void FindAllScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
-    {
-        matches = [];
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
-        Utf8InvocationResultBuffer<Utf8PythonMatchData> list = default;
-        try
-        {
-            while (cursor.MoveNext())
-            {
-                var group = cursor.SnapshotValueData();
-                cursor.AddResult(ref list, new Utf8PythonMatchData
-                {
-                    Success = true,
-                    StartOffsetInBytes = group.StartOffsetInBytes,
-                    EndOffsetInBytes = group.EndOffsetInBytes,
-                    ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes)
-                });
-                cursor.Checkpoint();
-            }
-            var completed = cursor.CompleteResults(ref list);
-            cursor.Checkpoint();
-            matches = completed;
-            return;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
-    }
-
     private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
     {

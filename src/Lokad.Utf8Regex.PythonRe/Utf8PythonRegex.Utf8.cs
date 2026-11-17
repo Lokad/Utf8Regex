@@ -150,46 +150,6 @@ public sealed partial class Utf8PythonRegex
         }
     }
 
-    private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
-    {
-        if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
-        {
-            matches = [];
-            return false;
-        }
-
-        try
-        {
-            var completed = ranges.AllocateResultArray<Utf8PythonMatchData>(ranges.Count);
-            for (var i = 0; i < completed.Length; i++)
-            {
-                var range = ranges[i];
-                completed[i] = new Utf8PythonMatchData
-                {
-                    Success = true,
-                    StartOffsetInBytes = range.IndexInBytes,
-                    EndOffsetInBytes = range.IndexInBytes + range.LengthInBytes,
-                    ValueText = ranges.GetText(input, range)
-                };
-            }
-            ranges.Checkpoint();
-            matches = completed;
-            return true;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
-        {
-            throw ranges.ResourceFailure();
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input, Pattern);
-        }
-        finally
-        {
-            ranges.Dispose();
-        }
-    }
-
     private bool TryCollectUtf8MatchRanges(
         ReadOnlySpan<byte> input,
         int startOffsetInBytes,

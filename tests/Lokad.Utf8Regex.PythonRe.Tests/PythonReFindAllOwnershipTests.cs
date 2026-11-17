@@ -51,12 +51,20 @@ public sealed class PythonReFindAllOwnershipTests
 
     [Theory]
     [MemberData(nameof(OwnedScalarCases))]
-    public void OwnedFindAllMatchesManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
+    public void CursorWholeMatchGoldensMatchManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var matches = regex.FindAll(input, startOffsetInBytes);
-        Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
+        var wholeMatches6 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor6 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor6.MoveNext(out var rangeMatch6))
+            {
+                wholeMatches6.Add(rangeMatch6);
+            }
+        }
+        var matches = wholeMatches6.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
         Assert.Equal(values, utf8.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
     }
@@ -70,12 +78,20 @@ public sealed class PythonReFindAllOwnershipTests
 
     [Theory]
     [MemberData(nameof(OwnedSingleGroupCases))]
-    public void OwnedSingleGroupFindAllMatchesManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[] groupValues)
+    public void SingleGroupCursorKeepsWholeMatchGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[] groupValues)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var matches = regex.FindAll(input, startOffsetInBytes);
-        Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
+        var wholeMatches7 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor7 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor7.MoveNext(out var rangeMatch7))
+            {
+                wholeMatches7.Add(rangeMatch7);
+            }
+        }
+        var matches = wholeMatches7.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
         Assert.Equal(groupValues, strings.ScalarValues);
     }
@@ -123,12 +139,20 @@ public sealed class PythonReFindAllOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void FormerManagedFindAllStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
+    public void GeneralCursorKeepsWholeMatchGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var matches = regex.FindAll(input, startOffsetInBytes);
-        Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
+        var wholeMatches8 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor8 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
+        {
+            while (rangeCursor8.MoveNext(out var rangeMatch8))
+            {
+                wholeMatches8.Add(rangeMatch8);
+            }
+        }
+        var matches = wholeMatches8.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
     }
     [Theory]
     [InlineData("[a-z]+", "alpha beta gamma 123 ", 1024, 3072)]
@@ -153,7 +177,6 @@ public sealed class PythonReFindAllOwnershipTests
         var expected = oracle.Matches(text).Select(static match => match.Value).ToArray();
         Assert.Equal(expected, result.ScalarValues);
         Assert.Equal(expected, regex.FindAllToUtf8(input).ScalarValues.Select(Encoding.UTF8.GetString));
-        Assert.Equal(expected, regex.FindAll(input).Select(static match => match.ValueText));
     }
 
 

@@ -88,7 +88,7 @@ public sealed class PythonReResourcePolicyTests
         var expectedSearch = baseline.Search(input);
         var actualSearch = explicitUnlimited.Search(input);
         Assert.Equal(expectedSearch.Success, actualSearch.Success);
-        Assert.Equal(baseline.FindAll(input).Length, explicitUnlimited.FindAll(input).Length);
+        Assert.Equal(baseline.FindAllToUtf8(input).Count, explicitUnlimited.FindAllToUtf8(input).Count);
         Assert.Equal(PythonReSplitAssert.Decode(input, baseline.SplitRanges(input, 0, 0, default)).Length, PythonReSplitAssert.Decode(input, explicitUnlimited.SplitRanges(input, 0, 0, default)).Length);
     }
 }

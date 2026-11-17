@@ -534,7 +534,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
         Assert.False(new Utf8PythonRegex("(.)++.").Match("ee"u8).Success);
         Assert.Equal((0, 0), GetSpan(new Utf8PythonRegex("x*+").Search("axx"u8)));
         Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("x++").Search("axx"u8)));
-        Assert.Equal(4, new Utf8PythonRegex("a?+").FindAll("aab"u8).Length);
+        Assert.Equal(4, new Utf8PythonRegex("a?+").FindAllToUtf8("aab"u8).Count);
     }
 
     [Fact]
@@ -548,7 +548,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
         Assert.False(new Utf8PythonRegex(@"(?>x)++x").Match("xxx"u8).Success);
         Assert.False(new Utf8PythonRegex(@"(?>x++)x").Match("xxx"u8).Success);
         Assert.True(new Utf8PythonRegex(@"(?>a+)b").FullMatch("ab"u8).Success);
-        Assert.Equal(4, new Utf8PythonRegex(@"(?>(?:ab)?)").FindAll("ababc"u8).Length);
+        Assert.Equal(4, new Utf8PythonRegex(@"(?>(?:ab)?)").FindAllToUtf8("ababc"u8).Count);
     }
 
     [Fact]
@@ -634,7 +634,15 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [InlineData(@"(?:ab){1,3}+", "ababc", "abab")]
     public void FindAllPossessiveQuantifiersFollowCpythonExamples(string pattern, string input, string expectedPipeJoined)
     {
-        var actual = JoinValues(new Utf8PythonRegex(pattern).FindAll(System.Text.Encoding.UTF8.GetBytes(input)));
+        var wholeMatches14 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor14 = new Utf8PythonRegex(pattern).CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes(input), 0, default))
+        {
+            while (rangeCursor14.MoveNext(out var rangeMatch14))
+            {
+                wholeMatches14.Add(rangeMatch14);
+            }
+        }
+        var actual = JoinValues(wholeMatches14.ToArray());
         Assert.Equal(expectedPipeJoined, actual);
     }
 
@@ -685,7 +693,15 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [InlineData(@"(?>(?:ab){1,3})", "ababc", "abab")]
     public void FindAllAtomicGroupingFollowsCpythonExamples(string pattern, string input, string expectedPipeJoined)
     {
-        var actual = JoinValues(new Utf8PythonRegex(pattern).FindAll(System.Text.Encoding.UTF8.GetBytes(input)));
+        var wholeMatches15 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor15 = new Utf8PythonRegex(pattern).CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes(input), 0, default))
+        {
+            while (rangeCursor15.MoveNext(out var rangeMatch15))
+            {
+                wholeMatches15.Add(rangeMatch15);
+            }
+        }
+        var actual = JoinValues(wholeMatches15.ToArray());
         Assert.Equal(expectedPipeJoined, actual);
     }
 
@@ -698,8 +714,24 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void ZeroWidthAlternationFindAllAndReplaceFollowCpythonExamples()
     {
-        Assert.Equal("||::||", JoinValues(new Utf8PythonRegex(@"\b|:+").FindAll("a::bc"u8)));
-        Assert.Equal("|a|||bc|", JoinValues(new Utf8PythonRegex(@"\b|\w+").FindAll("a::bc"u8)));
+        var wholeMatches16 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor16 = new Utf8PythonRegex(@"\b|:+").CreateMatchCursor(("a::bc"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor16.MoveNext(out var rangeMatch16))
+            {
+                wholeMatches16.Add(rangeMatch16);
+            }
+        }
+        Assert.Equal("||::||", JoinValues(wholeMatches16.ToArray()));
+        var wholeMatches17 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor17 = new Utf8PythonRegex(@"\b|\w+").CreateMatchCursor(("a::bc"u8).ToArray(), 0, default))
+        {
+            while (rangeCursor17.MoveNext(out var rangeMatch17))
+            {
+                wholeMatches17.Add(rangeMatch17);
+            }
+        }
+        Assert.Equal("|a|||bc|", JoinValues(wholeMatches17.ToArray()));
         Assert.Equal("-a---bc-", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"\b|:+").Replace("a::bc"u8, "-")));
         Assert.Equal("[]a[][::][]bc[]", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(\b|:+)").Replace("a::bc"u8, @"[\1]")));
     }
@@ -731,8 +763,8 @@ public sealed class Utf8PythonRegexCpythonParityTests
         return System.Text.Encoding.UTF8.GetString(group.Value.GetValueBytes());
     }
 
-    private static string JoinValues(Utf8PythonMatchData[] matches)
-        => string.Join('|', matches.Select(x => x.ValueText));
+    private static string JoinValues(Utf8PythonRangeMatch[] matches)
+        => string.Join('|', matches.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
 
     private static void AssertSplit(string?[] expected, string?[] actual)
         => Assert.Equal(expected, actual, StringComparer.Ordinal);
@@ -764,9 +796,41 @@ public sealed class Utf8PythonRegexCpythonParityTests
         Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("(?:a|ab){2,3}").Search(System.Text.Encoding.UTF8.GetBytes("xaabab\U0001F600"))));
         Assert.Equal((1, 7), GetSpan(new Utf8PythonRegex("(?:a|ab){2,3}c").Search("xaababc"u8)));
         Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("(?:a|ab){2}").Search("xaab"u8)));
-        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2,3}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaabab"), 0).Select(static match => match.ValueText).ToArray());
-        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2,3}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaabab\U0001F600"), 0).Select(static match => match.ValueText).ToArray());
-        Assert.Equal(new[] { "aababc" }, new Utf8PythonRegex("(?:a|ab){2,3}c").FindAll(System.Text.Encoding.UTF8.GetBytes("xaababc"), 0).Select(static match => match.ValueText).ToArray());
-        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaab"), 0).Select(static match => match.ValueText).ToArray());
+        var wholeMatches18 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor18 = new Utf8PythonRegex("(?:a|ab){2,3}").CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes("xaabab"), 0, default))
+        {
+            while (rangeCursor18.MoveNext(out var rangeMatch18))
+            {
+                wholeMatches18.Add(rangeMatch18);
+            }
+        }
+        Assert.Equal(new[] { "aa" }, wholeMatches18.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
+        var wholeMatches19 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor19 = new Utf8PythonRegex("(?:a|ab){2,3}").CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes("xaabab\U0001F600"), 0, default))
+        {
+            while (rangeCursor19.MoveNext(out var rangeMatch19))
+            {
+                wholeMatches19.Add(rangeMatch19);
+            }
+        }
+        Assert.Equal(new[] { "aa" }, wholeMatches19.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
+        var wholeMatches20 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor20 = new Utf8PythonRegex("(?:a|ab){2,3}c").CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes("xaababc"), 0, default))
+        {
+            while (rangeCursor20.MoveNext(out var rangeMatch20))
+            {
+                wholeMatches20.Add(rangeMatch20);
+            }
+        }
+        Assert.Equal(new[] { "aababc" }, wholeMatches20.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
+        var wholeMatches21 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor21 = new Utf8PythonRegex("(?:a|ab){2}").CreateMatchCursor(System.Text.Encoding.UTF8.GetBytes("xaab"), 0, default))
+        {
+            while (rangeCursor21.MoveNext(out var rangeMatch21))
+            {
+                wholeMatches21.Add(rangeMatch21);
+            }
+        }
+        Assert.Equal(new[] { "aa" }, wholeMatches21.ToArray().Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
     }
 }

@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe's legacy structural FindAll collector and Utf8PythonMatchData.
+  Use range cursors for whole-match metadata and FindAllToUtf8 for Python-shaped
+  byte values. Host aggregates and decoding remain outside regex controls.
+
 - Remove PCRE2 callback replacement, evaluator delegates and Core's former shared
   callback writer. Hosts compute custom output over range cursors. Byte templates
   retain their controls and substitution behavior; obsolete thread-local writer

@@ -93,6 +93,11 @@ Replace PythonRe `FindAllToStrings` with `FindAllToUtf8`. Its `Shape`, `Count`,
 scalar values and tuple order retain Python shaping; decode selected owned byte
 arrays in the host. Unmatched findall groups remain empty values. The former
 string-sharing/canonicalization behavior is removed; host text is outside limits.
+The separate structural `FindAll` overloads and `Utf8PythonMatchData` are removed.
+Use `CreateMatchCursor` for whole-match byte extents/captures, collecting ranges or
+decoding text in the host. It borrows stable `ReadOnlyMemory<byte>`; callers with
+only a transient span must retain suitable memory for those views. `FindAllToUtf8`
+still accepts spans directly and returns Python-shaped owned byte values.
 PCRE2 standalone views also remove `GetValueString`. Read `GetValueBytes()` on a
 value/group, or `Value.GetValueBytes()` on a match/partial context. Preserve status
 checks: opted-in `\C` can yield contiguous byte fragments that are not UTF-8 text,

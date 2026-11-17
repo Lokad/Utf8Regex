@@ -7,10 +7,9 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReBulkDeadlineEntryTests
 {
     [Theory]
-    [InlineData(0, 0)] [InlineData(0, 1)]
-
-    [InlineData(2, 0)] [InlineData(2, 1)]
-    public void ExpiredEntryPrecedesDiscovery(int operation, int start)
+    [InlineData(0)]
+    [InlineData(1)]
+    public void ExpiredEntryPrecedesDiscovery(int start)
     {
         foreach (var pattern in new[] { "cat|horse", "cat" })
         foreach (var input in new[] { "xcat"u8.ToArray(), "xcat😀"u8.ToArray() })
@@ -18,33 +17,40 @@ public sealed class PythonReBulkDeadlineEntryTests
             var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
             long reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, start, operation));
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
             Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
             Assert.Equal(regex.Pattern, error.Pattern);
             Assert.True(reads >= 2);
         }
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(2)]
-    public void RetainedValuesAndScalarCoordinatesSurviveTimeoutAndFreshCalls(int operation)
+    [Fact]
+    public void RetainedValuesAndScalarCoordinatesSurviveTimeoutAndFreshCalls()
     {
         var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = Encoding.UTF8.GetBytes("π😀 cat horse cat");
         using var steadyClock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
-        var detailed = regex.FindAll(input, 7);
-        Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => x.ValueText));
-        var retained = Run(regex, input, 7, operation);
+        var wholeMatches2 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor2 = regex.CreateMatchCursor(input, 7, default))
+        {
+            while (rangeCursor2.MoveNext(out var rangeMatch2))
+            {
+                wholeMatches2.Add(rangeMatch2);
+            }
+        }
+        var detailed = wholeMatches2.ToArray();
+        Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
+        var retained = string.Join("|", (regex).FindAllToUtf8(input, 7, default).ScalarValues.Select(Encoding.UTF8.GetString));
         long reads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000))
-            Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, 7, operation));
-        Assert.Equal(retained, Run(regex, input, 7, operation));
-        Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => x.ValueText));
-        Assert.Empty(regex.FindAll(input, input.Length));
+            Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, 7, default).ScalarValues.Select(Encoding.UTF8.GetString)));
+        Assert.Equal(retained, string.Join("|", (regex).FindAllToUtf8(input, 7, default).ScalarValues.Select(Encoding.UTF8.GetString)));
+        Assert.Equal(new[] { "cat", "horse", "cat" }, detailed.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
+        Assert.Equal(0, regex.FindAllToUtf8(input, input.Length).Count);
 
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => Run(regex, input, 7, operation, canceled.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => string.Join("|", (regex).FindAllToUtf8(input, 7, canceled.Token).ScalarValues.Select(Encoding.UTF8.GetString)));
         Assert.Equal(canceled.Token, error.CancellationToken);
     }
 
@@ -60,14 +66,6 @@ public sealed class PythonReBulkDeadlineEntryTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var operation in new[] { 0, 2 })
-            Assert.Equal(expected, Run(regex, input, start, operation));
+        Assert.Equal(expected, string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
     }
-
-    private static string Run(Utf8PythonRegex regex, byte[] input, int start, int operation,
-        CancellationToken token = default) => operation switch
-    {
-        0 => string.Join("|", regex.FindAll(input, start, token).Select(x => x.ValueText)),
-        _ => string.Join("|", regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString)),
-    };
 }

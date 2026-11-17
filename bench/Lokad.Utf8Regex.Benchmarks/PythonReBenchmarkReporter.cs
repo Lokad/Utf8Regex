@@ -1128,14 +1128,14 @@ internal static partial class PythonReBenchmarkReporter
             Regex.InfiniteMatchTimeout);
         var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
         string[] expectedProgression = [string.Empty, "y", string.Empty];
-        var progressiveStructural = progressivePythonRegex.FindAll(progressiveInput, progressiveStartOffsetInBytes)
+        var progressiveStructural = PythonReBenchmarkReporter.MaterializeStructural(progressivePythonRegex, progressiveInput, progressiveStartOffsetInBytes)
             .Select(static match => match.ValueText).ToArray();
         var progressiveStrings = PythonReFindAllTextResult.Decode(progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)).ScalarValues;
         var progressiveUtf8 = progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)
             .ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
         var progressiveCount = progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes);
 
-        if (pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
+        if (PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, input, startOffsetInBytes).Length != 0 ||
             PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
@@ -1143,7 +1143,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
             capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             managedRegex.Match(subject, prefix.Length).Success ||
-            pythonRegex.FindAll(hitInput, startOffsetInBytes).Length != 256 ||
+            PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, hitInput, startOffsetInBytes).Length != 256 ||
             PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count != 256 ||
             pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
             pythonRegex.FindIterDetailed(hitInput, startOffsetInBytes).Length != 256 ||
@@ -1169,8 +1169,8 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine("Implementation     : owned UTF8 engine");
         Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
-        PrintOperation("FindAllEmpty", MeasureOperation(
-            () => pythonRegex.FindAll(input, startOffsetInBytes).Length,
+        PrintOperation("HostCursorStructuralEmpty", MeasureOperation(
+            () => PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, input, startOffsetInBytes).Length,
             iterations,
             samples));
         PrintOperation("FindAllStringsEmpty", MeasureOperation(
@@ -1221,8 +1221,8 @@ internal static partial class PythonReBenchmarkReporter
             () => managedRegex.Count(subject, prefix.Length),
             iterations,
             samples));
-        PrintOperation("FindAllHit", MeasureOperation(
-            () => pythonRegex.FindAll(hitInput, startOffsetInBytes).Length,
+        PrintOperation("HostCursorStructuralHit", MeasureOperation(
+            () => PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, hitInput, startOffsetInBytes).Length,
             iterations,
             samples));
         PrintOperation("FindAllStringsHit", MeasureOperation(
@@ -1249,8 +1249,8 @@ internal static partial class PythonReBenchmarkReporter
             () => pythonRegex.Count(hitInput, startOffsetInBytes),
             iterations,
             samples));
-        PrintOperation("ProgressiveFindAll", MeasureOperation(
-            () => progressivePythonRegex.FindAll(progressiveInput, progressiveStartOffsetInBytes).Length,
+        PrintOperation("ProgressiveHostCursorStructural", MeasureOperation(
+            () => PythonReBenchmarkReporter.MaterializeStructural(progressivePythonRegex, progressiveInput, progressiveStartOffsetInBytes).Length,
             iterations,
             samples));
         PrintOperation("ProgressiveStrings", MeasureOperation(
@@ -1272,7 +1272,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         const string pattern = @"\b|\w+";
         var regex = new Utf8PythonRegex(pattern);
-        var unsupportedProgression = new Utf8PythonRegex("x*|y").FindAll("y"u8)
+        var unsupportedProgression = PythonReBenchmarkReporter.MaterializeStructural(new Utf8PythonRegex("x*|y"), ("y"u8).ToArray())
             .Select(static match => match.ValueText)
             .ToArray();
 
@@ -1288,7 +1288,7 @@ internal static partial class PythonReBenchmarkReporter
             var subject = string.Concat(Enumerable.Repeat("y ", tokenCount));
             var input = Encoding.UTF8.GetBytes(subject);
             var expectedCount = checked(tokenCount * 3);
-            if (regex.Count(input) != expectedCount || regex.FindAll(input).Length != expectedCount)
+            if (regex.Count(input) != expectedCount || PythonReBenchmarkReporter.MaterializeStructural(regex, input).Length != expectedCount)
             {
                 throw new InvalidOperationException(
                     $"PythonRe empty-progression scaling precondition failed at {tokenCount} tokens.");
@@ -1304,7 +1304,7 @@ internal static partial class PythonReBenchmarkReporter
                 iterations,
                 samples));
             PrintOperation("FindAll", MeasureOperation(
-                () => regex.FindAll(input).Length,
+                () => PythonReBenchmarkReporter.MaterializeStructural(regex, input).Length,
                 iterations,
                 samples));
             PrintOperation("FindAllStrings", MeasureOperation(
@@ -1812,6 +1812,26 @@ internal static partial class PythonReBenchmarkReporter
         return int.TryParse(args[index], out var value) && value > 0
             ? value
             : throw new ArgumentException($"'{args[index]}' must be a positive integer.");
+    }
+
+    // Explicit host materialization over the real cursor. Regex controls cover
+    // cursor advances/capture ranges; this aggregate and its strings belong here.
+    internal static PythonReStructuralMatch[] MaterializeStructural(Utf8PythonRegex regex,
+        ReadOnlyMemory<byte> input, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
+    {
+        var matches = new List<PythonReStructuralMatch>();
+        using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes, cancellationToken);
+        while (cursor.MoveNext(out var match))
+        {
+            matches.Add(new PythonReStructuralMatch
+            {
+                Success = match.Success,
+                StartOffsetInBytes = match.Value.StartOffsetInBytes,
+                EndOffsetInBytes = match.Value.EndOffsetInBytes,
+                ValueText = Encoding.UTF8.GetString(match.GetValueMemory().Span)
+            });
+        }
+        return matches.ToArray();
     }
 }
 
@@ -2477,10 +2497,10 @@ internal sealed class PythonReBenchmarkContext
             }
             case PythonReBenchmarkOperation.FindAllStructural:
             {
-                Utf8PythonMatchData[] result = [];
+                PythonReStructuralMatch[] result = [];
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.FindAll(InputBytes);
+                    result = PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes);
                 }
 
                 return Complete(
@@ -2755,7 +2775,7 @@ internal sealed class PythonReBenchmarkContext
             _case.Coverage.StartOffsetInBytes))),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
         PythonReBenchmarkOperation.FindIterDetailed => Checksum(_pythonRegex.FindIterDetailed(InputBytes)),
-        PythonReBenchmarkOperation.FindAllStructural => Checksum(_pythonRegex.FindAll(InputBytes)),
+        PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
@@ -2813,7 +2833,7 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.FindIterDetailed(InputBytes)),
         PythonReBenchmarkOperation.FindAllStructural => SemanticDigest(
             _case.Operation,
-            _pythonRegex.FindAll(InputBytes)),
+            PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
             _case.Operation,
             Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
@@ -4219,13 +4239,13 @@ var indexInBytes = match.StartOffsetInBytes;
         return matches.ToArray();
     }
 
-    private Utf8PythonMatchData[] MaterializeFindAllStructural(string input)
+    private PythonReStructuralMatch[] MaterializeFindAllStructural(string input)
     {
         var utf8Offsets = GetUtf8Offsets(input);
-        var matches = new List<Utf8PythonMatchData>();
+        var matches = new List<PythonReStructuralMatch>();
         foreach (Match match in _regex.Matches(input))
         {
-            matches.Add(new Utf8PythonMatchData
+            matches.Add(new PythonReStructuralMatch
             {
                 Success = true,
                 StartOffsetInBytes = utf8Offsets is null ? match.Index : utf8Offsets[match.Index],
@@ -4628,7 +4648,7 @@ var indexInBytes = match.StartOffsetInBytes;
 
     private static ulong SemanticDigest(
         PythonReBenchmarkOperation operation,
-        Utf8PythonMatchData[] matches)
+        PythonReStructuralMatch[] matches)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
         digest.Add(matches.Length);
@@ -4906,7 +4926,7 @@ var indexInBytes = match.StartOffsetInBytes;
         return checksum;
     }
 
-    private static int Checksum(Utf8PythonMatchData[] matches)
+    private static int Checksum(PythonReStructuralMatch[] matches)
     {
         var checksum = matches.Length;
         foreach (var match in matches)
@@ -5425,4 +5445,14 @@ internal readonly struct PythonReSubnTextResult
     public int ReplacementCount { get; init; }
     public static PythonReSubnTextResult Decode(Utf8PythonSubnUtf8Result result) => new()
     { ResultText = Encoding.UTF8.GetString(result.ResultBytes), ReplacementCount = result.ReplacementCount };
+}
+
+// Benchmark-owned structural output, also used by the .NET comparator.
+// Every successful whole match materializes its fields and text in the host.
+internal readonly struct PythonReStructuralMatch
+{
+    public bool Success { get; init; }
+    public int StartOffsetInBytes { get; init; }
+    public int EndOffsetInBytes { get; init; }
+    public string ValueText { get => field ?? string.Empty; init; }
 }

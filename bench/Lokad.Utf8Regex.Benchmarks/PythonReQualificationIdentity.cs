@@ -65,7 +65,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "managed-range-cursor-host-subn-bytes-untimed-verification-v3",
             PythonReBenchmarkOperation.SplitStrings => "managed-split-ranges-host-strings-eager-v3",
             PythonReBenchmarkOperation.CountFromOffset => "managed-count-from-offset-scalar-v1",
-            PythonReBenchmarkOperation.FindAllStructural => "managed-findall-structural-group-zero-eager-v1",
+            PythonReBenchmarkOperation.FindAllStructural => "managed-host-range-cursor-group-zero-structural-v2",
             PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-bytes-host-text-limited-eager-v3",
             PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-range-cursor-host-replace-text-untimed-verification-v3",
             PythonReBenchmarkOperation.SplitStringsLimited =>

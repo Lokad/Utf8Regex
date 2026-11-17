@@ -121,7 +121,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAll(s_input, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8(s_input, 4, token));
         Assert.Equal(token, exception.CancellationToken);
     }
 

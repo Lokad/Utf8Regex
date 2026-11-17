@@ -104,7 +104,7 @@ public sealed class PythonReFundedProgramTests
             () => regex.Count("a"u8), () => { _ = regex.SearchDetailed("a"u8); },
             () => { _ = regex.MatchDetailed("a"u8); }, () => { _ = regex.FullMatchDetailed("a"u8); },
             () => regex.SearchDetailedData("a"u8), () => regex.MatchDetailedData("a"u8), () => regex.FullMatchDetailedData("a"u8),
-            () => regex.FindAll("a"u8), () => regex.FindAllToUtf8("a"u8),
+            () => regex.FindAllToUtf8("a"u8),
             () => regex.FindIterDetailed("a"u8), () => regex.SplitRanges("a"u8),
             () => regex.Subn("a"u8, "x"),
             () => regex.CreateMatchCursor("a"u8.ToArray()),

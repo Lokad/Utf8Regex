@@ -67,11 +67,10 @@ public sealed class PythonReUnicodeStringSizingTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex(".+");
         var program = core.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes("x" + new string('é', 10_000) + "z");
-        var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, null, ".+",
-            new(new(0, 0, 1UL << 20), timeout, token.Token));
+        var cursor = new PythonReScalarMatchState(input,program,0,timeout,".+",            new(new(0, 0, 1UL << 20), timeout, token.Token),null);
         try
         {
-            Assert.True(cursor.MoveNext());
+            Assert.True(cursor.MoveNext(input));
             var baseline = cursor.ReservedBytes;
             ref var invocation = ref cursor.WorkingInvocation;
             while ((invocation.Budget.Steps & 63) != 62)
@@ -80,7 +79,7 @@ public sealed class PythonReUnicodeStringSizingTests
             invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
             Exception? failure = null;
             string? result = null;
-            try { result = cursor.GetText(1, input.Length - 1); }
+            try { result = cursor.GetText(input,1, input.Length - 1); }
             catch (Exception error) { failure = error; }
             Assert.True(entered);
             Assert.Null(result);

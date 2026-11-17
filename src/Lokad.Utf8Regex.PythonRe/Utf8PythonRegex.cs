@@ -53,9 +53,6 @@ public sealed partial class Utf8PythonRegex
         internal T[] AllocateResultArray<T>(int count)
             => _results.AllocateArray<T>(count, ref _invocation);
 
-        internal string GetText(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
-            => _results.DecodeUtf8(input.Slice(range.IndexInBytes, range.LengthInBytes), null, ref _invocation);
-
         internal byte[] GetBytes(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
         {
             var bytes = AllocateResultArray<byte>(range.LengthInBytes);

@@ -46,7 +46,15 @@ public sealed class PythonRePrefixOverlapTests
     public void OverlapPrefixFindAllListsExactMatches(string pattern, PythonReCompileOptions options, string inputText, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
-        var matches = regex.FindAll(Encoding.UTF8.GetBytes(inputText));
-        Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
+        var wholeMatches11 = new List<Utf8PythonRangeMatch>();
+        using (var rangeCursor11 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
+        {
+            while (rangeCursor11.MoveNext(out var rangeMatch11))
+            {
+                wholeMatches11.Add(rangeMatch11);
+            }
+        }
+        var matches = wholeMatches11.ToArray();
+        Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
     }
 }

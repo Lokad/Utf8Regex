@@ -93,12 +93,10 @@ public sealed class PythonReResultExtentTests
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(new string('é', 5000));
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor(input, program, 0,
-            timeout,
-            null, "(.+)", new(new(0, 0, 1UL << 20), timeout, token.Token));
+        var cursor = new PythonReScalarMatchState(input,program,0,            timeout,"(.+)",new(new(0, 0, 1UL << 20), timeout, token.Token),            null);
         try
         {
-            Assert.True(cursor.MoveNext());
+            Assert.True(cursor.MoveNext(input));
             var baseline = cursor.ReservedBytes;
             ref var invocation = ref cursor.WorkingInvocation;
             while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
@@ -106,7 +104,7 @@ public sealed class PythonReResultExtentTests
             invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
             string? result = null;
             Exception? failure = null;
-            try { result = cursor.GetText(0, input.Length); }
+            try { result = cursor.GetText(input,0, input.Length); }
             catch (Exception error) { failure = error; }
             Assert.True(entered); Assert.Null(result);
             if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);

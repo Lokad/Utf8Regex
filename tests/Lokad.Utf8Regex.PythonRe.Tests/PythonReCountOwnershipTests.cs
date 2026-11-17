@@ -48,7 +48,7 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
-        Assert.Equal(regex.FindAll(input, startOffsetInBytes).Length, regex.Count(input, startOffsetInBytes));
+        Assert.Equal(regex.FindAllToUtf8(input, startOffsetInBytes).Count, regex.Count(input, startOffsetInBytes));
     }
     [Fact]
     public void SplitBackendCountAgreesWithFindAll()
@@ -58,7 +58,7 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex("\\b|\\w+", PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes("\u00E9 skip y");
         Assert.Equal(3, regex.Count(input, 8));
-        Assert.Equal(3, regex.FindAll(input, 8).Length);
+        Assert.Equal(3, regex.FindAllToUtf8(input, 8).Count);
     }
     [Theory]
     [InlineData("(?P<word>foo)-(?P=word)", PythonReCompileOptions.None, "xx foo-foo yy foo-foo", 3, 2)]
