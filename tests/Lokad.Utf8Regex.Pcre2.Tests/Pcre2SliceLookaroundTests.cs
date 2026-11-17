@@ -143,7 +143,7 @@ public sealed class Pcre2SliceLookaroundTests
         var regex = new Utf8Pcre2Regex("(?<=(a|b))", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xab"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 
@@ -167,7 +167,7 @@ public sealed class Pcre2SliceLookaroundTests
             static (in Utf8Pcre2MatchContext match, ref int state) =>
             {
                 state++;
-                return "[" + match.Value.StartOffsetInBytes + ":" + match.GetValueString() + "]";
+                return "[" + match.Value.StartOffsetInBytes + ":" + System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()) + "]";
             });
         Assert.Equal("abc[3:][3:def]abc[9:]", actual);
         Assert.True(regex.DebugCompiledProgram is not null);

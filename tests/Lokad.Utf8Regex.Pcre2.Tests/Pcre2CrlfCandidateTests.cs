@@ -27,7 +27,7 @@ public sealed class Pcre2CrlfCandidateTests
             Assert.Equal(expected.Length, regex.Count(input));
             var first = regex.Match(input);
             Assert.Equal(expected.Length != 0, first.Success);
-            if (first.Success) Assert.Equal(expected[0], first.GetValueString());
+            if (first.Success) Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
             var cursor = regex.EnumerateMatches(input);
             var previousEnd = 0;
             var replaced = new StringBuilder();
@@ -38,7 +38,7 @@ public sealed class Pcre2CrlfCandidateTests
                 Assert.True(start >= previousEnd);
                 Assert.Equal(start, cursor.Current.StartOffsetInBytes);
                 Assert.Equal(start + value.Length, cursor.Current.EndOffsetInBytes);
-                Assert.Equal(value, cursor.Current.GetValueString());
+                Assert.Equal(value, System.Text.Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
                 replaced.Append("\r\nx".AsSpan(previousEnd, start - previousEnd)).Append('G');
                 previousEnd = start + value.Length;
             }
@@ -48,7 +48,7 @@ public sealed class Pcre2CrlfCandidateTests
             var destination = new byte[3];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
             Assert.Equal(replaced.ToString(), Encoding.UTF8.GetString(destination.AsSpan(0, written)));
-            if (pattern == "(.)") Assert.Equal("x", regex.MatchDetailed(input).GetGroup(1).GetValueString());
+            if (pattern == "(.)") Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
         }
     }
 

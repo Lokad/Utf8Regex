@@ -22,7 +22,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -39,7 +39,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -57,7 +57,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -76,7 +76,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -91,7 +91,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var match = regex.Match(input);
 
         Assert.True(match.Success);
-        Assert.Equal("é😀z", match.GetValueString());
+        Assert.Equal("é😀z", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(8, match.EndOffsetInBytes);
     }
@@ -139,8 +139,8 @@ public sealed class Pcre2BacktrackingCompilerTests
         var ungreedy = new Utf8Pcre2Regex("a+?", Pcre2CompileOptions.Ungreedy);
         var noAutoCapture = new Utf8Pcre2Regex("(a|ab)c", Pcre2CompileOptions.NoAutoCapture);
 
-        Assert.Equal("aaa", ungreedy.Match("aaa"u8).GetValueString());
-        Assert.Equal("abc", noAutoCapture.Match("abc"u8).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(ungreedy.Match("aaa"u8).GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(noAutoCapture.Match("abc"u8).GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(noAutoCapture.DebugCompiledProgram.Operations.Match);
     }
 

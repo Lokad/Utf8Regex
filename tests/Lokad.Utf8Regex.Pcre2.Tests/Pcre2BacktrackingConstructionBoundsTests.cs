@@ -30,7 +30,7 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
         Assert.False(Utf8ConstructionScope.IsActive);
         var regex = Compile(pattern, Utf8ConstructionPolicy.Default, bytes);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.Equal("😀😀", regex.Match("😀😀"u8).GetValueString());
+        Assert.Equal("😀😀", System.Text.Encoding.UTF8.GetString(regex.Match("😀😀"u8).GetValueBytes()));
         Assert.Equal(1, regex.Count("😀😀"u8));
     }
 
@@ -51,7 +51,7 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Compile(pattern, new() { MaxDepth = 8 }, false));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
-        Assert.Equal("ab", Compile(pattern, Utf8ConstructionPolicy.Default, false).Match("ab"u8).GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(Compile(pattern, Utf8ConstructionPolicy.Default, false).Match("ab"u8).GetValueBytes()));
     }
 
     [Fact]

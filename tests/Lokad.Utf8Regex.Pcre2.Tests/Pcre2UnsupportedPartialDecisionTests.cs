@@ -45,8 +45,8 @@ public sealed class Pcre2UnsupportedPartialDecisionTests
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
         Assert.Equal("tag", probe.Mark);
         var match = probe.GetMatch();
-        Assert.Equal("aaa", match.GetValueString());
-        Assert.Equal("aaa", match.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.Equal((2, 5), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
     }
 

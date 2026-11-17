@@ -85,7 +85,7 @@ public sealed class Pcre2SliceContiguousTests
         var regex = new Utf8Pcre2Regex("\\Ga+", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("aab"), 1);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(0).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

@@ -141,7 +141,7 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         Assert.Equal(kind, probe.Kind);
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind == Utf8Pcre2ProbeKind.FullMatch)
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), probe.GetMatch().GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
     }
     [Fact]
     public void LaterScalarBoundaryFullPreservesFiniteAdmissionAndRetainedAlias()
@@ -157,8 +157,8 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         var alias = retained.GetGroup(0);
         Assert.Equal((6, 9), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, regex.Probe("abcé"u8, Pcre2PartialMode.Soft).Kind);
-        Assert.Equal("abc", retained.GetValueString());
-        Assert.Equal("abc", alias.GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("abcé abc!"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe(""u8, Pcre2PartialMode.Soft).Kind);
     }

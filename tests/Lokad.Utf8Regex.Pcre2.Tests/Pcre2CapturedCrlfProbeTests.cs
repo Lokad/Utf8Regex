@@ -106,13 +106,13 @@ public sealed class Pcre2CapturedCrlfProbeTests
         {
             var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
             Assert.True(right.Success);
-            Assert.Equal(left.GetValueString(), right.GetValueString());
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((begin, end), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
         if (pattern.Contains("?<part>"))
         {
             Assert.True(actual.TryGetFirstSetGroup("part", out var named));
-            Assert.Equal(actual.GetValueString(), named.GetValueString());
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()), System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         }
     }
 
@@ -130,9 +130,9 @@ public sealed class Pcre2CapturedCrlfProbeTests
         var retained = regex.Probe("a\r\n"u8, Pcre2PartialMode.Soft).GetMatch();
         Assert.True(retained.TryGetFirstSetGroup("part", out var alias));
         Assert.Equal((0, 1), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("a\r", regex.Probe("a\r😀"u8, Pcre2PartialMode.Soft).GetMatch().GetValueString());
-        Assert.Equal("a", retained.GetValueString());
-        Assert.Equal("a", alias.GetValueString());
+        Assert.Equal("a\r", System.Text.Encoding.UTF8.GetString(regex.Probe("a\r😀"u8, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         var partial = Create(1).Probe("a\r\n"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, partial.Kind);
         Assert.Equal((0, 3), (partial.Value.StartOffsetInBytes, partial.Value.EndOffsetInBytes));

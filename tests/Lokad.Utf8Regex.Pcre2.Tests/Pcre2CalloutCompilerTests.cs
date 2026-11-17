@@ -11,7 +11,7 @@ public sealed class Pcre2CalloutCompilerTests
         var match = new Utf8Pcre2Regex("[(?C]").Match("x?y"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("?", match.GetValueString());
+        Assert.Equal("?", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(2, match.EndOffsetInBytes);
     }
@@ -22,7 +22,7 @@ public sealed class Pcre2CalloutCompilerTests
         var match = new Utf8Pcre2Regex("\\Q(?C\\E").Match("a(?Cb"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("(?C", match.GetValueString());
+        Assert.Equal("(?C", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(4, match.EndOffsetInBytes);
     }
@@ -33,7 +33,7 @@ public sealed class Pcre2CalloutCompilerTests
         var match = new Utf8Pcre2Regex("(?#(?C)ab").Match("xxab"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("ab", match.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(4, match.EndOffsetInBytes);
     }
@@ -44,7 +44,7 @@ public sealed class Pcre2CalloutCompilerTests
         var match = new Utf8Pcre2Regex("\\(\\?C\\)").Match("a(?C)b"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("(?C)", match.GetValueString());
+        Assert.Equal("(?C)", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(5, match.EndOffsetInBytes);
     }
@@ -73,7 +73,7 @@ public sealed class Pcre2CalloutCompilerTests
         var match = new Utf8Pcre2Regex(pattern).Match(System.Text.Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(expectedValue, match.GetValueString());
+        Assert.Equal(expectedValue, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(expectedStart, match.StartOffsetInBytes);
         Assert.Equal(expectedEnd, match.EndOffsetInBytes);
     }

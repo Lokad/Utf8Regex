@@ -110,7 +110,7 @@ public sealed class Pcre2PartialFlagTests
         Assert.Equal((2, 2), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, regex.Probe(""u8, Pcre2PartialMode.Soft, 0, Pcre2MatchOptions.NotEmpty).Kind);
         Assert.True(retained.GetGroup(0).Success);
-        Assert.Equal("", retained.GetValueString());
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal(2, regex.Probe("x\n"u8, Pcre2PartialMode.Soft, 1, Pcre2MatchOptions.NotEmptyAtStart).Value.StartOffsetInBytes);
     }
 

@@ -65,15 +65,15 @@ public sealed class Pcre2DetailedValidationAuthorityTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Match(Create(pattern, 3), input, probe); }).ErrorKind);
         var retained = Match(Create(pattern, 100000), input, probe);
-        Assert.Equal(text, retained.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.True(retained.TryGetFirstSetGroup("x", out var named));
-        Assert.Equal(capture, named.GetValueString());
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Match(Create(pattern, 100000, result: 1), input, probe); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Match(Create(pattern, 100000, heap: 1), input, probe); }).ErrorKind);
-        Assert.Equal(text, retained.GetValueString());
-        Assert.Equal(capture, named.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
     }
 
     [Theory] [MemberData(nameof(Routes))]
@@ -91,11 +91,11 @@ public sealed class Pcre2DetailedValidationAuthorityTests
             var whole = retained.GetGroup(0);
             Assert.Equal((lead + 4, input.Length), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
             Assert.True(retained.TryGetFirstSetGroup("x", out var named));
-            Assert.Equal(capture, named.GetValueString());
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
             Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Match(regex, input, probe, lead + 1, flags); });
             _ = Match(regex, Encoding.UTF8.GetBytes(text), probe);
-            Assert.Equal(text, retained.GetValueString());
-            Assert.Equal(capture, named.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         }
     }
 

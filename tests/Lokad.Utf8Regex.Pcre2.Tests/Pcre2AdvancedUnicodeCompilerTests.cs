@@ -17,15 +17,15 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
 
         var matches = regex.EnumerateMatches(input);
         Assert.True(matches.MoveNext());
-        Assert.Equal("a\u0301", matches.Current.GetValueString());
+        Assert.Equal("a\u0301", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.True(matches.MoveNext());
-        Assert.Equal("🇫🇷", matches.Current.GetValueString());
+        Assert.Equal("🇫🇷", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.True(matches.MoveNext());
-        Assert.Equal("👩🏽‍💻", matches.Current.GetValueString());
+        Assert.Equal("👩🏽‍💻", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.True(matches.MoveNext());
-        Assert.Equal("\r\n", matches.Current.GetValueString());
+        Assert.Equal("\r\n", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.True(matches.MoveNext());
-        Assert.Equal("한", matches.Current.GetValueString());
+        Assert.Equal("한", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.False(matches.MoveNext());
     }
 
@@ -72,7 +72,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
                 Timeout.InfiniteTimeSpan);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(segments.Length, regex.Count(input));
-            Assert.Equal(segments[0], regex.Match(input).GetValueString());
+            Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
             var cursor = regex.EnumerateMatches(input);
             var offset = 0;
             foreach (var segment in segments)
@@ -81,7 +81,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
                 Assert.Equal(offset, cursor.Current.StartOffsetInBytes);
                 offset += Encoding.UTF8.GetByteCount(segment);
                 Assert.Equal(offset, cursor.Current.EndOffsetInBytes);
-                Assert.Equal(segment, cursor.Current.GetValueString());
+                Assert.Equal(segment, System.Text.Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
             }
             Assert.False(cursor.MoveNext());
             Assert.Equal(input.Length, offset);
@@ -93,7 +93,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
             if (pattern.Contains("?<g>"))
             {
                 Assert.True(regex.MatchDetailed(input).TryGetFirstSetGroup("g", out var group));
-                Assert.Equal(segments[0], group.GetValueString());
+                Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
             }
         }
         // The existing Unicode Indic-conjunct rule remains supported even where

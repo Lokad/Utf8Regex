@@ -19,7 +19,7 @@ public sealed class Pcre2AssertionCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         // R03 lookaround slice: fixed-shape assertions run first-match on the shared slice runner instead of the generic VM.
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
@@ -37,7 +37,7 @@ public sealed class Pcre2AssertionCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -50,7 +50,7 @@ public sealed class Pcre2AssertionCompilerTests
         var match = regex.Match(input);
 
         Assert.True(match.Success);
-        Assert.Equal("😀", match.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(5, match.StartOffsetInBytes);
         Assert.Equal(9, match.EndOffsetInBytes);
     }
@@ -66,15 +66,15 @@ public sealed class Pcre2AssertionCompilerTests
             .MatchDetailed("aab"u8);
 
         Assert.True(lookahead.Success);
-        Assert.Equal("abc", lookahead.GetValueString());
-        Assert.Equal("abc", lookahead.GetGroup(1).GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.GetGroup(1).GetValueBytes()));
 
         Assert.True(lookbehind.Success);
         Assert.Equal(2, lookbehind.Value.StartOffsetInBytes);
         Assert.Equal(1, lookbehind.GetGroup(1).StartOffsetInBytes);
 
         Assert.True(outerToAssertion.Success);
-        Assert.Equal("aab", outerToAssertion.GetValueString());
+        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(outerToAssertion.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -108,10 +108,10 @@ public sealed class Pcre2AssertionCompilerTests
 
         Assert.True(noAutoCapture.Success);
         Assert.Equal(2, noAutoCapture.CaptureSlotCount);
-        Assert.Equal("b", noAutoCapture.GetGroup(1).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(noAutoCapture.GetGroup(1).GetValueBytes()));
 
         Assert.True(ungreedy.Success);
-        Assert.Equal("aaa", ungreedy.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(ungreedy.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class Pcre2AssertionCompilerTests
         var probe = regex.Probe("a"u8, Pcre2PartialMode.Soft);
 
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
-        Assert.Equal("a", probe.GetMatch().GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(probe.GetMatch().GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

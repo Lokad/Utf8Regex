@@ -84,7 +84,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         if (pattern.StartsWith("(?<", StringComparison.Ordinal) || pattern.StartsWith("(?'", StringComparison.Ordinal))
             Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         else
@@ -105,7 +105,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(input, match.GetValueString());
+        Assert.Equal(input, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Theory]
@@ -162,7 +162,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.False(hasMoreNumbers);
         Assert.Equal(1, numbers[0]);
         Assert.True(match.TryGetFirstSetGroup("word", out var word));
-        Assert.Equal("éé", word.GetValueString());
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(word.GetValueBytes()));
     }
 
     [Theory]
@@ -175,7 +175,7 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Assert.True(match.Success);
         Assert.True(match.TryGetFirstSetGroup(name, out var capture));
-        Assert.Equal("é", capture.GetValueString());
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(capture.GetValueBytes()));
     }
 
     [Fact]
@@ -241,7 +241,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         Utf8Pcre2GroupContext group,        string value,        int startInBytes,        int endInBytes)
     {
         Assert.True(group.Success);
-        Assert.Equal(value, group.GetValueString());
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal(startInBytes, group.StartOffsetInBytes);
         Assert.Equal(endInBytes, group.EndOffsetInBytes);
     }

@@ -161,9 +161,9 @@ public sealed class Pcre2SliceBackrefTests
         var regex = new Utf8Pcre2Regex("(a)(b)\\2\\1", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xxabbayy"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("abba", detailed.Value.GetValueString());
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("b", detailed.GetGroup(2).GetValueString());
+        Assert.Equal("abba", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

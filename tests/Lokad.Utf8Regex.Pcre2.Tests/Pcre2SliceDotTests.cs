@@ -155,8 +155,8 @@ public sealed class Pcre2SliceDotTests
         var regex = new Utf8Pcre2Regex("(.+)", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("x\U0001F600y"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("x\U0001F600y", detailed.Value.GetValueString());
-        Assert.Equal("x\U0001F600y", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

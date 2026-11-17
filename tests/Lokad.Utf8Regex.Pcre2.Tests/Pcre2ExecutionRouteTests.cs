@@ -57,14 +57,14 @@ public sealed class Pcre2ExecutionRouteTests
 
         var enumerator = regex.EnumerateMatches("xxcafé yy naïve zz"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("café", enumerator.Current.GetValueString());
+        Assert.Equal("café", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("naïve", enumerator.Current.GetValueString());
+        Assert.Equal("naïve", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
 
         var first = regex.Match("xxcafé yy naïve zz"u8);
         Assert.True(first.Success);
-        Assert.Equal("café", first.GetValueString());
+        Assert.Equal("café", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public sealed class Pcre2ExecutionRouteTests
         var enumerator = regex.EnumerateMatches("ab foo"u8);
 
         Assert.True(enumerator.MoveNext());
-        Assert.Equal(expected, enumerator.Current.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
     }
 
     [Theory]
@@ -214,7 +214,7 @@ public sealed class Pcre2ExecutionRouteTests
             regex.ReplaceToString(
                 input,
                 0,
-                static (in Utf8Pcre2MatchContext match, ref int _) => $"<{match.GetValueString()}>"));
+                static (in Utf8Pcre2MatchContext match, ref int _) => $"<{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}>"));
 
         var evaluatorBytes = regex.Replace(
             input,
@@ -261,7 +261,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.False(anchoredMiss.MoveNext());
         var anchoredMatch = regex.EnumerateMatches(input, 1, Pcre2MatchOptions.Anchored);
         Assert.True(anchoredMatch.MoveNext());
-        Assert.Equal("foo", anchoredMatch.Current.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(anchoredMatch.Current.GetValueBytes()));
         Assert.False(anchoredMatch.MoveNext());
     }
 
@@ -302,7 +302,7 @@ public sealed class Pcre2ExecutionRouteTests
 
         var match = regex.Match("xxfooBARzz"u8);
         Assert.True(match.Success);
-        Assert.Equal("fooBAR", match.GetValueString());
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
         Assert.Equal(2, regex.Count("foo fooBAR x"u8));
     }
@@ -335,9 +335,9 @@ public sealed class Pcre2ExecutionRouteTests
             static (in Utf8Pcre2MatchContext match, ref int _) =>
             {
                 var bar = match.TryGetFirstSetGroup("Bar", out var named) && named.Success
-                    ? named.GetValueString()
+                    ? System.Text.Encoding.UTF8.GetString(named.GetValueBytes())
                     : "none";
-                return $"<{match.Value.GetValueString()}|{bar}>";
+                return $"<{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}|{bar}>";
             });
 
         Assert.Equal("<foo|none> <fooBAR|BAR> x", replaced);
@@ -354,7 +354,7 @@ public sealed class Pcre2ExecutionRouteTests
 
         var probe = regex.Probe("a"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, probe.Kind);
-        Assert.Equal("a", probe.GetPartial().Value.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(probe.GetPartial().Value.GetValueBytes()));
     }
 
     [Fact]
@@ -382,7 +382,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(4, regex.Count(input));
         Assert.Equal(3, regex.Count(input, 8));
-        Assert.Equal("abcdefghij", regex.Match(input).GetValueString());
+        Assert.Equal("abcdefghij", System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
 
         Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
         Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
@@ -520,7 +520,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(2, regex.Count("foofoo foo bar foofoo"u8));
         Assert.False(regex.IsMatch("foo"u8));
-        Assert.Equal("foo", regex.MatchDetailed("xx foofoo"u8).GetGroup(1).GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("xx foofoo"u8).GetGroup(1).GetValueBytes()));
     }
 
     [Theory]
@@ -565,11 +565,11 @@ public sealed class Pcre2ExecutionRouteTests
 
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("bc.d", enumerator.Current.GetValueString());
+        Assert.Equal("bc.d", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("bc.e", enumerator.Current.GetValueString());
+        Assert.Equal("bc.e", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("β.γ", enumerator.Current.GetValueString());
+        Assert.Equal("β.γ", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
 
         Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[3];
@@ -586,7 +586,7 @@ public sealed class Pcre2ExecutionRouteTests
 
         var match = regex.Match(input, 2);
         Assert.True(match.Success);
-        Assert.Equal("c.de", match.GetValueString());
+        Assert.Equal("c.de", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
         var metered = new Utf8Pcre2Regex(
             @"[^a]+\.[^z]+",
@@ -607,7 +607,7 @@ public sealed class Pcre2ExecutionRouteTests
 
         Assert.True(match.Success);
         Assert.Equal(1, match.StartOffsetInBytes);
-        Assert.Equal("oo@bar", match.GetValueString());
+        Assert.Equal("oo@bar", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Theory]
@@ -657,7 +657,7 @@ public sealed class Pcre2ExecutionRouteTests
 
         var match = regex.Match(input, 2);
         Assert.True(match.Success);
-        Assert.Equal(" bringing ", match.GetValueString());
+        Assert.Equal(" bringing ", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Fact]
@@ -736,7 +736,7 @@ public sealed class Pcre2ExecutionRouteTests
         var match = regex.MatchDetailed("abcdefghij short"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("abcdefghij", match.Value.GetValueString());
+        Assert.Equal("abcdefghij", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal(0, match.Value.StartOffsetInBytes);
         Assert.Equal(10, match.Value.EndOffsetInBytes);
     }
@@ -749,19 +749,19 @@ public sealed class Pcre2ExecutionRouteTests
         var match = regex.MatchDetailed("xxfooBARzz"u8, startOffsetInBytes: 2);
 
         Assert.True(match.Success);
-        Assert.Equal("fooBAR", match.Value.GetValueString());
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
 
         var whole = match.GetGroup(0);
         Assert.True(whole.Success);
-        Assert.Equal("fooBAR", whole.GetValueString());
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(whole.GetValueBytes()));
 
         var capture = match.GetGroup(1);
         Assert.True(capture.Success);
-        Assert.Equal("BAR", capture.GetValueString());
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(capture.GetValueBytes()));
 
         Assert.True(match.TryGetFirstSetGroup("Bar", out var named));
         Assert.True(named.Success);
-        Assert.Equal("BAR", named.GetValueString());
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
     }
 
     [Fact]
@@ -845,7 +845,7 @@ public sealed class Pcre2ExecutionRouteTests
         var match = regex.MatchDetailed("glass"u8);
         Assert.True(match.Success);
         Assert.True(match.GetGroup(1).Success);
-        Assert.Equal("ss", match.GetGroup(1).GetValueString());
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

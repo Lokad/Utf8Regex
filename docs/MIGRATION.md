@@ -93,6 +93,11 @@ Replace PythonRe `FindAllToStrings` with `FindAllToUtf8`. Its `Shape`, `Count`,
 scalar values and tuple order retain Python shaping; decode selected owned byte
 arrays in the host. Unmatched findall groups remain empty values. The former
 string-sharing/canonicalization behavior is removed; host text is outside limits.
+PCRE2 standalone views also remove `GetValueString`. Read `GetValueBytes()` on a
+value/group, or `Value.GetValueBytes()` on a match/partial context. Preserve status
+checks: opted-in `\C` can yield contiguous byte fragments that are not UTF-8 text,
+and a noncontiguous reported span still rejects byte access. Inspect
+`IsUtf8SliceWellFormed` before decoding; host decoding is outside regex controls.
 Modeled work and working/result capacity requirements can decrease. Original
 byte context, scalar progress, cancellation and deadlines remain enforced.
 

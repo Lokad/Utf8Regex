@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -98,18 +97,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
         }
 
         return _input[StartOffsetInBytes..EndOffsetInBytes];
-    }
-
-    /// <summary>Gets the match value decoded as UTF-16 text.</summary>
-    /// <exception cref="InvalidOperationException">The match has no well-formed contiguous UTF-8 value.</exception>
-    public string GetValueString()
-    {
-        if (!IsUtf8SliceWellFormed)
-        {
-            throw new InvalidOperationException("This match has no well-formed UTF-8 string value.");
-        }
-
-        return Encoding.UTF8.GetString(GetValueBytes());
     }
 
     internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
@@ -275,10 +262,6 @@ public readonly ref struct Utf8Pcre2MatchContext
         return false;
     }
 
-    /// <summary>Gets the complete match as UTF-16 text.</summary>
-    /// <exception cref="InvalidOperationException">No successful, exactly projectable match is available.</exception>
-    public string GetValueString() => Value.GetValueString();
-
     internal static Utf8Pcre2MatchContext Create(
         ReadOnlySpan<byte> input,
         Pcre2GroupData[] groups,
@@ -347,18 +330,6 @@ public readonly ref struct Utf8Pcre2GroupContext
         }
 
         return _input[StartOffsetInBytes..EndOffsetInBytes];
-    }
-
-    /// <summary>Gets the group value decoded as UTF-16 text.</summary>
-    /// <exception cref="InvalidOperationException">The group has no well-formed contiguous UTF-8 value.</exception>
-    public string GetValueString()
-    {
-        if (!IsUtf8SliceWellFormed)
-        {
-            throw new InvalidOperationException("This group has no well-formed UTF-8 string value.");
-        }
-
-        return Encoding.UTF8.GetString(GetValueBytes());
     }
 
     internal static Utf8Pcre2GroupContext Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
@@ -473,9 +444,6 @@ public readonly ref struct Utf8Pcre2PartialMatchContext
 
     /// <summary>Gets the partial value bytes from the original subject.</summary>
     public ReadOnlySpan<byte> GetValueBytes() => Value.GetValueBytes();
-
-    /// <summary>Gets the partial value decoded as UTF-16 text.</summary>
-    public string GetValueString() => Value.GetValueString();
 
     internal static Utf8Pcre2PartialMatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData value, string? mark)
         => new(input, value, mark);

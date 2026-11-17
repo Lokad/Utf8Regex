@@ -64,13 +64,13 @@ public sealed class Pcre2ProfileResourceTests
         var regex = new Utf8Pcre2Regex(@"\x{41}(?<face>😀)(é)");
         var context = regex.MatchDetailed("xA😀éA😀é"u8, 1);
         Assert.Equal(3, context.CaptureSlotCount);
-        Assert.Equal("A😀é", context.GetValueString());
-        Assert.Equal("😀", context.GetGroup(1).GetValueString());
-        Assert.Equal("é", context.GetGroup(2).GetValueString());
+        Assert.Equal("A😀é", System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(context.GetGroup(1).GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(context.GetGroup(2).GetValueBytes()));
         Assert.True(context.TryGetFirstSetGroup("face", out var named));
         Assert.Equal((2, 6), (named.StartOffsetInBytes, named.EndOffsetInBytes));
         Assert.True(regex.MatchDetailed("A😀é"u8).Success);
-        Assert.Equal("😀", named.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
 
         var repeated = new Utf8Pcre2Regex("(?<a>😀)+é").MatchDetailed("😀😀é"u8);
         Assert.True(repeated.TryGetFirstSetGroup("a", out var retained));
@@ -78,8 +78,8 @@ public sealed class Pcre2ProfileResourceTests
         var shared = new Utf8Pcre2Regex(@"(?<v>\x{41})(?<v>😀)", Pcre2CompileOptions.None,
             new() { AllowDuplicateNames = true }, default, Timeout.InfiniteTimeSpan).MatchDetailed("A😀"u8);
         Assert.True(shared.TryGetFirstSetGroup("v", out var first));
-        Assert.Equal("A", first.GetValueString());
-        Assert.Equal("😀", shared.GetGroup(2).GetValueString());
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(shared.GetGroup(2).GetValueBytes()));
     }
 
     [Theory]
@@ -129,7 +129,7 @@ public sealed class Pcre2ProfileResourceTests
         try { _ = alias.MoveNext(); }
         catch (Pcre2MatchException error) { failure = error; }
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("A", retained.GetValueString());
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.Match("A"u8).Success);
     }
 
@@ -151,7 +151,7 @@ public sealed class Pcre2ProfileResourceTests
         try { _ = alias.MoveNext(); } catch (Exception error) { failure = error; }
         if (cancel) Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("A", retained.GetValueString());
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class Pcre2ProfileResourceTests
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(1, state.Calls);
         Assert.Equal((0, 1), (state.Capture.StartOffsetInBytes, state.Capture.EndOffsetInBytes));
-        Assert.Equal("A😀", regex.MatchDetailed("A😀"u8).GetValueString());
+        Assert.Equal("A😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("A😀"u8).Value.GetValueBytes()));
     }
 
     [Fact]

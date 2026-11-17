@@ -53,7 +53,7 @@ public sealed class Pcre2AsciiWordBoundaryTests
                     regex.IsMatch(bytes, offset, Pcre2MatchOptions.Anchored));
             }
             _ = regex.IsMatch("other"u8);
-            if (expected) Assert.Equal("abc", retained.GetGroup(1).GetValueString());
+            if (expected) Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         }
     }
 

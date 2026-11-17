@@ -56,10 +56,10 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         var success = new Utf8Pcre2Regex("^(?>(a|ab))c$").MatchDetailed("ac"u8);
         var fallback = new Utf8Pcre2Regex("^(?:(?>(a|ab))b|(ab)b)$").MatchDetailed("abb"u8);
 
-        Assert.Equal("a", success.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(success.GetGroup(1).GetValueBytes()));
         Assert.True(fallback.Success);
         Assert.False(fallback.GetGroup(1).Success);
-        Assert.Equal("ab", fallback.GetGroup(2).GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(fallback.GetGroup(2).GetValueBytes()));
     }
 
     [Fact]
@@ -69,9 +69,9 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         var subroutine = new Utf8Pcre2Regex(
             "^(?&g)c(?(DEFINE)(?<g>a(*ACCEPT)b))$").MatchDetailed("ac"u8);
 
-        Assert.Equal("a", topLevel.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(topLevel.GetValueBytes()));
         Assert.True(subroutine.Success);
-        Assert.Equal("ac", subroutine.GetValueString());
+        Assert.Equal("ac", System.Text.Encoding.UTF8.GetString(subroutine.Value.GetValueBytes()));
         Assert.False(subroutine.GetGroup(1).Success);
     }
 
@@ -119,8 +119,8 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         var match = regex.MatchDetailed("abc"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("b", match.GetValueString());
-        Assert.Equal("b", match.GetGroup(1).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -129,9 +129,9 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         var visible = new Utf8Pcre2Regex("a(?:(*MARK:X))(*SKIP:X)(*F)|(.)").Match("abc"u8);
         var hidden = new Utf8Pcre2Regex("a(?>(*MARK:X))(*SKIP:X)(*F)|(.)").Match("abc"u8);
 
-        Assert.Equal("b", visible.GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(visible.GetValueBytes()));
         Assert.Equal(1, visible.StartOffsetInBytes);
-        Assert.Equal("a", hidden.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(hidden.GetValueBytes()));
         Assert.Equal(0, hidden.StartOffsetInBytes);
     }
 

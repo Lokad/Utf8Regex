@@ -107,7 +107,7 @@ public sealed class Pcre2CompoundCandidateProbeTests
         Assert.Equal(kind, probe.Kind);
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind == Utf8Pcre2ProbeKind.FullMatch)
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), probe.GetMatch().GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
     }
     [Fact]
     public void LaterSubroutineFullPreservesFiniteCapturesAndNamedAlias()
@@ -124,8 +124,8 @@ public sealed class Pcre2CompoundCandidateProbeTests
         Assert.Equal((5, 11), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.Equal((5, 8), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("abcx"u8, Pcre2PartialMode.Soft).Kind);
-        Assert.Equal("abcabc", retained.GetValueString());
-        Assert.Equal("abc", alias.GetValueString());
+        Assert.Equal("abcabc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀xabcabc"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("xabcab"u8, Pcre2PartialMode.Hard).Kind);
     }

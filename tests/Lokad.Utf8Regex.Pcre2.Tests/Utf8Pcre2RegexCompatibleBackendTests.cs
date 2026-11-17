@@ -13,7 +13,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var match = regex.Match("xxfoozz"u8);
         Assert.True(match.Success);
-        Assert.Equal("foo", match.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(5, match.EndOffsetInBytes);
 
@@ -21,7 +21,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var enumerator = regex.EnumerateMatches("xxfoozz"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("foo", enumerator.Current.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
     }
 
@@ -33,8 +33,8 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         var match = regex.MatchDetailed("xxfooBARzz"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("fooBAR", match.Value.GetValueString());
-        Assert.Equal("BAR", match.GetGroup(1).GetValueString());
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -44,15 +44,15 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var match = regex.Match("ab abb x"u8);
         Assert.True(match.Success);
-        Assert.Equal("ab", match.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
         Assert.Equal(2, regex.Count("ab abb x"u8));
 
         var enumerator = regex.EnumerateMatches("ab abb x"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("ab", enumerator.Current.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("abb", enumerator.Current.GetValueString());
+        Assert.Equal("abb", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
     }
 
@@ -64,13 +64,13 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         Assert.Equal(4, regex.Count("HttpClient httpclient x HTTPCLIENT httpClient"u8));
         var enumerator = regex.EnumerateMatches("HttpClient httpclient x HTTPCLIENT httpClient"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("HttpClient", enumerator.Current.GetValueString());
+        Assert.Equal("HttpClient", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("httpclient", enumerator.Current.GetValueString());
+        Assert.Equal("httpclient", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("HTTPCLIENT", enumerator.Current.GetValueString());
+        Assert.Equal("HTTPCLIENT", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("httpClient", enumerator.Current.GetValueString());
+        Assert.Equal("httpClient", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
         Assert.Equal("client client x client client", regex.ReplaceToString("HttpClient httpclient x HTTPCLIENT httpClient"u8, "client"));
     }
@@ -92,7 +92,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var match = regex.Match("xxfoozzfoo"u8, startOffsetInBytes: 5);
         Assert.True(match.Success);
-        Assert.Equal("foo", match.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(7, match.StartOffsetInBytes);
         Assert.Equal(10, match.EndOffsetInBytes);
 
@@ -173,9 +173,9 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var enumerator = regex.EnumerateMatches("abcabcxyzabc"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("abcabc", enumerator.Current.GetValueString());
+        Assert.Equal("abcabc", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("xyzabc", enumerator.Current.GetValueString());
+        Assert.Equal("xyzabc", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
     }
 
@@ -204,11 +204,11 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var enumerator = regex.EnumerateMatches("abcxyzqqqabc"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("abc", enumerator.Current.GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("xyz", enumerator.Current.GetValueString());
+        Assert.Equal("xyz", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("abc", enumerator.Current.GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
     }
 
@@ -221,9 +221,9 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         var enumerator = regex.EnumerateMatches("xabcx xxyzx"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("xabcx", enumerator.Current.GetValueString());
+        Assert.Equal("xabcx", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("xxyzx", enumerator.Current.GetValueString());
+        Assert.Equal("xxyzx", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
 
         Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];

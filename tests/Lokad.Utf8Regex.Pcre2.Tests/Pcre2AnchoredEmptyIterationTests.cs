@@ -89,7 +89,7 @@ public sealed class Pcre2AnchoredEmptyIterationTests
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         Assert.NotNull(scope);
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
-        Assert.Equal("aaa", retained.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Pcre2CompileOptions compile, bool finite) =>

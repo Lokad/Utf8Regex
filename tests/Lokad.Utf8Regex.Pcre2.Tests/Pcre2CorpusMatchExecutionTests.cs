@@ -41,7 +41,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
 
                 if (corpusCase.Expected.ValueText is not null)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
                 }
             }
         }
@@ -64,7 +64,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
                 Assert.Equal(corpusCase.Expected.EndOffsetInBytes, match.Value.EndOffsetInBytes);
                 if (corpusCase.Expected.ValueText is not null)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, match.GetValueString());
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                 }
                 if (corpusCase.Expected.HasContiguousByteRange is bool hasContiguous)
                 {
@@ -81,7 +81,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
                         Assert.Equal(expectedGroup.EndOffsetInBytes, actualGroup.EndOffsetInBytes);
                         if (expectedGroup.ValueText is not null)
                         {
-                            Assert.Equal(expectedGroup.ValueText, actualGroup.GetValueString());
+                            Assert.Equal(expectedGroup.ValueText, System.Text.Encoding.UTF8.GetString(actualGroup.GetValueBytes()));
                         }
                     }
                 }

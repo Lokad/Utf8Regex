@@ -58,11 +58,11 @@ public sealed class Pcre2ProbeValidationAuthorityTests
             var retained = regex.Probe(input, Pcre2PartialMode.Soft, start).GetMatch();
             var group = retained.GetGroup(0);
             Assert.Equal((start, input.Length), (group.StartOffsetInBytes, group.EndOffsetInBytes));
-            Assert.Equal(body, retained.GetValueString());
+            Assert.Equal(body, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             { _ = regex.Probe(input, Pcre2PartialMode.Soft, lead + 1); });
             Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("zzz"u8, Pcre2PartialMode.Soft).Kind);
-            Assert.Equal(body, retained.GetValueString());
+            Assert.Equal(body, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         }
     }
 

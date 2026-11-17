@@ -43,9 +43,9 @@ public sealed class Pcre2FiniteAsciiSearchTests
                 regex.IsMatch(input, start, Pcre2MatchOptions.Anchored));
         }
         var retained = regex.MatchDetailed(input);
-        Assert.Equal("11", retained.GetGroup(1).GetValueString());
-        Assert.Equal("18", retained.GetGroup(2).GetValueString());
-        Assert.Equal("2019", retained.GetGroup(3).GetValueString());
+        Assert.Equal("11", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("18", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("2019", System.Text.Encoding.UTF8.GetString(retained.GetGroup(3).GetValueBytes()));
         Assert.Equal(2, regex.Count(input));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -101,12 +101,12 @@ public sealed class Pcre2FiniteAsciiSearchTests
         }
         Assert.Equal(2, direct.Count(input));
         var retained = direct.MatchDetailed(input);
-        Assert.Equal("ab", retained.GetValueString());
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
-        Assert.Equal("a", retained.GetGroup(2).GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.False(retained.GetGroup(3).Success);
         Assert.True(direct.IsMatch("cd"u8));
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => direct.IsMatch("ab"u8, 0, default, canceled.Token)).CancellationToken);
@@ -129,11 +129,11 @@ public sealed class Pcre2FiniteAsciiSearchTests
             Assert.Equal(metered.IsMatch(input, start), regex.IsMatch(input, start));
         }
         var retained = regex.MatchDetailed(input);
-        Assert.Equal("abc", retained.GetValueString());
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(4, retained.GetGroup(1).StartOffsetInBytes);
         Assert.True(regex.IsMatch("def"u8));
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("abc"u8, 0, default, canceled.Token)).CancellationToken);
@@ -177,11 +177,11 @@ public sealed class Pcre2FiniteAsciiSearchTests
         }
         Assert.Equal(2, regex.Count(input));
         var retained = regex.MatchDetailed(input);
-        Assert.Equal("a123a", retained.GetValueString());
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a123a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(8, retained.GetGroup(1).StartOffsetInBytes);
         Assert.True(regex.IsMatch("a456a"u8));
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -207,8 +207,8 @@ public sealed class Pcre2FiniteAsciiSearchTests
 
         var detailed = regex.MatchDetailed("card 4111-1111-1111-1111 done"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("4111-1111-1111-1111", detailed.GetValueString());
-        Assert.Equal("1111-", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("4111-1111-1111-1111", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("1111-", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

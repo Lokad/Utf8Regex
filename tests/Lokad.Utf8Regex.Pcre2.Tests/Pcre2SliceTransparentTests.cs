@@ -79,8 +79,8 @@ public sealed class Pcre2SliceTransparentTests
         var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("abc"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("c", detailed.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

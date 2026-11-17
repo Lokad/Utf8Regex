@@ -35,7 +35,7 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
                 Assert.Equal(left.Success, right.Success);
                 Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes),
                     (right.StartOffsetInBytes, right.EndOffsetInBytes));
-                Assert.Equal(left.GetValueString(), right.GetValueString());
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             }
         }
     }

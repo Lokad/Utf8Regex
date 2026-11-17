@@ -44,7 +44,7 @@ public sealed class Pcre2ValueCallbackAuthorityTests
         state.Scope = scope;
         state.Steps.Add(scope.Invocation.Budget.Steps);
         var group = match.GetGroup(0);
-        state.Captures.Add((group.StartOffsetInBytes, group.EndOffsetInBytes, group.GetValueString()));
+        state.Captures.Add((group.StartOffsetInBytes, group.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(group.GetValueBytes())));
         // Group zero can be projected without a temporary group array. Keep
         // output-control admission, rather than pinning a particular payload.
         Assert.True(scope.Invocation.Ledger.ReservedBytes >= 2 * Utf8SliceByteOutputScope.ControlBytes);

@@ -21,7 +21,7 @@ public sealed class Pcre2CharacterTests
         var match = regex.Match(input, startOffsetInBytes);
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
         Assert.Equal(expectedEndOffsetInBytes, match.EndOffsetInBytes);
     }
@@ -40,7 +40,7 @@ public sealed class Pcre2CharacterTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Theory]
@@ -62,7 +62,7 @@ public sealed class Pcre2CharacterTests
         var match = regex.Match(input);
 
         Assert.True(match.Success);
-        Assert.Equal(inputText, match.GetValueString());
+        Assert.Equal(inputText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Fact]
@@ -144,13 +144,13 @@ public sealed class Pcre2CharacterTests
         var absolute = new Utf8Pcre2Regex(@"\A.\Z");
         var requested = new Utf8Pcre2Regex(@"\G.");
 
-        Assert.Equal("b", multiline.Match("a\nb"u8, 2).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(multiline.Match("a\nb"u8, 2).GetValueBytes()));
         Assert.False(singleline.IsMatch("a\nb"u8, 2));
         Assert.Equal(1, finalCaret.Count("\n"u8));
         Assert.Equal(1, dollar.Match("a\n"u8).StartOffsetInBytes);
         Assert.Equal(2, strictDollar.Match("a\n"u8).StartOffsetInBytes);
-        Assert.Equal("a", absolute.Match("a\n"u8).GetValueString());
-        Assert.Equal("é", requested.Match("aé"u8, 1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(absolute.Match("a\n"u8).GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(requested.Match("aé"u8, 1).GetValueBytes()));
     }
 
     [Fact]

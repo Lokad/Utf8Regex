@@ -25,7 +25,7 @@ public sealed class Pcre2ResultPolicyTests
         Assert.True(tiny.Match(input).Success);
         var error = Assert.Throws<Pcre2MatchException>(() => { _ = tiny.MatchDetailed(input); });
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
-        Assert.Equal(text, Create(pattern, 1 << 20).MatchDetailed(input).GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, 1 << 20).MatchDetailed(input).Value.GetValueBytes()));
     }
 
     [Theory]
@@ -67,10 +67,10 @@ public sealed class Pcre2ResultPolicyTests
     {
         var cap = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(slots);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(text, Create(pattern, cap).MatchDetailed(input).GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, cap).MatchDetailed(input).Value.GetValueBytes()));
         Assert.Equal("ResultLimit", Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(pattern, cap - 1).MatchDetailed(input); }).ErrorKind.ToString());
-        Assert.Equal(text, Create(pattern, cap).MatchDetailed(input).GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, cap).MatchDetailed(input).Value.GetValueBytes()));
     }
 
     [Theory]
@@ -82,7 +82,7 @@ public sealed class Pcre2ResultPolicyTests
         Assert.Equal("ResultLimit", Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(pattern, 1).Probe(input, Pcre2PartialMode.Soft); }).ErrorKind.ToString());
         if (pattern == "(a)b+") Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(pattern, 1).Probe(input, Pcre2PartialMode.Hard).Kind);
-        Assert.Equal(text, Create(pattern, 4096).Probe(input, Pcre2PartialMode.Soft).GetMatch().GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, 4096).Probe(input, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public sealed class Pcre2ResultPolicyTests
         var regex = Utf8Pcre2Regex.Create("(é)(😀)", Pcre2CompileOptions.None, default,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
         Assert.Equal("😀é", regex.ReplaceToString("é😀"u8, "$2$1"));
-        Assert.Equal("é😀", regex.MatchDetailed("é😀"u8).GetValueString());
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("é😀"u8).Value.GetValueBytes()));
     }
 
     [Fact]

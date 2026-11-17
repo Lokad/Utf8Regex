@@ -132,7 +132,7 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("kS", retained.GetGroup(1).GetValueString());
+        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal((4, 6), (retained.GetGroup(1).StartOffsetInBytes, retained.GetGroup(1).EndOffsetInBytes));
         Assert.True(regex.IsMatch("K"u8));
     }

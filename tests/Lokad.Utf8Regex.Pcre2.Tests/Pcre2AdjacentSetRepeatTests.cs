@@ -21,10 +21,10 @@ public sealed class Pcre2AdjacentSetRepeatTests
         using var token = new CancellationTokenSource();
         Assert.True(owner.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
         var retained = owner.MatchDetailed(input, 0, Pcre2MatchOptions.None, token.Token);
-        Assert.Equal(text, retained.GetValueString());
-        Assert.Equal(group, retained.GetGroup(1).GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal(group, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(1, owner.Count(input, 0, Pcre2MatchOptions.None, token.Token));
-        Assert.Equal(group, retained.GetGroup(1).GetValueString());
+        Assert.Equal(group, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             owner.Count(input, 0, Pcre2MatchOptions.None, token.Token)).CancellationToken);

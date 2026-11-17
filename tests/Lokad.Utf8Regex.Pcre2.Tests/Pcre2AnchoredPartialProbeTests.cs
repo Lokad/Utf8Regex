@@ -115,9 +115,9 @@ public sealed class Pcre2AnchoredPartialProbeTests
         var retained = regex.Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored).GetMatch();
         Assert.True(retained.TryGetFirstSetGroup("head", out var alias));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("😀abbb"u8, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.Anchored).Kind);
-        Assert.Equal("abbb", retained.GetValueString());
-        Assert.Equal("a", alias.GetValueString());
-        Assert.Equal("a", regex.Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored).GetMatch().GetGroup(1).GetValueString());
+        Assert.Equal("abbb", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored).GetMatch().GetGroup(1).GetValueBytes()));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.None, default, new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan)
             .Probe("abbb"u8, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.Anchored); }).ErrorKind);

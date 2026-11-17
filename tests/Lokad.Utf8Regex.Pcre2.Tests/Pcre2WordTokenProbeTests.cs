@@ -156,11 +156,11 @@ public sealed class Pcre2WordTokenProbeTests
             Assert.Equal(left.Success, right.Success);
             if (left.Success)
             {
-                Assert.Equal(left.GetValueString(), right.GetValueString());
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
                 Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
             }
         }
-        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), actual.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -176,9 +176,9 @@ public sealed class Pcre2WordTokenProbeTests
         var retained = regex.Probe("a𐐀"u8, Pcre2PartialMode.Soft).GetMatch();
         Assert.Equal((0, 5), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.True(retained.TryGetFirstSetGroup("last", out var alias));
-        Assert.Equal("a", alias.GetValueString());
-        Assert.Equal("aé", regex.Probe("aé"u8, Pcre2PartialMode.Hard).GetMatch().GetValueString());
-        Assert.Equal("a𐐀", retained.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
+        Assert.Equal("aé", System.Text.Encoding.UTF8.GetString(regex.Probe("aé"u8, Pcre2PartialMode.Hard).GetMatch().Value.GetValueBytes()));
+        Assert.Equal("a𐐀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal((0, 1), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("aaa"u8, Pcre2PartialMode.Hard).Kind);
     }

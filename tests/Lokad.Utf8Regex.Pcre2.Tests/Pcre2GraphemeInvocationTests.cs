@@ -41,7 +41,7 @@ public sealed class Pcre2GraphemeInvocationTests
         Assert.False(new Utf8Pcre2Regex(@"\X", Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored).IsMatch("ab"u8));
         Assert.False(new Utf8Pcre2Regex(@"\X\X").IsMatch("a"u8));
         var match = regex.Match(input);
-        Assert.Equal("á", match.GetValueString());
+        Assert.Equal("á", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(3, match.EndOffsetInBytes);
         Assert.Equal(2, regex.Count(input));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();

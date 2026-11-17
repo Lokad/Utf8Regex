@@ -39,7 +39,7 @@ public sealed class Pcre2SliceConditionalTests
         {
             Assert.Equal(oracle.Groups[number].Success, actual.GetGroup(number).Success);
             if (oracle.Groups[number].Success)
-                Assert.Equal(oracle.Groups[number].Value, actual.GetGroup(number).GetValueString());
+                Assert.Equal(oracle.Groups[number].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroup(number).GetValueBytes()));
         }
     }
 
@@ -63,7 +63,7 @@ public sealed class Pcre2SliceConditionalTests
     {
         var negative = new Utf8Pcre2Regex("^(?(?!(a))def|abc)").MatchDetailed("abc"u8);
         Assert.True(negative.Success);
-        Assert.Equal("a", negative.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(negative.GetGroup(1).GetValueBytes()));
     }
 
     public static IEnumerable<object?[]> ParityCases()

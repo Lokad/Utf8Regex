@@ -125,7 +125,7 @@ public sealed class Pcre2LiteralEmptyEndProbeTests
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var match = probe.GetMatch();
         Assert.Equal(1, match.CaptureSlotCount);
-        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), match.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class Pcre2LiteralEmptyEndProbeTests
         Assert.Equal((4, 4), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("x"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal((4, 4), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("", retained.GetValueString());
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         var partial = Create(1).Probe("😀"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.NotEmptyAtStart);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, partial.Kind);
         Assert.Equal((4, 4), (partial.Value.StartOffsetInBytes, partial.Value.EndOffsetInBytes));

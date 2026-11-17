@@ -44,7 +44,7 @@ public sealed class Pcre2PublicConstructionTests
         var result = Compile(Utf8ConstructionPolicy.Default, bytes).MatchDetailed("z😀😀😀z"u8);
         Assert.True(result.Success);
         Assert.Equal((1, 13), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-        Assert.Equal("😀", result.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]
@@ -65,8 +65,8 @@ public sealed class Pcre2PublicConstructionTests
         Assert.Equal(100000u, regex.DefaultExecutionLimits.MatchLimit);
         var result = regex.MatchDetailed("z😀😀😀z"u8);
         Assert.True(result.Success);
-        Assert.Equal("😀😀😀", result.GetValueString());
-        Assert.Equal("😀", result.GetGroup(1).GetValueString());
+        Assert.Equal("😀😀😀", System.Text.Encoding.UTF8.GetString(result.Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(result.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

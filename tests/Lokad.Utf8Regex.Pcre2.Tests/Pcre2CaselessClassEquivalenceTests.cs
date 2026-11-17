@@ -58,7 +58,7 @@ public sealed class Pcre2CaselessClassEquivalenceTests
             Assert.Equal(expected, match.Success);
             if (expected)
             {
-                Assert.Equal(text, match.GetValueString());
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                 Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
             }
         }
@@ -71,7 +71,7 @@ public sealed class Pcre2CaselessClassEquivalenceTests
         Assert.False(new Utf8Pcre2Regex(@"(?i)^[é]$").IsMatch("e\u0301"u8));
         var regex = new Utf8Pcre2Regex(@"(?i)(?<x>[Kſ]+)");
         var match = regex.MatchDetailed("😀kS"u8);
-        Assert.Equal("kS", match.GetGroup(1).GetValueString());
+        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.Equal((4, 6), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
     }
 }

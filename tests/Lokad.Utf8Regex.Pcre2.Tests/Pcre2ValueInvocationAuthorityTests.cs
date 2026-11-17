@@ -54,10 +54,10 @@ public sealed class Pcre2ValueInvocationAuthorityTests
             Assert.True(Run(regex, input, value, lead + 4));
             var retained = regex.Match(input, lead + 4);
             Assert.Equal((lead + 4, input.Length), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
-            Assert.Equal(text, retained.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
             Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Run(regex, input, value, lead + 1); });
             Assert.True(Run(regex, Encoding.UTF8.GetBytes(text), value));
-            Assert.Equal(text, retained.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         }
     }
 

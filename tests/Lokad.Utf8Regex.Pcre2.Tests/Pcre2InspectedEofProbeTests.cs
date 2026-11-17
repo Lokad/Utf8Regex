@@ -170,7 +170,7 @@ public sealed class Pcre2InspectedEofProbeTests
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var match = probe.GetMatch();
         Assert.Equal(1, match.CaptureSlotCount);
-        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), match.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         var expected = regex.MatchDetailed(input, start, flags).GetGroup(0);
         Assert.Equal((begin, end), (expected.StartOffsetInBytes, expected.EndOffsetInBytes));
     }
@@ -188,8 +188,8 @@ public sealed class Pcre2InspectedEofProbeTests
         var retained = regex.Probe("😀pqrabcxyz"u8, Pcre2PartialMode.Soft, 7).GetMatch();
         var alias = retained.GetGroup(0);
         Assert.Equal((7, 10), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("abc", regex.Probe("pqrabcxyz"u8, Pcre2PartialMode.Soft, 3).GetMatch().GetValueString());
-        Assert.Equal("abc", retained.GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(regex.Probe("pqrabcxyz"u8, Pcre2PartialMode.Soft, 3).GetMatch().Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal((7, 10), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         var partial = Create(1).Probe("pqrab"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, partial.Kind);

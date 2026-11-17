@@ -38,12 +38,12 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
             Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
             var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-            Assert.Equal(text, match.GetValueString());
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
             var group = match.GetGroup(slot);
             Assert.Equal(value is not null, group.Success);
             if (value is not null)
             {
-                Assert.Equal(value, group.GetValueString());
+                Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
                 Assert.Equal((start, end), (group.StartOffsetInBytes, group.EndOffsetInBytes));
             }
         }
@@ -110,7 +110,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         Assert.False(retained.GetGroup(1).Success);
-        Assert.Equal("😀é", retained.GetGroup(2).GetValueString());
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.True(regex.MatchDetailed("😀é😀é"u8).Success);
     }
 }

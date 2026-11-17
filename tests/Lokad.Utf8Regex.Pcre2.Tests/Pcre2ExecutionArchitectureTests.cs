@@ -352,7 +352,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.False(optionalCapture.IsMatch("xx foo"u8, 4));
         var optionalMatch = optionalCapture.MatchDetailed("fooBAR"u8);
         Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
-        Assert.Equal("BAR", optionalGroup.GetValueString());
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(optionalGroup.GetValueBytes()));
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcabc"u8)).ErrorKind);
@@ -388,13 +388,13 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal((0, 6), (
             optionalDestination[0].StartOffsetInBytes,
             optionalDestination[0].EndOffsetInBytes));
-        Assert.Equal("abc", branchReset.MatchDetailed("abcabc"u8).GetGroup(1).GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(branchReset.MatchDetailed("abcabc"u8).GetGroup(1).GetValueBytes()));
         var duplicateMatch = duplicateNames.MatchDetailed("foofoo"u8);
         Assert.True(duplicateMatch.TryGetFirstSetGroup("n", out var duplicateGroup));
-        Assert.Equal("foo", duplicateGroup.GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(duplicateGroup.GetValueBytes()));
         var followupMatch = branchResetFollowup.MatchDetailed("aaaccccaaa"u8);
         Assert.True(followupMatch.TryGetFirstSetGroup("a", out var followupGroup));
-        Assert.Equal("aaa", followupGroup.GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(followupGroup.GetValueBytes()));
     }
 
     [Fact]
@@ -626,7 +626,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var match = regex.MatchDetailed("one,two,"u8);
 
         Assert.Equal(2, regex.Count("one,two,"u8));
-        Assert.Equal("one", match.GetGroup(1).GetValueString());
+        Assert.Equal("one", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

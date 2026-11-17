@@ -36,7 +36,7 @@ public sealed class Pcre2DefineOptionScopeTests
     [InlineData("(?U)(?(DEFINE)(?-U)(?<x>a))b+", "b")]
     public void DefinitionCannotChangeOuterGreediness(string pattern, string value)
     {
-        Assert.Equal(value, new Utf8Pcre2Regex(pattern).MatchDetailed("bbb"u8).GetValueString());
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).MatchDetailed("bbb"u8).Value.GetValueBytes()));
     }
 
     [Theory]
@@ -51,7 +51,7 @@ public sealed class Pcre2DefineOptionScopeTests
         Assert.True(match.Success);
         Assert.Equal(outerNoAutoCapture ? 2 : 3, match.CaptureSlotCount);
         Assert.False(match.GetGroup(1).Success);
-        if (!outerNoAutoCapture) Assert.Equal("b", match.GetGroup(2).GetValueString());
+        if (!outerNoAutoCapture) Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public sealed class Pcre2DefineOptionScopeTests
         Assert.True(retained.Success);
         Assert.Equal(3, retained.CaptureSlotCount);
         Assert.Equal((1, 13), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal("É😀", retained.GetGroup(2).GetValueString());
+        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.False(regex.IsMatch("É😀é😀"u8)); // The following reference retains outer case sensitivity.
         Assert.Equal(2, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal("q<É😀> <É😀>", regex.ReplaceToString(input, "<$whole>"));
@@ -77,7 +77,7 @@ public sealed class Pcre2DefineOptionScopeTests
         var error = Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        Assert.Equal("É😀", retained.GetGroup(2).GetValueString());
+        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
     }
 
     [Theory]
@@ -103,7 +103,7 @@ public sealed class Pcre2DefineOptionScopeTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("É😀", retained.GetValueString());
+        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.MatchDetailed("É😀"u8).Success);
     }
 }

@@ -28,13 +28,13 @@ public sealed class Pcre2WindowSemanticsTests
         var input = "Holmes and Watson\nWatson near Holmes\nHolmes\nWatson\nHolmesxxxxxxxxxxxxxxxxxxxxxxxxxWatson"u8;
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
-        Assert.Equal("Holmes and Watson", regex.Match(input).GetValueString());
+        Assert.Equal("Holmes and Watson", System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
 
         var values = new List<string>();
         var matches = regex.EnumerateMatches(input);
         while (matches.MoveNext())
         {
-            values.Add(matches.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         }
 
         Assert.Equal(
@@ -83,7 +83,7 @@ public sealed class Pcre2WindowSemanticsTests
         Assert.Equal(1, unicode.Count("HolmeséWatson"u8));
         var unicodeInput = Encoding.UTF8.GetBytes($"Holmes{string.Concat(Enumerable.Repeat("😀", 25))}Watson");
         Assert.Equal(1, unicode.Count(unicodeInput));
-        Assert.Equal(Encoding.UTF8.GetString(unicodeInput), unicode.Match(unicodeInput).GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(unicodeInput), System.Text.Encoding.UTF8.GetString(unicode.Match(unicodeInput).GetValueBytes()));
         Assert.Equal(0, unicode.Count("xHolmes and Watson"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(1, unicode.Count("xHolmes and Watson"u8, 1, Pcre2MatchOptions.Anchored));
 
@@ -108,10 +108,10 @@ public sealed class Pcre2WindowSemanticsTests
         Assert.Equal(1, cr.Count("Holmes\nWatson"u8));
         Assert.Equal(0, cr.Count("Holmes\rWatson"u8));
         var text = "Holmes a Watson b Watson"u8.ToArray();
-        Assert.Equal("Holmes a Watson b Watson", new Utf8Pcre2Regex(greedy).Match(text).GetValueString());
-        Assert.Equal("Holmes a Watson", new Utf8Pcre2Regex(lazy).Match(text).GetValueString());
-        Assert.Equal("Watson a Holmes", new Utf8Pcre2Regex(lazy).Match("Watson a Holmes b Holmes"u8).GetValueString());
+        Assert.Equal("Holmes a Watson b Watson", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(greedy).Match(text).GetValueBytes()));
+        Assert.Equal("Holmes a Watson", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(lazy).Match(text).GetValueBytes()));
+        Assert.Equal("Watson a Holmes", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(lazy).Match("Watson a Holmes b Holmes"u8).GetValueBytes()));
         var folded = new Utf8Pcre2Regex(greedy, Pcre2CompileOptions.Caseless);
-        Assert.Equal("HolmeséWATSON", folded.Match("HolmeséWATSON"u8).GetValueString());
+        Assert.Equal("HolmeséWATSON", System.Text.Encoding.UTF8.GetString(folded.Match("HolmeséWATSON"u8).GetValueBytes()));
     }
 }

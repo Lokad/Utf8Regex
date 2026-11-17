@@ -33,7 +33,7 @@ public sealed class Pcre2SliceDepthAdmissionTests
         var count = 0;
         var matches = regex.EnumerateMatches(input);
         while (matches.MoveNext())
-        { Assert.Equal("😀😀😀éé", matches.Current.GetValueString()); count++; }
+        { Assert.Equal("😀😀😀éé", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes())); count++; }
         return count;
     }
 }

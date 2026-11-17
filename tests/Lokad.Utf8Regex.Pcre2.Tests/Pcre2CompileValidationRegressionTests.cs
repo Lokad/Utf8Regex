@@ -36,7 +36,7 @@ public sealed class Pcre2CompileValidationRegressionTests
     [InlineData(@"(?J)(😀)\1", "😀😀")]
     public void LiteralAndEscapePayloadsRemainContextual(string pattern, string subject)
     {
-        Assert.Equal(subject, new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueString());
+        Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueBytes()));
     }
 
     [Fact]

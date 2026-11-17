@@ -32,6 +32,6 @@ public sealed class Pcre2DetailedLimitTests
         var actual = regex.MatchDetailed(input);
         Assert.True(actual.Success);
         var expected = Create("foo", default).MatchDetailed(input);
-        Assert.Equal(expected.GetValueString(), actual.GetValueString());
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.Value.GetValueBytes()), System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
     }
 }

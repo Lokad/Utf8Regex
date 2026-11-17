@@ -101,7 +101,7 @@ public sealed class Pcre2LiteralDotStarProbeTests
         {
             var match = probe.GetMatch();
             Assert.Equal(1, match.CaptureSlotCount);
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), match.GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         }
     }
 
@@ -131,8 +131,8 @@ public sealed class Pcre2LiteralDotStarProbeTests
         var alias = retained.GetGroup(0);
         Assert.Equal((4, 11), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("xyz"u8, Pcre2PartialMode.Soft).Kind);
-        Assert.Equal("f😀é", retained.GetValueString());
-        Assert.Equal("f😀é", alias.GetValueString());
+        Assert.Equal("f😀é", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("f😀é", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀f😀é"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("😀f😀é"u8, Pcre2PartialMode.Hard).Kind);
     }

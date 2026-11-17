@@ -47,7 +47,7 @@ public sealed class Pcre2BranchResetCompilerTests
         var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(input));
 
         Assert.True(match.Success);
-        Assert.Equal(capture, match.GetGroup(1).GetValueString());
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -61,14 +61,14 @@ public sealed class Pcre2BranchResetCompilerTests
 
         Assert.True(shortBranch.Success);
         Assert.Equal(5, shortBranch.CaptureSlotCount);
-        Assert.Equal("c", shortBranch.GetGroup(2).GetValueString());
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(shortBranch.GetGroup(2).GetValueBytes()));
         Assert.False(shortBranch.GetGroup(3).Success);
-        Assert.Equal("d", shortBranch.GetGroup(4).GetValueString());
+        Assert.Equal("d", System.Text.Encoding.UTF8.GetString(shortBranch.GetGroup(4).GetValueBytes()));
 
         Assert.True(wideBranch.Success);
-        Assert.Equal("a", wideBranch.GetGroup(2).GetValueString());
-        Assert.Equal("b", wideBranch.GetGroup(3).GetValueString());
-        Assert.Equal("d", wideBranch.GetGroup(4).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(2).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(3).GetValueBytes()));
+        Assert.Equal("d", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(4).GetValueBytes()));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class Pcre2BranchResetCompilerTests
         Assert.False(isMore);
         Assert.Equal("x", entries[0].Name);
         Assert.Equal(1, entries[0].Number);
-        Assert.Equal("b", match.GetGroup(1).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -96,13 +96,13 @@ public sealed class Pcre2BranchResetCompilerTests
         Span<int> numbers = stackalloc int[2];
 
         Assert.True(foo.Success);
-        Assert.Equal("foo", foo.GetGroup(1).GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(foo.GetGroup(1).GetValueBytes()));
         Assert.False(foo.GetGroup(2).Success);
         Assert.True(bar.Success);
         Assert.False(bar.GetGroup(1).Success);
-        Assert.Equal("bar", bar.GetGroup(2).GetValueString());
+        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(bar.GetGroup(2).GetValueBytes()));
         Assert.True(bar.TryGetFirstSetGroup("n", out var selected));
-        Assert.Equal("bar", selected.GetValueString());
+        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(selected.GetValueBytes()));
         Assert.Equal(2, regex.CopyNumbersForName("n", numbers, out var isMore));
         Assert.False(isMore);
         Assert.Equal([1, 2], numbers.ToArray());

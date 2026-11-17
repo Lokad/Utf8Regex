@@ -32,8 +32,7 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.Equal(1, match.EndOffsetInBytes);
         Assert.True(match.HasContiguousByteRange);
         Assert.False(match.IsUtf8SliceWellFormed);
-        Assert.Equal(1, match.GetValueBytes().Length);
-        Assert.Throws<InvalidOperationException>(static () => GetSplitValueString());
+        Assert.Equal(new byte[] { 0xc3 }, match.GetValueBytes().ToArray());
         Assert.True(regex.Analyze().MayProduceNonUtf8Slices);
     }
 
@@ -50,7 +49,8 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.Equal(0, group.StartOffsetInBytes);
         Assert.Equal(1, group.EndOffsetInBytes);
         Assert.False(group.IsUtf8SliceWellFormed);
-        Assert.Throws<InvalidOperationException>(static () => GetSplitGroupValueString());
+        Assert.True(group.HasContiguousByteRange);
+        Assert.Equal(new byte[] { 0xf0 }, group.GetValueBytes().ToArray());
     }
 
     [Fact]
@@ -150,8 +150,4 @@ public sealed class Pcre2BackslashCCompilerTests
 
     private static Utf8Pcre2Regex Create(string pattern) =>
         new(pattern, Pcre2CompileOptions.None, s_allowBackslashC, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
-
-    private static void GetSplitValueString() => Create(@"\C").Match("é"u8).GetValueString();
-
-    private static void GetSplitGroupValueString() => Create(@"(\C)").MatchDetailed("é"u8).GetGroup(1).GetValueString();
 }

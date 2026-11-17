@@ -56,7 +56,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         var regex = new Utf8Pcre2Regex(pattern, options);
         var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
         Assert.True(match.Success);
-        Assert.Equal(text, match.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal(1, match.CaptureSlotCount);
         Assert.Equal(0, regex.NameEntryCount);
     }
@@ -70,7 +70,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf);
         var match = new Utf8Pcre2Regex(pattern).MatchDetailed("a"u8);
         Assert.True(match.Success);
-        Assert.Equal("a", match.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal(1, match.CaptureSlotCount);
         var exception = Assert.Throws<Pcre2CompileException>(() =>
             new Utf8Pcre2Regex(pattern + "(?<100>b)"));
@@ -118,7 +118,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         Assert.Equal("x", names[0].Name);
         Assert.Equal(nameSlot, names[0].Number);
         Assert.True(match.TryGetFirstSetGroup("x", out var named));
-        Assert.Equal(nameSlot == 1 ? left : right, named.GetValueString());
+        Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         var replaced = regex.Replace(input, (Left: left, Right: right, Text: text),
             static (in Utf8Pcre2MatchContext context, ref Utf8ReplacementWriter writer, ref (string Left, string? Right, string Text) state) =>
             {
@@ -155,7 +155,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     {
         Assert.Equal(value is not null, group.Success);
         if (value is null) return;
-        Assert.Equal(value, group.GetValueString());
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         var start = text.IndexOf(value, StringComparison.Ordinal);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..start]), group.StartOffsetInBytes);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..(start + value.Length)]), group.EndOffsetInBytes);

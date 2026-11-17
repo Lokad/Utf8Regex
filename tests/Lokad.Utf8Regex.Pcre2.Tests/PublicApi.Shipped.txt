@@ -57,7 +57,6 @@ readonly ref struct Utf8Pcre2GroupContext
   property Int32 Number { get; }
   property Int32 StartOffsetInBytes { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
 readonly ref struct Utf8Pcre2MatchContext
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
@@ -68,7 +67,6 @@ readonly ref struct Utf8Pcre2MatchContext
   method Boolean TryGetGroup(Int32 number, out Utf8Pcre2GroupContext group)
   method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
-  method String GetValueString()
   method Utf8Pcre2GroupContext GetGroup(Int32 number)
 sealed class Utf8Pcre2MatchCursor : IDisposable
   method Boolean MoveNext(out Utf8Pcre2RangeMatch match, Threading.CancellationToken cancellationToken = default)
@@ -84,7 +82,6 @@ readonly ref struct Utf8Pcre2PartialMatchContext
   property String Mark { get; }
   property Utf8Pcre2ValueMatch Value { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
 enum Utf8Pcre2ProbeKind : Int32 { FullMatch = 1, NoMatch = 0, PartialMatch = 2 }
 readonly ref struct Utf8Pcre2ProbeResult
   property String Mark { get; }
@@ -209,7 +206,6 @@ readonly ref struct Utf8Pcre2ValueMatch
   property Int32 EndOffsetInBytes { get; }
   property Int32 StartOffsetInBytes { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
 ref struct Utf8Pcre2ValueMatchEnumerator
   property Utf8Pcre2ValueMatch Current { get; }
   method Boolean MoveNext()

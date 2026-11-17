@@ -265,7 +265,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
         var probe = regex.Probe("foo"u8, Pcre2PartialMode.Soft);
 
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
-        Assert.Equal("foo", probe.GetMatch().GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
     }
 
     [Fact]

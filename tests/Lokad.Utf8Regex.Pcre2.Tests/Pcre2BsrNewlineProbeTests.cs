@@ -108,7 +108,7 @@ public sealed class Pcre2BsrNewlineProbeTests
         Assert.Equal(kind, probe.Kind);
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind == Utf8Pcre2ProbeKind.FullMatch)
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), probe.GetMatch().GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
     }
     [Fact]
     public void ScalarNewlineFullPreservesFiniteAdmissionAndRetainedAlias()
@@ -125,8 +125,8 @@ public sealed class Pcre2BsrNewlineProbeTests
         var alias = retained.GetGroup(0);
         Assert.Equal((5, 12), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("qx"u8, Pcre2PartialMode.Soft).Kind);
-        Assert.Equal("\u2028\u2029x", retained.GetValueString());
-        Assert.Equal("\u2028\u2029x", alias.GetValueString());
+        Assert.Equal("\u2028\u2029x", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("\u2028\u2029x", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀\n\u2028\u2029x"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("\u2028\u2029"u8, Pcre2PartialMode.Hard).Kind);
     }

@@ -15,6 +15,11 @@ validation, checked accesses, scalar semantics and matching/output admission
 remain independent. Results expose byte endpoints without prefix scans or UTF-16
 coordinates. See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-contract).
 
+Standalone views expose byte access rather than `GetValueString`. Inspect
+`IsUtf8SliceWellFormed` before host decoding: opted-in `\C` can return scalar
+fragments. Noncontiguous reported spans still reject byte access. Host decoding
+and its allocations are outside regex resource/interruption controls.
+
 Canonical benchmarks give both sides valid text and use native `NO_UTF_CHECK`,
 equivalent options and matching requested outputs. This input contract deliberately
 differs from native PCRE2's default validation. Frozen tables retain their original

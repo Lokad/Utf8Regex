@@ -63,7 +63,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         var regex = new Utf8Pcre2Regex(directive + "(?<x>😀)");
         var retained = regex.MatchDetailed("é😀"u8);
         Assert.Equal((2, 6), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal("é<😀>", regex.ReplaceToString("é😀"u8, "<$x>"));
         using var cancellation = new CancellationTokenSource();
         var empty = new Utf8Pcre2Regex(directive, Pcre2CompileOptions.None, default,
@@ -76,7 +76,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.True(cursor.MoveNext());
         Assert.Equal(4, cursor.Current.StartOffsetInBytes);
         Assert.False(cursor.MoveNext());
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]
@@ -103,10 +103,10 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.True(retained.Success);
         Assert.Equal(3, retained.CaptureSlotCount);
         Assert.Equal((1, input.Length), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal(first, retained.GetGroup(1).GetValueString());
-        Assert.Equal(second, retained.GetGroup(2).GetValueString());
+        Assert.Equal(first, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal(second, System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.True(retained.TryGetFirstSetGroup("n", out var named));
-        Assert.Equal(first, named.GetValueString());
+        Assert.Equal(first, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         Assert.Equal("q" + first + "/" + second, regex.ReplaceToString(input, "$1/$2"));
         Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         if (pattern.Contains(@"\1", StringComparison.Ordinal))
@@ -117,7 +117,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal(first, retained.GetGroup(1).GetValueString());
+        Assert.Equal(first, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]
@@ -128,6 +128,6 @@ public sealed class Pcre2InlineOptionAdmissionTests
         var match = new Utf8Pcre2Regex(pattern).MatchDetailed("ab"u8);
         Assert.True(match.Success);
         Assert.Equal(2, match.CaptureSlotCount);
-        Assert.Equal("a", match.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 }

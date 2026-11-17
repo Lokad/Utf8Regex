@@ -129,7 +129,7 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         Assert.Equal(kind, probe.Kind);
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind == Utf8Pcre2ProbeKind.FullMatch)
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), probe.GetMatch().GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
     }
 
     [Fact]
@@ -146,8 +146,8 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         var alias = retained.GetGroup(0);
         Assert.Equal((9, 12), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("xabc"u8, Pcre2PartialMode.Soft, 1).Kind);
-        Assert.Equal("abc", retained.GetValueString());
-        Assert.Equal("abc", alias.GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀\nbar\nabc\nx"u8, Pcre2PartialMode.Hard).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("😀\nbar\nab"u8, Pcre2PartialMode.Hard).Kind);
     }
@@ -162,8 +162,8 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         Assert.True(retained.TryGetFirstSetGroup("last", out var alias));
         Assert.Equal((2, 3), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("xaaab"u8, Pcre2PartialMode.Soft, 1).Kind);
-        Assert.Equal("aaab", retained.GetValueString());
-        Assert.Equal("a", alias.GetValueString());
+        Assert.Equal("aaab", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
     }
 
     [Fact]

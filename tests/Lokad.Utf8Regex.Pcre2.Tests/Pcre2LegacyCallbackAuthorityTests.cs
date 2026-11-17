@@ -43,7 +43,7 @@ public sealed class Pcre2LegacyCallbackAuthorityTests
                 ? regex.ReplaceToString(input, state, static (in Utf8Pcre2MatchContext match, ref Observation state) =>
                 {
                     Observe(in match, state);
-                    return state.Fragment + match.GetGroup(2).GetValueString();
+                    return state.Fragment + System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes());
                 }, start, options, token)
                 : Encoding.UTF8.GetString(regex.Replace(input, state,
                     static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref Observation state) =>

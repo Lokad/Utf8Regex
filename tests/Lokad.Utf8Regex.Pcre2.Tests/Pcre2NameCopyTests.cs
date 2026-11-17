@@ -24,7 +24,7 @@ public sealed class Pcre2NameCopyTests
             for (var index = 0; index < storage.Length; index++)
                 Assert.Equal(index < copied ? index + 1 : -1, storage[index]);
         }
-        Assert.Equal("b", match.GetGroup(2).GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
     }
 
     [Fact]

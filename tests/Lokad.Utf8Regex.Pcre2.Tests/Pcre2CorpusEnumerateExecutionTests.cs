@@ -50,7 +50,7 @@ public sealed class Pcre2CorpusEnumerateExecutionTests
         while (enumerator.MoveNext())
         {
             var match = enumerator.Current;
-            results.Add((match.Success, match.StartOffsetInBytes, match.EndOffsetInBytes, match.GetValueString()));
+            results.Add((match.Success, match.StartOffsetInBytes, match.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(match.GetValueBytes())));
         }
 
         return results;

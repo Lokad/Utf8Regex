@@ -31,7 +31,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.True(match.TryGetFirstSetGroup("x", out var capture));
         Assert.True(capture.Success);
     }
@@ -73,7 +73,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         Assert.Equal(3, retained.CaptureSlotCount);
         Assert.Equal(2, regex.NameEntryCount);
         Assert.Equal((1, 9), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.False(retained.GetGroup(2).Success);
         Span<int> numbers = stackalloc int[2];
         Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
@@ -91,7 +91,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         var cancelled = Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(cancellation.Token, cancelled.CancellationToken);
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]
@@ -135,7 +135,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("😀😀", retained.GetValueString());
+        Assert.Equal("😀😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.MatchDetailed("éé"u8).Success);
     }
 }

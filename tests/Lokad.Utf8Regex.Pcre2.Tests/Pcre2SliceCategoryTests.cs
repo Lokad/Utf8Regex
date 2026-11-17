@@ -162,8 +162,8 @@ public sealed class Pcre2SliceCategoryTests
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("x\u03B1"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("\u03B1", detailed.Value.GetValueString());
-        Assert.Equal("\u03B1", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("\u03B1", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("\u03B1", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 

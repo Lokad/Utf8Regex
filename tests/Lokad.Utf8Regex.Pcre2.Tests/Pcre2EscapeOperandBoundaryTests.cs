@@ -19,7 +19,7 @@ public sealed class Pcre2EscapeOperandBoundaryTests
         {
             Assert.Equal(expected.Count(input), regex.Count(input));
             Assert.True(regex.IsMatch(input));
-            Assert.Equal(expected.Match(input).GetValueString(), regex.Match(input).GetValueString());
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.Match(input).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
             var expectedMatch = expected.MatchDetailed(input);
             var actualMatch = regex.MatchDetailed(input);
             Assert.Equal(expectedMatch.CaptureSlotCount, actualMatch.CaptureSlotCount);
@@ -29,7 +29,7 @@ public sealed class Pcre2EscapeOperandBoundaryTests
                 var actualGroup = actualMatch.GetGroup(slot);
                 Assert.Equal(expectedGroup.Success, actualGroup.Success);
                 if (expectedGroup.Success)
-                    Assert.Equal(expectedGroup.GetValueString(), actualGroup.GetValueString());
+                    Assert.Equal(System.Text.Encoding.UTF8.GetString(expectedGroup.GetValueBytes()), System.Text.Encoding.UTF8.GetString(actualGroup.GetValueBytes()));
             }
             var expectedNames = new Pcre2NameEntry[expected.NameEntryCount];
             var actualNames = new Pcre2NameEntry[regex.NameEntryCount];
@@ -60,7 +60,7 @@ public sealed class Pcre2EscapeOperandBoundaryTests
     [InlineData(@"\o{200000}", "𐀀")]
     public void QuotesCommentsAndBracedOperandsKeepTheirMeaning(string pattern, string subject)
     {
-        Assert.Equal(subject, new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueString());
+        Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueBytes()));
     }
 
     [Fact]

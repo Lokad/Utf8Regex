@@ -164,7 +164,7 @@ public sealed class Pcre2SliceInlineTests
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xabab"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("abab", detailed.Value.GetValueString());
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
         Assert.Equal(1, detailed.CaptureSlotCount);
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -179,8 +179,8 @@ public sealed class Pcre2SliceInlineTests
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("x\naab"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("aab", detailed.Value.GetValueString());
-        Assert.Equal("aa", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 

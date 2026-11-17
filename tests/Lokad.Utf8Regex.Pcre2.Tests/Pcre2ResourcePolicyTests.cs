@@ -39,7 +39,7 @@ public sealed class Pcre2ResourcePolicyTests
     {
         var policy = new Utf8ResourcePolicy { MaxResultBytes = 1024ul };
         var regex = Utf8Pcre2Regex.Create("foo", Pcre2CompileOptions.None, default, policy, Utf8Pcre2Regex.DefaultMatchTimeout);
-        Assert.Equal("foo", regex.MatchDetailed("foo"u8).GetValueString());
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("foo"u8).Value.GetValueBytes()));
     }
 
     [Fact]

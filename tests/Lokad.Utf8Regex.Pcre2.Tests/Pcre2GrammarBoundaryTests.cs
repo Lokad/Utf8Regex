@@ -32,7 +32,7 @@ public sealed class Pcre2GrammarBoundaryTests
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var bytes = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(subject, regex.Match(bytes).GetValueString());
+        Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(regex.Match(bytes).GetValueBytes()));
         Assert.Equal(1, regex.Count(bytes));
         Assert.True(regex.MatchDetailed(bytes).Success);
     }
@@ -43,5 +43,5 @@ public sealed class Pcre2GrammarBoundaryTests
     [InlineData(@"\é", "é")]
     [InlineData(@"\😀", "😀")]
     public void QuotedLiteralScalarsAreEstablishedByTheProfileParser(string pattern, string subject)
-        => Assert.Equal(subject, new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueString());
+        => Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueBytes()));
 }

@@ -97,7 +97,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
 
         var enumerator = regex.EnumerateMatches("ab"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("a", enumerator.Current.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
 
         Pcre2MatchException? exception = null;
         try
@@ -136,7 +136,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
 
         var enumerator = regex.EnumerateMatches("ab"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal("a", enumerator.Current.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
         Assert.Equal(1, regex.Count("ab"u8));
     }

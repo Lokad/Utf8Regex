@@ -117,7 +117,7 @@ public sealed class Pcre2CrlfDotProbeTests
         {
             var match = probe.GetMatch();
             Assert.Equal(1, match.CaptureSlotCount);
-            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), match.GetValueString());
+            Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         }
     }
     [Theory]
@@ -156,9 +156,9 @@ public sealed class Pcre2CrlfDotProbeTests
         var retained = regex.Probe("\r\n😀éx"u8, Pcre2PartialMode.Hard).GetMatch();
         var alias = retained.GetGroup(0);
         Assert.Equal((2, 8), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("😀é", retained.GetValueString());
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("\r\n"u8, Pcre2PartialMode.Hard).Kind);
-        Assert.Equal("😀é", alias.GetValueString());
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("\r\n😀éx"u8, Pcre2PartialMode.Hard).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("😀"u8, Pcre2PartialMode.Hard).Kind);
     }

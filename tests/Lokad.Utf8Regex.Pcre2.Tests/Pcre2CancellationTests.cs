@@ -159,7 +159,7 @@ public sealed class Pcre2CancellationTests
         var token = CancellationToken.None;
         Assert.Equal(regex.IsMatch(s_input, 0, Pcre2MatchOptions.None), regex.IsMatch(s_input, 0, Pcre2MatchOptions.None, token));
         Assert.Equal(regex.Count(s_input, 0, Pcre2MatchOptions.None), regex.Count(s_input, 0, Pcre2MatchOptions.None, token));
-        Assert.Equal(regex.Match(s_input, 0, Pcre2MatchOptions.None).GetValueString(), regex.Match(s_input, 0, Pcre2MatchOptions.None, token).GetValueString());
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(s_input, 0, Pcre2MatchOptions.None, token).GetValueBytes()));
         Assert.Equal(regex.ReplaceToString(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None), regex.ReplaceToString(s_input, "bar", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
     }
 

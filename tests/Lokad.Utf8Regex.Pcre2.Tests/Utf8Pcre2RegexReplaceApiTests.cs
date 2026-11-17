@@ -20,7 +20,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
             {
                 state++;
-                writer.Append(match.GetGroup(1).GetValueString().AsSpan());
+                writer.Append(System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()).AsSpan());
                 writer.AppendAsciiByte((byte)'!');
             });
 
@@ -39,7 +39,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             static (in Utf8Pcre2MatchContext match, ref int state) =>
             {
                 state++;
-                return $"<{match.GetGroup(1).GetValueString()}>";
+                return $"<{System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes())}>";
             });
 
         Assert.Equal("<foo> <bar>", actual);
@@ -57,7 +57,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             static (in Utf8Pcre2MatchContext match, ref int state) =>
             {
                 state++;
-                return $"[{match.Value.StartOffsetInBytes}:{match.GetValueString()}]";
+                return $"[{match.Value.StartOffsetInBytes}:{System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes())}]";
             });
 
         Assert.Equal("abc[3:][3:def]abc[9:]", actual);

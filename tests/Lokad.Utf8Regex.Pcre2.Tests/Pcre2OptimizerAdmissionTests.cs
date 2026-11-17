@@ -90,8 +90,8 @@ public sealed class Pcre2OptimizerAdmissionTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(2, regex.Count(input));
             var detailed = regex.MatchDetailed(input);
-            Assert.Equal(match, detailed.Value.GetValueString());
-            Assert.Equal(capture, detailed.GetGroup(1).GetValueString());
+            Assert.Equal(match, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         }
     }
 

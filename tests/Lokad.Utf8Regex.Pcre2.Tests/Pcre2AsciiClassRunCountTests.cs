@@ -161,9 +161,9 @@ public sealed class Pcre2AsciiClassRunCountTests
         Assert.Equal(0, allowance.Attempts);
         var values = new Utf8Pcre2Regex(pattern);
         var retained = values.MatchDetailed(input);
-        Assert.Equal("c", retained.GetGroup(1).GetValueString());
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(3, values.Count(input));
-        Assert.Equal("c", retained.GetGroup(1).GetValueString());
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(0, values.Count(input, 0, Pcre2MatchOptions.Anchored, token.Token));
     }
 

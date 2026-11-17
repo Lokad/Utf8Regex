@@ -90,7 +90,7 @@ public sealed class Pcre2SliceLeadingByteTests
         Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, live.Token));
         Assert.Equal(expected, regex.MatchDetailed(input).Success);
         if (expected && pattern == Pattern)
-            Assert.Equal("abc123", regex.MatchDetailed(input).GetGroup(1).GetValueString());
+            Assert.Equal("abc123", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
     }
 
     [Theory]

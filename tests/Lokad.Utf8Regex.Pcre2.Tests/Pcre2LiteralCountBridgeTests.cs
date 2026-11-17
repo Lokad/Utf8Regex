@@ -48,8 +48,8 @@ public sealed class Pcre2LiteralCountBridgeTests
         var retained = regex.MatchDetailed("😀ab ab"u8, 4);
         Assert.Equal(1, regex.Count("😀ab ab"u8, 4, Pcre2MatchOptions.Anchored));
         Assert.Equal(2, regex.Count("😀ab ab"u8, 4));
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
-        Assert.Equal("b", retained.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
     }
 
@@ -143,8 +143,8 @@ public sealed class Pcre2LiteralCountBridgeTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
-        Assert.Equal("b", retained.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
     }
 
     [Fact]

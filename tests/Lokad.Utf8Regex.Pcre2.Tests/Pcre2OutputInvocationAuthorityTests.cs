@@ -59,9 +59,9 @@ public sealed class Pcre2OutputInvocationAuthorityTests
             Assert.Equal((4, input.Length), (destination[0].StartOffsetInBytes, destination[0].EndOffsetInBytes));
         var match = regex.MatchDetailed(input);
         Assert.True(match.TryGetFirstSetGroup("x", out var retained));
-        var captured = retained.GetValueString();
+        var captured = System.Text.Encoding.UTF8.GetString(retained.GetValueBytes());
         Assert.Equal(1, Run(regex, input, destination, helper));
-        Assert.Equal(captured, retained.GetValueString());
+        Assert.Equal(captured, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
     }
 
     [Theory] [MemberData(nameof(Routes))]

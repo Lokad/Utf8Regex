@@ -51,7 +51,7 @@ public sealed class Pcre2BooleanSearchInterruptionTests
         Assert.True(entered);
         if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(shortText, retained.GetValueString());
+        Assert.Equal(shortText, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(shortText)));
     }
 }

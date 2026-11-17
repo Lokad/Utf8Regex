@@ -46,12 +46,12 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.Equal(2, match.CaptureSlotCount); // Outer (b) retains NoAutoCapture.
         var retained = match.GetGroup(1);
         Assert.Equal((2, 6), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
-        Assert.Equal("😀", retained.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.Equal(2, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal("é😀😀", regex.ReplaceToString(bytes, "$1"));
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal("😀", retained.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
     }
 
     [Theory]
@@ -60,7 +60,7 @@ public sealed class Pcre2ResetOptionExecutionTests
     [InlineData("(?^:a+)", Pcre2CompileOptions.None, "aaa")]
     public void ResetPreservesUngreedyPolicy(string pattern, Pcre2CompileOptions options, string value)
     {
-        Assert.Equal(value, new Utf8Pcre2Regex(pattern, options).MatchDetailed("aaa"u8).GetValueString());
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern, options).MatchDetailed("aaa"u8).Value.GetValueBytes()));
     }
 
     [Theory]
@@ -74,7 +74,7 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.Equal(3, match.CaptureSlotCount);
         Assert.Equal(2, regex.NameEntryCount);
         Assert.True(match.TryGetFirstSetGroup("x", out var group));
-        Assert.Equal(text, group.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
     }
 
     [Theory]
@@ -120,7 +120,7 @@ public sealed class Pcre2ResetOptionExecutionTests
         var match = regex.MatchDetailed("é😀😀"u8);
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        Assert.Equal("😀", match.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.Equal("é😀", regex.ReplaceToString("é😀😀"u8, "$1"));
     }
 }

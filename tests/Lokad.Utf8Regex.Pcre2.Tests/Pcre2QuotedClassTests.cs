@@ -90,11 +90,11 @@ public sealed class Pcre2QuotedClassTests
         var input = Encoding.UTF8.GetBytes("é😀-😃x😀");
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);
-        Assert.Equal("😀-😃", group.GetValueString());
+        Assert.Equal("😀-😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal((2,11),(group.StartOffsetInBytes,group.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("é<😀-😃>x<😀>", regex.ReplaceToString(input, "<$1>"));
-        Assert.Equal("😀-😃", group.GetValueString());
+        Assert.Equal("😀-😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>

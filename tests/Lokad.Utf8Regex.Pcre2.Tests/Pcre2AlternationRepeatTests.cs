@@ -16,7 +16,7 @@ public sealed class Pcre2AlternationRepeatTests
         var matches = regex.EnumerateMatches(input);
         while (matches.MoveNext())
         {
-            values.Add(matches.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         }
 
         Assert.Equal(["az", "abz", "aabz", "ababaz", "ababaz"], values);
@@ -110,12 +110,12 @@ public sealed class Pcre2AlternationRepeatTests
         var direct = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Assert.Equal(oracle.Match(inputText).Value, direct.Match(input).GetValueString());
+        Assert.Equal(oracle.Match(inputText).Value, System.Text.Encoding.UTF8.GetString(direct.Match(input).GetValueBytes()));
         var values = new System.Collections.Generic.List<string>();
         var matches = direct.EnumerateMatches(input);
         while (matches.MoveNext())
         {
-            values.Add(matches.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         }
         var wanted = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(inputText))

@@ -49,7 +49,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
         // A returned subroutine restores caller captures, including unset slots.
         Assert.False(match.GetGroup(1).Success);
         Assert.False(match.GetGroup(2).Success);
-        Assert.Equal("ab", match.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.False(regex.IsMatch("ax"u8));
     }
 
@@ -83,9 +83,9 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
         var negative = new Utf8Pcre2Regex("^(?(?!(a))def|abc)").MatchDetailed("abc"u8);
 
         Assert.True(positive.Success);
-        Assert.Equal("a", positive.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(positive.GetGroup(1).GetValueBytes()));
         Assert.True(negative.Success);
-        Assert.Equal("a", negative.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(negative.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]

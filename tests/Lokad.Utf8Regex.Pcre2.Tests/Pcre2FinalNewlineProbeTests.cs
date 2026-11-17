@@ -191,7 +191,7 @@ public sealed class Pcre2FinalNewlineProbeTests
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var match = probe.GetMatch();
         Assert.Equal(1, match.CaptureSlotCount);
-        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), match.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         var expected = regex.MatchDetailed(input, start, flags).GetGroup(0);
         Assert.Equal((begin, end), (expected.StartOffsetInBytes, expected.EndOffsetInBytes));
     }
@@ -213,7 +213,7 @@ public sealed class Pcre2FinalNewlineProbeTests
         Assert.Equal((1, 1), (regex.Probe("x\n"u8, Pcre2PartialMode.Soft).GetMatch().GetGroup(0).StartOffsetInBytes,
             regex.Probe("x\n"u8, Pcre2PartialMode.Soft).GetMatch().GetGroup(0).EndOffsetInBytes));
         Assert.Equal((5, 5), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("", retained.GetValueString());
+        Assert.Equal("", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         var partial = Create(1).Probe("😀x\u2028"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, partial.Kind);
         Assert.Equal((5, 8), (partial.Value.StartOffsetInBytes, partial.Value.EndOffsetInBytes));

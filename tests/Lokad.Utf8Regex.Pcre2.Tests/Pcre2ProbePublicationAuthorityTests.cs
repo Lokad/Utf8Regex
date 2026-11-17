@@ -42,11 +42,11 @@ public sealed class Pcre2ProbePublicationAuthorityTests
         var result = regex.Probe("A😀"u8, Pcre2PartialMode.None);
         var retained = result.GetMatch();
         Assert.True(retained.TryGetFirstSetGroup("v", out var named));
-        Assert.Equal("A", named.GetValueString());
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         Assert.Equal(1, retained.NameEntryCount);
-        Assert.Equal("😀", retained.GetGroup(2).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("xA😀"u8, Pcre2PartialMode.None).Kind);
-        Assert.Equal("A😀", retained.GetValueString());
+        Assert.Equal("A😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         var marked = new Utf8Pcre2Regex("(*MARK:tag)(é)(😀)").Probe("é😀"u8, Pcre2PartialMode.None);
         Assert.Equal("tag", marked.Mark);
     }

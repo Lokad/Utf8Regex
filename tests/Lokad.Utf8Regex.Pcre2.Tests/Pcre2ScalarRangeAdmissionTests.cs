@@ -75,11 +75,11 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         var input = Encoding.UTF8.GetBytes("é😁😃x😀");
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);
-        Assert.Equal("😁😃", group.GetValueString());
+        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal((2,10),(group.StartOffsetInBytes,group.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("é<😁😃>x<😀>", regex.ReplaceToString(input, "<$1>"));
-        Assert.Equal("😁😃", group.GetValueString());
+        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
 
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();

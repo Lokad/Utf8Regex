@@ -22,9 +22,9 @@ public sealed class Pcre2AnchoredDotSearchTests
 
         var detailed = regex.MatchDetailed("123-file listing"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("123", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("-", detailed.GetGroup(2).GetValueString());
-        Assert.Equal("file listing", detailed.GetGroup(3).GetValueString());
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("-", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+        Assert.Equal("file listing", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(3).GetValueBytes()));
     }
 
     [Fact]

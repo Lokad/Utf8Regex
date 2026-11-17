@@ -14,7 +14,7 @@ public sealed class Pcre2CoreOwnershipTests
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));
         Assert.Equal(1, regex.Count(bytes));
-        Assert.Equal(subject, regex.MatchDetailed(bytes).Value.GetValueString());
+        Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(bytes).Value.GetValueBytes()));
         Assert.Equal(1, regex.Count(bytes, 0, Pcre2MatchOptions.NotEmpty));
     }
 
@@ -27,8 +27,8 @@ public sealed class Pcre2CoreOwnershipTests
         Assert.Same(owner, Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Count).Regex);
         Assert.Equal(2, regex.Count("ab ab"u8));
         var match = regex.MatchDetailed("ab"u8);
-        Assert.Equal("a", match.GetGroup(1).GetValueString());
-        Assert.Equal("b", match.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public sealed class Pcre2CoreOwnershipTests
         Assert.Same(canonical.SliceProgram, Assert.IsType<Pcre2SliceDirectProgram>(program.Operations.Count).SliceProgram);
         Assert.Equal(2, regex.Count("12-12 7-7"u8));
         var retained = regex.MatchDetailed("12-12"u8);
-        Assert.Equal("12", retained.GetGroup(1).GetValueString());
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal(1, regex.Count("12-12"u8, 0, Pcre2MatchOptions.NotEmpty));
-        Assert.Equal("12", retained.GetGroup(1).GetValueString());
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 }

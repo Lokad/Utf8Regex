@@ -46,7 +46,7 @@ public sealed class Pcre2SliceCallbackAuthorityTests
                 ? regex.ReplaceToString(input, state, static (in Utf8Pcre2MatchContext match, ref Observation state) =>
                 {
                     Observe(in match, state);
-                    return state.Fragment + match.GetGroup(2).GetValueString();
+                    return state.Fragment + System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes());
                 }, start, Pcre2MatchOptions.None, token)
                 : Encoding.UTF8.GetString(regex.Replace(input, state,
                     static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref Observation state) =>
@@ -276,8 +276,8 @@ public sealed class Pcre2SliceCallbackAuthorityTests
         finally { scope.Release(); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         var retained = Utf8Pcre2MatchContext.Create(input, groups);
-        Assert.Equal("é😀", retained.GetValueString());
-        Assert.Equal("😀", retained.GetGroup(2).GetValueString());
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal((2, 6), (retained.GetGroup(2).StartOffsetInBytes, retained.GetGroup(2).EndOffsetInBytes));
     }
 
@@ -309,14 +309,14 @@ public sealed class Pcre2SliceCallbackAuthorityTests
             actual = regex.ReplaceToString(input, calls,
                 static (in Utf8Pcre2MatchContext match, ref List<(int, int, string)> calls) =>
                 {
-                    calls.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes, match.GetGroup(1).GetValueString()));
-                    return "<" + match.GetGroup(1).GetValueString() + ">";
+                    calls.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes())));
+                    return "<" + System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()) + ">";
                 });
         else
             actual = Encoding.UTF8.GetString(regex.Replace(input, calls,
                 static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref List<(int, int, string)> calls) =>
                 {
-                    calls.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes, match.GetGroup(1).GetValueString()));
+                    calls.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes())));
                     writer.AppendAsciiByte((byte)'<'); writer.Append(match.GetGroup(1).GetValueBytes()); writer.AppendAsciiByte((byte)'>');
                 }));
         Assert.Equal("abc<><def>abc<>😀", actual);

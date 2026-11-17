@@ -136,8 +136,8 @@ public sealed class Pcre2NonEmptyCountScopeTests
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal("aaa", retained.GetGroup(1).GetValueString());
-        Assert.Equal("b", retained.GetGroup(2).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal(1, regex.Count("ab"u8));
     }
 

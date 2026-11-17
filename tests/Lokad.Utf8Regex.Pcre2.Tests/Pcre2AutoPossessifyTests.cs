@@ -36,7 +36,7 @@ public sealed class Pcre2AutoPossessifyTests
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success)
         {
-            Assert.Equal(expected.Value, actual.GetValueString());
+            Assert.Equal(expected.Value, System.Text.Encoding.UTF8.GetString(actual.GetValueBytes()));
         }
 
         Assert.Equal(oracle.Count(inputText), regex.Count(input));
@@ -114,6 +114,6 @@ public sealed class Pcre2AutoPossessifyTests
         var regex = new Utf8Pcre2Regex(@"\b\d+\b", options);
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
         Assert.Equal(expected.Length != 0, match.Success);
-        if (match.Success) Assert.Equal(expected, match.GetValueString());
+        if (match.Success) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 }

@@ -45,10 +45,10 @@ public sealed class Pcre2SupplementaryCaseTests
                 if (success)
                 {
                     Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                    Assert.Equal(text, match.GetValueString());
+                    Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                     if (pattern.Contains(@"\1"))
                     {
-                        Assert.Equal(capital, match.GetGroup(1).GetValueString());
+                        Assert.Equal(capital, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
                         Assert.Equal((0, 4), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
                     }
                 }

@@ -30,7 +30,7 @@ public sealed class Pcre2OptionCallbackAuthorityTests
         state.Scope = scope;
         state.Steps.Add(scope.Invocation.Budget.Steps);
         var group = match.GetGroup(2);
-        state.Captures.Add((group.StartOffsetInBytes, group.EndOffsetInBytes, group.GetValueString()));
+        state.Captures.Add((group.StartOffsetInBytes, group.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(group.GetValueBytes())));
     }
 
     private static string Run(Utf8Pcre2Regex regex, byte[] input, Observation state, bool text,
@@ -42,7 +42,7 @@ public sealed class Pcre2OptionCallbackAuthorityTests
                 ? regex.ReplaceToString(input, state, static (in Utf8Pcre2MatchContext match, ref Observation state) =>
                 {
                     Observe(in match, state);
-                    return state.Fragment + match.GetGroup(2).GetValueString();
+                    return state.Fragment + System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes());
                 }, start, options, token)
                 : Encoding.UTF8.GetString(regex.Replace(input, state,
                     static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref Observation state) =>
@@ -110,15 +110,15 @@ public sealed class Pcre2OptionCallbackAuthorityTests
                 {
                     var group = match.GetGroup(1);
                     captures.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes,
-                        group.StartOffsetInBytes, group.EndOffsetInBytes, group.GetValueString()));
-                    return "<" + group.GetValueString() + ">";
+                        group.StartOffsetInBytes, group.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(group.GetValueBytes())));
+                    return "<" + System.Text.Encoding.UTF8.GetString(group.GetValueBytes()) + ">";
                 }, 0, options);
             else result = Encoding.UTF8.GetString(regex.Replace("abcdefabc😀"u8, captures,
                 static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref List<(int, int, int, int, string)> captures) =>
                 {
                     var group = match.GetGroup(1);
                     captures.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes,
-                        group.StartOffsetInBytes, group.EndOffsetInBytes, group.GetValueString()));
+                        group.StartOffsetInBytes, group.EndOffsetInBytes, System.Text.Encoding.UTF8.GetString(group.GetValueBytes())));
                     writer.AppendAsciiByte((byte)'<'); writer.Append(group.GetValueBytes()); writer.AppendAsciiByte((byte)'>');
                 }, 0, options));
             Assert.Equal("abc<><def>abc<>😀", result);
@@ -140,7 +140,7 @@ public sealed class Pcre2OptionCallbackAuthorityTests
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var bytes = Encoding.UTF8.GetBytes(input);
         Assert.Equal(expected, regex.ReplaceToString(bytes, 0,
-            static (in Utf8Pcre2MatchContext match, ref int state) => "<" + match.GetGroup(1).GetValueString() + ">", start, options));
+            static (in Utf8Pcre2MatchContext match, ref int state) => "<" + System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()) + ">", start, options));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(bytes, 0,
             static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
             { writer.AppendAsciiByte((byte)'<'); writer.Append(match.GetGroup(1).GetValueBytes()); writer.AppendAsciiByte((byte)'>'); }, start, options));

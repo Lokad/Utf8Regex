@@ -20,7 +20,7 @@ public sealed class Pcre2TokenRepeatTests
         string expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(inputText)).GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Match(Encoding.UTF8.GetBytes(inputText)).GetValueBytes()));
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class Pcre2TokenRepeatTests
         var enumerator = regex.EnumerateMatches(input);
         while (enumerator.MoveNext())
         {
-            values.Add(enumerator.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         }
 
         Assert.Equal(["abc", "", "def", ""], values);
@@ -59,14 +59,14 @@ public sealed class Pcre2TokenRepeatTests
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
         var input = "abc\ndef"u8;
 
-        Assert.Equal("def", regex.Match(input, 3, Pcre2MatchOptions.NotEmptyAtStart).GetValueString());
+        Assert.Equal("def", System.Text.Encoding.UTF8.GetString(regex.Match(input, 3, Pcre2MatchOptions.NotEmptyAtStart).GetValueBytes()));
         Assert.False(regex.IsMatch(
             input,
             3,
             Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart));
 
         var endAnchored = new Utf8Pcre2Regex(@"\w*?", Pcre2CompileOptions.EndAnchored);
-        Assert.Equal("abc", endAnchored.Match("abc"u8).GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(endAnchored.Match("abc"u8).GetValueBytes()));
 
         var firstLine = new Utf8Pcre2Regex(@"\w+", Pcre2CompileOptions.FirstLine);
         Assert.Equal(1, firstLine.Count("abc\ndef"u8));
@@ -97,9 +97,9 @@ public sealed class Pcre2TokenRepeatTests
             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow },
             default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
-        Assert.Equal("a\u0301🇫🇷", graphemes.Match(Encoding.UTF8.GetBytes("a\u0301🇫🇷")).GetValueString());
-        Assert.Equal("\r\n\n", newlineSequences.Match("\r\n\nx"u8).GetValueString());
-        Assert.Equal("é", codeUnits.Match("é"u8).GetValueString());
+        Assert.Equal("a\u0301🇫🇷", System.Text.Encoding.UTF8.GetString(graphemes.Match(Encoding.UTF8.GetBytes("a\u0301🇫🇷")).GetValueBytes()));
+        Assert.Equal("\r\n\n", System.Text.Encoding.UTF8.GetString(newlineSequences.Match("\r\n\nx"u8).GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(codeUnits.Match("é"u8).GetValueBytes()));
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class Pcre2TokenRepeatTests
         var enumerator = regex.EnumerateMatches(input);
         while (enumerator.MoveNext())
         {
-            values.Add(enumerator.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         }
 
         return values;

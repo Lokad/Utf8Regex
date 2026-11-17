@@ -253,20 +253,20 @@ public sealed class Pcre2SliceOwnershipTests
         if (oracle.Success)
         {
             Assert.Equal(oracle.Groups[0].Value, expectedWhole);
-            Assert.Equal(expectedWhole, detailed.Value.GetValueString());
+            Assert.Equal(expectedWhole, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
             if (oracle.Groups.Count > 1)
             {
                 Assert.Equal(
                     oracle.Groups[1].Success,
                     detailed.GetGroup(1).Success);
-                Assert.Equal(expectedFirst, detailed.GetGroup(1).GetValueString());
+                Assert.Equal(expectedFirst, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
             }
             if (oracle.Groups.Count > 2)
             {
                 Assert.Equal(
                     oracle.Groups[2].Success,
                     detailed.GetGroup(2).Success);
-                Assert.Equal(expectedSecond, detailed.GetGroup(2).GetValueString());
+                Assert.Equal(expectedSecond, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
             }
         }
 
@@ -292,7 +292,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.True(oracle.Success);
         Assert.True(detailed.Success);
         Assert.True(detailed.GetGroup(winningGroup).Success);
-        Assert.Equal(winningValue, detailed.GetGroup(winningGroup).GetValueString());
+        Assert.Equal(winningValue, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(winningGroup).GetValueBytes()));
         Assert.Equal(
             oracle.Groups[3 - winningGroup].Success,
             detailed.GetGroup(3 - winningGroup).Success);
@@ -313,9 +313,9 @@ public sealed class Pcre2SliceOwnershipTests
         var detailed = regex.MatchDetailed(input, 0);
         Assert.True(oracle.Success);
         Assert.True(detailed.Success);
-        Assert.Equal(oracle.Groups[0].Value, detailed.Value.GetValueString());
-        Assert.Equal(oracle.Groups[1].Value, detailed.GetGroup(1).GetValueString());
-        Assert.Equal(oracle.Groups[2].Value, detailed.GetGroup(2).GetValueString());
+        Assert.Equal(oracle.Groups[0].Value, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
         var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
         Assert.Equal(expectedStart, detailed.Value.StartOffsetInBytes);
         Assert.True(regex.DebugCompiledProgram is not null);
@@ -327,8 +327,8 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
         var hit = regex.MatchDetailed(Utf8("aaabbxx"), 0, Pcre2MatchOptions.Anchored);
         Assert.True(hit.Success);
-        Assert.Equal("aaabb", hit.Value.GetValueString());
-        Assert.Equal("aaa", hit.GetGroup(1).GetValueString());
+        Assert.Equal("aaabb", System.Text.Encoding.UTF8.GetString(hit.Value.GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(hit.GetGroup(1).GetValueBytes()));
         var miss = regex.MatchDetailed(Utf8("xxaaabbyy"), 0, Pcre2MatchOptions.Anchored);
         Assert.False(miss.Success);
     }
@@ -433,7 +433,7 @@ public sealed class Pcre2SliceOwnershipTests
         var enumerator = regex.EnumerateMatches(input, 0);
         while (enumerator.MoveNext())
         {
-            actual.Add(enumerator.Current.GetValueString());
+            actual.Add(System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         }
 
         Assert.Equal(

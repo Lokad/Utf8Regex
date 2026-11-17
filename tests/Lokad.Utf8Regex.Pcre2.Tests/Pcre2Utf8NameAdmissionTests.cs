@@ -23,7 +23,7 @@ public sealed class Pcre2Utf8NameAdmissionTests
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.Equal(2, match.CaptureSlotCount);
         Assert.True(match.TryGetFirstSetGroup(name, out var group));
-        Assert.Equal("😀", group.GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal((2, 6), (group.StartOffsetInBytes, group.EndOffsetInBytes));
         var names = new Pcre2NameEntry[1];
         Assert.Equal(1, regex.CopyNameEntries(names, out var more));

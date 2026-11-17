@@ -57,12 +57,12 @@ public sealed class Pcre2PartialProbeAuthorityTests
         Assert.Equal(Pcre2PartialProbeProgramKind.AbPlus, regex.DebugCompiledProgram.PartialProbe.Kind);
         var retained = regex.Probe("xabbb"u8, Pcre2PartialMode.Soft).GetMatch();
         Assert.Equal(2, retained.CaptureSlotCount);
-        Assert.Equal("a", retained.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.True(retained.TryGetFirstSetGroup("head", out var named));
         Assert.Equal((1, 2), (named.StartOffsetInBytes, named.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("zzz"u8, Pcre2PartialMode.Soft).Kind);
-        Assert.Equal("abbb", retained.GetValueString());
-        Assert.Equal("a", named.GetValueString());
+        Assert.Equal("abbb", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
     }
 
     [Theory]

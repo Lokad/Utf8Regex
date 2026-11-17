@@ -27,7 +27,7 @@ public sealed class Pcre2FullProbeCaptureTests
             var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
             Assert.Equal(left.Success, right.Success);
             if (!left.Success) continue;
-            Assert.Equal(left.GetValueString(), right.GetValueString());
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
         var entries = new Pcre2NameEntry[regex.NameEntryCount];
@@ -51,12 +51,12 @@ public sealed class Pcre2FullProbeCaptureTests
         var retained = regex.Probe("xdogsbody dog"u8, Pcre2PartialMode.Soft, 1).GetMatch();
         Assert.Equal((1, 9), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.True(retained.TryGetFirstSetGroup("tail", out var named));
-        Assert.Equal("sbody", named.GetValueString());
+        Assert.Equal("sbody", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         var next = regex.Probe("dog"u8, Pcre2PartialMode.Soft).GetMatch();
         Assert.Equal(2, next.CaptureSlotCount);
         Assert.False(next.GetGroup(1).Success);
-        Assert.Equal("dogsbody", retained.GetValueString());
-        Assert.Equal("sbody", named.GetValueString());
+        Assert.Equal("dogsbody", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("sbody", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
     }
 
     [Fact]
@@ -68,6 +68,6 @@ public sealed class Pcre2FullProbeCaptureTests
         { _ = Create(1, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(100000, 1).Probe("dogsbody"u8, Pcre2PartialMode.Soft); }).ErrorKind);
-        Assert.Equal("sbody", Create(100000, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft).GetMatch().GetGroup(1).GetValueString());
+        Assert.Equal("sbody", System.Text.Encoding.UTF8.GetString(Create(100000, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft).GetMatch().GetGroup(1).GetValueBytes()));
     }
 }

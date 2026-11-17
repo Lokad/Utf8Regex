@@ -40,7 +40,7 @@ public sealed class Pcre2ControlVerbLabelTests
             {
                 var match = regex.MatchDetailed("a"u8);
                 Assert.True(match.Success);
-                Assert.Equal("a", match.GetValueString());
+                Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                 Assert.Equal(1, match.CaptureSlotCount);
                 Assert.Equal(mark, match.Mark);
             }
@@ -70,8 +70,8 @@ public sealed class Pcre2ControlVerbLabelTests
         Assert.Equal("(?<100>😀", retained.Mark);
         Assert.Equal(3, retained.CaptureSlotCount);
         Assert.Equal((1, 7), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
-        Assert.Equal("é", retained.GetGroup(1).GetValueString());
-        Assert.Equal("😀", retained.GetGroup(2).GetValueString());
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("(?<100>😀", retained.Mark);
         Assert.Equal("x<(?<100>😀:😀>x<(?<100>😀:😀>",

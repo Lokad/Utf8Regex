@@ -64,11 +64,11 @@ public sealed class Pcre2SliceClassTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(expected.Length, regex.Count(input, 0));
-        Assert.Equal(expected[0], regex.Match(input, 0).GetValueString());
-        Assert.Equal(expected[0], regex.MatchDetailed(input, 0).Value.GetValueString());
+        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input, 0).GetValueBytes()));
+        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input, 0).Value.GetValueBytes()));
         var actual = new List<string>();
         var matches = regex.EnumerateMatches(input, 0);
-        while (matches.MoveNext()) actual.Add(matches.Current.GetValueString());
+        while (matches.MoveNext()) actual.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.Equal(expected, actual);
         Assert.Equal(replacement, regex.ReplaceToString(input, "<_>"));
         Assert.True(regex.DebugCompiledProgram is not null, pattern);
@@ -81,8 +81,8 @@ public sealed class Pcre2SliceClassTests
         var input = Utf8("1ab! a]!");
         var match = regex.MatchDetailed(input, 0);
         Assert.True(match.Success);
-        Assert.Equal("ab!", match.Value.GetValueString());
-        Assert.Equal("ab", match.GetGroup(1).GetValueString());
+        Assert.Equal("ab!", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.Equal("1<ab> a]!", regex.ReplaceToString(input, "<$1>"));
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.DebugCompiledProgram is not null);
@@ -156,8 +156,8 @@ public sealed class Pcre2SliceClassTests
         var regex = new Utf8Pcre2Regex("([^a-z]+)", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xxAByy"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("AB", detailed.Value.GetValueString());
-        Assert.Equal("AB", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

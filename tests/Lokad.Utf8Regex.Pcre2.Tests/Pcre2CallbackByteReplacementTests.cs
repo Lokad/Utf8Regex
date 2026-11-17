@@ -217,7 +217,7 @@ public sealed class Pcre2CallbackByteReplacementTests
         var regex = new Utf8Pcre2Regex("(?<w>😀)");
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         Assert.Equal("[😀][😀]", regex.ReplaceToString("😀😀"u8, 0,
-            static (in Utf8Pcre2MatchContext match, ref int state) => $"[{match.GetGroup(1).GetValueString()}]",
+            static (in Utf8Pcre2MatchContext match, ref int state) => $"[{System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes())}]",
             0, Pcre2MatchOptions.Anchored));
         Assert.Equal("[😀][😀]"u8.ToArray(), regex.Replace("😀😀"u8, 0,
             static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>

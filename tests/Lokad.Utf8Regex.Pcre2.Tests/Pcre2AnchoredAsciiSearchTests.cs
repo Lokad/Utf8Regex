@@ -20,7 +20,7 @@ public sealed class Pcre2AnchoredAsciiSearchTests
 
         var detailed = regex.MatchDetailed("-3.14159"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("-3.14159", detailed.Value.GetValueString());
+        Assert.Equal("-3.14159", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
     }
 
     [Fact]

@@ -56,9 +56,9 @@ public sealed class Pcre2PartialEndAnchoredTests
         Assert.Equal((7, 11), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.True(retained.TryGetFirstSetGroup("head", out var alias));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("abx"u8, Pcre2PartialMode.None).Kind);
-        Assert.Equal("abbb", retained.GetValueString());
-        Assert.Equal("a", alias.GetValueString());
-        Assert.Equal("a", regex.Probe("😀abxabbb"u8, Pcre2PartialMode.None).GetMatch().GetGroup(1).GetValueString());
+        Assert.Equal("abbb", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Probe("😀abxabbb"u8, Pcre2PartialMode.None).GetMatch().GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

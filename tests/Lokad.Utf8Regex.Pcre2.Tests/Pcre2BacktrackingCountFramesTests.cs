@@ -134,7 +134,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.True(failure is Utf8ExecutionDeadlineExpiredException or Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout });
-        Assert.Equal("aaa", retained.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         armed = false;
         ticks = 0;
         Assert.Equal(1, regex.Count("ab"u8));

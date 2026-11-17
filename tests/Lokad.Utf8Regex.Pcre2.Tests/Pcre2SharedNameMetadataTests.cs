@@ -19,7 +19,7 @@ public sealed class Pcre2SharedNameMetadataTests
             Assert.True(retained.Success);
             Assert.Equal(expectedNames, retained.NameEntryCount);
             Assert.True(retained.TryGetFirstSetGroup("x", out var first));
-            Assert.Equal("a", first.GetValueString());
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
             var names = new Pcre2NameEntry[expectedNames];
             Assert.Equal(expectedNames, regex.CopyNameEntries(names, out var more));
             Assert.False(more);
@@ -30,7 +30,7 @@ public sealed class Pcre2SharedNameMetadataTests
             Assert.Equal(1, regex.Count(input));
             Assert.Equal("<a>", Encoding.UTF8.GetString(regex.Replace(input, "<$x>")));
             Assert.True(retained.TryGetFirstSetGroup("x", out first));
-            Assert.Equal("a", first.GetValueString());
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
         }
     }
 }

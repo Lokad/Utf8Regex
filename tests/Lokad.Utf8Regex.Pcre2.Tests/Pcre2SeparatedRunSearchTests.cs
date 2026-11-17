@@ -17,7 +17,7 @@ public sealed class Pcre2SeparatedRunSearchTests
 
         var detailed = regex.MatchDetailed("go to https://example.org/a?q=1#top now"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("https://example.org/a?q=1#top", detailed.GetValueString());
+        Assert.Equal("https://example.org/a?q=1#top", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
     }
 
     [Fact]

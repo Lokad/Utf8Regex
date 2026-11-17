@@ -40,7 +40,7 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(3, regex.Count("xx"u8));
         Assert.True(regex.IsMatch("xx"u8));
-        Assert.Equal(string.Empty, regex.MatchDetailed("xx"u8).GetGroup(0).GetValueString());
+        Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("xx"u8).GetGroup(0).GetValueBytes()));
         var matches = regex.EnumerateMatches("xx"u8);
         var count = 0;
         while (matches.MoveNext()) count++;
@@ -166,8 +166,8 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal(firstCapture, retained.GetGroup(1).GetValueString());
-        if (secondCapture is not null) Assert.Equal(secondCapture, retained.GetGroup(2).GetValueString());
+        Assert.Equal(firstCapture, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        if (secondCapture is not null) Assert.Equal(secondCapture, System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
     }
 
     [Fact]

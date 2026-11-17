@@ -29,11 +29,11 @@ public sealed class Pcre2CaptureRollbackTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-        Assert.Equal(text, match.GetValueString());
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
         Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         var group = match.GetGroup(slot);
         Assert.Equal(expectedCapture is not null, group.Success);
-        if (expectedCapture is not null) Assert.Equal(expectedCapture, group.GetValueString());
+        if (expectedCapture is not null) Assert.Equal(expectedCapture, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
         Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
     }
 
@@ -63,7 +63,7 @@ public sealed class Pcre2CaptureRollbackTests
             Pcre2CompileOptions.None, default, new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(1, depth.Count("abcab"u8));
         // Disproved alternatives no longer require pending frames here.
-        Assert.Equal("ab", depth.MatchDetailed("abcab"u8).GetGroup(1).GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(depth.MatchDetailed("abcab"u8).GetGroup(1).GetValueBytes()));
         const string ambiguous = @"(?:(?<x>a+|a+b)c|a)\k<x>";
         Assert.True(new Utf8Pcre2Regex(ambiguous).MatchDetailed("aabcaab"u8).Success);
         var pending = new Utf8Pcre2Regex(ambiguous, Pcre2CompileOptions.None, default,
@@ -86,7 +86,7 @@ public sealed class Pcre2CaptureRollbackTests
                 ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
         var input = "😀éé😀 😀éé😀"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
         var alias = cursor;
@@ -97,7 +97,7 @@ public sealed class Pcre2CaptureRollbackTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.True(regex.MatchDetailed("😀éé😀"u8).Success);
     }
 }

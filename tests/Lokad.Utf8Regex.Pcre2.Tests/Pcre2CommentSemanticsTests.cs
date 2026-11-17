@@ -26,8 +26,8 @@ public sealed class Pcre2CommentSemanticsTests
             var regex = new Utf8Pcre2Regex(pattern);
             var match = regex.MatchDetailed("é😀"u8);
             Assert.True(match.Success);
-            Assert.Equal("é", match.GetGroup(1).GetValueString());
-            Assert.Equal("😀", match.GetGroup(2).GetValueString());
+            Assert.Equal("é", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
             Assert.Equal("é😀", regex.ReplaceToString("é😀"u8, "$1$2"));
         }
     }
@@ -73,7 +73,7 @@ public sealed class Pcre2CommentSemanticsTests
         var regex = new Utf8Pcre2Regex(pattern);
         var match = regex.Match(Encoding.UTF8.GetBytes(subject));
         Assert.Equal(expected is not null, match.Success);
-        if (expected is not null) Assert.Equal(expected, match.GetValueString());
+        if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
     [Theory]
@@ -100,7 +100,7 @@ public sealed class Pcre2CommentSemanticsTests
         var regex = new Utf8Pcre2Regex(@"(a)\1(?#)2");
         var match = regex.MatchDetailed("aa2"u8);
         Assert.True(match.Success); Assert.Equal(2, match.CaptureSlotCount);
-        Assert.Equal("a", match.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]

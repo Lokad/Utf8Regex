@@ -55,7 +55,7 @@ public sealed class Pcre2SpacePropertyTests
                 Assert.Equal(hit, match.Success);
                 if (hit)
                 {
-                    Assert.Equal(value, match.GetValueString());
+                    Assert.Equal(value, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                     Assert.Equal(subject.Length, match.Value.EndOffsetInBytes);
                 }
             }
@@ -77,12 +77,12 @@ public sealed class Pcre2SpacePropertyTests
         var input = Encoding.UTF8.GetBytes("z\u0085\u180E😀! \u0085a");
         var retained = regex.MatchDetailed(input, 1);
         Assert.True(retained.Success);
-        Assert.Equal("\u0085\u180E", retained.GetGroup(1).GetValueString());
-        Assert.Equal("😀!", retained.GetGroup(2).GetValueString());
+        Assert.Equal("\u0085\u180E", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("😀!", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal((1, 6), (retained.GetGroup(1).StartOffsetInBytes, retained.GetGroup(1).EndOffsetInBytes));
         Assert.Equal((1, 11), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("\u0085\u180E", retained.GetGroup(1).GetValueString());
+        Assert.Equal("\u0085\u180E", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
     }
 
     [Fact]
@@ -105,6 +105,6 @@ public sealed class Pcre2SpacePropertyTests
             new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 8192,
                 MaxWorkingBytes = 4 * 1048576, MaxResultBytes = 1048576 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(1, funded.Count(input));
-        Assert.Equal("\u0085\u180E", funded.MatchDetailed("\u0085\u180E"u8).GetValueString());
+        Assert.Equal("\u0085\u180E", System.Text.Encoding.UTF8.GetString(funded.MatchDetailed("\u0085\u180E"u8).Value.GetValueBytes()));
     }
 }

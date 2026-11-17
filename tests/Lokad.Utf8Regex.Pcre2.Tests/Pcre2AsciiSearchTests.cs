@@ -17,7 +17,7 @@ public sealed class Pcre2AsciiSearchTests
 
         var detailed = regex.MatchDetailed("prefix 192.168.001.001 suffix"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("192.168.001.001", detailed.Value.GetValueString());
+        Assert.Equal("192.168.001.001", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
     }
 
     [Fact]

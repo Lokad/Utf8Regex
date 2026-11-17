@@ -13,13 +13,13 @@ public sealed class Pcre2MultilineSearchTests
             "INFO: boot\nERROR: first\nERROR: \nERROR: \r\nERROR: café\n");
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
-        Assert.Equal("ERROR: first", regex.Match(input).GetValueString());
+        Assert.Equal("ERROR: first", System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
 
         var values = new List<string>();
         var matches = regex.EnumerateMatches(input);
         while (matches.MoveNext())
         {
-            values.Add(matches.Current.GetValueString());
+            values.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         }
 
         Assert.Equal(["ERROR: first", "ERROR: \r", "ERROR: café"], values);
@@ -44,7 +44,7 @@ public sealed class Pcre2MultilineSearchTests
         var secondMatchStart = "ERROR: zero\nINFO: one\n"u8.Length;
         Assert.Equal(2, regex.Count(input, 1));
         Assert.Equal(2, regex.Count(input, secondMatchStart));
-        Assert.Equal("ERROR: two\r", regex.Match(input, secondMatchStart).GetValueString());
+        Assert.Equal("ERROR: two\r", System.Text.Encoding.UTF8.GetString(regex.Match(input, secondMatchStart).GetValueBytes()));
         Assert.True(regex.IsMatch(input, secondMatchStart, Pcre2MatchOptions.Anchored));
         Assert.False(regex.IsMatch(input, secondMatchStart + 1, Pcre2MatchOptions.Anchored));
     }

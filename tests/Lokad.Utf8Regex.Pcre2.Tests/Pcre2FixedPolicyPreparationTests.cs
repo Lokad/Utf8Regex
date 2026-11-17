@@ -30,7 +30,7 @@ public sealed class Pcre2FixedPolicyPreparationTests
             Assert.Equal(2, count);
             Assert.Equal("! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
             if (pattern.Contains("?<left>"))
-                Assert.Equal("a", regex.MatchDetailed(input).GetGroup(1).GetValueString());
+                Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>

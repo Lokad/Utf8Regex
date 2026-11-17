@@ -30,7 +30,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
         Assert.True(match.Success);
         Assert.Equal((2, end), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.Equal(2, match.CaptureSlotCount);
-        Assert.Equal("😀", match.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.Equal((2, 6), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
     }
 
@@ -89,7 +89,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
             Pcre2CompileOptions.Extended, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
         var match = regex.MatchDetailed("😀"u8);
         Assert.True(match.Success);
-        Assert.Equal("😀", match.GetGroup(1).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]

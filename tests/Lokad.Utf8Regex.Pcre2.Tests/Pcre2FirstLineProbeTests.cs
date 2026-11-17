@@ -181,7 +181,7 @@ public sealed class Pcre2FirstLineProbeTests
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var actual = probe.GetMatch();
-        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), actual.GetValueString());
+        Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()));
         var expected = regex.MatchDetailed(input, start, flags);
         Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
         for (var slot = 0; slot < actual.CaptureSlotCount; slot++)
@@ -190,7 +190,7 @@ public sealed class Pcre2FirstLineProbeTests
             Assert.Equal(left.Success, right.Success);
             if (left.Success)
             {
-                Assert.Equal(left.GetValueString(), right.GetValueString());
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
                 Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
             }
         }
@@ -209,9 +209,9 @@ public sealed class Pcre2FirstLineProbeTests
         var retained = regex.Probe("horse\ncat"u8, Pcre2PartialMode.Soft).GetMatch();
         var alias = retained.GetGroup(0);
         Assert.Equal((0, 5), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
-        Assert.Equal("cat", regex.Probe("cat\nhorse"u8, Pcre2PartialMode.Soft).GetMatch().GetValueString());
-        Assert.Equal("horse", retained.GetValueString());
-        Assert.Equal("horse", alias.GetValueString());
+        Assert.Equal("cat", System.Text.Encoding.UTF8.GetString(regex.Probe("cat\nhorse"u8, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
+        Assert.Equal("horse", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal("horse", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("ho"u8, Pcre2PartialMode.Hard).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, Create(1).Probe("x\nho"u8, Pcre2PartialMode.Hard).Kind);
     }
@@ -225,7 +225,7 @@ public sealed class Pcre2FirstLineProbeTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(late, Pcre2PartialMode.Soft); }).ErrorKind);
         var early = Encoding.UTF8.GetBytes("horse" + new string('x', 20000) + "\ncat");
-        Assert.Equal("horse", regex.Probe(early, Pcre2PartialMode.Soft).GetMatch().GetValueString());
+        Assert.Equal("horse", System.Text.Encoding.UTF8.GetString(regex.Probe(early, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
     }
 
     [Theory]

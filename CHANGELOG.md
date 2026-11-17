@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 standalone value/group/match string getters. Byte views and slice
+  status remain; hosts decode valid slices explicitly.
+
 - Remove PythonRe callback replacement, evaluator delegates and string substitution
   output. Byte-template Replace/Subn and retained byte results remain; hosts use
   the range cursor for custom output and decode returned bytes when needed.

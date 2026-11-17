@@ -15,8 +15,8 @@ public sealed class Pcre2LeadingDotStarSearchTests
 
         var detailed = regex.MatchDetailed("glass"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("glass", detailed.GetValueString());
-        Assert.Equal("ss", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("glass", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]

@@ -74,7 +74,7 @@ public sealed class Pcre2SliceAtomicTests
         var regex = new Utf8Pcre2Regex("(?>(a+))b", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("aaab"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

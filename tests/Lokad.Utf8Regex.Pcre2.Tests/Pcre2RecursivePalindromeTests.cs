@@ -18,7 +18,7 @@ public sealed class Pcre2RecursivePalindromeTests
 
         var detailed = regex.MatchDetailed("abcba"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("abcba", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("abcba", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
     }
 
     [Theory]

@@ -11,8 +11,8 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         var match = regex.MatchDetailed("xx name-123 yy"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("123", match.Value.GetValueString());
-        Assert.Equal("name", match.GetGroup(1).GetValueString());
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("name", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -22,7 +22,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         var regex = new Utf8Pcre2Regex("a\\Kbz|ab");
         var match = regex.Match("ab"u8);
 
-        Assert.Equal("ab", match.GetValueString());
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(0, match.StartOffsetInBytes);
     }
 
@@ -32,7 +32,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         var match = new Utf8Pcre2Regex("^(?:a\\Kb)+$").Match("abab"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("b", match.GetValueString());
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(3, match.StartOffsetInBytes);
         Assert.Equal(4, match.EndOffsetInBytes);
     }
@@ -120,7 +120,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         {
             var input = index % 2 == 0 ? "foo-12"u8 : "bar-345"u8;
             var expected = index % 2 == 0 ? "12" : "345";
-            Assert.Equal(expected, regex.Match(input).GetValueString());
+            Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
         });
     }
 }

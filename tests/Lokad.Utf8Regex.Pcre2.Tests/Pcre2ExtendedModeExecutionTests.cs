@@ -40,7 +40,7 @@ public sealed class Pcre2ExtendedModeExecutionTests
             if (expected)
             {
                 Assert.Equal((4, 5), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                Assert.Equal(text, match.GetValueString());
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
             }
         }
     }
@@ -58,16 +58,16 @@ public sealed class Pcre2ExtendedModeExecutionTests
             Assert.True(match.Success);
             Assert.Equal((5, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
             Assert.True(match.TryGetFirstSetGroup("g", out var first));
-            Assert.Equal("aa", first.GetValueString());
+            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
             Assert.Equal((5, 7), (first.StartOffsetInBytes, first.EndOffsetInBytes));
             Assert.True(match.TryGetFirstSetGroup("h", out var second));
-            Assert.Equal(" bb", second.GetValueString());
+            Assert.Equal(" bb", System.Text.Encoding.UTF8.GetString(second.GetValueBytes()));
             Assert.Equal((7, 10), (second.StartOffsetInBytes, second.EndOffsetInBytes));
             Assert.Equal("😀 <aa| bb>\t", regex.ReplaceToString("😀 aa bb\t"u8, "<$1|$2>"));
             Assert.Equal(1, regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
             cancellation.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
-            Assert.Equal("aa", first.GetValueString());
+            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
         }
     }
 

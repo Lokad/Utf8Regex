@@ -61,8 +61,8 @@ public sealed class Pcre2SliceNamedTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         var context = regex.MatchDetailed("ab"u8);
         Assert.True(context.Success);
-        Assert.Equal("a", context.GetGroup(1).GetValueString());
-        Assert.Equal("b", context.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(context.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(context.GetGroup(2).GetValueBytes()));
         Span<int> numbers = stackalloc int[2];
         Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
         Assert.False(isMore);
@@ -78,10 +78,10 @@ public sealed class Pcre2SliceNamedTests
         var regex = new Utf8Pcre2Regex("(?<b>a)(c)+", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("acc"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.Equal("c", detailed.GetGroup(2).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
         Assert.True(detailed.TryGetFirstSetGroup("b", out var bee));
-        Assert.Equal("a", bee.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(bee.GetValueBytes()));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -161,9 +161,9 @@ public sealed class Pcre2SliceNamedTests
         var regex = new Utf8Pcre2Regex("(?<word>a)+", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xaa"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
-        Assert.Equal("a", word.GetValueString());
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(word.GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

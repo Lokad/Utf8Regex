@@ -132,8 +132,8 @@ public sealed class Pcre2SliceAnchorTests
         var regex = new Utf8Pcre2Regex("^(a.c)+$", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("abc"), 0);
         Assert.True(detailed.Success);
-        Assert.Equal("abc", detailed.Value.GetValueString());
-        Assert.Equal("abc", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

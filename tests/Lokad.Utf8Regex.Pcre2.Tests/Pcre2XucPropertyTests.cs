@@ -60,7 +60,7 @@ public sealed class Pcre2XucPropertyTests
                 Assert.Equal(hit, match.Success);
                 if (hit)
                 {
-                    Assert.Equal(value, match.GetValueString());
+                    Assert.Equal(value, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
                     Assert.Equal((0, subject.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
                 }
             }
@@ -80,8 +80,8 @@ public sealed class Pcre2XucPropertyTests
             new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 256, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }, Timeout.InfiniteTimeSpan);
         var retained = regex.MatchDetailed(input, 1, Pcre2MatchOptions.None, token.Token);
         Assert.True(retained.Success);
-        Assert.Equal("😀$@`\u00A0é", retained.GetGroup(1).GetValueString());
-        Assert.Equal("--", retained.GetGroup(2).GetValueString());
+        Assert.Equal("😀$@`\u00A0é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("--", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal((1, 14), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input, 1, Pcre2MatchOptions.None, token.Token));
         var cursor = regex.EnumerateMatches(input, 1, Pcre2MatchOptions.None, token.Token);
@@ -92,8 +92,8 @@ public sealed class Pcre2XucPropertyTests
         Assert.True(cursor.MoveNext());
         Assert.Equal((14, 19), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.False(cursor.MoveNext());
-        Assert.Equal("😀$@`\u00A0é", retained.GetGroup(1).GetValueString());
-        Assert.Equal("--", retained.GetGroup(2).GetValueString());
+        Assert.Equal("😀$@`\u00A0é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("--", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
     }
 
     [Theory]
@@ -117,7 +117,7 @@ public sealed class Pcre2XucPropertyTests
         Assert.Equal(expected, error.ErrorKind);
         var funded = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.Ucp, default,
             new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 256, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }, Timeout.InfiniteTimeSpan);
-        Assert.Equal("😀😀😀!", funded.MatchDetailed(input).GetValueString());
+        Assert.Equal("😀😀😀!", System.Text.Encoding.UTF8.GetString(funded.MatchDetailed(input).Value.GetValueBytes()));
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public sealed class Pcre2XucPropertyTests
         var input = Encoding.UTF8.GetBytes("z😀a𐐀!");
         var first = regex.MatchDetailed(input);
         Assert.True(first.Success);
-        Assert.Equal("😀", first.GetGroup(1).GetValueString());
-        Assert.Equal("a", first.GetGroup(2).GetValueString());
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(first.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(first.GetGroup(2).GetValueBytes()));
         Assert.Equal((1, 5), (first.GetGroup(1).StartOffsetInBytes, first.GetGroup(1).EndOffsetInBytes));
         Assert.Equal((5, 6), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));

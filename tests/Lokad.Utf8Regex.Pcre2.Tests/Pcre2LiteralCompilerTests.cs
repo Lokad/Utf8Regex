@@ -19,7 +19,7 @@ public sealed class Pcre2LiteralCompilerTests
         var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(pattern));
         Assert.True(match.Success);
         Assert.Equal(1, match.CaptureSlotCount);
-        Assert.Equal(pattern, match.GetGroup(0).GetValueString());
+        Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetGroup(0).GetValueBytes()));
         Assert.Equal(0, regex.NameEntryCount);
         Assert.Equal(0, match.NameEntryCount);
         Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
@@ -108,7 +108,7 @@ public sealed class Pcre2LiteralCompilerTests
         var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
 
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetValueString());
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
