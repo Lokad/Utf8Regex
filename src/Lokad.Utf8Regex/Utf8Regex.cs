@@ -782,7 +782,8 @@ public sealed partial class Utf8Regex
         try
         {
             slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
+                false, ref invocation, _preparedRegex.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
             invocation.Budget.ThrowIfCancellationRequested();
@@ -792,7 +793,7 @@ public sealed partial class Utf8Regex
     }
 
     // Adapters may borrow a necessary exact literal from their existing native
-    // rendering. They validate the complete subject and keep their own verifier;
+    // rendering. They receive caller-valid text and keep their own verifier;
     // finding this literal never proves a regex match or a candidate start.
     internal bool RejectMissingExactRequiredLiteral(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
@@ -816,7 +817,7 @@ public sealed partial class Utf8Regex
         ref readonly var prefilter = ref _preparedRegex.SearchPlan.PrefilterPlan.PrimarySearcher;
         if (prefilter.Kind is not (PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.MultiLiteral)) return false;
         // The existing planner proves this literal is necessary. Search the
-        // complete already-validated subject, including lookbehind context;
+        // complete caller-valid subject, including lookbehind context;
         // presence proves nothing about a match and retains normal verification.
         var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out _, out var found);
         if (breach != Utf8ExecutionLimitKind.None)

@@ -6,10 +6,10 @@
   dispatch arms. Existing general matching paths preserve the language, captures
   and controls; unmetered costs and numerical resource requirements can change.
 
-- Reuse bounded necessary-prefix discovery in Core capture-slot matching and
-  memory cursors. Scalar verification, captures and cumulative interruption/resource
-  controls remain. Sparse searches can avoid repeated attempts; dense candidates
-  can cost more. No extra subject pass or allocation is introduced.
+- Reuse bounded necessary-prefix discovery in Core Boolean matching, capture-slot
+  matching and memory cursors. Scalar verification, captures and cumulative
+  interruption/resource controls remain. Sparse searches can avoid repeated attempts;
+  dense candidates can cost more. No extra subject pass or allocation is introduced.
 
 - All profiles now require caller-valid, unchanged UTF-8 subjects. Remove
   `Utf8InputValidation`, policy arguments/properties, mandatory subject validation

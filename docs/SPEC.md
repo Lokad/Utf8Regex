@@ -65,9 +65,9 @@ storage, so a result-byte limit does not charge its existing capacity. Numerical
 work/storage needs can differ from the removed UTF16-start existence operation.
 It retains the existing bounded literal search for eligible families of up to eight
 alternatives; capture-bearing and other programs use their owned scalar executor.
-Slot matching and memory cursors also share Count's necessary exact-prefix search
-when the existing instruction-level start filter cannot prove a candidate. Every
-survivor is verified by the scalar executor, preserving alternative priority,
+Boolean matching, slot matching and memory cursors also share Count's necessary
+exact-prefix search when the existing instruction-level start filter cannot prove
+a candidate. Every survivor is verified by the scalar executor, preserving alternative priority,
 captures and original-subject context. Search uses the original cumulative
 invocation, including cancellation, deadline and resource limits. Skipping
 impossible starts can reduce the required work allowance.

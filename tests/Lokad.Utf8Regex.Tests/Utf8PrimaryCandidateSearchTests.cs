@@ -20,6 +20,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         using var source = new CancellationTokenSource();
         var captures = new Utf8CaptureRange[3];
         captures[2] = new(7, 9);
+        Assert.Equal(hit, regex.IsMatch(input, source.Token));
         var whole = regex.Match(input, 2, captures, source.Token);
         Assert.Equal(hit, whole.Success);
         Assert.Equal(new Utf8CaptureRange(7, 9), captures[2]);
@@ -49,12 +50,16 @@ public sealed class Utf8PrimaryCandidateSearchTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, 0, captures)).ResourceKind);
         Assert.All(captures, range => Assert.False(range.Success));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                regex.IsMatch(Encoding.UTF8.GetBytes("é" + new string('A', 8192)))).ResourceKind);
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void PrefixSearchRetainsOriginalSynchronousCancellation(bool cursor)
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void PrefixSearchRetainsOriginalSynchronousCancellation(int operation)
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(Pattern, RegexOptions.Singleline);
@@ -62,15 +67,17 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
         try
         {
-            if (cursor)
+            if (operation == 2)
             {
                 using var matches = regex.CreateMatchCursor(input, cancellationToken: source.Token);
                 Assert.Equal(source.Token,
                     Assert.Throws<OperationCanceledException>(() => matches.MoveNext(out _)).CancellationToken);
             }
-            else Assert.Equal(source.Token,
+            else if (operation == 1) Assert.Equal(source.Token,
                 Assert.Throws<OperationCanceledException>(() => regex.Match(input, 0,
                     new Utf8CaptureRange[2], source.Token)).CancellationToken);
+            else Assert.Equal(source.Token,
+                Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
             Assert.True(source.IsCancellationRequested);
         }
         finally { session.Complete(); }
