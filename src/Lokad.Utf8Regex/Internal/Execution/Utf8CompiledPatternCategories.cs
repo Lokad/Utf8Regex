@@ -6,7 +6,6 @@ internal enum Utf8CompiledPatternCategory : byte
 {
     None = 0,
     AnchoredWhole = 1,
-    SearchGuided = 2,
     DeterministicLinear = 3,
     Literal = 4,
 }
@@ -21,9 +20,6 @@ internal static class Utf8CompiledPatternCategories
             Utf8CompiledPatternFamilyKind.AnchoredBoundedDate or
             Utf8CompiledPatternFamilyKind.RepeatedDigitGroup
                 => Utf8CompiledPatternCategory.AnchoredWhole,
-
-            Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral
-                => Utf8CompiledPatternCategory.SearchGuided,
 
             _ => Utf8CompiledPatternCategory.None,
         };

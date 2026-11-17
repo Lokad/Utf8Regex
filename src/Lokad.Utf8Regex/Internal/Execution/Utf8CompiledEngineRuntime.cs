@@ -125,7 +125,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     private readonly bool _anchoredValidatorAllowsTrailingNewline;
     private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
     private readonly AsciiSimplePatternRepeatedDigitGroupPlan _repeatedDigitGroupPlan;
-    private readonly AsciiSimplePatternBoundedSuffixLiteralPlan _boundedSuffixLiteralPlan;
 
     internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
@@ -140,7 +139,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
             _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
         _anchoredBoundedDatePlan = compiledPatternFamily.AnchoredBoundedDatePlan;
         _repeatedDigitGroupPlan = compiledPatternFamily.RepeatedDigitGroupPlan;
-        _boundedSuffixLiteralPlan = compiledPatternFamily.BoundedSuffixLiteralPlan;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -250,7 +248,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
             if (Utf8SimplePatternCompiledSearchGuidedRouter.TryIsMatch(
-                    _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedIsMatch))
+                    _repeatedDigitGroupPlan, input, validation, out var guidedIsMatch))
             {
                 return guidedIsMatch;
             }
@@ -313,7 +311,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         }
 
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryCount(
-                _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedCount))
+                _repeatedDigitGroupPlan, input, validation, out var guidedCount))
         {
             return guidedCount;
         }
@@ -369,7 +367,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
             if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatch(
-                    _repeatedDigitGroupPlan, _boundedSuffixLiteralPlan, input, validation, budget, out var guidedMatch))
+                    _repeatedDigitGroupPlan, input, validation, out var guidedMatch))
             {
                 return guidedMatch;
             }

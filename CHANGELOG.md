@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Fix bounded-repeat alternatives that could accept excluded intermediate lengths.
+  Remove the bounded-suffix specialization and retain exact branch semantics in
+  the remaining matchers. Unmetered costs and numerical resource needs can change.
+
 - Remove the optional-field/postcode specialization, its construction proof and
   dispatch arms. Existing general matching paths preserve the language, captures
   and controls; unmetered costs and numerical resource requirements can change.

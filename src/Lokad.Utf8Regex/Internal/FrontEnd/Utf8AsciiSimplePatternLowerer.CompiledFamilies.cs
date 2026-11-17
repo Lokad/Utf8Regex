@@ -658,4 +658,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         index++;
         return true;
     }
+
+    private static bool SameLiteral(byte[] left, byte[] right)
+    {
+        Utf8ConstructionScope.ChargeWork((ulong)Math.Min(left.Length, right.Length));
+        return left.AsSpan().SequenceEqual(right);
+    }
 }

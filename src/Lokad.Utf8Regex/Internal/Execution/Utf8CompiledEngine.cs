@@ -65,7 +65,7 @@ internal static class Utf8CompiledEngineSelector
         }
 
         return new(regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            regexPlan.CompiledPatternCategory is Utf8CompiledPatternCategory.AnchoredWhole or Utf8CompiledPatternCategory.SearchGuided or Utf8CompiledPatternCategory.None
+            regexPlan.CompiledPatternCategory is Utf8CompiledPatternCategory.AnchoredWhole or Utf8CompiledPatternCategory.None
                 ? Utf8CompiledEngineKind.SimplePatternInterpreter
                 : Utf8CompiledEngineKind.FallbackRegex);
     }

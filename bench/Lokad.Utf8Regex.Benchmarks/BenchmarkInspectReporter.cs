@@ -2768,7 +2768,6 @@ internal static partial class BenchmarkInspectReporter
             if (context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
             {
                 Console.WriteLine($"RunPlanHasValue   : {simplePatternPlan.RunPlan.HasValue}");
-                Console.WriteLine($"BoundedSuffixPlan : {simplePatternPlan.BoundedSuffixLiteralPlan.HasValue}");
             }
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
@@ -2777,12 +2776,6 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.InputBytes.Length;
             });
-
-
-            if (simplePatternPlan.BoundedSuffixLiteralPlan.HasValue)
-            {
-                Measure("BoundedSuffixDirect", iterations, () => Utf8AsciiBoundedSuffixLiteralExecutor.Count(context.InputBytes, simplePatternPlan.BoundedSuffixLiteralPlan, budget: Utf8ExecutionDeadline.Infinite));
-            }
             if (simplePatternPlan.RunPlan.HasValue)
             {
                 Measure("RunPlanDirect", iterations, () => Utf8AsciiCharClassRunExecutor.Count(context.InputBytes, simplePatternPlan.RunPlan, budget: Utf8ExecutionDeadline.Infinite));

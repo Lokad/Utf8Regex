@@ -54,17 +54,11 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
     }
 
     public static bool TryIsMatch(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out bool isMatch)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, out bool isMatch)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)
         {
             isMatch = Utf8AsciiRepeatedDigitGroupExecutor.TryFind(input, repeatedDigitGroupPlan, out _, out _);
-            return true;
-        }
-
-        if (boundedSuffixLiteralPlan.HasValue)
-        {
-            isMatch = Utf8AsciiBoundedSuffixLiteralExecutor.IsMatch(input, boundedSuffixLiteralPlan, budget);
             return true;
         }
 
@@ -73,7 +67,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
     }
 
     public static bool TryCount(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out int count)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, out int count)
     {
         if (repeatedDigitGroupPlan.HasValue)
         {
@@ -92,18 +86,12 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
             }
         }
 
-        if (boundedSuffixLiteralPlan.HasValue)
-        {
-            count = Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, budget);
-            return true;
-        }
-
         count = 0;
         return false;
     }
 
     public static bool TryMatch(
-        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
+        AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, ReadOnlySpan<byte> input, Utf8ValidationResult validation, out Utf8CaptureRange match)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)
         {
@@ -114,12 +102,6 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
             }
 
             match = default(Utf8CaptureRange);
-            return true;
-        }
-
-        if (boundedSuffixLiteralPlan.HasValue)
-        {
-            match = Utf8AsciiBoundedSuffixLiteralExecutor.Match(input, boundedSuffixLiteralPlan, budget);
             return true;
         }
 

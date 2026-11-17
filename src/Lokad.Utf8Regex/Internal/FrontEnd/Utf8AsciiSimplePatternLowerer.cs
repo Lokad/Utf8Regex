@@ -128,14 +128,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 ? anchoredBoundedDatePlan
                 : default, repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
-                : default, boundedSuffixLiteralPlan: !ignoreCase &&
-                TryExtractBoundedSuffixLiteralPlan(
-                    storage, branches,
-                    isStartAnchored,
-                    isEndAnchored,
-                    allowUnicodeWhitespace: (options & RegexOptions.ECMAScript) == 0,
-                    out var boundedSuffixLiteralPlan)
-                ? boundedSuffixLiteralPlan
                 : default, isAbsoluteStartAnchored: isAbsoluteStartAnchored, isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {
@@ -172,7 +164,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 { Utf8ConstructionScope.ChargeWork(1); if (segment.IsLiteral) storage.Retain(segment.Literal); }
         }
         if (plan.RepeatedDigitGroupPlan.HasValue) storage.Retain(plan.RepeatedDigitGroupPlan.SeparatorBytes);
-        if (plan.BoundedSuffixLiteralPlan.HasValue) storage.Retain(plan.BoundedSuffixLiteralPlan.LiteralUtf8);
     }
 
     private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);
@@ -220,42 +211,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
         }
 
-        return true;
-    }
-
-    private static bool TryGetUniformRepeatedClass(
-        AsciiSimplePatternToken[] tokens,
-        int start,
-        int endExclusive,
-        out AsciiCharClass charClass,
-        out bool requiresAsciiInput)
-    {
-        charClass = default;
-        requiresAsciiInput = false;
-        if (endExclusive <= start ||
-            tokens[start].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            tokens[start].CharClass.IsEmpty)
-        {
-            return false;
-        }
-
-        var firstCharClass = tokens[start].CharClass;
-        var firstRequiresAsciiInput = tokens[start].RequiresAsciiInput;
-
-        for (var i = start + 1; i < endExclusive; i++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (tokens[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                tokens[i].CharClass.IsEmpty ||
-                !firstCharClass.HasSameDefinition(tokens[i].CharClass) ||
-                tokens[i].RequiresAsciiInput != firstRequiresAsciiInput)
-            {
-                return false;
-            }
-        }
-
-        charClass = firstCharClass;
-        requiresAsciiInput = firstRequiresAsciiInput;
         return true;
     }
 

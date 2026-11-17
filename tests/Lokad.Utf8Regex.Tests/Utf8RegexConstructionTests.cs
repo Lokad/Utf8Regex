@@ -1241,16 +1241,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void BaselineBoundedSuffixLiteralPlanRecognizesSameBoundaryClass()
-    {
-        var baseline = new Utf8Regex("\\s[a-zA-Z]{0,12}ing\\s", RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, baseline.Inspection.ExecutionKind);
-        Assert.False(baseline.Inspection.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
-        Assert.True(baseline.Inspection.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
-    }
-
-    [Fact]
     public void BaselineSymmetricLiteralWindowPlanRecognizesHolmesWatsonWindow()
     {
         var baseline = new Utf8Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None);
@@ -1296,29 +1286,19 @@ public sealed class Utf8RegexConstructionTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoundedSuffixLiteralCountUsesNativeRouteWithUnicodeWhitespace(RegexOptions options)
+    public void BoundedSuffixLiteralCountKeepsUnicodeWhitespace(RegexOptions options)
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = "\u00A0sing\u2003 café \u0085bringing\u2028 naïve ring 東京";
         var regex = new Utf8Regex(pattern, options);
         var bytes = Encoding.UTF8.GetBytes(input);
-        var session = Utf8SearchDiagnosticsSession.Start();
-
-        try
-        {
-            Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
-            Assert.Equal(Utf8ExecutionRoute.NativeAsciiBoundedSuffixLiteral, session.ExecutionRoute);
-        }
-        finally
-        {
-            session.Complete();
-        }
+        Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
     }
 
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoundedSuffixScalarWhitespacePreservesValidationAndCancellation(RegexOptions options)
+    public void BoundedSuffixScalarWhitespaceKeepsResultsAndCancellation(RegexOptions options)
     {
         const string pattern = @"\s[a-zA-Z]{0,12}ing\s";
         var input = Encoding.UTF8.GetBytes("😀\u00a0sing\u2003𐐀");

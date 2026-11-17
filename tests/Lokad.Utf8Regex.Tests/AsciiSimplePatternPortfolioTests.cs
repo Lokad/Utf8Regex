@@ -32,23 +32,18 @@ public sealed class AsciiSimplePatternPortfolioTests
         Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
-    [Fact]
-    public void BoundedSuffixLiteralPlanCountsAsSearchCompiledSpecialization()
-    {
-        var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.SupportsValidatedUtf8Input);
-        Assert.Equal(Utf8CompiledPatternCategory.SearchGuided, regex.Inspection.PreparedRegex.CompiledPatternCategory);
-    }
-
     [Theory]
     [InlineData(RegexOptions.IgnoreCase)]
     [InlineData(RegexOptions.ECMAScript)]
-    public void BoundedSuffixLiteralPlanDoesNotClaimUnicodeSafeExecutionForDifferentSemantics(RegexOptions options)
+    public void BoundedSuffixOptionsKeepWhitespaceAndCaseSemantics(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", options);
-
-        Assert.False(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.SupportsValidatedUtf8Input);
+        const string pattern = @"\s[a-zA-Z]{0,12}ing\s";
+        var regex = new Utf8Regex(pattern, options);
+        foreach (var text in new[] { "\u2003sing\u00a0", " SING ", " singing ", " xing\n", "é sing Ω" })
+        {
+            var input = System.Text.Encoding.UTF8.GetBytes(text);
+            Assert.Equal(Regex.IsMatch(text, pattern, options), regex.IsMatch(input));
+            Assert.Equal(Regex.Count(text, pattern, options), regex.Count(input));
+        }
     }
 }

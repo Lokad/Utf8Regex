@@ -54,7 +54,6 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(Utf8CompiledEngineKind.SimplePatternInterpreter, regex.Inspection.CompiledEngineKind);
         // The prefix has variable UTF-8 width; the suffix is a candidate, not a fixed offset.
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-        Assert.True(regex.Inspection.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
     [Theory]

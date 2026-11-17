@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal readonly struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
-        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
+        AsciiSimplePatternToken[][] branches, int searchLiteralOffset, byte[][] searchLiterals, AsciiFixedLiteralCheck[] fixedLiteralChecks, bool isStartAnchored, bool isEndAnchored, bool allowsTrailingNewlineBeforeEnd, bool ignoreCase, bool isUtf8ByteSafe, AsciiSimplePatternRunPlan runPlan, AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, bool isAbsoluteStartAnchored, bool isAbsoluteEndAnchored)
     {
         Branches = branches;
         MinLength = 0;
@@ -42,7 +42,6 @@ internal readonly struct AsciiSimplePatternPlan
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
         RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
-        BoundedSuffixLiteralPlan = boundedSuffixLiteralPlan;
     }
 
     public AsciiSimplePatternToken[][] Branches { get; }
@@ -85,8 +84,6 @@ internal readonly struct AsciiSimplePatternPlan
 
     public AsciiSimplePatternRepeatedDigitGroupPlan RepeatedDigitGroupPlan { get; }
 
-    public AsciiSimplePatternBoundedSuffixLiteralPlan BoundedSuffixLiteralPlan { get; }
-
     public Utf8CompiledPatternFamilyPlan CompiledPatternFamily => Utf8CompiledPatternFamilyPlan.FromSimplePatternPlan(this);
 
     public Utf8CompiledPatternCategory CompiledPatternCategory => CompiledPatternFamily.Category;
@@ -95,19 +92,18 @@ internal readonly struct AsciiSimplePatternPlan
 
 internal enum Utf8CompiledPatternFamilyKind : byte
 {
-    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2, RepeatedDigitGroup = 3, BoundedSuffixLiteral = 4
+    None = 0, AnchoredValidator = 1, AnchoredBoundedDate = 2, RepeatedDigitGroup = 3
 }
 
 internal readonly struct Utf8CompiledPatternFamilyPlan
 {
     private Utf8CompiledPatternFamilyPlan(
-        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan, AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan)
+        Utf8CompiledPatternFamilyKind kind, AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan, AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan, AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan)
     {
         Kind = kind;
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
         RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
-        BoundedSuffixLiteralPlan = boundedSuffixLiteralPlan;
     }
 
     public Utf8CompiledPatternFamilyKind Kind { get; }
@@ -118,21 +114,16 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
 
     public AsciiSimplePatternRepeatedDigitGroupPlan RepeatedDigitGroupPlan { get; }
 
-    public AsciiSimplePatternBoundedSuffixLiteralPlan BoundedSuffixLiteralPlan { get; }
-
     public Utf8CompiledPatternCategory Category => Utf8CompiledPatternCategories.GetSimplePatternCategory(this);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default, default);
+        new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default);
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredBoundedDate(AsciiSimplePatternAnchoredBoundedDatePlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan, default, default);
+        new(Utf8CompiledPatternFamilyKind.AnchoredBoundedDate, default, plan, default);
 
     private static Utf8CompiledPatternFamilyPlan ForRepeatedDigitGroup(AsciiSimplePatternRepeatedDigitGroupPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.RepeatedDigitGroup, default, default, plan, default);
-
-    private static Utf8CompiledPatternFamilyPlan ForBoundedSuffixLiteral(AsciiSimplePatternBoundedSuffixLiteralPlan plan) =>
-        new(Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral, default, default, default, plan);
+        new(Utf8CompiledPatternFamilyKind.RepeatedDigitGroup, default, default, plan);
 
     public static Utf8CompiledPatternFamilyPlan FromSimplePatternPlan(AsciiSimplePatternPlan plan)
     {
@@ -149,11 +140,6 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
         if (plan.RepeatedDigitGroupPlan.HasValue)
         {
             return ForRepeatedDigitGroup(plan.RepeatedDigitGroupPlan);
-        }
-
-        if (plan.BoundedSuffixLiteralPlan.HasValue)
-        {
-            return ForBoundedSuffixLiteral(plan.BoundedSuffixLiteralPlan);
         }
 
         return default;
@@ -384,68 +370,4 @@ internal readonly struct AsciiSimplePatternRepeatedDigitGroupPlan
     public int MaximumLength => RepeatedGroupCount * (GroupDigitCount + 1) + TrailingMaxDigits;
 
     public bool HasValue => RepeatedGroupCount > 0 && GroupDigitCount > 0 && TrailingMinDigits > 0 && SeparatorBytes.Length > 0;
-}
-
-internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
-{
-    private readonly AsciiCharClass _prefixCharClass;
-    private readonly AsciiCharClass _repeatedCharClass;
-    private readonly byte[]? _literalUtf8;
-    private readonly AsciiCharClass _suffixCharClass;
-
-    public AsciiSimplePatternBoundedSuffixLiteralPlan(
-        AsciiCharClass prefixCharClass,
-        AsciiCharClass repeatedCharClass,
-        int repeatedMinLength,
-        int repeatedMaxLength,
-        byte[] literalUtf8,
-        AsciiCharClass suffixCharClass,
-        Utf8SimplePatternScalarClassKind prefixScalarClassKind,
-        Utf8SimplePatternScalarClassKind suffixScalarClassKind,
-        bool repeatedRequiresAsciiInput)
-    {
-        _prefixCharClass = prefixCharClass;
-        _repeatedCharClass = repeatedCharClass;
-        RepeatedMinLength = repeatedMinLength;
-        RepeatedMaxLength = repeatedMaxLength;
-        _literalUtf8 = literalUtf8;
-        _suffixCharClass = suffixCharClass;
-        PrefixScalarClassKind = prefixScalarClassKind;
-        SuffixScalarClassKind = suffixScalarClassKind;
-        RepeatedRequiresAsciiInput = repeatedRequiresAsciiInput;
-        LiteralLastByte = literalUtf8[^1];
-    }
-
-    public AsciiCharClass PrefixCharClass => _prefixCharClass;
-
-    public AsciiCharClass RepeatedCharClass => _repeatedCharClass;
-
-    public int RepeatedMinLength { get; }
-
-    public int RepeatedMaxLength { get; }
-
-    public byte[] LiteralUtf8 => _literalUtf8 ?? [];
-
-    public AsciiCharClass SuffixCharClass => _suffixCharClass;
-
-    public Utf8SimplePatternScalarClassKind PrefixScalarClassKind { get; }
-
-    public Utf8SimplePatternScalarClassKind SuffixScalarClassKind { get; }
-
-    public bool RepeatedRequiresAsciiInput { get; }
-
-    public bool SupportsValidatedUtf8Input =>
-        PrefixScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
-        SuffixScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
-        !RepeatedRequiresAsciiInput;
-
-    public byte LiteralLastByte { get; }
-
-    public bool HasValue =>
-        !_prefixCharClass.IsEmpty &&
-        !_repeatedCharClass.IsEmpty &&
-        RepeatedMinLength >= 0 &&
-        RepeatedMaxLength >= RepeatedMinLength &&
-        _literalUtf8 is { Length: > 0 } &&
-        !_suffixCharClass.IsEmpty;
 }

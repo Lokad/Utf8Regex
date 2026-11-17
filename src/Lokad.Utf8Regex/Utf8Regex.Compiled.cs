@@ -179,14 +179,6 @@ public sealed partial class Utf8Regex
             return _compiledEngineRuntime.Count(input, validation, budget);
         }
 
-        var boundedSuffixLiteralPlan = _preparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan;
-        if (!validation.IsAscii &&
-            validation.ByteLength == input.Length &&
-            boundedSuffixLiteralPlan.SupportsValidatedUtf8Input)
-        {
-            return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, budget);
-        }
-
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) ||
             ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
