@@ -173,7 +173,7 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal("😀", first.ValueText);
         Denied(() => Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToStrings(input), 1);
         Assert.Equal("😀", retained.Value.ValueText);
-        Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, regex.SplitToStrings(input));
+        Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }
 
     [Fact]

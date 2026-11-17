@@ -93,7 +93,7 @@ public sealed class PythonReRangeResultTests
     }
 
     [Theory]
-    [MemberData(nameof(PythonReSplitOwnershipTests.OwnedCases), MemberType = typeof(PythonReSplitOwnershipTests))]
+    [MemberData(nameof(PythonReSplitOwnershipTests.Cases), MemberType = typeof(PythonReSplitOwnershipTests))]
     public void RangeSplitsFollowCpythonFixtures(string pattern, PythonReCompileOptions options, string text,
         int maxSplit, int start, string?[] expected)
     {

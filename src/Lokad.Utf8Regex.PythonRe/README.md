@@ -157,7 +157,7 @@ int count = regex.Count("foo-foo x foo-foo"u8);
 byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>");
 Utf8PythonMatchData[] matches = regex.FindAll("foo-foo xx foo-foo"u8);
 var iter = regex.FindIterDetailed("foo-foo xx foo-foo"u8);
-string?[] parts = regex.SplitToStrings("foo-foo xx foo-foo"u8);
+Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 ```
 
 `Search`, `Match` and `FullMatch` return borrowed byte ranges. Their former
@@ -221,6 +221,13 @@ The frozen tables below predate the byte-only result contract and include the
 former UTF-16 output costs. They remain historical until the next coherent refresh.
 Current .NET/CPython preflights compare byte-only outputs and use the versioned
 byte-range digest; they do not requalify those older measurements.
+
+PythonRe splitting now returns byte ranges only. The benchmark string/detailed
+split rows explicitly decode those ranges in host code, including that work in
+timing and allocations to retain equal outputs against the comparators. Regex
+limits cover range metadata, while host strings remain outside them. Those rows
+have new operation identities; the tables below retain their historical text-API
+measurements until the next coherent refresh.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;

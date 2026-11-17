@@ -32,7 +32,7 @@ public sealed class PythonReTimeoutTests
     public void CatastrophicSplitHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.SplitToStrings(CreateCatastrophicInput()));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PythonReSplitAssert.Decode(CreateCatastrophicInput(), regex.SplitRanges(CreateCatastrophicInput(), 0, 0, default)));
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class PythonReTimeoutTests
         Assert.Equal(1, regex.Count(input));
         Assert.Single(regex.FindAll(input));
         Assert.Equal("xxZxx", regex.SubnToString(input, "Z").ResultText);
-        Assert.Equal(2, regex.SplitToStrings(input).Length);
+        Assert.Equal(2, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)).Length);
     }
     [Fact]
     public void CatastrophicFindIterDetailedHonorsTimeout()

@@ -68,8 +68,7 @@ public sealed partial class PythonReScalarGlobalTests
                 Assert.Equal(scalars, utf8.ScalarValues.Select(Encoding.UTF8.GetString));
             }
             var split = e.GetProperty("split").Deserialize<string?[]>() ?? [];
-            Assert.Equal(split, regex.SplitToStrings(input, limit, start, token));
-            Assert.Equal(split, regex.SplitDetailed(input, limit, start, token).Select(static item => item.ValueText));
+            Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, limit, start, token)));
             var resultText = e.GetProperty("replacement").GetString();
             var resultCount = e.GetProperty("replacement_count").GetInt32();
             Assert.Equal(resultText, regex.ReplaceToString(input, replacement, limit, start, token));
@@ -93,7 +92,7 @@ public sealed partial class PythonReScalarGlobalTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
-    [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)]
+    [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
         var regex = new Utf8PythonRegex("(?P<x>.)+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout);
@@ -116,8 +115,7 @@ public sealed partial class PythonReScalarGlobalTests
                     case 1: regex.FindAll(input, 0, source.Token); break;
                     case 2: regex.FindAllToStrings(input, 0, source.Token); break;
                     case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
-                    case 4: regex.SplitToStrings(input, 0, 0, source.Token); break;
-                    case 5: regex.SplitDetailed(input, 0, 0, source.Token); break;
+                    case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
                     case 6: regex.Replace(input, "x", 0, 0, source.Token); break;
                     case 7: regex.ReplaceToString(input, "x", 0, 0, source.Token); break;
                     case 8: regex.Subn(input, "x", 0, 0, source.Token); break;

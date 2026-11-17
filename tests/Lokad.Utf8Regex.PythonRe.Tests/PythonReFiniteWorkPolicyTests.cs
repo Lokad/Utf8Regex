@@ -9,7 +9,7 @@ public sealed class PythonReFiniteWorkPolicyTests
     internal static IEnumerable<int> OperationIds()
     {
         for (var operation = 0; operation < 25; operation++)
-            if (operation is not (5 or 6 or 7)) yield return operation;
+            if (operation is not (5 or 6 or 7 or 19)) yield return operation;
     }
 
     public static IEnumerable<object[]> Operations()
@@ -48,8 +48,7 @@ public sealed class PythonReFiniteWorkPolicyTests
         15 => string.Join("|", regex.FindIterDetailed(input, start, token).Select(x => x.Value.ValueText)),
         16 => string.Join("|", regex.FindAllToStrings(input, start, token).ScalarValues),
         17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
-        18 => string.Join("|", regex.SplitToStrings(input, 0, start, token)),
-        19 => string.Join("|", regex.SplitDetailed(input, 0, start, token).Select(x => x.ValueText)),
+        18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
         20 => regex.SubnToString(input, "<\\g<0>>", 0, start, token).ResultText,
         21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
         22 => regex.SubnToString(input, "x", static (state, _) => state, 0, start, token).ResultText,

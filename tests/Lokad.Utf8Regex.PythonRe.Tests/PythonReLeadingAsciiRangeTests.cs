@@ -139,7 +139,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(padding + 1, regex.Search(input).StartOffsetInBytes);
         Assert.Equal(padding + 12, regex.Search(input, padding + 2).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
-        Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, regex.SplitToStrings(input));
+        Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", regex.ReplaceToString(input, "[\\g<word>]"));
 
 
@@ -162,7 +162,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(padding + 2, regex.Search(input, padding + 2).StartOffsetInBytes);
         Assert.Equal(padding + 7, regex.Search(input, padding + 4).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
-        Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, regex.SplitToStrings(input));
+        Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [aaa] x [aa]!", regex.ReplaceToString(input, "[\\g<word>]"));
 
         var match = regex.FindIterDetailed("π😀éa"u8)[0];
@@ -192,11 +192,11 @@ public sealed class PythonReLeadingAsciiRangeTests
         {
             var prefix = new string('x', padding) + "😀";
             var input = Encoding.UTF8.GetBytes(prefix + "alpha;beta,;gamma;");
-            Assert.Equal(new[] { prefix + "alpha", absent, "beta", ",", "gamma", absent, "" }, regex.SplitToStrings(input));
+            Assert.Equal(new[] { prefix + "alpha", absent, "beta", ",", "gamma", absent, "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
             Assert.Equal(new[] { "alpha", absent, "beta", ",", "gamma", absent, "" },
-                regex.SplitToStrings(input, 0, Encoding.UTF8.GetByteCount(prefix)));
+                PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, Encoding.UTF8.GetByteCount(prefix), default)));
             Assert.Equal(new[] { "alpha", absent, "beta,;gamma;" },
-                regex.SplitToStrings(input, 1, Encoding.UTF8.GetByteCount(prefix)));
+                PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 1, Encoding.UTF8.GetByteCount(prefix), default)));
         }
     }
 

@@ -17,7 +17,7 @@ public sealed class PythonReUnicodeStringSizingTests
             each.FindAllToStrings(Encoding.UTF8.GetBytes(text)).ScalarValues);
         using var split = new Utf8PythonRegex("([,;])");
         Assert.Equal(new string?[] { "α", ",", "😀", ";", "é", ",", "" },
-            split.SplitToStrings("α,😀;é,"u8));
+            PythonReSplitAssert.Decode("α,😀;é,"u8, split.SplitRanges("α,😀;é,"u8, 0, 0, default)));
     }
 
     [Theory]
@@ -46,9 +46,9 @@ public sealed class PythonReUnicodeStringSizingTests
             } : default;
             using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
             using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            Assert.Equal(new string?[] { word, word, "尾😀" }, plain.SplitToStrings(input, 0, 4));
-            Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, captured.SplitToStrings(input, 0, 4));
-            Assert.Equal(new string?[] { word, word + ",尾😀" }, plain.SplitToStrings(input, 1, 4));
+            Assert.Equal(new string?[] { word, word, "尾😀" }, PythonReSplitAssert.Decode(input, plain.SplitRanges(input, 0, 4, default)));
+            Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, PythonReSplitAssert.Decode(input, captured.SplitRanges(input, 0, 4, default)));
+            Assert.Equal(new string?[] { word, word + ",尾😀" }, PythonReSplitAssert.Decode(input, plain.SplitRanges(input, 1, 4, default)));
             using var findall = new Utf8PythonRegex("([^,，]+)");
             Assert.Equal(new string?[] { word, word, "尾😀" },
                 findall.FindAllToStrings(Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀")).ScalarValues);

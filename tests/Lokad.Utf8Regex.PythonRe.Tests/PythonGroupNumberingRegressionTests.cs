@@ -116,10 +116,9 @@ public sealed class PythonGroupNumberingRegressionTests
     public void SplitCapturesFollowPythonSlotOrder()
     {
         var regex = new Utf8PythonRegex("(?P<x>a)(-)");
-        Assert.Equal(["x", "a", "-", "b"], regex.SplitToStrings(Utf8("xa-b"), 0, 0));
-        var detailed = regex.SplitDetailed(Utf8("xa-b"), 0, 0);
-        Assert.Equal(["x", "a", "-", "b"], detailed.Select(static item => item.ValueText).ToArray());
-        Assert.Equal([0, 1, 2, 0], detailed.Select(static item => item.IsCapture ? item.CaptureGroupNumber : 0).ToArray());
+        var detailed = regex.SplitRanges(Utf8("xa-b"), 0, 0, default);
+        Assert.Equal(["x", "a", "-", "b"], PythonReSplitAssert.Decode(Utf8("xa-b"), detailed));
+        Assert.Equal([0, 1, 2, 0], detailed.Select(static item => item.Number).ToArray());
     }
 
     [Fact]

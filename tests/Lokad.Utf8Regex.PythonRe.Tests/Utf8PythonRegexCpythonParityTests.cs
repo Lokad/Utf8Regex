@@ -143,31 +143,31 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void SplitFollowsCpythonExamples()
     {
-        AssertSplit(["", "a", "b", "", "c"], new Utf8PythonRegex(":").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", "a", "b", "c"], new Utf8PythonRegex(":+").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", ":", "a", ":", "b", "::", "c"], new Utf8PythonRegex("(:+)").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", "a", "b", "c"], new Utf8PythonRegex("(?::+)").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", ":", "a", ":", "b", ":", "c"], new Utf8PythonRegex("(:)+").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", null, ":", "a", null, ":", "", "b", null, "", null, "::", "c"], new Utf8PythonRegex("(b)|(:+)").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", "a", "", "", "c"], new Utf8PythonRegex("(?:b)|(?::+)").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", "a", "", "", "bc", ""], new Utf8PythonRegex(@"\b|:+").SplitToStrings("a::bc"u8));
-        AssertSplit(["", ":a", ":b", ":", ":c"], new Utf8PythonRegex(@"(?=:)").SplitToStrings(":a:b::c"u8));
-        AssertSplit([":", "a:", "b:", ":", "c"], new Utf8PythonRegex(@"(?<=:)").SplitToStrings(":a:b::c"u8));
-        AssertSplit(["", "a", "b::c"], new Utf8PythonRegex(":").SplitToStrings(":a:b::c"u8, maxSplit: 2));
-        AssertSplit([":a:b::c"], new Utf8PythonRegex(":").SplitToStrings(":a:b::c"u8, maxSplit: -1));
+        AssertSplit(["", "a", "b", "", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(":").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", "a", "b", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(":+").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", ":", "a", ":", "b", "::", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex("(:+)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", "a", "b", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex("(?::+)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", ":", "a", ":", "b", ":", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex("(:)+").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", null, ":", "a", null, ":", "", "b", null, "", null, "::", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex("(b)|(:+)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", "a", "", "", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex("(?:b)|(?::+)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", "a", "", "", "bc", ""], PythonReSplitAssert.Decode("a::bc"u8, new Utf8PythonRegex(@"\b|:+").SplitRanges("a::bc"u8, 0, 0, default)));
+        AssertSplit(["", ":a", ":b", ":", ":c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(@"(?=:)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit([":", "a:", "b:", ":", "c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(@"(?<=:)").SplitRanges(":a:b::c"u8, 0, 0, default)));
+        AssertSplit(["", "a", "b::c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(":").SplitRanges(":a:b::c"u8, 2, 0, default)));
+        AssertSplit([":a:b::c"], PythonReSplitAssert.Decode(":a:b::c"u8, new Utf8PythonRegex(":").SplitRanges(":a:b::c"u8, -1, 0, default)));
     }
 
     [Fact]
     public void EmptyOnlySplitPatternsFollowCpythonProgression()
     {
-        AssertSplit(["", "a", "b", "c", ""], new Utf8PythonRegex("").SplitToStrings("abc"u8));
-        AssertSplit(["", "a", "bc"], new Utf8PythonRegex("").SplitToStrings("abc"u8, maxSplit: 2));
+        AssertSplit(["", "a", "b", "c", ""], PythonReSplitAssert.Decode("abc"u8, new Utf8PythonRegex("").SplitRanges("abc"u8, 0, 0, default)));
+        AssertSplit(["", "a", "bc"], PythonReSplitAssert.Decode("abc"u8, new Utf8PythonRegex("").SplitRanges("abc"u8, 2, 0, default)));
         AssertSplit(
             ["", "alpha", " ", "beta", ""],
-            new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii).SplitToStrings("alpha beta"u8));
-        AssertSplit(["a", ":b", ":"], new Utf8PythonRegex(@"(?=:)").SplitToStrings("a:b:"u8));
-        AssertSplit(["abc"], new Utf8PythonRegex(@"(?!)").SplitToStrings("abc"u8));
-        AssertSplit(["", "𝒜", "b", ""], new Utf8PythonRegex("").SplitToStrings("𝒜b"u8));
+            PythonReSplitAssert.Decode("alpha beta"u8, new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii).SplitRanges("alpha beta"u8, 0, 0, default)));
+        AssertSplit(["a", ":b", ":"], PythonReSplitAssert.Decode("a:b:"u8, new Utf8PythonRegex(@"(?=:)").SplitRanges("a:b:"u8, 0, 0, default)));
+        AssertSplit(["abc"], PythonReSplitAssert.Decode("abc"u8, new Utf8PythonRegex(@"(?!)").SplitRanges("abc"u8, 0, 0, default)));
+        AssertSplit(["", "𝒜", "b", ""], PythonReSplitAssert.Decode("𝒜b"u8, new Utf8PythonRegex("").SplitRanges("𝒜b"u8, 0, 0, default)));
     }
 
     [Fact]

@@ -31,14 +31,14 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 
 | Family | Contract |
 | --- | --- |
-| Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value, detailed, data and string forms agree. |
+| Search / Match / FullMatch | Search from the byte floor / match at it / match the entire remaining suffix. Value, detailed and data forms agree. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
 | FindAll | Structural full-match records, not Python findall shaping |
 | FindAllToStrings / FindAllToUtf8 | Whole values with no captures, group values with one, tuple rows with several |
 | FindIterDetailed | Materialized owned snapshots |
 | CreateMatchCursor | Incremental detailed snapshots over ReadOnlyMemory<byte>; explicit disposal on early stop |
 | Replace / Subn | Python template or detailed text/UTF-8 callback output; Subn includes replacement count |
-| SplitToStrings / SplitDetailed | Python capture-aware split shape; detailed results distinguish captures and segments |
+| SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
@@ -307,10 +307,10 @@ check under that same invocation. Omitting the duplicate final wrapper check can
 reduce numerical work by one step per decoded range; bounded decoding, allocation
 admission and final operation publication remain checked.
 
-Captured splitting reuses the result buffer's interruption check before staging
-each capture, including absent groups, instead of checking again immediately
-afterward. Decoding, capacity admission, next discovery and final publication
-retain their checks; numerical work can decrease by one step per captured value.
+Splitting stages byte ranges for segments and captures, including absent groups,
+with result admission and bounded interruption checks. It neither sizes nor
+decodes the selected text. Discovery and final publication retain the original
+invocation's authority.
 
 One-shot `Search`, `Match` and `FullMatch` return borrowed byte ranges over
 caller-guaranteed valid text. `SearchToString`, `MatchToString` and
@@ -759,6 +759,11 @@ empty-match progression, suffix/start-offset behavior and maxSplit semantics
 a no-separator split emits one range without reserving hypothetical matches or
 copying/decoding the subject. The caller slices its unchanged input to consume
 UTF-8 bytes. Explicit tokens cover discovery, shaping and result publication.
+`SplitToStrings`, `SplitDetailed` and `Utf8PythonSplitItem` are removed. Hosts may
+decode successful range slices and represent unmatched captures separately.
+That host work and its strings are outside regex work/memory/cancellation limits;
+the library still admits its range arrays before allocation and never publishes
+partial output on denial or interruption.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

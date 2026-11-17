@@ -231,19 +231,6 @@ public readonly struct Utf8PythonDetailedMatchData
     }
 }
 
-/// <summary>Represents one text or captured-group item in a CPython-compatible split result.</summary>
-public readonly struct Utf8PythonSplitItem
-{
-    /// <summary>Gets the item text, or <see langword="null"/> for an unmatched captured group.</summary>
-    public string? ValueText { get; init; }
-
-    /// <summary>Gets whether this item was inserted for a capture group rather than a split segment.</summary>
-    public bool IsCapture { get; init; }
-
-    /// <summary>Gets the capture slot number, or zero for an ordinary split segment.</summary>
-    public int CaptureGroupNumber { get; init; }
-}
-
 /// <summary>Represents a stateful callback that returns UTF-16 replacement text for one detailed match.</summary>
 public delegate string Utf8PythonMatchEvaluator<in TState>(TState state, Utf8PythonDetailedMatchData match);
 

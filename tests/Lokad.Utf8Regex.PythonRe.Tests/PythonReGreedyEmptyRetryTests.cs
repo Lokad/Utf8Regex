@@ -39,7 +39,7 @@ public sealed class PythonReGreedyEmptyRetryTests
                 regex.FindAllToStrings(input, start, token.Token).ScalarValues);
             Assert.Equal(reference.FindAllToUtf8(input, start).ScalarValues.Select(Convert.ToHexString),
                 regex.FindAllToUtf8(input, start, token.Token).ScalarValues.Select(Convert.ToHexString));
-            Assert.Equal(reference.SplitToStrings(input, 0, start), regex.SplitToStrings(input, 0, start));
+            Assert.Equal(PythonReSplitAssert.Decode(input, reference.SplitRanges(input, 0, start, default)), PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, start, default)));
             Assert.Equal(reference.ReplaceToString(input, "!", 0, start), regex.ReplaceToString(input, "!", 0, start));
 
             using var cursor = regex.CreateMatchCursor(input, start);

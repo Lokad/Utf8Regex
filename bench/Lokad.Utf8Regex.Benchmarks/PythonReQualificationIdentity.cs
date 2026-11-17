@@ -63,14 +63,14 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SubnUtf8 => "managed-subn-utf8-eager-v1",
             PythonReBenchmarkOperation.SubnEvaluatorString => "managed-subn-evaluator-string-untimed-verification-v2",
             PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "managed-subn-evaluator-utf8-untimed-verification-v2",
-            PythonReBenchmarkOperation.SplitStrings => "managed-split-strings-eager-v1",
+            PythonReBenchmarkOperation.SplitStrings => "managed-split-ranges-host-strings-eager-v3",
             PythonReBenchmarkOperation.CountFromOffset => "managed-count-from-offset-scalar-v1",
             PythonReBenchmarkOperation.FindAllStructural => "managed-findall-structural-group-zero-eager-v1",
             PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-string-limited-eager-v1",
             PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-replace-evaluator-string-untimed-verification-v2",
             PythonReBenchmarkOperation.SplitStringsLimited =>
-                $"managed-split-strings-limited-eager-v2;warmup={PythonReQualificationSplitWarmupCalls}",
-            PythonReBenchmarkOperation.SplitDetailed => "managed-split-detailed-eager-v1",
+                $"managed-split-ranges-host-strings-limited-eager-v3;warmup={PythonReQualificationSplitWarmupCalls}",
+            PythonReBenchmarkOperation.SplitDetailed => "managed-split-ranges-host-detailed-eager-v3",
             PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-strings-from-offset-eager-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });

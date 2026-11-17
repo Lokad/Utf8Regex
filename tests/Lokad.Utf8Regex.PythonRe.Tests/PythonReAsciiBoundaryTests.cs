@@ -55,7 +55,7 @@ public sealed class PythonReAsciiBoundaryTests
                     Assert.Equal(expected.Length, actual.Count(input, offset, token.Token));
                     Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
                     foreach (var limit in new[] { 0, 1, 2 })
-                        Assert.Equal(control.SplitToStrings(input, limit, offset, token.Token), actual.SplitToStrings(input, limit, offset, token.Token));
+                        Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
                     Assert.Equal(control.SubnToString(input, "-", 0, offset, token.Token).ResultText,
                         actual.SubnToString(input, "-", 0, offset, token.Token).ResultText);
                     if (offset == input.Length) break;
@@ -72,13 +72,13 @@ public sealed class PythonReAsciiBoundaryTests
         var ascii = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
         Assert.Equal(0, ascii.Count("İıé😀"u8));
         Assert.Equal(2, ascii.Count("İAı"u8));
-        Assert.Equal(new string?[] { "İ", "A", "ı" }, ascii.SplitToStrings("İAı"u8));
+        Assert.Equal(new string?[] { "İ", "A", "ı" }, PythonReSplitAssert.Decode("İAı"u8, ascii.SplitRanges("İAı"u8, 0, 0, default)));
         var unicode = new Utf8PythonRegex(@"\b");
         Assert.Equal(2, unicode.Count("İıé😀"u8));
         Assert.Equal(2, new Utf8PythonRegex(@"(?u:\b)", PythonReCompileOptions.Ascii).Count("İıé😀"u8));
         Assert.Equal(0, new Utf8PythonRegex(@"(?a:\b)").Count("İıé😀"u8));
         Assert.Equal(0, new Utf8PythonRegex(@"\B", PythonReCompileOptions.Ascii).Count([]));
-        Assert.Equal(new string?[] { "" }, new Utf8PythonRegex(@"\B", PythonReCompileOptions.Ascii).SplitToStrings([]));
+        Assert.Equal(new string?[] { "" }, PythonReSplitAssert.Decode([], new Utf8PythonRegex(@"\B", PythonReCompileOptions.Ascii).SplitRanges([], 0, 0, default)));
     }
 
     [Fact]
@@ -123,12 +123,12 @@ public sealed class PythonReAsciiBoundaryTests
         });
         try
         {
-            if (expire) Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.SplitToStrings(input, 0, 0, token.Token)).MatchTimeout);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings(input, 0, 0, token.Token)).CancellationToken);
+            if (expire) Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, token.Token))).MatchTimeout);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, token.Token))).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.Equal(new string?[] { "", "a", "" }, regex.SplitToStrings("a"u8));
+        Assert.Equal(new string?[] { "", "a", "" }, PythonReSplitAssert.Decode("a"u8, regex.SplitRanges("a"u8, 0, 0, default)));
     }
 
     [Fact]
@@ -137,10 +137,10 @@ public sealed class PythonReAsciiBoundaryTests
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
         {
             var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii, Regex.InfiniteMatchTimeout, policy);
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SplitToStrings("alpha beta"u8));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("alpha beta"u8, regex.SplitRanges("alpha beta"u8, 0, 0, default)));
         }
         var normal = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => normal.SplitToStrings("alpha beta"u8, 0, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => PythonReSplitAssert.Decode("alpha beta"u8, normal.SplitRanges("alpha beta"u8, 0, 0, token.Token))).CancellationToken);
     }
 }

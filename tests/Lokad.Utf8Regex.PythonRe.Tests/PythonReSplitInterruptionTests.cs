@@ -8,11 +8,9 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReSplitInterruptionTests
 {
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void CapturedSplitChecksOriginalAuthorityBeforePublication(bool detailed, bool expire)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CapturedSplitChecksOriginalAuthorityBeforePublication(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -22,12 +20,12 @@ public sealed class PythonReSplitInterruptionTests
             new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa,b😀c;", 8)));
         var checkpoints = new List<ulong>();
-        object retained;
+        Utf8PythonCaptureRange[] retained;
         var observation = Utf8SearchDiagnosticsSession.Start(steps => checkpoints.Add(steps));
-        try { retained = Split(default); }
+        try { retained = regex.SplitRanges(input, 0, 0, default); }
         finally { observation.Complete(); }
         Assert.NotEmpty(checkpoints);
-        var expected = Values(retained);
+        var expected = PythonReSplitAssert.Decode(input, retained);
         Assert.Contains(null, expected);
         Assert.Contains("😀", expected);
 
@@ -43,9 +41,9 @@ public sealed class PythonReSplitInterruptionTests
                 if (expire) ticks = 50;
                 else token.Cancel();
             });
-            object? published = null;
+            Utf8PythonCaptureRange[]? published = null;
             Exception? failure;
-            try { failure = Record.Exception(() => published = Split(token.Token)); }
+            try { failure = Record.Exception(() => published = regex.SplitRanges(input, 0, 0, token.Token)); }
             finally { injection.Complete(); }
             Assert.True(entered);
             Assert.Null(published);
@@ -56,16 +54,9 @@ public sealed class PythonReSplitInterruptionTests
                 Assert.Equal(timeout, error.MatchTimeout);
             }
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(expected, Values(retained));
+            Assert.Equal(expected, PythonReSplitAssert.Decode(input, retained));
         }
         ticks = 0;
-        Assert.Equal(expected, Values(Split(default)));
-
-        object Split(CancellationToken token) => detailed
-            ? regex.SplitDetailed(input, 0, 0, token)
-            : regex.SplitToStrings(input, 0, 0, token);
-
-        static string?[] Values(object result) => result is string?[] strings ? strings
-            : ((Utf8PythonSplitItem[])result).Select(item => item.ValueText).ToArray();
+        Assert.Equal(expected, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }
 }

@@ -153,20 +153,11 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeSplitToStrings()
+    public void PreCanceledTokenThrowsBeforeSplitRanges()
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings(s_input, 1, 4, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeSplitDetailed()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.SplitDetailed(s_input, 1, 4, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(s_input, 1, 4, token));
         Assert.Equal(token, exception.CancellationToken);
     }
 

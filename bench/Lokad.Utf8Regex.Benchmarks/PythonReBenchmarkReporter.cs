@@ -2616,7 +2616,7 @@ internal sealed class PythonReBenchmarkContext
                 string?[] result = [];
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.SplitToStrings(InputBytes);
+                    result = MaterializePythonSplitStrings();
                 }
 
                 return Complete(
@@ -2630,7 +2630,7 @@ internal sealed class PythonReBenchmarkContext
                 string?[] result = [];
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.SplitToStrings(InputBytes, _case.Coverage.MaxSplit);
+                    result = MaterializePythonSplitStrings(_case.Coverage.MaxSplit);
                 }
 
                 return Complete(
@@ -2641,10 +2641,10 @@ internal sealed class PythonReBenchmarkContext
             }
             case PythonReBenchmarkOperation.SplitDetailed:
             {
-                Utf8PythonSplitItem[] result = [];
+                SplitTextItem[] result = [];
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.SplitDetailed(InputBytes);
+                    result = MaterializePythonSplitDetailed();
                 }
 
                 return Complete(
@@ -2771,11 +2771,9 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),
         PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorString(),
-        PythonReBenchmarkOperation.SplitStrings => Checksum(_pythonRegex.SplitToStrings(InputBytes)),
-        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(_pythonRegex.SplitToStrings(
-            InputBytes,
-            _case.Coverage.MaxSplit)),
-        PythonReBenchmarkOperation.SplitDetailed => Checksum(_pythonRegex.SplitDetailed(InputBytes)),
+        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializePythonSplitStrings()),
+        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),
+        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializePythonSplitDetailed()),
         _ => throw new InvalidOperationException(),
     };
 
@@ -2840,13 +2838,13 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorStringSemanticDigest(),
         PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
             _case.Operation,
-            _pythonRegex.SplitToStrings(InputBytes)),
+            MaterializePythonSplitStrings()),
         PythonReBenchmarkOperation.SplitStringsLimited => SemanticDigest(
             _case.Operation,
-            _pythonRegex.SplitToStrings(InputBytes, _case.Coverage.MaxSplit)),
+            MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),
         PythonReBenchmarkOperation.SplitDetailed => SemanticDigest(
             _case.Operation,
-            _pythonRegex.SplitDetailed(InputBytes)),
+            MaterializePythonSplitDetailed()),
         _ => throw new InvalidOperationException(),
     };
 
@@ -4247,10 +4245,8 @@ var indexInBytes = match.StartOffsetInBytes;
 
     internal string?[] ExecutePythonReSplitStrings() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.SplitStrings => _pythonRegex.SplitToStrings(InputBytes),
-        PythonReBenchmarkOperation.SplitStringsLimited => _pythonRegex.SplitToStrings(
-            InputBytes,
-            _case.Coverage.MaxSplit),
+        PythonReBenchmarkOperation.SplitStrings => MaterializePythonSplitStrings(),
+        PythonReBenchmarkOperation.SplitStringsLimited => MaterializePythonSplitStrings(_case.Coverage.MaxSplit),
         _ => throw new InvalidOperationException(),
     };
 
@@ -4373,14 +4369,54 @@ var indexInBytes = match.StartOffsetInBytes;
         }
     }
 
+    // Host materialization is timed for text-output rows on both sides. The regex
+    // admits only range metadata; these benchmark-owned strings are outside its limits.
+    private string?[] MaterializePythonSplitStrings(int maxSplit = 0)
+    {
+        var ranges = _pythonRegex.SplitRanges(InputBytes, maxSplit, 0, default);
+        var values = new string?[ranges.Length];
+        for (var index = 0; index < ranges.Length; index++)
+        {
+            var range = ranges[index];
+            values[index] = range.Success
+                ? Encoding.UTF8.GetString(InputBytes.AsSpan(range.StartOffsetInBytes, range.EndOffsetInBytes - range.StartOffsetInBytes)) : null;
+        }
+        return values;
+    }
+
+    private SplitTextItem[] MaterializePythonSplitDetailed(int maxSplit = 0)
+    {
+        var ranges = _pythonRegex.SplitRanges(InputBytes, maxSplit, 0, default);
+        var values = new SplitTextItem[ranges.Length];
+        for (var index = 0; index < ranges.Length; index++)
+        {
+            var range = ranges[index];
+            values[index] = new SplitTextItem
+            {
+                ValueText = range.Success
+                    ? Encoding.UTF8.GetString(InputBytes.AsSpan(range.StartOffsetInBytes, range.EndOffsetInBytes - range.StartOffsetInBytes)) : null,
+                IsCapture = range.Number > 0,
+                CaptureGroupNumber = range.Number
+            };
+        }
+        return values;
+    }
+
+    private readonly struct SplitTextItem
+    {
+        public string? ValueText { get; init; }
+        public bool IsCapture { get; init; }
+        public int CaptureGroupNumber { get; init; }
+    }
+
     private string?[] MaterializeSplitStrings(string input, int maxSplit = 0) =>
         MaterializeSplitDetailed(input, maxSplit)
             .Select(static item => item.ValueText)
             .ToArray();
 
-    private Utf8PythonSplitItem[] MaterializeSplitDetailed(string input, int maxSplit = 0)
+    private SplitTextItem[] MaterializeSplitDetailed(string input, int maxSplit = 0)
     {
-        var parts = new List<Utf8PythonSplitItem>();
+        var parts = new List<SplitTextItem>();
         var lastIndex = 0;
         var splitCount = 0;
         foreach (Match match in _regex.Matches(input))
@@ -4390,7 +4426,7 @@ var indexInBytes = match.StartOffsetInBytes;
                 break;
             }
 
-            parts.Add(new Utf8PythonSplitItem
+            parts.Add(new SplitTextItem
             {
                 ValueText = input[lastIndex..match.Index],
                 IsCapture = false,
@@ -4399,7 +4435,7 @@ var indexInBytes = match.StartOffsetInBytes;
             for (var groupNumber = 1; groupNumber < match.Groups.Count; groupNumber++)
             {
                 var group = match.Groups[groupNumber];
-                parts.Add(new Utf8PythonSplitItem
+                parts.Add(new SplitTextItem
                 {
                     ValueText = group.Success ? group.Value : null,
                     IsCapture = true,
@@ -4411,7 +4447,7 @@ var indexInBytes = match.StartOffsetInBytes;
             splitCount++;
         }
 
-        parts.Add(new Utf8PythonSplitItem
+        parts.Add(new SplitTextItem
         {
             ValueText = input[lastIndex..],
             IsCapture = false,
@@ -4718,7 +4754,7 @@ var indexInBytes = match.StartOffsetInBytes;
 
     private static ulong SemanticDigest(
         PythonReBenchmarkOperation operation,
-        Utf8PythonSplitItem[] items)
+        SplitTextItem[] items)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
         digest.Add(items.Length);
@@ -4992,7 +5028,7 @@ var indexInBytes = match.StartOffsetInBytes;
         return checksum;
     }
 
-    private static int Checksum(Utf8PythonSplitItem[] items)
+    private static int Checksum(SplitTextItem[] items)
     {
         var checksum = items.Length;
         foreach (var item in items)

@@ -53,7 +53,7 @@ public sealed class PythonReUnicodeBoundaryTests
                     AssertRange(control.Match(input, offset), actual.Match(input, offset));
                     AssertRange(control.FullMatch(input, offset), actual.FullMatch(input, offset));
                     foreach (var limit in new[] { 0, 1, 2 })
-                        Assert.Equal(control.SplitToStrings(input, limit, offset, token.Token), actual.SplitToStrings(input, limit, offset, token.Token));
+                        Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
                     Assert.Equal(control.SubnToString(input, "-", 0, offset, token.Token).ResultText,
                         actual.SubnToString(input, "-", 0, offset, token.Token).ResultText);
                     if (offset == input.Length) break;
@@ -117,8 +117,8 @@ public sealed class PythonReUnicodeBoundaryTests
         });
         try
         {
-            if (expire) Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.SplitToStrings(input, 0, 0, token.Token)).MatchTimeout);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings(input, 0, 0, token.Token)).CancellationToken);
+            if (expire) Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, token.Token))).MatchTimeout);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, token.Token))).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
@@ -128,11 +128,11 @@ public sealed class PythonReUnicodeBoundaryTests
     public void OutputAdmissionAndOriginalCancellationStillApply()
     {
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(@"\b", PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, policy).SplitToStrings("é alpha"u8));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("é alpha"u8, new Utf8PythonRegex(@"\b", PythonReCompileOptions.None,
+                Regex.InfiniteMatchTimeout, policy).SplitRanges("é alpha"u8, 0, 0, default)));
         var regex = new Utf8PythonRegex(@"\b");
 
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitToStrings("é alpha"u8, 0, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => PythonReSplitAssert.Decode("é alpha"u8, regex.SplitRanges("é alpha"u8, 0, 0, token.Token))).CancellationToken);
     }
 }

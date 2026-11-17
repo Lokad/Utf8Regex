@@ -56,7 +56,7 @@ public sealed class PythonReTextInputContractTests
             _ = regex.FullMatch(input);
             _ = regex.FindAllToStrings(input);
             _ = regex.FindAllToUtf8(input);
-            _ = regex.SplitToStrings(input);
+            _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
             _ = regex.Replace(input, "X");
             using var cursor = regex.CreateMatchCursor(input);
             var observed = 0;

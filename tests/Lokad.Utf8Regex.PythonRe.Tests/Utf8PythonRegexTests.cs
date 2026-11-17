@@ -850,7 +850,7 @@ public sealed class Utf8PythonRegexTests
         var subn = regex.SubnToString("y"u8, "-");
         Assert.Equal("---", subn.ResultText);
         Assert.Equal(3, subn.ReplacementCount);
-        Assert.Equal(new string?[] { "", "", "", "" }, regex.SplitToStrings("y"u8));
+        Assert.Equal(new string?[] { "", "", "", "" }, PythonReSplitAssert.Decode("y"u8, regex.SplitRanges("y"u8, 0, 0, default)));
 
         var empty = new Utf8PythonRegex("");
         Assert.Equal(["", ""], empty.FindAll("𝒜"u8).Select(static match => match.ValueText).ToArray());
@@ -1295,14 +1295,14 @@ public sealed class Utf8PythonRegexTests
         // the managed progression cursor owns empty-match advancement in Split; oracle is CPython 3.13.2 re.split.
         var star = new Utf8PythonRegex("x*");
 
-        Assert.Equal(["", "a", "", "b", "", "c", ""], star.SplitToStrings("axbxc"u8, 0));
-        Assert.Equal(["", "axbxc"], star.SplitToStrings("axbxc"u8, 1));
-        Assert.Equal(["", "a", "bxc"], star.SplitToStrings("axbxc"u8, 2));
+        Assert.Equal(["", "a", "", "b", "", "c", ""], PythonReSplitAssert.Decode("axbxc"u8, star.SplitRanges("axbxc"u8, 0, 0, default)));
+        Assert.Equal(["", "axbxc"], PythonReSplitAssert.Decode("axbxc"u8, star.SplitRanges("axbxc"u8, 1, 0, default)));
+        Assert.Equal(["", "a", "bxc"], PythonReSplitAssert.Decode("axbxc"u8, star.SplitRanges("axbxc"u8, 2, 0, default)));
 
         var optional = new Utf8PythonRegex("(x)?");
 
-        Assert.Equal<string?[]>(["", null, "a", null, "b", null, ""], optional.SplitToStrings("ab"u8, 0));
-        Assert.Equal<string?[]>(["", null, "ab"], optional.SplitToStrings("ab"u8, 1));
+        Assert.Equal<string?[]>(["", null, "a", null, "b", null, ""], PythonReSplitAssert.Decode("ab"u8, optional.SplitRanges("ab"u8, 0, 0, default)));
+        Assert.Equal<string?[]>(["", null, "ab"], PythonReSplitAssert.Decode("ab"u8, optional.SplitRanges("ab"u8, 1, 0, default)));
     }
 
     [Fact]
@@ -1615,21 +1615,22 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void SplitDetailedPreservesSegmentAndCaptureShape()
+    public void SplitRangesPreservesSegmentAndCaptureShape()
     {
         var regex = new Utf8PythonRegex(@"(:+)");
 
-        var parts = regex.SplitDetailed(":a:b::c"u8);
+        var parts = regex.SplitRanges(":a:b::c"u8);
+        var values = PythonReSplitAssert.Decode(":a:b::c"u8, parts);
 
         Assert.Equal(7, parts.Length);
-        Assert.False(parts[0].IsCapture);
-        Assert.Equal("", parts[0].ValueText);
-        Assert.True(parts[1].IsCapture);
-        Assert.Equal(1, parts[1].CaptureGroupNumber);
-        Assert.Equal(":", parts[1].ValueText);
-        Assert.False(parts[2].IsCapture);
-        Assert.Equal("a", parts[2].ValueText);
-        Assert.Equal("::", parts[5].ValueText);
+        Assert.Equal(0, parts[0].Number);
+        Assert.Equal("", values[0]);
+        Assert.True(parts[1].Success);
+        Assert.Equal(1, parts[1].Number);
+        Assert.Equal(":", values[1]);
+        Assert.Equal(0, parts[2].Number);
+        Assert.Equal("a", values[2]);
+        Assert.Equal("::", values[5]);
     }
 
     [Fact]
@@ -1688,7 +1689,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(:+)");
 
-        var parts = regex.SplitToStrings(":a:b::c"u8);
+        var parts = PythonReSplitAssert.Decode(":a:b::c"u8, regex.SplitRanges(":a:b::c"u8, 0, 0, default));
 
         Assert.Equal<string?[]>(["", ":", "a", ":", "b", "::", "c"], parts);
     }
@@ -1697,26 +1698,26 @@ public sealed class Utf8PythonRegexTests
     public void ScalarSplitPreservesMandatoryOptionalAndEmptyCaptures()
     {
         var mandatory = new Utf8PythonRegex(@"(:+)");
-        Assert.Equal<string?[]>(["", ":", "a", ":", "b::c"], mandatory.SplitToStrings(":a:b::c"u8, maxSplit: 2));
-        Assert.Equal<string?[]>(["", ":", "a", ":", "b"], mandatory.SplitToStrings("π :a:b"u8, maxSplit: 0, startOffsetInBytes: "π "u8.Length));
+        Assert.Equal<string?[]>(["", ":", "a", ":", "b::c"], PythonReSplitAssert.Decode(":a:b::c"u8, mandatory.SplitRanges(":a:b::c"u8, 2, 0, default)));
+        Assert.Equal<string?[]>(["", ":", "a", ":", "b"], PythonReSplitAssert.Decode("π :a:b"u8, mandatory.SplitRanges("π :a:b"u8, 0, "π "u8.Length, default)));
 
         var nestedMandatory = new Utf8PythonRegex(@"((?:a|b)+)-([0-9]+)");
-        Assert.Equal<string?[]>(["x", "ab", "12", "y"], nestedMandatory.SplitToStrings("xab-12y"u8));
+        Assert.Equal<string?[]>(["x", "ab", "12", "y"], PythonReSplitAssert.Decode("xab-12y"u8, nestedMandatory.SplitRanges("xab-12y"u8, 0, 0, default)));
 
         var optional = new Utf8PythonRegex(@"(a)?b");
-        Assert.Equal<string?[]>(["", null, " ", "a", ""], optional.SplitToStrings("b ab"u8));
+        Assert.Equal<string?[]>(["", null, " ", "a", ""], PythonReSplitAssert.Decode("b ab"u8, optional.SplitRanges("b ab"u8, 0, 0, default)));
 
         var alternated = new Utf8PythonRegex(@"(b)|(:+)");
-        Assert.Equal<string?[]>(["", null, ":", "a", "b", null, ""], alternated.SplitToStrings(":ab"u8));
+        Assert.Equal<string?[]>(["", null, ":", "a", "b", null, ""], PythonReSplitAssert.Decode(":ab"u8, alternated.SplitRanges(":ab"u8, 0, 0, default)));
 
 
         var asciiBoundary = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
-        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], asciiBoundary.SplitToStrings("alpha beta"u8));
-        Assert.Equal<string?[]>(["", "alpha beta"], asciiBoundary.SplitToStrings("alpha beta"u8, maxSplit: 1));
-        Assert.Equal<string?[]>(["π", "alpha", " 𝒜", "beta", ""], asciiBoundary.SplitToStrings("πalpha 𝒜beta"u8));
-        var detailed = asciiBoundary.SplitDetailed("alpha beta"u8);
-        Assert.All(detailed, static item => Assert.False(item.IsCapture));
-        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], detailed.Select(static item => item.ValueText).ToArray());
+        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], PythonReSplitAssert.Decode("alpha beta"u8, asciiBoundary.SplitRanges("alpha beta"u8, 0, 0, default)));
+        Assert.Equal<string?[]>(["", "alpha beta"], PythonReSplitAssert.Decode("alpha beta"u8, asciiBoundary.SplitRanges("alpha beta"u8, 1, 0, default)));
+        Assert.Equal<string?[]>(["π", "alpha", " 𝒜", "beta", ""], PythonReSplitAssert.Decode("πalpha 𝒜beta"u8, asciiBoundary.SplitRanges("πalpha 𝒜beta"u8, 0, 0, default)));
+        var detailed = asciiBoundary.SplitRanges("alpha beta"u8);
+        Assert.All(detailed, static item => Assert.Equal(0, item.Number));
+        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], PythonReSplitAssert.Decode("alpha beta"u8, detailed));
     }
 
     [Fact]
@@ -1724,7 +1725,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"foo|bar");
 
-        var parts = regex.SplitToStrings("xxfoobaryybar"u8);
+        var parts = PythonReSplitAssert.Decode("xxfoobaryybar"u8, regex.SplitRanges("xxfoobaryybar"u8, 0, 0, default));
 
         Assert.Equal<string?[]>(["xx", "", "yy", ""], parts);
     }
@@ -1752,6 +1753,6 @@ public sealed class Utf8PythonRegexTests
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.FindAll(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => empty.Count(input, startOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => direct.ReplaceToString(input, "_", count: 0, startOffsetInBytes: startOffsetInBytes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => direct.SplitToStrings(input, maxSplit: 0, startOffsetInBytes: startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PythonReSplitAssert.Decode(input, direct.SplitRanges(input, 0, startOffsetInBytes, default)));
     }
 }

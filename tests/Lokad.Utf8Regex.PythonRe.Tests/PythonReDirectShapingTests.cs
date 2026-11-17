@@ -42,9 +42,7 @@ public sealed class PythonReDirectShapingTests
         var shape = Enum.Parse<Utf8PythonFindAllShape>(expected.GetProperty("shape").GetString()!);
         var scalarValues = Strings(expected.GetProperty("scalars"));
         var tupleValues = expected.GetProperty("tuples").EnumerateArray().Select(Strings).ToArray();
-        var splitValues = Strings(expected.GetProperty("split"));
         var ranges = expected.GetProperty("matches").EnumerateArray().ToArray();
-        var captures = shape == Utf8PythonFindAllShape.FullMatch ? 0 : shape == Utf8PythonFindAllShape.SingleGroup ? 1 : tupleValues[0].Length;
         using var source = new CancellationTokenSource();
         foreach (var bytesPattern in new[] { false, true })
         foreach (var finite in new[] { false, true })
@@ -65,25 +63,28 @@ public sealed class PythonReDirectShapingTests
             }
             var strings = regex.FindAllToStrings(input, 0, token);
             var bytes = regex.FindAllToUtf8(input, 0, token);
-            var split = regex.SplitToStrings(input, 0, 0, token);
-            var detailed = regex.SplitDetailed(input, 0, 0, token);
             Assert.Equal(shape, strings.Shape); Assert.Equal(shape, bytes.Shape);
-            Assert.Equal(splitValues, split);
-            Assert.Equal(splitValues, detailed.Select(x => x.ValueText));
-            for (var i = 0; i < detailed.Length; i++)
-            {
-                var group = i % (captures + 1);
-                Assert.Equal(group > 0, detailed[i].IsCapture);
-                Assert.Equal(group, detailed[i].CaptureGroupNumber);
-            }
             input.AsSpan().Fill((byte)'x');
             Assert.Equal(scalarValues, strings.ScalarValues);
             Assert.Equal(tupleValues, strings.TupleValues);
             Assert.Equal(scalarValues, bytes.ScalarValues.Select(Encoding.UTF8.GetString));
             Assert.Equal(tupleValues, bytes.TupleValues.Select(t => t.Select(Encoding.UTF8.GetString).ToArray()).ToArray());
             Assert.Equal(ranges.Select(x => x[0].GetString()), matches.Select(x => x.ValueText));
-            Assert.Equal(splitValues, split);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void RangeSplitsKeepPythonCapturePriorityAndLookaroundExtents(string pattern, string text, string golden)
+    {
+        using var document = JsonDocument.Parse(golden);
+        var expected = Strings(document.RootElement.GetProperty("split"));
+        using var regex = new Utf8PythonRegex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var ranges = regex.SplitRanges(input);
+        Assert.Equal(expected, PythonReSplitAssert.Decode(input, ranges));
+        for (var index = 0; index < ranges.Length; index++)
+            Assert.Equal(index % (regex.CaptureGroupCount + 1), ranges[index].Number);
     }
 
     [Fact]

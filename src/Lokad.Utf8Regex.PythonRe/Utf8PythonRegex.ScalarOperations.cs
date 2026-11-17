@@ -404,62 +404,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
-    private void SplitScalar(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes,
-        CancellationToken cancellationToken, bool stringsOnly, out Utf8PythonSplitItem[] items, out string?[] values)
-    {
-        items = [];
-        values = [];
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
-        Utf8InvocationResultBuffer<Utf8PythonSplitItem> parts = default;
-        // String output needs only references; detailed output keeps capture metadata.
-        // Both use the same cursor, result admission and interruption authority.
-        Utf8InvocationResultBuffer<string?> stringParts = default;
-        try
-        {
-            var last = startOffsetInBytes;
-            var splits = 0;
-            while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
-            {
-                var text = cursor.GetText(last, cursor.StartOffsetInBytes);
-                if (stringsOnly) cursor.AddResult(ref stringParts, text);
-                else cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = text });
-                for (var i = 1; i <= CaptureGroupCount; i++)
-                {
-                    var capture = cursor.TryGetCaptureByteRange(i, out var start, out var end) ? cursor.GetText(start, end) : null;
-                    if (stringsOnly) cursor.AddResult(ref stringParts, capture);
-                    else cursor.AddResult(ref parts, new Utf8PythonSplitItem
-                    {
-                        IsCapture = true,
-                        CaptureGroupNumber = i,
-                        ValueText = capture
-                    });
-                    // AddResult checks the original invocation before staging,
-                    // including absent groups. The next decoder/discovery and
-                    // final publication retain their own interruption checks.
-                }
-                last = cursor.EndOffsetInBytes;
-                splits++;
-            }
-            var tail = cursor.GetText(last, input.Length);
-            if (stringsOnly) cursor.AddResult(ref stringParts, tail);
-            else cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = tail });
-            Utf8PythonSplitItem[] completedItems = [];
-            string?[] completedValues = [];
-            if (stringsOnly) completedValues = cursor.CompleteResults(ref stringParts);
-            else completedItems = cursor.CompleteResults(ref parts);
-            cursor.Checkpoint();
-            items = completedItems;
-            values = completedValues;
-            return;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref stringParts); cursor.ReleaseResults(ref parts); cursor.Dispose(); }
-    }
-
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
         PythonReScalarReplacementAppender<TState> appendReplacement, int count, int startOffsetInBytes,
         Utf8SliceInvocation invocation, bool textOutput, bool validateOutput,

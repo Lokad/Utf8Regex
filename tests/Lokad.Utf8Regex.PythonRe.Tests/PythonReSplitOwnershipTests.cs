@@ -1,12 +1,10 @@
 using System.Text;
-using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-[Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReSplitOwnershipTests
 {
-    public static IEnumerable<object?[]> OwnedCases()
+    public static IEnumerable<object?[]> Cases()
     {
         var none = PythonReCompileOptions.None;
         var ignoreCase = PythonReCompileOptions.IgnoreCase;
@@ -36,56 +34,6 @@ public sealed class PythonReSplitOwnershipTests
         yield return new object?[] { "(?P<s>😀)|(,)?;", none, "é😀a;🙂,;z", 0, 0, new string?[] { "é", "😀", null, "a", null, null, "🙂", null, ",", "z" } };
         yield return new object?[] { "(?P<s>😀)|(,)?;", none, "é😀a;🙂,;z", 2, 2, new string?[] { "", "😀", null, "a", null, null, "🙂,;z" } };
         yield return new object?[] { "()", none, "😀é", 2, 0, new string?[] { "", "", "😀", "", "é" } };
-    }
-
-    [Theory]
-    [MemberData(nameof(OwnedCases))]
-    public void OwnedSplitMatchesCpython(string pattern, PythonReCompileOptions options, string inputText, int maxSplit, int startOffsetInBytes, string?[] expected)
-    {
-        var regex = new Utf8PythonRegex(pattern, options);
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var actual = regex.SplitToStrings(input, maxSplit, startOffsetInBytes);
-        Assert.Equal(expected, actual);
-    }
-
-    [Theory]
-    [MemberData(nameof(OwnedCases))]
-    public void OwnedDetailedSplitMatchesCpython(string pattern, PythonReCompileOptions options, string inputText, int maxSplit, int startOffsetInBytes, string?[] expected)
-    {
-        var regex = new Utf8PythonRegex(pattern, options);
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var items = regex.SplitDetailed(input, maxSplit, startOffsetInBytes);
-        Assert.Equal(expected, items.Select(static item => item.ValueText).ToArray());
-    }
-
-    [Fact]
-    public void OwnedDetailedSplitReportsCaptures()
-    {
-        var regex = new Utf8PythonRegex("(cat)|(horse)");
-        var items = regex.SplitDetailed(Encoding.UTF8.GetBytes("cat horse"));
-        var expected = new (string? Value, bool IsCapture, int Group)[]
-        {
-            ("", false, 0),
-            ("cat", true, 1),
-            (null, true, 2),
-            (" ", false, 0),
-            (null, true, 1),
-            ("horse", true, 2),
-            ("", false, 0),
-        };
-        Assert.Equal(expected.Length, items.Length);
-        for (var i = 0; i < expected.Length; i++)
-        {
-            Assert.Equal(expected[i].Value, items[i].ValueText);
-            Assert.Equal(expected[i].IsCapture, items[i].IsCapture);
-            Assert.Equal(expected[i].Group, items[i].CaptureGroupNumber);
-        }
-
-    }
-
-    public static IEnumerable<object?[]> ManagedCases()
-    {
-        var none = PythonReCompileOptions.None;
         yield return new object?[] { "(b)|(:+)", none, ":a:b::c", 0, 0, new string?[] { "", null, ":", "a", null, ":", "", "b", null, "", null, "::", "c" } };
         yield return new object?[] { "(:)+", none, ":a:b::c", 0, 0, new string?[] { "", ":", "a", ":", "b", ":", "c" } };
         yield return new object?[] { "(a)+", none, "aaabaaa", 0, 0, new string?[] { "", "a", "b", "a", "" } };
@@ -93,13 +41,19 @@ public sealed class PythonReSplitOwnershipTests
         yield return new object?[] { "(?:b)|(?::+)", none, ":a:b::c", 0, 0, new string?[] { "", "a", "", "", "c" } };
     }
 
-    [Theory]
-    [MemberData(nameof(ManagedCases))]
-    public void FormerManagedSplitStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int maxSplit, int startOffsetInBytes, string?[] expected)
+    [Fact]
+    public void CaptureSlotsDistinguishUnmatchedFromEmptyAndSurviveProgramDisposal()
     {
-        var regex = new Utf8PythonRegex(pattern, options);
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var actual = regex.SplitToStrings(input, maxSplit, startOffsetInBytes);
-        Assert.Equal(expected, actual);
+        using var regex = new Utf8PythonRegex("(cat)|(horse)");
+        var input = "cat horse"u8.ToArray();
+        var ranges = regex.SplitRanges(input);
+        regex.Dispose();
+        Assert.Equal(new string?[] { "", "cat", null, " ", null, "horse", "" },
+            PythonReSplitAssert.Decode(input, ranges));
+        Assert.Equal(new[] { 0, 1, 2, 0, 1, 2, 0 }, ranges.Select(r => r.Number));
+        Assert.Equal(new[] { true, true, false, true, false, true, true }, ranges.Select(r => r.Success));
+        Assert.Equal((0, 0), (ranges[0].StartOffsetInBytes, ranges[0].EndOffsetInBytes));
+        Assert.Equal((0, 3), (ranges[1].StartOffsetInBytes, ranges[1].EndOffsetInBytes));
+        Assert.Equal((4, 9), (ranges[5].StartOffsetInBytes, ranges[5].EndOffsetInBytes));
     }
 }

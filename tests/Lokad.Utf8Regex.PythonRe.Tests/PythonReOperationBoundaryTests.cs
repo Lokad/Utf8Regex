@@ -22,7 +22,7 @@ public sealed class PythonReOperationBoundaryTests
             : new Utf8PythonRegex(pattern, matchTimeout: timeout);
         for (var operation = 0; operation < 14; operation++)
         {
-            if (operation == 11) continue;
+            if (operation is 9 or 11) continue;
             // Observe the final poll of the real public route, including projection
             // and output. Warm cold preparation before counting those polls.
             using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0)) Invoke(regex, input, operation, default);
@@ -71,7 +71,6 @@ public sealed class PythonReOperationBoundaryTests
             case 6: _ = regex.FindAllToStrings(input, 0, token); break;
             case 7: _ = regex.FindAllToUtf8(input, 0, token); break;
             case 8: _ = regex.SplitRanges(input, 0, 0, token); break;
-            case 9: _ = regex.SplitToStrings(input, 0, 0, token); break;
             case 10: _ = regex.ReplaceToString(input, @"\2:\1", 0, 0, token); break;
             case 12: _ = regex.FullMatch(input, 0, token); break;
             case 13: _ = regex.Count(input, 0, token); break;

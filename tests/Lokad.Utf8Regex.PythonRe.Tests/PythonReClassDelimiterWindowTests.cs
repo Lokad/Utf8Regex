@@ -146,7 +146,7 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(2, owner.Count(input));
         Assert.Equal(new[] { "item", "123", "other", "45" }, owner.FindAllToStrings(input).TupleValues.SelectMany(row => row));
         Assert.Equal(oracle.Replace(text, "$2:$1"), owner.ReplaceToString(input, @"\2:\1"));
-        Assert.Equal(oracle.Split(text), owner.SplitToStrings(input));
+        Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;
         Assert.True(owner.Match(input, floor).Success);
         Assert.False(owner.Match(input).Success);

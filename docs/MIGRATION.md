@@ -85,6 +85,10 @@ PythonRe borrowed value/group/match views also remove `GetValueString` and the
 `Value.GetValueBytes()` on a group/match context. Resolve groups with `TryGetGroup`
 or `TryGetFirstSetGroup` and check `Success` to distinguish unmatched from empty.
 Decode the selected bytes in the host when required.
+Replace PythonRe `SplitToStrings` and `SplitDetailed` with `SplitRanges`.
+`Number == 0` denotes a segment; positive numbers identify captured separators.
+Check `Success` before slicing: unmatched captures differ from successful empty
+ones. Host decoding and string arrays are outside regex resource controls.
 Modeled work and working/result capacity requirements can decrease. Original
 byte context, scalar progress, cancellation and deadlines remain enforced.
 

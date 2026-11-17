@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe SplitToStrings, SplitDetailed and their text result type.
+  SplitRanges retains segment/capture metadata; hosts decode selected bytes.
+
 - Remove PythonRe borrowed-result string getters. Access value/capture bytes and
   decode in the host when needed; matching and capture lifetimes are unchanged.
 
