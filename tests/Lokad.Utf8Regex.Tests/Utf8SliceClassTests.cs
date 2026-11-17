@@ -56,12 +56,8 @@ public sealed class Utf8SliceClassTests
 
     [Theory]
     [MemberData(nameof(DeclinedClassShapes))]
-    public void UnsupportedClassShapesDecline(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-    }
-
+    public void UnsupportedClassShapesPreservePublicSemantics(string pattern)
+{ var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant); var oracle = new Regex(pattern, RegexOptions.CultureInvariant); foreach(var text in new[] { "", "a", "1", "a1b", "word", ":", "é", "abc", "aabc", "aaab" }) { var bytes = System.Text.Encoding.UTF8.GetBytes(text); Assert.Equal(oracle.IsMatch(text), regex.IsMatch(bytes)); Assert.Equal(oracle.Count(text), regex.Count(bytes)); } }
     public static IEnumerable<object?[]> ReversedClassShapes()
     {
         yield return new object?[] { "[z-a]" };

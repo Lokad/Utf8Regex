@@ -33,8 +33,6 @@ public class Utf8SearchKernelBenchmarks
     private PreparedMultiLiteralSearch _multiLiteralAlternationSearch;
     private PreparedMultiLiteralSearch _ignoreCaseMultiLiteralSearch;
     private PreparedMultiLiteralSearch _largeMultiLiteralAlternationSearch;
-    private ReadOnlyMemory<byte> _denseEnumerateInput;
-    private Utf8StructuralLinearProgram _denseEnumerateProgram;
     private ReadOnlyMemory<byte> _validationAsciiLarge;
     private ReadOnlyMemory<byte> _validationTwoByteLarge;
     private ReadOnlyMemory<byte> _validationThreeByteLarge;
@@ -139,8 +137,6 @@ public class Utf8SearchKernelBenchmarks
             Encoding.UTF8.GetBytes("dynamo"),
             Encoding.UTF8.GetBytes("needle"),
         ], ignoreCase: false);
-        _denseEnumerateInput = Encoding.UTF8.GetBytes(BuildRepeated("ab1d-", 4096));
-        _denseEnumerateProgram = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant).StructuralLinearProgram;
         _validationAsciiLarge = Utf8ValidationBenchmarkProfiles.Create("ascii-large");
         _validationTwoByteLarge = Utf8ValidationBenchmarkProfiles.Create("two-byte-large");
         _validationThreeByteLarge = Utf8ValidationBenchmarkProfiles.Create("three-byte-large");
@@ -261,25 +257,6 @@ public class Utf8SearchKernelBenchmarks
         }
 
         return count;
-    }
-
-    [Benchmark]
-    public int StructuralLinearDenseDeterministicScanOnly()
-    {
-        var input = _denseEnumerateInput.Span;
-        var sum = 0;
-        var state = new Utf8AsciiDeterministicScanState(0, _denseEnumerateProgram.DeterministicProgram.SearchLiteralOffset);
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-            _denseEnumerateProgram,
-            input,
-            ref state,
-            budget: Utf8ExecutionDeadline.Infinite,
-            out var match))
-        {
-            sum += match.Index;
-        }
-
-        return sum;
     }
 
     [Benchmark]

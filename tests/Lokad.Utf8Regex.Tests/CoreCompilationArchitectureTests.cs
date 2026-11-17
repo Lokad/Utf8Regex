@@ -21,7 +21,6 @@ public sealed class CoreCompilationArchitectureTests
         // Repeated access borrows the same instruction storage; this is a
         // reference-stability check, not a complete immutability proof.
         Assert.Same(prepared.StructuralLinearProgram.InstructionProgram.Instructions, prepared.StructuralLinearProgram.InstructionProgram.Instructions);
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, prepared.ExecutionKind);
     }
 
     [Fact]
@@ -82,7 +81,7 @@ public sealed class CoreCompilationArchitectureTests
     public void SimplePatternLoweringDoesNotDependOnSearchPlans()
     {
         var sourceRoot = FindCoreSourceDirectory();
-        var simpleLowerer = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8AsciiSimplePatternLowerer.cs"));
+        var simpleLowerer = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8FiniteLiteralLowerer.cs"));
 
         Assert.DoesNotContain("Utf8SearchPlan", simpleLowerer, StringComparison.Ordinal);
     }

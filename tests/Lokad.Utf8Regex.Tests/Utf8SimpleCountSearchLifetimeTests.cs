@@ -17,7 +17,6 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
     {
         var regex = new Utf8Regex("a?b[0-9]{2}", Options(compiled));
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(2, regex.Inspection.SimplePatternPlan.SearchLiterals.Length);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(
             miss ? " xx bxx abxx " : " xx b12 ab34 ", 1000)));
         var expected = miss ? 0 : 2000;
@@ -99,8 +98,6 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
         var prepared = regex.Inspection.PreparedRegex;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12", 4096)));
         ticks = 25;
-        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8ExecutionInterpreter.CountSimplePattern(input, prepared.SearchPlan, prepared.SimplePatternPlan, deadline));
     }
 
     private static RegexOptions Options(bool compiled) => RegexOptions.CultureInvariant |

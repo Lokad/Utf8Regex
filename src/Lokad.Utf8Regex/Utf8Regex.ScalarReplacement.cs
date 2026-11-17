@@ -21,7 +21,7 @@ public sealed partial class Utf8Regex
         // Non-literal shape replacements use the existing byte template engine.
         // Select it before preparation; no legacy capture view or second subject
         // invocation is needed. Genuine literal replacement routes remain below.
-        if (_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern)
+        if (_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex )
             return _ownedSliceProgram;
         if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _ownedSliceProgram : null)) is { } program) return program;
         // Native replacement routes need complete scalar endpoints. Unsupported

@@ -339,7 +339,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, fallback.SearchPlan.FallbackCandidateSource.Kind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback).Kind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(structural).Kind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(orderedWindow).Kind);
     }
 
@@ -962,28 +961,6 @@ public sealed class Utf8SearchPlanTests
 
         return line + Environment.NewLine + string.Join(Environment.NewLine,
             Enumerable.Range(0, node.ChildCount).Select(index => DumpNode(node.Child(index), depth + 1)));
-    }
-
-    [Fact]
-    public void ConstructorPrefersFixedDistanceLiteralSearchPlanForAsciiSimplePattern()
-    {
-        var regex = new Utf8Regex("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
-
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal("d", Encoding.UTF8.GetString(regex.Inspection.SearchPlan.LiteralUtf8!));
-        Assert.Equal(5, regex.Inspection.SearchPlan.Distance);
-        Assert.Equal(6, regex.Inspection.SearchPlan.MinRequiredLength);
-    }
-
-    [Fact]
-    public void ConstructorKeepsFixedDistanceSearchInsideTheAsciiPrefix()
-    {
-        var regex = new Utf8Regex("ab..cd", RegexOptions.CultureInvariant);
-
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal("b", Encoding.UTF8.GetString(regex.Inspection.SearchPlan.LiteralUtf8!));
-        Assert.Equal(1, regex.Inspection.SearchPlan.Distance);
-        Assert.Equal(6, regex.Inspection.SearchPlan.MinRequiredLength);
     }
 
     [Fact]

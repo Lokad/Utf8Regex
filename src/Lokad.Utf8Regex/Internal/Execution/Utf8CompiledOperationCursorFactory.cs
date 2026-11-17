@@ -41,16 +41,9 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(
                     input, regexPlan, regexPlan.ExecutionKind, budget),
             NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
-                => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, asciiInput: true),
+                => new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when CanUseStructuralFamilyCursor(regexPlan, validation)
                 => new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
-            NativeExecutionKind.AsciiSimplePattern when
-                regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
-                (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
-                => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, validation.IsAscii),
-            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
-                => new Utf8OperationMatchCursor(
-                    input, regexPlan, useStructuralLinearProgram: false, budget, validation.IsAscii),
             _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget),
         };
     }
@@ -87,23 +80,11 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, asciiInput: true),
+                    new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
                     count),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when regexPlan.Features.CaptureCount <= 1 &&
                 CanUseStructuralFamilyCursor(regexPlan, validation)
                 => new Utf8ValueSplitEnumerator(input, new Utf8OperationMatchCursor(input, regexPlan, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)), count),
-            NativeExecutionKind.AsciiSimplePattern when
-                regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
-                (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
-                => new Utf8ValueSplitEnumerator(
-                    input,
-                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, validation.IsAscii),
-                    count),
-            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
-                => new Utf8ValueSplitEnumerator(
-                    input,
-                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget, validation.IsAscii),
-                    count),
             _ => CreateOwnedSplitEnumerator(regexPlan, input, count, budget),
         };
     }

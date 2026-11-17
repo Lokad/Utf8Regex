@@ -4,5 +4,5 @@ internal enum Utf8ExecutionBackend : byte
 {
     FallbackRegex = 0,
     NativeLiteral = 1,
-    NativeSimplePattern = 2,
+    NativeStructural = 2,
 }

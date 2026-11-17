@@ -41,11 +41,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode is EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlExactUtf8Literal or EnumeratorMode.RtlAsciiLiteralIgnoreCase;
 
     internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
-
-    internal Utf8AsciiDeterministicScanState DebugDeterministicScanState => _deterministicScanState;
     internal int DebugConsumed => _consumed;
-
-    internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
     internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
 
@@ -54,8 +50,6 @@ internal ref partial struct Utf8OperationMatchCursor
     internal static int DebugSmallLiteralFamilySizeInBytes => Unsafe.SizeOf<PreparedSmallAsciiLiteralFamilySearch>();
 
     internal static int DebugSearchOperationPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchOperationPlan>();
-
-    internal static int DebugDeterministicScanStateSizeInBytes => Unsafe.SizeOf<Utf8AsciiDeterministicScanState>();
 
     private readonly EnumeratorMode _mode;
     private readonly Utf8OperationMatchCursorPlans _plans;
@@ -67,7 +61,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private ReadOnlySpan<byte> _remaining;
     private int _consumed;
     private PreparedMultiLiteralScanState _multiLiteralScanState;
-    private Utf8AsciiDeterministicScanState _deterministicScanState;
     private Utf8CaptureRange _current;
     private int _baseByteOffset;
     private Utf8SliceProgram? _sliceProgram;
@@ -94,7 +87,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _mode = executionKind switch
@@ -141,7 +133,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _mode = (executionKind, rightToLeft) switch
@@ -153,48 +144,7 @@ internal ref partial struct Utf8OperationMatchCursor
         };
     }
 
-
-
-
-
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool useStructuralLinearProgram, Utf8ExecutionDeadline budget, bool asciiInput)
-    {
-        ref readonly var searchPlan = ref regexPlan.SearchPlan;
-        ref readonly var structuralLinearProgram = ref regexPlan.StructuralLinearProgram;
-        _plans = regexPlan.OperationMatchCursorPlans;
-        _smallAsciiLiteralFamilySearch = default;
-        _literal = null;
-        _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
-        _remaining = input;
-        _consumed = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
-        _mode = useStructuralLinearProgram
-            ? (structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow
-                ? EnumeratorMode.AsciiOrderedLiteralWindow
-                : structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
-                ? EnumeratorMode.AsciiFixedTokenPattern
-                : EnumeratorMode.AsciiDeterministicPattern)
-            : !asciiInput && !regexPlan.SimplePatternPlan.IsUtf8ByteSafe
-                ? EnumeratorMode.AsciiSimplePatternScalar
-                : EnumeratorMode.AsciiSimplePattern;
-    }
-
     public Utf8CaptureRange CurrentValueMatch => ApplyBaseOffsets(_current);
-
-    // Transfer the already validated caller invocation into a simple-pattern
-    // cursor, retaining work counters, deadline, token and borrowed reservations.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation, bool asciiInput)
-        : this(input, regexPlan, regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue, invocation.Budget.Deadline, asciiInput)
-    {
-        _sliceInvocation = invocation;
-    }
 
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
         : this(program, input, invocation, program.RightToLeft ? input.Length : 0)
@@ -212,7 +162,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = default;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _sliceProgram = program;
@@ -312,7 +261,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _sliceProgram = null;
@@ -516,9 +464,6 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.RtlExactAsciiLiteral => MoveNextLiteral(),
             EnumeratorMode.RtlAsciiLiteralIgnoreCase => MoveNextLiteral(),
             EnumeratorMode.RtlExactUtf8Literal => MoveNextLiteral(),
-            EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
-            EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
-            EnumeratorMode.AsciiFixedTokenPattern or EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
             EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
@@ -563,7 +508,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _mode = EnumeratorMode.ExactUtf8Literal;
     }
@@ -611,7 +555,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
@@ -631,7 +574,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _mode = EnumeratorMode.EmptyLiteral;
@@ -650,7 +592,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
-        _deterministicScanState = default;
         _current = default(Utf8CaptureRange);
         _baseByteOffset = 0;
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
@@ -673,7 +614,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;
-        _deterministicScanState = new Utf8AsciiDeterministicScanState(startByteOffset, startByteOffset);
         _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
         _structuralSearchState = new Utf8StructuralSearchState(new PreparedSearchScanState(startByteOffset, default), default);
         _nativeStructuralExhausted = false;
@@ -809,109 +749,6 @@ internal ref partial struct Utf8OperationMatchCursor
         return true;
     }
 
-
-
-
-
-    private bool MoveNextAsciiSimplePattern()
-    {
-        var breach = TryMoveNextSimplePattern(out var found);
-        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native simple cursor exceeded {breach}.");
-        return found;
-    }
-
-    internal Utf8ExecutionLimitKind TryMoveNextSimplePattern(out bool found)
-    {
-        found = false;
-        var breach = _sliceInvocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        // Anchors see the complete subject, while discovery starts at the
-        // caller's floor. No result or floor is published before publication.
-        breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(_input, searchPlan, simplePatternPlan, _consumed, ref _sliceInvocation, out var absolute, out var length);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (absolute < 0)
-        {
-            breach = _sliceInvocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            _sliceInvocation.Budget.ThrowIfCancellationRequested();
-            _nativeStructuralExhausted = true;
-            return Utf8ExecutionLimitKind.None;
-        }
-        var consumed = (absolute) + (length);
-        breach = Utf8SliceBufferWork.TryCreateMatchRange(absolute, (absolute) + (length), ref _sliceInvocation, out var projected);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        _current = projected;
-        _consumed = consumed;
-        _remaining = _input[_consumed..];
-        found = true;
-        return Utf8ExecutionLimitKind.None;
-    }
-
-    // Scalar simple-pattern enumeration: every scalar start steps through the shared
-    // scalar verifier. Construction sites qualify astral-free non-ASCII subjects
-    // with scalar-verifiable tokens, yielding complete scalar byte ranges.
-    private bool MoveNextScalarSimplePattern()
-    {
-        ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        _budget.Step();
-        var relative = Utf8ScalarSimplePatternVerifier.FindNextScalar(_remaining, in simplePatternPlan, _budget, 0, out var matchByteLength);
-        if (relative < 0)
-        {
-            return false;
-        }
-
-        var matchByte = _consumed + relative;
-        _current = new Utf8CaptureRange(matchByte, (matchByte) + (matchByteLength));
-        _consumed = matchByte + matchByteLength;
-        _remaining = _input[_consumed..];
-        return true;
-    }
-
-
-    private bool MoveNextAsciiDeterministicPattern()
-    {
-        var breach = TryMoveNextDeterministic(out var found);
-        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native deterministic cursor exceeded {breach}.");
-        return found;
-    }
-
-    internal Utf8ExecutionLimitKind TryMoveNextDeterministic(out bool found)
-    {
-        found = false;
-        var breach = _sliceInvocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
-        ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
-        var pending = _deterministicScanState;
-        breach = Utf8AsciiInstructionLinearExecutor.TryFindNextDeterministicMatch(structuralLinearProgram,
-            _input, ref pending, ref _sliceInvocation, out var match, out var discovered);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (!discovered)
-        {
-            breach = _sliceInvocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            _sliceInvocation.Budget.ThrowIfCancellationRequested();
-            _nativeStructuralExhausted = true;
-            _deterministicScanState = pending;
-            return Utf8ExecutionLimitKind.None;
-        }
-        var consumed = (match.Index) + (match.Length);
-        breach = Utf8SliceBufferWork.TryCreateMatchRange(match.Index, (match.Index) + (match.Length), ref _sliceInvocation, out var projected);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        _sliceInvocation.Budget.ThrowIfCancellationRequested();
-        _deterministicScanState = pending;
-        _current = projected;
-        _consumed = consumed;
-        found = true;
-        return Utf8ExecutionLimitKind.None;
-    }
-
     private bool MoveNextEmptyLiteral()
     {
         var breach = _sliceInvocation.TryChargeInputStep();
@@ -957,9 +794,6 @@ internal ref partial struct Utf8OperationMatchCursor
         ExactUtf8Literals = 3,
         AsciiLiteralIgnoreCase = 4,
         AsciiLiteralIgnoreCaseLiterals = 5,
-        AsciiSimplePattern = 6,
-        AsciiFixedTokenPattern = 8,
-        AsciiDeterministicPattern = 9,
         EmptyLiteral = 10,
         SmallAsciiLiteralFamily = 11,
         OwnedSlice = 14,
@@ -969,7 +803,6 @@ internal ref partial struct Utf8OperationMatchCursor
         AnchoredFoldedAsciiLiteralPrefix = 18,
         AnchoredFoldedAsciiLiteralSuffix = 19,
         AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
-        AsciiSimplePatternScalar = 21,
         RtlExactAsciiLiteral = 22,
         RtlAsciiLiteralIgnoreCase = 23,
         RtlExactUtf8Literal = 24,

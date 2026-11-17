@@ -200,16 +200,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorClassifiesAsciiPrefixedFixedRunFamilyAsStructuralLinearAutomaton()
-    {
-        var regex = new Utf8Regex(@"((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, regex.Inspection.StructuralLinearProgramKind);
-    }
-
-    [Fact]
     public void ConstructorCompilesVerifierProgramForLoggingInvocationFamily()
     {
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
@@ -788,62 +778,6 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
-    }
-
-    [Fact]
-    public void ConstructorClassifiesBoundedAsciiCharClassRunAsStructuralLinearAutomaton()
-    {
-        var regex = new Utf8Regex(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiCharClassRun, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(
-            [Utf8StructuralLinearInstructionKind.RunCharClass, Utf8StructuralLinearInstructionKind.Accept],
-            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
-    }
-
-    [Fact]
-    public void AnalysisCompilesDeterministicProgramForFixedTokenStructuralLinearPattern()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"ab[0-9]d", RegexOptions.CultureInvariant);
-        var deterministicProgram = analysis.StructuralLinearProgram.DeterministicProgram;
-
-        Assert.True(deterministicProgram.HasValue);
-        Assert.Equal(4, deterministicProgram.FixedWidthLength);
-        Assert.Equal(
-            [
-                Utf8AsciiDeterministicStepKind.Literal,
-                Utf8AsciiDeterministicStepKind.Literal,
-                Utf8AsciiDeterministicStepKind.CharClass,
-                Utf8AsciiDeterministicStepKind.Literal,
-                Utf8AsciiDeterministicStepKind.Accept,
-            ],
-            deterministicProgram.Steps.Select(static step => step.Kind));
-        Assert.Equal(
-            [
-                Utf8AsciiDeterministicFixedWidthCheckKind.Literal,
-                Utf8AsciiDeterministicFixedWidthCheckKind.Literal,
-                Utf8AsciiDeterministicFixedWidthCheckKind.CharClass,
-                Utf8AsciiDeterministicFixedWidthCheckKind.Literal,
-            ],
-            deterministicProgram.FixedWidthChecks.Select(static check => check.Kind));
-    }
-
-    [Fact]
-    public void AnalysisCompilesDeterministicProgramForAsciiRunStructuralLinearPattern()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-        var deterministicProgram = analysis.StructuralLinearProgram.DeterministicProgram;
-
-        Assert.True(deterministicProgram.HasValue);
-        Assert.Equal(
-            [
-                Utf8AsciiDeterministicStepKind.RunCharClass,
-                Utf8AsciiDeterministicStepKind.Accept,
-            ],
-            deterministicProgram.Steps.Select(static step => step.Kind));
     }
 
     [Fact]
@@ -2376,26 +2310,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.Success);
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), match.StartOffsetInBytes);
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void ConstructorBuildsFixedTokenLinearProgramForDeterministicAsciiSimplePattern()
-    {
-        var regex = new Utf8Regex("ab[0-9]d", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(
-            [
-                Utf8StructuralLinearInstructionKind.Literal,
-                Utf8StructuralLinearInstructionKind.Literal,
-                Utf8StructuralLinearInstructionKind.CharClass,
-                Utf8StructuralLinearInstructionKind.Literal,
-                Utf8StructuralLinearInstructionKind.Accept,
-            ],
-            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]

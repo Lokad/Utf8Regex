@@ -39,11 +39,8 @@ public sealed class Utf8SliceWiringTests
     [InlineData("(a|ab)c")]
     [InlineData("a{2,3}b")]
     [InlineData("a.c")]
-    public void DeclinedShapesKeepLegacyRouting(string pattern)
-    {
-        Assert.False(new Utf8Regex(pattern, RegexOptions.CultureInvariant).Inspection.DebugUsesOwnedSliceProgram);
-    }
-
+    public void PreservePublicSemanticsdShapesKeepPublicSemantics(string pattern)
+{ var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant); var oracle = new Regex(pattern, RegexOptions.CultureInvariant); foreach(var text in new[] { "", "a", "1", "a1b", "word", ":", "é", "abc", "aabc", "aaab" }) { var bytes = System.Text.Encoding.UTF8.GetBytes(text); Assert.Equal(oracle.IsMatch(text), regex.IsMatch(bytes)); Assert.Equal(oracle.Count(text), regex.Count(bytes)); } }
     [Theory]
     [InlineData("(a+)(b+)", "xxaaabbyy", true)]
     [InlineData("(a+)(b+)", "xxaaayy", false)]

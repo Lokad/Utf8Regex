@@ -60,7 +60,7 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
-        if (TryAnalyzeSimplePatternTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeFiniteLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
@@ -396,7 +396,7 @@ internal static class Utf8NativeExecutionAnalyzer
         finally { owner.LeaveDepth(); }
     }
 
-    private static bool TryAnalyzeSimplePatternTree(
+    private static bool TryAnalyzeFiniteLiteralTree(
         Utf8SemanticRegex semanticRegex,
         string? executionPattern,
         RegexOptions executionOptions,
@@ -421,19 +421,13 @@ internal static class Utf8NativeExecutionAnalyzer
             }
 
             var body = root.Child(0);
-            if (!IsSupportedSimplePatternNode(body))
+            if (!IsSupportedFiniteLiteralNode(body))
             {
                 analyzedRegex = default;
                 return false;
             }
 
-            if (!Utf8AsciiSimplePatternLowerer.TryCreatePlan(semanticRegex, executionOptions, out var simplePatternPlan, out var searchFacts))
-            {
-                analyzedRegex = default;
-                return false;
-            }
-
-            if (Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(simplePatternPlan, out var literalBranches))
+            if (Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semanticRegex, executionOptions, out var literalBranches))
             {
                 if (literalBranches.Length == 1)
                 {
@@ -487,28 +481,13 @@ internal static class Utf8NativeExecutionAnalyzer
                 return true;
             }
 
-            // Simple byte plans have one folding flag. Scoped folding beneath a
-            // sensitive top level needs the owned scalar program's per-node behavior;
-            // decline this plan after the literal-extraction routes above.
-            if ((executionOptions & RegexOptions.IgnoreCase) == 0 &&
-                Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(root.Child(0)))
-            {
-                analyzedRegex = default;
-                return false;
-            }
-
-            var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
-            var analyzedSearchFacts = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchFacts);
-            analyzedRegex = searchFacts.LiteralUtf8 is { } literalUtf8
-                ? Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan, literalUtf8)
-                : Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan);
-            construction.Complete();
-            return true;
+            analyzedRegex = default;
+            return false;
         }
         finally { owner.LeaveDepth(); }
     }
 
-    private static bool IsSupportedSimplePatternNode(Utf8TreeNode node)
+    private static bool IsSupportedFiniteLiteralNode(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;

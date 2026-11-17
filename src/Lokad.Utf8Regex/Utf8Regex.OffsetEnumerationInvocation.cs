@@ -56,7 +56,7 @@ public sealed partial class Utf8Regex
         // Only live ASCII-dependent cursors need input facts. Literal discovery
         // and the general scalar program use original bytes without this pass.
         var needsFacts = _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiOrderedLiteralWindow or
-            NativeExecutionKind.AsciiStructuralIdentifierFamily or NativeExecutionKind.AsciiSimplePattern ||
+            NativeExecutionKind.AsciiStructuralIdentifierFamily ||
             _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix or
                 Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or
                 Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;

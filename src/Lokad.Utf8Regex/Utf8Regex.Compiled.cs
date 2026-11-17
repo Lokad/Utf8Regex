@@ -112,29 +112,6 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
-        {
-            // R05: scalar-verifiable simple patterns answer owned on astral-free
-            // non-ASCII input; other admitted shapes use the cached scalar program.
-            if (Utf8ScalarSimplePatternVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarIsMatch))
-            {
-                return scalarIsMatch;
-            }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-        }
-
-        if (ShouldUseInterpreterForTimeoutSensitiveSimplePattern())
-        {
-            return Utf8ExecutionInterpreter.FindNextSimplePattern(
-                input,
-                _preparedRegex.SearchPlan,
-                _preparedRegex.SimplePatternPlan,
-                0,
-                budget,
-                out _) >= 0;
-        }
 
         return _compiledEngine.Kind switch
         {
@@ -179,19 +156,6 @@ public sealed partial class Utf8Regex
             return _compiledEngineRuntime.Count(input, validation, budget);
         }
 
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) ||
-            ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
-        {
-            // R05: same scalar-verified route as IsMatch above.
-            if (Utf8ScalarSimplePatternVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarCount))
-            {
-                return scalarCount;
-            }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            return OwnedSliceCountFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-        }
-
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
@@ -202,27 +166,6 @@ public sealed partial class Utf8Regex
 
     private Utf8CaptureRange MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
-        {
-            // A complete scalar scan makes misses definitive. Other admitted
-            // shapes use the cached scalar program with the same deadline.
-            if (Utf8ScalarSimplePatternVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarStart, out var scalarLength))
-            {
-                if (scalarStart >= 0 &&
-                    Utf8ScalarSimplePatternVerifier.TryCreateScalarMatchRange(input, scalarStart, scalarLength, out var scalarMatch))
-                {
-                    return scalarMatch;
-                }
-
-                if (scalarStart < 0)
-                {
-                    return default(Utf8CaptureRange);
-                }
-            }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-        }
 
         return _compiledEngine.Kind switch
         {
@@ -234,21 +177,6 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        // Qualified simple kernels keep their native cursor. Remaining anchored
-        // or mixed-subject shapes transfer to the cached scalar program.
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
-        {
-            if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-            {
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, _preparedRegex, budget))
-                    .WithTimeoutMapping(input, this);
-            }
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            invocation.ShareStorageForCursor();
-            var cursor = new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation);
-            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
-        }
 
         return new Utf8ValueMatchEnumerator(Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex, input, validation, budget));

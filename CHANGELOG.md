@@ -2,6 +2,12 @@
 
 ## Unreleased — 0.5.0
 
+- Remove the nonliteral simple-pattern engine, its standalone deterministic/
+  fixed-token programs, selectors, cursor modes and replay benchmarks. Keep
+  bounded finite-literal expansion and shared structural helpers. These patterns
+  use the general scalar engine; numerical work/storage and execution costs can
+  increase while scalar matching, captures, lifetime and limit contracts remain.
+
 - Retire anchored class/head-tail validators and their whole-pattern dispatch
   and construction plans. Existing scalar execution preserves matching and
   captures; numerical work/storage requirements can change with the program.
@@ -119,7 +125,7 @@
   charges; existing finite budgets may need adjustment.
 - Remove whole-pattern, identifier/window and fixed-token shape IL emitters,
   reducing construction work and storage. Their operations use existing owned
-  interpreters/search helpers. Literal-family emission and fixed-width SIMD
+  interpreters/search helpers. Literal-family emission and shared literal search
   counting remain; `Compiled` does not yet compile general patterns to IL.
 - Support .NET 10 and .NET 11 across Core and all three adapters. .NET 11 is the
   primary benchmark baseline. Adapters require the exact matching Core version.

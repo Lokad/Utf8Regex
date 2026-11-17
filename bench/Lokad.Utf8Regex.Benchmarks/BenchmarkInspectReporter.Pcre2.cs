@@ -601,12 +601,10 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CandidateSearchB  : {Pcre2CandidateSearchProgram.DebugSizeInBytes}");
         Console.WriteLine($"SliceCursorB      : {Utf8Pcre2ValueMatchEnumerator.DebugSliceCursorSizeInBytes}");
         Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"Utf8SimplePlanB   : {Utf8OperationMatchCursor.DebugSimplePatternPlanSizeInBytes}");
         Console.WriteLine($"Utf8StructPlanB   : {Utf8OperationMatchCursor.DebugStructuralLinearProgramSizeInBytes}");
         Console.WriteLine($"Utf8SearchPlanB   : {Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes}");
         Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
         Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
-        Console.WriteLine($"Utf8DfaStateB     : {Utf8OperationMatchCursor.DebugDeterministicScanStateSizeInBytes}");
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
         Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
         Console.WriteLine($"LiteralFamilyCurB : {Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes}");

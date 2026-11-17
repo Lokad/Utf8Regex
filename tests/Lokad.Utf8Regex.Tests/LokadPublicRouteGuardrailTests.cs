@@ -49,9 +49,6 @@ public sealed class LokadPublicRouteGuardrailTests
     public void SherlockIngCountStaysOnAsciiSimplePatternInterpreter()
     {
         var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.SimplePatternInterpreter, regex.Inspection.CompiledEngineKind);
         // The prefix has variable UTF-8 width; the suffix is a candidate, not a fixed offset.
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
     }

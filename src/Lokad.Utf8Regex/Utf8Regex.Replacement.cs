@@ -192,14 +192,6 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
     {
-        // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
-        // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
-        if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-
-            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false);
-            return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
-        }
 
         // Reuse the prepared ASCII family search already used by Split. The
         // original range ledger still owns output admission and publication.
@@ -229,21 +221,6 @@ public sealed partial class Utf8Regex
 
     private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
-        // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
-        // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
-        if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-
-            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false);
-            var scalarSuccess = Utf8CursorReplaceEngine.TryReplace(
-                input,
-                replacementBytes,
-                destination,
-                ref scalarCursor,
-                out bytesWritten);
-
-            return scalarSuccess ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
-        }
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,

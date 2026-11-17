@@ -323,8 +323,6 @@ public sealed partial class Utf8Regex
 
     private AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
 
-    private AsciiSimplePatternPlan SimplePatternPlan => _preparedRegex.SimplePatternPlan;
-
     private string? FallbackReason => _preparedRegex.FallbackReason;
 
     private static void ValidateOptions(RegexOptions options)
@@ -423,13 +421,6 @@ public sealed partial class Utf8Regex
              // branch at the same start succeeds. The owned VM retries it.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
-             // Anchored simple plans without a dedicated native matcher use
-             // the cached scalar program. Keep qualified native and line paths.
-             _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
-                !_hasDirectFallbackAsciiFamilyWithoutValidation &&
-                !_hasDirectFallbackTokenFamilyWithoutValidation &&
-                _caretAnchoredGroupedLiteralUtf8 is null &&
-                ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input) ||
              _ownedSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||
@@ -457,40 +448,6 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        // Boolean existence on fully ASCII input can use the complete branch
-        // plan without capture projection. Controlled calls retain its bounded
-        // checkpoints instead of acquiring scalar capture/backtracking storage.
-        // Ordinary and unsupported routes keep their existing dispatch.
-        if ((_hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
-            HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout) &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            !_preparedRegex.Features.HasBackreferences && !_preparedRegex.Features.HasLookarounds &&
-            !_preparedRegex.Features.HasAtomicGroups && !_preparedRegex.Features.HasConditionals &&
-            !_ownedSliceProgram.RightToLeft && !_ownedSliceProgram.IgnoreCase && !_ownedSliceProgram.IsNonBacktracking &&
-            !_ownedSliceProgram.HasBalancing && !_ownedSliceProgram.HasSharedCaptureDeclarations &&
-            !_ownedSliceProgram.HasExplicitCaptureNumbers && !_ownedSliceProgram.HasContiguousAnchor &&
-            !_ownedSliceProgram.HasConditionalTest && !_ownedSliceProgram.UsesInterpretedLazyLoopSemantics)
-        {
-            var simpleInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-            try
-            {
-                if (!Utf8InputAnalyzer.IsAscii(input, ref simpleInvocation))
-                    return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref simpleInvocation);
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
-                var breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
-                    _preparedRegex.SearchPlan, simple, 0, ref simpleInvocation, out var index, out _);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
-                return index >= 0;
-            }
-            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-                simpleInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            {
-                throw CreateExecutionResourceFailure(ref simpleInvocation);
-            }
-        }
         if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole &&
             (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout))
         {
@@ -1099,7 +1056,7 @@ public sealed partial class Utf8Regex
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-                _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 !Utf8SliceRunner.CanCountTerminalClassRepeat(program))
             {
                 var isAscii = Utf8InputAnalyzer.IsAscii(input, ref invocation);
@@ -1115,25 +1072,6 @@ public sealed partial class Utf8Regex
                     if (structuralBreach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Native structural count breached the invocation budget.");
                     return structuralCount;
-                }
-                if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                    Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
-                        _preparedRegex.StructuralLinearProgram, input, ref invocation, out var nativeCount, out var breach))
-                {
-                    if (breach != Utf8ExecutionLimitKind.None)
-                        throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
-                    return nativeCount;
-                }
-                if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-                    _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple)
-                {
-                    var branchBreach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-                        _preparedRegex.SearchPlan, simple, ref invocation,
-                        out var branchCount);
-                    if (branchBreach != Utf8ExecutionLimitKind.None)
-                        throw new InvalidOperationException("Native simple count breached the invocation budget.");
-                    return branchCount;
                 }
             }
             else
@@ -1181,25 +1119,6 @@ public sealed partial class Utf8Regex
             if (terminal.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Terminal class count breached the invocation budget.");
             return terminal.Count;
-        }
-        // Every caller has admitted this subject through the same invocation.
-        // A positive ASCII-only branch cannot consume wider scalars elsewhere
-        // in that valid UTF-8 subject. Reuse the controlled simple counter;
-        // Count discards captures and needs no scalar VM workspace.
-        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan is { IsUtf8ByteSafe: true, Branches.Length: > 0, MinLength: > 0 } simple &&
-            !program.HasUnicodePatternAtoms && !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
-            !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
-            !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
-            !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
-        {
-            var breach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-                _preparedRegex.SearchPlan, simple, ref invocation, out var count);
-            if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Validated simple count breached the invocation budget.");
-            return count;
         }
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
@@ -1390,18 +1309,8 @@ public sealed partial class Utf8Regex
             _compiledEngineRuntime.SupportsAsciiWellFormedOnlyMatch &&
             CanUseAsciiDirectInput(input);
 
-        // An ASCII whole-match is incomplete for non-ASCII input unless the
-        // simple-pattern plan is UTF-8 byte-safe: a miss must not
-        // shortcut Unicode verification. Those inputs fall through to full
-        // validation and the compiled engine, which selects the semantic fallback.
-        var requiresUnicodeVerification =
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            !_preparedRegex.SimplePatternPlan.IsUtf8ByteSafe &&
-            !Utf8InputAnalyzer.IsAscii(input);
-
         var canUseWellFormedOnlyMatch =
-            _compiledEngineRuntime.SupportsWellFormedOnlyMatch &&
-            !requiresUnicodeVerification;
+            _compiledEngineRuntime.SupportsWellFormedOnlyMatch;
 
         if (canUseAsciiWellFormedOnlyMatch || canUseWellFormedOnlyMatch)
         {
@@ -1419,17 +1328,9 @@ public sealed partial class Utf8Regex
             {
                 return wellFormedMatch;
             }
-
-            // A whole-match miss is definitive only when a miss at offset 0 rules
-            // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
-            // still match inside the input, so they fall through to the engine below.
-            if (_compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive &&
-                !(_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-                    !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) &&
-                !(_preparedRegex.SimplePatternPlan.IsEndAnchored &&
-                    !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
+            if (_compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive)
             {
-                return default(Utf8CaptureRange);
+                return default;
             }
         }
 
@@ -1576,7 +1477,6 @@ public sealed partial class Utf8Regex
     {
         if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, this);
-        if (TryCreateNativeSimpleEnumerator(input, CancellationToken.None, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
         // anchor-enforcing owned cursor, without BCL construction.
@@ -1659,23 +1559,8 @@ public sealed partial class Utf8Regex
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
-            // Complete ASCII branches use the same controlled finder as finite
-            // Count, without acquiring scalar attempt scratch for every value.
-            ref readonly var simple = ref _preparedRegex.OperationMatchCursorPlans.SimplePatternPlan;
-            var nativeBranch = HasFiniteExecutionLimits && ReferenceEquals(program, _ownedSliceProgram) &&
-                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-                simple.Branches is { Length: > 0 } && simple.MinLength > 0 && !simple.IgnoreCase &&
-                !_preparedRegex.OperationMatchCursorPlans.StructuralLinearProgram.DeterministicProgram.HasValue &&
-                !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
-                !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
-                !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
-                !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-                Utf8InputAnalyzer.IsAscii(input, ref invocation);
             invocation.ShareStorageForCursor();
-            var cursor = nativeBranch
-                ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, true)
-                : new Utf8OperationMatchCursor(program, input, invocation);
+            var cursor = new Utf8OperationMatchCursor(program, input, invocation);
             return new Utf8ValueMatchEnumerator(cursor);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -1709,7 +1594,6 @@ public sealed partial class Utf8Regex
         cancellationToken.ThrowIfCancellationRequested();
         if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, cancellationToken).WithTimeoutMapping(input, this);
-        if (TryCreateNativeSimpleEnumerator(input, cancellationToken, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
         // Single literals retain one invocation through entry, discovery and result
         // publication. Other shapes retain the scalar VM.
@@ -1836,7 +1720,7 @@ public sealed partial class Utf8Regex
         // Count zero requests an unlimited split. Window cursors can serve it
         // through the same advancing scan as the default (int.MaxValue) count.
         if ((count > 0 || count == 0 && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow) &&
-            (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input)))
+            (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, count == 0 ? int.MaxValue : count, budget)
                 .WithTimeoutMapping(this);
@@ -1853,41 +1737,6 @@ public sealed partial class Utf8Regex
                 input,
                 new Utf8OperationMatchCursor(input, caretSplitPrefix, CreateExecutionBudget()),
                 count)
-                .WithTimeoutMapping(this);
-        }
-
-        // R05: absolute-anchored fixed-length simple patterns split owned through
-        // the simple-pattern cursor: anchors pin boundary-to-boundary hits with no
-        // empty matches, so cursor hits tile identically to the oracle (the same
-        // cursor backs owned enumeration). Variable lengths, empty-capable shapes,
-        // and inputs the factory cursor declines keep their existing routes.
-        if (count > 1 &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
-            _preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&
-            _preparedRegex.SimplePatternPlan.IsFixedLength &&
-            _preparedRegex.SimplePatternPlan.MinLength > 0 &&
-            (Utf8InputAnalyzer.IsAscii(input) || _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe) &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
-                _preparedRegex,
-                input,
-                validation,
-                count,
-                budget)
-                .WithTimeoutMapping(this);
-        }
-
-        // Scalar-verifiable simple patterns split through their native cursor;
-        // remaining shapes use the cached scalar program below.
-        if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            return new Utf8ValueSplitEnumerator(
-                input,
-                new Utf8OperationMatchCursor(input, _preparedRegex, useStructuralLinearProgram: false, budget, asciiInput: false),
-                count,
-                rightToLeft: false)
                 .WithTimeoutMapping(this);
         }
 
@@ -2013,8 +1862,7 @@ public sealed partial class Utf8Regex
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
-        if ((_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern
-            ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken) ??
+        if ((_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex             ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken) ??
             (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
                 _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
         {
@@ -2091,7 +1939,7 @@ public sealed partial class Utf8Regex
 
 
         if (!input.Overlaps(destination) &&
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern) &&
+            _preparedRegex.ExecutionKind is not (NativeExecutionKind.FallbackRegex ) &&
             GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             replacementPatternUtf8.IndexOf((byte)'$') < 0)
@@ -2181,10 +2029,6 @@ public sealed partial class Utf8Regex
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
             Utf8CompiledEngineKind.LiteralFamily => true,
-            Utf8CompiledEngineKind.StructuralLinearAutomaton
-                => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue &&
-                   (validation.IsAscii || _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe) ||
-                   (!validation.IsAscii && _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe),
             _ => false,
         };
     }

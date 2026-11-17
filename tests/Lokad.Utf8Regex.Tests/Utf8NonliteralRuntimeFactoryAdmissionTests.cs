@@ -15,7 +15,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         .GetValue(new Utf8Regex(pattern, RegexOptions.CultureInvariant))!;
 
     public static IEnumerable<object[]> Roots() => from kind in Enum.GetValues<Utf8CompiledEngineKind>()
-        where kind is Utf8CompiledEngineKind.SimplePatternInterpreter or Utf8CompiledEngineKind.StructuralLinearAutomaton
+        where kind == Utf8CompiledEngineKind.StructuralLinearAutomaton
         from limit in new[] { "bytes", "work", "depth" } select new object[] { (int)kind, limit };
 
     private static Utf8CompiledEngineRuntime Build(int kind, Utf8PreparedRegex plan, Utf8VerifierRuntime verifier) =>
@@ -69,7 +69,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         Utf8StructuralLinearProgram program) =>
         Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
+            Utf8OperationMatchCursorPlans.Create(search, program, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
@@ -87,7 +87,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         {
             object boxed = program;
             typeof(Utf8StructuralLinearProgram).GetField("<Kind>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .SetValue(boxed, kind == 1 ? Utf8StructuralLinearProgramKind.AsciiCharClassRun : Utf8StructuralLinearProgramKind.AsciiStructuralFamily);
+                .SetValue(boxed, kind == 1 ? Utf8StructuralLinearProgramKind.AsciiTokenWindow : Utf8StructuralLinearProgramKind.AsciiStructuralFamily);
             program = (Utf8StructuralLinearProgram)boxed;
         }
         var holderPlan = WithSearch(originalPlan, originalPlan.SearchPlan, program);

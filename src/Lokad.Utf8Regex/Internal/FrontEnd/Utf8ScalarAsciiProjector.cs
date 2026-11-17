@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>Derives native ASCII tokens from the canonical scalar class data.
-/// The mask is an ASCII intersection; its scalar kind qualifies any wider lane.</summary>
+/// The mask is an ASCII intersection, not a proof about non-ASCII subjects.</summary>
 internal static class Utf8ScalarAsciiProjector
 {
     // Native structural families run only within their qualified ASCII input
@@ -12,7 +12,7 @@ internal static class Utf8ScalarAsciiProjector
     {
         charClass = default;
         if (scalarClass is null || scalarClass.Data.Length < 3 || scalarClass.Data[2] != 0) return false;
-        if (TryCreateToken(scalarClass, out var token) && token.Kind == AsciiSimplePatternTokenKind.CharClass)
+        if (TryCreateToken(scalarClass, out var token) && token.Kind == AsciiPatternTokenKind.CharClass)
         {
             charClass = token.CharClass;
             return true;
@@ -285,7 +285,7 @@ internal static class Utf8ScalarAsciiProjector
         return true;
     }
 
-    internal static bool TryCreateToken(Utf8ScalarClass? scalarClass, out AsciiSimplePatternToken token)
+    internal static bool TryCreateToken(Utf8ScalarClass? scalarClass, out AsciiPatternToken token)
     {
         token = default;
         if (scalarClass is null) return false;
@@ -302,7 +302,7 @@ internal static class Utf8ScalarAsciiProjector
         var negated = data[0] != 0;
         if (!negated && categories.IsEmpty && ranges.SequenceEqual([0, 0x110000]))
         {
-            token = AsciiSimplePatternToken.Dot;
+            token = AsciiPatternToken.Dot;
             return true;
         }
         for (var index = 0; index < ranges.Length; index += 2)
@@ -337,18 +337,7 @@ internal static class Utf8ScalarAsciiProjector
                 else high |= 1UL << (value - 64);
             }
         }
-        var kind = shorthand < 0
-            ? negated ? Utf8SimplePatternScalarClassKind.AsciiClosedNegation : Utf8SimplePatternScalarClassKind.None
-            : effectiveNegation
-                ? shorthand switch
-                {
-                    0 => Utf8SimplePatternScalarClassKind.NegatedDigit,
-                    1 => Utf8SimplePatternScalarClassKind.NegatedWord,
-                    _ => Utf8SimplePatternScalarClassKind.NegatedWhitespace,
-                }
-                : whitespace ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace : Utf8SimplePatternScalarClassKind.None;
-        token = new AsciiSimplePatternToken(new AsciiCharClass(low, high, maskNegated),
-            requiresAsciiInput: shorthand >= 0 || negated, kind);
+        token = new AsciiPatternToken(new AsciiCharClass(low, high, maskNegated));
         return true;
     }
 

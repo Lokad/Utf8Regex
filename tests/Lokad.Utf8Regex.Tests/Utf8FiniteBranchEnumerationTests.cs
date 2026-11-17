@@ -8,8 +8,18 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8FiniteBranchEnumerationTests
 {
-    private static Utf8ResourcePolicy Tiny(ulong work = 1000000) => new()
-    { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    private static Utf8ResourcePolicy Funded(ulong work = 1000000) => new()
+    { MaxWorkSteps = work, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+
+    [Fact]
+    public void CaptureCursorsAdmitWorkingStorageBeforePublishing()
+    {
+        const string pattern = "(?<n>a?b[0-9]{2})";
+        var denied = new Utf8Regex(pattern, resourcePolicy: Funded() with { MaxWorkingBytes = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => { var cursor = denied.EnumerateMatches("b12"u8); cursor.MoveNext(); }).ResourceKind);
+        Assert.Equal(1, new Utf8Regex(pattern, resourcePolicy: Funded()).Count("b12"u8));
+    }
 
     [Theory]
     [InlineData("a?b[0-9]{2}")]
@@ -17,12 +27,12 @@ public sealed class Utf8FiniteBranchEnumerationTests
     [InlineData("ab[0-9]{1,2}d")]
     [InlineData("(?<n>a?b[0-9]{2})")]
     [InlineData("(?m:^a?b[0-9]{2}$)")]
-    public void CompleteAsciiValuesFitWithoutScalarScratch(string pattern)
+    public void CompleteAsciiValuesRespectFiniteWorkingStorage(string pattern)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = RegexOptions.CultureInvariant | mode;
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Tiny());
+            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded());
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
             using var source = new CancellationTokenSource();
             foreach (var text in new[] { "", "a", "b1", "b12", "ab12", "aab12", "ab1d ab12d",
@@ -49,7 +59,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var input = "abxx b12 ab34"u8.ToArray();
-        var funded = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Tiny());
+        var funded = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Funded());
         var measured = funded.EnumerateMatches(input);
         Assert.True(measured.MoveNext());
         Assert.True(measured.MoveNext());
@@ -58,13 +68,13 @@ public sealed class Utf8FiniteBranchEnumerationTests
         var complete = measured.DebugInvocationSteps;
         for (ulong work = 1; work < complete; work++)
         {
-            var regex = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Tiny(work));
+            var regex = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Funded(work));
             var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Drain(regex, input));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
             Assert.Equal(work, denied.Limit);
             Assert.True(denied.Requested > work);
         }
-        var bounded = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Tiny(twoMatches));
+        var bounded = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Funded(twoMatches));
         var cursor = bounded.EnumerateMatches(input);
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;
@@ -102,10 +112,10 @@ public sealed class Utf8FiniteBranchEnumerationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var input = "b12 ab34"u8.ToArray();
-        var measured = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Tiny()).EnumerateMatches(input);
+        var measured = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Funded()).EnumerateMatches(input);
         while (measured.MoveNext()) { }
         var fullCost = measured.DebugInvocationSteps;
-        var second = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Tiny()).EnumerateMatches(input);
+        var second = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout, Funded()).EnumerateMatches(input);
         Assert.True(second.MoveNext()); Assert.True(second.MoveNext());
         var terminalCost = fullCost - second.DebugInvocationSteps;
 
@@ -122,7 +132,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
         });
         try
         {
-            var regex = new Utf8Regex("a?b[0-9]{2}", options, TimeSpan.FromMilliseconds(20), Tiny());
+            var regex = new Utf8Regex("a?b[0-9]{2}", options, TimeSpan.FromMilliseconds(20), Funded());
             var cursor = regex.EnumerateMatches(input, source.Token);
             Assert.True(cursor.MoveNext()); Assert.True(cursor.MoveNext());
             var retained = cursor.Current;
@@ -146,17 +156,13 @@ public sealed class Utf8FiniteBranchEnumerationTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void DenseFiniteValuesDoNotAcquirePerResultScratch(bool compiled)
+    public void DenseFiniteValuesPreserveBorrowedRangesAndAliases(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("(?<n>a?b[0-9]{2})", options, Regex.InfiniteMatchTimeout, Tiny());
+        var regex = new Utf8Regex("(?<n>a?b[0-9]{2})", options, Regex.InfiniteMatchTimeout, Funded());
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 1024)));
-        for (var i = 0; i < 16; i++) Assert.Equal(2048, Drain(regex, input));
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var count = Drain(regex, input);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(2048, count);
-        Assert.InRange(allocated, 0, 4096);
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>

@@ -73,16 +73,6 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     }
 
     [Fact]
-    public void LettersEnBoundedRepeatStaysOnStructuralRunEngine()
-    {
-        var regex = new Utf8Regex("[A-Za-z]{8,13}", RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.None, regex.Inspection.SearchPlan.Kind);
-    }
-
-    [Fact]
     public void ContextBoundedRepeatStaysOnTokenWindowStructuralEngine()
     {
         var regex = new Utf8Regex("[A-Za-z]{10}\\s+[\\s\\S]{0,100}Result[\\s\\S]{0,100}\\s+[A-Za-z]{10}", RegexOptions.None);

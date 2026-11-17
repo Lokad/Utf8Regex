@@ -10,7 +10,6 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind,
-        AsciiSimplePatternPlan simplePatternPlan,
         AsciiStructuralIdentifierFamilyPlan asyncIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan tokenWindowPlan,
         AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan,
@@ -24,7 +23,6 @@ internal readonly struct Utf8RegexAnalysis
         Features = features;
         SearchFacts = searchFacts;
         ExecutionKind = executionKind;
-        SimplePatternPlan = simplePatternPlan;
         StructuralIdentifierFamilyPlan = asyncIdentifierFamilyPlan;
         StructuralTokenWindowPlan = tokenWindowPlan;
         StructuralRepeatedSegmentPlan = repeatedSegmentPlan;
@@ -43,8 +41,6 @@ internal readonly struct Utf8RegexAnalysis
     public Utf8SearchFacts SearchFacts { get; }
 
     public NativeExecutionKind ExecutionKind { get; }
-
-    public AsciiSimplePatternPlan SimplePatternPlan { get; }
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
 
@@ -66,7 +62,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind)
-        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, default, default, default, default, default, default, null, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, default, default, default, default, default, null, null);
 
     public static Utf8RegexAnalysis CreateFallback(
         Utf8SemanticRegex semanticRegex,
@@ -74,7 +70,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         string fallbackReason)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.FallbackRegex, default, default, default, default, default, default, null, fallbackReason);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.FallbackRegex, default, default, default, default, default, null, fallbackReason);
 
     public static Utf8RegexAnalysis CreateLiteral(
         Utf8SemanticRegex semanticRegex,
@@ -83,24 +79,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind,
         byte[] literalUtf8)
-        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, default, default, default, default, default, default, literalUtf8, null);
-
-    public static Utf8RegexAnalysis CreateSimple(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        Utf8RegexFeatures features,
-        Utf8SearchFacts searchFacts,
-        AsciiSimplePatternPlan simplePatternPlan)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiSimplePattern, simplePatternPlan, default, default, default, default, default, null, null);
-
-    public static Utf8RegexAnalysis CreateSimple(
-        Utf8SemanticRegex semanticRegex,
-        string? executionPattern,
-        Utf8RegexFeatures features,
-        Utf8SearchFacts searchFacts,
-        AsciiSimplePatternPlan simplePatternPlan,
-        byte[] literalUtf8)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiSimplePattern, simplePatternPlan, default, default, default, default, default, literalUtf8, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, default, default, default, default, default, literalUtf8, null);
 
     public static Utf8RegexAnalysis CreateStructuralIdentifier(
         Utf8SemanticRegex semanticRegex,
@@ -108,7 +87,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralIdentifierFamilyPlan plan)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralIdentifierFamily, default, plan, default, default, default, default, null, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralIdentifierFamily, plan, default, default, default, default, null, null);
 
     public static Utf8RegexAnalysis CreateStructuralTokenWindow(
         Utf8SemanticRegex semanticRegex,
@@ -117,7 +96,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8SearchFacts searchFacts,
         AsciiStructuralTokenWindowPlan plan,
         byte[] literalUtf8)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralTokenWindow, default, default, plan, default, default, default, literalUtf8, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralTokenWindow, default, plan, default, default, default, literalUtf8, null);
 
     public static Utf8RegexAnalysis CreateStructuralRepeatedSegment(
         Utf8SemanticRegex semanticRegex,
@@ -125,7 +104,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralRepeatedSegmentPlan plan)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralRepeatedSegment, default, default, default, plan, default, default, null, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralRepeatedSegment, default, default, plan, default, default, null, null);
 
     public static Utf8RegexAnalysis CreateStructuralQuotedRelation(
         Utf8SemanticRegex semanticRegex,
@@ -133,7 +112,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralQuotedRelationPlan plan)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralQuotedRelation, default, default, default, default, plan, default, null, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiStructuralQuotedRelation, default, default, default, plan, default, null, null);
 
     public static Utf8RegexAnalysis CreateOrderedLiteralWindow(
         Utf8SemanticRegex semanticRegex,
@@ -141,7 +120,7 @@ internal readonly struct Utf8RegexAnalysis
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiOrderedLiteralWindowPlan plan)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiOrderedLiteralWindow, default, default, default, default, default, plan, null, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiOrderedLiteralWindow, default, default, default, default, plan, null, null);
 
     public static Utf8RegexAnalysis CreateOrderedLiteralWindow(
         Utf8SemanticRegex semanticRegex,
@@ -150,5 +129,5 @@ internal readonly struct Utf8RegexAnalysis
         Utf8SearchFacts searchFacts,
         AsciiOrderedLiteralWindowPlan plan,
         byte[] literalUtf8)
-        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiOrderedLiteralWindow, default, default, default, default, default, plan, literalUtf8, null);
+        => new(semanticRegex, executionPattern, features, searchFacts, NativeExecutionKind.AsciiOrderedLiteralWindow, default, default, default, default, plan, literalUtf8, null);
 }

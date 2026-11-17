@@ -101,19 +101,6 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("(" + text + ")"), text, 0);
     }
 
-    [Fact]
-    public void WarmByteSimplePatternDiscoveryDoesNotAllocate()
-    {
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryCreatePlan(Utf8FrontEnd.Analyze("(?<x>a(?<x>b)c)(d)", RegexOptions.CultureInvariant).SemanticRegex,
-            RegexOptions.CultureInvariant, out var plan, out _));
-        for (var index = 0; index < 32; index++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, plan, 0, out _));
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var index = 0; index < 256; index++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, plan, 0, out _));
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-    }
-
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
     [InlineData(true, false)] [InlineData(true, true)]
@@ -210,32 +197,6 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Assert.True(regex.Match("abxc"u8, recovery.Token).Success);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("abxc"u8.ToArray(), cancellationToken: recovery.Token)).Success);
         Assert.True(regex.EnumerateMatches("abxc"u8, recovery.Token).MoveNext());
-    }
-
-    [Theory]
-    [InlineData("bool", false)]
-    [InlineData("bool", true)]
-    [InlineData("count", false)]
-    [InlineData("count", true)]
-    [InlineData("value", false)]
-    [InlineData("value", true)]
-    public void CallsWithoutTokensRetainTheirNativeSelection(string operation, bool compiled)
-    {
-        var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("abxz", 5000)) + "abxc");
-        var regex = new Utf8Regex("ab.c", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-        var session = Utf8SearchDiagnosticsSession.Start(_ => throw new InvalidOperationException("A no-token native call entered the unit VM."));
-        try
-        {
-            switch (operation)
-            {
-                case "bool": Assert.True(regex.IsMatch(input)); break;
-                case "count": Assert.Equal(1, regex.Count(input)); break;
-                case "value": Assert.True(regex.Match(input).Success); break;
-            }
-        }
-        finally { session.Complete(); }
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     private static void Invoke(Utf8Regex regex, byte[] input, string operation, CancellationToken token)

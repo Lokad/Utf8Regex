@@ -29,12 +29,6 @@ public sealed partial class Utf8Regex
         return Utf8PrefilterExecutor.Rejects(_preparedRegex.SearchPlan.PrefilterPlan, input);
     }
 
-    private bool ShouldUseFallbackForAnchoredSimplePattern()
-    {
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored);
-    }
-
     private bool TryMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         match = default(Utf8CaptureRange);
@@ -324,23 +318,8 @@ public sealed partial class Utf8Regex
             !features.HasLoops;
     }
 
-    private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation) =>
-        ShouldUseFallbackForNonAsciiSimplePattern(validation, false);
-
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
-        => _requiresKelvinSignFallback && ContainsKelvinSign(input) && !ScalarVerifierServesInput(input);
-
-    // R05: line-anchored shapes serve owned through the interpreter/linear
-    // verifiers and the owned split cursors, which enforce line edges per
-    // candidate; absolute-anchored shapes keep their dedicated arms and
-    // fallbacks. Culture, Kelvin, and right-to-left keep their fences.
-    private bool CanServeLineAnchoredOwned(ReadOnlySpan<byte> input)
-        => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-        !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
-        !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&
-        (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored) &&
-        !UsesRightToLeft() &&
-        !ShouldUseKelvinSignFallback(input);
+        => _requiresKelvinSignFallback && ContainsKelvinSign(input);
 
     // Native replacement splicers require complete scalar endpoints. Mixed
     // subjects outside these qualified shapes use the cached scalar program.
@@ -365,34 +344,14 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe &&
-            (_preparedRegex.SimplePatternPlan.MinLength > 0 ||
-            _preparedRegex.SimplePatternPlan.IsStartAnchored ||
-            _preparedRegex.SimplePatternPlan.IsEndAnchored);
+        return false;
     }
-
-    // Scalar-verifiable simple patterns fold Kelvin owned through the scalar
-    // walk, so they bypass Kelvin fencing everywhere; every other fenced route
-    // (anchored validators, literal families, byte-safe plans) keeps the fence.
-    private bool ScalarVerifierServesInput(ReadOnlySpan<byte> input)
-        => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-        Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input);
 
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
         => input.IndexOf("K"u8) >= 0;
 
     private static bool RequiresKelvinSignFallback(Utf8PreparedRegex preparedRegex)
     {
-        // Anchored simple-pattern routes compare ASCII literals and classes without
-        // Kelvin folding, while .NET matches U+212A against `k`/`K` under invariant
-        // IgnoreCase. Fencing the whole kind when IgnoreCase is set is
-        // conservative but exact: only Kelvin-containing inputs take the fallback.
-        if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            preparedRegex.SimplePatternPlan.IgnoreCase)
-        {
-            return true;
-        }
 
         if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase)
         {
@@ -418,47 +377,8 @@ public sealed partial class Utf8Regex
     private static bool ContainsAsciiK(byte[]? literal)
         => literal is not null && literal.AsSpan().IndexOfAny((byte)'K', (byte)'k') >= 0;
 
-    private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation, bool allowByteSafeStructuralLinear)
-    {
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe)
-        {
-            return false;
-        }
-
-        if (allowByteSafeStructuralLinear &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _compiledEngine.Kind == Utf8CompiledEngineKind.StructuralLinearAutomaton &&
-            _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe)
-        {
-            return false;
-        }
-
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern && !validation.IsAscii;
-    }
-
-    private bool ShouldUseInterpreterForTimeoutSensitiveSimplePattern()
-    {
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            MatchTimeout != Regex.InfiniteMatchTimeout;
-    }
-
     private bool CanGuideFallbackVerification()
     {
         return _preparedRegex.SearchPlan.HasFallbackCandidates;
-    }
-
-
-
-
-    private int FindNextSimplePatternViaInterpreter(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        return Utf8ExecutionInterpreter.FindNextSimplePattern(
-            input,
-            _preparedRegex.SearchPlan,
-            _preparedRegex.SimplePatternPlan,
-            startIndex,
-            budget,
-            out matchedLength);
     }
 }

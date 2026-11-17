@@ -157,7 +157,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("(?:ab|xy)")]
     [InlineData("a.{0,4}b")]
     [InlineData("(?:get|set)[A-Z][A-Za-z0-9_]*")]
-    [InlineData("ab[0-9]{1,2}d")]
+
     [InlineData("^abc")]
     [InlineData("abc$")]
     [InlineData(@"abc\z")]
@@ -299,7 +299,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("(?:ab|xy)")]
     [InlineData("a.{0,4}b")]
     [InlineData("(?:get|set)[A-Z][A-Za-z0-9_]*")]
-    [InlineData("ab[0-9]{1,2}d")]
+
     public void NativeFactoryKeepsValidationWorkAndBorrowedAdmission(string pattern)
     {
         var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));

@@ -362,7 +362,7 @@ literal text or a duplicate source. Each string literal is encoded independently
 surrogate becomes U+FFFD and cannot join a fragment from another substitution.
 Subjects are caller-valid; template bytes remain strict.
 
-Non-literal fallback/simple-pattern replacements use the existing scalar byte
+General-pattern replacements use the existing scalar byte
 template engine for both allocated and caller-owned output. They select that
 engine before subject preparation and do not construct UTF-16 match/group views
 or repeat subject validation. Literal replacement paths retain their existing
@@ -516,31 +516,13 @@ depth, working/result admission or retained-result lifetimes. Longer, folded,
 reverse and unsupported-hardware paths keep their existing bounded scans.
 Finite-policy and caller-funded `Count` also admit four-to-eight complete literal
 alternatives to this existing bounded search. Avoiding VM scratch can lower work,
-depth and working requirements. Explicit UTF-16 offsets still require admission
-for their coordinate map; result-producing operations retain their existing
-native eligibility.
-Count can also reuse a proved positive ASCII simple-pattern plan on a valid
-UTF-8 subject containing unrelated wider scalars. The existing proof must
-guarantee that accepted spans contain only ASCII; opaque Unicode constraints,
-folding, RTL/NonBacktracking, nullable/stateful cases and boundary/lookaround
-requirements retain their existing routes. The counter borrows the original
-validated invocation, including live/funded limits and interruption, without
-revalidating or allocating unneeded VM capture/continuation storage. Numeric
-work, depth and working requirements can decrease; real allocations remain
-admitted before acquisition. This changes no returned capture or result lifetime.
-Caller-funded Count requests only subject facts consumed by its selected route:
-Unicode category/letter and complete word-run counting classify encountered
-scalars directly. Other byte counters check
-subject validity under the immutable policy without deriving unused UTF-16
-metadata. They keep one original invocation and synchronous interruption,
-admission and refunds. Avoided metadata work can lower numeric work requirements.
-Controlled simple-pattern and signed-decimal IsMatch gates likewise request only
-ASCII eligibility, without UTF-16 totals or supplementary-scalar metadata.
-Caller-valid matching can stop ASCII
-classification at its first non-ASCII block; scalar fallback then borrows the
-same invocation without describing an unrelated suffix. This may lower required
-work, while native eligibility, matching algorithms and storage admission stay
-unchanged.
+depth and working requirements. Result-producing operations retain their own admission and native eligibility.
+General patterns, including bounded classes and captured finite branches, use
+owned scalar execution. Work, depth and working-storage requirements depend on
+the selected program; retiring a shortcut can increase them. Real storage is
+admitted before acquisition. Native counters classify only the subject facts
+they consume, under the original work, cancellation and deadline authority.
+Subjects are caller-valid UTF-8; no validity pass or UTF-16 metadata is required.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
@@ -604,15 +586,6 @@ ASCII literal-family cursors publish byte coordinates directly. Search and
 per-match interruption checks remain; no subject coordinate map is built.
 Complete literal discovery can also use a proved positive literal suffix,
 confirmed under the same bounded comparison budget without consuming the suffix.
-Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
-with its bounded checkpoints, without scalar capture/backtracking workspace.
-The caller guarantees valid unchanged text; operations perform no validity pass. Unsupported shapes, mixed Unicode input, RTL
-and NonBacktracking keep their existing paths. The
-controlled invocation owner remains; this is not a general zero-allocation claim.
-For example, the fixed predicate `^[A-Z]{3}[0-9]{4}$` keeps this Boolean path
-with a live caller token and finite numeric limits. Its fixed invocation metadata
-still allocates. The separate caller-funded entry point can use scalar scratch;
-that storage remains admitted and refunded independently of program ownership.
 Native counters admit their fixed scratch capacity against working bytes before
 use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
@@ -628,7 +601,7 @@ mixed Unicode, folding, RTL and NonBacktracking retain their existing routes.
 Avoiding scalar VM scratch can lower route-dependent work, depth and working
 requirements; invocation metadata still allocates.
 
-Finite structural/simple `Count` needs the valid-text guarantee and ASCII eligibility,
+Finite structural `Count` needs the valid-text guarantee and ASCII eligibility,
 not UTF-16 lengths or supplementary-scalar metadata. Only the route's actual ASCII
 eligibility checks remain. Original work/interruption and admission stay active.
 Unicode subjects retain scalar matching.
@@ -956,8 +929,8 @@ graph, identity deduplication or transactional manifest is required.
 
 ## Implementation and qualification
 
-Anchored class/head-tail patterns no longer have separate whole-pattern
-validators or segment plans; they use the remaining owned interpreters. This
+Nonliteral simple-pattern execution, its standalone fixed-token programs and
+whole-pattern validators are removed. These patterns use the owned scalar VM. This
 can increase work or working-storage requirements for a given numerical limit.
 Admission, original-token cancellation, deadlines, scalar semantics and byte
 capture ranges still apply to the selected program.

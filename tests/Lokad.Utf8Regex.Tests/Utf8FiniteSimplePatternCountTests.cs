@@ -99,45 +99,6 @@ public sealed class Utf8FiniteSimplePatternCountTests
     }
 
     [Theory]
-    [InlineData("", 0, false)]
-    [InlineData("", 0, true)]
-    [InlineData("abxx", 0, false)]
-    [InlineData("abxx", 0, true)]
-    [InlineData("b12 ab34", 2, false)]
-    [InlineData("b12 ab34", 2, true)]
-    public void TerminalObservationKeepsOriginalAuthorityAndParentLoans(string text, int expected, bool expire)
-    {
-        var prepared = new Utf8Regex("a?b[0-9]{2}").Inspection.PreparedRegex;
-        var input = Encoding.UTF8.GetBytes(text);
-        var limits = new Utf8ExecutionLimits(1000000, 1024, 1 << 20, 1 << 20);
-        var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.SearchPlan, prepared.SimplePatternPlan, ref measured, out var count));
-        Assert.Equal(expected, count);
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(limits, TimeSpan.FromMilliseconds(20), token.Token);
-        var padding = (64 - measured.Budget.Steps % 64) % 64;
-        for (ulong step = 0; step < padding; step++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        Assert.True(invocation.Ledger.TryReserve(13));
-        var terminal = padding + measured.Budget.Steps;
-        var entered = false;
-        invocation.CheckpointHook = step => {
-            if (step != terminal) return;
-            entered = true; if (expire) ticks = 50; else token.Cancel();
-        };
-        var failure = Record.Exception(() => Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.SearchPlan, prepared.SimplePatternPlan, ref invocation, out _));
-        Assert.True(entered);
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        invocation.Ledger.Release(13);
-    }
-
-    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

@@ -77,8 +77,6 @@ public sealed partial class Utf8Regex
         public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan =>
             _owner.StructuralIdentifierFamilyPlan;
 
-        public AsciiSimplePatternPlan SimplePatternPlan => _owner.SimplePatternPlan;
-
         public string? FallbackReason => _owner.FallbackReason;
 
         public bool DebugCanUseFusedCompiledUtf8LiteralCount =>

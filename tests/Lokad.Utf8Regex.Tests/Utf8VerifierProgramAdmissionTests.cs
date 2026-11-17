@@ -220,7 +220,7 @@ internal static class Utf8VerifierTestPlans
     internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(search, p.StructuralLinearProgram, p.SimplePatternPlan,
+            Utf8OperationMatchCursorPlans.Create(search, p.StructuralLinearProgram,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             search.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
@@ -231,7 +231,7 @@ internal static class Utf8VerifierTestPlans
         var p = Utf8FrontEnd.Compile("a", RegexOptions.CultureInvariant);
         return Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan,
+            Utf8OperationMatchCursorPlans.Create(p.SearchPlan, p.StructuralLinearProgram,
                 p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, structuralVerifier, p.StructuralIdentifierFamilyPlan,
             p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan,

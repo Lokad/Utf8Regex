@@ -130,8 +130,6 @@ internal sealed class Utf8PreparedRegex
 
     public ref readonly Utf8StructuralLinearProgram StructuralLinearProgram => ref _operationMatchCursorPlans.StructuralLinearProgram;
 
-    public ref readonly AsciiSimplePatternPlan SimplePatternPlan => ref _operationMatchCursorPlans.SimplePatternPlan;
-
     public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }

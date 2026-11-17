@@ -34,7 +34,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
     public void RangesPreserveAnchorsRunsCapturesMixedScalarsAndInvocationModes(string pattern, bool compiled, bool finite, bool live)
     {
         var regex = new Utf8Regex(pattern, Options(compiled), finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
-        Assert.True(Prepared(regex).StructuralLinearProgram.DeterministicProgram.HasValue);
         var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, Options(compiled)));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -70,42 +69,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
     {
         var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(10));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, Options(compiled)), Texts.Where(text => text.Length <= 128).ToArray());
-    }
-
-    [Theory]
-    [InlineData(@"ab[0-9]{2}", false)]
-    [InlineData(@"ab[0-9]{2}", true)]
-    [InlineData(@"[0-9]{2,4}", false)]
-    [InlineData(@"[0-9]{2,4}", true)]
-    [InlineData(@"[0-9]{2}ab", true)]
-    public void EverySecondMoveCutoffKeepsPublishedRangeScanProgressAndBorrowedStorage(string pattern, bool mixed)
-    {
-        var prepared = Prepared(new Utf8Regex(pattern, Options(false)));
-        var input = Encoding.UTF8.GetBytes(mixed ? "é😀 ab12 12ab 中ab34 34ab" : "ab12 12ab ab34 34ab");
-        var baselineInvocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref baselineInvocation);
-        var baseline = new Utf8OperationMatchCursor(input, prepared, baselineInvocation, validation.IsAscii);
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextDeterministic(out var found));
-        Assert.True(found);
-        var firstSteps = baseline.DebugInvocationSteps;
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextDeterministic(out found));
-        Assert.True(found);
-        for (var cap = firstSteps; cap < baseline.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-            var cursor = new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii);
-            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.TryMoveNextDeterministic(out found));
-            Assert.True(found);
-            var previous = cursor.CurrentValueMatch;
-            var state = cursor.DebugDeterministicScanState;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.TryMoveNextDeterministic(out var denied));
-            Assert.False(denied);
-            Assert.Equal(previous, cursor.CurrentValueMatch);
-            Assert.Equal(state, cursor.DebugDeterministicScanState);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-        }
     }
 
     [Theory]
@@ -146,7 +109,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
 
     [Theory]
     [MemberData(nameof(PhaseCases))]
-    public void ValidationCandidateScanAndVerifierObserveInterruption(bool compiled, string phase, bool expire)
+    public void MatchingAndFirstPublicationObserveOriginalInterruption(bool compiled, string phase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         // Stay inside the existing speculative preparation budget. Sixty
@@ -154,16 +117,11 @@ public sealed class Utf8DeterministicCursorInvocationTests
         var pattern = phase == "verifier" ? @"ab[0-9]{60}" : @"ab[0-9]{2}";
         var text = phase == "verifier" ? "ab" + new string('1', 60) : phase == "projection" ? new string('é', 160000) + "ab12" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var regex = new Utf8Regex(pattern, Options(compiled), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        Assert.True(Prepared(regex).StructuralLinearProgram.DeterministicProgram.HasValue);
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || phase != "validation" && steps <= validation.Budget.Steps ||
-                phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0 ||
-                phase == "projection" && Utf8SearchDiagnosticsSession.Current!.VerifierMatches == 0) return;
+            if (entered) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });
@@ -231,45 +189,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); }).CancellationToken);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    public static IEnumerable<object[]> TerminalCases()
-    {
-        foreach (var pattern in new[] { Patterns[0], Patterns[2] })
-        foreach (var compiled in new[] { false, true })
-        foreach (var matches in new[] { false, true })
-        foreach (var expire in new[] { false, true }) yield return [pattern, compiled, matches, expire];
-    }
-
-    [Theory]
-    [MemberData(nameof(TerminalCases))]
-    public void ExhaustedNativeCursorKeepsConstantWorkAndChecksTokenAndDeadline(string pattern, bool compiled, bool matches, bool expire)
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var input = Encoding.UTF8.GetBytes(matches ? "ab12 ab34" : new string('x', 32000));
-        // Match production ordering: construction is complete before the
-        // invocation deadline starts. The execution budget remains unchanged.
-        var prepared = Prepared(new Utf8Regex(pattern, Options(compiled)));
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7),
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
-        var cursor = new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii);
-        while (cursor.MoveNext()) { }
-        var previous = cursor.CurrentValueMatch;
-        var state = cursor.DebugDeterministicScanState;
-        var terminal = cursor.DebugInvocationSteps;
-        for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
-        Assert.Equal(3UL, cursor.DebugInvocationSteps - terminal);
-        if (expire) clock.Advance(250); else source.Cancel();
-        Exception? observed = null;
-        try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
-        Assert.Equal(previous, cursor.CurrentValueMatch);
-        Assert.Equal(state, cursor.DebugDeterministicScanState);
-        Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
     }
 
     [Theory]

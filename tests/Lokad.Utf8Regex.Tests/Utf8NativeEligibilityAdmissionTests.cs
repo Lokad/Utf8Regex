@@ -17,10 +17,8 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     private static readonly Func<Utf8TreeNode, bool>[] Scans =
     [
         Scan(typeof(Utf8NativeExecutionAnalyzer), "ContainsImpossibleAtom"),
-        Scan(typeof(Utf8NativeExecutionAnalyzer), "IsSupportedSimplePatternNode"),
-        Scan(typeof(Utf8AsciiSimplePatternLowerer), "HasCaseClearingGroup"),
-        Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase,
-        Scan(typeof(Utf8AsciiSimplePatternLowerer), "AllowsTrailingNewlineBeforeEnd"),
+        Scan(typeof(Utf8NativeExecutionAnalyzer), "IsSupportedFiniteLiteralNode"),
+        Scan(typeof(Utf8FiniteLiteralLowerer), "HasCaseClearingGroup"),
     ];
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, RegexOptions options, params Utf8TreeNode[] children)
@@ -65,7 +63,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
 
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 6; route++)
+        foreach (var route in Enumerable.Range(0, 6).Where(route => route is not 3 and not 4))
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -91,7 +89,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]   [InlineData(5)]
     public void DeepChildDenialAndSameOwnerRecoveryRestoreLoans(int route)
     {
         var input = Make(route, 32);
@@ -116,7 +114,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]   [InlineData(5)]
     public void GrowthDenialReleasesFramesAndAnyLoweredPayload(int route)
     {
         var input = Make(route, 128);
@@ -135,7 +133,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]   [InlineData(5)]
     public void EveryWorkCutoffRestoresParentWithoutRefundingWork(int route)
     {
         var input = Make(route, 3);
@@ -174,7 +172,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]   [InlineData(5)]
     public void EveryByteCutoffRestoresTemporaryAndTransferredLoans(int route)
     {
         var input = Make(route, 3);
@@ -204,7 +202,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void WideBorrowedTreesUseAncestorCapacityAndRestoreParent(int route)
     {
         var children = Enumerable.Range(0, 4097).Select(_ => route == 4

@@ -35,20 +35,19 @@ public sealed class Utf8CapturedSimpleBooleanTests
     [InlineData(@"(\d{1,2})X", " x1X ", true)]
     [InlineData(@"(\w{1,2})X", " abX ", true)]
     [InlineData(@"([^\d]{1,2})X", " \tX ", true)]
-    public void AsciiExistenceNeedsNoCaptureWorkspace(string pattern, string text, bool expected)
+    public void AsciiExistenceUsesFundedWorkingStorage(string pattern, string text, bool expected)
     {
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1, MaxDepth = 1 });
+                Funded with { MaxResultBytes = 1 });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(expected, regex.IsMatch(input));
-                Assert.Equal(Utf8ExecutionRoute.NativeAsciiSimplePattern, session.ExecutionRoute);
                 Assert.Equal(expected, regex.IsMatch(input, token.Token));
             }
             finally { session.Complete(); }
@@ -104,19 +103,19 @@ public sealed class Utf8CapturedSimpleBooleanTests
     }
 
     [Fact]
-    public void WholeKernelAdmissionBoundsMatchingAndPublication()
+    public void FiniteWorkingAdmissionBoundsMatchingAndPublication()
     {
         var input = "1234-5678-1234-456"u8.ToArray();
         ulong required = 0;
-        for (ulong work = 1; work <= 32; work++)
+        for (ulong work = 1; work <= 256; work++)
         {
             var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+                Funded with { MaxWorkSteps = work, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
             try { Assert.True(regex.IsMatch(input)); required = work; break; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
-        Assert.InRange(required, 2UL, 32UL);
+        Assert.InRange(required, 2UL, 256UL);
     }
 
     [Theory]

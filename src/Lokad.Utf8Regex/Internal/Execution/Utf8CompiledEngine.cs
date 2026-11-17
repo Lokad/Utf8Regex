@@ -7,7 +7,6 @@ internal enum Utf8CompiledEngineKind : byte
     FallbackRegex = 0,
     ExactLiteral = 3,
     LiteralFamily = 4,
-    SimplePatternInterpreter = 6,
     StructuralLinearAutomaton = 7,
 }
 
@@ -56,18 +55,14 @@ internal static class Utf8CompiledEngineSelector
         if (regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.DeterministicLinear &&
             (regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily or
                 NativeExecutionKind.AsciiStructuralTokenWindow or NativeExecutionKind.AsciiStructuralRepeatedSegment or
-                NativeExecutionKind.AsciiStructuralQuotedRelation or NativeExecutionKind.AsciiOrderedLiteralWindow ||
-             regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern && CanUseStructuralLinearSimplePattern(regexPlan)))
+                NativeExecutionKind.AsciiStructuralQuotedRelation or NativeExecutionKind.AsciiOrderedLiteralWindow))
         {
             var emitted = Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regexPlan);
             return new(Utf8CompiledEngineKind.StructuralLinearAutomaton,
                 emitted ? Utf8CompiledExecutionBackend.EmittedInstruction : Utf8CompiledExecutionBackend.Legacy);
         }
 
-        return new(regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            regexPlan.CompiledPatternCategory is Utf8CompiledPatternCategory.AnchoredWhole or Utf8CompiledPatternCategory.None
-                ? Utf8CompiledEngineKind.SimplePatternInterpreter
-                : Utf8CompiledEngineKind.FallbackRegex);
+        return new(Utf8CompiledEngineKind.FallbackRegex);
     }
 
     private static bool IsLiteral(Utf8PreparedRegex plan, Utf8SearchOperationPlan count)
@@ -87,14 +82,5 @@ internal static class Utf8CompiledEngineSelector
                 (count.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
                     Utf8SearchPortfolioKind.ExactAutomatonFamily or Utf8SearchPortfolioKind.ExactPackedFamily or
                     Utf8SearchPortfolioKind.ExactEarliestFamily or Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily);
-    }
-
-    private static bool CanUseStructuralLinearSimplePattern(Utf8PreparedRegex plan)
-    {
-        if (plan.SimplePatternPlan.IsStartAnchored || plan.SimplePatternPlan.IsEndAnchored || plan.Features.HasBackreferences)
-            return false;
-        return plan.SimplePatternPlan.RunPlan.HasValue ||
-            plan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern ||
-            plan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun;
     }
 }

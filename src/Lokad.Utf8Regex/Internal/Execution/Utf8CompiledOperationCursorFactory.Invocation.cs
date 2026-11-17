@@ -35,12 +35,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 return validation.IsAscii && prepared.StructuralLinearProgram.OrderedLiteralWindowPlan.HasValue;
             case NativeExecutionKind.AsciiStructuralIdentifierFamily:
                 return CanUseStructuralFamilyCursor(prepared, validation);
-            case NativeExecutionKind.AsciiSimplePattern:
-                return !prepared.Features.HasLookarounds &&
-                    (prepared.StructuralLinearProgram.DeterministicProgram.HasValue
-                        ? validation.IsAscii || prepared.StructuralLinearProgram.AllowsUtf8ByteSafe
-                        : prepared.SimplePatternPlan.Branches is { Length: > 0 } &&
-                            (validation.IsAscii || prepared.SimplePatternPlan.IsUtf8ByteSafe));
             default: return false;
         }
     }
@@ -56,8 +50,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, prepared, invocation),
             NativeExecutionKind.AsciiOrderedLiteralWindow or NativeExecutionKind.AsciiStructuralIdentifierFamily
                 => new Utf8OperationMatchCursor(input, prepared, invocation),
-            NativeExecutionKind.AsciiSimplePattern
-                => new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii),
             _ => throw new InvalidOperationException("The prepared plan cannot transfer a native invocation cursor."),
         };
         return cursor.WithStartFloor(byteFloor);

@@ -9,71 +9,18 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class AsciiSimplePatternTests
 {
-    [Fact]
-    public void SupportAnalyzerClassifiesDotConcatenationAsAsciiSimplePattern()
-    {
-        var regex = new Utf8Regex("ab.cd", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.Inspection.SearchPlan.Kind);
-    }
 
     [Fact]
     public void SupportAnalyzerClassifiesInvariantIgnoreCaseDotPatternAsAsciiSimplePattern()
     {
         var regex = new Utf8Regex("ab.cd", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
-    }
-
-    [Theory]
-    [InlineData("ab[0-9]d")]
-    [InlineData("a[^x]d")]
-    [InlineData("^abc")]
-    [InlineData("abc$")]
-    [InlineData("^ab.cd$")]
-    [InlineData("(ab.cd)")]
-    public void SupportAnalyzerClassifiesAsciiCharacterClassesAsAsciiSimplePattern(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-    }
-
-    [Theory]
-    [InlineData(@"\d\d")]
-    [InlineData(@"a\wb")]
-    [InlineData(@"\d{2}")]
-    [InlineData(@"[\d][A-Z]")]
-    [InlineData(@"[\w-][\s]")]
-    [InlineData(@"ab.cd|xy\d\d")]
-    [InlineData(@"\d{2,4}")]
-    public void SupportAnalyzerLowersUnicodeSensitiveCharacterClassesAsAsciiIntersections(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
-    }
-
-    [Theory]
-    [InlineData(@"a\sb")]
-    public void SupportAnalyzerLowersUnicodeWhitespaceClassesAsUnsafeAsciiIntersections(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
     }
 
     [Fact]
     public void SupportAnalyzerPreservesPredefinedClassInsideOuterNegation()
     {
         var regex = new Utf8Regex(@"[^\S]", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
         Assert.Equal(Regex.IsMatch("\u2003", @"[^\S]"), regex.IsMatch("\u2003"u8));
     }
 
@@ -97,9 +44,6 @@ public sealed class AsciiSimplePatternTests
             var expected = new Regex(pattern, options);
             var actual = new Utf8Regex(pattern, options);
             var utf8 = System.Text.Encoding.UTF8.GetBytes(input);
-
-            Assert.Equal(NativeExecutionKind.AsciiSimplePattern, actual.Inspection.ExecutionKind);
-            Assert.False(actual.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
             Assert.Equal(expected.IsMatch(input), actual.IsMatch(utf8));
             Assert.Equal(expected.Count(input), actual.Count(utf8));
         }
@@ -133,8 +77,6 @@ public sealed class AsciiSimplePatternTests
         Span<byte> destination = stackalloc byte[utf8.Length];
         var replaceStatus = actual.TryReplace(utf8, "#", destination, out var bytesWritten);
         var expectedReplacement = expected.Replace(input, "#");
-
-        Assert.False(actual.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
         Assert.Equal(expected.Count(input), actual.Count(utf8));
         Assert.Equal(expected.Matches(input).Select(static match => match.Value), actualMatches);
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#")));
@@ -142,15 +84,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(System.Buffers.OperationStatus.Done, replaceStatus);
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(destination[..bytesWritten]));
         Assert.Equal(expected.Split(input), actualSplits);
-    }
-
-    [Fact]
-    public void SupportAnalyzerBuildsRunPlanForRepeatedAsciiCharClass()
-    {
-        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, analysis.ExecutionKind);
-        Assert.True(analysis.SimplePatternPlan.RunPlan.HasValue);
     }
 
     [Fact]
@@ -226,27 +159,8 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Fact]
-    public void StructuralLinearDeterministicRawScanMatchesDenseSimplePatternOffsets()
-    {
-        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
-        var input = System.Text.Encoding.UTF8.GetBytes("ab1d-ab2d-ab3d");
-        var state = new Utf8AsciiDeterministicScanState(0, analysis.StructuralLinearProgram.DeterministicProgram.SearchLiteralOffset);
-        var offsets = new List<int>();
-
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-            analysis.StructuralLinearProgram,
-            input,
-            ref state,
-            budget: Utf8ExecutionDeadline.Infinite,
-            out var match))
-        {
-            offsets.Add(match.Index);
-            Assert.Equal(4, match.Length);
-        }
-
-        Assert.Equal([0, 5, 10], offsets);
-    }
-
+    public void PublicFixedWidthScanPreservesDenseOffsets()
+{ var regex = new Utf8Regex("ab[0-9]d", RegexOptions.CultureInvariant); var offsets = new List<int>(); foreach(var match in regex.EnumerateMatches("ab1d-ab2d-ab3d"u8)) { offsets.Add(match.StartOffsetInBytes); Assert.Equal(4, match.EndOffsetInBytes - match.StartOffsetInBytes); } Assert.Equal([0,5,10], offsets); }
     [Theory]
     [InlineData("ab[0-9]d", "ab1d-ab2d-xx-ab9d-ab0d-abXd-ab4d-ab5d-ab6d-ab7d-")]
     [InlineData("x[A-Za-z]y", "xAy-xzy-x0y-xBy-x_y-xCy-xdy-xEy-xfy-xGy-xhy-")]
@@ -259,29 +173,17 @@ public sealed class AsciiSimplePatternTests
     [InlineData("abc[0-9]defg", "abc1defg-abc2defg-abc3defg-abc4defg-abc5defg-")]
     public void VectorizedFixedWidthCountMatchesDotNet(string pattern, string input)
     {
-        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
-        {
-            return;
-        }
 
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
         var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
 
-        Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            analysis.StructuralLinearProgram,
-            inputBytes,
-            Utf8ExecutionDeadline.Infinite,
-            out var actual));
+        var actual = new Utf8Regex(analysis.SemanticRegex.Pattern, analysis.SemanticRegex.Options).Count(inputBytes);
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), actual);
     }
 
     [Fact]
     public void VectorizedFixedWidthCountMatchesDotNetAcrossVectorBoundaries()
     {
-        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
-        {
-            return;
-        }
 
         var patterns = new (string Pattern, string DensePrefix)[]
         {
@@ -306,11 +208,7 @@ public sealed class AsciiSimplePatternTests
 
                 var input = new string(chars);
                 var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
-                Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-                    analysis.StructuralLinearProgram,
-                    inputBytes,
-                    Utf8ExecutionDeadline.Infinite,
-                    out var actual));
+                var actual = new Utf8Regex(analysis.SemanticRegex.Pattern, analysis.SemanticRegex.Options).Count(inputBytes);
                 Assert.Equal(Regex.Count(input, patternCase.Pattern, RegexOptions.CultureInvariant), actual);
             }
         }
@@ -319,7 +217,6 @@ public sealed class AsciiSimplePatternTests
     [Fact]
     public void VectorizedFixedWidthCountPreservesBorrowedOffsetsAndOverlappingTails()
     {
-        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported) return;
 
         for (var width = 3; width <= 8; width++)
         {
@@ -335,9 +232,7 @@ public sealed class AsciiSimplePatternTests
                 {
                     var storage = Enumerable.Repeat((byte)'x', offset + length + 33).ToArray();
                     bytes.CopyTo(storage.AsSpan(offset));
-                    Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-                        analysis.StructuralLinearProgram, storage.AsSpan(offset, length),
-                        Utf8ExecutionDeadline.Infinite, out var actual));
+                    var actual = new Utf8Regex(analysis.SemanticRegex.Pattern, analysis.SemanticRegex.Options).Count(storage.AsSpan(offset, length));
                     Assert.Equal(expected, actual);
                 }
             }
@@ -347,10 +242,6 @@ public sealed class AsciiSimplePatternTests
     [Fact]
     public void VectorizedFixedWidthCountHandsLongBarrenSuffixToScalarSearch()
     {
-        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
-        {
-            return;
-        }
 
         const string pattern = "ab[0-9]d";
         var input = string.Concat(
@@ -360,11 +251,7 @@ public sealed class AsciiSimplePatternTests
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
         var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
 
-        Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            analysis.StructuralLinearProgram,
-            inputBytes,
-            Utf8ExecutionDeadline.Infinite,
-            out var actual));
+        var actual = new Utf8Regex(analysis.SemanticRegex.Pattern, analysis.SemanticRegex.Options).Count(inputBytes);
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), actual);
     }
 
@@ -411,31 +298,8 @@ public sealed class AsciiSimplePatternTests
     [InlineData("ab[02468]d", RegexOptions.CultureInvariant)]
     [InlineData("a[0-9]", RegexOptions.CultureInvariant)]
     [InlineData("abcd[0-9]efgh", RegexOptions.CultureInvariant)]
-    public void VectorizedFixedWidthCountRejectsUnqualifiedPlans(string pattern, RegexOptions options)
-    {
-        var analysis = Utf8FrontEnd.Compile(pattern, options);
-        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 64) + "ab2d");
-
-        Assert.False(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            analysis.StructuralLinearProgram,
-            input,
-            Utf8ExecutionDeadline.Infinite,
-            out _));
-    }
-
-    [Fact]
-    public void VectorizedFixedWidthCountRejectsFiniteDeadline()
-    {
-        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
-        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 64) + "ab2d");
-
-        Assert.False(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            analysis.StructuralLinearProgram,
-            input,
-            Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(10)),
-            out _));
-    }
-
+    public void FixedWidthNeighborsKeepPublicCounts(string pattern, RegexOptions options)
+{ var text = new string('x',64) + "ab2d"; Assert.Equal(Regex.Count(text, pattern, options), new Utf8Regex(pattern, options).Count(System.Text.Encoding.UTF8.GetBytes(text))); }
     [Theory]
     [InlineData("cat|dog")]
     [InlineData("cat|horse")]
@@ -699,40 +563,6 @@ public sealed class AsciiSimplePatternTests
                 Assert.Equal(expectedOffsetPositions, actualOffsetPositions);
             }
         }
-    }
-
-    [Theory]
-    [InlineData("^ab$", true)]
-    [InlineData("\\Aab\\z", true)]
-    [InlineData("(?m:^ab$)", false)]
-    public void StartAnchorKindThreadsThroughSimplePlan(string pattern, bool expectedAbsolute)
-    {
-        // Absolute `^`/`\A` lower distinctly from line-anchored `(?m:^)`: only
-        // the former may pin linear verification at offset 0.
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.True(regex.Inspection.SimplePatternPlan.IsStartAnchored);
-        Assert.Equal(expectedAbsolute, regex.Inspection.SimplePatternPlan.IsAbsoluteStartAnchored);
-    }
-
-    [Theory]
-    [InlineData("^ab$", true)]
-    [InlineData("\\Aab\\z", true)]
-    [InlineData("ab$", true)]
-    [InlineData("(?m:^ab$)", false)]
-    [InlineData("^(?m:ab$)", false)]
-    [InlineData("(?m:ab$)", false)]
-    public void EndAnchorKindThreadsThroughSimplePlan(string pattern, bool expectedAbsolute)
-    {
-        // Absolute end anchors (`$` outside multiline, `\Z`, `\z`) lower
-        // distinctly from line anchors (`(?m:$)`): only the former pins the
-        // match at the input end in linear verification.
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.True(regex.Inspection.SimplePatternPlan.IsEndAnchored);
-        Assert.Equal(expectedAbsolute, regex.Inspection.SimplePatternPlan.IsAbsoluteEndAnchored);
     }
 
     public static IEnumerable<object?[]> GrouplessSimpleDetailedCases()

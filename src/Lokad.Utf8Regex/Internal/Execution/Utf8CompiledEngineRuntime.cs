@@ -114,102 +114,6 @@ internal abstract class Utf8CompiledEngineRuntime
 
 }
 
-internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime
-{
-    private readonly Utf8PreparedRegex _regexPlan;
-    private readonly Utf8StructuralLinearRuntime _linearRuntime;
-    private readonly Utf8VerifierRuntime _verifierRuntime;
-
-    internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
-    {
-        _regexPlan = plan;
-        _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan);
-        _verifierRuntime = verifier;
-    }
-
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
-            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
-
-        if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
-        {
-            return _linearRuntime.IsMatch(input, validation, _verifierRuntime, budget);
-        }
-
-        if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
-        {
-
-            return Utf8ExecutionInterpreter.FindNextSimplePattern(
-                input,
-                _regexPlan.SearchPlan,
-                _regexPlan.SimplePatternPlan,
-                0,
-                budget,
-                out _) >= 0;
-        }
-
-        return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
-    }
-
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
-            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
-
-        if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
-        {
-            return _linearRuntime.Count(input, validation, _verifierRuntime, budget);
-        }
-
-        if (!validation.IsAscii && !_regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
-        {
-            return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
-        }
-
-        return Utf8ExecutionInterpreter.CountSimplePattern(
-            input,
-            _regexPlan.SearchPlan,
-            _regexPlan.SimplePatternPlan,
-            budget);
-    }
-
-    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
-            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
-
-        if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
-        {
-            return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
-        }
-
-        if (validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
-        {
-
-            var index = Utf8ExecutionInterpreter.FindNextSimplePattern(
-                input,
-                _regexPlan.SearchPlan,
-                _regexPlan.SimplePatternPlan,
-                0,
-                budget,
-                out var matchLength);
-            if (index < 0)
-            {
-                return default(Utf8CaptureRange);
-            }
-
-            return new Utf8CaptureRange(index, (index) + (matchLength));
-        }
-
-        return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
-    }
-
-}
-
 internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
@@ -252,12 +156,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
 
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _regexPlan.SimplePatternPlan.RunPlan.HasValue)
-        {
-            return Utf8AsciiCharClassRunExecutor.IsMatch(input, _regexPlan.SimplePatternPlan.RunPlan, budget);
-        }
-
         if (budget.IsInfinite &&
             _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
         {
@@ -283,12 +181,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
-
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _regexPlan.SimplePatternPlan.RunPlan.HasValue)
-        {
-            return Utf8AsciiCharClassRunExecutor.Count(input, _regexPlan.SimplePatternPlan.RunPlan, budget);
-        }
 
         if (budget.IsInfinite &&
             _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
@@ -317,19 +209,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
             !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
-
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _regexPlan.SimplePatternPlan.RunPlan.HasValue)
-        {
-            var index = Utf8AsciiCharClassRunExecutor.FindNext(input, _regexPlan.SimplePatternPlan.RunPlan, 0, out var matchedLength, budget);
-            if (index < 0) return default(Utf8CaptureRange);
-            if (validation.IsAscii)
-                return new Utf8CaptureRange(index, (index) + (matchedLength));
-            // A class-run search returns bytes even when every matched byte is
-            // ASCII. Preceding Unicode scalars still change the UTF-16 index.
-            if (Utf8ScalarSimplePatternVerifier.TryCreateScalarMatchRange(input, index, matchedLength, out var projectedRun))
-                return projectedRun;
-        }
 
         if (validation.IsAscii &&
             budget.IsInfinite &&

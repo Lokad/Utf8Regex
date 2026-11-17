@@ -55,7 +55,6 @@ public sealed class Utf8SliceHybridTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal("AsciiSimplePattern", regex.Inspection.ExecutionKind.ToString());
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }

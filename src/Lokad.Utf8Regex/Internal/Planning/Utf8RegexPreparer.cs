@@ -35,7 +35,7 @@ internal static class Utf8RegexPreparer
                 NativeExecutionKind.ExactUtf8Literals or
                 NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => Utf8ExecutionBackend.NativeLiteral,
                 NativeExecutionKind.FallbackRegex => Utf8ExecutionBackend.FallbackRegex,
-                _ => Utf8ExecutionBackend.NativeSimplePattern,
+                _ => Utf8ExecutionBackend.NativeStructural,
             };
             // General scalar execution and capture-free literal search do not
             // consume this copied tree. Captured/native shape preparation still does.
@@ -56,7 +56,6 @@ internal static class Utf8RegexPreparer
 
             var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
                 analyzedRegex.ExecutionKind,
-                analyzedRegex.SimplePatternPlan,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
                 analyzedRegex.StructuralTokenWindowPlan,
                 analyzedRegex.StructuralRepeatedSegmentPlan,
@@ -66,28 +65,9 @@ internal static class Utf8RegexPreparer
                 searchPlan,
                 structuralSearchPlan);
             var compiledPatternCategory = Utf8CompiledPatternCategories.GetNativeCategory(analyzedRegex.ExecutionKind);
-            if (compiledPatternCategory == Utf8CompiledPatternCategory.None &&
-                analyzedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
-            {
-                // A linear program alone does not prove the linear search route: that route
-                // declines every anchored shape, while the interpreter enforces line edges
-                // per candidate. Pure line-anchored shapes without backreferences therefore
-                // keep the interpreter category; absolute anchors and backreference programs
-                // keep the linear category and their current routing.
-                var simplePlan = analyzedRegex.SimplePatternPlan;
-                var hasLineAnchor = (simplePlan.IsStartAnchored && !simplePlan.IsAbsoluteStartAnchored) ||
-                    (simplePlan.IsEndAnchored && !simplePlan.IsAbsoluteEndAnchored);
-                var hasAbsoluteAnchor = (simplePlan.IsStartAnchored && simplePlan.IsAbsoluteStartAnchored) ||
-                    (simplePlan.IsEndAnchored && simplePlan.IsAbsoluteEndAnchored);
-                if (compiledPatternCategory == Utf8CompiledPatternCategory.None && structuralLinearProgram.HasValue &&
-                    !(hasLineAnchor && !hasAbsoluteAnchor && !analyzedRegex.Features.HasBackreferences))
-                {
-                    compiledPatternCategory = Utf8CompiledPatternCategory.DeterministicLinear;
-                }
-            }
 
             var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan, structuralLinearProgram,
-                analyzedRegex.SimplePatternPlan, structuralSearchPlan, structuralVerifier.AsciiProgram);
+structuralSearchPlan, structuralVerifier.AsciiProgram);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
                     analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,

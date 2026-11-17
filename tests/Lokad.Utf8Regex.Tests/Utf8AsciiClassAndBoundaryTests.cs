@@ -72,11 +72,6 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         var digits = ProjectToken(@"\d", RegexOptions.None);
         var spaces = ProjectToken(@"\s", RegexOptions.None);
         var ecmaSpaces = ProjectToken(@"\s", RegexOptions.ECMAScript);
-        Assert.True(spaces.RequiresAsciiInput);
-        Assert.True(digits.RequiresAsciiInput);
-        Assert.False(ecmaSpaces.RequiresAsciiInput);
-        Assert.Equal(Utf8SimplePatternScalarClassKind.UnicodeWhitespace, spaces.ScalarClassKind);
-        Assert.Equal(Utf8SimplePatternScalarClassKind.None, ecmaSpaces.ScalarClassKind);
 
         for (var value = 0; value < 128; value++)
         {
@@ -94,8 +89,8 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         var spacesWithoutSpace = ProjectToken(@"[^\S ]", RegexOptions.None);
         var notNewline = ProjectToken(@"[^\n]", RegexOptions.Singleline);
         var dot = ProjectToken(".", RegexOptions.Singleline);
-        Assert.Equal(AsciiSimplePatternTokenKind.Dot, dot.Kind);
-        Assert.Equal(AsciiSimplePatternTokenKind.CharClass, notNewline.Kind);
+        Assert.Equal(AsciiPatternTokenKind.Dot, dot.Kind);
+        Assert.Equal(AsciiPatternTokenKind.CharClass, notNewline.Kind);
         for (var value = 0; value < 128; value++)
         {
             Assert.Equal(value is >= '1' and <= '9', digitsWithoutZero.CharClass.Contains((byte)value));
@@ -207,7 +202,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
 
         var formerProjectors = new[]
         {
-            "Utf8AsciiSimplePatternLowerer.CharClasses.cs",
+            "Utf8FiniteLiteralLowerer.BranchContinuations.cs",
             "Utf8NativeExecutionAnalyzer.cs",
         };
         foreach (var file in formerProjectors)
@@ -227,7 +222,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         Assert.Equal(boundaries.Contains(utf16Offset), Utf8ScalarWordBoundary.IsBoundary(utf8, byteOffset));
     }
 
-    private static AsciiSimplePatternToken ProjectToken(string pattern, RegexOptions options)
+    private static AsciiPatternToken ProjectToken(string pattern, RegexOptions options)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(tree);

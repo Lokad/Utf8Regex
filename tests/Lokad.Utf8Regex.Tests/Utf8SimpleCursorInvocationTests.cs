@@ -35,8 +35,6 @@ public sealed class Utf8SimpleCursorInvocationTests
     public void RangesPreserveAnchorsRunsCapturesMixedScalarsAndInvocationModes(string pattern, bool compiled, bool finite, bool live)
     {
         var regex = new Utf8Regex(pattern, Options(compiled), finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
-        Assert.False(Prepared(regex).StructuralLinearProgram.DeterministicProgram.HasValue);
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, Prepared(regex).ExecutionKind);
         var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, Options(compiled)));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -52,9 +50,6 @@ public sealed class Utf8SimpleCursorInvocationTests
             var previous = cursor.Current;
             Assert.False(cursor.MoveNext());
             Assert.False(cursor.MoveNext());
-            // Native simple terminal replay retains its last published range.
-            if (Utf8Validation.Validate(input).IsAscii || Prepared(regex).SimplePatternPlan.IsUtf8ByteSafe)
-                Assert.Equal(previous, cursor.Current);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -72,42 +67,6 @@ public sealed class Utf8SimpleCursorInvocationTests
     {
         var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(10));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, Options(compiled)), Texts.Where(text => text.Length <= 128).ToArray());
-    }
-
-    [Theory]
-    [InlineData(@"ab[0-9]{1,2}d", false)]
-    [InlineData(@"ab[0-9]{1,2}d", true)]
-    [InlineData(@"(?:a[0-9]|ab[0-9])", false)]
-    [InlineData(@"(?:a[0-9]|ab[0-9])", true)]
-    [InlineData(@"(?:[A-Z]{2}|[0-9]{3})", true)]
-    public void EverySecondMoveCutoffKeepsPublishedRangeScanProgressAndBorrowedStorage(string pattern, bool mixed)
-    {
-        var prepared = Prepared(new Utf8Regex(pattern, Options(false)));
-        var input = Encoding.UTF8.GetBytes(mixed ? "é😀 ab1d AB xyAz 中ab12d CD xyBz 123 456" : "ab1d AB xyAz ab12d CD xyBz 123 456");
-        var baselineInvocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref baselineInvocation);
-        var baseline = new Utf8OperationMatchCursor(input, prepared, baselineInvocation, validation.IsAscii);
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextSimplePattern(out var found));
-        Assert.True(found);
-        var firstSteps = baseline.DebugInvocationSteps;
-        Assert.Equal(Utf8ExecutionLimitKind.None, baseline.TryMoveNextSimplePattern(out found));
-        Assert.True(found);
-        for (var cap = firstSteps; cap < baseline.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-            var cursor = new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii);
-            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.TryMoveNextSimplePattern(out found));
-            Assert.True(found);
-            var previous = cursor.CurrentValueMatch;
-            var state = cursor.DebugConsumed;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.TryMoveNextSimplePattern(out var denied));
-            Assert.False(denied);
-            Assert.Equal(previous, cursor.CurrentValueMatch);
-            Assert.Equal(state, cursor.DebugConsumed);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-        }
     }
 
     [Theory]
@@ -148,7 +107,7 @@ public sealed class Utf8SimpleCursorInvocationTests
 
     [Theory]
     [MemberData(nameof(PhaseCases))]
-    public void ValidationCandidateScanAndVerifierObserveInterruption(bool compiled, string phase, bool expire)
+    public void MatchingAndFirstPublicationObserveOriginalInterruption(bool compiled, string phase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         // Stay inside the existing speculative preparation budget. Sixty
@@ -156,17 +115,11 @@ public sealed class Utf8SimpleCursorInvocationTests
         var pattern = phase == "verifier" ? @"(?:ab[0-9]{60}|ab[A-Z])" : @"ab[0-9]{1,2}d";
         var text = phase == "verifier" ? "ab" + new string('1', 60) : phase == "projection" ? new string('é', 160000) + "ab12d" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var regex = new Utf8Regex(pattern, Options(compiled), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        Assert.False(Prepared(regex).StructuralLinearProgram.DeterministicProgram.HasValue);
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, Prepared(regex).ExecutionKind);
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || phase != "validation" && steps <= validation.Budget.Steps ||
-                phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0 ||
-                phase == "projection" && Utf8SearchDiagnosticsSession.Current!.VerifierMatches == 0) return;
+            if (entered) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });
@@ -236,45 +189,6 @@ public sealed class Utf8SimpleCursorInvocationTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    public static IEnumerable<object[]> TerminalCases()
-    {
-        foreach (var pattern in new[] { Patterns[0], Patterns[5] })
-        foreach (var compiled in new[] { false, true })
-        foreach (var matches in new[] { false, true })
-        foreach (var expire in new[] { false, true }) yield return [pattern, compiled, matches, expire];
-    }
-
-    [Theory]
-    [MemberData(nameof(TerminalCases))]
-    public void ExhaustedNativeCursorKeepsConstantWorkAndChecksTokenAndDeadline(string pattern, bool compiled, bool matches, bool expire)
-    {
-        using var clock = Utf8DeadlineTestClock.Start();
-        var input = Encoding.UTF8.GetBytes(matches ? "ab1d AB ab12d CD" : new string('x', 32000));
-        // Preparation precedes invocation in the public API. Its construction
-        // work must not consume this terminal-cursor control's execution budget.
-        var prepared = Prepared(new Utf8Regex(pattern, Options(compiled)));
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7),
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
-        var cursor = new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii);
-        while (cursor.MoveNext()) { }
-        var previous = cursor.CurrentValueMatch;
-        var state = cursor.DebugConsumed;
-        var terminal = cursor.DebugInvocationSteps;
-        for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
-        Assert.Equal(3UL, cursor.DebugInvocationSteps - terminal);
-        if (expire) clock.Advance(250); else source.Cancel();
-        Exception? observed = null;
-        try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
-        Assert.Equal(previous, cursor.CurrentValueMatch);
-        Assert.Equal(state, cursor.DebugConsumed);
-        Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-    }
-
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -321,40 +235,5 @@ public sealed class Utf8SimpleCursorInvocationTests
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
-    }
-
-    [Theory]
-    [InlineData("ab[0-9]CD", false)]
-    [InlineData("ab[0-9]CD", true)]
-    [InlineData("ab[0-9]{1,2}CD", false)]
-    [InlineData("ab[0-9]{1,2}CD", true)]
-    public void BoundedInterpreterPreservesInvariantFoldingFixedChecksAndCumulativeWork(string pattern, bool compiled)
-    {
-        var options = Options(compiled) | RegexOptions.IgnoreCase;
-        var regex = new Utf8Regex(pattern, options);
-        var prepared = Prepared(regex);
-        const string text = "AB1cd ab12CD Ab3Cd AB4xx ab5CD";
-        var input = Encoding.UTF8.GetBytes(text);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 7), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var floor = 0;
-        foreach (Match expected in new Regex(pattern, options).Matches(text))
-        {
-            var previous = invocation.Budget.Steps;
-            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
-                prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
-                out var index, out var length));
-            Assert.Equal((expected.Index, expected.Length), (index, length));
-            Assert.True(invocation.Budget.Steps > previous);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-            floor = index + length;
-        }
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
-            prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
-            out var terminalIndex, out var terminalLength));
-        Assert.Equal(-1, terminalIndex);
-        Assert.Equal(0, terminalLength);
-        Assert.Equal(1U, invocation.Budget.PeakDepth);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

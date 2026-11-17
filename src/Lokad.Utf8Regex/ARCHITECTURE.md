@@ -29,8 +29,7 @@ not a general regex IR or an integration contract for other regex flavors.
 Engine selection reads prepared capabilities. The whole-pattern,
 identifier/window and fixed-token shape emitters have been removed. Their public
 operations use the remaining owned interpreters and search helpers. Literal-family
-emission remains; the live fixed-width SIMD counter is shared by interpreter and
-facade paths. General patterns currently use the owned scalar interpreter,
+emission and the literal search stack remain. General patterns use the owned scalar interpreter,
 including when `Compiled` is requested. A general compiled backend remains future
 work. Invocation budgets and result ownership are separate from prepared programs.
 Programs selecting the general engine retain no specialized runtime or verifier.
@@ -39,9 +38,11 @@ constrained literals whose lower-level classification still says literal. The
 secondary fallback runtime and its count/match router chain have been removed.
 Shared candidate helpers with facade or adapter consumers remain.
 
-Anchored class/head-tail validators and their segment plans are removed too.
-Their patterns use the remaining owned interpreters; finite-literal expansion
-and shared structural byte-class helpers remain separate live consumers.
+The simple-pattern interpreter, scalar byte verifier and standalone deterministic/
+fixed-token programs are removed, together with their plans and cursor modes.
+Bounded finite-literal expansion returns literal alternatives directly. Shared
+structural byte-class search helpers remain for actual structural consumers.
+General-engine VM optimizations remain separate from the retired shape engines.
 
 Search dispositions derive from canonical candidate sources, confirmation and
 projection. Count, first-match and enumeration control their actual exit and

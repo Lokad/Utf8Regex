@@ -375,18 +375,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-bounded-repeat-case", StringCo
     return BenchmarkInspectReporter.RunMeasureBoundedRepeatReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-structural-linear-scan-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureStructuralLinearScanCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 1 && args[0].Equals("--measure-fixed-width-count-controls", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureFixedWidthCountControls(
-        args.Length >= 2 ? args[1] : null,
-        args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-structural-family-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureStructuralFamilyCase(args[1], args.Length >= 3 ? args[2] : null);

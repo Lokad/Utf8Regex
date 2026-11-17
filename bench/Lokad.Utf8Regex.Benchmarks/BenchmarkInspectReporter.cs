@@ -1564,43 +1564,6 @@ internal static partial class BenchmarkInspectReporter
         return ratio.ToString(ratio is > 0 and < 0.01 ? "G2" : "F2", CultureInfo.InvariantCulture) + "x";
     }
 
-    private static string GetMarkedSection(string text, string beginMarker, string endMarker)
-    {
-        var start = text.IndexOf(beginMarker, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            throw new InvalidOperationException($"README marker not found: {beginMarker}");
-        }
-
-        start += beginMarker.Length;
-        if (start < text.Length && text[start] == '\r')
-        {
-            start++;
-        }
-
-        if (start < text.Length && text[start] == '\n')
-        {
-            start++;
-        }
-
-        var end = text.IndexOf(endMarker, start, StringComparison.Ordinal);
-        if (end < 0)
-        {
-            throw new InvalidOperationException($"README marker not found: {endMarker}");
-        }
-
-        if (end > start && text[end - 1] == '\n')
-        {
-            end--;
-            if (end > start && text[end - 1] == '\r')
-            {
-                end--;
-            }
-        }
-
-        return text[start..end];
-    }
-
     private static string BuildReadmeSectionMarkdownFromSnapshot(ReadmeBenchmarkSection section, ReadmeBenchmarkSnapshot snapshot)
     {
         var writer = new StringWriter(CultureInfo.InvariantCulture);
@@ -2741,14 +2704,9 @@ internal static partial class BenchmarkInspectReporter
         {
             var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
             var compiledDiagnostics = context.CompiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
-            var simplePatternPlan = context.Utf8Regex.Inspection.PreparedRegex.SimplePatternPlan;
 
             WriteCountDiagnostics("Baseline", baselineDiagnostics);
             WriteCountDiagnostics("Compiled", compiledDiagnostics);
-            if (context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
-            {
-                Console.WriteLine($"RunPlanHasValue   : {simplePatternPlan.RunPlan.HasValue}");
-            }
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
@@ -2756,10 +2714,6 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.InputBytes.Length;
             });
-            if (simplePatternPlan.RunPlan.HasValue)
-            {
-                Measure("RunPlanDirect", iterations, () => Utf8AsciiCharClassRunExecutor.Count(context.InputBytes, simplePatternPlan.RunPlan, budget: Utf8ExecutionDeadline.Infinite));
-            }
             Measure("FallbackCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, false));
             Measure("FallbackBoundaryCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, true));
             Measure("FallbackVerifiedCount", iterations, () => Utf8FallbackReplay.Count(context.Utf8Regex, context.InputBytes));
@@ -2771,13 +2725,6 @@ internal static partial class BenchmarkInspectReporter
 
             WriteIsMatchDiagnostics("Baseline", baselineDiagnostics);
             WriteIsMatchDiagnostics("Compiled", compiledDiagnostics);
-
-            if (context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
-            {
-                var simplePatternPlan = context.Utf8Regex.Inspection.SimplePatternPlan;
-                Console.WriteLine($"BranchCount       : {context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Length}");
-                Console.WriteLine($"BranchLengths     : {string.Join(",", context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Select(static branch => branch.Length))}");
-            }
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).ByteLength);
             Measure("WellFormedOnly", iterations, () =>
@@ -3703,137 +3650,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureStructuralLinearScanCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
-        var analysis = Utf8FrontEnd.Compile(benchmarkCase.Pattern, benchmarkCase.Options);
-        if (!analysis.StructuralLinearProgram.DeterministicProgram.HasValue)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine("StructuralLinear  : no deterministic structural-linear program");
-            return 1;
-        }
-
-        var input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        var program = analysis.StructuralLinearProgram;
-        var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
-        var iterations = ParseIterations(iterationsText);
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
-        Console.WriteLine($"Options           : {benchmarkCase.Options}");
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ProgramKind       : {program.Kind}");
-        Console.WriteLine($"Deterministic     : {program.DeterministicProgram.HasValue}");
-
-        if (Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            program,
-            input,
-            Utf8ExecutionDeadline.Infinite,
-            out _))
-        {
-            Measure("VectorizedCount", iterations, () => ExecuteStructuralLinearVectorizedCount(program, input));
-        }
-        Measure("StructuralCount", iterations, () => ExecuteStructuralLinearCount(program, input));
-        Measure("FixedWidthIndexSum", iterations, () => ExecuteStructuralLinearFixedWidthIndexSum(program, input));
-        Measure("RawStructuralCount", iterations, () => ExecuteStructuralLinearRawCount(program, input));
-        Measure("RawStructuralScan", iterations, () => ExecuteStructuralLinearRawScan(program, input));
-        Measure("EnumeratorMoveNext", iterations, () => ExecuteStructuralLinearEnumeratorMoveNextCount(analysis, input));
-        Measure("EnumeratorIndexSum", iterations, () => ExecuteStructuralLinearEnumeratorIndexSum(analysis, input));
-        Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(input));
-        Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, input));
-        Measure("PublicIndexSum", iterations, () => ExecutePublicEnumeratorIndexSum(regex, input));
-        return 0;
-    }
-
-    public static int RunMeasureFixedWidthCountControls(
-        string? iterationsText,
-        string? samplesText)
-    {
-        var iterations = iterationsText is null ? 2_000 : ParseIterations(iterationsText);
-        var samples = ParseSamples(samplesText);
-        var controls = new (string Name, string Pattern, string Input)[]
-        {
-            ("digit-dense", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 20_480)),
-            ("digit-dense-scaling-1x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 2_560)),
-            ("digit-dense-scaling-2x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 5_120)),
-            ("digit-dense-scaling-4x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 10_240)),
-            ("digit-width-five-dense", "ab[0-9]cd", RepeatToLength("ab1cd-ab7cd-", 20_480)),
-            ("digit-width-eight-dense", "abc[0-9]defg", RepeatToLength("abc1defg-abc7defg-", 20_480)),
-            ("letter-dense", "x[A-Za-z]y", RepeatToLength("xAy-xzy-", 20_480)),
-            ("alphanumeric-dense", "u[A-Za-z0-9]v", RepeatToLength("uAv-u7v-", 20_480)),
-            ("word-dense", "m[A-Za-z0-9_]n", RepeatToLength("m_n-m9n-man-", 20_480)),
-            ("hex-dense", "q[0-9A-Fa-f]z", RepeatToLength("qAz-q8z-qfz-", 20_480)),
-            ("digit-false-candidates", "ab[0-9]d", RepeatToLength("abXd-ab-d-ab_d-", 20_480)),
-            ("digit-dense-prefix-long-gap", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 256) + new string('x', 20_224)),
-            ("digit-miss", "ab[0-9]d", new string('x', 20_480)),
-            ("digit-sparse", "ab[0-9]d", new string('x', 20_476) + "ab7d"),
-            ("digit-short", "ab[0-9]d", "ab1d-ab2d"),
-        };
-
-        WriteMeasurementEnvironment();
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"Samples           : {samples}");
-        foreach (var control in controls)
-        {
-            var input = Encoding.UTF8.GetBytes(control.Input);
-            var analysis = Utf8FrontEnd.Compile(control.Pattern, RegexOptions.CultureInvariant);
-            var ordinary = new Utf8Regex(control.Pattern, RegexOptions.CultureInvariant);
-            var compiled = new Utf8Regex(
-                control.Pattern,
-                RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            var regex = new Regex(
-                control.Pattern,
-                RegexOptions.CultureInvariant,
-                Regex.InfiniteMatchTimeout);
-            var compiledRegex = new Regex(
-                control.Pattern,
-                RegexOptions.CultureInvariant | RegexOptions.Compiled,
-                Regex.InfiniteMatchTimeout);
-            var expected = regex.Count(control.Input);
-            var vectorEligible = Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-                analysis.StructuralLinearProgram,
-                input,
-                Utf8ExecutionDeadline.Infinite,
-                out var vectorCount);
-            if (ordinary.Count(input) != expected ||
-                compiled.Count(input) != expected ||
-                (vectorEligible && vectorCount != expected))
-            {
-                throw new InvalidOperationException($"Fixed-width Count control '{control.Name}' is not equivalent.");
-            }
-
-            var effectiveIterations = input.Length <= 128
-                ? Math.Max(iterations, 20_000)
-                : iterations;
-            Console.WriteLine();
-            Console.WriteLine($"Case              : {control.Name}");
-            Console.WriteLine($"Pattern           : {control.Pattern}");
-            Console.WriteLine($"InputBytes        : {input.Length}");
-            Console.WriteLine($"ExpectedCount     : {expected}");
-            Console.WriteLine($"VectorEligible    : {vectorEligible}");
-            Console.WriteLine($"EffectiveIterations: {effectiveIterations}");
-            if (vectorEligible)
-            {
-                Measure("VectorizedCount", samples, effectiveIterations, () =>
-                    ExecuteStructuralLinearVectorizedCount(analysis.StructuralLinearProgram, input));
-            }
-            Measure("ScalarCount", samples, effectiveIterations, () =>
-                ExecuteStructuralLinearCount(analysis.StructuralLinearProgram, input));
-            Measure("Ordinary", samples, effectiveIterations, () => ordinary.Count(input));
-            Measure("Compiled", samples, effectiveIterations, () => compiled.Count(input));
-            Measure("DecodeThenRegex", samples, effectiveIterations, () => regex.Count(Encoding.UTF8.GetString(input)));
-            Measure("DecodeThenCompiledRegex", samples, effectiveIterations, () => compiledRegex.Count(Encoding.UTF8.GetString(input)));
-            Measure("PredecodedRegex", samples, effectiveIterations, () => regex.Count(control.Input));
-            Measure("PredecodedCompiledRegex", samples, effectiveIterations, () => compiledRegex.Count(control.Input));
-            Console.WriteLine(
-                $"Warm allocation   : ordinary={MeasureAllocatedBytesPerInvocation(Math.Min(effectiveIterations, 1_000), () => ordinary.Count(input))} B, " +
-                $"compiled={MeasureAllocatedBytesPerInvocation(Math.Min(effectiveIterations, 1_000), () => compiled.Count(input))} B");
-        }
-
-        return 0;
-    }
-
     public static int RunMeasureStructuralFamilyCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
@@ -4207,12 +4023,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ProgramKind       : {program.Kind}");
         Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
 
-        if (program.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun)
-        {
-            Measure("LiteralFamilyCandidates", iterations, () => ExecuteLiteralFamilyRunCandidateCount(program, context.InputBytes));
-            Measure("LiteralFamilyCandidateSum", iterations, () => ExecuteLiteralFamilyRunCandidateIndexSum(program, context.InputBytes));
-        }
-
         Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(context.InputBytes));
         Measure("WellFormedOnly", iterations, () =>
         {
@@ -4542,7 +4352,6 @@ internal static partial class BenchmarkInspectReporter
         string? caseId = null,
         string? origin = null)
     {
-        var deterministic = program.DeterministicProgram;
 
         if (caseId is not null)
         {
@@ -4557,27 +4366,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
         Console.WriteLine($"ProgramKind       : {program.Kind}");
-        Console.WriteLine($"Deterministic     : {deterministic.HasValue}");
-        if (deterministic.HasValue)
-        {
-            Console.WriteLine($"SearchOffset      : {deterministic.SearchLiteralOffset}");
-            Console.WriteLine($"SearchLiterals    : {FormatByteLiterals(deterministic.SearchLiterals)}");
-            Console.WriteLine($"FixedWidthLength  : {deterministic.FixedWidthLength}");
-            Console.WriteLine($"FixedChecks       : {FormatFixedLiteralChecks(deterministic.FixedLiteralChecks)}");
-            Console.WriteLine($"EndAnchored       : {deterministic.IsEndAnchored}");
-            Console.WriteLine($"IgnoreCase        : {deterministic.IgnoreCase}");
-
-            for (var i = 0; i < deterministic.FixedWidthChecks.Length; i++)
-            {
-                Console.WriteLine($"FixedWidth[{i}]    : {FormatFixedWidthCheck(deterministic.FixedWidthChecks[i])}");
-            }
-
-            for (var i = 0; i < deterministic.Steps.Length; i++)
-            {
-                Console.WriteLine($"Step[{i}]          : {FormatDeterministicStep(deterministic.Steps[i])}");
-            }
-        }
-        else
         {
             if (program.Kind == Utf8StructuralLinearProgramKind.AsciiStructuralFamily)
             {
@@ -4591,12 +4379,6 @@ internal static partial class BenchmarkInspectReporter
             }
 
             var instructionProgram = program.InstructionProgram;
-            Console.WriteLine($"SearchOffset      : {instructionProgram.SearchLiteralOffset}");
-            Console.WriteLine($"SearchLiterals    : {FormatByteLiterals(instructionProgram.SearchLiterals)}");
-            Console.WriteLine($"FixedChecks       : {FormatFixedLiteralChecks(instructionProgram.FixedLiteralChecks)}");
-            Console.WriteLine($"StartAnchored     : {instructionProgram.IsStartAnchored}");
-            Console.WriteLine($"EndAnchored       : {instructionProgram.IsEndAnchored}");
-            Console.WriteLine($"IgnoreCase        : {instructionProgram.IgnoreCase}");
             var instructions = instructionProgram.Instructions ?? [];
             Console.WriteLine($"InstructionCount  : {instructions.Length}");
 
@@ -4631,42 +4413,13 @@ internal static partial class BenchmarkInspectReporter
         }
     }
 
-    private static string FormatDeterministicStep(Utf8AsciiDeterministicStep step)
-    {
-        return step.Kind switch
-        {
-            Utf8AsciiDeterministicStepKind.Literal => $"Literal '{(char)step.Literal}'",
-            Utf8AsciiDeterministicStepKind.AnyByte => "AnyByte",
-            Utf8AsciiDeterministicStepKind.CharClass => $"CharClass {step.CharClass}",
-            Utf8AsciiDeterministicStepKind.RunCharClass => $"RunCharClass {step.CharClass} min={step.MinCount} max={FormatMax(step.MaxCount)}",
-            Utf8AsciiDeterministicStepKind.Accept => "Accept",
-            _ => step.Kind.ToString(),
-        };
-    }
-
-    private static string FormatFixedWidthCheck(Utf8AsciiDeterministicFixedWidthCheck check)
-    {
-        return check.Kind switch
-        {
-            Utf8AsciiDeterministicFixedWidthCheckKind.Literal => $"Literal '{(char)check.Literal}'",
-            Utf8AsciiDeterministicFixedWidthCheckKind.AnyByte => "AnyByte",
-            Utf8AsciiDeterministicFixedWidthCheckKind.CharClass => $"CharClass {check.CharClass}",
-            _ => check.Kind.ToString(),
-        };
-    }
-
     private static string FormatStructuralInstruction(Utf8StructuralLinearInstruction instruction)
     {
         return instruction.Kind switch
         {
-            Utf8StructuralLinearInstructionKind.Literal => $"Literal '{(char)instruction.Literal}'",
-            Utf8StructuralLinearInstructionKind.AnyByte => "AnyByte",
-            Utf8StructuralLinearInstructionKind.CharClass => $"CharClass {instruction.CharClass}",
-            Utf8StructuralLinearInstructionKind.RunCharClass => $"RunCharClass {instruction.CharClass} min={instruction.MinCount} max={FormatMax(instruction.MaxCount)}",
             Utf8StructuralLinearInstructionKind.RepeatedSegment => "RepeatedSegment",
             Utf8StructuralLinearInstructionKind.TokenWindow => "TokenWindow",
             Utf8StructuralLinearInstructionKind.QuotedRelation => "QuotedRelation",
-            Utf8StructuralLinearInstructionKind.LiteralFamilyRun => "LiteralFamilyRun",
             Utf8StructuralLinearInstructionKind.Accept => "Accept",
             _ => instruction.Kind.ToString(),
         };
@@ -4696,56 +4449,6 @@ internal static partial class BenchmarkInspectReporter
             _ => stage.Kind.ToString(),
         };
     }
-
-    private static string FormatByteLiterals(byte[][]? literals)
-    {
-        if (literals is null || literals.Length == 0)
-        {
-            return "[]";
-        }
-
-        return "[" + string.Join(", ", literals.Select(static bytes => $"\"{Encoding.UTF8.GetString(bytes)}\"")) + "]";
-    }
-
-    private static string FormatFixedLiteralChecks(AsciiFixedLiteralCheck[]? checks)
-    {
-        if (checks is null || checks.Length == 0)
-        {
-            return "[]";
-        }
-
-        return "[" + string.Join(", ", checks.Select(static check => $"@{check.Offset}=\"{Encoding.UTF8.GetString(check.Literal)}\"")) + "]";
-    }
-
-    private static string FormatAlternatives(byte[][] alternatives) =>
-        string.Join(", ", alternatives.Select(static bytes => $"\"{Encoding.UTF8.GetString(bytes)}\""));
-
-    private static string FormatOpaqueText(string? text)
-    {
-        if (text is null)
-        {
-            return "<null>";
-        }
-
-        var builder = new StringBuilder(text.Length);
-        foreach (var ch in text)
-        {
-            builder.Append(ch switch
-            {
-                '\0' => "\\0",
-                '\r' => "\\r",
-                '\n' => "\\n",
-                '\t' => "\\t",
-                '\\' => "\\\\",
-                _ when char.IsControl(ch) => $"\\u{(int)ch:x4}",
-                _ => ch,
-            });
-        }
-
-        return builder.ToString();
-    }
-
-    private static string FormatMax(int max) => max < 0 || max == int.MaxValue ? "open" : max.ToString();
 
     private static string DumpNode(Utf8TreeNode node, int depth = 0)
     {
@@ -4833,11 +4536,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return int.TryParse(text, out var iterations) && iterations > 0 ? iterations : 100;
-    }
-
-    private static int ParseShortIterations(string? text)
-    {
-        return Math.Max(50, ParseIterations(text));
     }
 
     private static int ParseLokadPrefixIterations(string? text)
@@ -6429,23 +6127,6 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteCandidatePrefilterIsMatch(
-        PreparedMultiLiteralCandidatePrefilter search,
-        byte[] input)
-    {
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        var span = input.AsSpan();
-        while (search.TryFindNextCandidate(span, ref state, out var candidateIndex))
-        {
-            if (search.TryGetMatchedLength(span, candidateIndex, out _))
-            {
-                return 1;
-            }
-        }
-
-        return 0;
-    }
-
     private static int ExecuteAutomatonLiteralSetCount(PreparedMultiLiteralAutomatonSearch search, byte[] input)
     {
         var count = 0;
@@ -6887,114 +6568,6 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteStructuralLinearRawScan(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        var sum = 0;
-        var state = new Utf8AsciiDeterministicScanState(0, program.DeterministicProgram.SearchLiteralOffset);
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-            program,
-            input,
-            ref state,
-            budget: Utf8ExecutionDeadline.Infinite,
-            out var match))
-        {
-            sum += match.Index;
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteStructuralLinearCount(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        return Utf8AsciiInstructionLinearExecutor.CountDeterministic(program, input, budget: Utf8ExecutionDeadline.Infinite);
-    }
-
-    private static int ExecuteStructuralLinearVectorizedCount(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        return Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
-            program,
-            input,
-            Utf8ExecutionDeadline.Infinite,
-            out var count)
-                ? count
-                : 0;
-    }
-
-    private static int ExecuteStructuralLinearFixedWidthIndexSum(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        if (program.DeterministicProgram.FixedWidthLength <= 0)
-        {
-            return 0;
-        }
-
-        var sum = 0;
-        var state = new Utf8AsciiDeterministicScanState(0, program.DeterministicProgram.SearchLiteralOffset);
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-            program,
-            input,
-            ref state,
-            budget: Utf8ExecutionDeadline.Infinite,
-            out var index))
-        {
-            sum += index;
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteStructuralLinearRawCount(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        var count = 0;
-        var state = new Utf8AsciiDeterministicScanState(0, program.DeterministicProgram.SearchLiteralOffset);
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-            program,
-            input,
-            ref state,
-            budget: Utf8ExecutionDeadline.Infinite,
-            out _))
-        {
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int ExecuteStructuralLinearEnumeratorMoveNextCount(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        var count = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(
-            new Utf8OperationMatchCursor(
-                input,
-                regexPlan,
-                useStructuralLinearProgram: true,
-                budget: Utf8ExecutionDeadline.Infinite,
-                asciiInput: true));
-        while (enumerator.MoveNext())
-        {
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int ExecuteStructuralLinearEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        var sum = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(
-            new Utf8OperationMatchCursor(
-                input,
-                regexPlan,
-                useStructuralLinearProgram: true,
-                budget: Utf8ExecutionDeadline.Infinite,
-                asciiInput: true));
-        while (enumerator.MoveNext())
-        {
-            sum += enumerator.Current.StartOffsetInBytes;
-        }
-
-        return sum;
-    }
-
     private static int ExecuteValidationOnly(byte[] input)
     {
         return Utf8Validation.Validate(input).ByteLength;
@@ -7108,37 +6681,6 @@ internal static partial class BenchmarkInspectReporter
             count++;
             remaining = remaining[(index + literal.Length)..];
         }
-    }
-
-    private static int GetTrustedUtf16Length(ReadOnlySpan<byte> input)
-    {
-        var utf16Length = 0;
-        for (var index = 0; index < input.Length;)
-        {
-            var leadingByte = input[index];
-            if (leadingByte < 0x80)
-            {
-                index++;
-                utf16Length++;
-            }
-            else if (leadingByte < 0xE0)
-            {
-                index += 2;
-                utf16Length++;
-            }
-            else if (leadingByte < 0xF0)
-            {
-                index += 3;
-                utf16Length++;
-            }
-            else
-            {
-                index += 4;
-                utf16Length += 2;
-            }
-        }
-
-        return utf16Length;
     }
 
     private static int ExecuteExactUtf8LiteralFamilySearchCount(Utf8SearchPlan plan, byte[] input)
@@ -7613,159 +7155,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
-    }
-
-    private static int ExecuteLiteralFamilyRunCandidateCount(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        var count = 0;
-        var searchFrom = program.InstructionProgram.SearchLiteralOffset;
-        while (searchFrom <= input.Length)
-        {
-            var found = TryFindLiteralFamilyRunCandidate(program, input, searchFrom, out var absoluteAnchor, out _);
-            if (!found)
-            {
-                return count;
-            }
-
-            count++;
-            searchFrom = absoluteAnchor + 1;
-        }
-
-        return count;
-    }
-
-    private static int ExecuteLiteralFamilyRunCandidateIndexSum(Utf8StructuralLinearProgram program, byte[] input)
-    {
-        var sum = 0;
-        var searchFrom = program.InstructionProgram.SearchLiteralOffset;
-        while (searchFrom <= input.Length)
-        {
-            var found = TryFindLiteralFamilyRunCandidate(program, input, searchFrom, out var absoluteAnchor, out _);
-            if (!found)
-            {
-                return sum;
-            }
-
-            sum += absoluteAnchor - program.InstructionProgram.SearchLiteralOffset;
-            searchFrom = absoluteAnchor + 1;
-        }
-
-        return sum;
-    }
-
-    private static bool TryFindLiteralFamilyRunCandidate(
-        Utf8StructuralLinearProgram program,
-        byte[] input,
-        int searchFrom,
-        out int absoluteAnchor,
-        out int prefixLength)
-    {
-        absoluteAnchor = -1;
-        prefixLength = 0;
-        var instructionProgram = program.InstructionProgram;
-        if (instructionProgram.SearchLiterals.Length == 0 || searchFrom > input.Length)
-        {
-            return false;
-        }
-
-        if (instructionProgram.SearchLiterals.Length == 1)
-        {
-            var relative = AsciiSearch.IndexOfExact(input.AsSpan(searchFrom), instructionProgram.SearchLiterals[0]);
-            if (relative < 0)
-            {
-                return false;
-            }
-
-            absoluteAnchor = searchFrom + relative;
-            prefixLength = instructionProgram.SearchLiterals[0].Length;
-            return true;
-        }
-
-        if (!instructionProgram.SearchLiteralsSearch.TryFindFirstMatchWithLength(input.AsSpan(searchFrom), out var relativeIndex, out prefixLength))
-        {
-            return false;
-        }
-
-        absoluteAnchor = searchFrom + relativeIndex;
-        return true;
-    }
-
-    private static int ExecuteLokadScriptByteSafeAcrossSamples(byte[][] sampleBytes, Func<byte[], int> measureOne)
-    {
-        var total = 0;
-        for (var i = 0; i < sampleBytes.Length; i++)
-        {
-            total += measureOne(sampleBytes[i]);
-        }
-
-        return total;
-    }
-
-    private static int ExecuteByteSafeStructuralCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.StructuralSearchPlan.HasValue ||
-            regexPlan.StructuralSearchPlan.YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            !CanMeasureByteSafeStructuralCandidates(regexPlan))
-        {
-            return 0;
-        }
-
-        var count = 0;
-        var state = new Utf8StructuralSearchState(
-            new PreparedSearchScanState(0, default),
-            new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
-        while (regexPlan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _))
-        {
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int ExecuteByteSafeStructuralCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.StructuralSearchPlan.HasValue ||
-            regexPlan.StructuralSearchPlan.YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            !CanMeasureByteSafeStructuralCandidates(regexPlan))
-        {
-            return 0;
-        }
-
-        var sum = 0;
-        var state = new Utf8StructuralSearchState(
-            new PreparedSearchScanState(0, default),
-            new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
-        while (regexPlan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
-        {
-            sum += candidate.StartIndex;
-        }
-
-        return sum;
-    }
-
-    private static bool CanMeasureByteSafeStructuralCandidates(Utf8PreparedRegex regexPlan)
-    {
-        if (!regexPlan.StructuralSearchPlan.HasValue)
-        {
-            return false;
-        }
-
-        if (regexPlan.StructuralSearchPlan.Stages is not { Length: > 0 } stages)
-        {
-            return false;
-        }
-
-        foreach (var stage in stages)
-        {
-            if (stage.HasSet)
-            {
-                // The deep benchmark candidate probe only simulates byte-level start filtering.
-                // This attribution probe does not replay prepared class guards.
-                return false;
-            }
-        }
-
-        return true;
     }
 
 }

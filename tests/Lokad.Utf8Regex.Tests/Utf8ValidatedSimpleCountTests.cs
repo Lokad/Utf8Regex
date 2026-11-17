@@ -84,10 +84,10 @@ RegexOptions options, bool unicodePrefix)
     }
 
     [Fact]
-    public void CompleteAsciiBranchesDoNotNeedVmScratchAndStillRefuseWork()
+    public void CompleteAsciiBranchesRespectFiniteStorageAndRefuseWork()
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var regex = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkingBytes = 1, MaxDepth = 1 });
+        var regex = new Utf8Regex(pattern, resourcePolicy: Limits);
         Assert.Equal(1, regex.Count("é😀ASIAABCDEFGHIJKLMNOP"u8));
         var denied = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,

@@ -29,7 +29,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
     {
         internal Utf8ConstructionBudget? Budget;
     }
-    private readonly record struct BranchSnapshot(List<AsciiSimplePatternToken> Tokens, List<AsciiFixedLiteralCheck> FixedChecks);
+    private readonly record struct BranchSnapshot(List<AsciiPatternToken> Tokens);
     private static CompilerState Compiler() => new();
     private static Utf8ConstructionBudget Invocation(CompilerState compiler) => compiler.Budget ?? throw new InvalidOperationException();
     private static bool Lower(CompilerState compiler, Utf8TreeNode node, out Array branches)
@@ -43,7 +43,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         bool found;
         try
         {
-            found = Assert.IsType<bool>((typeof(Utf8AsciiSimplePatternLowerer)
+            found = Assert.IsType<bool>((typeof(Utf8FiniteLiteralLowerer)
                 .GetMethod("TryLowerBranches", BindingFlags.NonPublic | BindingFlags.Static)
                 ?? throw new InvalidOperationException()).Invoke(null, arguments));
         }
@@ -55,8 +55,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         // Snapshot witnesses before session disposal; the production buffers never
         // escape this test owner. Private optimizer declines remain empty results.
         branches = found ? ReadBuffer<object>(arguments[4] ?? throw new InvalidOperationException())
-            .Select(value => new BranchSnapshot(ReadBuffer<AsciiSimplePatternToken>(Property<object>(value, "Tokens")),
-                ReadBuffer<AsciiFixedLiteralCheck>(Property<object>(value, "FixedChecks")))).ToArray() : [];
+            .Select(value => new BranchSnapshot(ReadBuffer<AsciiPatternToken>(Property<object>(value, "Tokens")))).ToArray() : [];
         return found;
     }
     private static List<T> ReadBuffer<T>(object value)
@@ -134,23 +133,6 @@ public sealed class Utf8AsciiPreparationContinuationTests
         Assert.True(Lower(Compiler(), loop, out var variants));
         Assert.Equal(["aa", "ab", "ba", "bb", "a", "b"], Literals(variants));
     }
-    [Theory]
-    [InlineData(254, true)]
-    [InlineData(255, false)]
-    public void LookaroundRetainsItsTwoDepthUnitsAndShiftedLiteralChecks(int wrappers, bool accepted)
-    {
-        var look = Node(Utf8TreeNodeKind.PositiveLookaround, Wrap(Text("bc"), Utf8TreeNodeKind.Group, wrappers));
-        Assert.Equal(accepted, Lower(Compiler(), look, out var isolated));
-        if (accepted) Assert.Equal("bc", Encoding.ASCII.GetString(Property<List<AsciiFixedLiteralCheck>>(isolated.GetValue(0)
-            ?? throw new InvalidOperationException(), "FixedChecks")[0].Literal));
-        var shallow = Node(Utf8TreeNodeKind.PositiveLookaround, Text("bc"));
-        Assert.True(Lower(Compiler(), Node(Utf8TreeNodeKind.Concatenate, Text("a"), shallow, Text("b")), out var branches));
-        var branch = branches.GetValue(0) ?? throw new InvalidOperationException();
-        Assert.Equal(["ab"], Literals(branches));
-        var check = Assert.Single(Property<List<AsciiFixedLiteralCheck>>(branch, "FixedChecks"));
-        Assert.Equal(1, check.Offset);
-        Assert.Equal("bc", Encoding.ASCII.GetString(check.Literal));
-    }
     [Fact]
     public void EveryContinuationWorkDepthAndStorageDenialReleasesScratchAndKeepsOtherLeases()
     {
@@ -215,15 +197,10 @@ public sealed class Utf8AsciiPreparationContinuationTests
     [Theory]
     [InlineData(65)]
     [InlineData(16385)]
-    public void DeepTrailingNewlineAndCaseFactsUseIterativeTraversal(int depth)
+    public void DeepCaseFactsUseIterativeTraversal(int depth)
     {
-        var newline = typeof(Utf8AsciiSimplePatternLowerer).GetMethod("AllowsTrailingNewlineBeforeEnd", BindingFlags.NonPublic | BindingFlags.Static)
+        var folded = typeof(Utf8FiniteLiteralLowerer).GetMethod("HasCaseClearingGroup", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException();
-        var folded = typeof(Utf8AsciiSimplePatternLowerer).GetMethod("HasCaseClearingGroup", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException();
-        var tail = Wrap(Utf8TreeNode.Create(Utf8TreeNodeKind.EndZ, Options), Utf8TreeNodeKind.Capture, depth);
-        Assert.True(Assert.IsType<bool>(newline.Invoke(null, [Node(Utf8TreeNodeKind.Alternate, tail, tail)])));
-        Assert.False(Assert.IsType<bool>(newline.Invoke(null, [Node(Utf8TreeNodeKind.Alternate, tail, Text("a"))])));
         var clearing = Wrap(Node(Utf8TreeNodeKind.Group, Text("a")), Utf8TreeNodeKind.Capture, depth);
         Assert.True(Assert.IsType<bool>(folded.Invoke(null, [Node(Utf8TreeNodeKind.Concatenate, Text("x"), clearing)])));
         Assert.False(Assert.IsType<bool>(folded.Invoke(null, [Wrap(Text("a"), Utf8TreeNodeKind.Capture, depth)])));

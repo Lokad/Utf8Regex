@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-internal static partial class Utf8AsciiSimplePatternLowerer
+internal static partial class Utf8FiniteLiteralLowerer
 {
     // Private optimizer limits qualify eligibility; the parent construction
     // owner independently admits all actual work, storage and live depth.
@@ -47,25 +47,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                         case Utf8TreeNodeKind.Empty:
                             result = SingleBranch(storage, EmptyBranch(storage));
                             break;
-                        case Utf8TreeNodeKind.Bol:
-                        case Utf8TreeNodeKind.Beginning:
-                        case Utf8TreeNodeKind.Start:
-                            result = SingleBranch(storage, EmptyBranch(storage) with {
-                                IsStartAnchored = true,
-                                IsAbsoluteStartAnchored = node.Kind is Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start });
-                            break;
-                        case Utf8TreeNodeKind.Eol:
-                        case Utf8TreeNodeKind.EndZ:
-                        case Utf8TreeNodeKind.End:
-                            result = SingleBranch(storage, EmptyBranch(storage) with {
-                                IsEndAnchored = true,
-                                IsAbsoluteEndAnchored = node.Kind is Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End });
-                            break;
                         case Utf8TreeNodeKind.One:
                         case Utf8TreeNodeKind.Oneloop:
                         case Utf8TreeNodeKind.Set:
                         case Utf8TreeNodeKind.Setloop:
-                            AsciiSimplePatternToken token;
+                            AsciiPatternToken token;
                             if (!budget.TryReserve(1, 1)) return false;
                             if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop)
                             {
@@ -80,16 +66,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                             break;
                         case Utf8TreeNodeKind.Multi:
                             if (!TryLowerLiteralText(storage, node, budget, out var tokens)) return false;
-                            result = SingleBranch(storage, new(tokens, storage.Buffer<AsciiFixedLiteralCheck>(), false, false, false, false));
+                            result = SingleBranch(storage, new(tokens));
                             break;
                         case Utf8TreeNodeKind.Loop:
                             if (node.ChildCount != 1 || node.N == int.MaxValue || node.N < node.M) return false;
                             child = new(node.Child(0), frame.Depth + 1);
-                            break;
-                        case Utf8TreeNodeKind.PositiveLookaround:
-                            if (frame.Depth + 1 > MaxLoweringDepth || node.ChildCount != 1 ||
-                                (node.Options & RegexOptions.RightToLeft) != 0) return false;
-                            child = new(node.Child(0), frame.Depth + 2);
                             break;
                         case Utf8TreeNodeKind.Concatenate:
                         case Utf8TreeNodeKind.Alternate:
@@ -115,17 +96,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                         case Utf8TreeNodeKind.Loop:
                             if (!TryExpandFiniteRepeat(storage, value, node.M, node.N, budget, out result)) return false;
                             break;
-                        case Utf8TreeNodeKind.PositiveLookaround:
-                            if (value.Count != 1) return false;
-                            var branch = value[0];
-                            if (branch.IsStartAnchored || branch.IsEndAnchored || branch.FixedChecks.Count != 0 ||
-                                !budget.TryReserve(branch.Tokens.Count, branch.Tokens.Count)) return false;
-                            var literal = ExtractFullLiteral(storage, branch.Tokens.Span);
-                            if (literal.Length == 0) return false;
-                            var checkedBranch = EmptyBranch(storage);
-                            checkedBranch.FixedChecks.Add(new(0, literal));
-                            result = SingleBranch(storage, checkedBranch);
-                            break;
                         default:
                             var accumulated = frame.Accumulated ?? throw new InvalidOperationException("Missing branch accumulation.");
                             if (node.Kind == Utf8TreeNodeKind.Alternate)
@@ -134,9 +104,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                                     !budget.TryReserve(value.Count, value.Count)) return false;
                                 accumulated.AddRange(value.Span);
                             }
-                            else if (accumulated.Count == 1 && value.Count == 1 &&
-                                !accumulated[0].IsStartAnchored && !accumulated[0].IsEndAnchored &&
-                                !value[0].IsStartAnchored && !value[0].IsEndAnchored)
+                            else if (accumulated.Count == 1 && value.Count == 1)
                             {
                                 if (!TryAppendBranch(accumulated[0], value[0], budget)) return false;
                             }
@@ -161,7 +129,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static LoweredBranch EmptyBranch(Utf8ConstructionSession storage) =>
-        new(storage.Buffer<AsciiSimplePatternToken>(), storage.Buffer<AsciiFixedLiteralCheck>(), false, false, false, false);
+        new(storage.Buffer<AsciiPatternToken>());
 
     private static Utf8ConstructionBuffer<LoweredBranch> SingleBranch(Utf8ConstructionSession storage, LoweredBranch branch)
     {

@@ -45,20 +45,20 @@ public sealed class Utf8SimplePrefixCountTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SafePrefixesAvoidVmStorageAndDependentCapturesRemainAdmitted(bool compiled)
+    public void SafePrefixesAndDependentCapturesRespectWorkingAdmission(bool compiled)
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var regex = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout, policy);
-        // A positive ASCII-only acceptance proof applies to this valid mixed
-        // subject. Both misses and complete hits can avoid VM storage.
+        // Necessary prefixes skip misses in valid mixed text. Complete hits
+        // use the general program's admitted workspace.
         var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(input, token.Token));
         Assert.Equal(1, regex.Count("😀ASIAABCDEFGHIJKLMNOP"u8, token.Token));
         // A backreference still depends on captured values and retains admission
         // for its real scalar workspace under the same small allowance.
-        var dependent = new Utf8Regex(pattern + @"\1", Options(compiled), Regex.InfiniteMatchTimeout, policy);
+        var dependent = new Utf8Regex(pattern + @"\1", Options(compiled), Regex.InfiniteMatchTimeout, policy with { MaxWorkingBytes = 256 });
         Assert.Equal(1, new Utf8Regex(pattern + @"\1", Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8, token.Token));
         var denied = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout,

@@ -20,8 +20,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         catch (TargetInvocationException error) when (error.InnerException is { } inner)
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
-    private static AsciiSimplePatternPlan Plan(AsciiSimplePatternToken[][] branches, bool folded)
-        => new(branches, 0, [], [], false, false, false, folded, true, default, false, false);
     private static Utf8SearchFactData Data() => new()
     {
         LiteralUtf8 = "one"u8.ToArray(),
@@ -52,7 +50,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         1 => "ASCII\0"u8.ToArray(),
         2 => AsciiCharClass.FromBytes("AaBb"u8),
         3 => AsciiCharClass.FromBytes("Aa"u8),
-        4 => Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiSimplePatternToken((byte)'!')]], false),
+        4 => new AsciiPatternToken[][] { [new AsciiPatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiPatternToken((byte)'!')] },
         _ => Utf8OwnedTreeParser.TryParse("[Aa]x", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
             ?? throw new InvalidOperationException("Owned parsing failed.")
     };
@@ -71,20 +69,20 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             case 1: Assert.Equal("ASCII\0", Utf8ConstructionScope.CurrentBudget.CopyAsciiText(Assert.IsType<byte[]>(input))); break;
             case 2:
                 object?[] bytesArgs = [input, true, null];
-                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AsciiSimplePatternLowerer), "TryExtractLiteralBytes", bytesArgs)));
+                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FiniteLiteralLowerer), "TryExtractLiteralBytes", bytesArgs)));
                 Assert.Equal("ab"u8.ToArray(), Assert.IsType<byte[]>(bytesArgs[2])); break;
             case 3:
                 object?[] foldedArgs = [input, (byte)0];
-                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AsciiSimplePatternLowerer), "TryExtractIgnoreCaseLiteral", foldedArgs)));
+                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FiniteLiteralLowerer), "TryExtractIgnoreCaseLiteral", foldedArgs)));
                 Assert.Equal((byte)'a', foldedArgs[1]); break;
             case 4:
-                Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Assert.IsType<AsciiSimplePatternPlan>(input), out var literals));
+                Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(Assert.IsType<AsciiPatternToken[][]>(input), false, out var literals));
                 Assert.Equal(new[] { "A!", "b!" }, literals.Select(Encoding.ASCII.GetString)); break;
             default:
                 var options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
                 var semantic = new Utf8SemanticRegex("[Aa]x", options, "[Aa]x", options, Assert.IsType<Utf8OwnedRegexTree>(input));
                 object?[] args = [semantic, "[Aa]x", options, null];
-                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8NativeExecutionAnalyzer), "TryAnalyzeSimplePatternTree", args)));
+                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8NativeExecutionAnalyzer), "TryAnalyzeFiniteLiteralTree", args)));
                 var analysis = Assert.IsType<Utf8RegexAnalysis>(args[3]); Assert.Equal("ax", analysis.ExecutionPattern);
                 Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, analysis.ExecutionKind);
                 Assert.Same(analysis.LiteralUtf8, analysis.SearchFacts.LiteralUtf8); break;
@@ -165,14 +163,14 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void FailedBranchExpansionCannotMutateBorrowedTokensOrRetainEarlierOutputs(bool overflow)
     {
-        var first = new AsciiSimplePatternToken[] { new((byte)'a'), new((byte)'b') };
+        var first = new AsciiPatternToken[] { new((byte)'a'), new((byte)'b') };
         var branch = overflow
-            ? Enumerable.Repeat(new AsciiSimplePatternToken(AsciiCharClass.FromBytes("ABCD"u8)), 4).ToArray()
-            : new AsciiSimplePatternToken[] { new((byte)'a'), AsciiSimplePatternToken.Dot };
-        var plan = Plan([first, branch], false); var original = first.ToArray();
+            ? Enumerable.Repeat(new AsciiPatternToken(AsciiCharClass.FromBytes("ABCD"u8)), 4).ToArray()
+            : new AsciiPatternToken[] { new((byte)'a'), AsciiPatternToken.Dot };
+        var plan = (AsciiPatternToken[][])[first, branch]; var original = first.ToArray();
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.False(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(plan, out var result)); Assert.Empty(result);
+        Assert.False(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(plan,false, out var result)); Assert.Empty(result);
         Assert.Equal(original, first); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
@@ -180,16 +178,16 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void EveryByteCutoffRecoversPartiallyAcquiredExpansion(bool folded)
     {
-        var input = Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("AaBb"u8)), new AsciiSimplePatternToken((byte)'!')]], folded);
+        var input = (AsciiPatternToken[][])[[new AsciiPatternToken(AsciiCharClass.FromBytes("AaBb"u8)), new AsciiPatternToken((byte)'!')]];
         ulong peak;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        { measure.Budget.AllocateObject(17, static value => new ParentValue(value)); Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _)); peak = measure.Budget.PeakBytes; }
+        { measure.Budget.AllocateObject(17, static value => new ParentValue(value)); Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,folded, out _)); peak = measure.Budget.PeakBytes; }
         var success = false; var partialDenial = false;
         for (var cap = 128ul; cap <= peak; cap += 16)
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _)));
+            var error = Record.Exception(() => Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,folded, out _)));
             if (error is null) { success = true; Assert.True(owner.Budget.ReservedBytes > 128); }
             else
             {
@@ -204,22 +202,22 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void FoldedValuesKeepBranchOrderAndExpansionLimits(bool folded)
     {
-        var input = Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("AaBb"u8)), new AsciiSimplePatternToken((byte)'!')]], folded);
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out var result));
+        var input = (AsciiPatternToken[][])[[new AsciiPatternToken(AsciiCharClass.FromBytes("AaBb"u8)), new AsciiPatternToken((byte)'!')]];
+        Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,folded, out var result));
         Assert.Equal(folded ? new[] { "a!", "b!" } : new[] { "A!", "B!", "a!", "b!" }, result.Select(Encoding.ASCII.GetString));
-        var tooMany = Plan([Enumerable.Repeat(new AsciiSimplePatternToken(AsciiCharClass.FromBytes("ABCD"u8)), 4).ToArray()], false);
-        Assert.False(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(tooMany, out _));
+        var tooMany = (AsciiPatternToken[][])[Enumerable.Repeat(new AsciiPatternToken(AsciiCharClass.FromBytes("ABCD"u8)), 4).ToArray()];
+        Assert.False(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(tooMany,folded, out _));
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void MultipleClassesKeepPrefixMajorOrderAndIndependentFinalPayloads(bool folded)
     {
         var suffix = new string('x', 256);
-        var tokens = new[] { new AsciiSimplePatternToken(AsciiCharClass.FromBytes(folded ? "AaBb"u8 : "BA"u8)),
-            new AsciiSimplePatternToken((byte)'!'), new AsciiSimplePatternToken(AsciiCharClass.FromBytes(folded ? "CcDd"u8 : "21"u8)) }
-            .Concat(suffix.Select(value => new AsciiSimplePatternToken((byte)value))).ToArray();
+        var tokens = new[] { new AsciiPatternToken(AsciiCharClass.FromBytes(folded ? "AaBb"u8 : "BA"u8)),
+            new AsciiPatternToken((byte)'!'), new AsciiPatternToken(AsciiCharClass.FromBytes(folded ? "CcDd"u8 : "21"u8)) }
+            .Concat(suffix.Select(value => new AsciiPatternToken((byte)value))).ToArray();
         var original = tokens.ToArray();
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Plan([tokens], folded), out var result));
+        Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches((AsciiPatternToken[][])[tokens],folded, out var result));
         Assert.Equal((folded ? new[] { "a!c", "a!d", "b!c", "b!d" } : new[] { "A!1", "A!2", "B!1", "B!2" })
             .Select(prefix => prefix + suffix), result.Select(Encoding.ASCII.GetString));
         result[0][^1] = (byte)'y';
@@ -232,13 +230,13 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     {
         var prefix = new string('x', 2049);
         var suffix = new string('y', 2049);
-        var tokens = prefix.Select(value => new AsciiSimplePatternToken((byte)value))
-            .Append(new AsciiSimplePatternToken(AsciiCharClass.FromBytes("BA"u8)))
-            .Concat(suffix.Select(value => new AsciiSimplePatternToken((byte)value))).ToArray();
-        var plan = Plan([tokens], false);
+        var tokens = prefix.Select(value => new AsciiPatternToken((byte)value))
+            .Append(new AsciiPatternToken(AsciiCharClass.FromBytes("BA"u8)))
+            .Concat(suffix.Select(value => new AsciiPatternToken((byte)value))).ToArray();
+        var plan = (AsciiPatternToken[][])[tokens];
         using var owner = new Utf8ConstructionScope(1000000, 65536, 64000, 100);
         owner.Budget.ReserveBytes(7);
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(plan, out var result));
+        Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(plan,false, out var result));
         Assert.Equal(new[] { prefix + "A" + suffix, prefix + "B" + suffix }, result.Select(Encoding.ASCII.GetString));
         result[0][^1] = (byte)'z';
         Assert.Equal((byte)'y', result[1][^1]);
@@ -265,19 +263,19 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [Fact]
     public void ExpansionAcceptsExactlySixtyFourBranchesAndAnEmptyLiteral()
     {
-        var token = new AsciiSimplePatternToken(AsciiCharClass.FromBytes("DCBA"u8));
+        var token = new AsciiPatternToken(AsciiCharClass.FromBytes("DCBA"u8));
         var branch = Enumerable.Repeat(token, 3).ToArray();
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Plan([branch], false), out var result));
+        Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches((AsciiPatternToken[][])[branch],false, out var result));
         Assert.Equal(64, result.Length);
         Assert.Equal(new[] { "AAA", "AAD", "ABA", "DDD" }, new[] { 0, 3, 4, 63 }.Select(index => Encoding.ASCII.GetString(result[index])));
-        Assert.False(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Plan([branch, []], false), out var declined));
+        Assert.False(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches((AsciiPatternToken[][])[branch, []],false, out var declined));
         Assert.Empty(declined);
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Plan([[]], false), out var empty));
+        Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches((AsciiPatternToken[][])[[]],false, out var empty));
         Assert.Empty(Assert.Single(empty));
-        foreach (var unsupported in new[] { AsciiSimplePatternToken.Dot, new AsciiSimplePatternToken(AsciiCharClass.Empty),
-            new AsciiSimplePatternToken(new AsciiCharClass(1, 0, true)), new AsciiSimplePatternToken(AsciiCharClass.FromBytes("ABCDE"u8)) })
+        foreach (var unsupported in new[] { AsciiPatternToken.Dot, new AsciiPatternToken(AsciiCharClass.Empty),
+            new AsciiPatternToken(new AsciiCharClass(1, 0, true)), new AsciiPatternToken(AsciiCharClass.FromBytes("ABCDE"u8)) })
         {
-            Assert.False(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(Plan([[unsupported]], false), out declined));
+            Assert.False(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches((AsciiPatternToken[][])[[unsupported]],false, out declined));
             Assert.Empty(declined);
         }
     }
@@ -285,13 +283,13 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void EveryExpansionCheckpointKeepsOriginalInterruptionAndParentCapacity(bool timeout)
     {
-        var input = Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("AB"u8)),
-            new AsciiSimplePatternToken((byte)'!'), new AsciiSimplePatternToken((byte)'x')]], false);
+        var input = (AsciiPatternToken[][])[[new AsciiPatternToken(AsciiCharClass.FromBytes("AB"u8)),
+            new AsciiPatternToken((byte)'!'), new AsciiPatternToken((byte)'x')]];
         var checkpoints = 0;
         using (var probe = Utf8ConstructionScope.Enter())
         {
             probe.Budget.CheckpointHook = _ => checkpoints++;
-            Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _));
+            Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,false, out _));
         }
         for (var target = 1; target <= checkpoints; target++)
         {
@@ -304,7 +302,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             owner.Budget.Deadline = deadline; owner.Budget.CancellationToken = token.Token;
             var current = 0;
             owner.Budget.CheckpointHook = _ => { if (++current == target) { if (timeout) ticks = 50; else token.Cancel(); } };
-            var error = Record.Exception(() => Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _));
+            var error = Record.Exception(() => Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,false, out _));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
             Assert.Same(deadline, owner.Budget.Deadline);

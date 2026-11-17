@@ -32,7 +32,6 @@ public sealed class Utf8OwnedPreparationContinuationTests
         }
         owned.Root.Children = body;
         body.Parent = owned.Root;
-        Assert.Equal(scoped, Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(owned.Root));
         var semantic = new Utf8SemanticRegex(pattern, options, pattern, options, owned);
         var tree = Utf8ExecutionTreeLowerer.Lower(semantic);
         Assert.NotNull(tree);

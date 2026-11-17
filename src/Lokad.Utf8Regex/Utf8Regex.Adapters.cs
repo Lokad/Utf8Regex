@@ -92,21 +92,6 @@ public sealed partial class Utf8Regex
             }
         }
 
-        // R05: line-anchored ASCII discovery from the start byte runs owned through the
-        // shared interpreter; misses are definitive without BCL verification.
-        if (CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
-        {
-            try
-            {
-                var offsetBudget = CreateExecutionBudget();
-                return FindNextSimplePatternViaInterpreter(input.Bytes, start.Value, offsetBudget, out _) >= 0;
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input.Bytes);
-            }
-        }
-
         try
         {
             return OwnedSliceIsMatchFromByte(input.Bytes,
@@ -273,17 +258,6 @@ public sealed partial class Utf8Regex
                     new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
                     .WithTimeoutMapping(input.Bytes, this);
             }
-        }
-
-        // R05: line-anchored ASCII enumeration from a nonzero start scans the full input
-        // from the start byte through the floored owned cursor; anchors keep their true left
-        // context, unlike suffix slicing which diverts below.
-        if (start.Value != 0 && CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
-        {
-            var floorBudget = CreateExecutionBudget();
-            var floorCursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                _preparedRegex, input.Bytes, input.Validation, floorBudget, start.Value);
-            return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
         // Adapter enumeration rides the owned slice from the start unit on
