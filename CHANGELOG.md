@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Reuse bounded necessary-prefix discovery in Core capture-slot matching and
+  memory cursors. Scalar verification, captures and cumulative interruption/resource
+  controls remain. Sparse searches can avoid repeated attempts; dense candidates
+  can cost more. No extra subject pass or allocation is introduced.
+
 - All profiles now require caller-valid, unchanged UTF-8 subjects. Remove
   `Utf8InputValidation`, policy arguments/properties, mandatory subject validation
   and PCRE2's validation-window analysis. Host text boundaries own validation;

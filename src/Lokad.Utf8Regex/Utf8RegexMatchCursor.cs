@@ -128,7 +128,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             else outcome = _nonBacktracking is { } batch
                 ? batch.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, true, ref _invocation)
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
-                    true, ref _workspace, ref _invocation);
+                    true, ref _workspace, ref _invocation, _regex!.Inspection.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
             Checkpoint();
             if (!outcome.Found) { exhausted = true; return false; }

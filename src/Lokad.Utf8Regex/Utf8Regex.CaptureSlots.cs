@@ -43,7 +43,7 @@ public sealed partial class Utf8Regex
             {
                 slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
-                    slots.Starts, slots.Ends, false, ref invocation);
+                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }

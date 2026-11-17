@@ -462,18 +462,18 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    // The complete subject is validated by the caller. Candidate positions and
-    // results are bytes; derived interoperability coordinates belong to projection.
+    // Callers supply valid UTF-8. Candidates and results use original byte
+    // coordinates; no validity pass or subject coordinate map is required.
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
-        ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default)
     {
         var workspace = new AttemptWorkspace();
         try
         {
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, ref workspace, ref invocation);
+                collectHistory, ref workspace, ref invocation, candidatePlan);
         }
         finally { workspace.Release(ref invocation); }
     }
@@ -483,7 +483,7 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
-        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation)
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -502,7 +502,10 @@ internal static partial class Utf8SliceRunner
         var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiCandidate(program, out leadingLast, out second, out secondLast) : -1;
-        if (leading >= 0)
+        // Keep the cheaper existing head proof when available. Prepared prefix
+        // search fills its gaps, including multi-alternative and UTF-8 starts.
+        var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
+        if (leading >= 0 || seekLiteral)
         {
             // A miss can avoid local scratch, but not an enclosing storage loan.
             var admission = invocation.TryReserveWorking(0);
@@ -511,6 +514,15 @@ internal static partial class Utf8SliceRunner
         }
         for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
+            if (seekLiteral)
+            {
+                var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
+                if (seekBreach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, seekBreach);
+                if (position < 0)
+                    return new(false, -1, -1, null, null,
+                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
                 (uint)(input[position] - leading) > (uint)(leadingLast - leading)))
             {
@@ -551,6 +563,28 @@ internal static partial class Utf8SliceRunner
     internal static int AdvancePastScalar(ReadOnlySpan<byte> input, int position, bool reverse)
         => TryReadScalar(input, position, reverse, out _, out var width)
             ? position + (reverse ? -width : width) : -1;
+
+    // Count and primary matching share the same necessary-prefix proof. Every
+    // candidate is still verified by the scalar VM under the original invocation.
+    private static bool CanSeekExactPrefix(Utf8SliceProgram program, in Utf8SearchPlan candidatePlan)
+        => !program.RightToLeft && !program.CanMatchEmpty &&
+            !program.HasContiguousAnchor && !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts &&
+            candidatePlan.Distance == 0 && candidatePlan.Kind is
+                Utf8SearchKind.ExactAsciiLiteral or
+                Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
+
+    private static Utf8ExecutionLimitKind TrySeekExactPrefix(in Utf8SearchPlan candidatePlan,
+        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
+    {
+        if (candidatePlan.LiteralSearch is { Length: > 0 } literal)
+            return Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
+                input.Length - literal.Length, false, ref invocation, out position);
+        var breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+            candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
+            false, ref invocation, out var candidate, out var found);
+        position = found ? candidate.Index : -1;
+        return breach;
+    }
 
     // Only an initial mandatory anchor proves that other starts cannot match.
     // Callers establish LTR/backtracking eligibility. An immediate exact ASCII
@@ -635,7 +669,7 @@ internal static partial class Utf8SliceRunner
         return new(outcome.Found, outcome.EndByte, outcome.Breach, null, null);
     }
 
-    // The caller validates the complete subject. Count needs no coordinate map:
+    // Count receives caller-valid text and needs no coordinate map:
     // attempts, successful endpoints and empty progress are all byte boundaries.
     internal static Utf8SliceCountOutcome CountFromBytes(
         Utf8SliceProgram program,
@@ -695,11 +729,7 @@ internal static partial class Utf8SliceRunner
             first.A == (int)Utf8SliceAnchorKind.VeryEnd;
         // A distance-zero exact prefix is necessary, never sufficient. The scalar
         // VM still verifies every candidate; stateful/empty/casefold starts decline.
-        var seekLiteral = !program.RightToLeft && !program.CanMatchEmpty &&
-            !program.HasContiguousAnchor && !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts &&
-            candidatePlan.Distance == 0 && candidatePlan.Kind is
-                Utf8SearchKind.ExactAsciiLiteral or
-                Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
+        var seekLiteral = CanSeekExactPrefix(program, candidatePlan);
         byte leadingAsciiLast = 0;
         var leadingAsciiSecond = -1;
         byte leadingAsciiSecondLast = 0;
@@ -784,17 +814,7 @@ internal static partial class Utf8SliceRunner
                     return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                 if (seekLiteral)
                 {
-                    Utf8ExecutionLimitKind seekBreach;
-                    if (candidatePlan.LiteralSearch is { Length: > 0 } literal)
-                        seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
-                            input.Length - literal.Length, false, ref invocation, out position);
-                    else
-                    {
-                        seekBreach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
-                            candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
-                            false, ref invocation, out var candidate, out var found);
-                        position = found ? candidate.Index : -1;
-                    }
+                    var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     // Keep the final charge and recheck the original token after
                     // its diagnostic hook before publishing any accumulated count.
