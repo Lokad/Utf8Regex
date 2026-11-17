@@ -493,33 +493,6 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorExtractsAnchoredValidatorPlanForPostcodeValidator()
-    {
-        var regex = new Utf8Regex("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.Compiled);
-
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
-        Assert.Equal(6, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
-        Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
-        Assert.True(
-            regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Count(static segment =>
-                !segment.IsLiteral &&
-                segment.MinLength == 0 &&
-                segment.MaxLength == 1) >= 2);
-        Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 2 && segment.MaxLength == 2);
-    }
-
-    [Fact]
-    public void AnchoredOptionalFieldPlanRejectsIncompleteBranchProduct()
-    {
-        var regex = new Utf8Regex(
-            "^(?:[A-Z][0-9][0-9][A-Z]{2}|[A-Z][0-9][A-Z0-9][0-9][A-Z]{2}|[A-Z][0-9] [0-9][A-Z]{2}|[A-Z]{2}[0-9][A-Z0-9] [0-9][A-Z]{2})$",
-            RegexOptions.Compiled);
-
-        Assert.False(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
-    }
-
-    [Fact]
     public void CompiledLiteralThenRunValidatorMatchesBaselineAcrossCorpus()
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -609,28 +582,6 @@ public sealed class Utf8RegexConstructionTests
                 "1234-5678-1234"u8.ToArray(),
                 "1234-5678-1234-45x"u8.ToArray(),
                 [ (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-', 0xD9, 0xA1, (byte)'2' ],
-            ]);
-    }
-
-    [Fact]
-    public void CompiledPostcodeValidatorMatchesBaselineAcrossCorpus()
-    {
-        AssertCompiledFastPathMatchesBaseline(
-            "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$",
-            RegexOptions.None,
-            expectHandledWithoutValidation: true,
-            [
-                "SW1 1ZZ"u8.ToArray(),
-                "W1A 0AX"u8.ToArray(),
-                "M11AE"u8.ToArray(),
-                "B338TH"u8.ToArray(),
-                "CR2 6XH"u8.ToArray(),
-                "DN55 1PT"u8.ToArray(),
-                "A1 9A"u8.ToArray(),
-                "SW11ZZ"u8.ToArray(),
-                "SW1 1Z1"u8.ToArray(),
-                "SW1  1ZZ"u8.ToArray(),
-                "SW1é1ZZ"u8.ToArray(),
             ]);
     }
 

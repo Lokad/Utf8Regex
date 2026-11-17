@@ -55,16 +55,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         ReadOnlySpan<byte> input,
         out int matchedLength)
     {
-        var optionalFieldPlan = regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan;
-        if (optionalFieldPlan.HasValue)
-        {
-            return Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
-                input,
-                optionalFieldPlan,
-                allowTrailingNewline,
-                out matchedLength,
-                out _);
-        }
 
         if (regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
         {
@@ -99,24 +89,6 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         ReadOnlySpan<byte> input,
         out int matchedLength)
     {
-        var optionalFieldPlan = regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan;
-        if (optionalFieldPlan.HasValue)
-        {
-            var matched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
-                input,
-                optionalFieldPlan,
-                allowTrailingNewline,
-                out matchedLength,
-                out var needsValidation);
-            if (matched)
-            {
-                return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
-            }
-
-            return needsValidation
-                ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation
-                : Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
-        }
 
         if (regexPlan.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
         {

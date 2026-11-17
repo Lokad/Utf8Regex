@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove the optional-field/postcode specialization, its construction proof and
+  dispatch arms. Existing general matching paths preserve the language, captures
+  and controls; unmetered costs and numerical resource requirements can change.
+
 - Reuse bounded necessary-prefix discovery in Core capture-slot matching and
   memory cursors. Scalar verification, captures and cumulative interruption/resource
   controls remain. Sparse searches can avoid repeated attempts; dense candidates

@@ -2805,7 +2805,6 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"BranchCount       : {context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Length}");
                 Console.WriteLine($"BranchLengths     : {string.Join(",", context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Select(static branch => branch.Length))}");
                 Console.WriteLine($"HasAnchoredValidator : {simplePatternPlan.AnchoredValidatorPlan.HasValue}");
-                Console.WriteLine($"HasAnchoredOptional  : {simplePatternPlan.AnchoredOptionalFieldPlan.HasValue}");
                 Console.WriteLine($"HasAnchoredHeadTail  : {simplePatternPlan.AnchoredHeadTailRunPlan.HasValue}");
                 Console.WriteLine($"HasRepeatedDigitGroup: {simplePatternPlan.RepeatedDigitGroupPlan.HasValue}");
                 Console.WriteLine($"CanDirectFixedLength : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");

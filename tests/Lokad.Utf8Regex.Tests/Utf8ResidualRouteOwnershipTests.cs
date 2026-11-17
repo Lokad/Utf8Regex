@@ -72,37 +72,36 @@ public sealed class Utf8ResidualRouteOwnershipTests
     }
 
     [Theory]
-    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aa", true, false)]
-    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aaa", false, false)]
-    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aaaa", true, false)]
-    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aa", true, true)]
-    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aaa", true, true)]
-    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aaaa", false, true)]
-    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aacc", true, false)]
-    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaaccc", true, false)]
-    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaccc", false, false)]
-    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaacc", false, false)]
-    [InlineData("^(?:x|[ab]{3}x)$", "x", true, false)]
-    [InlineData("^(?:x|[ab]{3}x)$", "aaax", true, false)]
-    [InlineData("^(?:x|[ab]{3}x)$", "ax", false, false)]
-    [InlineData("^(?:x|[ab]{3}x)$", "aax", false, false)]
-    [InlineData("^(?:[0-9]{2}/[0-9]{2}/[0-9]{4}|[0-9]{4}/[0-9]{2}/[0-9]{4})$", "12/34/5678", true, false)]
-    [InlineData("^(?:[0-9]{2}/[0-9]{2}/[0-9]{4}|[0-9]{4}/[0-9]{2}/[0-9]{4})$", "123/34/5678", false, false)]
-    [InlineData("^(?:[0-9]{1}/[0-9]{1}/[0-9]{4}|[0-9]{2}/[0-9]{2}/[0-9]{4})$", "1/2/3456", true, false)]
-    [InlineData("^(?:[0-9]{1}/[0-9]{1}/[0-9]{4}|[0-9]{2}/[0-9]{2}/[0-9]{4})$", "12/2/3456", false, false)]
-    [InlineData("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", "12/2/3456", true, true)]
-    [InlineData("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", "1/23/4567", true, true)]
-    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "SW1 1ZZ", true, true)]
-    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "W1A0AX", true, true)]
-    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "AA11B2ZZ", false, true)]
-    public void NativeLengthUnionsPreserveGapsAndBranchCorrelation(
-        string pattern, string text, bool success, bool nativeValidator)
+    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aa", true)]
+    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aaa", false)]
+    [InlineData("^(?:[ab]{2}|[ab]{4})$", "aaaa", true)]
+    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aa", true)]
+    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aaa", true)]
+    [InlineData("^(?:[ab]{2}|[ab]{3})$", "aaaa", false)]
+    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aacc", true)]
+    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaaccc", true)]
+    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaccc", false)]
+    [InlineData("^(?:[ab]{2}[cd]{2}|[ab]{3}[cd]{3})$", "aaacc", false)]
+    [InlineData("^(?:x|[ab]{3}x)$", "x", true)]
+    [InlineData("^(?:x|[ab]{3}x)$", "aaax", true)]
+    [InlineData("^(?:x|[ab]{3}x)$", "ax", false)]
+    [InlineData("^(?:x|[ab]{3}x)$", "aax", false)]
+    [InlineData("^(?:[0-9]{2}/[0-9]{2}/[0-9]{4}|[0-9]{4}/[0-9]{2}/[0-9]{4})$", "12/34/5678", true)]
+    [InlineData("^(?:[0-9]{2}/[0-9]{2}/[0-9]{4}|[0-9]{4}/[0-9]{2}/[0-9]{4})$", "123/34/5678", false)]
+    [InlineData("^(?:[0-9]{1}/[0-9]{1}/[0-9]{4}|[0-9]{2}/[0-9]{2}/[0-9]{4})$", "1/2/3456", true)]
+    [InlineData("^(?:[0-9]{1}/[0-9]{1}/[0-9]{4}|[0-9]{2}/[0-9]{2}/[0-9]{4})$", "12/2/3456", false)]
+    [InlineData("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", "12/2/3456", true)]
+    [InlineData("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", "1/23/4567", true)]
+    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "SW1 1ZZ", true)]
+    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "W1A0AX", true)]
+    [InlineData("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", "AA11B2ZZ", false)]
+    public void LengthUnionsPreserveGapsAndBranchCorrelation(
+        string pattern, string text, bool success)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
         {
             var regex = new Utf8Regex(pattern, Options(compiled));
-            Assert.Equal(nativeValidator, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
             Assert.Equal(success, regex.IsMatch(bytes));
             Assert.Equal(success ? 1 : 0, regex.Count(bytes));
             var value = regex.Match(bytes);

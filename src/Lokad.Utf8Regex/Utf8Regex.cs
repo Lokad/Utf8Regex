@@ -20,7 +20,6 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AsciiBoundedDateToken = 4,
     AnchoredAsciiLeadingDigitsTail = 5,
     AnchoredAsciiSignedDecimalWhole = 7,
-    AnchoredAsciiOptionalFieldWhole = 8,
     AsciiUriToken = 9,
     AsciiIpv4Token = 10,
 }
@@ -220,11 +219,6 @@ public sealed partial class Utf8Regex
                 return Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate;
             }
 
-            if (preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.CanUseShortAsciiWholeMatcher)
-            {
-                return Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole;
-            }
-
             return preparedRegex.FallbackDirectFamily.Kind switch
             {
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
@@ -314,9 +308,6 @@ public sealed partial class Utf8Regex
 
     private AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan =>
         _preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan;
-
-    private AsciiSimplePatternAnchoredOptionalFieldPlan _anchoredOptionalFieldPlan =>
-        _preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan;
 
     private ref readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
         ref _preparedRegex.FallbackDirectFamily;
@@ -426,20 +417,6 @@ public sealed partial class Utf8Regex
                 _fallbackDirectFamily,
                 out _,
                 out _);
-        }
-
-        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole)
-        {
-            var optionalFieldMatched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
-                input,
-                _anchoredOptionalFieldPlan,
-                _allowsTrailingNewlineBeforeEnd,
-                out _,
-                out var optionalFieldNeedsValidation);
-            if (!optionalFieldNeedsValidation)
-            {
-                return optionalFieldMatched;
-            }
         }
 
         try

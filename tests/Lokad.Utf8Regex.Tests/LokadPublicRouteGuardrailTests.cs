@@ -472,7 +472,6 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         const string pattern = "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$";
         var regex = new Utf8Regex(pattern, options);
-        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
 
         string[] inputs =
         [

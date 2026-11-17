@@ -126,8 +126,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 ? anchoredValidatorPlan
                 : default, anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
                 ? anchoredBoundedDatePlan
-                : default, anchoredOptionalFieldPlan: TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredOptionalFieldPlan)
-                ? anchoredOptionalFieldPlan
                 : default, repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
                 : default, boundedSuffixLiteralPlan: !ignoreCase &&
