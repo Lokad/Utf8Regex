@@ -20,22 +20,22 @@ public sealed class Utf8DotTailRepeatTests
         var text = new string('a', 4096) + "😀\né\0\r\n";
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex("(?s:^(?<body>.+)$)", mode, Timeout.InfiniteTimeSpan, Policy(1));
-        var retained = regex.MatchDetailed(input);
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(retained.Success);
-        Assert.Equal(input.Length, retained.LengthInBytes);
-        Assert.Equal(text, retained.GetGroup(1).GetValueString());
+        Assert.Equal(input.Length, retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes);
+        Assert.Equal(text, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
-        Assert.Equal(text, retained.GetGroup(1).GetValueString());
+        Assert.Equal(text, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
     [Fact]
     public void SinglelineLazyAndConsumingTailsKeepTheirEarlierEndpointChoices()
     {
         var tail = new Utf8Regex("(?sm:^(?<body>.*)$\\nX)");
-        Assert.Equal("a", tail.MatchDetailed("a\nX"u8).GetGroup(1).GetValueString());
+        Assert.Equal("a", Encoding.UTF8.GetString(Utf8MatchSequence.First(tail.CreateMatchCursor("a\nX"u8.ToArray())).GetGroupMemory(1).Span));
         var lazy = new Utf8Regex("(?sm:^(?<body>.*?)$)");
-        Assert.Equal("a", lazy.MatchDetailed("a\nb"u8).GetGroup(1).GetValueString());
+        Assert.Equal("a", Encoding.UTF8.GetString(Utf8MatchSequence.First(lazy.CreateMatchCursor("a\nb"u8.ToArray())).GetGroupMemory(1).Span));
         Assert.Equal(2, lazy.Count("a\nb"u8));
     }
 
@@ -45,18 +45,19 @@ public sealed class Utf8DotTailRepeatTests
     {
         var line = new string('a', prefixLength) + "😀é\0\r";
         var storage = Encoding.UTF8.GetBytes("pad" + line + "\nZpad");
-        var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(line) + 2);
+        var memory = storage.AsMemory(3, Encoding.UTF8.GetByteCount(line) + 2);
+        var input = memory.Span;
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex("(?m:^(?<line>.*)$)", mode, Timeout.InfiniteTimeSpan, Policy());
-            var retained = regex.MatchDetailed(input);
+            var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(memory));
             Assert.True(retained.Success);
-            Assert.Equal(0, retained.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(line), retained.LengthInBytes);
-            Assert.Equal(line, retained.GetGroup(1).GetValueString());
+            Assert.Equal(0, retained.Value.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(line), retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes);
+            Assert.Equal(line, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
             using var token = new CancellationTokenSource();
             Assert.Equal(2, regex.Count(input, token.Token));
-            Assert.Equal(line, retained.GetGroup(1).GetValueString());
+            Assert.Equal(line, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         }
     }
 
@@ -83,24 +84,11 @@ public sealed class Utf8DotTailRepeatTests
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Policy());
             var expected = oracle.Match(text);
-            var actual = regex.MatchDetailed(input);
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, regex.IsMatch(input));
             Assert.Equal(expected.Success, regex.Match(input).Success);
-            Assert.Equal(expected.Success, actual.Success);
             Assert.Equal(oracle.Count(text), regex.Count(input));
-            if (!actual.Success) continue;
-            Assert.Equal(expected.Value, actual.GetValueString());
-            Assert.Equal((expected.Index, expected.Length), (actual.IndexInBytes, actual.LengthInBytes));
-            foreach (var number in oracle.GetGroupNumbers().Where(number => number != 0))
-            {
-                var wanted = expected.Groups[number];
-                var group = actual.GetGroup(number);
-                Assert.Equal(wanted.Success, group.Success);
-                Assert.Equal(wanted.Value, group.GetValueString());
-                Assert.Equal(wanted.Captures.Count, group.CaptureCount);
-                for (var i = 0; i < wanted.Captures.Count; i++)
-                    Assert.Equal(wanted.Captures[i].Value, group.GetCapture(i).GetValueString());
-            }
+            Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         }
     }
 
@@ -111,12 +99,12 @@ public sealed class Utf8DotTailRepeatTests
         var regex = new Utf8Regex("(?m:^(.{1,2})$)", mode, Timeout.InfiniteTimeSpan, Policy(1));
         var input = "😀é\n中"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
-        var first = regex.MatchDetailed(input);
-        Assert.Equal((0, 6), (first.IndexInBytes, first.LengthInBytes));
-        Assert.Equal("😀é", first.GetGroup(1).GetValueString());
-        Assert.Equal(1, first.GetGroup(1).CaptureCount);
+        var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((0, 6), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes - first.Value.StartOffsetInBytes));
+        Assert.Equal("😀é", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+        Assert.Equal(1, first.GetCaptures(1).Length);
         Assert.Equal(2, regex.Count("AB\nXY"u8));
-        Assert.Equal("😀é", first.GetGroup(1).GetValueString());
+        Assert.Equal("😀é", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
 
     [Fact]
@@ -139,10 +127,10 @@ public sealed class Utf8DotTailRepeatTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var match = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Policy())
-                .MatchDetailed(Encoding.UTF8.GetBytes(text));
+            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Policy())
+                .CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             Assert.Equal(captured is not null, match.Success);
-            if (match.Success) Assert.Equal(captured, match.GetGroup(1).GetValueString());
+            if (match.Success) Assert.Equal(captured, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         }
     }
 
@@ -201,6 +189,6 @@ public sealed class Utf8DotTailRepeatTests
         byte[] input = [.. "abc\n"u8, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Count(input));
         Assert.Throws<ArgumentException>(() => regex.Match(input));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
     }
 }

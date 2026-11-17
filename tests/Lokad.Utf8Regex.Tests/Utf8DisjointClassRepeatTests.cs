@@ -17,12 +17,12 @@ public sealed class Utf8DisjointClassRepeatTests
             { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
             inputValidation: validation);
         var input = Encoding.UTF8.GetBytes("é😀!" + first + second + "!");
-        var match = regex.MatchDetailed(input);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
-        Assert.Equal(7, match.IndexInBytes);
-        Assert.Equal(16384, match.LengthInBytes);
-        Assert.Equal(first, match.GetGroup(1).GetValueString());
-        Assert.Equal(second, match.GetGroup(2).GetValueString());
+        Assert.Equal(7, match.Value.StartOffsetInBytes);
+        Assert.Equal(16384, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes);
+        Assert.Equal(first, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(second, Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
     }
 
     [Fact]
@@ -35,11 +35,11 @@ public sealed class Utf8DisjointClassRepeatTests
                 inputValidation: validation);
             const string captured = "é😀";
             var input = Encoding.UTF8.GetBytes(captured + (char)excluded);
-            var actual = regex.MatchDetailed(input);
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(actual.Success);
-            Assert.Equal(captured, actual.GetGroup(1).GetValueString());
-            Assert.Equal(6, actual.GetGroup(1).LengthInBytes);
-            Assert.Equal(7, actual.LengthInBytes);
+            Assert.Equal(captured, Encoding.UTF8.GetString(actual.GetGroupMemory(1).Span));
+            Assert.Equal(6, actual.GetGroupMemory(1).Length);
+            Assert.Equal(7, actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes);
             Assert.Equal(1, regex.Count(input));
         }
     }
@@ -143,20 +143,8 @@ public sealed class Utf8DisjointClassRepeatTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        foreach (var number in oracle.GetGroupNumbers())
-        {
-            if (number == 0) continue;
-            var wanted = expected.Groups[number];
-            var group = actual.GetGroup(number);
-            Assert.Equal(wanted.Success, group.Success);
-            Assert.Equal(wanted.Value, group.GetValueString());
-            Assert.Equal(wanted.Captures.Count, group.CaptureCount);
-            for (var index = 0; index < wanted.Captures.Count; index++)
-                Assert.Equal(wanted.Captures[index].Value, group.GetCapture(index).GetValueString());
-        }
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
     }
 
@@ -171,13 +159,13 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("([é😀]{0})[é😀]", "😀", "")]
     public void RepeatBoundsCountCompleteScalars(string pattern, string text, string? expected)
     {
-        var match = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes(text));
+        var match = Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
         Assert.Equal(expected is not null, match.Success);
         if (expected is not null)
         {
-            Assert.Equal(text, match.GetValueString());
-            Assert.Equal(expected, match.GetGroup(1).GetValueString());
-            Assert.Equal(Encoding.UTF8.GetByteCount(text), match.LengthInBytes);
+            Assert.Equal(text, Encoding.UTF8.GetString(match.GetValueMemory().Span));
+            Assert.Equal(expected, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text), match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes);
         }
     }
 
@@ -189,21 +177,21 @@ public sealed class Utf8DisjointClassRepeatTests
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256,
             MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         using var token = new CancellationTokenSource();
-        var match = new Utf8Regex("([a-z]{1,4096})-", RegexOptions.None,
-            Timeout.InfiniteTimeSpan, policy).MatchDetailed(input, token.Token);
+        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]{1,4096})-", RegexOptions.None,
+            Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input, cancellationToken: token.Token));
         Assert.True(match.Success);
-        Assert.Equal(4 + Math.Max(0, length - 4096), match.IndexInBytes);
-        Assert.Equal(Math.Min(length, 4096) + 1, match.LengthInBytes);
-        Assert.Equal(new string('a', Math.Min(length, 4096)), match.GetGroup(1).GetValueString());
+        Assert.Equal(4 + Math.Max(0, length - 4096), match.Value.StartOffsetInBytes);
+        Assert.Equal(Math.Min(length, 4096) + 1, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes);
+        Assert.Equal(new string('a', Math.Min(length, 4096)), Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
 
     [Fact]
     public void RightToLeftKeepsItsExistingTraversalAndCapture()
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
-        var match = new Utf8Regex("([a-z]+)-", options).MatchDetailed("abc- def-"u8);
-        Assert.Equal("def-", match.GetValueString());
-        Assert.Equal("def", match.GetGroup(1).GetValueString());
+        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]+)-", options).CreateMatchCursor("abc- def-"u8.ToArray()));
+        Assert.Equal("def-", Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal("def", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
 
     [Theory]
@@ -220,10 +208,8 @@ public sealed class Utf8DisjointClassRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        Assert.Equal(expected.Groups["run"].Value, actual.GetGroup(regex.GroupNumberFromName("run")).GetValueString());
-        Assert.Equal(expected.Groups["tail"].Value, actual.GetGroup(regex.GroupNumberFromName("tail")).GetValueString());
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     [Theory]
@@ -236,13 +222,13 @@ public sealed class Utf8DisjointClassRepeatTests
         var split = body.IndexOf("(?:", StringComparison.Ordinal);
         var regex = new Utf8Regex("(?<run>" + body[..split] + ")" + body[split..]);
         var input = Encoding.UTF8.GetBytes(text);
-        var actual = regex.MatchDetailed(input);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected is not null, actual.Success);
         Assert.Equal(expected is null ? 0 : 1, regex.Count(input));
         if (expected is not null)
         {
-            Assert.Equal(expected, actual.GetGroup(regex.GroupNumberFromName("run")).GetValueString());
-            Assert.Equal(input.Length, actual.LengthInBytes);
+            Assert.Equal(expected, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
+            Assert.Equal(input.Length, actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes);
         }
     }
 
@@ -273,10 +259,8 @@ public sealed class Utf8DisjointClassRepeatTests
         var regex = new Utf8Regex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
-        var actual = regex.MatchDetailed(input);
-        var expected = oracle.Match(text);
-        foreach (var number in oracle.GetGroupNumbers())
-            Assert.Equal(expected.Groups[number].Value, actual.GetGroup(number).GetValueString());
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
     }
 
     [Theory]

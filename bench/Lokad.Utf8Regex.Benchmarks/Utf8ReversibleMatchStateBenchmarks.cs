@@ -13,5 +13,9 @@ public class Utf8ReversibleMatchStateBenchmarks
     // Measurements of the retired private journal are historical only.
     [Benchmark]
     public int QuantifiedCaptureWithHugeSyntacticBound()
-        => _regex.MatchDetailed(_input).LengthInBytes;
+    {
+        using var cursor = _regex.CreateMatchCursor(_input);
+        return cursor.MoveNext(out var match)
+            ? match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes : 0;
+    }
 }

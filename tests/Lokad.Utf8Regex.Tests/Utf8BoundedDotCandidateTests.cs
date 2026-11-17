@@ -31,14 +31,12 @@ public sealed class Utf8BoundedDotCandidateTests
                 "AéW-not-a-tail Z", "Aé" + tail[..^1], "Aé" + tail + "\n" + tail })
             {
                 var input = Encoding.UTF8.GetBytes(text);
-                var actual = regex.MatchDetailed(input); var expected = reference.MatchDetailed(input);
-                Assert.Equal((expected.Success, expected.IndexInBytes, expected.LengthInBytes, expected.GetValueString()),
-                    (actual.Success, actual.IndexInBytes, actual.LengthInBytes, actual.GetValueString()));
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                var expected = Utf8MatchSequence.First(reference.CreateMatchCursor(input));
+                Utf8MatchSequence.EqualCaptures(expected, actual);
                 Assert.Equal(reference.Count(input), regex.Count(input));
                 Assert.Equal(reference.IsMatch(input), regex.IsMatch(input));
-                if (!actual.Success) continue;
-                foreach (var number in regex.GetGroupNumbers())
-                    Assert.Equal(expected.GetGroup(number).GetValueString(), actual.GetGroup(number).GetValueString());
+
             }
         }
     }
@@ -51,7 +49,9 @@ public sealed class Utf8BoundedDotCandidateTests
         var pattern = @"\AA(?<gap>.{0,25})" + tail;
         var input = Encoding.UTF8.GetBytes("Aé😀" + tail);
         var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
-        Assert.Equal("é😀", regex.MatchDetailed(input).GetGroup("gap").GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.True(match.TryGetGroup("gap", out _));
+        Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
         Assert.Equal(1, regex.Count(input));
     }
 
@@ -64,8 +64,8 @@ public sealed class Utf8BoundedDotCandidateTests
             var input = "AéWatsonX中Watson"u8.ToArray();
             var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
             var reference = new Utf8Regex(referencePattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
-            Assert.Equal(reference.MatchDetailed(input).GetValueString(), regex.MatchDetailed(input).GetValueString());
-            Assert.Equal(reference.MatchDetailed(input).GetGroup("gap").GetValueString(), regex.MatchDetailed(input).GetGroup("gap").GetValueString());
+            Utf8MatchSequence.EqualCaptures(Utf8MatchSequence.First(reference.CreateMatchCursor(input)),
+                Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         }
     }
 
@@ -157,18 +157,8 @@ public sealed class Utf8BoundedDotCandidateTests
                 Assert.Equal(expected.Success, regex.IsMatch(input));
                 Assert.Equal(expected.Success, regex.Match(input).Success);
                 Assert.Equal(oracle.Count(text), regex.Count(input));
-                var actual = regex.MatchDetailed(input);
-                Assert.Equal((expected.Success, expected.Index, expected.Length, expected.Value),
-                    (actual.Success, actual.IndexInUtf16, actual.LengthInUtf16, actual.GetValueString()));
-                if (!actual.Success) continue;
-                foreach (var number in oracle.GetGroupNumbers())
-                {
-                    var wanted = expected.Groups[number]; var group = actual.GetGroup(number);
-                    Assert.Equal((wanted.Success, wanted.Value, wanted.Captures.Count),
-                        (group.Success, group.GetValueString(), group.CaptureCount));
-                    for (var i = 0; i < wanted.Captures.Count; i++)
-                        Assert.Equal(wanted.Captures[i].Value, group.GetCapture(i).GetValueString());
-                }
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
             }
         }
     }
@@ -192,12 +182,12 @@ public sealed class Utf8BoundedDotCandidateTests
             {
                 var gap = string.Concat(Enumerable.Repeat(scalar, length));
                 var input = Encoding.UTF8.GetBytes("A" + gap + "Z");
-                var actual = regex.MatchDetailed(input); var expected = reference.MatchDetailed(input);
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                var expected = Utf8MatchSequence.First(reference.CreateMatchCursor(input));
                 Assert.Equal(length <= maximum, actual.Success);
-                Assert.Equal((expected.Success, expected.IndexInBytes, expected.LengthInBytes, expected.GetValueString()),
-                    (actual.Success, actual.IndexInBytes, actual.LengthInBytes, actual.GetValueString()));
+                Utf8MatchSequence.EqualCaptures(expected, actual);
                 Assert.Equal(reference.Count(input), regex.Count(input));
-                if (actual.Success) Assert.Equal(gap, actual.GetGroup("gap").GetValueString());
+                if (actual.Success) Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
             }
         }
     }
@@ -218,15 +208,15 @@ public sealed class Utf8BoundedDotCandidateTests
             {
                 var gap = string.Concat(Enumerable.Repeat(scalar, length));
                 var input = Encoding.UTF8.GetBytes("A" + gap + suffix);
-                var actual = regex.MatchDetailed(input); var expected = reference.MatchDetailed(input);
-                Assert.Equal((expected.Success, expected.IndexInBytes, expected.LengthInBytes, expected.GetValueString()),
-                    (actual.Success, actual.IndexInBytes, actual.LengthInBytes, actual.GetValueString()));
+                var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+                var expected = Utf8MatchSequence.First(reference.CreateMatchCursor(input));
+                Utf8MatchSequence.EqualCaptures(expected, actual);
                 Assert.Equal(reference.Count(input), regex.Count(input));
                 Assert.Equal(reference.IsMatch(input), regex.IsMatch(input));
                 if (actual.Success)
                 {
-                    Assert.Equal(gap, actual.GetGroup("gap").GetValueString());
-                    if (tail.Contains("?<tail>")) Assert.Equal("at", actual.GetGroup("tail").GetValueString());
+                    Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
+                    if (tail.Contains("?<tail>")) Assert.Equal("at", Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
                 }
             }
         }
@@ -297,18 +287,19 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         const string pattern = "A(?<gap>.{8,25})Z";
         var regex = new Utf8Regex(pattern); var input = "AxxxxxxxxZ"u8.ToArray();
-        var retained = regex.MatchDetailed(input); var group = retained.GetGroup("gap");
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        var group = retained.GetGroupMemory(regex.GroupNumberFromName("gap"));
         var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(cursor.Current, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-        Assert.Equal("xxxxxxxx", group.GetValueString());
+        Assert.Equal("xxxxxxxx", Encoding.UTF8.GetString(group.Span));
         foreach (var policy in new[] { Funded with { MaxWorkingBytes = 1 }, Funded with { MaxResultBytes = 1 } })
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, RegexOptions.None,
-                Timeout.InfiniteTimeSpan, policy).MatchDetailed(input));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(
+                new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input)));
         byte[] malformed = [.. input, 0xff];
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
-        Assert.Throws<ArgumentException>(() => regex.MatchDetailed(malformed));
+        Assert.Throws<ArgumentException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(malformed)));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
     }

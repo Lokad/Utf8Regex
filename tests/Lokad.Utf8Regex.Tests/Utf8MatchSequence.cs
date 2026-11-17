@@ -57,6 +57,24 @@ internal static class Utf8MatchSequence
         return count;
     }
 
+    internal static void EqualCaptures(Utf8RangeMatch expected, Utf8RangeMatch actual)
+    {
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Value, actual.Value);
+        Assert.Equal(expected.GetValueMemory().ToArray(), actual.GetValueMemory().ToArray());
+        if (!expected.Success) return;
+        Assert.Equal(expected.GroupNumbers.ToArray(), actual.GroupNumbers.ToArray());
+        Assert.Equal(expected.GroupNames.ToArray(), actual.GroupNames.ToArray());
+        foreach (var number in expected.GroupNumbers)
+        {
+            Assert.True(expected.TryGetGroup(number, out var wanted));
+            Assert.True(actual.TryGetGroup(number, out var found));
+            Assert.Equal(wanted, found);
+            Assert.Equal(expected.GetGroupMemory(number).ToArray(), actual.GetGroupMemory(number).ToArray());
+            Assert.Equal(expected.GetCaptures(number).ToArray(), actual.GetCaptures(number).ToArray());
+        }
+    }
+
     internal static void AssertRange(Utf8CaptureRange actual, string text, int index, int length)
     {
         Assert.True(actual.Success);

@@ -30,23 +30,8 @@ public sealed class Utf8TerminalCaptureRepeatTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
-        var actual = regex.MatchDetailed(input);
-        Assert.Equal(expected.Success, actual.Success);
-        if (expected.Success)
-        {
-            Assert.Equal(expected.Value, actual.GetValueString());
-            foreach (var number in oracle.GetGroupNumbers())
-            {
-                if (number == 0) continue;
-                var wanted = expected.Groups[number];
-                var group = actual.GetGroup(number);
-                Assert.Equal(wanted.Success, group.Success);
-                Assert.Equal(wanted.Value, group.GetValueString());
-                Assert.Equal(wanted.Captures.Count, group.CaptureCount);
-                for (var index = 0; index < wanted.Captures.Count; index++)
-                    Assert.Equal(wanted.Captures[index].Value, group.GetCapture(index).GetValueString());
-            }
-        }
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
     }
 
@@ -56,10 +41,10 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [InlineData("([é😀]*)", "", "")]
     public void TerminalBoundsCountCompleteScalars(string pattern, string text, string expected)
     {
-        var match = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes(text));
+        var match = Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
         Assert.True(match.Success);
-        Assert.Equal(expected, match.GetGroup(1).GetValueString());
-        Assert.Equal(Encoding.UTF8.GetByteCount(expected), match.LengthInBytes);
+        Assert.Equal(expected, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(Encoding.UTF8.GetByteCount(expected), match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes);
     }
 
     [Fact]
@@ -103,18 +88,18 @@ public sealed class Utf8TerminalCaptureRepeatTests
     public void RightToLeftKeepsItsExistingCapture()
     {
         var regex = new Utf8Regex("([a-z]+)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
-        var match = regex.MatchDetailed("abc def"u8);
-        Assert.Equal("def", match.GetGroup(1).GetValueString());
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("abc def"u8.ToArray()));
+        Assert.Equal("def", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
 
     [Fact]
-    public void CountCanAvoidFramesButDetailedOutputStillRequiresResultAdmission()
+    public void CountCanAvoidFramesButCaptureSnapshotsStillRequireResultAdmission()
     {
         var regex = new Utf8Regex("([a-z]+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(new string('a', 2048));
         Assert.Equal(1, regex.Count(input));
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
     }
 
