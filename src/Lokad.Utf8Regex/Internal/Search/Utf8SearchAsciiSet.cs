@@ -28,6 +28,15 @@ internal readonly struct Utf8SearchAsciiSet
         return value < 64 ? (Low & bit) != 0 : (High & bit) != 0;
     }
 
+    internal bool ExcludesFinalScalar(ReadOnlySpan<byte> input, bool allowTrailingLf, bool canMatchEmpty)
+    {
+        if (input.IsEmpty) return !canMatchEmpty;
+        var last = input[^1];
+        if (last >= 128 || Contains(last)) return false;
+        if (!allowTrailingLf || last != (byte)'\n') return true;
+        return input.Length == 1 ? !canMatchEmpty : input[^2] < 128 && !Contains(input[^2]);
+    }
+
     public Utf8SearchAsciiSet With(byte value)
     {
         if (value >= 128)

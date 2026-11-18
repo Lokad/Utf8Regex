@@ -8,6 +8,37 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2CharacterTests
 {
+    [Fact]
+    public void AnchoredNullableDigitTailCanRejectBeforeBacktracking()
+    {
+        using var regex = new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*$", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8 }
+        });
+        using var token = new CancellationTokenSource();
+        var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x\n");
+        Assert.False(regex.IsMatch(nearMiss, cancellationToken: token.Token));
+        Assert.Equal(0, regex.Count(nearMiss, cancellationToken: token.Token));
+        Assert.False(regex.Match(nearMiss, cancellationToken: token.Token).Success);
+    }
+
+    [Theory]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "", Pcre2CompileOptions.None, true)]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "\n", Pcre2CompileOptions.None, true)]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "١٢\n", Pcre2CompileOptions.Ucp, true)]
+    [InlineData(@"^[-+]?\d*\.?\d*$", "\n", Pcre2CompileOptions.DollarEndOnly, false)]
+    [InlineData(@"^[-+]?\d*\.?\d*\z", "1\n", Pcre2CompileOptions.None, false)]
+    [InlineData(@"(?m)^\d*$", "12\nx", Pcre2CompileOptions.DollarEndOnly, true)]
+    [InlineData(@"^a*(*ACCEPT)b*$", "x", Pcre2CompileOptions.None, true)]
+    public void AnchoredDigitTailKeepsObservableEndRules(string pattern, string text, Pcre2CompileOptions options, bool expected)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern, options: options);
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input, cancellationToken: token.Token));
+        Assert.Equal(expected, regex.Match(input, cancellationToken: token.Token).Success);
+    }
+
     [Theory]
     [InlineData("é", 1, 3)]
     [InlineData("€", 3, 6)]
@@ -131,6 +162,9 @@ public sealed class Pcre2CharacterTests
         Assert.True(unicodeBsr.IsMatch(lineSeparator));
         Assert.False(crlfBsr.IsMatch(lineSeparator));
         Assert.False(notNewline.IsMatch("\n"u8));
+        using var crDecimal = Create(@"^[-+]?\d*\.?\d*$", Pcre2CompileOptions.None,
+            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr });
+        Assert.True(crDecimal.IsMatch("12\r"u8));
     }
 
     [Fact]

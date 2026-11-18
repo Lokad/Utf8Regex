@@ -340,7 +340,8 @@ internal sealed class Pcre2BacktrackingProgram
         int maximumScalarLength,
         byte? leadingAsciiByte,
         bool leadingExtendedGraphemeCluster,
-        bool usesCodeUnit)
+        bool usesCodeUnit,
+        (Utf8SearchAsciiSet Allowed, bool AllowTrailingLf, bool CanMatchEmpty) anchoredFinalAscii)
     {
         Instructions = instructions;
         _request = request;
@@ -368,6 +369,7 @@ internal sealed class Pcre2BacktrackingProgram
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
         UsesCodeUnit = usesCodeUnit;
+        AnchoredFinalAscii = anchoredFinalAscii;
     }
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
@@ -420,6 +422,7 @@ internal sealed class Pcre2BacktrackingProgram
     internal bool LeadingExtendedGraphemeCluster { get; }
 
     internal bool UsesCodeUnit { get; }
+    internal (Utf8SearchAsciiSet Allowed, bool AllowTrailingLf, bool CanMatchEmpty) AnchoredFinalAscii { get; }
 }
 
 internal enum Pcre2BacktrackingInstructionKind : byte

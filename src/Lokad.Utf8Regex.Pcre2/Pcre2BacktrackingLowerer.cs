@@ -89,7 +89,53 @@ internal sealed class Pcre2BacktrackingLowerer
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
             Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root),
-            Pcre2BacktrackingAnalysis.ContainsCodeUnit(root));
+            Pcre2BacktrackingAnalysis.ContainsCodeUnit(root),
+            FindAnchoredFinalAscii(root));
+    }
+
+    private (Utf8SearchAsciiSet Allowed, bool AllowTrailingLf, bool CanMatchEmpty) FindAnchoredFinalAscii(IPcre2BacktrackingNode root)
+    {
+        if (root is not Pcre2SequenceBacktrackingNode { Children: { Length: >= 3 and <= 24 } children } ||
+            children[0] is not Pcre2TokenBacktrackingNode { Token: var start } ||
+            !(start.Kind == Pcre2CharacterTokenKind.BeginningOfSubject ||
+              start.Kind == Pcre2CharacterTokenKind.BeginningOfLine && (start.Options & Pcre2CharacterOptions.Multiline) == 0) ||
+            children[^1] is not Pcre2TokenBacktrackingNode { Token: var end }) return default;
+
+        var strict = end.Kind == Pcre2CharacterTokenKind.EndOfSubject ||
+            end.Kind == Pcre2CharacterTokenKind.EndOfLine && (_request.Options & Pcre2CompileOptions.DollarEndOnly) != 0;
+        if ((end.Kind == Pcre2CharacterTokenKind.EndOfLine && (end.Options & Pcre2CharacterOptions.Multiline) != 0) ||
+            !strict && (end.Kind is not (Pcre2CharacterTokenKind.EndOfLine or Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline) ||
+                _request.Settings.Newline is not (Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf))) return default;
+
+        var allowed = default(Utf8SearchAsciiSet);
+        var canMatchEmpty = true;
+        for (var index = children.Length - 2; index > 0; index--)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            var node = children[index];
+            var minimum = 1;
+            if (node is Pcre2RepeatBacktrackingNode repeat)
+            {
+                if (repeat.Maximum == 0) continue;
+                node = repeat.Body;
+                minimum = repeat.Minimum;
+            }
+            // Prove every child, including the nonterminal prefix. Opaque
+            // control effects or early acceptance must keep their normal VM.
+            if (node is not Pcre2TokenBacktrackingNode { Token: var atom } ||
+                atom.Kind is not (Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass) ||
+                (atom.Options & Pcre2CharacterOptions.Caseless) != 0) return default;
+            if (!canMatchEmpty) continue;
+            if (atom.Kind == Pcre2CharacterTokenKind.CharacterClass)
+            {
+                var mask = atom.CharacterClass.AsciiSet;
+                allowed = Utf8SearchAsciiSet.FromMasks(allowed.Low | mask.ActualLowMask, allowed.High | mask.ActualHighMask);
+            }
+            else if (atom.Literal.IsAscii)
+                allowed = allowed.With((byte)atom.Literal.Value);
+            canMatchEmpty = minimum == 0;
+        }
+        return (allowed, !strict, canMatchEmpty);
     }
 
     private void EmitNode(

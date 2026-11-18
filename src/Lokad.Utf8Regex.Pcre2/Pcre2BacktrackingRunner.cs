@@ -268,6 +268,14 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2BacktrackingWorkspace workspace, scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         var bytes = input.Bytes;
+        var (lastScalars, allowTrailingLf, canMatchEmpty) = program.AnchoredFinalAscii;
+        if (lastScalars.HasValue && matchOptions == Pcre2MatchOptions.None &&
+            lastScalars.ExcludesFinalScalar(bytes, allowTrailingLf, canMatchEmpty))
+        {
+            budget.ChargeCandidate();
+            budget.CheckDeadline();
+            return default;
+        }
         var anchored = program.RestrictsSearchToInitialCandidate ||
             (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;

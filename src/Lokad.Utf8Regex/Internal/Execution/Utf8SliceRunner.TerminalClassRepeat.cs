@@ -695,7 +695,7 @@ internal static partial class Utf8SliceRunner
         in Utf8SliceInstruction atom, out uint unicodeCategories, out ulong asciiLow, out ulong asciiHigh)
     {
         asciiLow = asciiHigh = 0;
-        unicodeCategories = GetCompleteAsciiCategoryMask(program, atom);
+        unicodeCategories = program.GetCompleteAsciiCategoryMask(atom);
         if (unicodeCategories == 0)
         {
             if (atom is not { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
@@ -714,12 +714,6 @@ internal static partial class Utf8SliceRunner
         asciiHigh = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
         return true;
     }
-
-    // The lowerer includes every ASCII member for this single positive table.
-    private static uint GetCompleteAsciiCategoryMask(Utf8SliceProgram program, in Utf8SliceInstruction atom)
-        => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            program.CategorySetMembers[atom.D] is [{ Negated: false, Table: {
-                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
 
     private static Utf8SliceMatchOutcome FindLazyDotLiteral(ReadOnlySpan<byte> input, int position,
         byte literal, bool singleline, ref Utf8SliceInvocation invocation)
@@ -949,7 +943,7 @@ internal static partial class Utf8SliceRunner
                     if (++count == minimum) minimumEnd = position;
                     continue;
                 }
-                if (atom.Kind == Utf8SliceInstructionKind.Set || GetCompleteAsciiCategoryMask(program, atom) != 0)
+                if (atom.Kind == Utf8SliceInstructionKind.Set || program.GetCompleteAsciiCategoryMask(atom) != 0)
                     break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;

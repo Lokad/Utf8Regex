@@ -33,6 +33,12 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [InlineData(@"(?m:(?:ab)+$)", "abab\n#", true)]
     [InlineData(@"(?i:(?:ab)+Z)$", "ababz", true)]
     [InlineData(@"\A(?:ab)?$", "", true)]
+    [InlineData(@"\A[-+]?\d*\.?\d*$", "\n", true)]
+    [InlineData(@"\A[-+]?\d*\.?\d*$", "+\n", true)]
+    [InlineData(@"\A[-+]?\d*\.?\d*$", "١٢.٣\n", true)]
+    [InlineData(@"\A[-+]?\d*\.?\d*\z", "\n", false)]
+    [InlineData(@"\A[-+]?\d*\.?\d*$", "١٢x\n", false)]
+    [InlineData(@"(?m)^\d*$", "12\nx", true)]
     public void FinalScalarScreenKeepsAllPossibleEndpoints(string pattern, string text, bool expected)
     {
         using var regex = new Utf8Regex(pattern);
@@ -40,6 +46,19 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, token.Token));
         Assert.Equal(expected ? 1 : 0, regex.Count(input, token.Token));
+    }
+
+    [Fact]
+    public void NullableAbsoluteStartCanRejectAnImpossibleDigitTailUnderTinyWork()
+    {
+        using var regex = Utf8Regex.Compile(@"^[-+]?\d*\.?\d*$", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8 }
+        });
+        using var token = new CancellationTokenSource();
+        var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x\n");
+        Assert.False(regex.IsMatch(nearMiss, token.Token));
+        Assert.Equal(0, regex.Count(nearMiss, token.Token));
     }
 
     [Theory]

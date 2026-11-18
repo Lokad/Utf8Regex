@@ -30,7 +30,8 @@ public sealed class Utf8RegexTimeoutTests
         });
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
-        input[^1] = (byte)'!';
+        // Keep a possible final letter so the category repeat is exercised.
+        input[^2] = (byte)'!';
 
         var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(input.Length, exception.Input.Length);

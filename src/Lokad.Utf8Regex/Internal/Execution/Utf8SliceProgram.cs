@@ -333,8 +333,11 @@ internal sealed class Utf8SliceProgram
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
-        if (!rightToLeft && !isNonBacktracking && !canMatchEmpty)
-            RequiredFinalAscii = FindRequiredFinalAscii(instructions, setMasks, Utf8ConstructionScope.CurrentBudget);
+        // An absolute start confines an empty match to byte zero. A terminal
+        // anchor can then still exclude the last scalar on nonempty extents.
+        if (!rightToLeft && !isNonBacktracking && (!canMatchEmpty || instructions is
+            [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 }, ..]))
+            RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget);
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings)
@@ -496,18 +499,19 @@ internal sealed class Utf8SliceProgram
     internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)
     {
         var (end, ascii) = RequiredFinalAscii;
-        if (end == Utf8SliceAnchorKind.Beginning) return false;
-        if (input.IsEmpty) return true;
-        var last = input[^1];
-        if (last >= 128 || ascii.Contains(last)) return false;
-        // A nonempty match may also end just before the final LF at a lax end.
-        return end == Utf8SliceAnchorKind.VeryEnd || last != (byte)'\n' || input.Length == 1 ||
-            input[^2] < 128 && !ascii.Contains(input[^2]);
+        return end != Utf8SliceAnchorKind.Beginning &&
+            ascii.ExcludesFinalScalar(input, end == Utf8SliceAnchorKind.End, CanMatchEmpty);
     }
 
-    private static (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(
-        ReadOnlySpan<Utf8SliceInstruction> code, byte[][] masks, Utf8ConstructionBudget budget)
+    // The lowerer includes every ASCII member for this single positive table.
+    internal uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom)
+        => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+            CategorySetMembers[atom.D] is [{ Negated: false, Table: {
+                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
+
+    private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(Utf8ConstructionBudget budget)
     {
+        var code = Instructions.AsSpan();
         if (code.Length is < 2 or > 128 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return default;
         var end = FindTerminalEnd(code[..^1]);
         if (end < 0) return default;
@@ -558,9 +562,10 @@ internal sealed class Utf8SliceProgram
                     if (next && (uint)instruction.A < 128) ascii = ascii.With((byte)instruction.A);
                     break;
                 case Utf8SliceInstructionKind.Set when instruction.C == 0:
+                case Utf8SliceInstructionKind.CategorySet when next && GetCompleteAsciiCategoryMask(instruction) != 0:
                     if (next)
                     {
-                        var mask = masks[instruction.A].AsSpan();
+                        var mask = SetMasks[instruction.A].AsSpan();
                         var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
                         var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
                         if (instruction.B != 0) { low = ~low; high = ~high; }
