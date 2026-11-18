@@ -1138,6 +1138,44 @@ internal static partial class Utf8SliceRunner
                                 else failed = true;
                                 break;
                             }
+                            // A lazy category atom may require a longer table
+                            // or subtraction walk. Defer it until backtracking.
+                            if (continuation > programIndex &&
+                                instruction is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
+                                (instruction.Kind != Utf8SliceInstructionKind.RepeatLazy ||
+                                    instructions[programIndex + 1].Kind != Utf8SliceInstructionKind.CategorySet))
+                            {
+                                // The repeat proof has verified one forward,
+                                // side-effect-free atom and its exit. The two
+                                // endpoints share that exit, just like a fork.
+                                var breach = invocation.TryChargeStep();
+                                if (breach != Utf8ExecutionLimitKind.None)
+                                { failure = breach; goto Failure; }
+                                if (TryReadScalar(input, inputIndex, false, out var scalar, out var width))
+                                {
+                                    breach = TryMatchScalarClass(program, instructions[programIndex + 1], scalar,
+                                        ref invocation, out var hit);
+                                    if (breach != Utf8ExecutionLimitKind.None)
+                                    { failure = breach; goto Failure; }
+                                    if (hit)
+                                    {
+                                        var end = inputIndex + width;
+                                        var lazy = instruction.Kind == Utf8SliceInstructionKind.RepeatLazy;
+                                        if (!stacks.PushFrame(new Utf8SliceFrame
+                                        {
+                                            ResumeKind = Utf8SliceResumeKind.Alternation,
+                                            Target = continuation,
+                                            InputIndex = lazy ? end : inputIndex,
+                                            TrailCount = stacks.TrailCount,
+                                            JournalCount = stacks.JournalCount,
+                                        }, ref invocation))
+                                        { failure = stacks.Breach; goto Failure; }
+                                        if (!lazy) inputIndex = end;
+                                    }
+                                }
+                                programIndex = continuation;
+                                break;
+                            }
                             if (counts.Length == 0)
                             {
                                 var breach = stacks.TryRentRepeatTables(program.RepeatCount, ref invocation,

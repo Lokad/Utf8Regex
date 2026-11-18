@@ -11,7 +11,8 @@ public sealed class Utf8OptionalRepeatTests
     {
         foreach (var pattern in new[]
         {
-            @"(ab)?b", @"(ab)??b", @"(a?)?a", @"(a?)??a", @"((a)?)*b", @"((a)??)+b",
+            @"a?a", @"a??a", @"[ab]?[ab]", @"[ab]??[ab]", @"(ab)?b", @"(ab)??b",
+            @"(a?)?a", @"(a?)??a", @"((a)?)*b", @"((a)??)+b",
             @"(?<x>a)?(?(x)b|c)", @"(?<x>a)??(?(x)b|c)", @"(?<x>a)?\k<x>b",
             @"(?:(?<x>a)?b|(?<x>ab)?c)", @"(?=(a)?b)a?b", @"(?<=(a)?b)c",
             @"(?>(ab)?a)b", @"(?>(ab)??a)b", @"(?<x>a)(?<-x>b)?(?(x)c|d)",
@@ -132,5 +133,44 @@ public sealed class Utf8OptionalRepeatTests
             using var source = new CancellationTokenSource();
             Assert.Equal(3, regex.Count("a😀"u8, source.Token));
         }
+    }
+
+    [Theory]
+    [InlineData(@"\A[ab]?[ab]\z", "a")]
+    [InlineData(@"\A[ab]??[ab]\z", "aa")]
+    public void SingleAtomOptionalCanRetryWithinOneBranchReservation(string pattern, string subject)
+    {
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10_000, MaxDepth = 1, MaxWorkingBytes = 768 };
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant,
+            new Utf8RegexPolicy { ResourcePolicy = policy });
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(subject);
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(input.Length, regex.Match(input, cancellationToken: token.Token).EndOffsetInBytes);
+    }
+
+    [Theory]
+    [InlineData(@"(?<body>[é😀]?)[é😀]", "😀")]
+    [InlineData(@"(?<body>😀??)[é😀]", "")]
+    public void OptionalScalarBranchKeepsCapturePriorityAndByteBoundaries(string pattern, string body)
+    {
+        using var regex = new Utf8Regex(pattern);
+        using var token = new CancellationTokenSource();
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀é"u8.ToArray(), cancellationToken: token.Token));
+        Assert.True(match.Success);
+        Assert.Equal(body, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(body.Length == 0 ? 4 : 6, match.Value.EndOffsetInBytes);
+    }
+
+    [Fact]
+    public void LazySubtractionDefersItsWorkUntilTheAtomIsNeeded()
+    {
+        var atom = "[ab]";
+        for (var depth = 0; depth < 64; depth++) atom = $"[ab-{atom}]";
+        using var regex = Utf8Regex.Compile(@"\A" + atom + "??[ab]", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 48 }
+        });
+        Assert.True(regex.IsMatch("a"u8));
     }
 }
